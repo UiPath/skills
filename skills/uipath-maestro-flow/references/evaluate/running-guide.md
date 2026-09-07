@@ -1,6 +1,8 @@
 # Running Flow Evaluations
 
+<!--skill-flavor:sw-eval-run-intro:start-->
 `uip maestro flow eval run *` — start, monitor, inspect, and compare evaluation runs. All run commands require `uip login` and a Flow solution that already exists in Studio Web.
+<!--skill-flavor:sw-eval-run-intro:end-->
 
 <!--skill-flavor:upload-safety-guide-gate:start-->
 > **Before running any of these:** read [upload-safety.md](upload-safety.md). The skill must NOT auto-run `uip solution upload` to satisfy the "solution must be in Studio Web" prerequisite. If the solution isn't in Studio Web, ask the user.
@@ -8,6 +10,7 @@
 
 ## Start a Run
 
+<!--skill-flavor:sw-eval-run-start-syntax:start-->
 ```bash
 uip maestro flow eval run start \
   --set "<set_name>" \
@@ -20,14 +23,15 @@ uip maestro flow eval run start \
   [--wait [--timeout <seconds>]] \
   --output json
 ```
+<!--skill-flavor:sw-eval-run-start-syntax:end-->
 
+<!--skill-flavor:sw-eval-id-resolution:start-->
 ### Resolution order for `--solution-id` / `--project-id`
 
 The CLI auto-resolves these from project metadata in the working tree (typically `SolutionStorage.json` and the parent `.uipx`). Pass `--solution-id` or `--project-id` explicitly only when the working tree does not have those IDs (e.g., a freshly scaffolded local project that has never been uploaded).
 
-<!--skill-flavor:upload-safety-resolution-failure:start-->
 If the auto-resolution fails AND you have not passed explicit IDs, the start command will error. Do NOT respond by running `uip solution upload` automatically — see [upload-safety.md](upload-safety.md) for the right action.
-<!--skill-flavor:upload-safety-resolution-failure:end-->
+<!--skill-flavor:sw-eval-id-resolution:end-->
 
 ### `--folder-key`
 
@@ -35,6 +39,7 @@ The Orchestrator folder key that scopes the run. Defaults to the user's personal
 
 ### `--wait` and `--timeout`
 
+<!--skill-flavor:sw-eval-wait-timeout:start-->
 Without `--wait`, the command returns immediately with `EvalSetRunId`. With `--wait`, the CLI blocks until the run reaches a terminal state (`Completed` or `Failed`) or `--timeout` elapses (default 600s, hardcoded by the CLI).
 
 `--timeout` only stops the local CLI from blocking. The server-side run continues regardless. Query progress with:
@@ -45,6 +50,7 @@ uip maestro flow eval run status <eval_set_run_id> \
 ```
 
 Polling cadence is not part of the public CLI contract — do not depend on a specific interval.
+<!--skill-flavor:sw-eval-wait-timeout:end-->
 
 ### Output (no `--wait`)
 
@@ -66,12 +72,14 @@ The CLI emits a summary plus per-data-point results. Use `run results` for the s
 
 ## Check Status
 
+<!--skill-flavor:sw-eval-run-status-syntax:start-->
 ```bash
 uip maestro flow eval run status <eval_set_run_id> \
   --set "<set_name>" \
   --path <flow_project> \
   --output json
 ```
+<!--skill-flavor:sw-eval-run-status-syntax:end-->
 
 ```json
 {
@@ -89,6 +97,7 @@ Status values: `Pending`, `Running`, `Completed`, `Failed`. `Completed` and `Fai
 
 ## Detailed Results
 
+<!--skill-flavor:sw-eval-run-results-syntax:start-->
 ```bash
 uip maestro flow eval run results <eval_set_run_id> \
   --set "<set_name>" \
@@ -98,6 +107,7 @@ uip maestro flow eval run results <eval_set_run_id> \
   [--export-format json|csv] \
   --output json
 ```
+<!--skill-flavor:sw-eval-run-results-syntax:end-->
 
 Per-data-point fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Error` (plus `Justifications` when `--verbose`).
 
@@ -111,12 +121,15 @@ Include the LLM judge's free-text justification per evaluator. Essential when a 
 
 ### `--export-format <json|csv>`
 
+<!--skill-flavor:sw-eval-export-format-note:start-->
 Write results to a file alongside the project (e.g., `eval-results-<timestamp>.json` or `.csv`). Useful for archiving or feeding into a dashboard.
+<!--skill-flavor:sw-eval-export-format-note:end-->
 
 ### Filtering with `--output-filter`
 
 `--output-filter` takes a JMESPath expression and applies it to the JSON payload before printing. Useful for triage:
 
+<!--skill-flavor:sw-eval-output-filter-examples:start-->
 ```bash
 # Show only data points named "checkout-flow"
 uip maestro flow eval run results <run_id> \
@@ -128,20 +141,24 @@ uip maestro flow eval run results <run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json \
   --output-filter 'Data.Results[*].{name: DataPoint, score: Score}'
 ```
+<!--skill-flavor:sw-eval-output-filter-examples:end-->
 
 ## List Past Runs
 
+<!--skill-flavor:sw-eval-run-list-syntax:start-->
 ```bash
 uip maestro flow eval run list \
   --set "<set_name>" \
   --path <flow_project> \
   --output json
 ```
+<!--skill-flavor:sw-eval-run-list-syntax:end-->
 
 Per-row: `EvalSetRunId`, `Status`, `Score`, `DataPoints`, `Duration`, `CreatedAt`.
 
 ## Compare Two Runs
 
+<!--skill-flavor:sw-eval-run-compare-syntax:start-->
 ```bash
 uip maestro flow eval run compare <run_id_a> \
   --compare-to <run_id_b> \
@@ -149,6 +166,7 @@ uip maestro flow eval run compare <run_id_a> \
   --path <flow_project> \
   --output json
 ```
+<!--skill-flavor:sw-eval-run-compare-syntax:end-->
 
 Output:
 
@@ -176,10 +194,9 @@ Use `compare` after each prompt or flow change to verify the change improved sco
 
 ## Workflow Example
 
+<!--skill-flavor:sw-eval-workflow-example:start-->
 ```bash
-<!--skill-flavor:upload-safety-recipe-comment:start-->
 # 1. Verify the solution is in Studio Web (do NOT auto-upload — see upload-safety.md)
-<!--skill-flavor:upload-safety-recipe-comment:end-->
 #    If unsure, list runs first; absence of any error here implies the solution exists.
 uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 
@@ -200,6 +217,7 @@ uip maestro flow eval run start --set "Smoke Tests" --path ./MySolution/MyFlow -
 uip maestro flow eval run compare <new_run_id> --compare-to <old_run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-workflow-example:end-->
 
 ## Failure Detection
 
@@ -217,7 +235,9 @@ Use `--only-failed` to filter to these rows. Use `--verbose` to read the justifi
 <!--skill-flavor:upload-safety-guide-antipattern:start-->
 - **Don't auto-run `uip solution upload`** when `eval run start` errors with a missing-solution error. Stop and ask the user — see [upload-safety.md](upload-safety.md).
 <!--skill-flavor:upload-safety-guide-antipattern:end-->
+<!--skill-flavor:sw-eval-run-antipatterns:start-->
 - **Don't depend on `--wait`'s polling cadence.** Treat as a black-box block.
 - **Don't compare runs from different eval sets.** `compare` aligns by data point name; cross-set deltas are meaningless.
 - **Don't rely on aggregate `Score` alone.** Inspect per-evaluator scores. A 0.86 aggregate can mask a high-similarity-but-wrong-trajectory failure.
 - **Don't keep retrying `eval run status` while `--wait` is still blocking from another shell.** Pick one — either `--wait` or polling status — to avoid race conditions on the same run ID.
+<!--skill-flavor:sw-eval-run-antipatterns:end-->

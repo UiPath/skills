@@ -1,6 +1,8 @@
 # `uip maestro flow eval` Command Reference
 
+<!--skill-flavor:sw-eval-ref-intro:start-->
 Complete syntax reference for every subcommand under `uip maestro flow eval`. All commands accept the global flags `--output <table|json|yaml|plain>` (default `json`), `--output-filter <jmespath>`, `--log-level <debug|info|warn|error>`, and `--log-file <path>`. Repeated reminders below: always pass `--output json` when an agent will parse the result.
+<!--skill-flavor:sw-eval-ref-intro:end-->
 
 ## Command Tree
 
@@ -35,11 +37,13 @@ uip maestro flow eval
 
 Every subcommand accepts:
 
+<!--skill-flavor:sw-eval-common-options:start-->
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--path <path>` | No (defaults to `.`) | Flow project directory, or a solution directory containing exactly one Flow project |
 | `--output <fmt>` | No (default `json`) | `table`, `json`, `yaml`, or `plain` |
 | `--output-filter <expr>` | No | JMESPath expression applied to JSON output before printing |
+<!--skill-flavor:sw-eval-common-options:end-->
 
 ## Data Points (Test Cases)
 
@@ -59,6 +63,7 @@ Add a data point to an eval set.
 
 Example:
 
+<!--skill-flavor:sw-eval-add-example:start-->
 ```bash
 uip maestro flow eval add greeting-test \
   --set "Smoke Tests" \
@@ -66,14 +71,17 @@ uip maestro flow eval add greeting-test \
   --expected '{"greeting":"Hello, Alice!"}' \
   --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-add-example:end-->
 
 ### `uip maestro flow eval list`
 
 List data points in an eval set.
 
+<!--skill-flavor:sw-eval-list-example:start-->
 ```bash
 uip maestro flow eval list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-list-example:end-->
 
 ### `uip maestro flow eval remove <id>`
 
@@ -160,12 +168,15 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 - **Top-level simulations:** reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`).
 - **Child simulations (inline canvas agents):** finds the child tool node via edges in the `.flow` file and extracts its output schema.
 - **Child simulations (same-solution agents):** reads the inline agent's `agent.json` and matches the tool by name in the `resources[]` array.
+<!--skill-flavor:sw-eval-published-agent-auth:start-->
 - **Child simulations (published agents):** calls the platform API (`simulatableComponents`) using the current login session to fetch the tool's schema. Requires `uip login`.
+<!--skill-flavor:sw-eval-published-agent-auth:end-->
 
 Fails with an actionable error if the node/tool is not found or has no outputs.
 
 **Static mock value validation:** For `Static` child simulations, the CLI validates that `--mock-value` keys match the auto-resolved schema properties, catching shape mismatches early.
 
+<!--skill-flavor:sw-eval-simulation-add-examples:start-->
 Example — LLM strategy:
 
 ```bash
@@ -214,6 +225,7 @@ uip maestro flow eval simulation add Send_Email \
   --simulation-instructions "Return a success status with a generated messageId." \
   --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-simulation-add-examples:end-->
 
 The child's `<component-id>` is the tool's **runtime name** (e.g. `Web_Search`, `Send_Email`), not a `.flow` node ID. Child simulations are stored in the parent's `childSimulations` array.
 
@@ -228,6 +240,7 @@ List all simulations configured on a data point.
 | `--parent <component-id>` | No | Parent agent component ID. When set, lists child tool simulations on that parent instead of top-level simulations. |
 | `--path <path>` | No | (see Common Options) |
 
+<!--skill-flavor:sw-eval-simulation-list-examples:start-->
 ```bash
 # List top-level simulations
 uip maestro flow eval simulation list \
@@ -242,6 +255,7 @@ uip maestro flow eval simulation list \
   --data-point "hello-test" \
   --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-simulation-list-examples:end-->
 
 ### `uip maestro flow eval simulation remove <component-id>`
 
@@ -254,6 +268,7 @@ Remove a simulation from a data point. Returns an error if no simulation with th
 | `--parent <component-id>` | No | Parent agent component ID. When set, removes a child tool simulation from the parent instead of a top-level simulation. |
 | `--path <path>` | No | (see Common Options) |
 
+<!--skill-flavor:sw-eval-simulation-remove-examples:start-->
 ```bash
 # Remove a top-level simulation
 uip maestro flow eval simulation remove connector-send-email \
@@ -268,6 +283,7 @@ uip maestro flow eval simulation remove Web_Search \
   --data-point "hello-test" \
   --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-simulation-remove-examples:end-->
 
 ## Run
 
@@ -277,6 +293,7 @@ uip maestro flow eval simulation remove Web_Search \
 Start a Studio Web evaluation run. The Flow solution **must already exist in Studio Web** — see [upload-safety.md](upload-safety.md).
 <!--skill-flavor:upload-safety-run-start-prereq:end-->
 
+<!--skill-flavor:sw-eval-run-start-options:start-->
 | Flag | Required | Description | Default |
 |------|----------|-------------|---------|
 | `--set <name>` | Yes | Eval set name or ID | — |
@@ -290,22 +307,26 @@ Start a Studio Web evaluation run. The Flow solution **must already exist in Stu
 | `--timeout <seconds>` | No | Max time to block on `--wait` | `600` (10 min) |
 
 Without `--wait`, returns immediately with `EvalSetRunId`. With `--wait`, the CLI polls until `Completed` or `Failed`, or `--timeout` elapses (the server-side run continues regardless).
+<!--skill-flavor:sw-eval-run-start-options:end-->
 
 ### `uip maestro flow eval run status <evalSetRunId>`
 
 Get current status. Terminal states: `Completed`, `Failed`.
 
+<!--skill-flavor:sw-eval-run-status-options:start-->
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--solution-id <id>` | No | Override solution ID |
 | `--project-id <id>` | No | Override project ID |
 | `--path <path>` | No | (see Common Options) |
+<!--skill-flavor:sw-eval-run-status-options:end-->
 
 ### `uip maestro flow eval run results <evalSetRunId>`
 
 Per-data-point results.
 
+<!--skill-flavor:sw-eval-run-results-options:start-->
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
@@ -313,6 +334,7 @@ Per-data-point results.
 | `--verbose` | No | Include evaluator justifications |
 | `--export-format <json\|csv>` | No | Export results to a file |
 | `--solution-id`, `--project-id`, `--path` | No | (see start) |
+<!--skill-flavor:sw-eval-run-results-options:end-->
 
 Per-row output fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Error` (plus `Justifications` when `--verbose`).
 
@@ -320,19 +342,23 @@ Per-row output fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Er
 
 List runs for an eval set.
 
+<!--skill-flavor:sw-eval-run-list-example:start-->
 ```bash
 uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-run-list-example:end-->
 
 ### `uip maestro flow eval run compare <evalSetRunId>`
 
 Compare two runs side-by-side.
 
+<!--skill-flavor:sw-eval-run-compare-options:start-->
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--compare-to <id>` | Yes | Second eval set run ID |
 | `--set <name>` | Yes | Eval set name or ID |
 | `--solution-id`, `--project-id`, `--path` | No | (see start) |
+<!--skill-flavor:sw-eval-run-compare-options:end-->
 
 `compare` aligns data points by `name` within the eval set. Comparing runs from different eval sets is meaningless.
 
