@@ -44,6 +44,9 @@ Exit 0 on success or skip; exit 1 when validation or a required Data Fabric
 operation fails.
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess
@@ -132,13 +135,28 @@ def find_entity_id(entities: list[dict], name: str) -> str | None:
     return None
 
 
+def _normalize_field_names(schema: dict) -> dict:
+    """Ensure fields use ``fieldName`` (current CLI) instead of ``name``."""
+    schema = dict(schema)
+    fields = schema.get("fields")
+    if isinstance(fields, list):
+        normalized = []
+        for f in fields:
+            f = dict(f)
+            if "fieldName" not in f and "name" in f:
+                f["fieldName"] = f.pop("name")
+            normalized.append(f)
+        schema["fields"] = normalized
+    return schema
+
+
 def create_entity(name: str, schema: dict) -> str | None:
     """Create the entity and return its new ID, or None on failure.
 
     `entities create` can fail locally even though the entity was created
     server-side. After any nonzero result, re-list and look up by name.
     """
-    body = json.dumps(schema)
+    body = json.dumps(_normalize_field_names(schema))
     code, out, err = run_uip(
         "df", "entities", "create", name, "--body", body,
         timeout=UIP_LONG_TIMEOUT_SECONDS,
