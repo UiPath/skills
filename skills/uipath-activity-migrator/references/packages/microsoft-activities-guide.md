@@ -2,13 +2,7 @@
 
 > **Owner review pending.** Pre-filled from the migrator source (`UiPath.Upgrade.MicrosoftActivitiesExtensions`). Extend the three hooks; keep their headings.
 
-Extension `MicrosoftActivitiesExtension`. Applies when `project.json` lists `Microsoft.Activities.Extensions` or `Microsoft.Activities`. These community packages have no Windows-framework release; the extension removes them and replaces their activities with Invoke Code.
-
-Detect usage:
-
-```bash
-grep -rlE "\b(AddToDictionary|ClearDictionary|GetFromDictionary|KeyExistsInDictionary|RemoveFromDictionary|DelayUntilDateTime|DelayUntilTime|GetInstanceId|InvokeWorkflow|LoadActivity|LoadAndInvokeWorkflow|LoadAssembly)\b" --include=*.xaml "<PROJECT_DIR>"
-```
+Extension `MicrosoftActivitiesExtension`. Applies when `project.json` lists `Microsoft.Activities.Extensions` or `Microsoft.Activities`. These community packages have no Windows-framework release; the extension removes them and replaces their activities with Invoke Code. Do not pre-scan the XAML: the `analyze` run reports every affected activity per file.
 
 ## Hook 1 — Before analyze
 

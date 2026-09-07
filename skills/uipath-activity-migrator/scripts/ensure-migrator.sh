@@ -15,7 +15,6 @@ set -u
 DEFAULT_URL="https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip"
 URL="${UIPATH_ACTIVITY_MIGRATOR_URL:-$DEFAULT_URL}"
 OFFLINE="${UIPATH_ACTIVITY_MIGRATOR_OFFLINE:-0}"
-MIN_ARCHIVE_BYTES=50000000
 CHECK_ONLY=0
 FORCE=0
 for arg in "$@"; do
@@ -111,11 +110,6 @@ if [ "$NEED_DOWNLOAD" = 1 ]; then
     ERR="$(tr -d '\r\n' < "$CURL_ERR" | tail -c 300)"
     rm -f "$TMP_ZIP" "$HEADERS" "$CURL_ERR"
     emit_error download-failed "Download failed: $ERR. Check proxy settings (HTTPS_PROXY) or place the tool manually; see references/acquisition-guide.md § Manual placement."
-  fi
-  SIZE="$(wc -c < "$TMP_ZIP" | tr -d ' ')"
-  if [ "$SIZE" -le "$MIN_ARCHIVE_BYTES" ]; then
-    rm -f "$TMP_ZIP" "$HEADERS" "$CURL_ERR"
-    emit_error download-failed "Downloaded file is only $SIZE bytes; expected a ~178 MB archive. The URL may be blocked or redirected."
   fi
   NEW_LM="$(last_modified_from "$HEADERS")"
 

@@ -2,13 +2,7 @@
 
 > **Owner review pending.** Pre-filled from the migrator source (`UiPath.Upgrade.MailActivities`). Lines marked `VERIFY` need confirmation by the Mail and Microsoft 365 package owners. Extend the three hooks; keep their headings.
 
-Extension `MailActivities`. Applies when `project.json` lists `UiPath.Mail.Activities` and workflows use classic Outlook desktop activities: `SendOutlookMail`, `GetOutlookMailMessages`, `MoveOutlookMessage`, `DeleteOutlookMailMessage`, `MarkOutlookMailAsRead`, `ReplyToOutlookMailMessage`, `SaveOutlookMailMessage`, `SetOutlookMailCategories`, `OutlookMailMessagesTrigger`. SMTP, IMAP, POP3, and Exchange activities from the same package are not touched `VERIFY`.
-
-Detect classic usage:
-
-```bash
-grep -rlE "<[a-z0-9]+:(SendOutlookMail|GetOutlookMailMessages|MoveOutlookMessage|DeleteOutlookMailMessage|MarkOutlookMailAsRead|ReplyToOutlookMailMessage|SaveOutlookMailMessage|SetOutlookMailCategories|OutlookMailMessagesTrigger)\b" --include=*.xaml "<PROJECT_DIR>"
-```
+Extension `MailActivities`. Applies when `project.json` lists `UiPath.Mail.Activities`. It migrates the classic Outlook desktop activities; SMTP, IMAP, POP3, and Exchange activities from the same package are not touched `VERIFY`. Do not pre-scan the XAML: the `analyze` run reports every affected activity per file.
 
 ## Hook 1 — Before analyze
 
@@ -20,10 +14,12 @@ grep -rlE "<[a-z0-9]+:(SendOutlookMail|GetOutlookMailMessages|MoveOutlookMessage
 
 ### Flags
 
-| Flag | Default | Use |
-|---|---|---|
-| `--mail-o365-package-version=<VER>` | `3.6.10` (minimum; lower values are raised) | Pass the latest stable `UiPath.MicrosoftOffice365.Activities`: `node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.MicrosoftOffice365.Activities --all-lines --lines 1` |
-| `--config=<FILE>` (alias `--mail-config`) | none | JSON file that supplies `ConnectionId` values and behavior overrides. Without it every migrated activity has an empty ConnectionId and is reported as action required |
+Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the installed build (Step 0).
+
+| Flag | Use |
+|---|---|
+| `--mail-o365-package-version=<VER>` | Pass the latest stable `UiPath.MicrosoftOffice365.Activities`: `node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.MicrosoftOffice365.Activities --all-lines --lines 1`. The tool raises values below its built-in minimum |
+| `--config=<FILE>` (alias `--mail-config`) | JSON file that supplies `ConnectionId` values and behavior overrides. Without it every migrated activity has an empty ConnectionId and is reported as action required |
 
 Extension options bind only in the `--name=value` form; the space-separated form is silently ignored.
 
@@ -63,19 +59,7 @@ Rule IDs follow `<CLASSIC-ACTIVITY-NAME>-ACTIVITY-MIGRATION`, one rule per class
 | `warning` without the prefix | Migrated with a caveat | Note in the report |
 | `note` | Migrated cleanly | Count |
 
-Mapping and known gaps `VERIFY`:
-
-| Classic | Modern | Notes |
-|---|---|---|
-| Send Outlook Mail Message | `SendMailConnections`, or `ForwardEmailConnections` when a `MailMessage` is forwarded | Attachments become `LocalResource.FromPath(...)` items |
-| Get Outlook Mail Messages | `GetEmailListConnections` | Filter options are not migrated; recreate filters by hand |
-| Delete Outlook Mail Message | `DeleteEmailConnections` | |
-| Mark Outlook Mail As Read/Unread | `MarkAsReadUnreadConnections` | |
-| Move Outlook Mail Message | `MoveEmailConnections` | |
-| Reply To Outlook Mail Message | reply / forward connector activity | |
-| Save Outlook Mail Message | `DownloadEmailConnections` | Save-as-type check; see the reserved config key |
-| Set Outlook Mail Categories | categories connector activity | |
-| Outlook Mail Messages Trigger | none | Not migrated. No folder-monitoring equivalent; redesign with an Integration Service trigger. Report as capability loss |
+Do not describe the classic-to-modern mapping from memory: the analyze results name each affected activity, and the migrated activity in the output XAML keeps the display name prefixed with `Migrated`, so its modern type is read from the element tag on that line. Known gaps `VERIFY`: the Outlook Mail Messages Trigger has no equivalent and is left classic, a capability loss to report; Get Outlook Mail Messages filter options are not migrated and must be recreated by hand; attachments become `LocalResource.FromPath(...)` items; Save Outlook Mail Message is subject to the save-as-type check (see the reserved config key).
 
 ## Hook 3 — After upgrade
 

@@ -8,7 +8,7 @@ How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The s
 |---|---|
 | Public download | `https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip` |
 | Also available from | Automation Cloud → Help → Resources → Downloads → Activity Migrator Tool; Customer Portal (`https://customerportal.uipath.com/`) |
-| Archive | ~178 MB zip, ~520 MB extracted, `UiPath.Upgrade.exe` at the archive root, extensions under `Extensions/<Name>/` |
+| Archive | Zip with `UiPath.Upgrade.exe` at the archive root and extensions under `Extensions/<Name>/` |
 | Runtime | Windows, .NET 8: `Microsoft.NETCore.App 8.x` and `Microsoft.WindowsDesktop.App 8.x` (the .NET Desktop Runtime 8 installer provides both) |
 | Version | `UiPath.Upgrade.exe version` prints it (GA line `25.10.x`) |
 | Freshness signal | The URL is unversioned. The server's `Last-Modified` header is the only change signal; the scripts store it and re-download when it changes |

@@ -31,34 +31,22 @@ The tool's own summary has three outcomes. Derive them from results, never from 
 
 | Status | Condition |
 |---|---|
-| `failed` | Any `error`-level result whose rule is a core critical rule: `PROJECT-LOAD`, `XAML-WORKFLOW-PARSE`, `RESTORE-MISSING-PACKAGE`, `RESTORE-INCOMPATIBLE-PACKAGE`, `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED`, `ASSEMBLY-LOAD`, `WORKFLOW-LOAD`, `PROJECT-COPY`. Also when the log ends before `WORKFLOW-VALIDATION-*` rules appear: the pipeline aborted |
+| `failed` | Any `error`-level result that is not activity-scoped (UIA activity or workflow rules, `<X>-ACTIVITY-MIGRATION` rules) and not a per-file type, load, compilation, or validation issue: the pipeline itself failed (project load, XAML parse, restore, assembly load, project copy). Also any project-level stop condition an extension reports, and any log that ends before validation rules appear |
 | `partial` | Any other `error` or `warning` result, **or** any rule that means an activity was left classic, partially migrated, needs manual action, or has a type issue, whatever its level. The UIA extension reports unmigrated activities (`UIAUTOMATION-ACTIVITY-MIGRATION-ERROR-<Reason>`) at note level |
 | `success` | Only informational results and nothing left to do |
 
 `partial` is the normal outcome of a migration that did its job. Do not present it as a failure; present the counts. The tool's own console summary is level-based and would call a run with unmigrated activities a success; the summarizer does not.
 
-## Core rule IDs
+## Core rules: policy by category
 
-| Rule | Level | Meaning | Action |
-|---|---|---|---|
-| `PROJECT-LOAD` | error | `project.json` unreadable or invalid | Stop. Show the message |
-| `PROJECT-FRAMEWORK-UPDATE` | note | Legacy → Windows applied | Report |
-| `XAML-WORKFLOW-PARSE` | error | A workflow is not well-formed XAML | Stop for that run; name the file |
-| `RESTORE-PACKAGE-UPGRADE` | note | Dependency moved to a Windows-compatible version | Report old → new per package |
-| `RESTORE-PACKAGE` | note / warning | Restore detail | Report only when warning |
-| `RESTORE-MISSING-PACKAGE` | error | Package or version not found on any reachable feed | Stop condition. Tenant library → feed hand-off; typo or retired package → user decision; the resolved `--uia-package-version` not on the feed → re-resolve |
-| `RESTORE-INCOMPATIBLE-PACKAGE` | error | No Windows-compatible version exists | Stop condition. Package must be replaced by hand after migration; offer `--ignore-missing-dependencies` with consequences |
-| `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED` | error | A Legacy library dependency must be migrated and published first | Critical Rule 9. Stop |
-| `ASSEMBLY-LOAD` | error | Restored assembly failed to load | Stop. Usually a feed or disk problem; show the log path |
-| `REPAIR_LOCAL_ASSEMBLIES` | warning | Generated assemblies (global variables, entities, web services) could not be rebuilt | Report; expect type errors in workflows using them |
-| `TYPE-CHECK` / `TYPE-MISSING` | warning | A referenced type could not be resolved | Report per file. Common with dynamically generated types; the workflow will fail to compile |
-| `REFERENCES-FIX` | note | Assembly and namespace references rewritten | Report count only |
-| `OBSOLETE-UIPATH-CORE-REPLACEMENT` | note | Obsolete `UiPath.Core` references replaced | Report count only |
-| `WORKFLOW-LOAD` | error | Workflow could not be loaded into the object model; activity migrators skipped it | Report per file as not migrated |
-| `WORKFLOW-VALIDATION-SUCCESS` | note | Workflow validates | Count |
-| `WORKFLOW-VALIDATION-ISSUE` | warning | Validation issue in the migrated workflow | Carry into Step 5 verification |
-| `WORKFLOW-COMPILATION-ERROR` | error | Expression compilation failed | Carry into Step 5; classify as partial, not failed |
-| `PROJECT-COPY` | error | Output could not be written | Stop. Disk or path issue |
+Core rules come from the tool build and their set changes with it; do not keep a list. The meaning of any rule is its `fullDescription` in `tool.driver.rules` and the result's `message.text`. What to do about it follows from its category:
+
+1. **Restore failures** (`RESTORE-MISSING-PACKAGE`, `RESTORE-INCOMPATIBLE-PACKAGE`, `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED`): stop conditions with a user decision; see [Stop conditions](#stop-conditions).
+2. **Any other core result at `error` level before validation ran**: the pipeline aborted (project load, XAML parse, assembly load, project copy). Status `failed`; show the message and the `.log` path; stop.
+3. **Per-file issues** at `warning` or `error`: unresolved types, generated assemblies that could not be rebuilt, a workflow that could not load, compilation or validation problems. Status `partial`; list per file and carry them into Step 5 verification. A workflow that could not load was skipped by every activity migrator: report it as not migrated.
+4. **Notes**: framework flip, package moves (`RESTORE-PACKAGE-UPGRADE` and the extensions' `*-PACKAGE-UPGRADE` / `*-PACKAGE-MIGRATION` rules), reference fixes, validation success. Counts and the package-version row only.
+
+The summarizer applies the same categories, so its `status` and `blockers` already reflect them.
 
 Extension rule families:
 

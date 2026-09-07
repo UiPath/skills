@@ -10,23 +10,22 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
-const CORE_CRITICAL = new Set([
-  'PROJECT-LOAD', 'XAML-WORKFLOW-PARSE', 'RESTORE-MISSING-PACKAGE', 'RESTORE-INCOMPATIBLE-PACKAGE',
-  'RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED', 'ASSEMBLY-LOAD', 'WORKFLOW-LOAD', 'PROJECT-COPY',
-]);
-const CORE_RULES = new Set([
-  ...CORE_CRITICAL, 'PROJECT-FRAMEWORK-UPDATE', 'RESTORE-PACKAGE', 'RESTORE-PACKAGE-UPGRADE',
-  'REPAIR_LOCAL_ASSEMBLIES', 'TYPE-CHECK', 'TYPE-MISSING', 'REFERENCES-FIX', 'OBSOLETE-UIPATH-CORE-REPLACEMENT',
-  'WORKFLOW-VALIDATION-SUCCESS', 'WORKFLOW-VALIDATION-ISSUE', 'WORKFLOW-COMPILATION-ERROR',
-]);
-const BLOCKERS = new Set([
-  'RESTORE-MISSING-PACKAGE', 'RESTORE-INCOMPATIBLE-PACKAGE', 'RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED',
+// Core (tool-owned) rule prefixes, used only to label the family in the output.
+const CORE_PREFIXES = ['PROJECT-', 'XAML-', 'RESTORE-', 'ASSEMBLY-', 'REPAIR_', 'TYPE-', 'REFERENCES-', 'OBSOLETE-', 'WORKFLOW-'];
+// Project-level stop conditions that extensions report below error level (the tool's own core
+// failures need no list: any non-activity-scoped error is critical, see isCritical below).
+const WARNING_LEVEL_BLOCKERS = new Set([
   'UIAUTOMATION-INVALID-UIA-PACKAGE', 'UIAUTOMATION-LANGUAGE-NOT-SUPPORTED',
   'UIAUTOMATION-PROJECT-SETTINGS-CONFIGURATION-NOT-SUPPORTED',
 ]);
+// Per-file issues: reported, carried into verification, never fatal for the run.
 const TYPE_ISSUES = new Set([
   'TYPE-MISSING', 'TYPE-CHECK', 'WORKFLOW-COMPILATION-ERROR', 'WORKFLOW-VALIDATION-ISSUE', 'REPAIR_LOCAL_ASSEMBLIES',
+  'WORKFLOW-LOAD',
 ]);
+// Activity- or workflow-scoped extension rules: an error there means one activity was left classic, not a failed run.
+const isActivityScoped = (id) => /^UIAUTOMATION-(ACTIVITY|WORKFLOW)-/.test(id) || id.endsWith('-ACTIVITY-MIGRATION');
+const isCritical = (id, lvl) => lvl === 'error' && !isActivityScoped(id) && !TYPE_ISSUES.has(id);
 const ACTION_TAG = '[PostMigration Action Required]';
 const LIST_LIMIT = 60;
 const MSG_LIMIT = 220;
@@ -103,7 +102,7 @@ const familyOf = (id) => {
   if (!id) return 'other';
   if (id.startsWith('UIAUTOMATION-')) return 'uia';
   if (id.endsWith('-ACTIVITY-MIGRATION')) return 'productivity';
-  if (CORE_RULES.has(id)) return 'core';
+  if (CORE_PREFIXES.some((p) => id.startsWith(p))) return 'core';
   return 'other';
 };
 const reasonOf = (id, prefix) => (id.startsWith(prefix + '-') ? id.slice(prefix.length + 1) : '');
@@ -132,9 +131,10 @@ for (const r of results) {
   byFamily[fam] = byFamily[fam] || { error: 0, warning: 0, note: 0 };
   byFamily[fam][lvl] = (byFamily[fam][lvl] || 0) + 1;
 
-  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), property: propsOf(r).propertyName || '', message: msgOf(r) };
+  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', message: msgOf(r) };
 
-  if (CORE_CRITICAL.has(id) && lvl === 'error') hasCriticalError = true;
+  const critical = isCritical(id, lvl);
+  if (critical) hasCriticalError = true;
   if (id.startsWith('WORKFLOW-VALIDATION') || id === 'WORKFLOW-COMPILATION-ERROR') sawValidation = true;
   if (id === 'PROJECT-FRAMEWORK-UPDATE') frameworkChanged = true;
   if (id === 'RESTORE-PACKAGE-UPGRADE' || id.endsWith('-PACKAGE-UPGRADE') || id.endsWith('-PACKAGE-MIGRATION')) {
@@ -143,13 +143,15 @@ for (const r of results) {
     const m = entry.message.match(/package '([^']+)' from (?:version )?'([^']+)' to (?:compatible \.NET Core version )?'([^']+)'/i);
     if (m) effectiveVersions[m[1]] = { from: m[2], to: m[3] };
   }
-  if (BLOCKERS.has(id)) blockers.push(entry);
+  if (critical || WARNING_LEVEL_BLOCKERS.has(id)) blockers.push(entry);
   if (TYPE_ISSUES.has(id) && lvl !== 'note') typeIssues.push(entry);
   if (entry.message.includes(ACTION_TAG)) actionRequired.push(entry);
 
   if (fam === 'uia') {
     if (/^UIAUTOMATION-ACTIVITY-.+-MIGRATION-SUCCESS$/.test(id)) {
       uia.migrated += 1;
+      // destinationActivity in the SARIF is the migrated activity's display name (kept equal to the
+      // source), not its modern type; the modern type is only visible in the output XAML.
       const fullType = propsOf(r).activityType || id.replace(/^UIAUTOMATION-ACTIVITY-/, '').replace(/-MIGRATION-SUCCESS$/, '');
       const type = fullType.split('.').pop();
       uia.migratedByType[type] = (uia.migratedByType[type] || 0) + 1;
@@ -176,7 +178,7 @@ for (const r of results) {
 // activities at note or warning level, so a level-only reading would call them success.
 const leftovers = uia.notMigrated.length + uia.partial.length + productivity.notMigrated.length + actionRequired.length + typeIssues.length;
 let status;
-if (hasCriticalError) status = 'failed';
+if (hasCriticalError || blockers.length > 0) status = 'failed';
 else if (results.length === 0) status = 'unknown';
 else if (!sawValidation && !results.some((r) => (r.ruleId || '') === 'PROJECT-COPY')) status = byLevel.error > 0 ? 'failed' : 'unknown';
 else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'partial';

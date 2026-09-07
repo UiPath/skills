@@ -4,7 +4,7 @@
 
 Extension `GSuiteActivities`. **Preview-gated:** in the public build its flags may be absent and its migrators inactive. Confirm with `"<MIGRATOR_EXE>" analyze --help`: when no `--gsuite-*` flag is listed, this extension does nothing in this build; report classic GSuite activities as not migrated and skip the rest of this guide.
 
-Applies when `project.json` lists the classic GSuite package `VERIFY` (`UiPath.GSuite.Activities` below the modern `3.x` line) and workflows use `GoogleDocsApplicationScope`, `GoogleSheetsApplicationScope`, `GoogleDriveApplicationScope`, `GetMailMessages`, `SendEmail`, `ReadRange`, `WriteRange`, `DownloadFile`, `UploadFile`, `CreateEvent` and the rest of the classic set.
+Applies when `project.json` lists the classic GSuite package `VERIFY` (`UiPath.GSuite.Activities` below the modern `3.x` line). Do not pre-scan the XAML: the `analyze` run reports every affected activity per file.
 
 ## Hook 1 — Before analyze
 
@@ -16,11 +16,13 @@ Applies when `project.json` lists the classic GSuite package `VERIFY` (`UiPath.G
 
 ### Flags
 
-| Flag | Default | Use |
-|---|---|---|
-| `--gsuite-package-version=<VER>` | `3.8.10` (minimum; lower values are raised) | Latest stable: `node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.GSuite.Activities --all-lines --lines 1` |
-| `--gsuite-config=<FILE>` | none | Same JSON grammar as the Mail guide; connector types `uipath-google-gmail`, `uipath-google-drive`, `uipath-google-sheets`, `uipath-google-calendar` `VERIFY`, `uipath-google-docs` `VERIFY` |
-| `--gsuite-migrate-only=<svc,...>` | all | Restrict to services: `gmail`, `calendar`, `appsscript`, `docs`, `sheets`, `drive` (case sensitive) |
+Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the installed build (Step 0); this extension's flags appear only in preview builds.
+
+| Flag | Use |
+|---|---|
+| `--gsuite-package-version=<VER>` | Latest stable: `node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.GSuite.Activities --all-lines --lines 1`. The tool raises values below its built-in minimum |
+| `--gsuite-config=<FILE>` | Same JSON grammar as the Mail guide; connector types `uipath-google-gmail`, `uipath-google-drive`, `uipath-google-sheets`, `uipath-google-calendar` `VERIFY`, `uipath-google-docs` `VERIFY` |
+| `--gsuite-migrate-only=<svc,...>` | Restrict to services: `gmail`, `calendar`, `appsscript`, `docs`, `sheets`, `drive` (case sensitive); default is all |
 
 Extension options bind only in the `--name=value` form; the space-separated form is silently ignored.
 
@@ -45,7 +47,7 @@ None. Missing connections degrade to action-required results.
 
 Rule IDs follow `<CLASSIC-ACTIVITY-NAME>-ACTIVITY-MIGRATION`, for example `SEND-EMAIL-ACTIVITY-MIGRATION`, `DOWNLOAD-FILE-ACTIVITY-MIGRATION`. Levels as in the Mail guide: `error` = left classic, `warning` with `[PostMigration Action Required]:` = manual work, `note` = migrated.
 
-Known unsupported classic activities (reported at `error`) `VERIFY`: Create Script Deployment, Create Script Project, Get Project Content, Upload Script File, Get Text Index, Batch Update Document Scope, For Each Sheet Row, Copy Sheet, Batch Update Values Scope, Download Spreadsheet, Get Sheets.
+Unsupported classic activities are reported at `error` and left in place; the analyze results are the only authoritative list for a given package version.
 
 Known caveats: Send Email loses the classic attachment-existence check and de-duplication; outputs typed as raw Google API objects are rebuilt through an HTTP bridge or reported when the file or document ID is not a literal.
 

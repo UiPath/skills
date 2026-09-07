@@ -14,22 +14,20 @@ Step 5 of the workflow. The migrated project is a Windows project, so the modern
 uip rpa build "<OUTPUT_DIR>" --output json
 ```
 
-Build compiles every workflow, applies project-scope analyzer rules, and restores packages. Restoring also installs package documentation under `<OUTPUT_DIR>/.local/docs/packages/<PackageId>/`, which the UIA package guide relies on in Hook 3.
+Build compiles every workflow, applies project-scope analyzer rules, and restores packages. Restoring may also place package documentation under `<OUTPUT_DIR>/.local/docs/packages/<PackageId>/`, which the UIA package guide checks for in Hook 3; in the builds tested it did not, and Hook 3 has a fallback.
 
 | Build result | Action |
 |---|---|
 | Success, no errors | Verified. Continue to Step 6 |
-| Success with `[WARN]` lines | Verified. Classify warnings per the table below; carry relevant ones into the report |
+| Success with `[WARN]` lines | Verified. Apply the two rules under Build warnings below |
 | Errors | Enter the fix loop |
 
-## Expected warnings after migration
+## Build warnings
 
-| Warning | Meaning | Report as |
-|---|---|---|
-| `ST-AMG-001` | Post-migration annotations present; a migrated activity still carries `[PostMigration Action Required]` | Manual work, per activity. Available from Studio 2025.10.8 LTS / 2026.0.189 STS; absent on older hosts |
-| `[WARN] [Process] [<project>] <activity>: ERROR: Migration not implemented.` | An activity the migrator left classic, surfaced through its annotation | Already in the "not migrated" list; do not double-report |
-| `<activity> does not have the verification feature enabled` | Modern UIA activities default to no verification | Not an issue; omit |
-| Analyzer rule IDs already present before migration | Pre-existing project debt | Mention once, do not fix |
+Warnings are Workflow Analyzer output: an open set that depends on the Studio version, the project's analyzer configuration, and the packages' own rules. Two rules cover all of them:
+
+1. A warning that quotes a `[PostMigration Action Required]` annotation or a "Migration not implemented" text is the migrator's own finding surfacing through the analyzer (rule `ST-AMG-001` on recent Studio versions). It is already in the manual-work list; do not report it twice.
+2. Any other warning is analyzer output on the project as it was. Mention it once, do not fix it, and never let warnings gate delivery.
 
 ## Package versions are frozen
 
@@ -51,7 +49,7 @@ At most 3 iterations. Each iteration:
 
    | Error pattern | Cause | Fix |
    |---|---|---|
-   | `CS0104` / `BC30561` ambiguous `SelectorStrategy` | Classic and modern enums with the same name both imported | Not a hand fix. Delete `<OUTPUT_DIR>`, rerun Step 4 with `--uia-fix-selector-strategy true` |
+   | `CS0104` / `BC30561` ambiguous `SelectorStrategy` | Classic and modern enums with the same name both imported | Not a hand fix. Delete `<OUTPUT_DIR>`, rerun Step 4 with `--uia-fix-selector-strategy=true` |
    | Missing type from a package reported as `TYPE-MISSING` or `RESTORE-INCOMPATIBLE-PACKAGE` | Package has no Windows version | Manual work. Report the activities; do not stub them |
    | Expression compile error in an unchanged expression (`BC30451`, `CS0103` on a variable) | Legacy-only API or implicit `mscorlib` type | Fix the expression with the equivalent .NET 8 API. Keep the change minimal |
    | Error inside an activity the migrator generated (Assign, Sequence, Application Card) | Migration defect | Report as manual work with the activity name; do not rewrite the generated construct blind |

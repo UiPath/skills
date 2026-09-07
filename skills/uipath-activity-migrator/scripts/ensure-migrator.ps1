@@ -25,7 +25,6 @@ $DefaultUrl = 'https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip'
 $Url = $DefaultUrl
 if ($env:UIPATH_ACTIVITY_MIGRATOR_URL) { $Url = $env:UIPATH_ACTIVITY_MIGRATOR_URL }
 $Offline = ($env:UIPATH_ACTIVITY_MIGRATOR_OFFLINE -eq '1')
-$MinArchiveBytes = 50000000
 
 function Emit-Json([hashtable]$Fields) {
     $ordered = [ordered]@{}
@@ -121,12 +120,6 @@ if ($NeedDownload) {
         if (Test-Path -LiteralPath $tmpZip) { Remove-Item -LiteralPath $tmpZip -Force }
         Emit-Error 'download-failed' ('Download failed: ' + $_.Exception.Message + '. Check proxy settings or place the tool manually; see references/acquisition-guide.md § Manual placement.')
     }
-    $size = (Get-Item -LiteralPath $tmpZip).Length
-    if ($size -le $MinArchiveBytes) {
-        Remove-Item -LiteralPath $tmpZip -Force
-        Emit-Error 'download-failed' "Downloaded file is only $size bytes; expected a ~178 MB archive. The URL may be blocked or redirected."
-    }
-
     $stage = Join-Path $Root '.extract-tmp'
     if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
     New-Item -ItemType Directory -Force -Path $stage | Out-Null

@@ -62,18 +62,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<SKILL_DIR>/scripts/ensure-
 | `error`, `code: download-failed` | Proxy or offline machine. Give the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement). Stop. |
 | any other `error` | Show `message`. Stop. |
 
-Then list the active extensions once. Their flags appear under the command's options:
+Then read the flag list of this build once. It is the only authority on which flags exist.
 
 ```bash
 "<MIGRATOR_EXE>" analyze --help
 ```
 
+Keep the output for Steps 3 and 4: an extension flag a package guide names is passed only when it appears here. A missing flag is skipped and noted in the report. The build may also list extension flags no guide names; use one only when its help text directly addresses a problem this run has shown (a specific SARIF result or build error), pass it as `--name=value`, and say so in the report. Behavior the help does not state (option binding, exit code, output streams, folders) is in [tool-behavior-guide.md](references/tool-behavior-guide.md).
+
 Summarize to the user in two lines: tool version and location, telemetry disclosure (Rule 11).
 
 ### Step 1 — Discover the project
 
-1. Resolve `<PROJECT_DIR>`: the folder containing `project.json`. If several exist under the working directory, ask which one, unless the user named it. For "migrate everything in this repo", see [cli-reference.md § bulk](references/cli-reference.md#bulk).
-2. Read `project.json` and record: `targetFramework`, `expressionLanguage`, `studioVersion`, `dependencies`. `Legacy` (or absent) is the primary case. `Windows` projects still qualify when they hold classic activities; tell the user the framework step will be a no-op.
+1. Resolve `<PROJECT_DIR>`: the folder containing `project.json`. If several exist under the working directory, ask which one, unless the user named it. For "migrate everything in this repo", see [tool-behavior-guide.md § bulk](references/tool-behavior-guide.md#bulk).
+2. Read `project.json` and record: `targetFramework`, `expressionLanguage`, `dependencies`. `Legacy` (or absent) is the primary case. `Windows` projects still qualify when they hold classic activities; tell the user the framework step will be a no-op.
 3. Match `dependencies` against the [Package Routing](#package-routing) table. Read every matching package guide in full now.
 4. Pick `<OUTPUT_DIR>`: the user's choice, else `<PROJECT_DIR>_Upgraded`. If it already exists, ask whether to delete it or use a different name. Never reuse it silently: the tool merges into an existing folder.
 5. If the project is under git, run `git status --short` in it and mention uncommitted changes in the report. Do not commit or stash.
@@ -86,11 +88,11 @@ Only when `UiPath.UIAutomation.Activities` is a dependency. Rationale and detail
 2. Otherwise resolve the candidate lines from the official UiPath NuGet feed. The script needs no project and no login. Do not use `uip rpa packages versions` here: the headless Studio host it starts refuses to open Legacy projects.
 
    ```bash
-   node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.UIAutomation.Activities --min 25.10.21 --studio-version "<STUDIO_VERSION>"
+   node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.UIAutomation.Activities --min 25.10.21
    ```
 
-   Output: the two most recent LTS lines (`<year>.10`) with their highest stable patch, plus `recommended` and `reason`. The recommendation is the line matching the project's `studioVersion` when it is a candidate, otherwise the newest line.
-3. Ask once with `AskUserQuestion`: recommended line first, labeled `(Recommended)`, each option showing `<line>.x → <version>` and the note that robots and Studio must run that release line.
+   Output: the two most recent LTS lines (`<year>.10`) with their highest stable patch; the newest is `recommended`.
+3. Ask once with `AskUserQuestion`: newest line first, labeled `(Recommended)`, each option showing `<line>.x → <version>`. Say once that a package version runs only on Studio and robots at or above the minimum its release notes list, so the older line is the safe pick when the fleet is behind. The project's `studioVersion` field is not a signal: it records the Studio that last saved the Legacy project.
 4. If the script prints `error` (feed unreachable), use the tool default without asking and record "target version: tool default (feed unreachable)" for the report.
 
 Record the chosen version as `<UIA_VERSION>`.
@@ -163,14 +165,14 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 
 ## Package Routing
 
-Match `project.json` dependencies to guides. Every guide has three hook sections the workflow calls: **Hook 1** (flags and config before analyze), **Hook 2** (triage rules for that extension's SARIF results), **Hook 3** (post-migration steps). Adding a package to this skill means adding one guide with those three sections and one row here.
+Match `project.json` dependencies to guides; the dependency is the only routing key. Do not pre-scan XAML for classic activities: no pattern is exhaustive, and the `analyze` run reports every affected activity per file anyway. Every guide has three hook sections the workflow calls: **Hook 1** (flags and config before analyze), **Hook 2** (triage rules for that extension's SARIF results), **Hook 3** (post-migration steps). Adding a package to this skill means adding one guide with those three sections and one row here.
 
-| Dependency in `project.json` | Classic signal in `.xaml` | Extension name (`--help`) | Guide |
-|---|---|---|---|
-| `UiPath.UIAutomation.Activities` | `<ui:Click`, `<ui:TypeInto`, `<ui:OpenBrowser`, `<ui:UiElementExists` and other `ui:` activities | `UiAutomationActivities` | [packages/uia-guide.md](references/packages/uia-guide.md) |
-| `UiPath.Mail.Activities` | `SendOutlookMail`, `GetOutlookMailMessages` and other `*Outlook*` activities | `MailActivities` | [packages/mail-guide.md](references/packages/mail-guide.md) |
-| `UiPath.GSuite.Activities` (classic line) | `GSuiteApplicationScope`, `GetMailMessages`, `ReadRange` under the GSuite namespace | `GSuiteActivities` (preview-gated) | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) |
-| `Microsoft.Activities.Extensions`, `Microsoft.Activities` | `AddToDictionary`, `GetFromDictionary`, `InvokeWorkflow` under the Microsoft namespace | `MicrosoftActivitiesExtension` | [packages/microsoft-activities-guide.md](references/packages/microsoft-activities-guide.md) |
+| Dependency in `project.json` | Extension name (`--help`) | Guide |
+|---|---|---|
+| `UiPath.UIAutomation.Activities` | `UiAutomationActivities` | [packages/uia-guide.md](references/packages/uia-guide.md) |
+| `UiPath.Mail.Activities` | `MailActivities` | [packages/mail-guide.md](references/packages/mail-guide.md) |
+| `UiPath.GSuite.Activities` (classic line) | `GSuiteActivities` (preview-gated) | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) |
+| `Microsoft.Activities.Extensions`, `Microsoft.Activities` | `MicrosoftActivitiesExtension` | [packages/microsoft-activities-guide.md](references/packages/microsoft-activities-guide.md) |
 
 The framework flip, package restore, reference fixing, and type checking are core steps and run for every project with no routing.
 
@@ -179,7 +181,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 | File | Read when |
 |---|---|
 | [acquisition-guide.md](references/acquisition-guide.md) | Step 0 fails, the machine is offline or behind a proxy, or the user asks where the tool lives or how to update it |
-| [cli-reference.md](references/cli-reference.md) | You need a flag not shown above, `bulk` mode, Orchestrator feed options, or output semantics |
+| [tool-behavior-guide.md](references/tool-behavior-guide.md) | Behavior `--help` cannot tell you: option binding, exit code, output streams, the `.upgrade` and output folders, restore version selection, the Orchestrator hand-off template, `bulk` |
 | [sarif-triage-guide.md](references/sarif-triage-guide.md) | Every analyze and upgrade run: status mapping, core rule IDs, stop conditions, summarizer usage |
 | [verification-guide.md](references/verification-guide.md) | Step 5: build and validate loop, expected warnings, fix policy, Studio version requirements |
 | [packages/uia-guide.md](references/packages/uia-guide.md) | Project depends on `UiPath.UIAutomation.Activities` |
