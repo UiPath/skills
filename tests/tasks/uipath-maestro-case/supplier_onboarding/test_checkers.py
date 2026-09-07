@@ -20,6 +20,7 @@ Run: python3 -m unittest discover -s <this directory>
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import subprocess
 import sys
@@ -345,6 +346,14 @@ TASKS = [
       reads=['vars.contactEmail', 'vars.companyName', 'vars.contactName', 'vars.complianceReviewRevisedDate', 'metadata.ExternalId'],
       outputs=[('response', 'response7', 'response7', '=response', 'Response'), ('Error', 'error7', 'error7', '=Error', 'Error'), ('Status', 'status7', 'lastEmailStatus', '=response.status', None)]),
     # --- Setting up the supplier ---
+    T('tBnk14qLz', 'action', 'Provide bank details for payment setup',
+      req=True, once=False, entry=[('runs-sequentially', None)],
+      reads=['metadata.ExternalId', 'vars.companyName'],
+      literals={'requestedDocuments': '=js:(["Bank details"])'},
+      outputs=[('documentFileName', 'documentFileName', 'bankDetailsFileName', '=documentFileName', None),
+               ('documentType', 'documentType', 'bankDetailsDocumentType', '=documentType', None),
+               ('documentContentBase64', 'documentContentBase64', 'bankDetailsContent',
+                '=documentContentBase64', None)]),
     T('tErp15rMa', 'api-workflow', 'Register supplier in ERP',
       req=True, once=True, entry=[('runs-sequentially', None)],
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactName', 'vars.contactEmail', 'vars.countryOfRegistration', 'vars.spendCurrency', 'vars.bankDetailsDocument'],
@@ -422,7 +431,7 @@ STAGES = [
       slas=[('sla_SetStg01', *E.STAGE_SLA[E.SETUP], [('esc_st01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_st02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_st01en', 'Compliance approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Cmp3nD', 'conditionExpression': '=js:vars.complianceDecision === "approve"'})])],
       exits=[('Condition_st01ex', 'Bank verification failed', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tErp15rMa'], 'conditionExpression': '=js:vars.bankVerificationStatus !== "verified"'})]), ('Condition_st02ex', 'Setup complete', None, 'exit-only', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.bankVerificationStatus === "verified"'})])],
-      lanes=[['tErp15rMa'], ['tNeg16sNb', 'tPrt17tPc'], ['tEscSet01'], ['tNteSet02']]),
+      lanes=[['tBnk14qLz'], ['tErp15rMa'], ['tNeg16sNb', 'tPrt17tPc'], ['tEscSet01'], ['tNteSet02']]),
     S('Stage_Onb2qF', 'Supplier onboarded', None,
       slas=[('sla_OnbStg01', *E.STAGE_SLA[E.ONBOARDED], [('esc_on01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_on02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_on01en', 'Setup complete', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Set8pE'})])],
@@ -446,84 +455,26 @@ STAGES = [
 ]
 
 # --- Variables and bindings, generated from a real build -------------------------
-INPUTS = [   # (id, name, type, default)
-    ('vCmp1aXk2', 'companyName', 'string', 'Northwind Components Ltd'),
-    ('vCon2bYm3', 'contactName', 'string', 'Alex Fisher'),
-    ('vCem3cZn4', 'contactEmail', 'string', 'yiqi.hu@uipath.com'),
-    ('vCtr4dAp5', 'countryOfRegistration', 'string', 'United Kingdom'),
-    ('vOfc5eBq6', 'offeringCategory', 'string', 'Components'),
-    ('vExs6fCr7', 'expectedAnnualSpend', 'double', '120000'),
-    ('vSpc7gDs8', 'spendCurrency', 'string', 'USD'),
-    ('vOfd8hEt9', 'offeringDescription', 'string', 'precision machined components for industrial pumps'),
-    ('vSbd9jFu1', 'submittedDate', 'date', '2026-08-26'),
-    ('vRgc1kGv2', 'registrationCertificate', 'file', ''),
-    ('vIns2mHw3', 'insuranceDocument', 'file', ''),
-    ('vTax3nJx4', 'taxFormsDocument', 'file', ''),
-    ('vBnk4pKy5', 'bankDetailsDocument', 'file', ''),
-]
+# The three variable groups, built from the fixture's own Case Variables table rather
+# than listed here. A second fixture with different variables then needs no edit, and the
+# ids stay stable across runs because they are derived from the name.
+def _vid(name: str) -> str:
+    return "v" + hashlib.sha1(name.encode()).hexdigest()[:8]
 
-OUTPUTS = [   # (id, name, type, var)
-    ('vSup5qLz6', 'supplierId', 'string', 'supplierId'),
-    ('vCso6rMa7', 'caseOutcome', 'string', 'caseOutcome'),
-]
 
-INPUT_OUTPUTS = [   # (name, type) — id equals name for every one
-    ('companyName', 'string'),
-    ('contactName', 'string'),
-    ('contactEmail', 'string'),
-    ('countryOfRegistration', 'string'),
-    ('offeringCategory', 'string'),
-    ('expectedAnnualSpend', 'double'),
-    ('spendCurrency', 'string'),
-    ('offeringDescription', 'string'),
-    ('submittedDate', 'date'),
-    ('registrationCertificate', 'file'),
-    ('insuranceDocument', 'file'),
-    ('taxFormsDocument', 'file'),
-    ('bankDetailsDocument', 'file'),
-    ('validationOutcome', 'string'),
-    ('validationIssues', 'string'),
-    ('addedDocumentName', 'string'),
-    ('duplicateSupplierIds', 'string'),
-    ('sanctionsFindings', 'string'),
-    ('assignedBuyerEmail', 'string'),
-    ('categoryMatches', 'boolean'),
-    ('suggestedCategory', 'string'),
-    ('reviewNotes', 'string'),
-    ('buyerDecision', 'string'),
-    ('buyerComments', 'string'),
-    ('referenceCheckFindings', 'string'),
-    ('riskRating', 'string'),
-    ('complianceFlags', 'string'),
-    ('financialHealthSummary', 'string'),
-    ('fraudIndicators', 'string'),
-    ('concernLevel', 'string'),
-    ('signOffTier', 'string'),
-    ('directorSignOffRequired', 'boolean'),
-    ('directorSignOffDecision', 'string'),
-    ('directorSignOffNotes', 'string'),
-    ('legalOpinion', 'string'),
-    ('complianceDecision', 'string'),
-    ('complianceComments', 'string'),
-    ('bankVerificationStatus', 'string'),
-    ('portalAccessConfirmation', 'string'),
-    ('registeredAt', 'string'),
-    ('applicationCheckRevisedDate', 'string'),
-    ('buyerReviewRevisedDate', 'string'),
-    ('complianceReviewRevisedDate', 'string'),
-    ('supplierSetupRevisedDate', 'string'),
-    ('escalationNotes', 'string'),
-    ('lastEmailStatus', 'string'),
-    ('auditRecordId', 'string'),
-    ('cleanupSummary', 'string'),
-    ('reviewsCancelled', 'boolean'),
-    ('timersStopped', 'boolean'),
-    ('addedDocumentType', 'string'),
-    ('addedDocumentContent', 'string'),
-    ('addedDocumentSubmittedOn', 'string'),
-    ('supplierId', 'string'),
-    ('caseOutcome', 'string'),
+_VARS = E.sdd_facts()["variables"]
+INPUTS = [
+    (_vid(n), n, vtype, default)
+    for n, (category, vtype, default) in _VARS.items()
+    if category == "In"
 ]
+OUTPUTS = [
+    (_vid(n), n, vtype, n)
+    for n, (category, vtype, _d) in _VARS.items()
+    if category == "Out"
+]
+INPUT_OUTPUTS = [(n, vtype) for n, (_c, vtype, _d) in _VARS.items()]
+
 # id != name 的:[]
 
 BINDINGS = [   # (id, name, resource, resourceSubType, resourceKey, default, propertyAttribute)

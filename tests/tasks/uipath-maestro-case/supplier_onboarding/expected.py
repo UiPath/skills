@@ -239,64 +239,8 @@ RUN_ONCE_TASKS: set[str] = set()    # filled with STAGE_TASKS, below
 # variable namespace, so requiring every `var` to be a declared variable false-fails
 # every connector task.
 
-OUTPUT_TARGETS = {
-    "addedDocumentContent": ["Attach supporting documents"],
-    "addedDocumentName": ["Attach supporting documents"],
-    "addedDocumentSubmittedOn": ["Attach supporting documents"],
-    "addedDocumentType": ["Attach supporting documents"],
-    "applicationCheckRevisedDate": ["Escalate delayed application check"],
-    "assignedBuyerEmail": ["Pull supplier records and screening"],
-    "auditRecordId": ["Log rejection for audit"],
-    "bankVerificationStatus": ["Register supplier in ERP"],
-    "buyerComments": ["Record buyer review decision", "Request more information from supplier"],
-    "buyerDecision": ["Record buyer review decision"],
-    "buyerReviewRevisedDate": ["Escalate delayed buyer review"],
-    "categoryMatches": ["Confirm offering category match"],
-    "cleanupSummary": ["Close out withdrawn application"],
-    "complianceComments": ["Record compliance review decision"],
-    "complianceDecision": ["Record compliance review decision"],
-    "complianceFlags": ["Run compliance and risk check"],
-    "complianceReviewRevisedDate": ["Escalate delayed compliance review"],
-    "concernLevel": ["Analyze supplier financial health"],
-    "directorSignOffDecision": ["Obtain procurement director sign-off"],
-    "directorSignOffNotes": ["Obtain procurement director sign-off"],
-    "directorSignOffRequired": ["Determine sign-off tier"],
-    "duplicateSupplierIds": ["Pull supplier records and screening"],
-    "escalationNotes": [
-        "Escalate delayed application check",
-        "Escalate delayed buyer review",
-        "Escalate delayed compliance review",
-        "Escalate delayed supplier setup",
-        "Review overall SLA breach",
-    ],
-    "financialHealthSummary": ["Analyze supplier financial health"],
-    "fraudIndicators": ["Analyze supplier financial health"],
-    "lastEmailStatus": [
-        "Notify buyer of application",
-        "Send delay note for the application check",
-        "Send delay note for the buyer review",
-        "Send delay note for the compliance review",
-        "Send delay note for the supplier setup",
-        "Send rejection notice to supplier",
-        "Send supplier welcome message",
-        "Send withdrawal confirmation",
-    ],
-    "legalOpinion": ["Obtain legal opinion"],
-    "portalAccessConfirmation": ["Confirm supplier portal access"],
-    "referenceCheckFindings": ["Order reference check"],
-    "registeredAt": ["Record supplier in approved register"],
-    "reviewNotes": ["Confirm offering category match"],
-    "reviewsCancelled": ["Close out withdrawn application"],
-    "riskRating": ["Run compliance and risk check"],
-    "sanctionsFindings": ["Pull supplier records and screening"],
-    "signOffTier": ["Determine sign-off tier"],
-    "suggestedCategory": ["Confirm offering category match"],
-    "supplierId": ["Register supplier in ERP"],
-    "supplierSetupRevisedDate": ["Escalate delayed supplier setup"],
-    "timersStopped": ["Close out withdrawn application"],
-    "validationIssues": ["Validate application details"],
-    "validationOutcome": ["Validate application details"],
-}
+OUTPUT_TARGETS: dict[str, list[str]] = {}   # target variable -> the tasks the SDD makes write it
+
 
 # --- Recipients ---------------------------------------------------------------
 # Type 3 is the runtime expression form. Roles carry no recipient in the caseplan at
@@ -517,6 +461,31 @@ if len(RESOURCE_KEYS) < 10:
     _fail(
         "fixture parse error: expected >=10 bound resources across the task blocks; got "
         f"{sorted(RESOURCE_KEYS)}"
+    )
+
+_EXTRACT_ROW_RE = re.compile(r"^\|[^|]*\|\s*->\s*([A-Za-z]\w*)\s*\|", re.M)
+
+
+def _sdd_output_targets(sdd: str) -> dict:
+    """Every `-> <variable>` row in a task Outputs table, keyed by the variable.
+
+    Asserted in this direction, "each declared target IS written by its task", so a
+    dropped output row surfaces as a named task rather than as a silently smaller set.
+    """
+    targets: dict = {}
+    marks = [(m.start(), m.group(1).strip()) for m in _TASK_HEADING_RE.finditer(sdd)]
+    for index, (start, name) in enumerate(marks):
+        end = marks[index + 1][0] if index + 1 < len(marks) else len(sdd)
+        for match in _EXTRACT_ROW_RE.finditer(sdd, start, end):
+            targets.setdefault(match.group(1), []).append(name)
+    return targets
+
+
+OUTPUT_TARGETS.update(_sdd_output_targets(read_fixture()))
+if len(OUTPUT_TARGETS) < 15:
+    _fail(
+        "fixture parse error: expected >=15 distinct `->` output targets across the task "
+        f"Outputs tables; got {sorted(OUTPUT_TARGETS)}"
     )
 if TOTAL_TASKS < 20 or len(STAGE_TASKS) < 5:
     _fail(
