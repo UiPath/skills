@@ -1306,8 +1306,6 @@ class FieldNameTests(CheckerBase):
         self.accepts(baseline_plan())
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class VariableTests(CheckerBase):
@@ -1482,3 +1480,7 @@ class TaskEnvelopeTests(CheckerBase):
                     "elementId": "root",
                 })
         self.rejects(plan, "reads the slot it writes")
+
+
+if __name__ == "__main__":
+    unittest.main()
