@@ -40,10 +40,6 @@ DI_NS = {
 }
 
 
-def load_bpmn() -> tuple[str, ET.Element]:
-    return parse_bpmn("InvoiceApproval")
-
-
 def finite_number(value: str, label: str) -> float:
     try:
         number = float(value)
@@ -90,7 +86,7 @@ def require_complete_di_geometry(root: ET.Element) -> None:
 
 
 def main() -> None:
-    _path, root = load_bpmn()
+    path, root = parse_bpmn("InvoiceApproval")
 
     if not elements(root, "startEvent"):
         fail("no start event")
@@ -102,8 +98,11 @@ def main() -> None:
         fail("no exclusive gateway authored")
 
     # Diagram + reference integrity (importable on the canvas).
-    require_di_for_visible_elements(root)
+    # Structural first: require_di_for_visible_elements exits on a missing
+    # shape, which would mask this helper's clearer missing-diagram/plane
+    # messages if it ran first.
     require_complete_di_geometry(root)
+    require_di_for_visible_elements(root)
     require_sequence_integrity(root)
 
     # Exclusive-gateway routing: exactly one default; every other outgoing flow

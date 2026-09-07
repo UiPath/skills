@@ -542,13 +542,16 @@ Validation is only meaningful once coherent diagram interchange exists:
 complete `BPMNDiagram` coverage, a finite-bounds `BPMNShape` with positive
 width and height for every rendered node, and a `BPMNEdge` with at least two
 finite waypoints for every rendered sequence flow. `validate` rejects a file
-with no `BPMNDiagram` outright (`BPMN_PARSE_ERROR: No diagrams found`), but it
-still reports `Valid` for *degenerate* geometry — 0x0 bounds and single-waypoint
-edges pass — so a clean validate does not prove the canvas will render. Do not
+with no `BPMNDiagram` outright (`BPMN_PARSE_ERROR: No diagrams found`), and it
+also fails a shape that carries no `dc:Bounds` at all. What it does **not**
+catch is *degenerate* geometry: 0x0 bounds and single-waypoint edges report
+`Valid`. So missing geometry fails loudly while meaningless geometry passes
+silently, and a clean validate does not prove the canvas will render. Do not
 invoke `validate` until DI is complete.
 
 <!-- Delete this degenerate-geometry caveat once the CLI rejects 0x0 bounds and
-     single-waypoint edges; verified still accepted on uip 1.202.0. -->
+     single-waypoint edges. Last checked on uip 1.203.0: absent dc:Bounds ->
+     Failure, 0x0 bounds -> Success. -->
 
 After DI is complete, validate with the CLI. It runs the canvas rules offline,
 plus the deploy-readiness checks:
