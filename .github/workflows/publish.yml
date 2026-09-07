@@ -152,6 +152,9 @@ jobs:
       # publishes the committed version. An explicit
       # `--tag preview` on a pre-release version never moves `latest`, so
       # `npm install @uipath/skills` still resolves the last stable release.
+      #
+      # Which preview tag depends on the line: only the highest release line
+      # owns the bare `preview`. See the guard in the step body.
       - name: Resolve dist-tag and stamp version
         id: dist
         env:
@@ -165,8 +168,29 @@ jobs:
             PREVIEW="${BASE}-preview.${RUN_NUMBER}"
             npm version "$PREVIEW" --no-git-tag-version --allow-same-version
             node scripts/sync-version.mjs
-            echo "tag=preview" >> "$GITHUB_OUTPUT"
-            echo "Publishing $PREVIEW to dist-tag preview"
+
+            # Only the highest release line owns the bare `preview` tag.
+            # `--tag preview` used to be unconditional, so whichever line
+            # published LAST took it regardless of version: on 2026-09-06,
+            # run 637 (release/v1.201) landed after run 635 (release/v1.202)
+            # and pointed `preview` back at the older line. That gets worse
+            # once a line goes stable while the next one previews -- every
+            # 1.201.x hotfix push would take `preview` from 1.202. A lower
+            # line publishes to `preview-v<M.N>` and leaves `preview` alone.
+            #
+            # Fails open: an unset tag or an unreachable registry keeps
+            # `preview`, which is the behaviour this guard replaced.
+            TAG=preview
+            CURRENT=$(npm view "@uipath/skills@preview" version --@uipath:registry=https://registry.npmjs.org/ 2>/dev/null || true)
+            if [ -n "$CURRENT" ]; then
+              # Compare release lines only; strip the -preview.<run> suffix.
+              HIGHEST=$({ echo "${CURRENT%%-*}"; echo "$BASE"; } | sort -V | tail -1)
+              if [ "$HIGHEST" != "$BASE" ]; then
+                TAG="preview-v${BASE%.*}"
+              fi
+            fi
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "Publishing $PREVIEW to dist-tag $TAG (preview is at ${CURRENT:-unset})"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
             echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
