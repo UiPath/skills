@@ -62,65 +62,9 @@ TERMINAL_STAGES = {ONBOARDED, REJECTED, WITHDRAWN}
 # --- Tasks --------------------------------------------------------------------
 # (display name, task type, isRequired, shouldRunOnlyOnce)
 
-STAGE_TASKS = {
-    CHECKING: [
-        ("Validate application details", "action", True, False),
-        ("Pull supplier records and screening", "api-workflow", True, False),
-        ("Confirm offering category match", "agent", False, False),
-        ("Attach supporting documents", "action", False, False),
-        ("Escalate delayed application check", "action", False, False),
-        ("Send delay note for the application check", "execute-connector-activity", False, False),
-    ],
-    BUYER: [
-        ("Notify buyer of application", "execute-connector-activity", True, False),
-        ("Record buyer review decision", "action", True, False),
-        ("Request more information from supplier", "action", False, False),
-        ("Order reference check", "action", False, False),
-        ("Escalate delayed buyer review", "action", False, False),
-        ("Send delay note for the buyer review", "execute-connector-activity", False, False),
-    ],
-    COMPLIANCE: [
-        ("Run compliance and risk check", "api-workflow", True, False),
-        ("Analyze supplier financial health", "agent", False, False),
-        ("Determine sign-off tier", "api-workflow", True, False),
-        ("Obtain procurement director sign-off", "action", False, False),
-        ("Record compliance review decision", "action", True, False),
-        ("Obtain legal opinion", "action", False, False),
-        ("Escalate delayed compliance review", "action", False, False),
-        ("Send delay note for the compliance review", "execute-connector-activity", False, False),
-    ],
-    SETUP: [
-        ("Register supplier in ERP", "api-workflow", True, True),
-        ("Open contract negotiation case", "case-management", False, True),
-        ("Confirm supplier portal access", "action", True, True),
-        ("Escalate delayed supplier setup", "action", False, False),
-        ("Send delay note for the supplier setup", "execute-connector-activity", False, False),
-    ],
-    ONBOARDED: [
-        ("Send supplier welcome message", "execute-connector-activity", True, True),
-        ("Record supplier in approved register", "api-workflow", True, True),
-    ],
-    REJECTED: [
-        ("Send rejection notice to supplier", "execute-connector-activity", True, True),
-        ("Log rejection for audit", "api-workflow", True, True),
-    ],
-    WITHDRAWN: [
-        ("Send withdrawal confirmation", "execute-connector-activity", True, True),
-        ("Close out withdrawn application", "api-workflow", True, True),
-    ],
-    SLA_REVIEW: [
-        ("Review overall SLA breach", "action", True, True),
-    ],
-}
-
-TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())          # 32
-TASK_TYPE_COUNTS = {
-    "action": 14,
-    "api-workflow": 7,
-    "agent": 2,
-    "execute-connector-activity": 8,
-    "case-management": 1,
-}
+STAGE_TASKS: dict[str, list[tuple[str, str, bool, bool]]] = {}  # from the fixture, below
+TOTAL_TASKS = 0                     # both recomputed once STAGE_TASKS is filled
+TASK_TYPE_COUNTS: dict[str, int] = {}
 
 # Optional tasks a person launches on their own judgement, each locked to one stage.
 ADHOC_TASKS = {
@@ -305,12 +249,7 @@ OUTLOOK_CONNECTOR_KEY = "uipath-microsoft-outlook365"
 CHILD_CASE_TASK = "Open contract negotiation case"
 CHILD_CASE_WAITS = False
 
-RUN_ONCE_TASKS = {
-    name
-    for rows in STAGE_TASKS.values()
-    for name, _type, _req, once in rows
-    if once
-}
+RUN_ONCE_TASKS: set[str] = set()    # filled with STAGE_TASKS, below
 
 # --- Output reassigns ---------------------------------------------------------
 # Every `-> <variable>` row in the fixture's task Output tables, keyed by the variable
@@ -511,6 +450,55 @@ if len(_durations) < 4:
     )
 STAGE_SLA.update(_durations)
 STAGE_SLA_TITLE.update(_titles)
+
+_TASK_LINE_RE = re.compile(r"^#{4,5} Task [\d.A-Z]+: (.+)$")
+_TASK_TYPE_RE = re.compile(r"^\*\*Type:\*\*\s*(.+?)\s*$")
+
+
+def _sdd_stage_tasks(sdd: str) -> dict:
+    """Each stage's tasks as (display name, type, isRequired, shouldRunOnlyOnce).
+
+    A task is only counted once its Task envelope row is reached, which is the row that
+    carries Required and Run Only Once. That row is what closes the record, so a heading
+    without an envelope contributes nothing instead of a half-filled tuple.
+    """
+    found: dict = {}
+    marks = [(m.start(), m.group(1).strip()) for m in _STAGE_HEADING_RE.finditer(sdd)]
+    for index, (start, label) in enumerate(marks):
+        end = marks[index + 1][0] if index + 1 < len(marks) else len(sdd)
+        rows, name, task_type = [], None, None
+        for line in sdd[start:end].split("\n"):
+            heading = _TASK_LINE_RE.match(line)
+            if heading:
+                name, task_type = heading.group(1).strip(), None
+                continue
+            if name and _TASK_TYPE_RE.match(line):
+                task_type = _TASK_TYPE_RE.match(line).group(1)
+                continue
+            if not (name and task_type and line.startswith("|")):
+                continue
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) == 3 and cells[0] in ("Yes", "No") and cells[1] in ("Yes", "No"):
+                rows.append((name, task_type, cells[0] == "Yes", cells[1] == "Yes"))
+                name = None
+        if rows:
+            found[label] = rows
+    return found
+
+
+STAGE_TASKS.update(_sdd_stage_tasks(read_fixture()))
+TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())
+for _rows in STAGE_TASKS.values():
+    for _n, _type, _r, _o in _rows:
+        TASK_TYPE_COUNTS[_type] = TASK_TYPE_COUNTS.get(_type, 0) + 1
+RUN_ONCE_TASKS.update(
+    name for rows in STAGE_TASKS.values() for name, _t, _r, once in rows if once
+)
+if TOTAL_TASKS < 20 or len(STAGE_TASKS) < 5:
+    _fail(
+        "fixture parse error: expected >=20 tasks across >=5 stages, each closed by its "
+        f"Task envelope row; got {TOTAL_TASKS} across {len(STAGE_TASKS)}"
+    )
 def _bound_inputs(sdd: str) -> dict[str, set[str]]:
     """Which inputs each task binds to an expression, read off the fixture's own tables."""
     headings = [(m.start(), m.group(1).strip()) for m in _TASK_HEADING_RE.finditer(sdd)]
