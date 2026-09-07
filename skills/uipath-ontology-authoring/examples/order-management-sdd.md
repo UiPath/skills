@@ -36,11 +36,9 @@ A product has:
 
 A product belongs to exactly one category.
 
-### DigitalProduct
-
-A type of product that is delivered electronically (for example, software licences or e-books).
-A digital product additionally has:
-- A download URL (URL, required)
+Digitally delivered products (software licences, e-books) carry two further fields on `Product`
+itself rather than on a separate class:
+- A download URL (text, optional — present only for digitally delivered products)
 - A licence key (text, optional)
 
 ### Category
@@ -103,7 +101,21 @@ Each order line refers to exactly one product.
 7. Line total on an order line must be >= 0.
 8. Product unit price must be >= 0.
 9. Product stock quantity must be >= 0.
-10. A digital product must have a download URL.
+10. A digitally delivered product must have a download URL. Because there is no separate
+    `DigitalProduct` class, this is not expressible as a SHACL cardinality on the class and is
+    enforced by whatever populates the field.
+
+11. An order is overdue once it has sat in its current status beyond that status's allowance:
+    24 hours for `pending`, 72 hours for `confirmed`, 120 hours for `shipped`. Orders in
+    `delivered` or `cancelled` are terminal and are never overdue.
+12. Loyalty discount by customer tier: `enterprise` 10%, `premium` 5%, `standard` none. The rate
+    follows the tier recorded against the customer, not any rate a caller supplies.
+13. An order's total amount must equal the sum of its order lines' line totals.
+14. Reserving stock for an order reduces each referenced product's stock quantity by the quantity
+    ordered on that line. Stock must never fall below zero: if any one line cannot be satisfied in
+    full, no stock is reserved for that order at all.
+15. A cancellation must leave an audit trail on the order recording when it was cancelled and why.
+    `Order` carries no dedicated audit fields, so the trail is appended to the delivery notes.
 
 ---
 
@@ -143,9 +155,76 @@ These are read-only queries the system should expose. Each becomes a function in
 
 ---
 
+## Actions (write operations)
+
+These are the changes the system should be able to make to order data, each invoked by name. Every
+one is a governed operation: the caller names the operation and its parameters, never the tables or
+the statement.
+
+### 1. Set order status
+
+**Name:** `setOrderStatus`
+**Description:** Moves an order to a status the caller names. Used by ops staff correcting a status
+by hand, and by the fulfilment integration as it reports progress.
+**Parameters:** `orderNumber` (text, required), `status` (text, required)
+**Changes:** the order's status
+
+### 2. Record delivery notes
+
+**Name:** `updateDeliveryNotes`
+**Description:** Replaces the delivery notes on an order with text the caller supplies, for instance
+a courier instruction taken over the phone.
+**Parameters:** `orderNumber` (text, required), `notes` (text, required)
+**Changes:** the order's delivery notes
+
+### 3. Recalculate an order total
+
+**Name:** `recalculateOrderTotal`
+**Description:** Brings an order's total amount back in line with its order lines, per rule 13. Adds
+up the line totals of every line on the order and stores the result. If the stored total already
+agrees with the lines, nothing is changed.
+**Parameters:** `orderNumber` (text, required)
+**Changes:** the order's total amount
+
+### 4. Escalate an overdue order
+
+**Name:** `escalateOverdueOrder`
+**Description:** Applies rule 11's per-status allowance to decide whether an order is overdue, and
+records an escalation against it. An order inside its allowance, or in a terminal status, is left
+alone.
+**Parameters:** `orderNumber` (text, required)
+**Changes:** the order's delivery notes (there is no dedicated escalation field)
+
+### 5. Reserve stock for an order
+
+**Name:** `reserveStockForOrder`
+**Description:** Applies rule 14. Reduces each referenced product's stock by the quantity on that
+line, all-or-nothing: if any single line cannot be satisfied in full, nothing is reserved.
+**Parameters:** `orderNumber` (text, required)
+**Changes:** each referenced product's stock quantity
+
+### 6. Apply a loyalty discount
+
+**Name:** `applyLoyaltyDiscount`
+**Description:** Applies rule 12. Reads the customer's tier and reduces the order total by that
+tier's rate. A `standard` customer gets no discount and the order is left unchanged.
+**Parameters:** `orderNumber` (text, required)
+**Changes:** the order's total amount
+
+### 7. Cancel an order
+
+**Name:** `cancelOrder`
+**Description:** Cancels an order and records the audit trail rule 15 requires. Terminal orders are
+left alone.
+**Parameters:** `orderNumber` (text, required), `reason` (text, required)
+**Changes:** the order's status, and its delivery notes (which carry the audit trail)
+
+---
+
 ## Notes for ontology authoring
 
-- `DigitalProduct` is a subclass of `Product` and inherits all product properties.
+- There is no `DigitalProduct` class. Its two fields live on `Product` as optional properties, so a
+  digitally delivered product is a `Product` with `downloadUrl` populated.
 - The `status` field on `Order` is a controlled vocabulary but modelled as `xsd:string` for now (not a choice set).
 - `customerTier` on `Customer` is likewise `xsd:string`.
 - Order numbers are system-assigned strings, not auto-incrementing integers.

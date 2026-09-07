@@ -1251,6 +1251,7 @@
     "codedagent run",
     "context-grounding",
     "llm-configuration",
+    "ont",
     "rpa"
   ]
 }

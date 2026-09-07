@@ -4,6 +4,12 @@ Actions document what write operations are allowed on the ontology data. They gi
 
 Each action targets one entity and one record (single-entity, single-record scope). Actions work on both native and federated entities. The skill extracts these semantic concepts from the PDD (structured table or prose) and generates a W3C FnO TTL artifact per action.
 
+**This is the base contract for every action kind**: the envelope below — prefixes, the
+`fno:Function` node, param blocks, the `rowsAffected` output, type mapping, validation rules — is
+shared. Only `ont:language` and what `ont:statements` carries vary: `"SQL"` plus the statement here,
+`"CODED"` plus a job marker in [`coded-action-contract-guide.md`](coded-action-contract-guide.md),
+which documents only its additions.
+
 ## What the skill needs to know
 
 | Question | TTL construct | Notes |
@@ -56,9 +62,17 @@ PDD uses business-friendly types. Map to XSD:
 | Number | `xsd:decimal` |
 | Date | `xsd:date` |
 | DateTime | `xsd:dateTime` |
-| Boolean | `xsd:boolean` |
+| Boolean | `xsd:string` + `ont:datatype "category"` — **not** `xsd:boolean`, whose range the reasoner silently drops (see the OWL guide) |
 
 ## Generated TTL structure
+
+**`ont:` means something different here than in the constraints and mapping artifacts, and
+that is deliberate.** In `{name}-constraints.ttl` and `{name}-mapping.yarrrml.yml`, `ont:` is
+bound to the *ontology's own* namespace. In an action (and a function) it is the *platform*
+namespace, with a separate `{ns}:` prefix for the ontology's terms. Writing constraints and
+actions in one sitting means flipping the meaning of the same prefix, and getting it wrong
+here is silent — the parser resolves platform predicates by full URI and simply drops the
+action.
 
 **Two prefixes required.** `ont:` = platform namespace (predicates: `kind`, `language`, `statements`, `paramName`, `paramType`, `required`). A separate prefix for the ontology's own namespace (entity-specific terms: action name, param/output resource IRIs). The parser resolves platform predicates by full URI — using the wrong namespace silently drops the action.
 

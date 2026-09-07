@@ -145,6 +145,38 @@
       },
       "last_synced": null
     },
+    "uipath-ontologies": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-ontology-authoring": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-ontology-coded-action-deploy": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-ontology-modeler": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-planner": {
       "status": "preview",
       "confluence": {

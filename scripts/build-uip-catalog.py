@@ -56,13 +56,16 @@ _DECODER = json.JSONDecoder()
 # classified as Uncertain rather than Stale.
 UNWALKABLE = set()
 
-# Tool prefixes that are platform-specific and may not be installable on
-# the runner that builds the catalog (e.g. `rpa` requires Windows + Studio
-# Helm; the nightly refresh runs on ubuntu-latest where the rpa tool can't
-# install). Marked unwalkable only when the prefix is NOT exposed as a
-# top-level subcommand in the current catalog build — that way a catalog
-# built on Windows still resolves `uip rpa …` verbs concretely.
-PLATFORM_SPECIFIC_PREFIXES = {"rpa"}
+# Tool prefixes that may not be installable or exposed on the runner that
+# builds the catalog (e.g. `rpa` requires Windows + Studio Helm, and the
+# nightly refresh runs on ubuntu-latest where the rpa tool can't install;
+# `ont` registers only when the CLI version carries a prerelease tag, so a
+# catalog built from a released CLI never sees it). Marked unwalkable only
+# when the prefix is NOT exposed as a top-level subcommand in the current
+# catalog build — that way a catalog built on Windows still resolves
+# `uip rpa …` verbs concretely, and one built from a prerelease CLI resolves
+# `uip ont …` concretely.
+PLATFORM_SPECIFIC_PREFIXES = {"rpa", "ont"}
 
 
 def _ci(d, key):
