@@ -20,6 +20,7 @@ import argparse
 import atexit
 import datetime
 import json
+import os
 import re
 import subprocess
 import sys
@@ -59,6 +60,19 @@ SELECT_OVERRIDE = {
 }
 
 ROUTES = {
+    # The application the `In` defaults describe, carried all the way to onboarding. It is
+    # the only route that reaches `Supplier onboarded`, and the only one that proves the
+    # bank details a debug run collects in-case are enough for ERP to verify them. The
+    # 750000 default puts it over the director threshold, so the sign-off gate opens on
+    # this route and is answered here rather than needing a route of its own.
+    "onboard": [
+        ("Validate application details", "approve"),
+        ("Record buyer review decision", "approve"),
+        ("Obtain procurement director sign-off", "approve"),
+        ("Record compliance review decision", "approve"),
+        ("Provide bank details for payment setup", "approve"),
+        ("Confirm supplier portal access", "approve"),
+    ],
     # Nothing is completed until the intake phase misses its own deadline. The escalation task that
     # opens is answered, then the phase's own task is completed as well, which is the evidence that
     # the escalation ran alongside the phase's work rather than replacing it. The breach is driven
@@ -165,10 +179,24 @@ def fail(msg: str):
     sys.exit(1)
 
 
+# A named login the CLI keeps beside the default one, so a second case can be driven on
+# another organisation from the same machine without either login evicting the other.
+# Unset in CI, where the runner has exactly one login and passing a name it has never
+# authenticated would fail every call.
+UIP_PROFILE = os.environ.get("UIP_PROFILE", "").strip()
+
+
+def with_profile(args: list[str]) -> list[str]:
+    """The same command, addressed to the named login when one is configured."""
+    if not UIP_PROFILE or args[:1] != ["uip"]:
+        return args
+    return args + ["--profile", UIP_PROFILE]
+
+
 def envelope(args: list[str], *, timeout: int = 120) -> dict:
     """The whole uip response envelope, so callers can read Result as well as Data."""
     try:
-        proc = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.run(with_profile(args), capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         return {"Result": "Failure", "Message": f"timed out after {timeout}s"}
     out = proc.stdout
@@ -727,8 +755,8 @@ def main() -> int:
         # `--log-level debug` because three guesses at why a second route gets no instance
         # were all wrong, and the command says nothing at default level: the failure message
         # quoted an empty stream every time.
-        ["uip", "maestro", "case", "debug", project_dir,
-         "--output", "json", "--log-level", "debug"],
+        with_profile(["uip", "maestro", "case", "debug", project_dir,
+                      "--output", "json", "--log-level", "debug"]),
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
     _DEBUG_SESSION.append(debug)
