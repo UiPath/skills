@@ -102,7 +102,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed the steps (`steps list --test-case-id` + --output json)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+(steps\s+list|list-steps)\b'
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
