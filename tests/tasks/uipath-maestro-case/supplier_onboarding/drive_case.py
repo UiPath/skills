@@ -955,10 +955,11 @@ def main() -> int:
         # moves a case between stages, so sending one after the case has closed is the
         # test: nothing may match it. Checked here rather than on its own route, because
         # this is the shortest way to a terminal outcome.
-        before = {label: stage_entries(instance_id, label) for label in E.TERMINAL_STAGES}
+        terminals = (ONBOARDED, REJECTED, WITHDRAWN)
+        before = {label: stage_entries(instance_id, label) for label in terminals}
         send_stage_selection(instance_id, REJECTED, ONBOARDED)
         time.sleep(POLL_SLEEP * 2)
-        after = {label: stage_entries(instance_id, label) for label in E.TERMINAL_STAGES}
+        after = {label: stage_entries(instance_id, label) for label in terminals}
         moved = {k: (before[k], after[k]) for k in before if before[k] != after[k]}
         if moved:
             fail(f"a closed case moved when sent a stage selection: {moved}")
