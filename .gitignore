@@ -95,3 +95,8 @@ package-lock.json
 
 # Written at runtime by each e2e task's seed.py; never committed (carries live tenant ids)
 tests/tasks/**/seed.json
+# Run artifacts of the live BPMN escalation grader — never committed.
+# Cleanup journal of created Jira/Slack ids, consumed by the post_run sweep:
+.created-ids.jsonl
+# Ephemeral solution .uipx (post_run globs it) plus debug logs:
+.customer-escalation-live/
