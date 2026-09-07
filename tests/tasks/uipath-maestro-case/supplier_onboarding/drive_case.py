@@ -281,6 +281,25 @@ def _is_transient(detail: str) -> bool:
     return any(marker in detail.lower() for marker in _TRANSIENT_MARKERS)
 
 
+
+def envelope_retrying(args: list[str], *, timeout: int = 120) -> dict:
+    """`envelope`, but a service that is briefly away gets another chance.
+
+    Writes are the calls that cost a whole route when they fail: a gate answered twice
+    is harmless, an unanswered gate ends the run. A refusal still comes back on the
+    first attempt, because only the markers that mean "could not answer yet" retry.
+    """
+    for attempt in range(TRANSIENT_RETRIES + 1):
+        reply = envelope(args, timeout=timeout)
+        if reply.get("Result") == "Success":
+            return reply
+        detail = envelope_detail(reply)
+        if attempt == TRANSIENT_RETRIES or not _is_transient(detail):
+            return reply
+        print(f"  `{' '.join(args[:5])}` came back {detail}; retrying in {TRANSIENT_PAUSE}s")
+        time.sleep(TRANSIENT_PAUSE)
+    return reply
+
 def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
     """`run_list`, but a failed CLI call raises instead of reading as an empty result.
 
@@ -433,7 +452,7 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
              f"to {who!r} cannot take effect and `tasks complete` then reports the action is no "
              f"longer assigned to you")
     by_id = ["--user-id", str(mine["Id"])] if mine.get("Id") else ["--user", who]
-    assigned = envelope(["uip", "tasks", "assign", task_id, *by_id, "--output", "json"])
+    assigned = envelope_retrying(["uip", "tasks", "assign", task_id, *by_id, "--output", "json"])
     if assigned.get("Result") != "Success":
         fail(f"assigning task {task_id} to {who} failed: "
              f"{envelope_detail(assigned)}")
@@ -458,7 +477,7 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
              f"AssignedToUserId. Orchestrator answers a refused assignment with HTTP 200 and an "
              f"error body, so the envelope is not evidence. assign returned: "
              f"{str(assigned.get('Data'))[:300]}")
-    reply = envelope([
+    reply = envelope_retrying([
         "uip", "tasks", "complete", task_id,
         "--type", "AppTask",
         "--folder-id", folder_id,
@@ -548,7 +567,7 @@ def send_stage_selection(instance_id: str, from_stage: str, to_stage: str) -> No
         "reference": f"case-{instance_id}-CaseEntered:Wait for User to Select Next Stage for {from_stage}",
         "itemData": {"stageName": to_stage},
     }
-    reply = envelope([
+    reply = envelope_retrying([
         "uip", "maestro", "case", "instance", "message", "send",
         "-f", CASE_FOLDER_KEY, "--inputs", json.dumps(message), "--output", "json",
     ])
