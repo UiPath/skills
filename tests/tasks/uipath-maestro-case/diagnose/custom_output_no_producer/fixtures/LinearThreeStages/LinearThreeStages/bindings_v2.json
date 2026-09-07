@@ -1,4 +1,20 @@
 {
     "version": "2.0",
-    "resources": []
+    "resources": [
+        {
+            "resource": "Connection",
+            "key": "00000000-0000-0000-0000-000000000001",
+            "value": {
+                "connectionId": {
+                    "defaultValue": "00000000-0000-0000-0000-000000000001"
+                },
+                "folderKey": {
+                    "defaultValue": "solution_folder"
+                }
+            },
+            "metadata": {
+                "connector": "uipath-microsoft-outlook365"
+            }
+        }
+    ]
 }
