@@ -198,7 +198,25 @@ def assert_outcome(
 
     final_status = get_ci(debug_data, "FinalStatus")
     if final_status not in COMPLETED_STATUSES:
-        raise CheckFailure(f"final status was {final_status!r}")
+        # A bare status is not diagnosable. Surface the incidents and the
+        # per-element outcome so a Faulted run says WHICH node failed and
+        # why, instead of sending the reader back to the tenant.
+        detail = []
+        faulted = [
+            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
+            for item in get_ci(debug_data, "ElementExecutions", []) or []
+            if isinstance(item, dict)
+            and str(get_ci(item, "Status") or "").casefold() != "completed"
+        ]
+        if faulted:
+            detail.append(f"non-completed elements: {faulted}")
+        records = incident_records(incidents_data)
+        if records:
+            detail.append(f"incidents: {json.dumps(records)[:1500]}")
+        raise CheckFailure(
+            f"final status was {final_status!r}"
+            + ("; " + "; ".join(detail) if detail else "")
+        )
     incidents = incident_records(incidents_data)
     if incidents is None:
         raise CheckFailure(

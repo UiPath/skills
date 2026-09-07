@@ -71,7 +71,14 @@ initial_prompt: |
 
      The first returns the `XmlTemplate` for a connector sendTask with
      {connectorKey}/{operation}/{objectName}/{method}/{path} placeholders; the
-     other two give the values to fill them with. `uip maestro bpmn registry
+     other two give the values to fill them with. Fill them exactly:
+     `objectName` and `path` come from the activity's ObjectName
+     (`/curated_create_issue`), but `operation` MUST come from
+     `AvailableOperations[].Name` in `is resources describe` — that is
+     `Create`. Do NOT use the activity's own `Name` (`CreateIssue`) as the
+     operation: `is activities list` reports `Operation: N/A`, and the only
+     valid operations are Create|List|Retrieve|Update|Delete|Replace. A wrong
+     operation faults the process at runtime. `uip maestro bpmn registry
      list` reports 0 activities for connector packages -- that is expected,
      connector operations live in the Integration Service catalogue above, so
      do not conclude the connector is unavailable. The request fields must
