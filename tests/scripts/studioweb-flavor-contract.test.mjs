@@ -61,3 +61,78 @@ test("the default flavor keeps `uip solution init` (the guard is not vacuous)", 
 
   assert.ok(filesMentioning(output, FORBIDDEN).length > 0);
 });
+
+// The Flow skill audit (2026-09-07, verified live on alpha) found the same
+// class of dead end for a handful of other commands: the Studio Web host has no
+// `.uipx`, injects auth, runs debug through its own service and ships no
+// python. Each of these is a command the agent copied straight out of a fenced
+// block, so the guard scans fenced code in the composed Flow skill — prose may
+// still name them when it says "never run".
+const FLOW_SKILL = "uipath-maestro-flow";
+const FORBIDDEN_FENCED_COMMANDS = [
+  /^\s*(?:[A-Z_]+=\S+\s+)*uip login\b/,
+  /^\s*uip solution resources refresh\b/,
+  /^\s*uip solution upload\b/,
+  /^\s*uip solution projects add\b/,
+  /^\s*uip solution pack\b/,
+  /^\s*uip solution deploy\b/,
+  /^\s*(?:[A-Z_]+=\S+\s+)*uip maestro flow debug\b/,
+  /^\s*uip maestro flow pack\b/,
+  /^\s*uip tools update\b/,
+  /^\s*python3?\b/,
+  /\buuidgen\b/,
+  /\buip [^\n]*\s--local\b/,
+];
+// Never legitimate anywhere in the Flow skill's studioweb text, prose included.
+const FORBIDDEN_PROSE = ["CreateProjects", "crypto.randomUUID"];
+
+function fencedLines(text) {
+  const lines = [];
+  let inFence = false;
+  for (const line of text.split(/\r?\n/)) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) lines.push(line);
+  }
+  return lines;
+}
+
+function flowSkillViolations(output) {
+  const root = join(output, FLOW_SKILL);
+  const violations = [];
+  for (const file of markdownFiles(root)) {
+    const text = readFileSync(file, "utf8");
+    const rel = relative(output, file);
+    for (const line of fencedLines(text)) {
+      for (const re of FORBIDDEN_FENCED_COMMANDS) {
+        if (re.test(line)) violations.push(`${rel}: fenced \`${line.trim()}\``);
+      }
+    }
+    for (const needle of FORBIDDEN_PROSE) {
+      if (text.includes(needle)) violations.push(`${rel}: mentions ${needle}`);
+    }
+  }
+  return violations.sort();
+}
+
+test("the built studioweb Flow skill never scripts a command the Studio Web host cannot run", (t) => {
+  const output = mkdtempSync(join(tmpdir(), "studioweb-flow-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  materializeComposition(createCompositionPlan(REPO_ROOT, STUDIOWEB_ROOT), output);
+
+  assert.deepEqual(
+    flowSkillViolations(output),
+    [],
+    "studioweb Flow skill still scripts a Node-CLI-only command — wrap the passage in a marker block and add a sparse override under skill-flavors/studioweb/uipath-maestro-flow/",
+  );
+});
+
+test("the default Flow skill keeps those commands (the Flow guard is not vacuous)", (t) => {
+  const output = mkdtempSync(join(tmpdir(), "default-flow-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  materializeComposition(createDefaultPlan(REPO_ROOT), output);
+
+  assert.ok(flowSkillViolations(output).length > 0);
+});
