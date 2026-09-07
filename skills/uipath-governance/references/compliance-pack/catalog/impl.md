@@ -103,5 +103,7 @@ If the array is empty: "No compliance standards are currently configured on this
 | "ISO 27001" / "ISO/IEC 27001" / "Information Security Management System" / "ISMS" | `iso-27001-2022` |
 | A name matching a pack with an explicit `Available: false` (on cloud today: GDPR, HIPAA, SOC 2, EU AI Act — the set differs by environment, so read it from the response, never from this list) | Say that standard is announced but not yet available, name the ones that are, and stop. Do NOT run `catalog get` or any `state` command on it. |
 | A standard name with no match at all | Tell the user that standard is not available, list the `Available: true` packs, and offer to proceed with one. |
-| No standard named at all (e.g. "check my compliance posture") | Run `catalog list` and ask which standard. Never assume — more than one pack is available. |
+| No standard named at all (e.g. "check my compliance posture"), and **two or more** packs are `Available: true` | Run `catalog list` and ask which standard. Never assume. |
+| No standard named at all, and **exactly one** pack is `Available: true` | Proceed with that pack — it is the only posture that exists. Name it explicitly in the reply and say it was the only available standard, so the user can correct you. Do not ask a question with one answer. |
+| No standard named at all, and **no** pack is `Available: true` | Say no compliance standards are available on this tenant and stop. |
 | Two or more `Available: true` packs match the wording | Ask which one, listing the matches by `PackName`. |
