@@ -13,12 +13,12 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-scope-bullets:start-->
 - Push a flow to Studio Web (`uip solution upload`)
 - Deploy a flow to Orchestrator (`uip maestro flow pack` + `uip solution publish`)
-<!--skill-flavor:upload-scope-bullets:end-->
 - Run a flow end-to-end via `uip maestro flow debug` (cloud round-trip with real side effects)
 - Trigger a deployed process via `uip maestro flow process run`
 - Check job status or stream traces with `uip maestro flow job status` / `job traces`
 - Manage a running instance — pause, resume, cancel, or retry
 - Refresh solution resources after binding changes (`uip solution resources refresh`)
+<!--skill-flavor:upload-scope-bullets:end-->
 
 ## Critical rules
 
@@ -29,7 +29,9 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 2. **Default to Studio Web when the user says "publish" without specifier.** "Publish" → `uip solution upload <SolutionDir>`. Only run `uip maestro flow pack` + `uip solution publish` when the user explicitly asks to deploy to Orchestrator. Pass the exact solution root path (the directory containing the `.uipx` file), or `.` when already in that directory; do not pass the solution name while the shell is inside a nested project folder. The Orchestrator path bypasses Studio Web — the user cannot visualize or edit the flow there.
 <!--skill-flavor:upload-publish-default-rule:end-->
 3. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#6---folder-key-requirement).
+<!--skill-flavor:debug-summary-rule:start-->
 4. **Always report Studio Web URL and Instance ID as the first two lines of any debug summary.** Parse `Data.studioWebUrl` and `Data.instanceId` from the JSON output. Use `<not returned by CLI>` if missing — never omit the line. Users need these immediately, not buried below status text.
+<!--skill-flavor:debug-summary-rule:end-->
 
 ## Workflow
 
@@ -49,7 +51,6 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Publish a flow to Studio Web** | [ship.md — Path 1](ship.md#path-1--studio-web-upload-default) |
 | **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-solution](/uipath:uipath-solution) |
 | **Sync solution resource declarations** | [ship.md — Pre-flight](ship.md#pre-flight) (the `uip solution resources refresh` step) |
-<!--skill-flavor:ship-common-tasks-rows:end-->
 | **Debug a flow end-to-end** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) |
 | **Pass input arguments to `flow debug`** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
 | **Bind local files to file-typed inputs** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) and [run.md — Process run](run.md#process-run--trigger-a-deployed-process) (same `--attachment <variableId>=<localPath>` flag on both, repeatable; `--attachment` overrides `--inputs` on key collisions) |
@@ -61,6 +62,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Cancel an instance** | [manage.md](manage.md) |
 | **Retry a faulted instance** | [manage.md](manage.md) (after diagnosing root cause via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
 | **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) |
+<!--skill-flavor:ship-common-tasks-rows:end-->
 | **My flow run failed** | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
 ## Anti-patterns
@@ -68,8 +70,8 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-antipatterns:start-->
 - **Never run `solution upload` without `solution resources refresh` first.** Stale resource declarations cause runtime binding failures.
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" → Studio Web upload. Confirm explicitly before running `flow pack` + `solution publish`.
-<!--skill-flavor:upload-antipatterns:end-->
 - **Never run `flow debug` as a validation step, and never re-run a completed one to reshape its output.** Each run re-uploads the solution and executes the flow again against real systems; extract report fields from the payload the completed run already returned, and when that run faulted, read the cause from it first — see [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have). Use `uip maestro flow validate` for correctness checking.
+<!--skill-flavor:upload-antipatterns:end-->
 - **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
 
@@ -88,7 +90,9 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-shared-cli-entry:start-->
 - [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `solution upload`, `solution resources refresh`, `flow pack`, `flow debug`, `flow process`, `flow job`, `flow instance`
 <!--skill-flavor:upload-shared-cli-entry:end-->
+<!--skill-flavor:conventions-reference-entry:start-->
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, FOLDER_KEY, UIP_LOG_LEVEL, JSON output shape
+<!--skill-flavor:conventions-reference-entry:end-->
 - [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) — `--inputs` JSON shape for `flow debug`
 
 <!--skill-flavor:upload-orchestrator-pointer:start-->

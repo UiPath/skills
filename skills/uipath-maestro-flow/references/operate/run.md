@@ -1,18 +1,23 @@
 # Run — Execute a Flow
 
+<!--skill-flavor:run-intro:start-->
 Execute a flow on demand and monitor progress. Three modes: **debug** (controlled re-run with full Studio Web visibility), **process run** (trigger a deployed process), **job inspection** (status and traces). All require `uip login`.
+<!--skill-flavor:run-intro:end-->
 
 ## Pre-flight
 
+<!--skill-flavor:run-preflight-steps:start-->
 1. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../shared/cli-conventions.md#5-login-state).
 2. **For debug runs: solution resources refreshed.** Always run before `flow debug` so connection and process resource declarations are in sync with project bindings:
 
    ```bash
    uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
+<!--skill-flavor:run-preflight-steps:end-->
 
 ## Debug — controlled end-to-end run
 
+<!--skill-flavor:debug-run-body:start-->
 > **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate. The mandate does not cover side effects that reach a third party (a real call, a message to someone who is not the user) — those need the run asked for explicitly. Never debug a solution this run did not scaffold: debug overwrites the Studio Web solution matching the local `.uipx` `SolutionId`. See rule #2 in [SKILL.md](../../SKILL.md).
 
 ```bash
@@ -51,9 +56,11 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding).
 
 > **Reading the bound file.** At runtime a `file` variable is an object — a Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../shared/variables-and-expressions.md#file-input).
+<!--skill-flavor:debug-run-body:end-->
 
 ### Reporting debug runs to the user
 
+<!--skill-flavor:debug-reporting-body:start-->
 The CLI response includes a **Studio Web URL** (where the user inspects the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary**:
 
 ```text
@@ -64,9 +71,11 @@ Instance ID: <instanceId>
 ```
 
 If either value is missing from the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
+<!--skill-flavor:debug-reporting-body:end-->
 
 ### When the run faults
 
+<!--skill-flavor:debug-fault-body:start-->
 `Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there. Redirect stdout to a file and extract the cause from the file; on a faulted run the CLI ignores `--output-filter` and prints the whole envelope, so the filter is not a way to shrink it:
 
 ```bash
@@ -76,6 +85,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json > 
 Extraction commands and fault-code lookup: [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
 
 See [shared/cli-commands.md — uip maestro flow debug](../shared/cli-commands.md#uip-maestro-flow-debug) for additional options.
+<!--skill-flavor:debug-fault-body:end-->
 
 ## Process run — trigger a deployed process
 
@@ -88,6 +98,7 @@ uip maestro flow process list --output json                           # discover
 uip maestro flow process run <process-key> <folder-key> --output json # trigger a run
 ```
 
+<!--skill-flavor:process-run-inputs-attachment:start-->
 Pass input arguments and/or bind file-typed input variables:
 
 ```bash
@@ -98,15 +109,18 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 ```
 
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
+<!--skill-flavor:process-run-inputs-attachment:end-->
 
 Run `uip maestro flow process --help` for all subcommands and options.
 
 ## Job inspection — status and traces
 
+<!--skill-flavor:job-inspection-commands:start-->
 ```bash
 uip maestro flow job status <job-key> --output json   # check status of a running or completed job
 uip maestro flow job traces <job-key> --output json   # stream the verbose execution timeline
 ```
+<!--skill-flavor:job-inspection-commands:end-->
 
 > **Traces are verbose** and contain the full execution timeline. Use them only when needed for diagnosis — start from incidents first via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 
@@ -117,7 +131,9 @@ uip maestro flow job traces <job-key> --output json   # stream the verbose execu
 
 ## Anti-patterns
 
+<!--skill-flavor:run-antipatterns:start-->
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
 - **Never re-run a completed `flow debug` to re-read or reshape its output.** Each run re-uploads the solution and executes the flow again for real. Extract the report fields from the payload the completed run already returned — see [Reporting debug runs](#reporting-debug-runs-to-the-user). For a faulted run, read the cause first — see [When the run faults](#when-the-run-faults).
 - **Never skip `solution resources refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
+<!--skill-flavor:run-antipatterns:end-->
 - **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.

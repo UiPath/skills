@@ -8,17 +8,17 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 | Pattern | Symptom | Cause |
 |---|---|---|
+<!--skill-flavor:project-creation-recovery-index:start-->
 | [`=js:` prefix missing](#js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
 | [`variables.nodes[]` missing](#variablesnodes-missing--varsxoutput-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
 | [Misshapen nodes in Studio Web](#misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Run reports `Completed`, work not done](#run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
-<!--skill-flavor:project-creation-recovery-index:start-->
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
-<!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (the missing-`=js:` validator + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
+<!--skill-flavor:project-creation-recovery-index:end-->
 
 ---
 
@@ -28,7 +28,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 A connector, HTTP, or end node receives the literal string `"vars.X.output.Y"` as its input value at runtime instead of the resolved value.
 
+<!--skill-flavor:js-prefix-validator-note:start-->
 `flow validate` flags this as an error today (cli-side `expression-prefix-validator`, emitted with a remediation hint pointing at the `=js:`-prefixed form). Pre-validator cli versions miss it and the failure surfaces only at `flow debug` or in deployed runs — if you see the symptom without a corresponding validate error, your cli is older than the fix.
+<!--skill-flavor:js-prefix-validator-note:end-->
 
 Example: input field set to literal `"vars.createEntityRecord1.output.Id"` instead of the entity's actual ID.
 
@@ -71,7 +73,9 @@ This happens almost exclusively on **direct-authored** `.flow` files: `uip maest
 
 ### Fix
 
+<!--skill-flavor:variables-nodes-fix-command:start-->
 Run `uip maestro flow format <ProjectName>.flow --output json`. Current CLI versions regenerate `variables.nodes[]` from `nodes[]` + `definitions[]` (matching `node add` and canvas behavior). On older CLI versions, add the entries manually:
+<!--skill-flavor:variables-nodes-fix-command:end-->
 
 ```json
 "variables": {
@@ -102,6 +106,7 @@ One entry per declared output (trigger nodes: `output` only; action nodes: `outp
 
 ### Symptom
 
+<!--skill-flavor:misshapen-nodes-body:start-->
 After publish or debug upload, Studio Web renders nodes at the wrong dimensions for their shape — a square/circle node stretched into an oblong (e.g., 200×80), or an inline agent squashed to a 96×96 square instead of its 288×96 rectangle. Layout looks visually broken even though the flow runs correctly.
 
 ### Cause
@@ -115,6 +120,7 @@ Run format before any publish or debug operation:
 ```bash
 uip maestro flow format <ProjectName>.flow --output json
 ```
+<!--skill-flavor:misshapen-nodes-body:end-->
 
 Format:
 
@@ -153,7 +159,9 @@ Add an edge from the HITL node's `completed` port to the next node in the flow. 
 
 ### Symptom
 
+<!--skill-flavor:completed-but-no-work-symptom:start-->
 `finalStatus` is `Completed` and no incident is raised, yet the flow's real effect is missing — the record was never created, the message never sent, the downstream node ran on empty or stale data. The flow "always looks successful," including on runs where a dependency was demonstrably down. Nothing shows up in `instance incidents` because, as far as the engine is concerned, nothing failed.
+<!--skill-flavor:completed-but-no-work-symptom:end-->
 
 ### Cause
 
@@ -168,6 +176,7 @@ Both pass `uip maestro flow validate` — it checks structure, never whether an 
 
 Report every node carrying the flag, and where its error path ends:
 
+<!--skill-flavor:error-handling-audit-script:start-->
 ```bash
 python3 - "<ProjectName>.flow" <<'PY'
 import json, sys
@@ -200,6 +209,7 @@ for nid, n in N.items():
         else: print(f"{nid}: error -> {t} distinct terminal(s) {sorted(terminals(t))} - ok")
 PY
 ```
+<!--skill-flavor:error-handling-audit-script:end-->
 
 No output means no node has the flag set — the flow is clean. Otherwise act per line:
 
@@ -284,15 +294,17 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 ### Reference
 
 [Author greenfield journey — Step 2](../author/greenfield.md) — the canonical scaffold sequence.
-<!--skill-flavor:project-creation-recovery:end-->
 
 ---
 
+<!--skill-flavor:project-creation-recovery:end-->
 ## Missing `bindings[]` on resource node
 
 ### Symptom
 
+<!--skill-flavor:missing-bindings-symptom-intro:start-->
 `uip maestro flow validate` passes locally. At `uip maestro flow debug` (or in deployed runs), the resource node faults with:
+<!--skill-flavor:missing-bindings-symptom-intro:end-->
 
 ```text
 Folder does not exist or the user does not have access to the folder.
@@ -320,7 +332,9 @@ Add two entries to the top-level `bindings[]` array per resource node — `name`
 
 ### Symptom
 
+<!--skill-flavor:validate-passes-debug-faults-symptom:start-->
 Local `uip maestro flow validate` returns `Result: Success`. The same flow fails at `uip maestro flow debug` with a runtime error.
+<!--skill-flavor:validate-passes-debug-faults-symptom:end-->
 
 ### Cause
 
