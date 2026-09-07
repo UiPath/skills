@@ -35,14 +35,17 @@
 <!--skill-flavor:when-to-use-create:end-->
 
 <!--skill-flavor:cli-surface-probe:start-->
-Studio Web runs the post-rename CLI: use the commands and flags as documented in the references, with no probe. The open solution is the only solution — creating another is not possible here.
+Studio Web runs the post-rename CLI — use the commands and flags as documented in the references, with no probe.
 <!--skill-flavor:cli-surface-probe:end-->
+<!--skill-flavor:cli-unavailable:start-->
+- `unknown command` / `command not found` on a documented verb → the host did not expose it. Do NOT `npm install` (the CLI is bundled by the host, not globally installed) and do not fall back to a pre-rename spelling. Report the exact command and error to the user and stop.
+<!--skill-flavor:cli-unavailable:end-->
 
-<!--skill-flavor:rename-row-init:start-->
-<!--skill-flavor:rename-row-init:end-->
+<!--skill-flavor:rename-table:start-->
+<!--skill-flavor:rename-table:end-->
 
 <!--skill-flavor:probe-rule:start-->
-1. **Studio Web runs the post-rename CLI.** Use the documented commands directly; the fallback table does not apply.
+1. **Studio Web runs the post-rename CLI.** Use the documented commands directly; there is no pre-rename fallback.
 <!--skill-flavor:probe-rule:end-->
 
 <!--skill-flavor:develop-solution-row:start-->

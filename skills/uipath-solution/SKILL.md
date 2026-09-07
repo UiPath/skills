@@ -42,14 +42,15 @@ uip solution init --help --output json
 
 - Result `Success` → post-rename CLI (default). Use the commands and flags as documented in the references.
 - `unknown command` / non-zero exit → pre-rename CLI. Translate via the table below before each call. Re-probe on any later `unknown command` error.
-- `command not found` / `uip: not found` / `'uip' is not recognized` → CLI not installed. Tell the user to run `npm install -g @uipath/cli`, then `uip login`, and abort the work until those succeed.
 <!--skill-flavor:cli-surface-probe:end-->
+<!--skill-flavor:cli-unavailable:start-->
+- `command not found` / `uip: not found` / `'uip' is not recognized` → CLI not installed. Tell the user to run `npm install -g @uipath/cli`, then `uip login`, and abort the work until those succeed.
+<!--skill-flavor:cli-unavailable:end-->
 
+<!--skill-flavor:rename-table:start-->
 | Post-rename (default) | Pre-rename equivalent |
 |---|---|
-<!--skill-flavor:rename-row-init:start-->
 | `uip solution init <NAME>` | `uip solution new <NAME>` |
-<!--skill-flavor:rename-row-init:end-->
 | `uip solution deploy run --parent-folder-path <PATH>` | `uip solution deploy run --folder-path <PATH>` |
 | `uip solution deploy run --parent-folder-key <KEY>` | `uip solution deploy run --folder-key <KEY>` |
 | `uip solution projects <VERB>` | `uip solution project <VERB>` (singular still works post-rename, but is hidden and deprecated) |
@@ -57,6 +58,7 @@ uip solution init --help --output json
 | `uip solution projects import <PATH>` | `uip solution project import --source <PATH>` |
 
 All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uninstall`, `upload`, `resources …`, `projects add/remove/list`) are unchanged on both surfaces.
+<!--skill-flavor:rename-table:end-->
 
 ## Critical Rules
 
