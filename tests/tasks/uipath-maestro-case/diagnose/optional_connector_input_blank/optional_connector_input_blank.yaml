@@ -50,6 +50,9 @@ initial_prompt: |
 
   Scope: this is a targeted repair of one input value, not a build.
 
+  - This case is offline. The resource names and ids in it are placeholders, and
+    nothing here needs looking up on a tenant. Do not run `uip` commands that
+    reach one.
   - The defect and its fix are both inside
     LinearThreeStages/LinearThreeStages/caseplan.json. Nothing else changes.
   - Read the case definition and the skill's input binding rules only. You do
