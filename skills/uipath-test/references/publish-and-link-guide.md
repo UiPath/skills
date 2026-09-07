@@ -19,6 +19,7 @@ uip tm wait              → block until terminal
 - Logged in: `uip login status --output json`. If not, `uip login`.
 - Project builds clean: `uip rpa build "<PROJECT_DIR>" --output json` returns `Result: "Success"`.
 - Test case exists in Test Manager: `uip tm testcases list --project-key <PROJECT_KEY> --output json`. Capture the `ObjKey` (e.g. `DEMO:1`) — it is the `--test-case-key` value.
+- If you already hold the project's `Id` (it was given to you, or `project create` returned it), pass `--project-id <PROJECT_ID>` in place of `--project-key <PROJECT_KEY>` below — it skips a project lookup on each of the five calls this flow makes. Don't fetch the ID just for this. See [/uipath:uipath-test § Naming the project](../SKILL.md#naming-the-project---project-key-or---project-id).
 
 ## Step 1 — Pack
 
