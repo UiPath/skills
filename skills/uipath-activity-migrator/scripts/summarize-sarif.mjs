@@ -208,11 +208,13 @@ if (wantJson) {
 }
 
 const md = [];
-const list = (items, fmt) => {
+// A section is printed only when it has entries; empty checks are not worth a line.
+const section = (title, items, fmt) => {
+  if (!items.length) return;
+  md.push('', `## ${title}`);
   const shown = items.slice(0, LIST_LIMIT);
   for (const it of shown) md.push(`- ${fmt(it)}`);
   if (items.length > shown.length) md.push(`- … and ${items.length - shown.length} more`);
-  if (!items.length) md.push('- none');
 };
 const loc = (e) => `${e.file || '(project)'}${e.activity ? ': ' + e.activity : ''}${e.property ? ' / ' + e.property : ''}`;
 
@@ -231,33 +233,15 @@ md.push(`| Productivity migrated / not migrated / warnings | ${productivity.migr
 md.push(`| Manual action required | ${actionRequired.length} | messages tagged ${ACTION_TAG} |`);
 md.push(`| Type / compile issues | ${typeIssues.length} | TYPE-MISSING, compilation, validation |`);
 md.push(`| Blockers | ${blockers.length} | ${blockers.map((b) => b.rule).filter((v, i, a) => a.indexOf(v) === i).join(', ')} |`);
-md.push('');
-md.push('## Blockers');
-list(blockers, (e) => `**${e.rule}** — ${e.message}${e.file ? ` (${e.file})` : ''}`);
-md.push('');
-md.push('## UIA not migrated');
-list(uia.notMigrated, (e) => `${loc(e)} — ${e.reason || e.rule}`);
-md.push('');
-md.push('## UIA partial');
-list(uia.partial, (e) => `${loc(e)} — ${e.message}`);
-md.push('');
-md.push('## UIA warnings (activity and property)');
-list(uia.warnings, (e) => `${loc(e)} — ${e.reason || e.rule}${e.message ? ': ' + e.message : ''}`);
-md.push('');
-md.push('## UIA workflow-level');
-list(uia.workflow, (e) => `${e.file || '(project)'} — ${e.rule}: ${e.message}`);
-md.push('');
-md.push('## Productivity not migrated');
-list(productivity.notMigrated, (e) => `${loc(e)} — ${e.rule}: ${e.message}`);
-md.push('');
-md.push('## Productivity warnings');
-list(productivity.warnings, (e) => `${loc(e)} — ${e.rule}: ${e.message}`);
-md.push('');
-md.push('## Manual action required');
-list(actionRequired, (e) => `${loc(e)} — ${e.message}`);
-md.push('');
-md.push('## Type / compile issues');
-list(typeIssues, (e) => `${e.file || '(project)'} — ${e.rule}: ${e.message}`);
+section('Blockers', blockers, (e) => `**${e.rule}** — ${e.message}${e.file ? ` (${e.file})` : ''}`);
+section('UIA not migrated', uia.notMigrated, (e) => `${loc(e)} — ${e.reason || e.rule}`);
+section('UIA partial', uia.partial, (e) => `${loc(e)} — ${e.message}`);
+section('UIA warnings (activity and property)', uia.warnings, (e) => `${loc(e)} — ${e.reason || e.rule}${e.message ? ': ' + e.message : ''}`);
+section('UIA workflow-level', uia.workflow, (e) => `${e.file || '(project)'} — ${e.rule}: ${e.message}`);
+section('Productivity not migrated', productivity.notMigrated, (e) => `${loc(e)} — ${e.rule}: ${e.message}`);
+section('Productivity warnings', productivity.warnings, (e) => `${loc(e)} — ${e.rule}: ${e.message}`);
+section('Manual action required', actionRequired, (e) => `${loc(e)} — ${e.message}`);
+section('Type / compile issues', typeIssues, (e) => `${e.file || '(project)'} — ${e.rule}: ${e.message}`);
 md.push('');
 md.push('## Rule counts');
 md.push('| Rule | Level | Count |');

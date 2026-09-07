@@ -29,9 +29,9 @@ Warnings are Workflow Analyzer output: an open set that depends on the Studio ve
 1. A warning that quotes a `[PostMigration Action Required]` annotation or a "Migration not implemented" text is the migrator's own finding surfacing through the analyzer (rule `ST-AMG-001` on recent Studio versions). It is already in the manual-work list; do not report it twice.
 2. Any other warning is analyzer output on the project as it was. Mention it once, do not fix it, and never let warnings gate delivery.
 
-## Package versions are frozen
+## Package versions are not edited here
 
-Do not change any dependency version on the output during verification, and never raise `UiPath.UIAutomation.Activities` to reach a requested release line. The migration logic ships inside that package, so the migrated workflows are the product of the exact version the tool pinned; a later version was never run against them. Moving to a newer line is a deliberate upgrade the user performs in Studio after the migration is accepted.
+The skill does not change any dependency version on the output during verification. The target UIAutomation version is settled in Step 2 and a mismatch is handled in Step 3, never by editing the output. What the client does with package versions after the migration is their normal maintenance; it is not a report item.
 
 ## Fix loop
 
@@ -68,5 +68,4 @@ Report these; do not run them unattended:
 
 - Open `<OUTPUT_DIR>` in Studio 2024.10 or later and let it restore.
 - Run the main workflow once in Debug against the real applications.
-- For UI Automation, set the project setting "Log target & anchor search steps" to Info before the run; healthy targets log `Searching for target …` then `Target was found with the selector method`.
 - Package-specific runtime prerequisites are listed in each package guide's Hook 3 (for example Integration Service connections for Mail).

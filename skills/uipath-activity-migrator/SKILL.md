@@ -14,7 +14,7 @@ Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquir
 
 > **Read referenced files in full.** This SKILL.md is a router. Before running `analyze`, open and read the whole package guide for every classic package the project uses (see [Package Routing](#package-routing)). Package guides add flags, config files, triage rules, and post-migration steps that the core workflow does not know.
 
-`<SKILL_DIR>` below is the folder that contains this SKILL.md. `<PROJECT_DIR>` is the absolute path of the folder holding `project.json`. `<OUTPUT_DIR>` is the migrated copy, a sibling folder, `<PROJECT_DIR>_Upgraded` by default.
+`<SKILL_DIR>` below is the folder that contains this SKILL.md. `<PROJECT_DIR>` is the absolute path of the folder holding `project.json`. `<OUTPUT_DIR>` is the migrated copy, a sibling folder, `<PROJECT_DIR>_Upgraded` by default, always as an absolute path: `uip rpa` rejects relative ones.
 
 ## When to Use This Skill
 
@@ -34,11 +34,10 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 4. **Analyze before upgrade, every time.** Run `analyze`, triage it, and only then run `upgrade`. When the analyze triage shows no stop condition, proceed to `upgrade` without asking.
 5. **Never write into the source project.** `upgrade` writes to a fresh sibling folder. Never point `--output-path` at `<PROJECT_DIR>`, never copy the output back over the source, never delete the source. The tool's own `.upgrade/` report folder inside the source is the only thing it writes there.
 6. **Never pass secrets through the agent.** Do not type `--orchestrator-pat` or `--orchestrator-application-secret` values yourself. When a tenant feed is required, rely on the tool's fallback to the local Studio or Robot connection; if that fails, hand the user the complete command with `<PLACEHOLDER>` values to run themselves.
-7. **Resolve the target UIAutomation package line explicitly.** When the project uses `UiPath.UIAutomation.Activities`, resolve the latest stable patch of a release line per [Step 2](#step-2--resolve-the-target-package-line) and pass it as `--uia-package-version=<UIA_VERSION>`. Extension options bind only in the `--name=value` form; the space-separated form parses without error and is silently ignored. Accept the tool default only when the feed is unreachable, and say so in the report. Never raise the UIAutomation package on the migrated output to reach the requested line: the migration logic ships inside the package, and the output must stay on the version that produced it.
+7. **Resolve the target UIAutomation package line explicitly.** When the project uses `UiPath.UIAutomation.Activities`, resolve the latest stable patch of a release line per [Step 2](#step-2--resolve-the-target-package-line) and pass it as `--uia-package-version=<UIA_VERSION>`. Extension options bind only in the `--name=value` form; the space-separated form parses without error and is silently ignored. Accept the tool default only when the feed is unreachable, and say so in the report. The target version is settled before the migration runs; the skill never edits package versions on the output afterwards to reach it.
 8. **Verify with the modern CLI.** Migration is not done until `uip rpa build` passes on `<OUTPUT_DIR>`, or the remaining errors are reported as manual work after the bounded fix loop in [verification-guide.md](references/verification-guide.md).
 9. **Libraries first.** When analyze reports `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED`, stop. Tell the user to migrate and publish that library to the feed before migrating this project. The tool cannot order dependencies.
 10. **Bounded loops.** At most 3 build-fix iterations in Step 5. Then report what remains.
-11. **Disclose telemetry once.** The tool sends usage telemetry to UiPath and has no opt-out flag. State this in the preflight summary.
 
 ## Workflow
 
@@ -70,7 +69,7 @@ Then read the flag list of this build once. It is the only authority on which fl
 
 Keep the output for Steps 3 and 4: an extension flag a package guide names is passed only when it appears here. A missing flag is skipped and noted in the report. The build may also list extension flags no guide names; use one only when its help text directly addresses a problem this run has shown (a specific SARIF result or build error), pass it as `--name=value`, and say so in the report. Behavior the help does not state (option binding, exit code, output streams, folders) is in [tool-behavior-guide.md](references/tool-behavior-guide.md).
 
-Summarize to the user in two lines: tool version and location, telemetry disclosure (Rule 11).
+Summarize to the user in one line: tool version and location.
 
 ### Step 1 — Discover the project
 
@@ -109,7 +108,7 @@ node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/analyze-l
 
 Omit `--uia-package-version` when the project has no UIAutomation dependency. The summarizer prints status, package changes, per-family counts, blockers, and per-file lists. Show the user the summary table.
 
-Check the effective UIAutomation version in the "Package versions" row against `<UIA_VERSION>`. When they differ, the flag did not bind. The usual cause is the space-separated form (`--uia-package-version 25.10.39`), which the tool accepts and ignores; fix the command to the `=` form and rerun analyze. If the effective version still differs, stop and ask the user whether to proceed on the effective version or abort: the migrated workflows are produced by the migration service inside that package version, so the output must stay on it. Never raise the dependency on the output afterwards to reach the requested line. Then apply the stop conditions from [sarif-triage-guide.md § Stop conditions](references/sarif-triage-guide.md#stop-conditions):
+Check the effective UIAutomation version in the "Package versions" row against `<UIA_VERSION>`. When they differ, the flag did not bind. The usual cause is the space-separated form (`--uia-package-version 25.10.39`), which the tool accepts and ignores; fix the command to the `=` form and rerun analyze. If the effective version still differs, stop and ask the user whether to proceed on the effective version or abort. Do not compensate by editing package versions on the output afterwards. Then apply the stop conditions from [sarif-triage-guide.md § Stop conditions](references/sarif-triage-guide.md#stop-conditions):
 
 | Analyze outcome | Action |
 |---|---|
@@ -132,7 +131,7 @@ Confirm `<OUTPUT_DIR>/project.json` exists and its `targetFramework` is `Windows
 
 ### Step 5 — Verify
 
-Follow [verification-guide.md](references/verification-guide.md). In short:
+Follow [verification-guide.md](references/verification-guide.md). In short, with `<OUTPUT_DIR>` absolute (never `.`):
 
 ```bash
 uip rpa build "<OUTPUT_DIR>" --output json
@@ -143,24 +142,24 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 ### Step 6 — Post-migration and report
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
-2. Report with this shape:
+2. Report only what the reader must act on or decide. Omit any section, row, or line with nothing in it; never list checks that found nothing. Shape:
 
 ```markdown
 ## Migration result: <status>
-- Source: <PROJECT_DIR> (untouched; `.upgrade/` report folder added)
-- Output: <OUTPUT_DIR> — targetFramework Windows, build <passed|failed|not verified>
-- Target UIAutomation version: <UIA_VERSION or "tool default">
-- Report: <PROJECT_DIR>/.upgrade/<name>-<id>.html (+ .sarif; log: project-<id>.log)
+- Output: <OUTPUT_DIR> — build <passed|failed|not verified>
+- Target UIAutomation version: <UIA_VERSION>
+- Report: <PROJECT_DIR>/.upgrade/<name>-<id>.html
 
 | Area | Migrated | Not migrated | Needs manual action |
 |---|---|---|---|
+<one row per area with a non-zero count>
 
-### Manual work
-- <file>: <activity> — <why> — <what to do>
+### Manual work            <- only when there is any
+- <file>: <activity> — <what to do>
 
 ### Next steps
-- Open the output with Studio 2024.10 or later; commit `<OUTPUT_DIR>` as the new project.
-- <package-specific runtime prerequisites>
+- Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.
+- <package-specific runtime prerequisites, only when a package guide lists one>
 ```
 
 ## Package Routing
@@ -200,7 +199,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Hand-converting classic activities in XAML instead of letting the tool do it, or "finishing" activities the tool left classic by rewriting them blind
 - Accepting the tool's default UIAutomation version when the feed was reachable
 - Passing an extension option space-separated (`--uia-package-version 25.10.39`); only `--uia-package-version=25.10.39` binds
-- Raising the UIAutomation package on the migrated output with `uip rpa packages install` to reach the requested line; the output must stay on the version whose migration service produced it
+- Raising the UIAutomation package on the migrated output with `uip rpa packages install` to reach the requested line instead of fixing the flag or asking the user
 - Resolving package versions with `uip rpa packages versions` against a Legacy project; the headless Studio host cannot open it
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output

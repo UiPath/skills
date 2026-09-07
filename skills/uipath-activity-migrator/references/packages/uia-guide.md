@@ -73,7 +73,7 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
 ## Hook 3 — After upgrade
 
 1. **Ambiguous `SelectorStrategy` build errors** (`CS0104`, `BC30561`): delete `<OUTPUT_DIR>`, rerun Step 4 with `--uia-fix-selector-strategy=true`, then rebuild. Do not hand-edit the expressions.
-1. **Package version stays as pinned.** Never raise `UiPath.UIAutomation.Activities` on the output to reach `<UIA_VERSION>` when the tool pinned something else. The migration service that produced the workflows lives inside the pinned package; a newer version was never run against them. Report the effective version and leave the upgrade to the user in Studio.
+1. **No version edits on the output.** When the tool pinned something other than `<UIA_VERSION>`, that was handled in Step 3; do not raise `UiPath.UIAutomation.Activities` on the output to make up the difference, and do not advise the user about future package upgrades in the report.
 2. **Annotations.** Migrated activities carry design-time annotations, one line per message: `[PostMigration Action Required]: <TYPE>: <message>`, followed by `[Existing annotation]: <user text>` when the classic activity had one. List them per file for the report:
 
    ```bash
@@ -98,4 +98,4 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
    ```
 
    Generated Use Application/Browser cards appear in this count too, so it can exceed the number of migrated activities.
-5. **Runtime prerequisites for the report.** Studio 2024.10 or later to open the project. Robots on the same release line as `<UIA_VERSION>`. Modern UIA needs the browser extensions installed on the robot machines for web targets. Suggest the project setting "Log target & anchor search steps" = Info for the first debug run.
+5. **Runtime prerequisites for the report.** Studio 2024.10 or later to open the project. Robots at or above the minimum `<UIA_VERSION>` requires. Modern UIA needs the browser extensions installed on the robot machines for web targets.
