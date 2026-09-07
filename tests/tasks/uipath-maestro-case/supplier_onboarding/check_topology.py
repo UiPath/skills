@@ -267,6 +267,7 @@ def main() -> int:
                     f"and answers CASE_MGMT_RULE_NAME_DUPLICATE otherwise"
                 )
 
+
     print(f"checked {P.find_caseplan()}")
     print(f"stages: {sorted(by_label)}")
     if not problems:
