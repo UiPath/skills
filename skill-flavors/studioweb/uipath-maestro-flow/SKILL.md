@@ -1,21 +1,46 @@
+<!--skill-flavor:keep-outputs-small-debug-example:start-->
+- **Keep outputs small.** Extract with `--output json --output-filter` when you know the fields (rule #1). When the payload is large or the command is slow or side-effecting — `flow debug`, `job traces`, `registry get` — redirect the whole output to a file outside the solution tree (`uip flow debug > /tmp/flow-debug.txt`, `uip maestro flow registry get <node-type> --output json > /tmp/node.json`) and search the file, so re-reading it never means re-running the command.
+<!--skill-flavor:keep-outputs-small-debug-example:end-->
+
 <!--skill-flavor:project-creation-scope:start-->
-- Create a new Flow project through Studio Web's solution-level project-creation capability
+  - Create a new Flow project in the open solution with `uip flow init <ProjectName>` (host-intercepted; no `.uipx`, no registration step).
 <!--skill-flavor:project-creation-scope:end-->
-
-<!--skill-flavor:user-question-options-extra:start-->
-
-   **Exception — the option set came from the host, not from you.** When a Studio Web command answers with the choices itself (`uip solution publish` with no destination lists every feed you can publish to, and its `--location` accepts only those keys or names), offer exactly the options it returned and omit "Something else". That list is authoritative and exhaustive: a free-form destination cannot match it, so the command rejects it and the user pays a round-trip to be shown the same list again. Everything else in this rule still applies — the enumerated options, the numbered-list fallback, the non-interactive behaviour, and the consent gates.
-
-<!--skill-flavor:user-question-options-extra:end-->
-
-<!--skill-flavor:project-creation:start-->
-6. **Create Flow projects with the Studio Web project tool.** Before creating a project, inspect the live `CreateProjects` schema. Invoke that operation with the Flow project type using exactly the fields and enum values present in the current schema. Treat the live schema as the request contract.
-
-   **Use Studio Web's project scaffold and solution metadata.** After `CreateProjects` succeeds, inspect the project files exposed by the Studio Web workspace/VFS and edit the generated `.flow` entrypoint. If the creation tool or Flow project type is unavailable, report that capability gap and await user direction.
-<!--skill-flavor:project-creation:end-->
 
 <!--skill-flavor:upload-scope-bullets:start-->
 <!--skill-flavor:upload-scope-bullets:end-->
 
 <!--skill-flavor:upload-eval-scope-bullet:start-->
+  - `eval run *` needs both ids passed explicitly (`--solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId>`), can hang on first use — call with `timeoutSeconds: 120`, never `--wait`; on a time-out hand the run to the user via the Studio Web Evaluations panel.
 <!--skill-flavor:upload-eval-scope-bullet:end-->
+
+<!--skill-flavor:output-filter-rule:start-->
+1. **Use `--output json`; prefer `--output-filter` for extraction.** Filters are global and run against the `Data` envelope, so expressions start at `Data` without a `Data.` prefix. Registry search returns a flat PascalCase array (`NodeType`, `DisplayName`, `Description`, `AvailableOnTenant`), not `Data.Nodes` or lowercase fields. Example: `uip maestro flow registry search <keyword> --output json --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"`. `registry list` and `uip or … list` reject `--output-filter` unless you also pass `--limit <n>` explicitly; other lists (e.g. `uip is connections list`) have no `--limit` flag, so add it only where the command rejects the filter. Use `jq` or `node` only after verifying shape and when JMESPath cannot express the transform; there is no `python` in the Studio Web shell. See [cli-conventions.md §3](references/shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
+<!--skill-flavor:output-filter-rule:end-->
+
+<!--skill-flavor:debug-mandate-rule:start-->
+2. **`flow debug` consent comes from the mandate.** It executes the flow for real (sends emails, posts messages, calls APIs), so run it only when the request is for a flow that *works* — asked to build something that does X, or to make it work. Building and validating does not discharge that; a flow never executed is not finished. Ask when the request stops at review, one node, or validate; with nobody to ask, report debug as the step not run. **The mandate does not cover side effects reaching a third party** — a real call, a message to someone who is not the user. Those need the run asked for explicitly, whoever is watching. In Studio Web `uip flow debug` runs the saved open project as-is — nothing is packed or uploaded — so make sure every edit is written to `/solution/<ProjectName>/new.flow` before running. `TimedOut after 300s` with `(no run logs emitted)` means the run never reached the runtime — do not retry in a loop; ask the user to run Debug from the designer and paste the result.
+<!--skill-flavor:debug-mandate-rule:end-->
+
+<!--skill-flavor:search-before-creating-registry:start-->
+3. **Search before creating or declaring resources absent.** For named agents, API workflows, RPA processes, and similar resources: (a) pull and search the tenant registry with `uip maestro flow registry pull --force && uip maestro flow registry search "<name>" --output json`; pull first because the cache expires after 30 minutes and only published resources are returned (auth is the host session — no login step); (b) list the open solution's own projects with `uip solution resources list --kind Process --output json` — `solutionResources` holds the in-solution projects with their resource keys (`{key,name,kind:"process",type:"flow"|"api"}`) and `availableResources` the deployed processes per folder; `registry list|search --local` needs a `.uipx` and is unavailable in Studio Web; an empty keyword search does not prove absence, so confirm with the `--kind Process` list; (c) scaffold, mock, or create only when both searches find no match and the user explicitly requests embedding/creation or no published resource satisfies the need.
+<!--skill-flavor:search-before-creating-registry:end-->
+
+<!--skill-flavor:user-question-options-extra:start-->
+
+   **Exception — the option set came from the host, not from you.** Publish destinations are such a set: `uip solution publish --help` lists `PublishLocations` (name, key, `IsPersonalWorkspace`, `Default`). When more than one exists and the user named none, offer exactly those entries and omit "Something else" — a free-form destination cannot match, so the command rejects it and the user pays a round-trip to be shown the same list again. Then run `uip solution publish --location "<key or name>"` (add `--personal-workspace` for that choice). Never run `uip solution publish` without `--location` unless the user chose the personal workspace: with no flag the host publishes there immediately, and a personal-workspace publish auto-deploys. Everything else in this rule still applies — the enumerated options, the numbered-list fallback, the non-interactive behaviour, and the consent gates.
+
+<!--skill-flavor:user-question-options-extra:end-->
+
+<!--skill-flavor:project-creation:start-->
+6. **Create Flow projects with `uip flow init <ProjectName>`.** Studio Web works on one open solution, already scaffolded as the workspace root (`/solution`); never create another — the solution-creation verbs (`solution init`, `solution new`) are refused. `uip flow init <ProjectName>` (alias `uip maestro flow init`) is intercepted by the host: it creates the project entity in the open solution and seeds `/solution/<ProjectName>/new.flow` (manual trigger only, empty `edges`/`definitions`/`bindings`) plus `project.uiproj`. Pass just the name — a nested path is rejected and template-shaping flags are reported as ignored. There is no `.uipx`, no `uip solution projects add`, and no registration step; chain the command with the T1 setup commands (rule #10). If it fails, report the capability gap and await user direction. See [author/greenfield.md](references/author/greenfield.md) Step 2.
+<!--skill-flavor:project-creation:end-->
+
+<!--skill-flavor:node-ownership-rule:start-->
+9. **Each node has exactly one author: Edit/Write or CLI, never both.** CLI-owned nodes are connector activities (`uipath.connector.<key>.<op>`), connector triggers (`uipath.connector.trigger.<key>.<trigger>`), wait-for-events (`uipath.connector.event.<key>.<event>`, configured like triggers), and managed HTTP (`core.action.http.v2`); add/configure them with `uip maestro flow node add` and `node configure`. All others—triggers, control flow, logic, HITL, patterns, agents, resource nodes, and queues—are user-owned and should be authored directly with `Edit` or `Write`. Never full-file `Write` a flow containing CLI-owned nodes because it can clobber CLI-set `bindings[]` and `inputs.detail`; use `Edit` or configure CLI-owned nodes last. Their `inputs.detail` is a `=jsonString:essentialConfiguration` envelope rejected when hand-authored. Inline-agent CLI is limited to `uip agent init / refresh / validate --inline-in-flow`; the `uipath.agent.autonomous` node is user-owned. Scripting (`jq`, `sed`, `awk`, or `node` — prefer a file script, `node /tmp/script.js <file>` reading `process.argv`, over inline heredocs) is a last resort for user-owned edits and requires explicit approval after explaining state bypass, opaque diffs, and lack of interruption points. See [author/CAPABILITY.md — Node ownership](references/author/CAPABILITY.md#node-ownership--who-authors-the-node) and [author/editing-operations.md — Tool Selection Ladder](references/author/editing-operations.md#tool-selection-ladder).
+<!--skill-flavor:node-ownership-rule:end-->
+
+<!--skill-flavor:antipatterns-json-and-debug:start-->
+- Do not pipe JSON to `jq` or `node` for simple extraction; use `--output-filter`, verify shape first, and use external parsers only for unsupported transforms (the Studio Web shell has no `python`). A valid but wrong filter can return `Data: []`; `keys(@)` fails on arrays, so probe with `type(@)` first. See [cli-conventions.md §3](references/shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
+- Never use `flow debug` for validation, and never re-run a completed debug to reshape its output; use `flow validate`, because debug has real side effects. Extract report fields from the plain-text output the completed run already returned; when that run faulted, read the cause from its `Run logs:` and `Execution trace:` sections, and, only when the output carries a `Trace ID:` line, take that id to `uip maestro flow job status <TRACE_ID>` / `uip maestro flow job traces <TRACE_ID>` for more (a made-up key hangs the command). `TimedOut after 300s` with `(no run logs emitted)` means the run never reached the runtime — do not retry in a loop; ask the user to run Debug from the designer and paste the result. — see [diagnose/troubleshooting-guide.md — Step 0](references/diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
+- Never run `uip flow debug` under a short tool timeout. The host waits up to 5 minutes for a terminal state and prints only at exit, so call it with `timeoutSeconds: 600` and wait for the result — see [operate/run.md — Debug](references/operate/run.md#debug--controlled-end-to-end-run).
+<!--skill-flavor:antipatterns-json-and-debug:end-->

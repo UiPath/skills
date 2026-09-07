@@ -38,7 +38,9 @@ uip maestro flow validate <path/to/file.flow> --governance --output json
 
 Checks JSON parsing; required fields, including `targetPort` on edges; matching `type:typeVersion` entries in `definitions`; existing node `id` references for `sourceNodeId`/`targetNodeId`; and unique node and edge `id`s. Exit code 0 = valid, 1 = invalid.
 
+<!--skill-flavor:validate-governance-login:start-->
 `--governance` checks agent nodes against organization policies fetched from the platform and requires `uip login`. If governance data cannot be fetched, the command fails. Omit it for local-only schema validation.
+<!--skill-flavor:validate-governance-login:end-->
 
 ## uip maestro flow format
 
@@ -51,6 +53,7 @@ uip maestro flow format <path/to/file.flow> --output json
 
 Format only layout: arrange nodes horizontally left-to-right while anchoring to the leftmost node's original position; set `size` to canvas shape (`shape: rectangle` inline agents: `{ "width": 288, "height": 96 }`; loops/groups: `{ "width": 560, "height": 320 }`; everything else, including referenced `uipath.core.agent.<guid>`: `{ "width": 96, "height": 96 }`); preserve sticky-note custom sizes; recurse into subflows and rewrite `subflows[<id>].layout`; and backfill missing `position`/`size`. Do not modify node logic, edges, definitions, or variables. JSON output reports `Data.NodesTotal`, `Data.EdgesTotal`, `Data.NodesRepositioned`, `Data.NodesResized`, and `Data.SubflowsTidied`.
 
+<!--skill-flavor:pack-command-section:start-->
 ## uip maestro flow pack
 
 Pack a Flow project into a `.nupkg` for Orchestrator deployment:
@@ -63,24 +66,22 @@ uip maestro flow pack <project-path> <OutputDir> --output json
 
 Require `content/package-descriptor.json` and `content/operate.json`. Output is `<Name>.flow.Flow.<version>.nupkg`.
 
-<!--skill-flavor:upload-pack-note:start-->
 > **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
-<!--skill-flavor:upload-pack-note:end-->
+<!--skill-flavor:pack-command-section:end-->
 
+<!--skill-flavor:solution-resources-refresh-section:start-->
 ## uip solution resources refresh
 
-<!--skill-flavor:upload-refresh-prereq:start-->
 Always run `uip solution resources refresh` before `uip solution upload` or `uip maestro flow debug`. It re-scans solution projects and syncs resource declarations (connections, processes, queues, etc.) from `bindings_v2.json`, creating bindings not yet in the solution and importing matching Orchestrator resources.
-<!--skill-flavor:upload-refresh-prereq:end-->
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
 
-<!--skill-flavor:upload-solution-dir-note:start-->
 `<SolutionDir>` is the solution directory containing the `.uipx` file. The command has no positional solution argument; omit `--solution-folder` only from the solution root.
-<!--skill-flavor:upload-solution-dir-note:end-->
+<!--skill-flavor:solution-resources-refresh-section:end-->
 
+<!--skill-flavor:solution-resources-mutations:start-->
 ## uip solution resources add / remove / edit
 
 Use atomic mutations when adding, deleting, or changing one resource without scanning every project's bindings:
@@ -94,6 +95,7 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output
 ```
 
 `add` is idempotent on `(kind, name, folder)` for local resources and on resource key for remote resources; retries return `Status: "Unchanged"`. `edit` alone mutates an existing resource spec; `refresh` never overwrites and skips resources already in the solution. These commands do not modify `bindings_v2.json`; a later `refresh` re-imports a still-bound resource. See [uipath-solution Step 9–11](/uipath:uipath-solution).
+<!--skill-flavor:solution-resources-mutations:end-->
 
 <!--skill-flavor:upload-command-section:start-->
 ## uip solution upload
@@ -122,7 +124,6 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```
-<!--skill-flavor:flow-debug-command-usage:end-->
 
 Pass the project directory containing `project.uiproj` (`<ProjectName>/` from the solution root, or `.` inside it). Use `--inputs` for a JSON object of flow input arguments. Repeat `--attachment <variableId>=<localPath>` to upload files for file-typed inputs; a bare path is rejected.
 
@@ -132,9 +133,7 @@ Pass the project directory containing `project.uiproj` (`<ProjectName>/` from th
 
 The CLI does not validate `<variableId>`; a mismatch can fault at runtime. Read `<flow>.flow`, inspect `variables.globals[]`, and use only entries with `direction:"in"` and `type:"file"`. If none exist, add `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`. In a Script node, read the uploaded name as `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
 
-<!--skill-flavor:flow-debug-help-pointer:start-->
 Run `uip maestro flow debug --help` for other options.
-<!--skill-flavor:flow-debug-help-pointer:end-->
 
 ### Reporting the run back to the user
 
@@ -148,10 +147,13 @@ Instance ID: <instanceId>
 ```
 
 If either is absent, output its label with `<not returned by CLI>`. Do not place these lines below the run summary.
+<!--skill-flavor:flow-debug-command-usage:end-->
 
 ## uip maestro flow process
 
+<!--skill-flavor:process-login-note:start-->
 Manage deployed Flow processes; require `uip login`:
+<!--skill-flavor:process-login-note:end-->
 
 ```bash
 uip maestro flow process list --output json
@@ -166,7 +168,9 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 
 ## uip maestro flow job
 
+<!--skill-flavor:job-login-note:start-->
 Monitor jobs; require `uip login`:
+<!--skill-flavor:job-login-note:end-->
 
 ```bash
 uip maestro flow job status <job-key> --output json
@@ -225,7 +229,9 @@ See the [Author CLI editing strategy](../author/editing-operations-cli.md) for `
 
 ## uip maestro flow eval
 
+<!--skill-flavor:eval-login-note:start-->
 Evaluation surface: evaluator, eval-set, and data-point CRUD; Studio Web run start/status/results/list/compare. Local CRUD needs no login; `eval run *` requires `uip login` and a Flow solution already in Studio Web.
+<!--skill-flavor:eval-login-note:end-->
 <!--skill-flavor:upload-safety-eval-surface-note:start-->
 **Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/upload-safety.md](../evaluate/upload-safety.md).
 <!--skill-flavor:upload-safety-eval-surface-note:end-->
@@ -251,7 +257,9 @@ Evaluators: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `l
 
 ## uip maestro flow registry
 
+<!--skill-flavor:registry-login-note:start-->
 Manage the local node-type cache. No auth is required for OOTB nodes; login is required for tenant-specific connector nodes:
+<!--skill-flavor:registry-login-note:end-->
 
 ```bash
 uip maestro flow registry pull
@@ -266,7 +274,9 @@ The cache expires after 30 minutes. `registry search` returns a flat `Data` arra
 { "Data": [{ "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records", "Category": "connector.196536", "DisplayName": "List Records", "Description": "(Salesforce) List records in Salesforce", "Version": "1.0.0", "Tags": "connector, activity", "AvailableOnTenant": true }] }
 ```
 
+<!--skill-flavor:registry-available-on-tenant-note:start-->
 Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the node is not enabled or available for the tenant. Do not use unsupported flags such as `--include-unavailable`; choose an enabled alternative, use `--local` for in-solution resources, or report unavailability.
+<!--skill-flavor:registry-available-on-tenant-note:end-->
 
 `registry get` returns `Data.Node` verbatim for the `.flow` `definitions` array. Preserve its manifest casing, predominantly camelCase (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`); filter with `--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`.
 

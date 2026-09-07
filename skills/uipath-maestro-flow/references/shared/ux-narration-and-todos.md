@@ -27,6 +27,7 @@ A logical step is the smallest user-meaningful outcome, usually 1–5 actions gr
 
 ## Narration cadence
 
+<!--skill-flavor:narration-cadence-table:start-->
 | Situation | Rule |
 |---|---|
 | Start of logical step | Narrate one short line in plain English. |
@@ -37,6 +38,7 @@ A logical step is the smallest user-meaningful outcome, usually 1–5 actions gr
 | Trivial probe (`uip --version`, repeated `login status` in the same minute) | Skip. |
 | Non-`uip` shell plumbing (`ls`, `cat`, `mkdir`, `cd`) | Skip; the step line covers it. |
 | File reads/edits inside a step | Skip; the step line covers them. |
+<!--skill-flavor:narration-cadence-table:end-->
 
 ## Narration lines
 
@@ -44,14 +46,13 @@ Keep each line to approximately 15 words or fewer, as one sentence or fragment. 
 
 Use or adapt these patterns:
 
+<!--skill-flavor:flow-project-creation-narration:start-->
 | Step | Narration |
 |---|---|
 | Login probe | "Checking whether you're logged in to the UiPath tenant…" |
-<!--skill-flavor:flow-project-creation-narration:start-->
 | Solution scaffold | "Scaffolding a new solution at `<path>` so the Flow project has a parent." |
 | Flow init | "Initializing the Flow project. This creates the `.flow` file you'll edit." |
 | Verify project layout | "Confirming the solution/project layout is correct before continuing." |
-<!--skill-flavor:flow-project-creation-narration:end-->
 | Registry discovery | "Looking up `<node-type>` in the registry so I can wire its inputs correctly…" |
 | Node add | "Adding the `<node-type>` node and copying its registry definition into the file…" |
 | Edit flow JSON | "Editing the flow JSON to add the `<thing>`." |
@@ -76,23 +77,28 @@ Use or adapt these patterns:
 | Variable inspection | "Reading the runtime variable state at the moment of failure…" |
 | Flow correlation | "Mapping the faulting element ID back to a node in your `.flow` file…" |
 | Traces, last resort | "Pulling traces. Last resort — the previous steps weren't enough." |
+<!--skill-flavor:flow-project-creation-narration:end-->
 
 ## Progress-list threshold
 
 This applies only when narration/todos are engaged. In silent mode, journey size never creates a user-facing list.
 
+<!--skill-flavor:progress-list-threshold-table:start-->
 | Journey | Narration | Progress list |
 |---|---|---|
 | Single edit: 1–2 actions, no decisions | One line | None |
 | Small edit: 3–5 actions or one decision | One line per step | Optional |
 | Standard: greenfield, multi-node brownfield, ship, or full diagnose | One line per step | Required and granular |
 | Complex: 10+ nodes, multiple resource bindings, or planning phase | Denser cadence | Required, granular, with sub-todos |
+<!--skill-flavor:progress-list-threshold-table:end-->
 
 ## Todo rules
 
 A todo represents a state-changing outcome the user cares about; roughly one logical step. Multiple tool actions may form one todo.
 
+<!--skill-flavor:valid-todos-list:start-->
 Valid todos include: solution scaffolded; Flow project created; node added and wired; edges connected; variables defined and mapped; validate green; format applied; resources refreshed; uploaded to Studio Web; incident fetched and read; root cause classified.
+<!--skill-flavor:valid-todos-list:end-->
 
 Do not create todos for registry lookup, `ls`/`cat`/`Glob` path checks, pre-edit reads, parsing JSON, or rerunning the same `validate` after a one-character fix. Keep such plumbing invisible.
 
