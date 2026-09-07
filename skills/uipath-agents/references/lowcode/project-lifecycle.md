@@ -184,6 +184,7 @@ uip solution init "<SOLUTION_NAME>" --output json
 - **`--skip-solution-registration`** — opts out of **both** auto-scaffold and registration. No discovery, no sibling solution dir; the project lands at the bare path with `Status: OptedOut`.
 <!--skill-flavor:register-project:end-->
 
+<!--skill-flavor:registration-status:start-->
 Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
 
 - `Registered` / `AlreadyRegistered` — registered (added now / already present). **You are done.**
@@ -198,6 +199,7 @@ uip solution projects add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 ```
 
 Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.
+<!--skill-flavor:registration-status:end-->
 
 ### Upload to Studio Web
 

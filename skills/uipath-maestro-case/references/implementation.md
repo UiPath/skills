@@ -434,11 +434,15 @@ After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user 
 
 # Phase 7 — Publish to Orchestrator (Step 16)
 
+<!--skill-flavor:phase-seven-bridge:start-->
 Optional `case pack` (BPMN recompile) + `solution pack` + `solution publish` to the tenant solution feed. Full contract — prompt options, publish commands, version bumping, failure handling — in [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). This section is a bridge — do NOT duplicate contract here.
+<!--skill-flavor:phase-seven-bridge:end-->
 
 ## Step 16 — Publish to Orchestrator
 
+<!--skill-flavor:step-sixteen:start-->
 Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator` → run `uip solution resources refresh`, then `uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json`, then `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, then `uip solution publish "<packagePath>" --wait --output json`. **Never skip `case pack`** — it compiles `caseplan.json` → `caseplan.json.bpmn`, and it runs on every pass regardless of which earlier phases were skipped. Publish the `solution pack` `.zip`, never the `case pack` `.nupkg`. Read `<packagePath>` from the `solution pack` response `Data.Packages` — never guess the filename. On `Done` → exit skill. Never auto-run (Rule 12).
+<!--skill-flavor:step-sixteen:end-->
 
 Stops at publish — `uip solution deploy run` is out of scope.
 <!-- END: implementation.md -->

@@ -167,7 +167,9 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
 8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**
 
+<!--skill-flavor:local-workspace-delivery:start-->
    - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask the user (single choice, "Delivery"):
+<!--skill-flavor:local-workspace-delivery:end-->
 
      **Question:** *Studio Web is auto-syncing this workspace. Do you want a local dev console too?*
 
@@ -212,7 +214,9 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
      - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
      - **Skip** → continue to step 9.
 
+<!--skill-flavor:deploy-reachability:start-->
 9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask the user (single choice, "Deploy target").
+<!--skill-flavor:deploy-reachability:end-->
 
    **Question:** *Do you want to deploy the agent? If yes, which target?*
 

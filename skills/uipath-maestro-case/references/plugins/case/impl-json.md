@@ -44,7 +44,9 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 <!--skill-flavor:preflight-solution-exists:start-->
 1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution init` — Step 6.0).
 <!--skill-flavor:preflight-solution-exists:end-->
+<!--skill-flavor:preflight-distinct-child:start-->
 2. **Project dir is a distinct child of the solution dir.** The target is always `<SolutionDir>/<ProjectName>/`, never `<SolutionDir>/` itself. `<ProjectName>` equal to `<SolutionName>` is normal and still nests — `Foo/Foo/`. Never collapse the two because the names match.
+<!--skill-flavor:preflight-distinct-child:end-->
 <!--skill-flavor:preflight-target-clean:start-->
 3. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
@@ -66,7 +68,9 @@ Capture the printed UUID; inject it at `<PROJECT_ID>` below.
 
 ### Files to write
 
+<!--skill-flavor:files-to-write-intro:start-->
 Use the Write tool for each. All 5 files go directly into `<SolutionDir>/<ProjectName>/` — **flat layout, no `content/` directory on disk**.
+<!--skill-flavor:files-to-write-intro:end-->
 
 #### `project.uiproj`
 
@@ -142,7 +146,9 @@ Hard-fail on the first write error — no rollback, no staging directory. Partia
 - `<SolutionDir>/<ProjectName>/operate.json` contains a non-empty `projectId` string.
 - `<SolutionDir>/<ProjectName>/entry-points.json` parses as JSON and its `entryPoints` field is `[]`.
 - **No `content/` dir on disk.** Case file is flat at `<SolutionDir>/<ProjectName>/caseplan.json`; if nested under `content/`, layout is wrong — halt. `validate`/`debug` resolve only the flat root path (an ad-hoc validate against the nested path passes, but real project-dir resolution fails).
+<!--skill-flavor:verify-not-solution-dir:start-->
 - **Project dir is not the solution dir.** `<SolutionName>.uipx` and `caseplan.json` must NOT be siblings — `<SolutionDir>/<ProjectName>/<SolutionName>.uipx` must not exist. Nothing downstream catches this: `validate` passes on any path given, and `uip solution projects add <SolutionDir> …` registers the solution directory as its own project without error. But `debug` walks up from the project dir for the enclosing `.uipx`, so a collapsed layout overshoots it and fails with `no .uipx file was found in <workingRoot>`. Halt; move the 6 project files into `<SolutionDir>/<ProjectName>/`.
+<!--skill-flavor:verify-not-solution-dir:end-->
 
 If any check fails, halt and report.
 

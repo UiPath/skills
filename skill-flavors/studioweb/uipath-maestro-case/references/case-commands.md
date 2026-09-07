@@ -21,9 +21,11 @@ uip maestro case init <ProjectName>   # from the solution root, /solution
 `case init` creates the project in the open Studio Web solution at `/solution/<ProjectName>/` and seeds its scaffold. There is no auto-scaffolded sibling solution, no `.uipx` on disk, and no registration step — Studio Web owns the solution manifest — so `--skip-solution-registration` and `uip solution projects add` have nothing to do here.
 <!--skill-flavor:case-init-semantics:end-->
 
-<!--skill-flavor:projects-add-scenarios:start-->
-Not used in Studio Web: there is no `.uipx` on disk and Studio Web owns project registration — `uip maestro case init` already places the project in the open solution.
-<!--skill-flavor:projects-add-scenarios:end-->
+<!--skill-flavor:projects-add-section:start-->
+## uip solution projects add
+
+Not used in Studio Web: there is no `.uipx` on disk and Studio Web owns project registration — `uip maestro case init` already places the project in the open solution, and the verb is Node-CLI-only.
+<!--skill-flavor:projects-add-section:end-->
 
 <!--skill-flavor:phase-seven-row:start-->
 | `solution publish` | Phase 7 Publish (consent-gated) — Studio Web packages and publishes the open solution; `maestro case pack` / `solution pack` are Node-CLI-only | Host-injected |

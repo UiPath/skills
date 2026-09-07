@@ -21,3 +21,15 @@ Runs before § Write caseplan.json. Studio Web seeds some or all of the 5 static
 <!--skill-flavor:preflight-target-clean:start-->
 3. **Inventory the seeded scaffold.** List `<SolutionDir>/<ProjectName>/`. Every one of the 5 scaffold files that already exists was seeded by Studio Web at Step 6.0 — keep it untouched and skip its entry under § Files to write. Write only the missing ones. Do not merge into a seeded file. `caseplan.json` is governed by § Pre-write checks (an existing one is overwritten there), not by this item.
 <!--skill-flavor:preflight-target-clean:end-->
+
+<!--skill-flavor:preflight-distinct-child:start-->
+2. **Project dir is a distinct child of the solution dir.** The target is always `/solution/<ProjectName>/`, never `/solution/` itself.
+<!--skill-flavor:preflight-distinct-child:end-->
+
+<!--skill-flavor:files-to-write-intro:start-->
+Use the Write tool for each file Step 6.0 did not seed. All 5 files live directly in `/solution/<ProjectName>/` — **flat layout, no `content/` directory on disk** — whether Studio Web seeded them or § Scaffold writes them.
+<!--skill-flavor:files-to-write-intro:end-->
+
+<!--skill-flavor:verify-not-solution-dir:start-->
+- **Project dir is not the solution dir.** `caseplan.json` lives at `/solution/<ProjectName>/caseplan.json`, never directly under `/solution/`. If the 6 project files landed at the solution root, halt and move them into `/solution/<ProjectName>/`.
+<!--skill-flavor:verify-not-solution-dir:end-->

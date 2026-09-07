@@ -35,7 +35,9 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | **4 — Validate** | Run authoritative `uip maestro case validate`, summarize `build-issues.md` (journal already on disk) | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Continue to publish`; a re-publish after a fix is confirmed separately |
+<!--skill-flavor:phase-table-seven-row:start-->
 | **7 — Publish to Orchestrator** | Optional `case pack` + `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Publish to Orchestrator` / `Done` |
+<!--skill-flavor:phase-table-seven-row:end-->
 
 ## Phase 2 — Prototyping
 
@@ -265,6 +267,7 @@ After Phase 6 (whether debug ran or was skipped), prompt via **AskUserQuestion**
 
 > **Publish to Orchestrator ships the case to the tenant solution feed — a real, outward-facing publish. Only run when user explicitly selects it. Never auto-run** (Rule 12).
 
+<!--skill-flavor:phase-seven-commands:start-->
 Requires `uip login`.
 
 ### Publish commands
@@ -292,16 +295,21 @@ uip solution publish "<packagePath>" --wait --output json
 - `case pack` requires `package-descriptor.json` in the case project directory (written at scaffold, [plugins/case/impl-json.md](plugins/case/impl-json.md)). If it fails with `Missing package-descriptor.json`, restore that file — do not skip the step.
 
 > `uip maestro case pack` is **not** the publish artifact. It emits a single project `.nupkg`, which `solution publish` does not accept — `solution pack` produces its own project `.nupkg` internally and wraps it in the `.zip`. Run `case pack` for the BPMN recompile only; always publish the `solution pack` `.zip`.
+<!--skill-flavor:phase-seven-commands:end-->
 
 Phase 7 stops at publish. `uip solution deploy run` (the step that installs the solution into an Orchestrator folder) is out of scope — report the published package and tell the user to deploy it from Orchestrator.
 
 ### On failure
 
+<!--skill-flavor:phase-seven-on-failure:start-->
 If `case pack`, `solution pack`, or `publish` fails, print the CLI error verbatim, note it in `build-issues.md`, and re-show the Phase 7 prompt. Do not retry with a different pack command, and never work around a `case pack` failure by going straight to `solution pack` — that ships a package with a missing or stale `.bpmn`. A `processKey` collision on publish means the `name+version` pair already exists on the feed — re-run with a bumped `--version`.
+<!--skill-flavor:phase-seven-on-failure:end-->
 
 ### Suggested next steps
 
+<!--skill-flavor:phase-seven-next-steps:start-->
 Before the prompt: `Suggested next steps: publish to Orchestrator when you want the case on the tenant solution feed, or stop here if Studio Web and debug are enough.` After a successful publish: `Suggested next steps: verify the package with 'uip solution packages list', then deploy it to an Orchestrator folder.` On `Done`: `Suggested next steps: review caseplan.json locally, or update sdd.md and re-run when you want changes.`
+<!--skill-flavor:phase-seven-next-steps:end-->
 
 ### Publish-to-Orchestrator notes
 

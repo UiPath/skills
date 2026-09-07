@@ -162,6 +162,7 @@ Hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`
 
 ### Phase 7 — Publish to Orchestrator
 
+<!--skill-flavor:phase-seven-publish:start-->
 Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publish, run in order:
 
 1. `uip solution resources refresh`
@@ -170,6 +171,7 @@ Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publ
 4. `uip solution publish <packagePath> --wait --output json`
 
 `case pack` is mandatory because it creates `caseplan.json.bpmn`; `validate` does not. Publish the `solution pack` `.zip`, not the case `.nupkg`; read `<packagePath>` from `Data.Packages`, never guess. `Done` exits.
+<!--skill-flavor:phase-seven-publish:end-->
 
 ## Reference Navigation
 

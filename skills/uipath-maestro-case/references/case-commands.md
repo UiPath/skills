@@ -22,6 +22,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
+
 <!--skill-flavor:auth-column-note:start-->
 <!--skill-flavor:auth-column-note:end-->
 
@@ -69,14 +70,13 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 
 ---
 
+<!--skill-flavor:projects-add-section:start-->
 ## uip solution projects add
 
 Register a project with an existing solution. Used in two scenarios in this skill:
 
-<!--skill-flavor:projects-add-scenarios:start-->
 1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
 2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
-<!--skill-flavor:projects-add-scenarios:end-->
 
 ```bash
 uip solution projects add <ProjectName> <SolutionName>.uipx
@@ -88,6 +88,7 @@ uip solution projects add <ProjectName> <SolutionName>.uipx
 | `<SolutionName>.uipx` | **(required)** Path to the solution `.uipx` |
 
 Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
+<!--skill-flavor:projects-add-section:end-->
 
 ---
 

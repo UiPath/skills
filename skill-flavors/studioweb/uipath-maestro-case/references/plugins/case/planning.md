@@ -20,3 +20,7 @@ The root case definition — the top-level container that every other node lives
 <!--skill-flavor:naming-canonical:start-->
 **Naming (canonical) — the solution identity is fixed and reused by every step.** `<SolutionDir>` = `/solution`, the open Studio Web solution — the same for Step 6.0 and for the Rule-17 Create prerequisite ([registry-discovery.md § Create-on-Missing → 0](../../registry-discovery.md#create-on-missing-build-and-rediscovery)), so nothing can fork. `<ProjectName>` = the case Name (SDD §1 Metadata), sanitized to a valid directory name; Step 6.0 passes it to `uip maestro case init` and T01 reuses it under `/solution/<ProjectName>/`.
 <!--skill-flavor:naming-canonical:end-->
+
+<!--skill-flavor:see-implementation-step-six:start-->
+See [implementation.md Step 6](../../implementation.md) for the authoritative execution sequence (Step 6.0, then T01).
+<!--skill-flavor:see-implementation-step-six:end-->

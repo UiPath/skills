@@ -880,7 +880,9 @@ uip solution pack <SOLUTION_DIR> <OUTPUT_DIR>
 ```
 <!--skill-flavor:packaging-solution:end-->
 
+<!--skill-flavor:packaging-solution-promote:start-->
 The `.uipx` promotes via `uip solution publish` / `uip solution deploy run`. Full lifecycle: `uipath-solution` skill.
+<!--skill-flavor:packaging-solution-promote:end-->
 
 **Packaging = Standalone package** — a single independently-published RPA project (`.nupkg` to an Orchestrator feed) is a valid terminal artefact; UiPath supports development with and without Solutions. Package/publish routes to `uipath-rpa` (build) + `uipath-platform` (feed publish, process creation). `[DEFAULT for a single-project scope]` — pick Solution instead only when cross-product composition or team standardization on Solutions applies.
 
