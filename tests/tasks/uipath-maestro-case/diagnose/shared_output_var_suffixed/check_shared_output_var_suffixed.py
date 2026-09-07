@@ -31,26 +31,34 @@ if len(sends) < 2:
 rows = []
 for t in sends:
     outs = ((t.get("data") or {}).get("outputs")) or []
-    hit = [o for o in outs if SHARED in str(o.get("id") or "") or SHARED in str(o.get("var") or "")]
+    hit = [o for o in outs if SHARED in str(o.get("var") or "")]
     if not hit:
         fail(f"task {t.get('displayName')!r} no longer writes a send status; both tasks report into "
              f"the same case variable by design")
     rows.append((t.get("displayName"), hit[0]))
 
+# The reassign shape keeps a per-task `id` and points `var` at the case variable. A collision
+# guard may number `id`, `originalVar` and `target`, which are the task's own slot; numbering
+# `var` sends the write somewhere the gate never reads.
 suffixed = [(n, r) for n, r in rows
-            if re.fullmatch(SHARED + r"\d+", str(r.get("id") or "")) or
-               re.fullmatch(SHARED + r"\d+", str(r.get("var") or ""))]
+            if re.fullmatch(SHARED + r"\d+", str(r.get("var") or "")) or
+               re.fullmatch(SHARED + r"\d+", str(r.get("value") or ""))]
 if suffixed:
-    names = [f"{n}: id={r.get('id')!r} var={r.get('var')!r}" for n, r in suffixed]
-    fail(f"a send status still lands in a numbered variant of {SHARED!r}: {names}. Both tasks report "
-         f"into one case variable, so the case reports the most recent send; a suffix gives each task "
-         f"its own name and only the first one reaches the gate")
+    names = [f"{n}: var={r.get('var')!r} value={r.get('value')!r}" for n, r in suffixed]
+    fail(f"a send status still writes a numbered variant of {SHARED!r}: {names}. Both tasks report "
+         f"into one case variable, so the case reports the most recent send; numbering `var` gives "
+         f"each task its own name and only the first one reaches the gate")
 
 for n, r in rows:
-    if r.get("id") != SHARED or r.get("var") != SHARED:
-        fail(f"{n}: the status row is id={r.get('id')!r} var={r.get('var')!r}; both must be {SHARED!r}")
-    if r.get("target") != f"={SHARED}":
-        fail(f"{n}: the status row's target is {r.get('target')!r}; it must be '={SHARED}'")
+    if r.get("var") != SHARED:
+        fail(f"{n}: the status row's var is {r.get('var')!r}; it must point at {SHARED!r}")
+    if r.get("value") != SHARED:
+        fail(f"{n}: the status row's value is {r.get('value')!r}; it mirrors `var`, so it must be {SHARED!r}")
+    if not r.get("id"):
+        fail(f"{n}: the status row lost its id; the reassign shape keeps the task's own slot")
+    if str(r.get("target") or "") != "=" + str(r.get("id") or ""):
+        fail(f"{n}: the status row's target is {r.get('target')!r} while its id is {r.get('id')!r}; "
+             f"target follows the row's own id, not the case variable")
 
 decls = [v for grp in (p.get("variables") or {}).values() for v in grp
          if re.fullmatch(SHARED + r"\d*", str(v.get("name") or ""))]

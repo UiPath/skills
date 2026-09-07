@@ -444,14 +444,14 @@
                     "elementId": "Stage_Qn7tBz-tVw2hJcR5b"
                   },
                   {
-                    "name": "Status",
+                    "name": "response",
                     "type": "string",
-                    "id": "lastEmailStatus",
+                    "id": "response",
                     "var": "lastEmailStatus",
-                    "originalVar": "lastEmailStatus",
+                    "originalVar": "response",
                     "value": "lastEmailStatus",
                     "source": "=response.status",
-                    "target": "=lastEmailStatus",
+                    "target": "=response",
                     "elementId": "Stage_Qn7tBz-tVw2hJcR5b"
                   },
                   {
@@ -618,14 +618,14 @@
                     "elementId": "Stage_Qn7tBz-tSecondSend"
                   },
                   {
-                    "name": "Status",
+                    "name": "response",
                     "type": "string",
-                    "id": "lastEmailStatus2",
+                    "id": "response2",
                     "var": "lastEmailStatus2",
-                    "originalVar": "lastEmailStatus",
+                    "originalVar": "response2",
                     "value": "lastEmailStatus2",
                     "source": "=response.status",
-                    "target": "=lastEmailStatus2",
+                    "target": "=response2",
                     "elementId": "Stage_Qn7tBz-tSecondSend"
                   },
                   {
