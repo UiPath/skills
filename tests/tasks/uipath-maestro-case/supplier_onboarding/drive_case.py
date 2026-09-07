@@ -300,6 +300,20 @@ def envelope_retrying(args: list[str], *, timeout: int = 120) -> dict:
         time.sleep(TRANSIENT_PAUSE)
     return reply
 
+def run_checked(args: list[str], *, timeout: int = 120) -> dict:
+    """`run`, but a failed CLI call raises instead of reading as an empty payload.
+
+    A caller that reads a field off `{}` gets `None`, which is indistinguishable from the
+    case genuinely holding no value. One route reported all four case variables as `None`
+    when the lookup itself had failed, and that reads as a case defect rather than a
+    lookup that never answered.
+    """
+    reply = envelope(args, timeout=timeout)
+    if reply.get("Result") != "Success":
+        fail(f"`{' '.join(args[:6])}` failed: {envelope_detail(reply)}")
+    return reply.get("Data") or {}
+
+
 def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
     """`run_list`, but a failed CLI call raises instead of reading as an empty result.
 
@@ -577,13 +591,13 @@ def send_stage_selection(instance_id: str, from_stage: str, to_stage: str) -> No
 
 def run_status(instance_id: str) -> str:
     """The instance's run status. `instance get` reports it as LatestRunStatus, not Status."""
-    data = run(["uip", "maestro", "case", "instance", "get", instance_id, "-f", CASE_FOLDER_KEY, "--output", "json"])
+    data = run_checked(["uip", "maestro", "case", "instance", "get", instance_id, "-f", CASE_FOLDER_KEY, "--output", "json"])
     return data.get("LatestRunStatus") or ""
 
 
 def globals_of(instance_id: str) -> dict:
     """The case's own variables at the end of the run. Names come back PascalCase: CaseOutcome, not caseOutcome."""
-    data = run(["uip", "maestro", "case", "instance", "variables", instance_id, "-f", CASE_FOLDER_KEY, "--output", "json"])
+    data = run_checked(["uip", "maestro", "case", "instance", "variables", instance_id, "-f", CASE_FOLDER_KEY, "--output", "json"])
     return data.get("Globals") or {}
 
 
