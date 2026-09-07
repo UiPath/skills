@@ -9,6 +9,14 @@ run_limits:
   expected_turns: 55
   turn_timeout: 1200
 
+pre_run:
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrderSdk --include-folders"
+    timeout: 60
+    fail_on_error: false
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_shared/seed_coded_order.py --entity-name CE_CodedOrderSdk"
+    timeout: 300
+    fail_on_error: true
+
 initial_prompt: |
   Build me a coded agent called `order-lookup` that can look up
   customer orders. The data lives in Data Fabric — find the right
@@ -19,6 +27,10 @@ initial_prompt: |
   same shape), and summarize the results conversationally.
 
   Scaffold and init only — don't run or deploy.
+
+post_run:
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrderSdk --include-folders"
+    timeout: 60
 
 success_criteria:
   - type: skill_triggered

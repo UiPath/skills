@@ -51,7 +51,11 @@ Both paths can coexist in a single agent — use SDK for known operations and `c
 
 Use the Python SDK's `EntitiesService` for deterministic CRUD operations. No LLM intermediary — the agent code specifies exactly what to fetch or write.
 
-**Fixed-shape does not mean inline.** Even when the query is always the same, expose each SDK call as a `@tool`-decorated function and hand it to the agent (see § Wiring into a LangGraph Agent). Do NOT call `sdk.entities.*` directly inside a plain graph node — a tool keeps the SDK call bindable, testable, and invocable by the agent.
+> **MANDATORY: every `sdk.entities.*` call MUST be inside a `@tool`-decorated function, registered with `create_agent(..., tools=[...])`.**
+>
+> This is NOT optional, even when the query is always the same shape. A plain `StateGraph` node that calls `sdk.entities.*` directly is **wrong** — it is not invocable by the agent, not bindable, and not testable. The correct architecture is always: `@tool` function wrapping the SDK call → `create_agent(llm, tools=[...])`.
+>
+> "Fixed-shape" describes the tool's *body* (same filter every time), not a reason to skip the tool pattern. Do NOT rationalize a simpler graph architecture — the tool pattern is mandatory regardless of query complexity.
 
 ### Setup
 
@@ -195,9 +199,9 @@ content: bytes = await sdk.entities.download_attachment_async(
 )
 ```
 
-### Wiring into a LangGraph Agent
+### Wiring into a LangGraph Agent (MANDATORY)
 
-Wrap every SDK call as a LangChain `@tool` so the agent can invoke it. This applies to fixed-shape queries too — the deterministic query lives inside the tool body; the agent decides when to call it. Never place `sdk.entities.*` calls in a plain graph node.
+Every SDK call MUST be a `@tool`-decorated async function passed to `create_agent(llm, tools=[...])`. No exceptions — not for single-query agents, not for "simple" graphs, not for fixed-shape operations. A `StateGraph` node that calls `sdk.entities.*` inline is the most common and most expensive mistake on this path.
 
 ```python
 from langchain_core.tools import tool
@@ -436,7 +440,7 @@ graph = create_agent(llm, tools=[query_tool, close_order], messages=[SystemMessa
 
 2. **For freeform queries, use `create_datafabric_tool` — not a custom solution.** Import it from `uipath_langchain.agent.tools`. Do NOT use `create_datafabric_query_tool` or any other internal function — those are implementation details and may change without notice.
 
-3. **SDK-direct calls are always `@tool`-wrapped — even fixed-shape ones.** "Same query every time" describes the tool's body, not a reason to skip the tool. An `sdk.entities.*` call inline in a graph node is not invocable by the agent and is the most common shape mistake on this path.
+3. **SDK-direct calls are ALWAYS `@tool`-wrapped — no exceptions.** "Same query every time" describes the tool's body, not a reason to skip the tool. An `sdk.entities.*` call inline in a `StateGraph` node is **wrong** — it is not invocable by the agent. Use `@tool` + `create_agent(llm, tools=[...])`. This is the #1 shape failure on this path; agents that build a "simpler" plain graph without `@tool` always fail validation.
 
 4. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
 
