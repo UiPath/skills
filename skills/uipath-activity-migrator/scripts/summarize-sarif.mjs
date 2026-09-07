@@ -31,7 +31,7 @@ const isActivityScoped = (id) => /^UIAUTOMATION-(ACTIVITY|WORKFLOW)-/.test(id) |
 const isCritical = (id, lvl) => lvl === 'error' && !isActivityScoped(id) && !TYPE_ISSUES.has(id);
 const ACTION_TAG = '[PostMigration Action Required]';
 const INLINE_LIMIT = 10;
-const MSG_LIMIT = 220;
+const MSG_LIMIT = 320;
 
 const args = process.argv.slice(2);
 const wantJson = args.includes('--json');
@@ -115,7 +115,6 @@ const familyOf = (id) => {
   if (CORE_PREFIXES.some((p) => id.startsWith(p))) return 'core';
   return 'other';
 };
-const reasonOf = (id, prefix) => (id.startsWith(prefix + '-') ? id.slice(prefix.length + 1) : '');
 
 const byRule = {};
 const byLevel = { error: 0, warning: 0, note: 0 };
@@ -142,8 +141,13 @@ for (const r of results) {
   byFamily[fam][lvl] = (byFamily[fam][lvl] || 0) + 1;
 
   // Reason suffix of an extension rule id, e.g. UIAUTOMATION-ACTIVITY-MIGRATION-WARNING-VariableSelector → VariableSelector.
+  // A bare outcome (…-MIGRATION-ERROR with no suffix) gets a plain label; the message carries the detail.
   const reasonMatch = id.match(/-(?:ERROR|WARNING|INFO)-(.+)$/);
-  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', reason: reasonMatch ? reasonMatch[1] : '', message: msgOf(r) };
+  const bareOutcome = id.match(/-MIGRATION-(ERROR|WARNING|PARTIAL)$/);
+  let reason = '';
+  if (reasonMatch) reason = reasonMatch[1];
+  else if (bareOutcome) reason = { ERROR: 'not migrated', WARNING: 'warning', PARTIAL: 'partial' }[bareOutcome[1]];
+  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', reason, message: msgOf(r) };
 
   const critical = isCritical(id, lvl);
   if (critical) hasCriticalError = true;
@@ -168,14 +172,13 @@ for (const r of results) {
       const type = fullType.split('.').pop();
       uia.migratedByType[type] = (uia.migratedByType[type] || 0) + 1;
     } else if (id.startsWith('UIAUTOMATION-ACTIVITY-MIGRATION-ERROR')) {
-      uia.notMigrated.push({ ...entry, reason: reasonOf(id, 'UIAUTOMATION-ACTIVITY-MIGRATION-ERROR') });
+      uia.notMigrated.push(entry);
     } else if (id === 'UIAUTOMATION-ACTIVITY-MIGRATION-PARTIAL') {
       uia.partial.push(entry);
     } else if (id.startsWith('UIAUTOMATION-ACTIVITY-MIGRATION-WARNING')) {
-      uia.warnings.push({ ...entry, reason: reasonOf(id, 'UIAUTOMATION-ACTIVITY-MIGRATION-WARNING') });
+      uia.warnings.push(entry);
     } else if (id.startsWith('UIAUTOMATION-ACTIVITY-PROPERTY-MIGRATION-')) {
-      const prefix = id.startsWith('UIAUTOMATION-ACTIVITY-PROPERTY-MIGRATION-ERROR') ? 'UIAUTOMATION-ACTIVITY-PROPERTY-MIGRATION-ERROR' : 'UIAUTOMATION-ACTIVITY-PROPERTY-MIGRATION-WARNING';
-      uia.warnings.push({ ...entry, reason: reasonOf(id, prefix) });
+      uia.warnings.push(entry);
     } else if (id.startsWith('UIAUTOMATION-WORKFLOW-')) {
       uia.workflow.push(entry);
     }
