@@ -217,29 +217,8 @@ ALL_RESOURCE_IDS = set(API_WORKFLOWS.values()) | set(AGENTS.values()) \
 # connector binds its connection UUID directly. These are what the plan actually holds,
 # so these are what a grader can assert. The GUIDs above stay as the tenant-side
 # identities the fixture pins and `sweep_guids.py` re-verifies.
-RESOURCE_KEYS = {
-    "Shared/uipath-maestro-case.buyer-supplier-review-v2": ("app", None),
-    "Shared/uipath-maestro-case.supplier-delay-escalation": ("app", None),
-    "Shared/uipath-maestro-case.supplier-document-upload": ("app", None),
-    "Shared/uipath-maestro-case/Procurement Director Sign-off.Procurement Director Sign-off": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Application Validation.Supplier Application Validation": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Compliance Review.Supplier Compliance Review": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Information Request.Supplier Information Request": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Legal Opinion.Supplier Legal Opinion": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Portal Access Confirmation.Supplier Portal Access Confirmation": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Reference Check.Supplier Reference Check": ("app", None),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierApprovedRegisterUpdate": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierComplianceRiskCheck": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierErpRegistration": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierFinancialHealthCheck": ("process", "Agent"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierMasterScreeningLookup": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierOfferingCategoryMatch": ("process", "Agent"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierRejectionAuditLog": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierSignOffTierRules": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierWithdrawalCleanup": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierNegotiationKit.SupplierContractNegotiation": ("process", "CaseManagement"),
-    "dd657127-91f5-4568-a3a3-c024bc03fb0f": ("Connection", None),
-}
+RESOURCE_KEYS: dict[str, tuple] = {}   # folder-qualified name -> (kind, version), below
+
 
 OUTLOOK_CONNECTION_ID = "dd657127-91f5-4568-a3a3-c024bc03fb0f"
 OUTLOOK_ACTIVITY_TYPE_ID = "c7ce0a96-2091-3d94-b16f-706ebb1eb351"
@@ -494,6 +473,51 @@ for _rows in STAGE_TASKS.values():
 RUN_ONCE_TASKS.update(
     name for rows in STAGE_TASKS.values() for name, _t, _r, once in rows if once
 )
+
+_CONNECTION_ID_RE = re.compile(r"\*\*Connection ID:\*\*\s*([0-9a-f-]{36})")
+
+
+def _task_field(body: str, label: str):
+    """One `**Label:** value` line from a task block, with any trailing `· ...` dropped."""
+    found = re.search(rf"^\*\*{re.escape(label)}:\*\*\s*(.+?)\s*(?:\u00b7.*)?$", body, re.M)
+    return found.group(1).strip() if found else None
+
+
+def _sdd_resource_keys(sdd: str) -> dict:
+    """Every resource the tasks bind, keyed the way the caseplan binds it.
+
+    Three shapes, because the SDD declares three: an action task names its Action App and
+    its Deployment Folder, a child case names the case and its folder, and everything else
+    names a Resolved Resource and a Folder Path. A connector binds its connection UUID
+    instead of a folder-qualified name.
+    """
+    keys: dict = {}
+    marks = [(m.start(), m.group(1).strip()) for m in _TASK_HEADING_RE.finditer(sdd)]
+    for index, (start, _name) in enumerate(marks):
+        end = marks[index + 1][0] if index + 1 < len(marks) else len(sdd)
+        body = sdd[start:end]
+        connection = _CONNECTION_ID_RE.search(body)
+        if connection:
+            keys[connection.group(1)] = ("Connection", None)
+        app = _task_field(body, "HITL Implementation")
+        child = _task_field(body, "Child Case")
+        if app and app.startswith("Action App:"):
+            name, folder, kind = app.split(":", 1)[1].strip(), _task_field(body, "Deployment Folder"), "app"
+        elif child:
+            name, folder, kind = child, _task_field(body, "Folder Path") or _task_field(body, "Deployment Folder"), None
+        else:
+            name, folder, kind = _task_field(body, "Resolved Resource"), _task_field(body, "Folder Path"), None
+        if name and folder:
+            keys[f"{folder}.{name}"] = (kind, None)
+    return keys
+
+
+RESOURCE_KEYS.update(_sdd_resource_keys(read_fixture()))
+if len(RESOURCE_KEYS) < 10:
+    _fail(
+        "fixture parse error: expected >=10 bound resources across the task blocks; got "
+        f"{sorted(RESOURCE_KEYS)}"
+    )
 if TOTAL_TASKS < 20 or len(STAGE_TASKS) < 5:
     _fail(
         "fixture parse error: expected >=20 tasks across >=5 stages, each closed by its "
