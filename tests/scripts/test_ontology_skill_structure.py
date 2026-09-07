@@ -250,5 +250,29 @@ class ShippedPathTests(unittest.TestCase):
         self.assertGreater(seen, 5, "found almost no invocations -- the regex probably stopped matching")
 
 
+    def test_the_invoke_script_is_shipped_and_sources_its_own_token(self):
+        """The invoke is the only step that proves a deployed action runs, and for two runs it was
+        the only step with no supported command: the skill handed over a curl with a `{token}`
+        placeholder it never sourced, and `uip login status` returns identity but no token.
+
+        The script must exist, be published, and get its bearer from `uip login refresh` -- which
+        exists to emit one for programmatic callers -- rather than by reading the credential store.
+        """
+        script = ROOT / "tools" / "invoke_action.py"
+        self.assertTrue(script.is_file(), "tools/invoke_action.py is missing")
+        published = set(json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["files"])
+        self.assertIn("tools", published)
+
+        body = script.read_text(encoding="utf-8")
+        self.assertIn('"login", "refresh"', body, "the token must come from uip login refresh")
+        self.assertIn("AccessToken", body)
+        for forbidden in (".auth", "credential", "keychain"):
+            self.assertNotIn(forbidden, body.lower(),
+                             "must not read the credential store directly (%r)" % forbidden)
+
+        authoring = (SKILLS / "uipath-ontology-authoring" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("invoke_action.py", authoring, "Step 4 must call the script")
+        self.assertNotIn("Bearer {token}", authoring, "the unsourceable curl must be gone")
+
 if __name__ == "__main__":
     unittest.main()

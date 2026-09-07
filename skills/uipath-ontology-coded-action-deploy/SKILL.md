@@ -103,7 +103,8 @@ has to be added. So do not run either command blindly. Read the `.uipx` first:
 python3 -c "import json;print([p.get('ProjectRelativePath') for p in json.load(open('{name}-jobs.uipx')).get('Projects',[])])"
 ```
 
-Every project you created must appear. For any that does not:
+Every project you created must appear. The value is `{Project}/uipath.json`, not the `./{Project}`
+path you passed to `projects add` — compare on the directory name. For any that does not appear:
 
 ```bash
 uip solution projects add ./{ActionName}Process ./{name}-jobs.uipx
@@ -190,6 +191,7 @@ folder name as `{deployment-name}`: it becomes the folder name too.
 export SOLUTION_SRC={workdir}/{name}-jobs
 python3 <SKILL_DIR>/scripts/publish_package.py {version}                     # dry run: reports current, next, target
 python3 <SKILL_DIR>/scripts/publish_package.py {version} --execute           # tenant feed
+python3 <SKILL_DIR>/scripts/deploy_release.py  {version} {deployment-name}             # dry run: prints the plan
 python3 <SKILL_DIR>/scripts/deploy_release.py  {version} {deployment-name} --execute
 ```
 

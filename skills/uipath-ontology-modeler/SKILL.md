@@ -33,7 +33,7 @@ ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
 CLASS_MAP: class -> entityName, entityId, folderId, readOnly
-MAPPING_STATUS: supplied | generate
+MAPPING_STATUS: supplied | generate | defer
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
 OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and a CODED action additionally carries its reads (bind name + SELECT statement), its writes union, its process type (`CODED_FUNCTION`), and its process name. TTL emission writes ont:language "CODED" plus ont:processType "CODED_FUNCTION", and emits no deployment coordinate.
@@ -41,7 +41,7 @@ DEPLOYMENT_MODE: delegated; generate artifacts and run local preflight only; aut
 PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
 ```
 
-Reject an incomplete handoff before writing files. `MAPPING_STATUS: supplied` means validate the provided mapping and requires a mapping path or complete mapping contents. `MAPPING_STATUS: generate` means generate it from handoff metadata and requires machine-readable `CLASS_MAP` entries with entityName/entityId/folderId, `FIELD_METADATA` (with exactly one identifier) for every mapped class, and explicit `RELATIONSHIPS` metadata (`[]` when none); it is invalid when a class-to-entity, field, relationship, or identifier choice is ambiguous. In delegated mode, start at Step 3, preserve the supplied IRI and workdir, validate the provided mapping or generate it from handoff metadata, run local preflight, and return the confirmed file paths, gate results, and exact `artifact_inventory` to the caller. Never upload the mapping. Never make backend calls or upload artifacts in delegated mode.
+Reject an incomplete handoff before writing files. `MAPPING_STATUS: supplied` means validate the provided mapping and requires a mapping path or complete mapping contents. `MAPPING_STATUS: defer` means do not generate it at all: the caller's coded path has no entity ids yet because the deployment that creates their folder has not run, so run preflight with `--mapping-mode defer` (which passes on an absent mapping) and return without a mapping. `MAPPING_STATUS: generate` means generate it from handoff metadata and requires machine-readable `CLASS_MAP` entries with entityName/entityId/folderId, `FIELD_METADATA` (with exactly one identifier) for every mapped class, and explicit `RELATIONSHIPS` metadata (`[]` when none); it is invalid when a class-to-entity, field, relationship, or identifier choice is ambiguous. In delegated mode, start at Step 3, preserve the supplied IRI and workdir, validate the provided mapping or generate it from handoff metadata, run local preflight, and return the confirmed file paths, gate results, and exact `artifact_inventory` to the caller. Never upload the mapping. Never make backend calls or upload artifacts in delegated mode.
 
 When `MAPPING_STATUS: generate`, the generated mapping must use the supplied ontology IRI, folder key, entity IDs, schema terms, and exact field names. When `MAPPING_STATUS: supplied`, validate the provided mapping instead. Return this handoff result:
 
@@ -69,7 +69,7 @@ Keep concerns separated:
 | Query implementation | Function `ont:statement` |
 | SQL write implementation | Action `ont:statements` |
 
-Do not model system fields (`Id`, `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`) as domain properties. Do not model narrative-only actors, roles, or systems without properties and a mapped entity. Turn FK-shaped fields into object properties unless a packed multi-valued FK cannot be joined.
+Do not model system fields (`Id`, `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`) as domain properties. A creation timestamp the domain actually reasons about — an SLA clock, an ageing rule — is a domain property under a distinct name (`openedAt`, `raisedAt`), never `createdAt`, with an `rdfs:comment` saying it is not the storage row's `CreateTime`. Do not model narrative-only actors, roles, or systems without properties and a mapped entity. Turn FK-shaped fields into object properties unless a packed multi-valued FK cannot be joined.
 
 ## Step 1 — Gather standalone inputs
 

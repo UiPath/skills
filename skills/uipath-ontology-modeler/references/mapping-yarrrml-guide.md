@@ -45,8 +45,8 @@ mappings:
 ### Source block
 - `access: datafabric` — always this literal string; tells the runtime to use Data Fabric as the FQS source
 - `table:` — the **entity name** in Data Fabric (not a SQL table name; usually matches the class name)
-- `entityId:` — UUID from `uip df entities list --output json` → `Data[].ID`
-- `folderId:` — folder key GUID from `uip df entities list --output json` → `Data[].FolderKey`
+- `entityId:` — UUID from `uip df entities list --output json` → the entity's `Id`
+- `folderId:` — folder GUID from `uip df entities list --output json` → the entity's `FolderId`
 - `referenceFormulation: rr:SQL2008` — always this literal
 
 ### Subject template (`s:`)
@@ -114,8 +114,8 @@ uip df entities list --native-only --output json
 ```
 
 From the JSON output, for each class find the matching entity:
-- `entityId` = `Data[].ID`
-- `folderId` = `Data[].FolderKey`
+- `entityId` = the entity's `Id`
+- `folderId` = the entity's `FolderId`
 
 If the entity doesn't exist yet, create it with the `data-fabric` skill first.
 
@@ -240,6 +240,6 @@ A federated entity maps exactly like a native entity — same `access: datafabri
 - **Wrong object property direction** — check `ObjectPropertyDomain` and `ObjectPropertyRange` in `schema.ofn`. The mapping entry goes on the entity that holds the foreign key.
 - **Object property name not in schema** — `ont:{objectProperty}` in the `p:` line must exactly match an `ObjectProperty` declared in `schema.ofn`. A mismatch causes upload rejection with a property-not-found error. Read `schema.ofn` to find the correct IRI before writing the condition.
 - **Missing `mapping:` block for target class** — `mapping: {TargetClassName}` must reference a top-level mapping key that exists in this file. A missing or misspelled block causes YARRRML to silently produce no join triples for that property — no upload error, no runtime error, just absent relationships.
-- **folderId vs folderKey** — Data Fabric uses `FolderKey` in the API response; this maps to `folderId` in the YARRRML source block.
+- **folderId** — the entity's `FolderId` in the API response maps to `folderId` in the YARRRML source block. The response has no `FolderKey`; `--folder-key` is a request flag, not a response field.
 - **Uploading mapping before schema/constraints** — the server validates that every `ont:` property referenced in the mapping exists in the schema. In standalone modeler mode, upload schema and constraints first, then the modeler may upload the mapping last. In delegated modeler mode, return or hold the mapping and let authoring upload it last after backend validation and the preceding tiers.
 - **Verbose YARRRML syntax causes DRAFT stuck** — Never use `subjects:`, `predicateobjects:`, `predicate:`, `object:`, or `[rdf:type, ont:Class~iri]`. Never add `~xsd:string` type annotations to data property values (`$(col)` not `$(col)~xsd:string`). The backend `validate` command accepts the verbose form and returns `Valid: true` — this is a false green. Only the compact `s:`/`po:`/`p:`/`o:` form with `table:` and `referenceFormulation: rr:SQL2008` in every source block triggers DRAFT→DEPLOYED. If state stays DRAFT after mapping upload, the format is wrong — re-read this file and rewrite.

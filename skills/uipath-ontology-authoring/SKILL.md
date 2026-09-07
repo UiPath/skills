@@ -353,7 +353,7 @@ Now that the SDD class names are known (from Step 1), match each SDD class again
 uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json
 ```
 
-Identify each entity's type from the response: `externalFields: []` → **Native**; `externalFields: [{...}]` → **Federated**. Then build the matching table:
+Identify each entity's type from the response's top-level `EntityType`, and per-field from `Fields[].IsExternalField`. There is no `externalFields` key on the payload. Then build the matching table:
 
 | SDD class | Suggested entity | Type | Match | Entity ID | Folder ID | Action |
 |---|---|---|---|---|---|---|
@@ -620,7 +620,7 @@ That skill publishes the `{name}-jobs` Solution, deploys it — **which is what 
 1. delegate the deploy, passing Phase 1 Path B's `FOLDER_NAME` as the **deployment name** and `PARENT_FOLDER` as its parent. The deployment name *is* the folder name — see that skill's input table
 2. **set `PRIMARY_FOLDER_KEY` to the key of the folder it created.** Everything downstream reads that one variable, so from here on both paths are identical
 3. run the `uip df entities create` calls Phase 2 deferred, against `PRIMARY_FOLDER_KEY`
-4. **read the new entities' ids** — `uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json` — and complete `CLASS_MAP` with each class's `Data[].ID` and `Data[].FolderKey`
+4. **read the new entities' ids** — `uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json` — and complete `CLASS_MAP` from each entity's `Id` and `FolderId`. Those are the actual response keys; `ID` and `FolderKey` do not exist on it
 5. **now generate the mapping**, by delegating to the modeler again with the completed `CLASS_MAP` and `MAPPING_STATUS: generate`, then rerun `ontology_preflight.py` — with `--mapping-mode auto` this time, not `defer` — and require `mapping_status: PRESENT_VALID`. This is the step Step 2 deferred; a mapping written before item 4 would carry ids that do not exist
 6. `uip ont create {name} --folder-key {PRIMARY_FOLDER_KEY}` (Step 3a)
 7. validate and upload the artifacts (Steps 3b, 3c), mapping last
@@ -733,18 +733,24 @@ After `DEPLOYED`, run `uip ont artifact list {name} --output json`. Confirm that
 and nothing else, so an invoke is a plain HTTP call against the ontology service:
 
 ```bash
-curl -sS -X POST \
-  "{baseUrl}/{org}/{tenant}/ontology_/api/ontology/{name}/actions/{actionName}/invoke" \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{"params": {"{p1}": "{value}"}}'
+python3 <TOOLS_DIR>/invoke_action.py {name} {actionName} --param {p1}={value}
 ```
 
-`{baseUrl}`, `{org}` and `{tenant}` come from `uip login status --output json` — `Data.BaseUrl`,
-`Data.Organization`, `Data.Tenant` — and from nowhere else, the same rule as everywhere in this
-skill. The service segment is `ontology_`; `datafabric_` returns 404. `GET` the same path without
-`/invoke` to read the action's tool schema, which is a cheap way to confirm the action is live
-before sending a payload.
+It resolves the base URL, organisation and tenant from `uip login status` and the bearer from `uip
+login refresh` — which exists to "emit a machine-readable session payload (access token, org/tenant
+identity, expiration)" for exactly this kind of caller. Do not hand-roll the call: `uip login
+status` reports identity but no token, so a curl has nothing to put in the `Authorization` header,
+and reading the CLI's credential store directly is not an acceptable substitute.
+
+Exit code is 0 only when the call returned 200 and no step failed. It prints the step trace,
+`outcome` and `rowsAffected`. `GET` the same route without `/invoke` returns the action's tool
+schema, which is a cheap way to confirm the action is live before sending a payload — the service
+segment is `ontology_`, and `datafabric_` returns 404 for these routes.
+
+**The first invoke of a new release can time out.** The serverless runtime prepares the function's
+environment on first use, and the edge gateway gives up before that finishes — a `504`, with no step
+trace. Retry once; the second call runs warm. A `504` on a release that has already run successfully
+is a real timeout, not a cold start.
 
 The response carries the step trace this skill's error guidance refers to by name — `Resolving
 ontology`, `Loading action definition`, `Reading context`, `Running job`, `Preparing write
