@@ -27,7 +27,26 @@
       }
     ]
   },
-  "bindings": [],
+  "bindings": [
+    {
+      "id": "bConnMail01",
+      "name": "connection",
+      "type": "string",
+      "resource": "Connection",
+      "resourceKey": "00000000-0000-0000-0000-000000000001",
+      "default": "00000000-0000-0000-0000-000000000001",
+      "propertyAttribute": "connectionId"
+    },
+    {
+      "id": "bFolderMail1",
+      "name": "folderKey",
+      "type": "string",
+      "resource": "Connection",
+      "resourceKey": "00000000-0000-0000-0000-000000000001",
+      "default": "solution_folder",
+      "propertyAttribute": "folderKey"
+    }
+  ],
   "variables": {
     "inputs": [
       {
@@ -311,7 +330,61 @@
               ],
               "data": {
                 "serviceType": "connector",
-                "context": [],
+                "context": [
+                  {
+                    "name": "connectorKey",
+                    "type": "string",
+                    "value": "uipath-microsoft-outlook365"
+                  },
+                  {
+                    "name": "connection",
+                    "type": "string",
+                    "value": "=bindings.bConnMail01"
+                  },
+                  {
+                    "name": "resourceKey",
+                    "type": "string",
+                    "value": "00000000-0000-0000-0000-000000000001"
+                  },
+                  {
+                    "name": "folderKey",
+                    "type": "string",
+                    "value": "=bindings.bFolderMail1"
+                  },
+                  {
+                    "name": "objectName",
+                    "type": "string",
+                    "value": "send-mail-v2"
+                  },
+                  {
+                    "name": "method",
+                    "type": "string",
+                    "value": "POST"
+                  },
+                  {
+                    "name": "path",
+                    "type": "string",
+                    "value": "/hubs/productivity/send-mail-v2"
+                  },
+                  {
+                    "name": "metadata",
+                    "type": "json",
+                    "body": {
+                      "activityPropertyConfiguration": {
+                        "multipartParameters": [
+                          {
+                            "name": "file",
+                            "dataType": "file"
+                          },
+                          {
+                            "name": "body",
+                            "dataType": "string"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ],
                 "bindings": [],
                 "inputs": [
                   {
@@ -409,7 +482,61 @@
               ],
               "data": {
                 "serviceType": "connector",
-                "context": [],
+                "context": [
+                  {
+                    "name": "connectorKey",
+                    "type": "string",
+                    "value": "uipath-microsoft-outlook365"
+                  },
+                  {
+                    "name": "connection",
+                    "type": "string",
+                    "value": "=bindings.bConnMail01"
+                  },
+                  {
+                    "name": "resourceKey",
+                    "type": "string",
+                    "value": "00000000-0000-0000-0000-000000000001"
+                  },
+                  {
+                    "name": "folderKey",
+                    "type": "string",
+                    "value": "=bindings.bFolderMail1"
+                  },
+                  {
+                    "name": "objectName",
+                    "type": "string",
+                    "value": "send-mail-v2"
+                  },
+                  {
+                    "name": "method",
+                    "type": "string",
+                    "value": "POST"
+                  },
+                  {
+                    "name": "path",
+                    "type": "string",
+                    "value": "/hubs/productivity/send-mail-v2"
+                  },
+                  {
+                    "name": "metadata",
+                    "type": "json",
+                    "body": {
+                      "activityPropertyConfiguration": {
+                        "multipartParameters": [
+                          {
+                            "name": "file",
+                            "dataType": "file"
+                          },
+                          {
+                            "name": "body",
+                            "dataType": "string"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ],
                 "bindings": [],
                 "inputs": [
                   {
