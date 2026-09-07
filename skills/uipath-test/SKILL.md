@@ -76,9 +76,9 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testcases list --project-key <PROJECT_KEY>` | List all test cases in a Test Manager project. Optional `--filter <text>` — matches name or key by PREFIX, not substring. |
 | `uip tm testcases update --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --name <TEST_CASE_NAME>` | Update a test case name, description, precondition, or postcondition (at least one field required). |
 | `uip tm testcases delete --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | Delete a test case by its key. |
-| `uip tm testcases link-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME> --test-name <TEST_NAME>` | Link an Orchestrator package automation to a test case. |
+| `uip tm testcases link-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME> --test-name <TEST_NAME>` | Link an Orchestrator package automation to a test case. Additionally pass `--entry-point-id <PACKAGE_ENTRY_POINT_ID>` (from `list-automations`) to bind by id; the id overrides `--test-name`, which stays required but is ignored. RPA/coded pipeline only — do NOT link-automation Playwright cases (they are auto-linked by ingestion). |
 | `uip tm testcases unlink-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | Unlink the automation from a test case. |
-| `uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). |
+| `uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). Each row includes `PackageEntryPointId` for `link-automation --entry-point-id`. |
 | `uip tm testcases list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | List test sets that contain a given test case. |
 | `uip tm testcases steps list --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List manual test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** `uip tm testcases list-steps` is a supported alias. |
 | `uip tm testcases steps get --project-key <PROJECT_KEY> --step-id <UUID>` | Get a single test step by its UUID. |
@@ -167,7 +167,7 @@ Common `uip tm` commands organized by resource type.
 
 | Command | Purpose |
 |---|---|
-| `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` | Pack a Playwright suite into a `.nupkg` external test package. Requires a lockfile and `@playwright/test` in the project. `--package-version` takes a NuGet/SemVer-style version — three numeric parts, optional prerelease suffix (`1.0.0`, `1.0.1-beta.1`); `1.0` or a non-numeric string is rejected. `--project-key` targets the Test Manager project where ingestion auto-creates the test cases; `--no-create-test-cases` skips that; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. |
+| `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` | Pack a Playwright suite into a `.nupkg` external test package. Requires a lockfile and `@playwright/test` in the project. `--package-version` takes a NuGet/SemVer-style version — three or four numeric parts, optional prerelease/build suffix (`1.0.0`, `1.0.0.0`, `1.0.1-beta.1`); `1.0` or a non-numeric string is rejected. `--project-key` targets the Test Manager project where ingestion auto-creates the test cases; `--no-create-test-cases` skips that; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. |
 
 > Packing is offline — no auth needed. The upload → ingestion → label-fill → run pipeline is in [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 

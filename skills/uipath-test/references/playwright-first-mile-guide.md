@@ -26,7 +26,7 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Reading command output.** `--output json` prints a JSON envelope, but not on its own line: auto-updater chatter (including `Update completed with failures.`, which is unrelated to your command), `Resolved project …` progress lines and trailing telemetry warnings share the same stream. Judge a command by the `Result` field inside the envelope, never by surrounding text. Noise appears on **both sides** of the JSON, so taking everything from the first `{` is not enough — slice from the first `{` to the **matching final `}`** (or read the last balanced JSON object) before parsing, or a trailing telemetry line will break the parse.
 
-> **If a command is missing.** Two commands in this pipeline are hidden from `--help`, so `--help` is not a reliable way to tell whether a build has them: `testsets playwright-context` (Step 5) and `run --playwright-projects` (Step 6). Older CLIs answer `unknown command` / `unknown option` for them. Treat them differently:
+> **If a command is missing.** `testsets playwright-context` (Step 5) and `run --playwright-projects` (Step 6) need a recent CLI; older ones answer `unknown command` / `unknown option`. Treat them differently:
 >
 > - **Probe missing** → skip Step 5 and continue. The probe only *reports* whether a test set is Playwright; it does not enable anything, so losing it costs you the pre-check, not the capability. Project scoping still works.
 > - **`--playwright-projects` rejected** → this build cannot scope a run to selected projects. Run the test set without the flag (every project in the package's config runs) rather than retrying.
