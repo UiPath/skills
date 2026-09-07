@@ -65,6 +65,15 @@ ROUTES = {
     # bank details a debug run collects in-case are enough for ERP to verify them. The
     # 750000 default puts it over the director threshold, so the sign-off gate opens on
     # this route and is answered here rather than needing a route of its own.
+    # The compliance reviewer rejects after the director has already signed off. The only
+    # route that reaches `Application rejected` from the compliance stage rather than the
+    # buyer's, and the only proof that a sign-off does not override the later decision.
+    "compliance-reject": [
+        ("Validate application details", "approve"),
+        ("Record buyer review decision", "approve"),
+        ("Obtain procurement director sign-off", "approve"),
+        ("Record compliance review decision", "reject"),
+    ],
     "onboard": [
         ("Validate application details", "approve"),
         ("Record buyer review decision", "approve"),
