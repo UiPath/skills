@@ -223,8 +223,9 @@ jobs:
         run: pip install pytest pyyaml
 
       # Guards both gates in scripts/check-task-driver.py: the driver pin (which
-      # had no tests) and the cmd.exe-safety gate. The headline case replays the
-      # 2026-09-04 outage — a multi-line POSIX pre_run in nightly.yaml that took
-      # the Windows nightly split to 7/7 ERROR — and asserts the gate rejects it.
+      # had no tests) and the single-line hook rule. The headline case replays
+      # the 2026-09-04 outage, a multi-line POSIX pre_run in nightly.yaml that
+      # took the Windows nightly split to 7/7 ERROR, and asserts the gate
+      # rejects it.
       - name: Run task gate tests
         run: pytest tests/scripts/test_check_task_driver.py -v

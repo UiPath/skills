@@ -2,7 +2,7 @@ name: Task Driver Gate
 
 # Two gates over the task/experiment corpus:
 #   1. no coder-eval task YAML pins `sandbox.driver: tempdir`
-#   2. every shell command reachable from a Windows runner is cmd.exe-safe
+#   2. every experiment `pre_run`/`post_run` command is a single line
 #
 # Gate 1:
 # The sandbox driver is chosen by the run environment, never by the task:
@@ -15,11 +15,12 @@ name: Task Driver Gate
 # scripts/check-task-driver.py for the full rationale.
 #
 # Gate 2: on Windows, coder_eval hands pre_run/post_run to
-# create_subprocess_shell and run_command criteria to subprocess.run(shell=True),
-# both of which resolve to cmd.exe. A POSIX `pre_run` ERRORs every task in the
-# split (skills #2756 -> #3116, 2026-09-04); a POSIX `run_command` criterion
-# silently scores 0, which in the report is indistinguishable from the agent
-# writing bad code. See scripts/check-task-driver.py for the full rationale.
+# create_subprocess_shell, which is cmd.exe, and cmd parses only the FIRST line
+# of the string it gets. A `|-` block scalar therefore drops the rest, and a
+# `pre_run` cmd cannot parse ERRORs every task in the split before the agent
+# starts (skills #2756 -> #3116, 2026-09-04). The newline rule is a syntactic
+# fact, so it has no false positives and no per-experiment config; it does not
+# try to detect one-line POSIX sh. See scripts/check-task-driver.py.
 #
 # No `paths:` filter so this can be wired as a required check — it is a
 # sub-second full scan that always reports a definitive pass/fail. The job
@@ -53,5 +54,5 @@ jobs:
       # `tests/experiments` is passed because the cmd-safety gate covers
       # experiment-level pre_run/post_run hooks, which apply to EVERY task in a
       # run: the 2026-09-04 outage was one such hook, not a task.
-      - name: Check task drivers and Windows shell portability
+      - name: Check task drivers and experiment hook portability
         run: python3 scripts/check-task-driver.py tests/tasks tests/experiments
