@@ -39,6 +39,7 @@ An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`
 2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <object-name> --activity-version 4.0.0`).
 3. **Operation label ≠ HTTP verb** — a semantic operation (e.g. `Update`) pairs with any verb (e.g. `POST /usergroups.users.update`). `flow validate` accepts it; do not "fix" the method to match the label.
 4. **Not connection-scoped** — `--connection-id` on `registry get` adds no custom fields.
+5. **Reference fields are script-backed** — `reference` carries `scriptRef` (e.g. `list_usergroups`) and no `objectName`. Resolve with `uip is resources run script --connection-id <id> --connector-key <connector-key> --script-ref <scriptRef> --output json`, never `run list`. `registry get` strips `scriptRef` — read it from the Step 3 `describe` (`--activity-version 4.0.0 --operation <method>`). Response parsing and matching rules: [/uipath:uipath-platform — reference-resolution.md § 4.0.0 Activities — Script References](../../../../../uipath-platform/references/integration-service/reference-resolution.md#400-activities--script-references-scriptref).
 
 ## No-Live-Tenant / Planned Configuration
 
@@ -120,6 +121,8 @@ Do not skip this for Get/Retrieve: runtime may succeed while Studio Web lacks th
 ### Step 4 — Resolve reference fields
 
 Check **BOTH `requestFields` AND `parameters`** from the metadata for entries with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
+
+> **`4.0.0` activities use `run script`, not `run list`.** Their `reference` blocks carry `scriptRef` instead of `objectName`. Run `uip is resources run script --connection-id "<id>" --connector-key "<connector-key>" --script-ref "<reference.scriptRef>" --output json`, parse `Data.Body` (a JSON string; rows are under `.body`), and match `lookupNames` → take `lookupValue`. The zero-match, multiple-match, failed-call, and connection-scoping rules below apply unchanged. See [§ 4.0.0 Activities](#400-activities) and [reference-resolution.md — 4.0.0 Activities — Script References](../../../../../uipath-platform/references/integration-service/reference-resolution.md#400-activities--script-references-scriptref).
 
 > **References are NOT body-field-only.** Query and path parameters carry `reference` objects too, and on some connectors the activity's PRIMARY input is a required **path parameter** whose `reference` is the design-time lookup behind a Studio Web dropdown. Scanning only `requestFields` misses it — the node then configures and passes `flow validate` with an unverified value and 404s at runtime. The same `reference` blocks appear on `connectorMethodInfo.parameters[]` in `registry get` output (with or without `--connection-id`) — when projecting parameter metadata for inspection, always include the `reference` key, not just `name`/`required`/`design.component`.
 
