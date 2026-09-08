@@ -138,7 +138,7 @@ uip solution resources refresh --solution-folder ./InvoiceAutomation --output js
 | `Skipped` | Resources already tracked in the solution |
 | `Warnings` | Bindings that couldn't be resolved (logged for follow-up) |
 
-A project that binds to a Data Fabric `Entity` in its `bindings_v2.json` will have that entity imported on refresh, the same way refresh handles queues, assets, or buckets. Choice sets don't bind directly from a project — pull a choice set in with [Step 9](#step-9-add-a-resource-atomically), or let the packer pick it up as a dependency of an Entity that references it.
+A project that binds to a Data Fabric `Entity` in its `bindings_v2.json` will have that entity imported on refresh, the same way refresh handles queues, assets, or buckets. Any choice set the entity references is pulled in automatically as a dependency of the entity — don't add it separately.
 
 ### What `refresh` actually does
 

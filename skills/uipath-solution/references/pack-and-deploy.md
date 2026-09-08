@@ -440,13 +440,13 @@ Folder filtering with `--folder-path` happens **after** fetching `--limit` resul
 
 `--poll-interval` is in **milliseconds** (default 5000ms = 5s). `--timeout` is in **seconds** (default 360s = 6min). Do not confuse the two.
 
-### Data Fabric Resources Stay in Their Source Folder
+### Data Fabric Resources — Pointer, Not Copy
 
-When the solution includes `Entity` or `ChoiceSet` resources imported via `solution resources add --source remote`, deploy does **not** move or copy them into the new deployment folder. The entity / choice set keeps the `FolderId` it had when created via `uip df entities create` / `uip df choice-sets create --folder-key <…>`; the new deployment folder only holds the binding.
+When the solution imports `Entity` or `ChoiceSet` resources via `solution resources add --source remote`, the package stores a **pointer** to the resource in its source folder — it does not embed a copy. `uip df entities create` / `uip df choice-sets create --folder-key <…>` owns the resource; the solution just records `(name, sourceFolder)` and the deployed projects bind to it there.
 
-Data Fabric entities and choice sets are owned by the folder they were created in. A solution that imports one just records a pointer to that folder; deploying the solution into a different folder doesn't change ownership, it only wires up the binding the deployed projects will use.
+On a plain deploy, the pointer is honored as-is: the entity / choice set stays in the source folder, and the deployment folder holds only the binding. To retarget the binding to a different Orchestrator entity or choice set at deploy time — e.g. shipping the same solution to dev vs. prod — use [`solution deploy config link`](#link-to-an-existing-orchestrator-resource) to override the resource before running deploy.
 
-Verify post-deploy by querying the **source** folder, not the deployment folder:
+Verify a plain deploy by querying the **source** folder, not the deployment folder:
 
 ```bash
 # Source folder (where `uip df entities create --folder-key <X>` placed it)

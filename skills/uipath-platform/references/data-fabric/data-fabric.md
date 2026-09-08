@@ -165,16 +165,8 @@ For topic-specific errors, use the relevant reference. Cross-cutting failures:
 | Entity / choice set created via `--folder-key <X>` doesn't appear in list | Lists default to tenant-only | Re-run with `--folder-key <X>` or `--include-folders` |
 
 Any error not in this table → Rule 18. Topic-specific error tables live in the topic references.
+
 ---
-
-## References
-
-- [`entity-schema.md`](entity-schema.md) — Field definitions, supported types, schema update patterns, choice-set + relationship field shapes
-- [`choice-sets.md`](choice-sets.md) — Full choice-set CRUD (`list`/`list-values`/`create`/`update`/`delete` plus `choice-set-values create`/`update`/`delete`), look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
-- [`records-query.md`](records-query.md) — Query filter syntax, pagination, sorting, choice/relationship semantics on read & write
-- [`filter-platform-contract.md`](filter-platform-contract.md) — Filter body structure, per-type operator support matrix, and what to do when a request needs an unsupported operator
-- [`file-attachments.md`](file-attachments.md) — File field upload/download/delete file
-- [`bulk-import.md`](bulk-import.md) — CSV format requirements and the Basic-fields-only limitation (complex types — `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, `AUTO_NUMBER` — are **not supported** by `records import`; use `records insert` with a JSON body, plus `files upload` for FILE)
 
 ## Packaging into a Solution
 
