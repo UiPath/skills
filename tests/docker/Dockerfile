@@ -202,13 +202,6 @@ RUN cd /opt/maestro-flow-sdk-smoke && \
 # SimpleCodedAgent fixture's pyproject.toml but has no pre-built venv.
 RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"
 
-# That install resolves a2a-sdk, which caps protobuf below 7 and so downgrades the
-# base image's protobuf 7.35.1 to 6.33.6. google-antigravity 0.1.8 then cannot import
-# its own generated stubs (their gencode asserts a 7.35 runtime), the harness never
-# starts, and every antigravity docker task errors. Restore a runtime that serves both
-# consumers: protobuf refuses a runtime OLDER than a stub's gencode but not a newer
-# one, and a2a's own stubs are generated at 5.29.3, so 7.x satisfies a2a and
-# antigravity alike and only a2a's metadata cap objects. pip prints a resolver
-# complaint about that cap, which is expected and does not fail the build. Capped
-# below 8 so a future major cannot age out a2a's 5.29.3 gencode.
+# a2a-sdk, pulled in above, caps protobuf below 7, which leaves google-antigravity
+# unable to load its gencode-7.35 stubs. a2a's own stubs are 5.29.3, so 7.x serves both.
 RUN pip install --no-cache-dir "protobuf>=7.35,<8"
