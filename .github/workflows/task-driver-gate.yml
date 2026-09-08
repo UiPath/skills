@@ -1,7 +1,10 @@
 name: Task Driver Gate
 
-# Fails the build if any coder-eval task YAML pins `sandbox.driver: tempdir`.
+# Two gates over the task/experiment corpus:
+#   1. no coder-eval task YAML pins `sandbox.driver: tempdir`
+#   2. every shell command reachable from a Windows runner is cmd.exe-safe
 #
+# Gate 1:
 # The sandbox driver is chosen by the run environment, never by the task:
 #   - Linux nightly slice  -> `driver: docker` (skills-image bakes the uip CLI
 #     + every tool plugin), set in tests/experiments/nightly.yaml.
@@ -11,8 +14,17 @@ name: Task Driver Gate
 # tool-backed command (e.g. `uip maestro flow validate`). See
 # scripts/check-task-driver.py for the full rationale.
 #
+# Gate 2: on Windows, coder_eval hands pre_run/post_run to
+# create_subprocess_shell and run_command criteria to subprocess.run(shell=True),
+# both of which resolve to cmd.exe. A POSIX `pre_run` ERRORs every task in the
+# split (skills #2756 -> #3116, 2026-09-04); a POSIX `run_command` criterion
+# silently scores 0, which in the report is indistinguishable from the agent
+# writing bad code. See scripts/check-task-driver.py for the full rationale.
+#
 # No `paths:` filter so this can be wired as a required check — it is a
-# sub-second full scan that always reports a definitive pass/fail.
+# sub-second full scan that always reports a definitive pass/fail. The job
+# `name:` below is a required status check in the `main` ruleset; do not rename
+# it without updating the ruleset first.
 
 on:
   pull_request:
@@ -36,5 +48,10 @@ jobs:
         with: { python-version: '3.13' }
       - name: Install PyYAML
         run: pip install --quiet pyyaml
-      - name: Check task drivers
-        run: python3 scripts/check-task-driver.py tests/tasks
+      # Both gates in one step so the job name -- and therefore the required
+      # status check registered in the `main` ruleset -- stays byte-identical.
+      # `tests/experiments` is passed because the cmd-safety gate covers
+      # experiment-level pre_run/post_run hooks, which apply to EVERY task in a
+      # run: the 2026-09-04 outage was one such hook, not a task.
+      - name: Check task drivers and Windows shell portability
+        run: python3 scripts/check-task-driver.py tests/tasks tests/experiments
