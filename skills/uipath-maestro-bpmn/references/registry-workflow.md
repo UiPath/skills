@@ -137,7 +137,9 @@ and the canvas's round-trip fixture for a Jira `curated_create_issue` node is
 exactly one nested `target="body"` CDATA asserted parse→serialize identical
 (`origin/develop:src/services/serialization/xml-serialization.test.ts:706`).
 The serializer *preserves* separate inputs if a file already has them rather
-than merging, but it never generates them.
+than merging, but it never generates them. Copy that fixture's body shape, not
+its context inputs: being a parse→serialize identity test, it faithfully
+preserves an `operation="CreateIssue"` that the next section corrects.
 
 The outlier is the CLI manifest: `Intsvc.ActivityExecution` still declares
 `inputPattern: separateInputs` with `inputTarget: body`, and its `InputNotes`
@@ -145,22 +147,41 @@ still tell authors to add one `uipath:input` per request field. That contradicts
 both the canvas and the runtime, so treat the manifest's InputNotes as stale
 here rather than as the contract.
 
-`target="bodyField"` is **not** an option here. It is the target of the single
-merged *arguments* payload on `mergedBody` / `scriptArgs` types —
-`JobArguments` for the `Orchestrator.*` process starts, `HitlTaskArguments` for
-`Actions.HITL`, `args` for `BPMN.ScriptTask` — and no `Intsvc.*` type uses it.
-The validator enforces that: any other direct input name is rejected with
-`does not support input payload "<name>"`. Dotted Integration Service field
-names are also nested into objects on the way out, not sent as literal flat
-keys, so a flat `fields.project.key` leaves the provider never seeing
-`fields.project`.
+`target="bodyField"` is **not** an option here. It is the target of a merged
+*arguments* payload on specific types — `JobArguments` on the `Orchestrator.*`
+job and process starts, `HitlTaskArguments` on `Actions.HITL`, `args` on
+`BPMN.ScriptTask` — and no `Intsvc.*` type uses it. Read `inputTarget` from the
+manifest per type; it is not a property of `inputPattern`. Five of the fourteen
+`mergedBody` types use `body` (`Orchestrator.CreateQueueItem`,
+`Orchestrator.CreateAndWaitForQueueItem`, `A2A.AgentExecution`,
+`Maestro.CaseRulesEvaluator`, `Maestro.CaseManagerGuardrails`), so inferring
+`bodyField` from the pattern gets the target wrong on a third of them.
+
+**Local validation will not catch a wrong target or a wrong input name here.**
+`validateInputs` short-circuits for this type: `usesCanvasOwnedDynamicPayload`
+(`project-validator.ts:1602`) is true for anything `isDynamic` or for an
+`Intsvc.*` type requiring discovery, and it returns after
+`validateDynamicDirectInputs`, which checks only that each input has a `name`
+and that `type="json"` payloads parse. No allow-list, no `target` check, no
+count check — so several `target="body"` inputs, a `bodyField` input, and an
+unrecognized input name all pass `validate` and `pack`. The failure is a
+runtime one. This is why a clean `validate` is not evidence the body shape is
+right.
+
+Dotted Integration Service field names are also nested into objects on the way
+out, not sent as literal flat keys, so a flat `fields.project.key` leaves the
+provider never seeing `fields.project`.
 
 Take `operation` from the `Operation.Name` reported by
 `uip is resources describe` (for example `Create`); `path` and `objectName`
 come from the same described object. The template's `DiscoveryNotes` say "set
 operation from Name", which reads as the catalogue's per-activity `Name`
-(`CreateIssue`) — that value draws a provider `400` at runtime. `--operation`
-takes the same value, so pass `--operation Create`.
+(`CreateIssue`) — a value that can never resolve: `METHOD_TO_OPERATION`
+(`integrationservice-sdk/src/dap/validation/rules.ts:74`) defines a closed
+six-name lexicon — List, Retrieve, Create, Update, Delete, Replace — and the
+reverse map accepts only those plus raw HTTP verbs, which is also exactly what
+`uip is resources run` exposes as subcommands. `--operation` takes the same
+value, so pass `--operation Create`.
 
 ### Required `Parameters` are separate from the body — emit every one
 
@@ -220,6 +241,15 @@ connection binding's `default` is the connection id, the folder binding's
   <uipath:binding id="Binding_JiraFolder" resource="Connection" propertyAttribute="folderKey"    resourceKey="<connection-id>" default="<folder-key>" />
 </uipath:bindings>
 ```
+
+Only the `ConnectionId` binding becomes a `bindings_v2.json` resource — the
+folder binding exists for authoring and validation. `buildConnectionResources`
+(`connection-resources.ts`) keeps a binding only when `resource` is
+`Connection` **and** `propertyAttribute` is `ConnectionId`, so counting two
+bindings in and one resource out is expected, not a dropped binding. The same
+filter is why a `Connection` binding with any other `propertyAttribute`
+vanishes without a diagnostic and resurfaces as
+`Activity "<name>" references missing Connection binding "<id>"`.
 
 ## Agent wrapper selection — pick by `processType`, not the label
 
