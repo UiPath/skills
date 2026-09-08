@@ -82,6 +82,16 @@ Map the letter to the verdict word (this is the only place the letter→word map
 - **Single-agent review:** the overall Agent Grade IS the agent's grade.
 - **Solution with multiple agents:** the overall Agent Grade = the **worst** per-agent grade. A solution is only as deployable as its weakest agent — do not average grades. Non-agent projects do not contribute a grade (phase 1).
 
+## Record the grade (Step 6)
+
+Low-code agent projects only (`uip agent` verbs do not apply to coded agents), after the report. For each low-code agent project, persist its per-agent final grade into the project's `review-history.json`:
+
+```bash
+uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <CRITICAL_COUNT> --warnings <WARNING_COUNT> --output json
+```
+
+The CLI owns `review-history.json`: never create, edit, or review the file; exclude it from the authored-file set. If the command fails, state that the grade was not recorded and stop — recording never changes the review outcome.
+
 ## Low-code agent reports — omit these sections
 
 Low-code agent review (`agent.json`): omit entirely — no placeholder, no "not applicable" note.

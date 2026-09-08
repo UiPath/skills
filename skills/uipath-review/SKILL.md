@@ -267,17 +267,11 @@ Required sections, in order:
 9. `### Optimization Notes` — only when relevant.
 10. `**Final grade: <A–F>**` — agents only, on its own line as the **last line** of the report (nothing after it); the letter **must match** the Summary Agent Grade.
 
+Legacy validation status must say: `Use uipath-rpa (Legacy mode) for Legacy-specific validation`. Do not say “Could not run” or “Failed”. Legacy is supported indefinitely in Studio LTS and is not a Critical deployment blocker. Recommend migration based on actual needs. Overall Quality is **Good** for 0 Critical and 0–3 Warnings; **Needs Improvement** for 0 Critical and 4+ Warnings or 1 Critical with a clear fix; **Critical Issues** for 2+ Critical or 1 security/data-integrity Critical. For agents, A/B maps to Good, C/D to Needs Improvement, and F to Critical Issues. Never use “Mismatch” or “Aligned”.
+
 ### Step 6 — Record the Agent Grade
 
-Low-code agent projects only (`uip agent` verbs do not apply to coded agents), after the report. For each low-code agent project, persist its per-agent final grade (Step 4.5) into the project's `review-history.json`:
-
-```bash
-uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <CRITICAL_COUNT> --warnings <WARNING_COUNT> --output json
-```
-
-The CLI owns `review-history.json`: never create, edit, or review the file; exclude it from the authored-file set. If the command fails, state that the grade was not recorded and stop — recording never changes the review outcome.
-
-Legacy validation status must say: `Use uipath-rpa (Legacy mode) for Legacy-specific validation`. Do not say “Could not run” or “Failed”. Legacy is supported indefinitely in Studio LTS and is not a Critical deployment blocker. Recommend migration based on actual needs. Overall Quality is **Good** for 0 Critical and 0–3 Warnings; **Needs Improvement** for 0 Critical and 4+ Warnings or 1 Critical with a clear fix; **Critical Issues** for 2+ Critical or 1 security/data-integrity Critical. For agents, A/B maps to Good, C/D to Needs Improvement, and F to Critical Issues. Never use “Mismatch” or “Aligned”.
+Low-code agents only: persist the final grade with `uip agent review-history add` per [agent-grading-rubric.md § Record the grade](references/agents/agent-grading-rubric.md#record-the-grade-step-6).
 
 ## Task Navigation
 
