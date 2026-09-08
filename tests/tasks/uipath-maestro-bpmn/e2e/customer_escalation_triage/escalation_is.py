@@ -40,9 +40,11 @@ CONNECTION_NAMES = {
     JIRA_CONNECTOR: "is-sandboxes-test@uipath.com-uipath-sandbox-380",
     SLACK_CONNECTOR: "is-sandboxes",
 }
-# Shared/uipath-maestro-flow — the folder every escalation e2e's connections
-# live in, matched by key because `connections list` reports keys, not paths.
-CONNECTION_FOLDER_KEY = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+# The folder every escalation e2e's connections live in. Matched by name, as
+# the flow suite does: each `connections list` row carries both `Folder` and
+# `FolderKey`, so the key is read off the matched row rather than committed.
+CONNECTION_FOLDER_PATH = "Shared/uipath-maestro-flow"
+CONNECTION_FOLDER_NAME = "uipath-maestro-flow"  # leaf of the path, as reported
 JIRA_PROJECT_KEY = "CE"  # "Coder Eval" project on uipath-sandbox-380
 JIRA_ISSUE_TYPE_ID = "11457"  # "Task" issue type, scoped to the CE project
 SLACK_CHANNEL_ID = "C01H4SPS77W"
@@ -118,13 +120,14 @@ def connection_ids() -> dict[str, str]:
             if isinstance(row, dict)
             and get_ci(row, "ConnectorKey") == connector_key
             and get_ci(row, "Name") == name
-            and get_ci(row, "FolderKey") == CONNECTION_FOLDER_KEY
+            and get_ci(row, "Folder") == CONNECTION_FOLDER_NAME
             and str(get_ci(row, "State") or "").casefold() == "enabled"
         ]
         if len(matches) != 1:
             raise CheckFailure(
                 f"expected one enabled {connector_key} connection named "
-                f"{name!r}, found {len(matches)}"
+                f"{name!r} in folder {CONNECTION_FOLDER_PATH!r}, "
+                f"found {len(matches)}"
             )
         identifier = get_ci(matches[0], "Id")
         if not isinstance(identifier, str):

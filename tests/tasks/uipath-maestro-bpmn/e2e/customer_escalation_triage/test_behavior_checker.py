@@ -343,9 +343,10 @@ class SeedTests(unittest.TestCase):
 
 class PackageBindingTests(unittest.TestCase):
     def test_real_uuid_accepted(self):
+        # Any well-formed UUID exercises this; no live id needed.
         self.assertTrue(
             packager.is_real_connection_key(
-                "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+                "3f2b9c14-7ae5-4d61-9b28-c05f18ad6e73"
             )
         )
 
@@ -361,3 +362,48 @@ class PackageBindingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ConnectionResolutionTests(unittest.TestCase):
+    """Connections are scoped by folder NAME, as in the flow suite.
+
+    Every `connections list` row carries both `Folder` and `FolderKey`, so the
+    key is read off the matched row at runtime rather than committed here.
+    """
+
+    @staticmethod
+    def _row(connector, name, folder="uipath-maestro-flow", state="Enabled"):
+        return {
+            "Id": f"id-{connector}",
+            "Name": name,
+            "ConnectorKey": connector,
+            "Folder": folder,
+            "FolderKey": "3f2b9c14-7ae5-4d61-9b28-c05f18ad6e73",
+            "State": state,
+        }
+
+    def _rows(self, **overrides):
+        return [
+            self._row(connector, name, **overrides)
+            for connector, name in escalation_is.CONNECTION_NAMES.items()
+        ]
+
+    def _resolve(self, rows):
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps({"Result": "Success", "Data": rows})
+        )
+        with patch.object(escalation_is, "run_cli", return_value=completed):
+            return escalation_is.connection_ids()
+
+    def test_resolves_both_connections_in_the_target_folder(self):
+        resolved = self._resolve(self._rows())
+        self.assertEqual(set(resolved), set(escalation_is.CONNECTION_NAMES))
+
+    def test_same_named_connection_in_another_folder_is_rejected(self):
+        with self.assertRaises(escalation_is.CheckFailure) as caught:
+            self._resolve(self._rows(folder="some-other-team"))
+        self.assertIn(escalation_is.CONNECTION_FOLDER_PATH, str(caught.exception))
+
+    def test_disabled_connection_is_rejected(self):
+        with self.assertRaises(escalation_is.CheckFailure):
+            self._resolve(self._rows(state="Disabled"))
