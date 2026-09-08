@@ -21,16 +21,16 @@ Number activity patterns monotonically across the entire workflow in author orde
 Sequence_1
 ├─ Assign_1
 ├─ For_Each_1
-│  └─ For_Each_1#Body
-│     ├─ If_1#Wrapper
-│     │  ├─ If_1
-│     │  ├─ If_1#Then
-│     │  └─ If_1#Else
-│     │  └─ Try_Catch_1
-└─ If_2#Wrapper
-   ├─ If_2
-   ├─ If_2#Then
-   └─ If_2#Else
+│   └─ For_Each_1#Body
+│       ├─ If_1#Wrapper        ← inside the loop body, but uses _1 because no other If yet
+│       │   ├─ If_1
+│       │   ├─ If_1#Then
+│       │   └─ If_1#Else
+│       └─ Try_Catch_1         ← _1 because no other TryCatch yet
+└─ If_2#Wrapper                ← _2 because If_1 was already used inside the loop
+    ├─ If_2
+    ├─ If_2#Then
+    └─ If_2#Else
 ```
 
 ## Pattern Catalog

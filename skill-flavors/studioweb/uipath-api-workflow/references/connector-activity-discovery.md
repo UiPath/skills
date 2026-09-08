@@ -59,10 +59,6 @@ Well-known folder-name shortcuts such as `"inbox"`, `"sentitems"`, and `"drafts"
 - **Slot key carries the operation; export bucket carries the object name:** slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). Copy `Data.ExportBucketKey` verbatim. After each host rewrite of `Workflow.json`, re-check that downstream `$context.outputs.<X>` reads match the on-disk `export.as` keys; runtime `undefined` results reveal dangling output references.
 <!--skill-flavor:export-bucket-stability:end-->
 
-<!--skill-flavor:runtime-content-normalization-comment:start-->
-// In a JsInvoke script body, normalize content supplied as either a JSON string or a parsed value:
-<!--skill-flavor:runtime-content-normalization-comment:end-->
-
 <!--skill-flavor:solution-metadata:start-->
 ### Step 5 — Use Studio Web Connection and Solution Metadata
 
@@ -74,10 +70,6 @@ Studio Web maintains the connection and solution resource model. For additional 
 
 Use `--resource-key` when a live Studio Web resource capability exposes the exact key. Continue to pass the resource name through `--inputs`. When the key or resource operation is unavailable, report the exact host capability gap.
 <!--skill-flavor:solution-resource-fields:end-->
-
-<!--skill-flavor:worked-example-solution-metadata:start-->
-# 5. Use Studio Web's host resource capability for connection-resource metadata.
-<!--skill-flavor:worked-example-solution-metadata:end-->
 
 <!--skill-flavor:registry-auth-limit:start-->
 4. **Studio Web supplies authentication for `resolve` and `stub`.** Report a host-authentication failure with its exact result and retry after the active session or tenant state changes.

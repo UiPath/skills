@@ -82,13 +82,16 @@ grep 'Response task evaluated successfully' <LOG_PATH> | tail -1 \
 
 Compare that raw object with `expectedOutput` under the declared evaluator's `targetOutputKey`. A non-`Success` run is an `ERROR`, not a score. Derive expected output from `output.schema`; declare the schema first if `output: null`. The `Response` must emit exactly those keys and casing.
 
-Run every row after each change with one outside-project comparator command:
+Write a comparator script once, outside the project (never under `evals/`), and run it after every change so one command scores every row. It must:
 
-```bash
-python3 /tmp/score-evals.py <PROJECT>
-```
-
-Write the comparator outside the project, never under `evals/`. It must run `uip api-workflow run` once per row with `--input-arguments`, `--no-auth`, `--output json`, `--log-level debug`, and `--log-file`; require `Result == "Success"`; extract the last `Response task evaluated successfully` response; wrap non-object outputs as `{ "result": raw }`; match evaluator refs by file base name; require `uipath-exact-match`; require `evaluationCriterias[ref].expectedOutput`; honor `targetOutputKey` values `"*"`, dotted strings, and arrays; use strict JSON deep equality (key order ignored, shapes, casing, types, and values equal); print `[PASS]`, `[FAIL]`, or `[ERROR]` per row; and exit 0 only when at least one row exists and every verdict is `PASS`.
+- Run `uip api-workflow run` once per row with `--input-arguments`, `--no-auth`, `--output json`, `--log-level debug`, `--log-file`, and a 120 s timeout so one hanging row cannot stall the loop.
+- Require `Result == "Success"`; if stdout is not valid JSON, report `ERROR` with the first lines of stdout instead of crashing.
+- Extract the last `Response task evaluated successfully` response from the log; wrap non-object outputs as `{ "result": raw }`.
+- Match evaluator refs by file base name; if none matches, say so and hint that refs are file base names. Require `uipath-exact-match` and `evaluationCriterias[ref].expectedOutput`.
+- Honor `targetOutputKey` values `"*"`, dotted strings, and arrays.
+- Compare with strict JSON deep equality: key order ignored, but shapes, casing, types, and values must match — `true` and `1` are not equal.
+- Print one line per row: row name, `PASS`/`FAIL`/`ERROR`, and on failure both `expected=` and `actual=`.
+- Exit 0 only when at least one row exists and every verdict is `PASS`.
 
 Inside Studio Web, ask the user to press **Run** in Evaluations, whose verdicts are authoritative. With explicit consent (SKILL.md rule 21), invoke `RunProject` once per row with that row's `inputs`; treat its host result as raw output. Derive `expectedOutput` from it or `output.schema` with exact casing.
 
@@ -109,7 +112,7 @@ Apply this protocol only when `<PROJECT>/evals/` exists. Its absence means the f
    1. Declare `input.schema` and `output.schema` in `Workflow.json`, including exact property casing.
    2. Write or update the eval set from those schemas.
    3. Author the workflow so `Response` emits exactly `output.schema`.
-   4. In loop mode, run and score every row in one command: `python3 /tmp/score-evals.py <PROJECT>`. Loop mode consents to repeated `--no-auth` runs; authenticated or side-effecting connector runs still require their own “yes”.
+   4. In loop mode, run and score every row with the comparator you wrote (§2), one command per iteration. Loop mode consents to repeated `--no-auth` runs; authenticated or side-effecting connector runs still require their own “yes”.
    5. Use evaluator verdicts, not visual judgment. On `FAIL` or `ERROR`, first inspect keys, casing, types, and shape (`sum` vs `Sum`, missing wrapper, string vs number); fix the workflow when it violates `output.schema`, and fix a row when it contradicts requested behavior. Otherwise triage Structure > Expression > Activity Config > Logic (SKILL.md Core Principle 4), fix the workflow, and rerun.
    6. Report each iteration, for example: `iteration 2: 3/4 rows pass; fixing row 'unpaid invoice' (expected status 'unpaid', got 'paid')`.
    7. Stop when all rows pass, the user interjects, or there is no progress after a few iterations; cap the loop per Infinite Loop Prevention in SKILL.md. Always provide a per-row final summary with `PASS`/`FAIL`/`ERROR`, inputs, actual output, expected output, and error details where applicable.
