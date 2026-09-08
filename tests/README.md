@@ -171,6 +171,15 @@ Experiment files define shared agent defaults per test type. Tasks inherit these
 
 Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 
+`turn_timeout` bounds one agent turn; `task_timeout` bounds the turns **and**
+grading under a single watchdog. Raising `task_timeout` therefore does not give
+a turn more room — the orchestrator logs `A larger task_timeout cannot extend
+the agent's single iteration` when a task tries. Raise `turn_timeout` for an
+agent that runs out of time mid-build, and `task_timeout` when the criteria
+need room after it: a task whose `task_timeout` equals its `turn_timeout`
+leaves grading nothing, and firing that watchdog reports the whole task
+`TIMEOUT`, losing even the criteria that passed.
+
 | Experiment | Driver | Used by | max_turns | task_timeout | turn_timeout |
 |------------|--------|---------|-----------|--------------|--------------|
 | `default.yaml` | tempdir | Devs locally, ad-hoc runs | 200 | 1200s | 900s |
