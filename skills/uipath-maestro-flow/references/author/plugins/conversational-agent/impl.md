@@ -91,6 +91,8 @@ This is the one that goes wrong silently. The agent reads the conversation throu
 }
 ```
 
+**`mode` selects the contract.** `simple` (the default) takes the single `context` binding and lets the platform derive the rest; `custom` means you bind each field yourself and `conversationId` becomes mandatory. The examples here are all `simple`.
+
 **Write all five.** In Studio Web the author fills `context` and the panel derives the other four, but that derivation only runs in the editor — nothing derives them when the file is authored from the CLI.
 
 Validation only requires `conversationId`, so it half-helps: leave that out and validate fails, but bind `context` and `conversationId` while dropping `exchangeId`, `messages` and `userSettings` and validate passes. The runtime reads all four, so that flow ships an agent with no chat history and no user settings.
@@ -106,16 +108,18 @@ This matters when using `node add`, which writes `--input` JSON through untouche
 ```bash
 # WRONG — lands in the file verbatim, renders as text
 uip maestro flow node add ChatFlow/ChatFlow.flow uipath.conversational.wait-for-message \
-  -i '{"conversationId":"=js:$vars.conversationTrigger1.output.conversationId"}'
+  --input '{"conversationId":"=js:$vars.conversationTrigger1.output.conversationId"}'
 
 # RIGHT
 uip maestro flow node add ChatFlow/ChatFlow.flow uipath.conversational.wait-for-message \
-  -i '{"conversationId":{"type":"jsExpression","expression":"$vars.conversationTrigger1.output.conversationId","fieldType":"string"}}'
+  --input '{"conversationId":{"type":"jsExpression","expression":"$vars.conversationTrigger1.output.conversationId","fieldType":"string"}}'
 ```
 
 (`uip maestro flow node configure --detail` uses the `=js:` form for **connector** nodes — that is a different surface and does not apply here.)
 
 ## Node JSON
+
+> **Which surface authors this node.** [inline-agent/impl.md § What NOT to Do](../inline-agent/impl.md#what-not-to-do) bars Flow CLI `node add` / `edge add` for inline **autonomous** agent graph edits. That rule does not cover `uipath.agent.conversational`: the CLI path below is the supported one for this node, `--source` is a documented `node add` flag for it, and the full recipe validates clean. Use `Edit` / `Write` when you prefer, but do not read the inline-agent prohibition as applying here.
 
 Editing the `.flow` directly carries the usual obligations — chiefly a `variables.nodes[]` entry for every data-producing node, which is what makes `$vars.<id>.output` resolve at all. See [editing-operations-json.md](../../editing-operations-json.md). `node add` writes those entries for you.
 
@@ -124,7 +128,7 @@ Editing the `.flow` directly carries the usual obligations — chiefly a `variab
 Replace the default manual trigger — `flow init` scaffolds `core.trigger.manual`, and the conversation trigger is what makes the packaged flow conversational and exposed as a chat experience.
 
 ```bash
-uip maestro flow node delete ChatFlow/ChatFlow.flow start
+uip maestro flow node remove ChatFlow/ChatFlow.flow start
 uip maestro flow node add ChatFlow/ChatFlow.flow core.trigger.conversation --position 256,144
 ```
 

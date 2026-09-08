@@ -40,6 +40,7 @@ from _shared.flow_check import find_project_dir  # noqa: E402
 CONV_AGENT = "uipath.agent.conversational"
 CORE_AGENT_PREFIX = "uipath.core.agent."
 CONV_TRIGGER = "core.trigger.conversation"
+GET_CONTEXT = "uipath.conversational.get-conversation-context"
 WAIT_FOR_MESSAGE = "uipath.conversational.wait-for-message"
 MANUAL_TRIGGER = "core.trigger.manual"
 
@@ -73,7 +74,14 @@ MIN_PROMPT_LEN = 15
 
 # Generated/staging trees the CLI writes beside the sources. Same exclusion set
 # the other maestro-flow checkers use.
-EXCLUDED_PARTS = {".cli-stage", ".v1stage", ".agent-builder", "_outputs", "v1stage"}
+EXCLUDED_PARTS = {
+    ".cli-stage",
+    ".v1stage",
+    ".agent-builder",
+    "_outputs",
+    "v1stage",
+    "node_modules",
+}
 
 
 def _fail(msg: str) -> int:
@@ -231,14 +239,22 @@ def check_settings(flow: dict) -> int:
                 f"{node_id}: settings read from more than one source {sorted(roots)} "
                 "— every key derives from the same wait node's context"
             )
-        wait_ids = {n.get("id") for n in _nodes_of(flow, WAIT_FOR_MESSAGE)}
+        # A wait node is the usual source, but planning.md documents reading the
+        # context from `get-conversation-context` too — e.g. re-fetching history
+        # between chained agent / send-message nodes. Both emit
+        # `output.conversationContext`, so both are legal roots here.
+        context_ids = {
+            n.get("id")
+            for n in _nodes_of(flow, WAIT_FOR_MESSAGE) + _nodes_of(flow, GET_CONTEXT)
+        }
         for root in roots:
             root_id = _root_node_id(root)
-            if root_id not in wait_ids:
+            if root_id not in context_ids:
                 problems.append(
-                    f"{node_id}: settings are rooted at {root_id!r}, which is not a "
-                    f"{WAIT_FOR_MESSAGE} node in this flow — `flow validate` accepts "
-                    "invented $vars paths, so this has to be checked here"
+                    f"{node_id}: settings are rooted at {root_id!r}, which is neither a "
+                    f"{WAIT_FOR_MESSAGE} nor a {GET_CONTEXT} node in this flow — "
+                    "`flow validate` accepts invented $vars paths, so this has to be "
+                    "checked here"
                 )
 
     node_ids = {n.get("id") for n in flow.get("nodes") or []}
@@ -411,16 +427,23 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
             f"{label}: metadata.isConversational is "
             f"{metadata.get('isConversational')!r}, expected true"
         )
-    iterations = settings.get("maxIterations")
-    if (
-        isinstance(iterations, bool)
-        or not isinstance(iterations, int)
-        or not 1 <= iterations <= 8
-    ):
-        problems.append(
-            f"{label}: settings.maxIterations is {iterations!r}; conversational "
-            "expects 1-8"
-        )
+    # `settings.maxIterations` is written by `uip agent init --conversational`,
+    # not by the agent under test, and CLI builds disagree on whether the
+    # conversational scaffold carries it at all. Asserting its presence grades
+    # the CLI build; the same reasoning keeps it ungraded in
+    # tests/tasks/uipath-agents/lowcode/conversational/scaffold/. So check the
+    # range only when the field is there — a bad value is still the agent's doing.
+    if "maxIterations" in settings:
+        iterations = settings["maxIterations"]
+        if (
+            isinstance(iterations, bool)
+            or not isinstance(iterations, int)
+            or not 1 <= iterations <= 8
+        ):
+            problems.append(
+                f"{label}: settings.maxIterations is {iterations!r}; conversational "
+                "expects 1-8 when present"
+            )
     system = next(
         (
             m.get("content")
@@ -477,7 +500,7 @@ def check_agent_json(flow_path: str, flow: dict) -> int:
             if _grade_agent_json(path, problems):
                 graded.add(path)
 
-    if any(not _is_inline(n) for n in agents) and not graded:
+    if any(not _is_inline(n) for n in agents):
         # Project-backed agents: grade every conversational agent.json present.
         candidates = _agent_json_files(root)
         conversational = []
@@ -497,6 +520,10 @@ def check_agent_json(flow_path: str, flow: dict) -> int:
                 "would have none, but the sandbox has no tenant)"
             )
         for path in conversational:
+            # The inline pass above may already have graded this file; re-grading
+            # would append the same problems twice.
+            if path in graded:
+                continue
             if _grade_agent_json(path, problems):
                 graded.add(path)
 

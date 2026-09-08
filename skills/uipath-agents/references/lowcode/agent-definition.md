@@ -24,7 +24,7 @@ Primary configuration file for autonomous agent. Edit directly.
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "settings": {
     "model": "<MODEL_IDENTIFIER>",
     "maxTokens": 128000,
@@ -209,7 +209,7 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 
 | Field | Value |
 |-------|-------|
-| `version` | `"1.1.0"` — always scaffolded at this version |
+| `version` | `"1.2.0"` — always scaffolded at this version |
 | `type` | `"lowCode"` |
 | `projectId` | Auto-generated UUID — do not edit |
 
@@ -220,7 +220,7 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 | `storageVersion` | Managed by `uip agent refresh` — do not edit |
 | `isConversational` | `false` for autonomous agents, `true` for conversational agents. Do not edit. |
 | `showProjectCreationExperience` | `false` |
-| `targetRuntime` | `"pythonAgent"` for autonomous and conversational. |
+| `targetRuntime` | `"pythonAgent"` for standalone agents, autonomous and conversational alike. **Absent for `--inline-in-flow` scaffolds** of either flavor — see [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md). |
 
 ### Input Schema
 
