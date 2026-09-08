@@ -34,6 +34,7 @@ Two distinct sources with two casings:
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
 import math
 import os
@@ -53,6 +54,7 @@ from typing import Any, Iterable, Sequence
 # the exact payload (finalStatus, elementExecutions, globals, incidents) that the
 # checker saw — which is otherwise ephemeral and unrecoverable post-run.
 _LAST_DEBUG_RAW: str | None = None
+_LAST_DEBUG_STDERR: str | None = None
 
 # Variable ids the most recent :func:`run_debug` bound as INPUTS (via ``--inputs``
 # / ``--attachment``). Stashed because the runtime returns every global — `in` and
@@ -106,8 +108,17 @@ _POLL_TIMEOUT_ATTEMPTS = 2
 # 5xx, matching the CLI's own "retry once before reporting") that keeps a third
 # full-length attempt out of every criterion ceiling. `retries=3` still works.
 _DEFAULT_RETRIES_TIMEOUT = 240
+# One backend read of a faulted instance's incidents; never worth more of the criterion budget.
+_INCIDENTS_TIMEOUT_SECONDS = 60
 _DEFAULT_RETRIES = 2
 _DEFAULT_BACKOFF_SECONDS = 5.0
+
+# ``finalStatus: Completed`` with NO ``variables`` key (or a ``variablesError``)
+# means the CLI's post-completion outputs fetch failed — infrastructure to retry,
+# not an empty result to grade (a flow with no outputs still returns the key).
+# Retries and the CLI-side fix: UiPath/cli#3929.
+_VARIABLES_UNREADABLE_ATTEMPTS = 2
+_STDERR_CAPTURE_TAIL_CHARS = 4000
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -125,9 +136,110 @@ _DEBUG_RETRY_MARKERS = (
 )
 
 
+def _rglob_pruned(pattern: str) -> list[str]:
+    """``glob.glob(pattern, recursive=True)`` from the CWD, but never descending
+    into ``node_modules`` (the preview workspace symlinks the baked SDK tree
+    there, and ``glob`` follows directory symlinks under ``**``)."""
+    if "**" not in pattern:
+        return sorted(glob.glob(pattern, recursive=True))
+    prefix, _, suffix = pattern.partition("**")
+    root = prefix.rstrip("/") or "."
+    suffix = suffix.lstrip("/")
+    matches: list[str] = []
+    for dirpath, dirnames, _ in os.walk(root, followlinks=True):
+        dirnames[:] = [d for d in dirnames if d != "node_modules"]
+        matches.extend(glob.glob(os.path.join(glob.escape(dirpath), suffix)))
+    if root == ".":
+        matches = [m[2:] if m.startswith("./") else m for m in matches]
+    return sorted(set(matches))
+
+
 def _output_blob(result: subprocess.CompletedProcess) -> str:
     """Both streams, lowercased, for case-insensitive marker matching."""
     return f"{result.stdout}\n{result.stderr}".lower()
+
+
+# INTERIM — Studio Web answers 400/1001 when an EXISTING solution is overwritten
+# (UiPath/cli#3938 has the evidence). `flow debug` #2 of a project is an
+# overwrite, so on exactly that signature the bundled SolutionId is rotated and
+# the debug retried ONCE as a new import. Delete this block when Overwrite works.
+_OVERWRITE_STUCK_ISSUE = "UiPath/cli#3938"
+_OVERWRITE_STUCK_MARKER = "overwrite failed (400)"
+_OVERWRITE_STUCK_CODE = re.compile(r'\\?"code\\?":\s*\\?"1001\\?"')
+# Since UiPath/cli#3951 the CLI reports the refusal as
+# Context: {"HttpStatus": 400, "Stage": "overwrite-solution", "ErrorCode": "1001"}
+# instead of echoing the raw body; both envelopes must rotate.
+_OVERWRITE_STUCK_STAGE = "overwrite-solution"
+_OVERWRITE_STUCK_ATTEMPTS = 2  # the failed overwrite + one import-as-new retry
+_SOLUTION_ID_RE = re.compile(r'("SolutionId"\s*:\s*")([0-9a-fA-F-]{36})(")')
+# Rotated-away ids, one per line, beside the `.uipx`; `cleanup_solutions.py`
+# deletes them alongside the current id so the rotation leaks nothing.
+ROTATED_SOLUTION_IDS_SIDECAR = ".rotated-solution-ids"
+
+
+def _is_overwrite_stuck(result: subprocess.CompletedProcess) -> bool:
+    """True iff ``flow debug`` died on the Studio Web Overwrite 400/1001 regression
+    (see :data:`_OVERWRITE_STUCK_ISSUE`) — never on any other overwrite failure.
+
+    Matches the legacy envelope (``Overwrite failed (400): {"code":"1001",…}``)
+    and the staged one the CLI emits since UiPath/cli#3951 (``Context.Stage ==
+    "overwrite-solution"`` with ``Context.ErrorCode == "1001"``, or HTTP 400 and
+    the platform's "invalid value" wording when the code is absent)."""
+    if result.returncode == 0:
+        return False
+    blob = _output_blob(result)
+    if _OVERWRITE_STUCK_MARKER in blob and _OVERWRITE_STUCK_CODE.search(blob) is not None:
+        return True
+    data = _parse_json(result.stdout)
+    context = _get_ci(data or {}, "Context", default={})
+    if not isinstance(context, dict):
+        return False
+    stage = _get_ci(context, "Stage")
+    if not isinstance(stage, str) or stage.lower() != _OVERWRITE_STUCK_STAGE:
+        return False
+    code = _get_ci(context, "ErrorCode")
+    if str(code) == "1001":
+        return True
+    http = _get_ci(context, "HttpStatus")
+    return http == 400 and "invalid value" in blob
+
+
+def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
+    """Give the project's solution a fresh bundled ``SolutionId`` so the next
+    ``flow debug`` imports it as a NEW Studio Web solution instead of overwriting.
+
+    Walks up from ``project_dir`` to the nearest ancestor holding exactly one
+    ``*.uipx`` (a JSON text file; ``uip solution init`` writes it beside the
+    project directory). Returns ``(old, new)``, or ``None`` when no unambiguous
+    ``.uipx`` is found — the caller then fails the plain way. The previous id is
+    appended to :data:`ROTATED_SOLUTION_IDS_SIDECAR` next to the ``.uipx`` so
+    ``cleanup_solutions.py`` can delete the solution it still names on the tenant."""
+    import uuid
+
+    here = os.path.abspath(project_dir)
+    for _ in range(4):
+        uipx = sorted(glob.glob(os.path.join(glob.escape(here), "*.uipx")))
+        if len(uipx) == 1:
+            try:
+                with open(uipx[0], encoding="utf-8") as handle:
+                    text = handle.read()
+            except OSError:
+                return None
+            match = _SOLUTION_ID_RE.search(text)
+            if match is None:
+                return None
+            new = str(uuid.uuid4())
+            with open(uipx[0], "w", encoding="utf-8") as handle:
+                handle.write(text[: match.start(2)] + new + text[match.end(2):])
+            sidecar = os.path.join(here, ROTATED_SOLUTION_IDS_SIDECAR)
+            with open(sidecar, "a", encoding="utf-8") as handle:
+                handle.write(match.group(2) + "\n")
+            return match.group(2), new
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+    return None
 
 
 def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
@@ -152,6 +264,36 @@ def _is_poll_timeout(result: subprocess.CompletedProcess) -> bool:
     return result.returncode != 0 and (
         _DEBUG_POLL_TIMEOUT_MARKER in _output_blob(result)
     )
+
+
+def _variables_unreadable(data: dict | None) -> str | None:
+    """Return a reason when a *completed* debug payload's outputs could not be
+    read (see :data:`_VARIABLES_UNREADABLE_ATTEMPTS`), else ``None``.
+
+    Exact by construction: only the ``variables`` key being absent from ``Data``
+    (or an explicit ``variablesError``) counts. A present-but-empty
+    ``variables`` is a real result and is returned to the caller as-is."""
+    payload = _get_ci(data or {}, "Data") or {}
+    if not isinstance(payload, dict):
+        return None
+    status = _get_ci(payload, "finalStatus", "FinalStatus")
+    if status != "Completed":
+        return None
+    err = _get_ci(payload, "variablesError", "VariablesError")
+    if isinstance(err, dict):
+        attempts = _get_ci(err, "attempts", "Attempts")
+        message = _get_ci(err, "message", "Message") or "unknown error"
+        return (
+            f"the CLI could not read the output variables (variablesError after "
+            f"{attempts} attempt(s): {message})"
+        )
+    has_key = any(str(k).lower() == "variables" for k in payload)
+    if not has_key:
+        return (
+            "the CLI returned no `variables` key at all — the post-completion "
+            "fetch of /debug-instances/{id}/variables failed and was dropped"
+        )
+    return None
 
 
 def _as_text(raw: bytes | str | None) -> str:
@@ -231,7 +373,8 @@ def run_debug(
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
     env = dict(os.environ)
     env.setdefault("UIP_LOG_LEVEL", _DEBUG_LOG_LEVEL)
-    global _LAST_DEBUG_RAW, _LAST_DEBUG_INPUT_IDS, _LAST_DEBUG_PROJECT_DIR
+    global _LAST_DEBUG_RAW, _LAST_DEBUG_STDERR, _LAST_DEBUG_INPUT_IDS
+    global _LAST_DEBUG_PROJECT_DIR
     # Record what we bound as input, and where the project lives, so output
     # assertions can discount echoes of our own inputs.
     _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
@@ -275,7 +418,17 @@ def run_debug(
     # Mirrors debug_budget: pricing an attempt the loop never makes left `r` unbound.
     attempts = max(1, retries)
 
-    for attempt in range(attempts):
+    unreadable: str | None = None
+    unreadable_attempts = 0
+    overwrite_rotations = 0
+    rotated_solution_ids: list[str] = []
+    # `max_attempts` starts at the transient allowance and is extended by one
+    # for an unreadable-outputs retry (see _VARIABLES_UNREADABLE_ATTEMPTS): that
+    # retry has its own allowance, never the 5xx/RetryLater one. The deadline
+    # below still bounds every attempt, so the criterion budget holds.
+    max_attempts = attempts
+    attempt = 0
+    while attempt < max_attempts:
         attempt_cap = min(timeout, int(deadline - time.monotonic()))
         cli_timeout = max(
             _MIN_CLI_TIMEOUT_SECONDS, attempt_cap - _CLI_TIMEOUT_HEADROOM_SECONDS
@@ -292,6 +445,7 @@ def run_debug(
             # The CLI's own --timeout never fired, so the stall is upstream of
             # polling. Keep the partial output rather than dying on a traceback.
             _LAST_DEBUG_RAW = _as_text(exc.stdout)
+            _LAST_DEBUG_STDERR = _as_text(exc.stderr)
             _fail_with_capture(
                 f"flow debug exceeded the {attempt_cap}s subprocess cap without returning "
                 f"(CLI --timeout was {cli_timeout}s, so the stall is upstream of "
@@ -300,16 +454,46 @@ def run_debug(
                 f"stdout: {_as_text(exc.stdout)}\nstderr: {_as_text(exc.stderr)}"
             )
         _LAST_DEBUG_RAW = r.stdout
-        if r.returncode == 0 or not _is_transient_debug_error(r):
+        # Keep the CLI's stderr too: it is where `flow debug` reports what it
+        # could not do (e.g. the output-variables fetch). Dropping it on a zero
+        # exit is how the 2026-08-31/09-01 move-node failures lost their cause.
+        _LAST_DEBUG_STDERR = r.stderr
+        if r.returncode == 0:
+            unreadable = _variables_unreadable(_parse_json(r.stdout))
+            if unreadable is None:
+                break
+            unreadable_attempts += 1
+            if unreadable_attempts >= _VARIABLES_UNREADABLE_ATTEMPTS:
+                break
+            max_attempts = max(max_attempts, attempt + 2)
+        elif _is_overwrite_stuck(r) and overwrite_rotations < _OVERWRITE_STUCK_ATTEMPTS - 1:
+            # INTERIM (see _OVERWRITE_STUCK_ISSUE): its own single allowance, like
+            # the unreadable-outputs retry; the deadline below still bounds it.
+            rotated = _rotate_solution_id(project_dir)
+            if rotated is None:
+                break
+            overwrite_rotations += 1
+            rotated_solution_ids.append(rotated[0])
+            print(
+                f"INTERIM ({_OVERWRITE_STUCK_ISSUE}: Studio Web Overwrite → 400/1001 for an "
+                f"existing solution since 2026-09-02): rotated the bundled SolutionId "
+                f"{rotated[0]} → {rotated[1]}; retrying as a new import. The solution "
+                f"{rotated[0]} is recorded in {ROTATED_SOLUTION_IDS_SIDECAR} for cleanup.",
+                file=sys.stderr,
+                flush=True,
+            )
+            max_attempts = max(max_attempts, attempt + 2)
+        elif not _is_transient_debug_error(r):
             break
-        if _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
+        elif _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
-        if attempt + 1 < attempts:
+        if attempt + 1 < max_attempts:
             left = deadline - time.monotonic() - backoff_seconds
             if left < _MIN_RETRY_BUDGET_SECONDS:
                 out_of_budget = True
                 break
             time.sleep(backoff_seconds)
+        attempt += 1
 
     if r.returncode != 0:
         spent = (
@@ -321,14 +505,33 @@ def run_debug(
         _fail(
             f"flow debug exit {r.returncode}{spent}\n"
             f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            + _incident_details(_parse_json(r.stdout))
         )
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
     payload = _get_ci(data, "Data") or {}
+    if rotated_solution_ids:
+        print(
+            f"INTERIM ({_OVERWRITE_STUCK_ISSUE}): debug ran as a new import; Studio Web "
+            f"solution {_get_ci(payload, 'solutionId', 'SolutionId')} (previous: "
+            f"{', '.join(rotated_solution_ids)}).",
+            file=sys.stderr,
+            flush=True,
+        )
     status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
-        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
+        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}" + _incident_details(data))
+    if unreadable is not None:
+        # Every attempt completed, and every attempt's outputs were unreadable.
+        # This is an infrastructure failure (INFRA), not a verdict on the flow:
+        # the run reached its End node, we just never saw what it returned.
+        _fail_with_capture(
+            f"flow debug completed but its outputs could not be read on "
+            f"{unreadable_attempts} attempt(s): {unreadable}. "
+            "Classify as INFRA (outputs unknown), not as a flow defect; the "
+            "elements all ran. See the captured STDERR for the CLI's own account."
+        )
     return payload
 
 
@@ -524,8 +727,7 @@ def assert_loop_body_nodes_parented(
     loop's ID. Without ``parentId``, the runtime executes the node outside the
     loop context — per-iteration variables like ``currentItem`` are
     inaccessible and outputs come back null."""
-    project_dir = _find_project(project_glob)
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+    for path in find_flow_files(project_glob):
         with open(path) as f:
             flow = json.load(f)
         nodes_by_id = {n["id"]: n for n in flow.get("nodes") or []}
@@ -781,6 +983,11 @@ def assert_outputs_contain(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
             f"missing={missing}\nOutputs: {haystack[:1000]}{detail}"
         )
+
+
+def get_last_debug_stderr() -> str | None:
+    """Return the stderr of the most recent ``run_debug`` call, or ``None``."""
+    return _LAST_DEBUG_STDERR
 
 
 def get_last_debug_raw() -> str | None:
@@ -1332,12 +1539,10 @@ def node_output_leaves(payload: dict, node_ids) -> set:
 
 
 def _load_flow(project_glob: str) -> dict:
-    """Load the single .flow next to the matched project.uiproj."""
-    proj = _find_project(project_glob)
-    flows = glob.glob(os.path.join(proj, "*.flow"))
-    if not flows:
-        _fail(f"no .flow file under {proj}")
-    return json.loads(open(flows[0], encoding="utf-8").read())
+    """Load the single discovered flow artifact."""
+    path = find_flow_file(project_glob)
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 
 def assert_decision_branches_reach(
@@ -1520,7 +1725,141 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
     return _find_project(pattern)
 
 
+def find_flow_files(
+    project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
+) -> list[str]:
+    """Return flow artifacts from the selected solution, or one root emit.
+
+    A substantive Flow solution project wins whenever one exists. This keeps a
+    root-level SDK scratch file from competing with the linked solution copy.
+    When no project exists, or every project is only an abandoned scaffold,
+    validate and source-structure checks may consume a substantive root-level
+    SDK emit. Multiple genuinely distinct root emits are ambiguous and fail
+    with their paths rather than selecting one by glob order.
+
+    Debug callers intentionally do not use this helper: ``uip maestro flow
+    debug`` is project-scoped and must continue through :func:`find_project_dir`.
+    """
+    project_candidates = _rglob_pruned(project_pattern)
+    flow_projects = [path for path in project_candidates if _is_flow_project(path)]
+    root_matches = _dedupe_flow_candidates(
+        sorted(glob.glob(os.path.basename(flow_glob)))
+    )
+
+    # A preview author may compile a complete root-level SDK source before a
+    # later CLI command leaves an untouched trigger-only project scaffold. For
+    # file-scoped checks the substantive artifact is the build; the scaffold is
+    # not allowed to shadow it merely because it carries project.uiproj.
+    if flow_projects and len(root_matches) == 1:
+        project_counts = [
+            _flow_node_count(os.path.dirname(path)) for path in flow_projects
+        ]
+        root_count = _flow_file_node_count(root_matches[0])
+        if (
+            root_count is not None
+            and root_count > _HUSK_MAX_NODES
+            and all(
+                count is not None and count <= _HUSK_MAX_NODES
+                for count in project_counts
+            )
+        ):
+            print(
+                "note: ignoring abandoned project scaffold(s) in favor of "
+                f"substantive root Flow emit: {root_matches[0]}"
+            )
+            return root_matches
+
+    if flow_projects:
+        project_dir = _find_project(project_pattern)
+        matches = sorted(
+            glob.glob(
+                os.path.join(project_dir, "**", os.path.basename(flow_glob)),
+                recursive=True,
+            )
+        )
+        if not matches:
+            _fail(
+                f"No .flow file matching {flow_glob!r} under selected Flow "
+                f"project {project_dir}"
+            )
+        return matches
+
+    if not root_matches:
+        _fail(
+            f"No Flow project found matching {project_pattern!r}, and no "
+            f"root-level .flow file matching {os.path.basename(flow_glob)!r}"
+        )
+    if len(root_matches) > 1:
+        joined = "\n  - ".join(root_matches)
+        _fail(
+            "Multiple distinct root-level .flow files found — refusing to "
+            f"guess:\n  - {joined}"
+        )
+    return root_matches
+
+
+def find_flow_file(
+    project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
+) -> str:
+    """Return one unambiguous flow artifact using :func:`find_flow_files`."""
+    matches = find_flow_files(project_pattern, flow_glob=flow_glob)
+    if len(matches) > 1:
+        joined = "\n  - ".join(matches)
+        _fail(f"Multiple .flow files match {flow_glob!r}:\n  - {joined}")
+    return matches[0]
+
+
+def assert_no_flow_files() -> None:
+    """Require that the sandbox contains no ``.flow`` artifact anywhere.
+
+    This is the negative counterpart to :func:`find_flow_files` for read-only
+    tasks. It deliberately scans every location because any emitted Flow is a
+    failure; there is no preferred artifact to select in the absence case.
+    """
+    matches = _rglob_pruned("**/*.flow")
+    if matches:
+        joined = "\n  - ".join(matches)
+        _fail(f"Unexpected .flow file(s) found:\n  - {joined}")
+
+
 # ── Internals ───────────────────────────────────────────────────────────────
+
+
+def _incident_details(envelope: dict | None) -> str:
+    """The backend's own account of a faulted debug run, for the failure text.
+
+    `flow debug` reports a fault as one line per incident (`[102003] Integration
+    Services bad request (element createIssue)`) and defers the provider's
+    message to `uip maestro flow debug-instance incidents <id>`. That message is
+    the cause — 2026-09-01: `errors - {reporter=Specify a valid value for
+    Reporter}` behind six identical `[102003]` failures across three arms and two
+    weeks, none of whose task.json said so. Fetch it while the instance is still
+    on the tenant (it is gone within days) so the criterion output carries it.
+
+    Best-effort and side-effect-free: returns "" when there is no instance id,
+    the CLI is unavailable, or the tenant answers with anything but a list.
+    """
+    data = _get_ci(envelope, "Data") or {}
+    instance_id = _get_ci(data, "instanceId", "InstanceId")
+    if not instance_id:
+        return ""
+    try:
+        r = subprocess.run(
+            ["uip", "maestro", "flow", "debug-instance", "incidents", str(instance_id), "--output", "json"],
+            capture_output=True, text=True, timeout=_INCIDENTS_TIMEOUT_SECONDS,
+        )
+        parsed = _parse_json(r.stdout) or {}
+        incidents = _get_ci(parsed, "Data")
+        if not isinstance(incidents, list) or not incidents:
+            return ""
+        lines = [
+            f"  - element={_get_ci(i, 'elementId', 'ElementId')} code={_get_ci(i, 'errorCode', 'ErrorCode')} "
+            f"{_get_ci(i, 'errorMessage', 'ErrorMessage')}: {_get_ci(i, 'errorDetails', 'ErrorDetails')}"
+            for i in incidents if isinstance(i, dict)
+        ]
+        return "\nincidents (uip maestro flow debug-instance incidents):\n" + "\n".join(lines)
+    except Exception:  # noqa: BLE001 — diagnostics must never mask the real failure
+        return ""
 
 
 def _parse_json(stdout: str) -> dict | None:
@@ -1561,8 +1900,7 @@ def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
 
 
 def _iter_flow_nodes(project_glob: str):
-    project_dir = _find_project(project_glob)
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+    for path in find_flow_files(project_glob):
         with open(path) as f:
             flow = json.load(f)
         yield from flow.get("nodes") or []
@@ -1579,6 +1917,23 @@ def _non_empty_binding_value(value: Any) -> bool:
 _HUSK_MAX_NODES = 1
 
 
+def _dedupe_flow_candidates(paths: list[str]) -> list[str]:
+    """Collapse aliases and byte-identical copies before ambiguity checks."""
+    by_realpath: dict[str, str] = {}
+    for path in paths:
+        by_realpath.setdefault(os.path.realpath(path), path)
+
+    by_content: dict[str, str] = {}
+    for path in by_realpath.values():
+        try:
+            with open(path, "rb") as f:
+                key = hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            key = f"unreadable:{path}"
+        by_content.setdefault(key, path)
+    return sorted(by_content.values())
+
+
 def _find_project(pattern: str) -> str:
     """Locate the *Flow* project directory matching ``pattern``.
 
@@ -1591,10 +1946,11 @@ def _find_project(pattern: str) -> str:
     Filtering by manifest avoids a 1-of-N glob collision the symptom of
     MST-9734.
 
-    Two Flow projects can also mean one build plus one abandoned scaffold —
-    see :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
+    Two Flow projects can also mean byte-identical copies, or one build plus one
+    abandoned scaffold — see :func:`_dedupe_flow_projects` and
+    :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
     """
-    candidates = sorted(glob.glob(pattern, recursive=True))
+    candidates = _rglob_pruned(pattern)
     if not candidates:
         _fail(f"No project.uiproj found matching {pattern}")
     flow_projects = [p for p in candidates if _is_flow_project(p)]
@@ -1605,6 +1961,15 @@ def _find_project(pattern: str) -> str:
             f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
+        original_count = len(flow_projects)
+        flow_projects = _dedupe_flow_projects(flow_projects)
+        if len(flow_projects) == 1:
+            print(
+                "note: ignoring "
+                f"{original_count - 1} byte-identical Flow project duplicate(s)"
+            )
+            return os.path.dirname(flow_projects[0])
+
         counts = [(p, _flow_node_count(os.path.dirname(p))) for p in flow_projects]
         selected, husks = _split_off_scaffold_husks(counts)
         if selected is not None:
@@ -1651,16 +2016,52 @@ def _flow_node_count(project_dir: str) -> int | None:
         return None
     total = 0
     for path in flows:
-        try:
-            with open(path, encoding="utf-8") as f:
-                flow = json.load(f)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        count = _flow_file_node_count(path)
+        if count is None:
             return None
-        nodes = flow.get("nodes") if isinstance(flow, dict) else None
-        if not isinstance(nodes, list):
-            return None
-        total += len(nodes)
+        total += count
     return total
+
+
+def _flow_file_node_count(path: str) -> int | None:
+    """Return one Flow file's node count, or ``None`` when unreadable."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            flow = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    nodes = flow.get("nodes") if isinstance(flow, dict) else None
+    return len(nodes) if isinstance(nodes, list) else None
+
+
+def _dedupe_flow_projects(project_uiprojs: list[str]) -> list[str]:
+    """Collapse projects whose relative Flow files are byte-for-byte equal.
+
+    Missing or unreadable Flow files stay distinct so project-scoped debug never
+    guesses across candidates whose equivalence cannot be proved.
+    """
+    by_content: dict[tuple[tuple[str, str], ...] | tuple[str, str], str] = {}
+    for project_uiproj in project_uiprojs:
+        project_dir = os.path.dirname(project_uiproj)
+        flows = sorted(
+            glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+        )
+        fingerprints: list[tuple[str, str]] = []
+        try:
+            for path in flows:
+                with open(path, "rb") as f:
+                    digest = hashlib.sha256(f.read()).hexdigest()
+                fingerprints.append((os.path.relpath(path, project_dir), digest))
+        except OSError:
+            fingerprints = []
+
+        key: tuple[tuple[str, str], ...] | tuple[str, str]
+        if fingerprints:
+            key = tuple(fingerprints)
+        else:
+            key = ("unknown", project_uiproj)
+        by_content.setdefault(key, project_uiproj)
+    return sorted(by_content.values())
 
 
 def _describe_candidate(project_uiproj: str, node_count: int | None) -> str:
@@ -1737,6 +2138,11 @@ def _dump_debug_capture(context: str = "") -> None:
     except Exception as exc:  # noqa: BLE001 — diagnostics must never mask the real failure
         lines.append(f"SUMMARY: <unparsable: {exc!r}>")
     lines.append("RAW: " + raw.strip())
+    stderr = (_LAST_DEBUG_STDERR or "").strip()
+    if stderr:
+        # The CLI's own account of the run (progress, warnings such as a failed
+        # output-variables fetch). Tail only: the head is login/upload noise.
+        lines.append("STDERR (tail): " + stderr[-_STDERR_CAPTURE_TAIL_CHARS:])
     lines.append("=== FLOW_DEBUG_RAW_CAPTURE END ===")
     print("\n".join(lines), file=sys.stderr)
 

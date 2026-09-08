@@ -27,6 +27,12 @@ def main():
     except OSError:
         fail("result.json missing — agent did not record the create/get round-trip")
 
+    if len(sys.argv) > 1 and sys.argv[1] == "--execution-evidence":
+        if not all(res.get(key) for key in ("created_name", "retrieved_name", "id")):
+            fail("result.json is missing created_name, retrieved_name, or id")
+        print("OK: execution result recorded")
+        return
+
     name = seed["name"]
     if res.get("created_name") != name:
         fail(f"created_name {res.get('created_name')!r} != seeded {name!r}")

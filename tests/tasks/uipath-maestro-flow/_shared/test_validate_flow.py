@@ -51,7 +51,7 @@ def _timeout(stdout=b"partial", stderr=b"stub stderr"):
 
 
 def _stub(monkeypatch, results, *, flows=("a.flow",)):
-    """Feed validate_flow a queue of results, stub discovery, sleep, and glob.
+    """Feed validate_flow a queue of results and stub discovery and time.
 
     A queued ``BaseException`` is raised rather than returned, which is how the
     ``subprocess.TimeoutExpired`` path is exercised.
@@ -67,8 +67,7 @@ def _stub(monkeypatch, results, *, flows=("a.flow",)):
     calls = {"n": 0, "timeouts": [], "flows": [], "clock": 0.0, "overruns": []}
     queue = list(results)
 
-    monkeypatch.setattr(validate_flow, "find_project_dir", lambda: "/tmp/proj")
-    monkeypatch.setattr(validate_flow.glob, "glob", lambda *a, **k: list(flows))
+    monkeypatch.setattr(validate_flow, "find_flow_files", lambda: list(flows))
     monkeypatch.setattr(validate_flow.time, "sleep", lambda *_: None)
     monkeypatch.setattr(validate_flow.time, "monotonic", lambda: calls["clock"])
     monkeypatch.delenv(validate_flow._BUDGET_ENV, raising=False)
@@ -165,10 +164,17 @@ def test_budget_exhaustion_reports_instead_of_running(monkeypatch, capsys):
     assert "-0s left" not in err  # negative remainder is clamped for display
 
 
-def test_no_flow_file_fails(monkeypatch, capsys):
+def test_no_flow_file_fails(monkeypatch):
+    """`find_flow_files()` exits with its own message when nothing is found;
+    `main` has no empty-list branch of its own."""
     _stub(monkeypatch, [], flows=())
-    assert validate_flow.main() == 1
-    assert "No .flow file found" in capsys.readouterr().err
+
+    def no_flows():
+        raise SystemExit("FAIL: No Flow project found matching '**/project.uiproj'")
+
+    monkeypatch.setattr(validate_flow, "find_flow_files", no_flows)
+    with pytest.raises(SystemExit, match="No Flow project found"):
+        validate_flow.main()
 
 
 @pytest.mark.parametrize(

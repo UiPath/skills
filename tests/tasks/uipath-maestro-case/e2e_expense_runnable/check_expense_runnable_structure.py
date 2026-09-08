@@ -35,6 +35,7 @@ from _shared.case_check import (  # noqa: E402
     get_case_exit_conditions,
     iter_tasks,
     read_caseplan,
+    selected_stage_ids,
 )
 
 EXPECTED_CASEPLAN = os.path.join(
@@ -218,8 +219,8 @@ def main():
         rname = rule.get("rule")
         if rname == "required-stages-completed" and ce.get("marksCaseComplete") is True:
             happy = True
-        if rname in ("selected-stage-completed", "selected-stage-exited") and rule.get("selectedStageId") in terminal_ids:
-            terminal_seen.add(rule.get("selectedStageId"))
+        if rname in ("selected-stage-completed", "selected-stage-exited"):
+            terminal_seen.update(terminal_ids & set(selected_stage_ids(rule)))
     if not happy:
         _fail("missing happy-path case-exit 'required-stages-completed' with marksCaseComplete=true")
     missing_term = [name for name, node in terminal.items() if node["id"] not in terminal_seen]

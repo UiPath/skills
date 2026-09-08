@@ -13,31 +13,31 @@ const sourceRoot = 'typescript/sdk';
 const skillMappings = [
   {
     source: `${sourceRoot}/skill/SKILL.md`,
-    target: 'preview/uipath-maestro-flow/SKILL.md',
+    target: 'preview/skills/uipath-maestro-flow/SKILL.md',
   },
   {
     source: `${sourceRoot}/skill/SKILL-case.md`,
-    target: 'preview/uipath-maestro-case/SKILL.md',
+    target: 'preview/skills/uipath-maestro-case/SKILL.md',
   },
   {
     source: `${sourceRoot}/skill/SKILL-bpmn.md`,
-    target: 'preview/uipath-maestro-bpmn/SKILL.md',
+    target: 'preview/skills/uipath-maestro-bpmn/SKILL.md',
   },
 ];
 
 const provenanceFiles = [
-  ['preview/uipath-maestro-flow/SKILL.md', 'typescript/sdk/skill/SKILL.md'],
-  ['preview/uipath-maestro-case/SKILL.md', 'typescript/sdk/skill/SKILL-case.md'],
-  ['preview/uipath-maestro-bpmn/SKILL.md', 'typescript/sdk/skill/SKILL-bpmn.md'],
+  ['preview/skills/uipath-maestro-flow/SKILL.md', 'typescript/sdk/skill/SKILL.md'],
+  ['preview/skills/uipath-maestro-case/SKILL.md', 'typescript/sdk/skill/SKILL-case.md'],
+  ['preview/skills/uipath-maestro-bpmn/SKILL.md', 'typescript/sdk/skill/SKILL-bpmn.md'],
 ];
 
 const managedDirectories = [
-  'preview/uipath-maestro-flow/references',
-  'preview/uipath-maestro-flow/examples',
-  'preview/uipath-maestro-case/references',
-  'preview/uipath-maestro-case/examples',
-  'preview/uipath-maestro-bpmn/references',
-  'preview/uipath-maestro-bpmn/examples',
+  'preview/skills/uipath-maestro-flow/references',
+  'preview/skills/uipath-maestro-flow/examples',
+  'preview/skills/uipath-maestro-case/references',
+  'preview/skills/uipath-maestro-case/examples',
+  'preview/skills/uipath-maestro-bpmn/references',
+  'preview/skills/uipath-maestro-bpmn/examples',
 ];
 
 const oldSiblingParagraph = [
@@ -190,13 +190,13 @@ function collectMappings(upstreamRoot, refs) {
         'bpmn-runtime.md',
       ].includes(name)) continue;
       const relative = path.posix.relative(referencesRoot, source);
-      add(source, `preview/uipath-maestro-flow/references/${relative}`);
+      add(source, `preview/skills/uipath-maestro-flow/references/${relative}`);
     }
 
     const flowExamplesRoot = `${sourceRoot}/example-eval`;
     for (const source of gitFiles(upstreamRoot, ref, flowExamplesRoot)) {
       const relative = path.posix.relative(flowExamplesRoot, source);
-      add(source, `preview/uipath-maestro-flow/examples/${relative}`);
+      add(source, `preview/skills/uipath-maestro-flow/examples/${relative}`);
     }
 
     const sharedExamplesRoot = `${sourceRoot}/example`;
@@ -204,26 +204,26 @@ function collectMappings(upstreamRoot, refs) {
       const name = path.posix.basename(source);
       const relative = path.posix.relative(sharedExamplesRoot, source);
       if (name.endsWith('.case.ts')) {
-        add(source, `preview/uipath-maestro-case/examples/${relative}`);
+        add(source, `preview/skills/uipath-maestro-case/examples/${relative}`);
       } else if (relative === 'case-bindings.json') {
-        add(source, 'preview/uipath-maestro-case/examples/bindings.json');
+        add(source, 'preview/skills/uipath-maestro-case/examples/bindings.json');
       } else if (name.endsWith('.bpmn.ts')) {
-        add(source, `preview/uipath-maestro-bpmn/examples/${relative}`);
+        add(source, `preview/skills/uipath-maestro-bpmn/examples/${relative}`);
       }
     }
   }
 
   add(
     `${sourceRoot}/skill/references/case-api.md`,
-    'preview/uipath-maestro-case/references/api.md',
+    'preview/skills/uipath-maestro-case/references/api.md',
   );
   add(
     `${sourceRoot}/skill/references/bpmn-api.md`,
-    'preview/uipath-maestro-bpmn/references/api.md',
+    'preview/skills/uipath-maestro-bpmn/references/api.md',
   );
   for (const [source, target] of [
-    [`${sourceRoot}/skill/references/case-runtime.md`, 'preview/uipath-maestro-case/references/case-runtime.md'],
-    [`${sourceRoot}/skill/references/bpmn-runtime.md`, 'preview/uipath-maestro-bpmn/references/bpmn-runtime.md'],
+    [`${sourceRoot}/skill/references/case-runtime.md`, 'preview/skills/uipath-maestro-case/references/case-runtime.md'],
+    [`${sourceRoot}/skill/references/bpmn-runtime.md`, 'preview/skills/uipath-maestro-bpmn/references/bpmn-runtime.md'],
   ]) {
     if (refs.some((ref) => gitObjectExists(upstreamRoot, ref, source))) add(source, target);
   }
@@ -406,13 +406,13 @@ function adaptBpmnRuntime(text) {
 }
 
 const snapshotAdaptations = new Map([
-  ['preview/uipath-maestro-flow/SKILL.md', adaptFlowSkill],
-  ['preview/uipath-maestro-case/SKILL.md', adaptCaseSkill],
-  ['preview/uipath-maestro-bpmn/SKILL.md', adaptBpmnSkill],
-  ['preview/uipath-maestro-flow/references/api.md', adaptFlowApi],
-  ['preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
-  ['preview/uipath-maestro-case/references/case-runtime.md', adaptCaseRuntime],
-  ['preview/uipath-maestro-bpmn/references/bpmn-runtime.md', adaptBpmnRuntime],
+  ['preview/skills/uipath-maestro-flow/SKILL.md', adaptFlowSkill],
+  ['preview/skills/uipath-maestro-case/SKILL.md', adaptCaseSkill],
+  ['preview/skills/uipath-maestro-bpmn/SKILL.md', adaptBpmnSkill],
+  ['preview/skills/uipath-maestro-flow/references/api.md', adaptFlowApi],
+  ['preview/skills/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
+  ['preview/skills/uipath-maestro-case/references/case-runtime.md', adaptCaseRuntime],
+  ['preview/skills/uipath-maestro-bpmn/references/bpmn-runtime.md', adaptBpmnRuntime],
 ]);
 
 function snapshotAdaptationFor(target) {
@@ -470,10 +470,10 @@ function verifySkillBody(skillsRoot, upstreamRoot, newCommit, target, source, ad
 
 function verifyExactMappings(skillsRoot, upstreamRoot, newCommit, mappings) {
   const adaptedTargets = new Map([
-    ['preview/uipath-maestro-flow/references/api.md', adaptFlowApi],
-    ['preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
-    ['preview/uipath-maestro-case/references/case-runtime.md', adaptCaseRuntime],
-    ['preview/uipath-maestro-bpmn/references/bpmn-runtime.md', adaptBpmnRuntime],
+    ['preview/skills/uipath-maestro-flow/references/api.md', adaptFlowApi],
+    ['preview/skills/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
+    ['preview/skills/uipath-maestro-case/references/case-runtime.md', adaptCaseRuntime],
+    ['preview/skills/uipath-maestro-bpmn/references/bpmn-runtime.md', adaptBpmnRuntime],
   ]);
   const skillTargets = new Set(skillMappings.map(({ target }) => target));
   for (const mapping of mappings) {
@@ -492,7 +492,7 @@ function verifyExactMappings(skillsRoot, upstreamRoot, newCommit, mappings) {
 
 function verifyFrontmatterAndPins(skillsRoot, newPin) {
   for (const skill of ['flow', 'case', 'bpmn']) {
-    const target = `preview/uipath-maestro-${skill}/SKILL.md`;
+    const target = `preview/skills/uipath-maestro-${skill}/SKILL.md`;
     const text = readText(path.join(skillsRoot, target));
     const frontmatter = text.match(/^---\n([\s\S]*?)\n---\n/);
     if (!frontmatter) fail(`${target} is missing YAML frontmatter`);
@@ -510,7 +510,7 @@ function verifyFrontmatterAndPins(skillsRoot, newPin) {
 
 function verifyDeadLinks(skillsRoot) {
   for (const skill of ['flow', 'case', 'bpmn']) {
-    const skillRoot = path.join(skillsRoot, `preview/uipath-maestro-${skill}`);
+    const skillRoot = path.join(skillsRoot, `preview/skills/uipath-maestro-${skill}`);
     const documents = [path.join(skillRoot, 'SKILL.md')];
     documents.push(
       ...walkFiles(path.join(skillRoot, 'references')).filter((file) => file.endsWith('.md')),
@@ -545,7 +545,7 @@ function routerRows(text) {
 }
 
 function verifyRouter(skillsRoot, upstreamRoot, newCommit) {
-  const target = readText(path.join(skillsRoot, 'preview/uipath-maestro-flow/SKILL.md'));
+  const target = readText(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/SKILL.md'));
   const source = gitShow(upstreamRoot, newCommit, `${sourceRoot}/skill/SKILL.md`).toString('utf8');
   const rows = routerRows(target);
   const sourceRows = routerRows(source);
@@ -555,19 +555,19 @@ function verifyRouter(skillsRoot, upstreamRoot, newCommit) {
   for (const row of rows) {
     const reference = row.match(/\]\(references\/([^)]+)\)/)?.[1];
     const example = row.match(/`examples\/([^`]+)`/)?.[1];
-    if (!reference || !fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references', reference))) {
+    if (!reference || !fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/references', reference))) {
       fail(`Flow router row has a missing reference: ${row}`);
     }
-    if (!example || !fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/examples', example))) {
+    if (!example || !fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/examples', example))) {
       fail(`Flow router row has a missing example: ${row}`);
     }
   }
 }
 
 function verifyStalePaths(skillsRoot) {
-  const flow = readText(path.join(skillsRoot, 'preview/uipath-maestro-flow/SKILL.md'));
-  const caseSkill = readText(path.join(skillsRoot, 'preview/uipath-maestro-case/SKILL.md'));
-  const bpmn = readText(path.join(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'));
+  const flow = readText(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/SKILL.md'));
+  const caseSkill = readText(path.join(skillsRoot, 'preview/skills/uipath-maestro-case/SKILL.md'));
+  const bpmn = readText(path.join(skillsRoot, 'preview/skills/uipath-maestro-bpmn/SKILL.md'));
   if (/\bexample\//.test(flow) || /references\/(?:case|bpmn)-api\.md/.test(flow)) {
     fail('Flow SKILL.md contains an upstream-only path');
   }
@@ -577,7 +577,7 @@ function verifyStalePaths(skillsRoot) {
   if (/bpmn-api|\bexample\//.test(bpmn)) {
     fail('BPMN SKILL.md contains an upstream-only path');
   }
-  for (const file of walkFiles(path.join(skillsRoot, 'preview/uipath-maestro-case/examples'))) {
+  for (const file of walkFiles(path.join(skillsRoot, 'preview/skills/uipath-maestro-case/examples'))) {
     if (/case-bindings|\bexample\//.test(readText(file))) {
       fail(`${normalizeRelative(path.relative(skillsRoot, file))} contains an upstream-only path`);
     }
@@ -618,7 +618,7 @@ export function verifySnapshot({ skillsRoot, upstreamRoot, newCommit, newPin, ma
     skillsRoot,
     upstreamRoot,
     newCommit,
-    'preview/uipath-maestro-flow/SKILL.md',
+    'preview/skills/uipath-maestro-flow/SKILL.md',
     `${sourceRoot}/skill/SKILL.md`,
     adaptFlowSkill,
   );
@@ -626,7 +626,7 @@ export function verifySnapshot({ skillsRoot, upstreamRoot, newCommit, newPin, ma
     skillsRoot,
     upstreamRoot,
     newCommit,
-    'preview/uipath-maestro-case/SKILL.md',
+    'preview/skills/uipath-maestro-case/SKILL.md',
     `${sourceRoot}/skill/SKILL-case.md`,
     adaptCaseSkill,
   );
@@ -634,7 +634,7 @@ export function verifySnapshot({ skillsRoot, upstreamRoot, newCommit, newPin, ma
     skillsRoot,
     upstreamRoot,
     newCommit,
-    'preview/uipath-maestro-bpmn/SKILL.md',
+    'preview/skills/uipath-maestro-bpmn/SKILL.md',
     `${sourceRoot}/skill/SKILL-bpmn.md`,
     adaptBpmnSkill,
   );

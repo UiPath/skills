@@ -35,8 +35,8 @@ Definitions in `definitions[]` are CLI-owned. `uip maestro flow node add` copies
 
 An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`. Author it through the Configuration workflow below like any other connector activity; `describe`/version mechanics are in [/uipath:uipath-platform — resources.md § `--activity-version`](../../../../../uipath-platform/references/integration-service/resources.md#--activity-version). Four deltas:
 
-1. **No `objectName` in `--detail`** — resolved from the configuration's `activityName` (`model.context.objectName` is empty).
-2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <activity-name> --activity-version 4.0.0`).
+1. **`objectName` source** — read the definition's `configuration` `objectName` (the `model.context[]` `objectName` entry is declared with no value). It is the `describe` positional, but do NOT pass it in `--detail` — `node configure` reads it from the definition itself. If configuration carries no `objectName`, the registry copy is stale: run `uip maestro flow registry pull --force`, delete the `definitions[]` entry, and re-add the node.
+2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <object-name> --activity-version 4.0.0`).
 3. **Operation label ≠ HTTP verb** — a semantic operation (e.g. `Update`) pairs with any verb (e.g. `POST /usergroups.users.update`). `flow validate` accepts it; do not "fix" the method to match the label.
 4. **Not connection-scoped** — `--connection-id` on `registry get` adds no custom fields.
 
@@ -103,9 +103,11 @@ uip is resources describe "<connector-key>" "<objectName>" \
 
 Then run `cat <metadataFile path from response>` and read the full cached metadata. Pass `--operation` as the node definition's `model.context[].method` verbatim. E.g. Jira `curated_get_issue` → `GETBYID`; Data Service `QueryEntityRecordsCurated` → `POST`. Do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method` as the describe lookup key.
 
-> **`4.0.0` activities** — positional is the `activityName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<activityName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
+> **`4.0.0` activities** — positional is the `objectName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<objectName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
 
 Read `availableOperations[].method` and `availableOperations[].path` for method and endpoint; `parameters[]` for query/path parameters and `reference` objects; `requestFields[]` for body names, types, required status, descriptions, and `reference` objects; and `responseFields[]` for the response schema.
+
+> **Write only parameter names that `describe` listed, in the bucket it listed them under.** Never guess a key. Slack `send_message_to_channel_v2`: `send_as` is a required query parameter, not a body field; `username` is the bot display name, not a send-as switch.
 
 ### Step 3a — Resolve parent-field-driven custom fields
 
@@ -120,6 +122,8 @@ Do not skip this for Get/Retrieve: runtime may succeed while Studio Web lacks th
 Check **BOTH `requestFields` AND `parameters`** from the metadata for entries with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
 
 > **References are NOT body-field-only.** Query and path parameters carry `reference` objects too, and on some connectors the activity's PRIMARY input is a required **path parameter** whose `reference` is the design-time lookup behind a Studio Web dropdown. Scanning only `requestFields` misses it — the node then configures and passes `flow validate` with an unverified value and 404s at runtime. The same `reference` blocks appear on `connectorMethodInfo.parameters[]` in `registry get` output (with or without `--connection-id`) — when projecting parameter metadata for inspection, always include the `reference` key, not just `name`/`required`/`design.component`.
+
+> **A field with a `reference` takes a value a live lookup returned, never a value you typed.** Resolve it per [reference-resolution.md — Reference Fields](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-fields-critical). A plain word is right only when the lookup returns it (Slack `send_as` → `user` or `bot`). Jira `fields.reporter.id` wants the looked-up `accountId`, not `jane.doe@acmecorp.com`.
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../SKILL.md).
 
@@ -261,6 +265,8 @@ Illustrative supported activities (confirm against `registry get` for the specif
 | `uipath-microsoft-onedrive` | `AddListItem` | Add List Item | POST | method |
 | `uipath-sap-s4hanacloud` | `Entity` | Create Entity | POST | method |
 | `uipath-google-bigquery` | `projects::table` | List All Records | GET | method |
+
+> **Data Fabric also has native nodes — check whether they exist before choosing.** `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`, so they are the lighter path **when the tenant has them**. Their flags default to off, so confirm with `uip maestro flow registry get core.datafabric.read` first. If that answers "Node not found" — or search reports `AvailableOnTenant: false` — these `uipath-uipath-dataservice` activities are the correct path; stay here. Stay here too when the entity is federated, since the native writes require a native entity.
 
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 

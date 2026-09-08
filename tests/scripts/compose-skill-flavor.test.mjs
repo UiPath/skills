@@ -1188,7 +1188,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   );
   const customPublishDryRun = invokeNpm(
     repo,
-    ["publish", selectedStudioWeb, "--dry-run"],
+    ["publish", selectedStudioWeb, "--dry-run", "--tag", "preview"],
     { npm_config_userconfig: forcedPublicUserConfig },
   );
   assert.equal(
@@ -1489,7 +1489,16 @@ test("root npm publish dry-run keeps the old default-only behavior and restores 
   addPackageManifest(repo);
   const canonicalBefore = treeFileBytes(join(repo, "skills"));
 
-  const result = runNpm(repo, "publish", "--dry-run", "--json", "--access", "public");
+  const result = runNpm(
+    repo,
+    "publish",
+    "--dry-run",
+    "--json",
+    "--access",
+    "public",
+    "--tag",
+    "test",
+  );
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(`${result.stdout}\n${result.stderr}`, /@uipath\/skills|"name"\s*:\s*"@uipath\/skills"/);
   assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /skills-studioweb/);

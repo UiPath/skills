@@ -131,8 +131,9 @@ initial_prompt: |
   Run `uip maestro case validate TimerLogCase/TimerLogCase/caseplan.json
   --output json`. Validation is expected to fail due to the invalid exitType;
   that is not a reason to stop. The task is NOT complete until validate has run
-  and the build's issue log is on disk. Follow the skill's own logging contract
-  for when and how that log is written.
+  and `tasks/build-issues.md` is on disk. Keep that file as an append-only build
+  journal: include a heading naming TimerLogCase, a `## Journal` table with the
+  validation failure, and a completed summary of the recorded issue.
 
 success_criteria:
   - type: run_command

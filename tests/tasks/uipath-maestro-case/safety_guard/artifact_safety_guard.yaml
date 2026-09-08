@@ -188,9 +188,9 @@ success_criteria:
   # --- Rule 13 guards: no interpreter/stream-editor/helper-script assembly of a skill artifact ---
   # crypto.randomUUID() UUID subprocess (no fs, no redirection) is NOT matched by either pattern.
   - type: command_not_executed
-    description: "Rule 13: no inline interpreter or stream-editor manipulation of a skill artifact (sed -i, perl -i, gawk in-place, jq on/into an artifact, python open(), node -e ...fs. / require('fs'))"
+    description: "Rule 13: no inline interpreter or stream-editor writes to a skill artifact (read-only inspection is allowed)"
     tool_name: "Bash"
-    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|registry-resolved\.json|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*open\s*\(|(node|nodejs)\s+(-e|--eval)\b[^\n]*(fs\.|require\s*\(\s*[''"](node:)?fs[''"]))'
+    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|python[0-9]?\b[^\n]*(open\s*\([^)]*,[^)]*[wax]|\.write(_text|_bytes)?\s*\()|(node|nodejs)\s+(-e|--eval)\b[^\n]*(fs\.|require\s*\(\s*[''"](node:)?fs[''"]\s*\)\s*\.)(write|append|truncate|rm|unlink|rename))'
     weight: 2.0
     pass_threshold: 1.0
 

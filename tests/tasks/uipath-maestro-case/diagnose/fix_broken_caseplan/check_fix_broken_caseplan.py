@@ -43,6 +43,7 @@ from _shared.case_check import (  # noqa: E402
     find_triggers,
     get_case_exit_conditions,
     iter_tasks,
+    selected_stage_ids,
     read_caseplan,
 )
 
@@ -147,12 +148,12 @@ def main():
         for cond in (stage.get("data") or {}).get("entryConditions") or []:
             for group in cond.get("rules") or []:
                 for rule in group or []:
-                    sid = (rule or {}).get("selectedStageId")
-                    if sid and sid not in node_ids:
-                        _fail(
-                            f"stage {_label(stage)!r} entry condition references "
-                            f"non-existent stage id {sid!r}"
-                        )
+                    for sid in selected_stage_ids(rule or {}):
+                        if sid not in node_ids:
+                            _fail(
+                                f"stage {_label(stage)!r} entry condition references "
+                                f"non-existent stage id {sid!r}"
+                            )
     if not _has_path(plan, primary["Intake"]["id"], primary["Decision"]["id"]):
         _fail(
             "Decision is not reachable from Intake through condition-derived "

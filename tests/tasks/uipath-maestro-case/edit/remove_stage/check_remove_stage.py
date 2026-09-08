@@ -25,6 +25,7 @@ from _shared.case_check import (  # noqa: E402
     iter_stage_exit_conditions,
     iter_tasks,
     read_caseplan,
+    selected_stage_ids,
     start_debug,
 )
 
@@ -47,9 +48,9 @@ def _dangling_stage_refs(plan):
         for cond in iter_stage_entry_conditions(node):
             for group in cond.get("rules") or []:
                 for rule in group or []:
-                    sid = (rule or {}).get("selectedStageId")
-                    if sid and sid not in node_ids:
-                        dangling.append((label, sid))
+                    for sid in selected_stage_ids(rule or {}):
+                        if sid not in node_ids:
+                            dangling.append((label, sid))
         for cond in iter_stage_exit_conditions(node):
             dst = cond.get("exitToStageId")
             if dst and dst not in node_ids:
