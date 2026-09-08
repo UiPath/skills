@@ -340,6 +340,28 @@ class SeedTests(unittest.TestCase):
             f"{criterion_timeout}s -- raise the criterion or lower a step",
         )
 
+    def test_task_timeout_covers_the_turn_plus_all_grading(self):
+        """The same watchdog bounds the turns AND grading (tests/README.md).
+
+        Grading only gets what the turn did not spend, and firing the watchdog
+        reports the whole task TIMEOUT -- losing even the criteria that passed.
+        So turn_timeout + every criterion timeout must fit under task_timeout.
+        """
+
+        task = yaml.safe_load(
+            (HERE / "customer_escalation_triage.yaml").read_text(encoding="utf-8")
+        )
+        limits = task["run_limits"]
+        criteria = sum(c.get("timeout", 0) for c in task["success_criteria"])
+        needed = limits["turn_timeout"] + criteria
+        self.assertLessEqual(
+            needed,
+            limits["task_timeout"],
+            f"a full {limits['turn_timeout']}s turn plus {criteria}s of grading "
+            f"needs {needed}s but task_timeout is {limits['task_timeout']}s -- "
+            "the watchdog would report TIMEOUT and discard passing criteria",
+        )
+
 
 class PackageBindingTests(unittest.TestCase):
     def test_real_uuid_accepted(self):
