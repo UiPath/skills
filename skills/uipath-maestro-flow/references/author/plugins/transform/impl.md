@@ -234,7 +234,7 @@ Aggregation operations:
 ```json
 { "id": "op1", "type": "groupBy", "config": {
     "groupByField": "",
-    "aggregations": [{ "id": "a1", "field": "views", "operation": "sum", "alias": "totalViews" }] } }
+    "aggregations": [{ "id": "a1", "field": "views", "operation": "sum", "alias": "total" }] } }
 ```
 
 Verified on `core.action.transform.group-by:1.1` — summing `10, 20, 30` returns `[{ "value": { … }, "total": 60 }]`. The group object still carries a `value` key holding the first row; read the alias, not `value`. Reach for a [Script](../script/impl.md) node only when the figure needs logic the aggregation list cannot express.

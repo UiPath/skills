@@ -62,7 +62,7 @@ Rules:
 - Output fields use `variable: "vars.<globalName>"` (`vars.` required) and no `binding`.
 - InOut fields use both properties in those formats.
 - Use `schemaId` (not `id`) at schema level and generate a fresh UUID.
-- `priority` is `"Low"` | `"Medium"` | `"High"` — the three options this node's manifest declares; there is no `Critical` here, unlike an Action Center case task. It defaults to `Low` and comes from the request, not from the literal in either option's example. Urgency stated or implied ("urgent", "high priority", "time-sensitive", an SLA) means `High` or `Medium`. The value must land in the node; acknowledging the urgency in conversation is not enough.
+- `priority` is `"Low"` | `"Medium"` | `"High"` — the three options this node's manifest declares; there is no `Critical` here, unlike an Action Center case task. It defaults to `Low` and comes from the request, not from the literal in either option's example. Explicit high-urgency language — "urgent", "high priority", "critical", "ASAP", a named or breached SLA — selects `High`. Reserve `Medium` for a request that signals only mild or unquantified urgency, and `Low` when none is expressed. The value must land in the node; acknowledging the urgency in conversation is not enough.
 - `typeVersion` — always `"1.0"` for this node. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - Do not include a `model` block on node instances; only the definition carries it.
 - `outputs` contains only `output` (with `properties` for output/inOut fields plus `Action`) and `status` (with outcome `enum`/`default`). Do not add per-field `custom: true` entries.
