@@ -109,6 +109,7 @@ Pass the solution directory containing the `.uipx` file, or `.` from its root. F
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` and share the resulting URL.
 <!--skill-flavor:upload-command-section:end-->
 
+<!--skill-flavor:flow-debug-command-usage:start-->
 ## uip maestro flow debug
 
 Debug in the cloud through Studio Web + Orchestrator; require `uip login`. Always run `uip maestro flow validate` first, and run `uip solution resources refresh` before debugging:
@@ -121,6 +122,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```
+<!--skill-flavor:flow-debug-command-usage:end-->
 
 Pass the project directory containing `project.uiproj` (`<ProjectName>/` from the solution root, or `.` inside it). Use `--inputs` for a JSON object of flow input arguments. Repeat `--attachment <variableId>=<localPath>` to upload files for file-typed inputs; a bare path is rejected.
 
@@ -130,7 +132,9 @@ Pass the project directory containing `project.uiproj` (`<ProjectName>/` from th
 
 The CLI does not validate `<variableId>`; a mismatch can fault at runtime. Read `<flow>.flow`, inspect `variables.globals[]`, and use only entries with `direction:"in"` and `type:"file"`. If none exist, add `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`. In a Script node, read the uploaded name as `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
 
+<!--skill-flavor:flow-debug-help-pointer:start-->
 Run `uip maestro flow debug --help` for other options.
+<!--skill-flavor:flow-debug-help-pointer:end-->
 
 ### Reporting the run back to the user
 

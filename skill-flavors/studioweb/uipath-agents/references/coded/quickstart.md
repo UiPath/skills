@@ -9,8 +9,10 @@ Use when the coded agent is tightly coupled to one flow and lives as a sibling f
 <!--skill-flavor:flow-project-creation:end-->
 
 <!--skill-flavor:agent-solution-registration:start-->
-   cd ..
-   uip solution projects add "<AgentName>" --output json
+   # No registration command in Studio Web: the host registers every project it creates under
+   # /solution, and `uip solution projects add` is Node-CLI-only. If step 3 was refused
+   # ("coded-agent projects are not among the types Studio Web can create"), this scenario needs
+   # the Node CLI on your machine — stop and tell the user.
 <!--skill-flavor:agent-solution-registration:end-->
 
 <!--skill-flavor:agent-scaffold-solution-root:start-->
@@ -20,3 +22,17 @@ Use when the coded agent is tightly coupled to one flow and lives as a sibling f
 <!--skill-flavor:agent-scaffold-result-paths:start-->
    Result: `/solution/<AgentName>/` sibling to `/solution/<FlowName>/`.
 <!--skill-flavor:agent-scaffold-result-paths:end-->
+
+<!--skill-flavor:delivery-option-b-row:start-->
+<!--skill-flavor:delivery-option-b-row:end-->
+
+<!--skill-flavor:delivery-option-b:start-->
+<!--skill-flavor:delivery-option-b:end-->
+
+<!--skill-flavor:deploy-reachability:start-->
+9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after option **A** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask the user (single choice, "Deploy target").
+<!--skill-flavor:deploy-reachability:end-->
+
+<!--skill-flavor:local-workspace-delivery:start-->
+   - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so option A (manual push) is skipped — it would be redundant or break sync identity. The user may still want a local dev console. Stop and ask the user (single choice, "Delivery"):
+<!--skill-flavor:local-workspace-delivery:end-->

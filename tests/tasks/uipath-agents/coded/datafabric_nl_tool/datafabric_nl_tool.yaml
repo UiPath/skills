@@ -10,6 +10,14 @@ run_limits:
   expected_turns: 60
   turn_timeout: 1200
 
+pre_run:
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedProductCatalog --include-folders"
+    timeout: 60
+    fail_on_error: false
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_CodedProductCatalog --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_shared/seeds/coded_product_catalog.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_shared/seeds/coded_product_catalog.records.json"
+    timeout: 180
+    fail_on_error: true
+
 initial_prompt: |
   Build me a coded agent called `product-explorer` that lets users
   ask any question they want about our product catalog. The data is
@@ -18,6 +26,10 @@ initial_prompt: |
   instructions should apply consistently everywhere.
 
   Scaffold and init only — don't run or deploy.
+
+post_run:
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedProductCatalog --include-folders"
+    timeout: 60
 
 success_criteria:
   - type: skill_triggered

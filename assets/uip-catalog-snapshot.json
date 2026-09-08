@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-06T04:06:44Z",
-  "cli_version": "1.202.0-dev.8552",
+  "generated_at": "2026-09-08T04:07:47Z",
+  "cli_version": "1.203.0-dev.8563",
   "verbs": [
     "admin",
     "admin audit",
@@ -175,6 +175,8 @@
     "agent model list",
     "agent refresh",
     "agent review",
+    "agent review-history",
+    "agent review-history add",
     "agent tool",
     "agent tool list",
     "agent validate",
@@ -1315,7 +1317,9 @@
     "rpa remote configure",
     "rpa remote download-file",
     "rpa remote exec",
-    "rpa remote show",
+    "rpa remote start",
+    "rpa remote status",
+    "rpa remote stop",
     "rpa remote upload-file",
     "rpa restore",
     "rpa run",

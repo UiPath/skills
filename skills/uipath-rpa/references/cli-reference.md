@@ -69,7 +69,7 @@ To create a project, see [environment-setup.md](environment-setup.md); `--target
 `uip rpa` connects to one of two Studio flavors behind the same IPC contract:
 
 - **Headless Studio (Helm) — default.** Ships as a NuGet package and auto-launches on first use. **No Studio Desktop install needed.** First call on a cold NuGet cache may sit near-silent for 30–90 s while `dotnet restore` runs — the default shell timeout covers this; raise `timeoutSeconds` only behind a slow feed.
-- **Studio Desktop.** The interactive UI. Used automatically only by verbs with **UI side effects** — those that open a window or highlight something in the designer (discover them via `--help`; they don't work headless). For such a verb, ensure Desktop is up first (`uip rpa studio start --project-dir "<PROJECT_DIR>"`), then run it. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop).
+- **Studio Desktop.** The interactive UI. A running Studio Desktop instance that has the project open handles that project's `uip rpa` calls — `run` and `debug start` included — and `uip rpa instances list --output json` shows which instance holds which project. Verbs with **UI side effects** (open a window, highlight something in the designer; discover them via `--help`) work only here: ensure Desktop is up first (`uip rpa studio start --project-dir "<PROJECT_DIR>"`), then run them. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop). **The two backends return different `run` / `debug start` payloads** — see [Reading run / debug results](#reading-run--debug-results).
 
 `--studio-dir` is consulted **only when Studio Desktop is in use**; headless ignores it. When Desktop auto-detection fails, resolution falls back to `UIPATH_STUDIO_DIR`, then the default install path, then a dev build output. Errors like `"does not have interop support"` / `"Requires Studio 26.2+"` mean the detected Desktop is too old — tell the user to update it; this affects only the Desktop-only verbs.
 
@@ -93,33 +93,56 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 `uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
-Both wrap the result in `{Result, Code, Data}`. **`Data`'s inner shape varies by CLI build and run state — read it by key presence, never by assumed schema.** A completed run returns the fields flat (`output`, `errors`, `logEntries` — the workflow's own `Log Message` output arrives in `logEntries`); suspended and stepping debug sessions, and older builds, nest a JSON-encoded string on `Data.runResult` (`HasErrors`, `ErrorMessage`, `DebugState`, `DebugDetails`, `Profiling`). Field-by-field meaning for both shapes: [debugging.md § Output Format](debugging.md#output-format).
+Both wrap the result in `{Result, Code, Data}`. **`Data`'s shape is set by the backend that ran the workflow** ([§ Headless Studio (Helm) vs Studio Desktop](#headless-studio-helm-vs-studio-desktop)) — identify it by the keys present:
 
-> **A completed run passed only when `Data.errors` is empty AND `Data.output` is `"Session ended"`.** The outer `Result` qualifies the CLI invocation, not the workflow — it stays `Success` through unhandled exceptions, compile failures, and a missing entry point, so **never read `Result: "Success"` as a passing run**. Both conditions are required, because `errors` stays empty for a missing entry point and for a debug session suspended on an exception. **DO NOT infer failure from a log entry's `level`** — a clean run that logs at `Error` still returns `errors: []` and `output: "Session ended"`; treating log levels as a verdict flips green runs to "failed" and burns retries. Field-by-field behavior per scenario: [debugging.md § Output Format](debugging.md#output-format).
+| Backend | `Data` keys | Where the workflow's `Log Message` output is |
+|---|---|---|
+| **Headless Studio (Helm)** — no Studio Desktop instance has the project open | `output` (serialized output arguments, `"{}"` when none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails` | streamed to stdout as `[<Level>] …` lines (`[Information]`, `[Error]`, …) **above** the JSON envelope; nothing inside `Data` |
+| **Studio Desktop** — the project is open in a running Studio Desktop | `output` (status string: `"Session ended"` on completion), `errors` (array), `logEntries` (array of `{source, level, message}`, `source` = `Compile` or `Debug`), `debugState` (`"Completed"` on completion; absent when the file could not be opened) | inside `Data.logEntries`; nothing streams above the envelope |
+
+Field-by-field meaning for both: [debugging.md § Output Format](debugging.md#output-format).
+
+> **Verdict, Helm shape: passed only when `hasErrors` is `false` AND `errorMessage` is `null` AND `debugState` is `null` or `"Completed"`.** A `run` that faulted, failed validation, or named a missing entry point returns outer `Result: "Failure"` with the same field set JSON-encoded in `Message` (`hasErrors: true`, `errorMessage` = the failure text). A faulted `debug start` returns `Result: "Success"` with `hasErrors: false`, `debugState: "Suspended"`, the exception in `debugDetails` and command guidance in `errorMessage` — the session is still alive; cancel or continue it.
+>
+> **Verdict, Studio Desktop shape: passed only when `errors` is empty AND `output` is `"Session ended"`.** Both are required: a missing entry point returns outer `Result: "Success"` with `errors: []`, `logEntries: []` and `output: "Failed to open the file <absolute path>"`. An `--input-arguments` key the workflow does not declare is accepted silently (`"Session ended"`).
+>
+> **On either backend: never read the outer `Result: "Success"` as a passing run, and never infer failure from a `Warning` / `Error` log level** — `Log Message` activities emit at any level, and treating log levels as a verdict flips green runs to "failed" and burns retries.
 
 ### Capturing the verdict
 
-**Always pass `--output-filter` on `run` / `debug start`.** It applies a JMESPath expression to `Data` server-side, so one call returns the verdict and the workflow's own `Log Message` output in ~14 lines:
+**Run `run` / `debug start` with no `--output-filter` and read the envelope as printed.** The two backends return different key sets, so a filter written for one names keys the other does not have; the CLI then rejects the whole call with `Filter '…' failed to evaluate: Invalid type … received type null` *after* the workflow has already run (`length(errors)` on Helm, any function on `hasErrors` on Desktop), and the retry re-drives the application and costs a turn. On Helm the filter cannot reach the log lines at all — they are outside `Data`.
 
 ```bash
-uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json \
-  --output-filter "{output: output, errorCount: length(errors), errors: errors, runtimeLog: logEntries[?source=='Debug' && level!='Trace'].message | [-8:]}"
+uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
 ```
+
+Helm:
+
+```text
+[Information] Starting execution...
+[Information] <PROJECT_NAME> execution started
+[Information] Sum: 10
+[Information] <PROJECT_NAME> execution ended in: 00:00:00
+{ "Result": "Success", "Code": "ToolResult", "Data": {
+    "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
+```
+
+Studio Desktop (same command, project open in Studio):
 
 ```json
 { "Result": "Success", "Code": "ToolResult", "Data": {
-    "output": "Session ended", "errorCount": 0, "errors": [],
-    "runtimeLog": ["... execution started", "5 + 5 = 10", "... execution ended in: 00:00:08"] } }
+    "output": "Session ended", "errors": [],
+    "logEntries": [ { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution started" },
+                    { "source": "Debug", "level": "Information", "message": "Sum: 10" },
+                    { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution ended in: 00:00:06" } ],
+    "debugState": "Completed" } }
 ```
 
-Adjudicate straight off `output` and `errorCount` per the rule above; `runtimeLog` carries the workflow's own messages. The `source=='Debug'` term drops compile-phase noise (`Compiling files`, `Registering activities metadata`, dozens of `Unregistered service requested`); widen the slice past `[-8:]` for a chattier workflow.
+Adjudicate per the two rules above. The workflow's logged values are the `[Information]` lines above the envelope on Helm — read them there and do not strip them (`grep -v '^\['`) — and the `logEntries` entries on Desktop, where `Trace`-level entries (`Unregistered service requested …`, `Audit: …`) outnumber the workflow's own lines. On `debug start` through Helm, `debugState` / `debugDetails` carry the suspended-state exception that selector recovery needs.
 
-**Never `| tail -N` (or `| head`) the unfiltered payload.** `logEntries` runs to hundreds of trace lines, so tailing is the reflex — but `output` and `errors` are emitted *above* it, so tailing keeps the noise and drops the verdict. Recovering them means re-running, which re-drives the application; a workflow that is not re-run-safe behaves differently the second time.
+**Never `| tail -N` or `| head -N` the payload.** On Helm the log lines precede the envelope, so either cut drops one of the two things you need; on Desktop `output` and `errors` precede a long `logEntries`, so `tail` drops the verdict. Recovering either means re-running, which re-drives the application; a workflow that is not re-run-safe behaves differently the second time. On a Helm `Result: "Failure"` envelope there is no `Data`: read `Message` — the `Data` fields JSON-encoded (`hasErrors: true`) for a `run` that faulted, failed validation, or named a missing entry point; `{"success": false, "errorMessage": "…"}` for a project directory that cannot be opened or an executor that is still busy.
 
-When a failure needs more than the filter shows (compile-phase error, root cause older than the slice), redirect the full payload — `> run.json` — and query the file. `jq` is absent on a standard Windows agent host; use PowerShell: `(Get-Content run.json -Raw | ConvertFrom-Json).Data.logEntries | Where-Object level -ne Trace`.
-
-> **A style diagnostic can fail the verdict.** `Data.errors` carries analyzer/IDE diagnostics, not just runtime faults — `IDE0063` ("'using' statement can be simplified") sets `output` to `"Execution aborted. See attached errors for more information"` though the body ran and logged normally. When `errors` holds a diagnostic ID rather than an exception, fix the code style and re-run; do not hunt for a runtime failure that did not happen.
-
+When a failure needs more than the envelope shows (compile-phase error, a stack older than the visible lines), redirect the whole stdout — `> run.log` — and read it from the file: on Helm the `[Error]` lines plus the envelope's `errorMessage`, on Desktop the `errors` and `logEntries` arrays. `jq` is absent on a standard Windows agent host; the envelope is the last JSON object in the file.
 ---
 
 ## Passing structured inputs
