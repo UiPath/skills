@@ -211,7 +211,7 @@ On every reachable End node, map every `out` variable:
 {
   "id": "doneSuccess",
   "type": "core.control.end",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Done" },
   "inputs": {},
   "outputs": { "<VARIABLE_ID>": { "source": "=js:<EXPRESSION>" } }
@@ -292,13 +292,13 @@ Only `inout` variables can be updated; `in` variables are read-only. `expression
 
 **Tool:** `Edit` (or `Write` when scaffolding from a template).
 
-1. Add a `core.subflow` parent with `display`, inputs, and error output (the JSON below pins `typeVersion`):
+1. Add a `core.subflow` parent with `display`, inputs, and error output:
 
 ```json
 {
   "id": "<SUBFLOW_NODE_ID>",
   "type": "core.subflow",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "<LABEL>" },
   "inputs": { "<IN_VAR>": "=js:<EXPRESSION>" },
   "outputs": {
@@ -313,9 +313,10 @@ Only `inout` variables can be updated; `in` variables are read-only. `expression
 ```
 
 2. Add `subflows.<SUBFLOW_NODE_ID>` with independent `nodes`, `edges`, `variables`, and `layout`; its variables include `in` variables with `triggerNodeId`, `out` variables, and `variables.nodes`.
-3. Match subflow `in` variable IDs to parent input keys; map every `out` variable on its End node.
-4. Parent `$vars` are not visible inside; pass values through inputs.
-5. Put subflow positions in its own `layout.nodes`, never top-level layout. See [subflow/impl.md](plugins/subflow/impl.md).
+3. Add a top-level `definitions[]` entry for `core.subflow` and for every node type used **inside** the subflow that the flow does not already carry. A subflow section has no `definitions` array of its own — see [subflow/impl.md](plugins/subflow/impl.md#subflow-rules).
+4. Match subflow `in` variable IDs to parent input keys; map every `out` variable on its End node.
+5. Parent `$vars` are not visible inside; pass values through inputs.
+6. Put subflow positions in its own `layout.nodes`, never top-level layout. See [subflow/impl.md](plugins/subflow/impl.md).
 
 ## Connector Node Configuration (Edit / Write fallback)
 
