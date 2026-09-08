@@ -80,15 +80,7 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
    grep -rn "PostMigration Action Required" --include=*.xaml "<OUTPUT_DIR>"
    ```
 
-3. **Variable-selector defects.** Recent UIAutomation packages ship a fix skill that lands in the project at `<OUTPUT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-post-migration-fix/SKILL.md` once the package docs are installed. Locate it with a direct `Read` after the build; a failed `Read` is the existence check. Do not probe with `Glob` or a directory-wide `Grep`, both skip `.local/`. `uip rpa build` and `validate` against a `25.10.21` package did not create that folder in testing, so expect the fallback below to be the common path.
-   - Present: follow that skill with `--project-dir "<OUTPUT_DIR>" --report-only`, fold its findings table into the report, and offer to run it without `--report-only`. It asks for confirmation before editing.
-   - Absent: list the affected activities yourself and mark them for manual review:
-
-     ```bash
-     grep -rn "ToStringWithDelimiter" --include=*.xaml "<OUTPUT_DIR>"
-     ```
-
-     Known failing shapes: a generated Use Application/Browser card whose selector is the marker expression and whose variable holds an element-only selector; a Check App State with `IsLoose="True"` and a marker scope selector inside a real card. Full values (window plus element) work.
+3. **Expression-selector defects.** When the output contains `.ToStringWithDelimiter()` markers, run the full procedure in [uia-post-migration-fix-guide.md](uia-post-migration-fix-guide.md) on `<OUTPUT_DIR>`: scan, classify each variable's value, present the findings table, confirm once, apply Fix 1 and Fix 2 with targeted edits, validate each edited file, then rebuild. Never rework or "improve" a selector that carries the marker; the defects are structural, and a selector rewrite destroys the variable binding.
 4. **Leftover classic activities** compile and run on the Windows framework; they are not broken. The summarizer's "UIA not migrated" list is the complete inventory; report it with each reason. Do not count `<ui:` elements in the XAML to cross-check it: that prefix also covers classic System and Excel activities, and a naive pattern counts property elements such as `<ui:Highlight.Target>` as activities.
 5. **What the output now contains.** Count the modern activity elements the run produced (opening tags only; property elements such as `<uix:NClick.Target>` are excluded), and look a specific activity up by the display name the SARIF reported; the nearest opening tag above it is its modern type:
 

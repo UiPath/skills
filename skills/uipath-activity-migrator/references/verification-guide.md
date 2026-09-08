@@ -14,7 +14,7 @@ Step 5 of the workflow. The migrated project is a Windows project, so the modern
 uip rpa build "<OUTPUT_DIR>" --output json
 ```
 
-Build compiles every workflow, applies project-scope analyzer rules, and restores packages. Restoring may also place package documentation under `<OUTPUT_DIR>/.local/docs/packages/<PackageId>/`, which the UIA package guide checks for in Hook 3; in the builds tested it did not, and Hook 3 has a fallback.
+Build compiles every workflow, applies project-scope analyzer rules, and restores packages.
 
 | Build result | Action |
 |---|---|

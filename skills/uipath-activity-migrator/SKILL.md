@@ -1,7 +1,7 @@
 ---
 name: uipath-activity-migrator
-description: "UiPath Activity Migrator — migrate Windows-Legacy RPA projects (`project.json` with `targetFramework: Legacy`, classic `ui:` activities) to the Windows framework and modern activities with the standalone `UiPath.Upgrade.exe` (`analyze` / `upgrade` / `bulk`). Windows only. Acquires the tool when missing, resolves the target UIAutomation package line, runs analyze then upgrade into a sibling folder, verifies with `uip rpa build`, triages the SARIF report. Classic UI Automation→modern UIA, Outlook classic→Microsoft 365, GSuite classic→modern, Microsoft.Activities.Extensions→Invoke Code. Authoring or editing Legacy `.xaml`→uipath-rpa. Migration-readiness review without running the tool→uipath-review. Runtime failures after migration→uipath-troubleshoot. Maestro `instance migrate`→the Maestro skills."
-when_to_use: "User says 'migrate activities', 'migrate this project', 'upgrade from Windows-Legacy', 'convert classic to modern activities', 'modernize this workflow', 'run the Activity Migrator', 'UiPath.Upgrade.exe', 'legacy to Windows', 'activity migration report'. NOT for writing new Legacy workflows (→uipath-rpa), `uip solution deploy upgrade`, or Maestro instance migration."
+description: "UiPath Activity Migrator — migrate Windows-Legacy RPA projects (`project.json` with `targetFramework: Legacy`, classic `ui:` activities) to the Windows framework and modern activities with the standalone `UiPath.Upgrade.exe` (`analyze` / `upgrade` / `bulk`). Windows only. Acquires the tool when missing, resolves the target UIAutomation package line, runs analyze then upgrade into a sibling folder, verifies with `uip rpa build`, triages the SARIF report. Classic UI Automation→modern UIA, Outlook classic→Microsoft 365, GSuite classic→modern, Microsoft.Activities.Extensions→Invoke Code. Also the post-migration fix: repairs migrated projects whose expression-selector targets fail or silently report not-found. Authoring or editing Legacy `.xaml`→uipath-rpa. Migration-readiness review without running the tool→uipath-review. Other runtime failures after migration→uipath-troubleshoot. Maestro `instance migrate`→the Maestro skills."
+when_to_use: "User says 'migrate activities', 'migrate this project', 'upgrade from Windows-Legacy', 'convert classic to modern activities', 'modernize this workflow', 'run the Activity Migrator', 'UiPath.Upgrade.exe', 'legacy to Windows', 'activity migration report', 'post migration fix', 'check always returns false after migration', 'could not find the UI element after migration'. NOT for writing new Legacy workflows (→uipath-rpa), `uip solution deploy upgrade`, or Maestro instance migration."
 ---
 
 # UiPath Activity Migrator
@@ -23,6 +23,7 @@ Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquir
 - User wants to **run the Activity Migrator** or mentions `UiPath.Upgrade.exe`
 - User wants a **migration dry run** or **migration report** produced by the tool (`analyze`)
 - User wants classic **Outlook** mail, classic **GSuite**, or **Microsoft.Activities.Extensions** activities migrated
+- User wants a **post-migration fix**: an already-migrated project whose expression-selector targets fail at runtime or silently report not-found, or one carrying `[PostMigration Action Required]` annotations
 
 Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode), a readiness review that does not run the tool (uipath-review), diagnosing runtime failures of an already-migrated project (uipath-troubleshoot), `uip solution deploy upgrade`, or Maestro `instance migrate`.
 
@@ -40,6 +41,8 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 10. **Bounded loops.** At most 3 build-fix iterations in Step 5. Then report what remains.
 
 ## Workflow
+
+**Fix-only entry.** When the user asks to fix or scan a project that was already migrated (its XAML carries `.ToStringWithDelimiter()` markers or `[PostMigration Action Required]` annotations), skip Steps 0 to 4: run [packages/uia-post-migration-fix-guide.md](references/packages/uia-post-migration-fix-guide.md) on that project as `<OUTPUT_DIR>`, then Steps 5 and 6.
 
 ### Step 0 — Preflight and acquire the tool
 
@@ -181,6 +184,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 | [sarif-triage-guide.md](references/sarif-triage-guide.md) | Every analyze and upgrade run: status mapping, core rule IDs, stop conditions, summarizer usage |
 | [verification-guide.md](references/verification-guide.md) | Step 5: build and validate loop, expected warnings, fix policy, Studio version requirements |
 | [packages/uia-guide.md](references/packages/uia-guide.md) | Project depends on `UiPath.UIAutomation.Activities` |
+| [packages/uia-post-migration-fix-guide.md](references/packages/uia-post-migration-fix-guide.md) | The migrated output carries `.ToStringWithDelimiter()` markers (UIA Hook 3), or the user asks for a post-migration fix on an already-migrated project |
 | [packages/mail-guide.md](references/packages/mail-guide.md) | Project depends on `UiPath.Mail.Activities` |
 | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) | Project depends on classic `UiPath.GSuite.Activities` |
 | [packages/microsoft-activities-guide.md](references/packages/microsoft-activities-guide.md) | Project depends on `Microsoft.Activities.Extensions` or `Microsoft.Activities` |
@@ -194,6 +198,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Running `upgrade` without an `analyze` triage first, or pointing `--output-path` at the source project
 - Pasting a PAT or client secret into a command line
 - Hand-converting classic activities in XAML instead of letting the tool do it, or "finishing" activities the tool left classic by rewriting them blind
+- Reworking or "improving" a selector that carries the `.ToStringWithDelimiter()` marker instead of running the post-migration fix procedure; the defect is structural and the rewrite destroys the variable binding
 - Accepting the tool's default UIAutomation version when the feed was reachable
 - Passing an extension option space-separated (`--uia-package-version 25.10.39`); only `--uia-package-version=25.10.39` binds
 - Raising the UIAutomation package on the migrated output with `uip rpa packages install` to reach the requested line instead of fixing the flag or asking the user
