@@ -12,7 +12,7 @@
       <uipath:migrationVersion version="11.5" />
       <uipath:caseManagement version="v1"><![CDATA[{"owner":"risk-team","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" elementId="Process_RiskScoring" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="double" elementId="Process_RiskScoring" />
         <uipath:inputOutput id="Var_Tier" name="Tier" type="string" elementId="Process_RiskScoring" />
         <uipath:inputOutput id="Var_Message" name="Message" type="string" elementId="Process_RiskScoring" />
       </uipath:variables>
@@ -32,7 +32,6 @@
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Format" name="Format Message" scriptFormat="JavaScript">
       <bpmn:extensionElements>
-        <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
           <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"tier":"=vars.Var_Tier"}]]></uipath:input>

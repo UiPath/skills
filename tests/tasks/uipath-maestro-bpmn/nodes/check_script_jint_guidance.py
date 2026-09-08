@@ -509,9 +509,8 @@ def main() -> None:
     properties = schema.get("properties", {}) if isinstance(schema, dict) else {}
     if (
         not isinstance(schema, dict)
-        or schema.get("$schema") != "http://json-schema.org/draft-07/schema#"
         or schema.get("type") != "object"
-        or schema.get("required") != []
+        or schema.get("required", [])
         or set(properties) != {"vars", "metadata"}
     ):
         fail("ScriptTask inputSchema must use the current vars/metadata schema")

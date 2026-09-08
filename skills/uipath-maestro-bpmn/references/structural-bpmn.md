@@ -278,6 +278,17 @@ template, in the first rule below:
   body. The supported path is: return a value from the script, then use a
   `uipath:output` mapping to write it to the declared variable. Direct mutation
   is not applied to the runtime, so the variable reads empty afterward.
+- **v2+ only:** do not add an extra `{ response: ... }` wrapper around the
+  script return — the runtime already exposes the direct return beneath
+  `result.response`, so wrapping yields `result.response.response`. Under v1
+  (the default when the marker is absent) the runtime spreads the returned
+  object's keys instead, so there the wrapper is required. Note the marker is
+  matched as `/^v(\d+)$/` — case-sensitive, no trimming: `V3`, `3`, `v3.1` and
+  `" v3 "` all fall back to v1 semantics silently, flipping this rule.
+- Inputs merge: a ScriptTask's declared inputs are replaced by one `args` JSON
+  input at `target="bodyField"`; sibling `uipath:input` elements are not
+  supported. `var` holds the declared variable id — never put the target id in
+  `name`.
 
 ```xml
 <uipath:inputOutput id="Var_ScriptResponse" name="scriptResponse"
