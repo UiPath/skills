@@ -242,8 +242,8 @@ def main() -> None:
             fail(f"{input_name!r} start bridge must target uipath:inputOutput")
         if public_input.attrib.get("type") != internal_input.attrib.get("type"):
             fail(f"{input_name!r} public and mutable variable types must match")
-        if input_name == "amount" and public_input.attrib.get("type") != "double":
-            fail("numeric public and mutable amount variables must use type='double'")
+        if input_name == "amount" and public_input.attrib.get("type") != "number":
+            fail("numeric public and mutable amount variables must use type='number'")
 
     public_output = variable(
         variables,

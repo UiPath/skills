@@ -103,6 +103,9 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 - Preserve exact variable ids: if the requested variable id is `product`,
   declare `id="product"` and map to `var="product"`, not `Product` or
   `Var_Product`.
+  Live debug may expose the root output definition while still returning its
+  value as `null`; treat that as a debug API limitation, not proof the authored
+  mapping is absent.
 - Subprocess variables stay scoped to that subprocess.
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.

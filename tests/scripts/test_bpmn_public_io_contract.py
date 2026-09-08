@@ -56,6 +56,8 @@ def test_minimal_example_bridges_mutable_state_to_public_output() -> None:
     process = root.find("bpmn:process", NS)
     assert process is not None
 
+    # Pins the canonical example, not the general rule: a process with an error
+    # or terminate end event legitimately has more than one endEvent.
     ends = process.findall("bpmn:endEvent", NS)
     assert len(ends) == 1
     end = ends[0]
