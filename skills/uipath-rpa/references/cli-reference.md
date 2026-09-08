@@ -386,6 +386,8 @@ uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 
 `--skip-build` executes the existing compiled artifact — any edit since the last successful `build` is silently ignored. Use bare `run` after edits.
 
+**[Coded] Don't pair `build` with a default `run`/`debug start`.** `build` deletes `.local/.codedworkflows/WorkflowRunnerService.cs`, so a default `run`/`debug start` afterward re-validates the now-inconsistent generated set and fails `CS0246 'WorkflowRunnerService' does not exist in the namespace`. Use either **`build` → `run`/`debug start --skip-build`** (runs the built artifact) or a **bare `run`/`debug start`** (builds internally).
+
 **When to run:**
 1. Workflow has no compilation errors but you want to verify runtime behavior
 2. Workflow involves file I/O, API calls, or data transformations that could fail at runtime
