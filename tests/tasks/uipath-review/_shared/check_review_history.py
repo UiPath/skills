@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Verify Step 6 recorded the final grade in CLI-owned review-history.json.
 
-The review skill's Step 6 (SKILL.md; detailed in
-`references/agents/agent-grading-rubric.md`) has the reviewer run, per low-code
-agent project after the report:
+The review skill's agent-review-guide.md Step 6 has the reviewer run, per
+low-code agent project after the report:
 
     uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <N> --warnings <N> --output json
 
