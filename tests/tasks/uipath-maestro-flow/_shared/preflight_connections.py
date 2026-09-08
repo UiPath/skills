@@ -4,8 +4,8 @@
 Usage:
     preflight_connections.py <selector> [<selector> ...]
 
-    <selector> := <connector-key>              any Enabled connection will do
-                | <connector-key>=<folder>     that folder's connection must be Enabled
+    <selector> := <connector-key>              any live connection will do
+                | <connector-key>=<folder>     that folder's connection must be live
 
 A `pre_run` failure lands the run as ``FinalStatus.ERROR``; a criterion failure
 lands it as ``FAILURE``. Without this, a revoked grant or an asleep tenant reads
@@ -17,9 +17,11 @@ as an agent mistake:
 Both were scored FAILURE on 2026-09-04 and root-caused as skill defects before
 anyone read far enough into the checker output to find the 403.
 
-The bare form passes when at least one connection for the key reports Enabled.
-Connections live in several folders, so `--all-folders` is required; without it
-an empty result is a false negative.
+The bare form passes when at least one connection for the key answers a ping.
+`State` from `connections list` is cached, so a revoked grant still reads
+Enabled — per connections.md the selection is verified by ping. Connections live
+in several folders, so `--all-folders` is required; without it an empty result
+is a false negative.
 
 The `=<folder>` form is for a task whose fixture data lives in one specific
 workspace. A tenant carries several Enabled connections per connector, and the
@@ -54,6 +56,39 @@ def _connections(key: str) -> list[dict]:
     return payload.get("Data") or []
 
 
+def _ping(connection_id: str) -> str | None:
+    """``None`` when the connection answers as active, else why it did not."""
+    proc = subprocess.run(
+        ["uip", "is", "connections", "ping", connection_id, "--output", "json"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return proc.stderr.strip() or f"ping exited {proc.returncode} with no JSON"
+    if payload.get("Result") == "Success" and (payload.get("Data") or {}).get("Status") == "Enabled":
+        return None
+    return str(payload.get("Message") or payload).strip()
+
+
+def _first_live(candidates: list[dict]) -> tuple[dict | None, list[str]]:
+    """The first candidate that pings clean, plus why the earlier ones did not.
+
+    `State` from `connections list` is cached, so a revoked grant still reads
+    Enabled — the failure mode this whole script exists to catch. Short-circuits,
+    so the healthy case costs one ping.
+    """
+    refused: list[str] = []
+    for c in candidates:
+        reason = _ping(str(c.get("Id")))
+        if reason is None:
+            return c, refused
+        refused.append(f"{c.get('Name')}@{c.get('Folder')}: {reason}")
+    return None, refused
+
+
 def main(selectors: list[str]) -> int:
     broken: list[str] = []
     for selector in selectors:
@@ -76,18 +111,21 @@ def main(selectors: list[str]) -> int:
             states = ", ".join(f"{c.get('Name')}={c.get('State')}" for c in conns)
             broken.append(f"{key}: no Enabled connection ({states})")
             continue
-        if not folder:
-            print(f"OK: {key} — {len(enabled)}/{len(conns)} connection(s) Enabled")
+        candidates = enabled
+        scope = ""
+        if folder:
+            candidates = [c for c in enabled if c.get("Folder") == folder]
+            scope = f" in folder {folder!r}"
+            if not candidates:
+                where = ", ".join(f"{c.get('Name')}@{c.get('Folder')}" for c in enabled)
+                broken.append(f"{key}: no Enabled connection{scope} (Enabled elsewhere: {where})")
+                continue
+
+        live, refused = _first_live(candidates)
+        if live is None:
+            broken.append(f"{key}: no live connection{scope} — {'; '.join(refused)}")
             continue
-        in_folder = [c for c in enabled if c.get("Folder") == folder]
-        if not in_folder:
-            where = ", ".join(f"{c.get('Name')}@{c.get('Folder')}" for c in enabled) or "none"
-            broken.append(
-                f"{key}: no Enabled connection in folder {folder!r} (Enabled elsewhere: {where})"
-            )
-            continue
-        named = ", ".join(f"{c.get('Name')} ({c.get('Id')})" for c in in_folder)
-        print(f"OK: {key} — Enabled in folder {folder!r}: {named}")
+        print(f"OK: {key} — {live.get('Name')} ({live.get('Id')}) live{scope}")
 
     if broken:
         print(
