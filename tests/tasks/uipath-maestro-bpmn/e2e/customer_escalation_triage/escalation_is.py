@@ -43,11 +43,11 @@ CONNECTION_NAMES = {
 # The folder every escalation e2e's connections live in. Matched by name, as
 # the flow suite does: each `connections list` row carries both `Folder` and
 # `FolderKey`, so the key is read off the matched row rather than committed.
-CONNECTION_FOLDER_PATH = "Shared/uipath-maestro-flow"
-CONNECTION_FOLDER_NAME = "uipath-maestro-flow"  # leaf of the path, as reported
-JIRA_PROJECT_KEY = "CE"  # "Coder Eval" project on uipath-sandbox-380
-JIRA_ISSUE_TYPE_ID = "11457"  # "Task" issue type, scoped to the CE project
-SLACK_CHANNEL_ID = "C01H4SPS77W"
+FOLDER_PATH = "Shared/uipath-maestro-flow"
+FOLDER_NAME = "uipath-maestro-flow"  # leaf of the path, as reported
+PROJECT_KEY = "CE"  # "Coder Eval" project on uipath-sandbox-380
+ISSUETYPE_ID = "11457"  # "Task" issue type, scoped to the CE project
+SLACK_CHANNEL = "C01H4SPS77W"  # coding-agent-testing
 EXPECTED_LIVE_TARGET = {
     "BaseUrl": "https://alpha.uipath.com",
     "Organization": "codereval",
@@ -106,7 +106,7 @@ def connection_ids() -> dict[str, str]:
     """Resolve the enabled Jira and Slack connection ids, scoped by folder."""
 
     listed = run_cli(
-        ["uip", "is", "connections", "list", "--all-folders"],
+        ["uip", "is", "connections", "list", "--all-folders", "--refresh"],
         timeout=CONNECTIONS_LIST_TIMEOUT,
     )
     _payload, rows = payload_data(listed, "discover connector connections")
@@ -114,20 +114,27 @@ def connection_ids() -> dict[str, str]:
         raise CheckFailure("connector discovery returned no list")
     ids: dict[str, str] = {}
     for connector_key, name in CONNECTION_NAMES.items():
-        matches = [
+        by_name = [
             row
             for row in rows
             if isinstance(row, dict)
             and get_ci(row, "ConnectorKey") == connector_key
             and get_ci(row, "Name") == name
-            and get_ci(row, "Folder") == CONNECTION_FOLDER_NAME
             and str(get_ci(row, "State") or "").casefold() == "enabled"
         ]
+        matches = [row for row in by_name if get_ci(row, "Folder") == FOLDER_NAME]
+        # Accept a name-only match only when NO candidate reports folder
+        # metadata (older CLI / env). If folders ARE reported but none is the
+        # target folder, refuse to guess -- a same-named connection elsewhere
+        # could be the wrong account. Mirrors the flow suite's connection_id().
+        if not matches and by_name and not any(get_ci(row, "Folder") for row in by_name):
+            matches = by_name
         if len(matches) != 1:
+            folders = [get_ci(row, "Folder") for row in by_name]
             raise CheckFailure(
                 f"expected one enabled {connector_key} connection named "
-                f"{name!r} in folder {CONNECTION_FOLDER_PATH!r}, "
-                f"found {len(matches)}"
+                f"{name!r} in folder {FOLDER_PATH!r}, found {len(matches)}"
+                f"; candidates in folders {folders}"
             )
         identifier = get_ci(matches[0], "Id")
         if not isinstance(identifier, str):
@@ -192,6 +199,38 @@ def delete_jira_issue(connection_id: str, issue_id: str) -> bool:
         return True
     except CheckFailure:
         return delete_target_is_absent(completed, "jira issue", issue_id)
+
+
+def jira_issue_absent(connection_id: str, issue_key: str) -> bool:
+    """True ONLY when a tenant read CONFIRMS the issue is gone.
+
+    False when it still exists OR when the read itself failed (transient 5xx /
+    auth), so teardown never treats an ambiguous read as proof of deletion.
+    Mirrors the flow suite's `issue_absent`; distinct from `get_issue_fields`,
+    which raises on every failure alike.
+    """
+
+    completed = run_cli(
+        [
+            "uip",
+            "is",
+            "resources",
+            "run",
+            "get",
+            JIRA_CONNECTOR,
+            "issue",
+            "--connection-id",
+            connection_id,
+            "--query",
+            json.dumps({"issueId": issue_key}, separators=(",", ":")),
+        ],
+        timeout=JIRA_READ_TIMEOUT,
+    )
+    try:
+        payload_data(completed, f"read Jira issue {issue_key}")
+        return False  # a successful read means the issue still exists
+    except CheckFailure:
+        return delete_target_is_absent(completed, "jira issue", issue_key)
 
 
 def delete_slack_message(

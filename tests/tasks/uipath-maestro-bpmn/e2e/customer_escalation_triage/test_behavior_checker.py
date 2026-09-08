@@ -402,8 +402,79 @@ class ConnectionResolutionTests(unittest.TestCase):
     def test_same_named_connection_in_another_folder_is_rejected(self):
         with self.assertRaises(escalation_is.CheckFailure) as caught:
             self._resolve(self._rows(folder="some-other-team"))
-        self.assertIn(escalation_is.CONNECTION_FOLDER_PATH, str(caught.exception))
+        self.assertIn(escalation_is.FOLDER_PATH, str(caught.exception))
 
     def test_disabled_connection_is_rejected(self):
         with self.assertRaises(escalation_is.CheckFailure):
             self._resolve(self._rows(state="Disabled"))
+
+    def test_name_only_match_accepted_when_no_row_reports_a_folder(self):
+        # Older CLI / env that does not populate `Folder`. Flow's fallback.
+        resolved = self._resolve(self._rows(folder=""))
+        self.assertEqual(set(resolved), set(escalation_is.CONNECTION_NAMES))
+
+    def test_list_is_refreshed_so_a_new_connection_is_not_missed(self):
+        completed = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout=json.dumps({"Result": "Success", "Data": self._rows()}),
+        )
+        with patch.object(escalation_is, "run_cli", return_value=completed) as ran:
+            escalation_is.connection_ids()
+        self.assertIn("--refresh", ran.call_args.args[0])
+
+
+class TeardownRetryTests(unittest.TestCase):
+    """Teardown mirrors the flow suite: retry once, then confirm by reread.
+
+    A transient 5xx on the first delete must not leak a real ticket in the
+    shared CE project.
+    """
+
+    def _run_teardown(self, **patches):
+        records = {"jira_issue": ["CE-1"], "slack_message": []}
+        defaults = {
+            "read_journal": lambda: records,
+            "connection_ids": lambda: {
+                escalation_is.JIRA_CONNECTOR: "jira-conn",
+                escalation_is.SLACK_CONNECTOR: "slack-conn",
+            },
+        }
+        defaults.update(patches)
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = Path(tmp) / ".created-ids.jsonl"
+            with patch.multiple(escalation_is, JOURNAL=journal, **defaults):
+                spec = importlib.util.spec_from_file_location(
+                    "teardown_run", HERE / "teardown_escalation.py"
+                )
+                module = importlib.util.module_from_spec(spec)
+                try:
+                    spec.loader.exec_module(module)
+                except SystemExit:
+                    pass
+
+    def test_transient_first_failure_is_retried(self):
+        attempts = []
+
+        def flaky(_conn, issue):
+            attempts.append(issue)
+            return len(attempts) > 1  # first call fails, second succeeds
+
+        self._run_teardown(delete_jira_issue=flaky)
+        self.assertEqual(len(attempts), 2, "teardown did not retry the delete")
+
+    def test_reread_confirming_absence_counts_as_deleted(self):
+        reread = []
+
+        def always_unconfirmed(_conn, _issue):
+            return False
+
+        def absent(_conn, issue):
+            reread.append(issue)
+            return True
+
+        self._run_teardown(
+            delete_jira_issue=always_unconfirmed,
+            jira_issue_absent=absent,
+        )
+        self.assertEqual(reread, ["CE-1"], "teardown never confirmed by reread")

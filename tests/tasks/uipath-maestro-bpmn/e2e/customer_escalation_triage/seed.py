@@ -26,9 +26,9 @@ seed = {
         "serviceState": "Unavailable",
         "workaroundAvailable": False,
         "correlationId": correlation,
-        "jiraProjectKey": escalation_is.JIRA_PROJECT_KEY,
-        "jiraIssueTypeId": escalation_is.JIRA_ISSUE_TYPE_ID,
-        "slackChannelId": escalation_is.SLACK_CHANNEL_ID,
+        "jiraProjectKey": escalation_is.PROJECT_KEY,
+        "jiraIssueTypeId": escalation_is.ISSUETYPE_ID,
+        "slackChannelId": escalation_is.SLACK_CHANNEL,
     },
     # jiraIssueKey is asserted against the created issue's actual key, so only
     # the deterministic outputs are seeded here.
@@ -37,6 +37,6 @@ seed = {
 Path("seed.json").write_text(json.dumps(seed, indent=2) + "\n", encoding="utf-8")
 print(
     f"OK: wrote seed (correlationId={correlation}, "
-    f"project={escalation_is.JIRA_PROJECT_KEY}, "
-    f"channel={escalation_is.SLACK_CHANNEL_ID})"
+    f"project={escalation_is.PROJECT_KEY}, "
+    f"channel={escalation_is.SLACK_CHANNEL})"
 )

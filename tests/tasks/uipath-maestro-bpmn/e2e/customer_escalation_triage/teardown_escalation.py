@@ -24,18 +24,31 @@ try:
         sys.exit(0)
     connections = escalation_is.connection_ids()
     leaked = 0
+    jira_connection = connections[escalation_is.JIRA_CONNECTOR]
     for issue in dict.fromkeys(records.get("jira_issue", [])):
-        ok = escalation_is.delete_jira_issue(
-            connections[escalation_is.JIRA_CONNECTOR], issue
-        )
+        # Retry once on an unconfirmed (transient) failure, then confirm via a
+        # tenant reread before giving up -- only a confirmed deletion or a
+        # confirmed not-found counts. Mirrors the flow suite's teardown, and
+        # keeps a 5xx from leaking a real ticket in the shared CE project.
+        ok = escalation_is.delete_jira_issue(jira_connection, issue)
+        if not ok:
+            ok = escalation_is.delete_jira_issue(jira_connection, issue)
+        if not ok and escalation_is.jira_issue_absent(jira_connection, issue):
+            ok = True
         print(f"OK: deleted Jira {issue}" if ok
-              else f"WARN: could NOT confirm deletion of Jira {issue}")
+              else f"WARN: could NOT confirm deletion of Jira {issue} "
+                   f"-- may be leaked in the {escalation_is.PROJECT_KEY} project")
         leaked += 0 if ok else 1
+    slack_connection = connections[escalation_is.SLACK_CONNECTOR]
     for record in records.get("slack_message", []):
         channel_id, timestamp = record
         ok = escalation_is.delete_slack_message(
-            connections[escalation_is.SLACK_CONNECTOR], channel_id, timestamp
+            slack_connection, channel_id, timestamp
         )
+        if not ok:
+            ok = escalation_is.delete_slack_message(
+                slack_connection, channel_id, timestamp
+            )
         print(f"OK: deleted Slack {timestamp}" if ok
               else f"WARN: could NOT confirm deletion of Slack {timestamp}")
         leaked += 0 if ok else 1
