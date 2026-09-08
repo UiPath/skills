@@ -64,18 +64,39 @@ which of the two recorded its result last. PR #3100 hit this: commit
 `1056e6c56` carried a red `Skill activation gate` beside a green one (runs
 `34055252280` and `34055306035`, ~70s apart).
 
-The fix is in the concurrency block, not the job:
+The fix is in the concurrency block, not the job — and it is an **allow-list**:
 
 ```yaml
-cancel-in-progress: ${{ github.event.action != 'ready_for_review' }}
+cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 ```
 
-`ready_for_review` is the only event that fires on a commit a run is already in
-flight for, so it is the only one that must not cancel. Every other event
-arrives with a new SHA, where cancelling is free — the superseded run's red
-lands on a commit nobody is merging.
+`synchronize` is the only `pull_request` event that arrives with a new head SHA,
+so it is the only one where cancelling is free: the superseded run's red lands
+on a commit nobody is merging. Every other event can fire on a commit a run is
+already in flight for:
 
-`verb-gate.yml` needs none of this: it has no `ready_for_review` trigger.
+| Event | Same-SHA path |
+|---|---|
+| `ready_for_review` | Taking a PR out of draft — the measured #3100 case |
+| `reopened` | Closing a PR does not cancel its runs; close and reopen during one and the new run kills the old on the unchanged SHA |
+| `opened` | A `workflow_dispatch` run already in flight for that ref |
+
+An earlier version of this rule deny-listed `ready_for_review` alone and claimed
+it was the only same-SHA event. It is not, and a deny-list also has to be
+re-audited every time GitHub adds an activity type. The allow-list needs no
+maintenance and costs at most one extra run per draft flip or reopen — cheap,
+since the gated jobs skip on drafts.
+
+All six required workflows carrying `cancel-in-progress` use this expression:
+`activation-gate.yml`, `verb-gate.yml`, `smoke-skills.yml`,
+`smoke-rpa-skills.yml`, `task-driver-gate.yml`, `validate-version-sync.yml`.
+`test_concurrency_only_cancels_on_a_new_head_sha` enforces it, so a revert to
+`cancel-in-progress: true` fails the contract guard rather than surfacing as an
+intermittent red months later.
+
+**If a superseded red does land**, it is not a ruleset bug and needs no ruleset
+edit: re-run that run (`gh run rerun <id>`) and its fresh result replaces the
+`cancelled` one, since GitHub keeps only the latest check run per context name.
 
 ### Why `!cancelled()` and not `always()`
 
@@ -145,7 +166,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `Skill activation gate` | `activation-gate.yml` (aggregator) |
 | `CLI verb gate` | `verb-gate.yml` (aggregator) |
 
-Deliberately **not** required: `Detect changed skills (CLI verb gate)` and `detect` in `activation-gate.yml`. Both are covered by their workflow's `always()` aggregator (Rule 3), so requiring them adds nothing.
+Deliberately **not** required: `Detect changed skills (CLI verb gate)` and `detect` in `activation-gate.yml`. Both are rolled up by their workflow's `!cancelled()` aggregator (Rule 3), so requiring them adds nothing.
 
 ## Applying a change
 
@@ -159,16 +180,35 @@ Adding a context before the job has reported once blocks every open PR. Sequence
      --jq '.check_runs[].name' | sort
    ```
 
-3. Only then add the context to the ruleset. `scripts/apply-required-checks.sh` reads the table above and PUTs the full rule set:
+3. Only then add the context to the ruleset. `scripts/apply-required-checks.sh` reads the table above and PUTs the ruleset:
 
    ```bash
-   ./scripts/apply-required-checks.sh --dry-run   # print the payload
+   ./scripts/apply-required-checks.sh --dry-run   # print the payload (stdout is pipeable JSON)
    ./scripts/apply-required-checks.sh             # apply
    ```
+
+   The script builds the PUT body from the **live** ruleset and replaces only the required-status-check list. `name`, `enforcement`, `bypass_actors` and the `pull_request` parameters are carried through: GitHub's behaviour for fields omitted from `PUT /repos/{owner}/{repo}/rulesets/{id}` is undocumented, so sending a literal body risks clearing admin bypass on `main`, and hardcoding the review count silently reverts a change someone made in the Rules UI.
+
+## Checking for drift
+
+Every test in `tests/scripts/test_required_checks_contract.py` reads this doc and validates it against the workflows. **Nothing in CI compares it to the live ruleset**, and that direction fails in two ways no test can see:
+
+- Delete a table row and its job in one PR: the contract guard stays green, the ruleset keeps waiting on a context that no longer reports, and **every PR blocks**.
+- Edit the ruleset in the Rules UI: the ruleset is right and this doc is fiction.
+
+Close the loop by hand, or from a scheduled job:
+
+```bash
+./scripts/apply-required-checks.sh --check   # exits non-zero on any doc/ruleset difference
+```
+
+Reading a ruleset needs admin on the repository, which the default `GITHUB_TOKEN` does not have — wiring `--check` to a `schedule:` trigger requires a PAT in a secret. Until that exists, run it after any change to the table above.
 
 ## Open items
 
 - **`release/*` has no required checks.** The ruleset condition is `["~DEFAULT_BRANCH"]`, so ~92 release-branch PRs per quarter (mostly cherry-picks — where a stale conflict resolution most easily breaks a checker) merge on review alone. Fix by extending the condition to `["~DEFAULT_BRANCH", "refs/heads/release/*"]`; `apply-required-checks.sh --with-release-branches` emits that payload.
 - **`strict_required_status_checks_policy` is `false`.** Branches may merge green against a stale base. Leave it off while `Run skill smoke tests` (p95 22 min) is required — forcing re-runs on base drift would serialize the merge queue.
 - **`Validate task schema (advisory)` is not requirable yet.** It is `continue-on-error` by design and validates the whole task tree, so pre-existing drift shows red on unrelated PRs. Clean the tree, then drop `continue-on-error` and the `(advisory)` suffix.
+- **`--check` is not scheduled.** See § Checking for drift — it needs an admin-scoped token to read the ruleset from CI.
+- **`validate-skill-flavors.yml` is the only required workflow on GitHub-hosted runners.** Every other one is `uipath-ubuntu-latest`. Dropping its `paths:` filter (Rule 1) puts a ~52s node build on billed minutes for every PR, doc-only ones included. Accepted on purpose: the build is what ships to consumers and the 28-entry path list it replaced went stale each time an input was added. Move it to the self-hosted pool once that pool is verified to carry `rg` and `sha512sum`.
 - **Three rulesets overlap.** `Merge rule` (`14273765`) and `Require PR` (`13681075`) duplicate the `main` ruleset's `pull_request` rule. `Merge rule` returns an empty ref filter from the API — confirm its scope in the Rules UI before folding it in.

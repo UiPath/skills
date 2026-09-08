@@ -54,6 +54,61 @@ REQUIRED_PR_TYPES = {"opened", "synchronize", "reopened"}
 # starves a required context exactly the way `paths:` does.
 NARROWING_KEYS = ("paths", "paths-ignore", "branches", "branches-ignore")
 
+# The one accepted rollup condition. Anchored so bare `cancelled()` — which
+# inverts the guard — cannot satisfy a substring test.
+NOT_CANCELLED_RE = re.compile(r"^\s*\$\{\{\s*!\s*cancelled\(\)\s*\}\}\s*$")
+
+# Rule 3a. `synchronize` is the only `pull_request` event that arrives with a new
+# head SHA; cancelling on any other one can kill a run on a commit that also has
+# a passing run, and `cancelled` is not a pass.
+CANCEL_ON_SYNCHRONIZE_RE = re.compile(
+    r"^\s*\$\{\{\s*github\.event\.action\s*==\s*'synchronize'\s*\}\}\s*$"
+)
+
+# activation-gate.yml is the one required workflow that must fire on
+# `ready_for_review`: its `gate` job is skipped on drafts, so a PR opened as a
+# draft records a passing (skipped) `Skill activation gate` and, without this
+# event, is never re-gated when it becomes ready. Activation changes would then
+# merge unmeasured.
+WORKFLOW_EXTRA_PR_TYPES = {"activation-gate.yml": {"ready_for_review"}}
+
+
+def check_names(data):
+    """The check name GitHub reports for every job in a workflow.
+
+    A job with no `name:` still produces a context — GitHub falls back to the
+    job id. Dropping unnamed jobs (`{j.get("name") for j in ...}` minus the
+    falsy ones) is what let an unnamed job slip past the reverse-direction
+    guard below.
+    """
+    return {job.get("name") or job_id for job_id, job in (data.get("jobs") or {}).items()}
+
+
+def unconsumed_needs(job, needs):
+    """Needed jobs whose `result` never reaches failure-producing shell logic.
+
+    A result counts as consumed when a `run:` body references it — directly, or
+    through an `env:` var bound to it. Checking the `env:` mapping alone accepts
+    a gutted aggregator: keep `DETECT_RESULT: ${{ needs.detect.result }}`,
+    replace the `run:` with `echo ok`, and every need looks read.
+    """
+    steps = job.get("steps") or []
+    runs = "\n".join(str(step.get("run", "")) for step in steps)
+    unread = []
+    for key in needs:
+        token = f"needs.{key}.result"
+        if token in runs:
+            continue
+        bound = {
+            var
+            for step in steps
+            for var, value in (step.get("env") or {}).items()
+            if token in str(value)
+        }
+        if not any(re.search(rf"\${{?{re.escape(var)}\b", runs) for var in bound):
+            unread.append(key)
+    return unread
+
 
 def load_workflow(name):
     data = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
@@ -111,9 +166,9 @@ def test_context_is_not_an_unexpanded_expression(context, workflow):
 def test_context_matches_a_job_name(context, workflow):
     """Every required context names a real job in the workflow the table cites."""
     data, _ = load_workflow(workflow)
-    names = {job.get("name") for job in (data.get("jobs") or {}).values()}
+    names = check_names(data)
     assert context in names, (
-        f"{workflow} has no job named {context!r} (found: {sorted(n for n in names if n)}). "
+        f"{workflow} has no job named {context!r} (found: {sorted(names)}). "
         f"Renaming a job renames its check and breaks the required-status-check "
         f"ruleset — update docs/REQUIRED-CHECKS.md and the ruleset in the same PR."
     )
@@ -160,14 +215,20 @@ def test_workflow_has_no_trigger_filter(workflow):
         # still cover the three events that open a PR and push to it —
         # dropping `synchronize` in particular leaves a stale pass standing.
         types = cfg.get("types")
-        if types is not None:
-            missing = REQUIRED_PR_TYPES - set(types)
-            assert not missing, (
-                f"{workflow}'s `{name}.types:` omits {sorted(missing)}, so the "
-                f"required check {'/'.join(c for c, w in TARGET_SET if w == workflow)!r} "
-                f"would not report on those events. Keep at least "
-                f"{sorted(REQUIRED_PR_TYPES)}."
-            )
+        expected = REQUIRED_PR_TYPES | WORKFLOW_EXTRA_PR_TYPES.get(workflow, set())
+        if types is None:
+            # The default set is `opened, synchronize, reopened` — fine unless
+            # this workflow needs an event outside it, which it can only get by
+            # listing `types:` explicitly.
+            missing = expected - REQUIRED_PR_TYPES
+        else:
+            missing = expected - set(types)
+        assert not missing, (
+            f"{workflow}'s `{name}.types:` omits {sorted(missing)}, so the "
+            f"required check {'/'.join(c for c, w in TARGET_SET if w == workflow)!r} "
+            f"would not report on those events. Keep at least "
+            f"{sorted(expected)}."
+        )
 
 
 @pytest.mark.parametrize("context,workflow", TARGET_SET, ids=[c for c, _ in TARGET_SET])
@@ -210,17 +271,31 @@ def test_required_job_needs_are_covered(context, workflow):
         )
 
     if "cancelled()" in condition:
+        # Match the documented expression exactly. A substring test also accepts
+        # the INVERSE, `if: ${{ cancelled() }}` — an aggregator that skips every
+        # normal and every failed run while reporting the required context as a
+        # pass.
+        assert NOT_CANCELLED_RE.search(condition), (
+            f"{workflow}: required job {context!r} has `if: {condition}`, which is "
+            f"not the documented `if: ${{{{ !cancelled() }}}}`. Bare `cancelled()` "
+            f"inverts the guard: the job then skips on every normal run and "
+            f"reports the required context as a pass. See "
+            f"docs/REQUIRED-CHECKS.md Rule 3."
+        )
+
         # `!cancelled()` alone proves nothing — a job that runs and never
         # inspects its needs reports green whatever they did, which is the exact
-        # Rule 3 failure. Demand that the job actually reads each one's result.
-        body = " ".join(
-            str(step.get("run", "")) + " " + str(step.get("env", ""))
-            for step in (job.get("steps") or [])
-        )
-        unread = [key for key in needs if f"needs.{key}.result" not in body]
+        # Rule 3 failure. Demand that each result reaches failure-producing
+        # shell logic: mapped into `env:` AND read by a `run:` body.
+        #
+        # Testing the `env:` mapping alone is not enough. Keep
+        # `DETECT_RESULT: ${{ needs.detect.result }}` and replace the `run:`
+        # with `echo ok` and the gutted aggregator passes this guard while
+        # reporting green whatever its needs did.
+        unread = unconsumed_needs(job, needs)
         assert not unread, (
             f"{workflow}: required job {context!r} runs under "
-            f"`if: ${{{{ !cancelled() }}}}` but never reads "
+            f"`if: ${{{{ !cancelled() }}}}` but no `run:` step consumes "
             f"{[f'needs.{k}.result' for k in unread]}. A job that runs "
             f"regardless and ignores its needs reports success no matter what "
             f"they did — the Rule 3 failure this test exists to catch. Either "
@@ -236,9 +311,42 @@ def test_required_job_needs_are_covered(context, workflow):
     ]
     assert not uncovered, (
         f"{workflow}: required job {context!r} depends on {uncovered}, which "
-        f"is not itself required and is not rolled up under `if: always()`. "
+        f"is not itself required and is not rolled up under "
+        f"`if: ${{{{ !cancelled() }}}}` with an explicit result check. "
         f"If that job fails, {context!r} is skipped — which GitHub counts as a "
         f"pass. See docs/REQUIRED-CHECKS.md Rule 3."
+    )
+
+
+@pytest.mark.parametrize(
+    "workflow", sorted({w for _, w in TARGET_SET}), ids=lambda w: w
+)
+def test_concurrency_only_cancels_on_a_new_head_sha(workflow):
+    """Rule 3a: a superseded run reports `cancelled`, which is not a pass.
+
+    `cancel-in-progress: true` cancels on every event, including the ones that
+    fire on a commit a run is already in flight for — `ready_for_review` (the
+    measured PR #3100 case), `reopened` (close and reopen mid-run), `opened`
+    (a `workflow_dispatch` run on the same ref). The required context then goes
+    red beside a green one on the same SHA, and merge turns on which recorded
+    last.
+    """
+    data, _ = load_workflow(workflow)
+    concurrency = data.get("concurrency")
+    if not isinstance(concurrency, dict):
+        return
+
+    cancel = concurrency.get("cancel-in-progress")
+    if cancel is False:
+        return
+
+    assert isinstance(cancel, str) and CANCEL_ON_SYNCHRONIZE_RE.search(cancel), (
+        f"{workflow} produces a required check and sets "
+        f"`cancel-in-progress: {cancel!r}`. Cancelling on an event that does not "
+        f"move the head SHA leaves a `cancelled` required context beside a "
+        f"passing one on the same commit. Use "
+        f"`cancel-in-progress: ${{{{ github.event.action == 'synchronize' }}}}` "
+        f"— docs/REQUIRED-CHECKS.md Rule 3a."
     )
 
 
@@ -246,10 +354,11 @@ def test_no_two_jobs_share_a_required_context():
     """A context matching two jobs is ambiguous about which run satisfied it."""
     required = {c for c, _ in TARGET_SET}
     owners = {}
-    for path in sorted(WORKFLOWS.glob("*.yml")):
+    # `*.y*ml`: GitHub reads `.yaml` too, and a colliding job in one would be
+    # invisible to a `*.yml`-only sweep.
+    for path in sorted(WORKFLOWS.glob("*.y*ml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        for job in (data.get("jobs") or {}).values():
-            name = job.get("name")
+        for name in check_names(data):
             if name in required:
                 owners.setdefault(name, []).append(path.name)
 
@@ -279,14 +388,61 @@ def test_every_test_helpers_job_is_required():
     a job here to sit outside the required set.
     """
     data, _ = load_workflow("test-helpers.yml")
-    names = {job.get("name") for job in (data.get("jobs") or {}).values()}
+    names = check_names(data)
     required = {c for c, _ in TARGET_SET}
 
-    unregistered = sorted(n for n in names if n and n not in required)
+    unregistered = sorted(n for n in names if n not in required)
     assert not unregistered, (
         f"test-helpers.yml defines job(s) {unregistered} that are absent from "
         f"docs/REQUIRED-CHECKS.md § Current target set. Every job in this "
         f"workflow is meant to be a required check; add the row in the same PR "
         f"that adds the job, or move the job to another workflow if it is "
         f"advisory (Rule 4)."
+    )
+
+
+# --- negative controls for the two guards above -----------------------------
+#
+# Both guards previously accepted the shape they exist to reject, and both
+# rejections are invisible in a green suite unless the bad shape is exercised
+# here. These build the aggregator by hand rather than mutating a workflow file.
+
+_ROLLUP_STEPS = [
+    {
+        "env": {"DETECT_RESULT": "${{ needs.detect.result }}"},
+        "run": 'if [ "$DETECT_RESULT" = "failure" ]; then exit 1; fi',
+    }
+]
+
+
+def test_bare_cancelled_is_not_accepted_as_the_rollup_condition():
+    """`if: ${{ cancelled() }}` is the inverse: it skips every normal run."""
+    assert NOT_CANCELLED_RE.search("${{ !cancelled() }}")
+    assert NOT_CANCELLED_RE.search("${{ ! cancelled() }}")
+    assert not NOT_CANCELLED_RE.search("${{ cancelled() }}")
+    assert not NOT_CANCELLED_RE.search("${{ cancelled() || failure() }}")
+
+
+def test_gutted_rollup_is_reported_as_unconsumed():
+    """Mapping a result into `env:` is not consuming it."""
+    assert unconsumed_needs({"steps": _ROLLUP_STEPS}, ["detect"]) == []
+    gutted = [{"env": _ROLLUP_STEPS[0]["env"], "run": "echo ok"}]
+    assert unconsumed_needs({"steps": gutted}, ["detect"]) == ["detect"]
+    assert unconsumed_needs({"steps": _ROLLUP_STEPS}, ["detect", "gate"]) == ["gate"]
+    inline = [{"run": 'test "${{ needs.gate.result }}" != failure'}]
+    assert unconsumed_needs({"steps": inline}, ["gate"]) == []
+
+
+def test_unnamed_job_still_counts_as_a_check_name():
+    """GitHub falls back to the job id, so an unnamed job is a real context."""
+    data = {"jobs": {"sneaky-unnamed-job": {"steps": []}, "named": {"name": "Real name"}}}
+    assert check_names(data) == {"sneaky-unnamed-job", "Real name"}
+
+
+def test_cancel_on_synchronize_regex_rejects_the_unconditional_form():
+    assert CANCEL_ON_SYNCHRONIZE_RE.search("${{ github.event.action == 'synchronize' }}")
+    assert not CANCEL_ON_SYNCHRONIZE_RE.search("true")
+    # The deny-list this replaced: correct for ready_for_review, silent on reopened.
+    assert not CANCEL_ON_SYNCHRONIZE_RE.search(
+        "${{ github.event.action != 'ready_for_review' }}"
     )

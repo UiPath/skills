@@ -525,7 +525,12 @@ open PR, not just yours:
   reported and the PR stays pending forever. Always trigger, and short-circuit
   inside the job instead: a *skipped* job counts as a pass.
 
-`required-check contract guard` (in `test-helpers.yml`) fails on both. The
+A third breaks them loudly: **cancelling a run on a SHA that also has a passing
+one**. A cancelled run still reports its jobs, and `cancelled` is not a pass, so
+required workflows only cancel on `synchronize` — the one event that moves the
+head SHA. Keep that expression when editing a `concurrency:` block.
+
+`required-check contract guard` (in `test-helpers.yml`) fails on the first two. The
 current set, the rationale, and how to change it: [docs/REQUIRED-CHECKS.md](docs/REQUIRED-CHECKS.md).
 
 ## Style Guide

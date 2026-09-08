@@ -9,7 +9,11 @@ name: CLI Verb Gate
 
 concurrency:
   group: verb-gate-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; every other pull_request event can
+  # fire on a commit a run is already in flight for, and the cancelled run
+  # reports the required `CLI verb gate` context as `cancelled`. See
+  # docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No `paths:` filter — this is wired as a required check. detect short-
@@ -135,21 +139,11 @@ jobs:
   gate-summary:
     name: CLI verb gate
     needs: [detect, gate]
-    # Run regardless of what `detect` and `gate` did — without this the summary
-    # is skipped whenever `gate` is skipped (no skill markdown changed) and the
-    # required context would never report.
-    #
-    # `!cancelled()` rather than `always()`: `always()` also runs during RUN
-    # cancellation, so a superseded run executed this job and reported the
-    # required context FAILED off a `detect: cancelled` it was never meant to
-    # judge. `!cancelled()` does not make such a run pass — GitHub reports the
-    # skipped job as `cancelled` — it just resolves it immediately and without
-    # a misleading error. See the same block in activation-gate.yml.
-    #
-    # No `ready_for_review` in this workflow's triggers, so it has no event that
-    # starts a second run on a SHA already in flight; the conditional
-    # `cancel-in-progress` activation-gate.yml needs has nothing to do here.
-    # The `${{ }}` wrapper is required: bare `!` starts a YAML tag.
+    # Runs whatever `detect` and `gate` did, so the required context always
+    # reports; the rollup below is what turns their results into pass/fail.
+    # `!cancelled()` rather than `always()`, and the `${{ }}` wrapper is
+    # required (bare `!` starts a YAML tag) — docs/REQUIRED-CHECKS.md
+    # § Why `!cancelled()` and not `always()`.
     if: ${{ !cancelled() }}
     runs-on: uipath-ubuntu-latest
     timeout-minutes: 5

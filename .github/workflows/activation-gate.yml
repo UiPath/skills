@@ -7,19 +7,13 @@ name: Skill Activation Gate
 
 concurrency:
   group: activation-gate-${{ github.head_ref || github.ref }}
-  # Cancel superseded runs on every event EXCEPT ready_for_review, which is the
-  # one that fires on a commit a run is already in flight for. Taking a PR out
-  # of draft otherwise cancels that run on the SAME head SHA, and the cancelled
-  # run reports the required `Skill activation gate` context as `cancelled` —
-  # non-passing, exactly like `failure`. Merge then turns on whether the good
-  # run or the cancelled one recorded its check last (GitHub keeps the latest
-  # per context name). Measured on PR #3100: runs 34055252280 and 34055306035,
-  # same commit, one red and one green, ~70s apart.
-  #
-  # Letting the ready_for_review run coexist costs one extra run per draft flip.
-  # That run is cheap: `gate` skips on drafts, so the in-flight run it would
-  # have cancelled is a detect plus a skipped matrix.
-  cancel-in-progress: ${{ github.event.action != 'ready_for_review' }}
+  # Allow-list, not deny-list: `synchronize` is the only event that arrives with
+  # a new head SHA, so it is the only one where cancelling is free. `opened`,
+  # `reopened` and `ready_for_review` all fire on a commit a run can already be
+  # in flight for, and a cancelled run reports the required context as
+  # `cancelled` — non-passing, exactly like `failure`. See
+  # docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No paths: filter — see smoke-skills.yml for the required-check rationale.
@@ -137,28 +131,11 @@ jobs:
   gate-summary:
     name: Skill activation gate
     needs: [detect, gate]
-    # Run regardless of what `detect` and `gate` did — without this the summary
-    # is skipped whenever `gate` is skipped (no frontmatter changed, or the PR
-    # is a draft) and the required context would never report.
-    #
-    # `!cancelled()` rather than `always()`. This does NOT rescue a cancelled
-    # run: GitHub reports a job skipped by `if:` during run cancellation as
-    # `cancelled`, not `skipped`, so the context is non-passing either way.
-    # Measured, not assumed — dispatching this workflow and cancelling it mid-
-    # flight gave `cancelled  Skill activation gate` (run 34067126301). The
-    # concurrency block above is what stops the cancelled run from happening on
-    # a SHA that also has a passing one.
-    #
-    # What `!cancelled()` buys is that the aggregator resolves the moment the
-    # run is cancelled instead of queueing for a runner and spending ~10s
-    # deciding — a smaller window in which it can record its check AFTER the
-    # superseding run records its own — and no misleading "gate could not
-    # determine which skills to gate" error in a log nobody needs to read.
-    #
-    # It still runs, and fails, when a needed job fails or a leg hits
-    # `timeout-minutes` (a timed-out job does not cancel the run, so the result
-    # arrives as `cancelled` and the check below fires).
-    # The `${{ }}` wrapper is required: bare `!` starts a YAML tag.
+    # Runs whatever `detect` and `gate` did, so the required context always
+    # reports; the rollup below is what turns their results into pass/fail.
+    # `!cancelled()` rather than `always()`, and the `${{ }}` wrapper is
+    # required (bare `!` starts a YAML tag) — docs/REQUIRED-CHECKS.md
+    # § Why `!cancelled()` and not `always()`.
     if: ${{ !cancelled() }}
     runs-on: uipath-ubuntu-latest
     timeout-minutes: 5

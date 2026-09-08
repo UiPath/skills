@@ -35,6 +35,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
     ```bash
     python3 -m pytest tests/scripts/test_required_checks_contract.py -q   # must pass
     ./scripts/apply-required-checks.sh --dry-run                          # preview the ruleset
+    ./scripts/apply-required-checks.sh --check                            # doc vs live ruleset (needs repo admin)
     ```
 
 ## File Conventions
