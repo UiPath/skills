@@ -4,7 +4,9 @@ description: >
   scheduled (timer) start event that fires on a recurring hourly cycle, using the
   registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a
   bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to a
-  BPMN timer start event. Authoring only — a timer only fires in a live engine,
+  BPMN timer start event. Source-only by construction: a timer start derives no
+  entry point, so the project is deliberately not package-ready. Authoring only
+  — a timer only fires in a live engine,
   so this validates the structure locally.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:trigger"]
 
@@ -31,6 +33,9 @@ initial_prompt: |
     Author the node from that template, not from prose.
   - The process start MUST be a bpmn:startEvent carrying the Intsvc.TimerTrigger
     wrapper and a bpmn:timerEventDefinition. There must be NO manual start event.
+    This makes the process source-only: only a manual root start derives an
+    entry point, so `refresh` and `pack` are unavailable for this shape and are
+    not part of the task.
   - Configure a recurring hourly schedule using a bpmn:timeCycle with a valid
     ISO-8601 repeating interval (for example R/PT1H). Do not use a never-firing
     interval.

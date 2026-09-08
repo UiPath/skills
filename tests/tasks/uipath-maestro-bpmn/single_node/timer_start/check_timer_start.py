@@ -58,7 +58,10 @@ def main() -> None:
     start = timer_starts[0]
 
     # No manual start: every start event must be the timer start (the flow port
-    # replaced manual with scheduled — they must not coexist).
+    # replaced manual with scheduled -- they must not coexist). This is a
+    # source-only shape by design: entry-point derivation selects manual root
+    # starts only, so the project is deliberately not package-ready and the task
+    # never calls refresh or pack.
     non_timer = [s for s in starts if s not in timer_starts]
     if non_timer:
         fail(f"a non-timer (manual) start event remains: {[attr(s, 'id') for s in non_timer]}")
