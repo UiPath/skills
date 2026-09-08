@@ -181,8 +181,14 @@ def assert_generated_project_scaffold(
     *,
     entry_point_id: str | None = None,
     expected_resource_count: int | None = None,
+    expected_entry_points: int = 1,
 ) -> None:
-    """Assert the current CLI-owned Process Orchestration metadata contract."""
+    """Assert the current CLI-owned Process Orchestration metadata contract.
+
+    ``start_id`` names the entry point checked in detail. ``refresh`` emits one
+    entry per root manual start event, so a project with more than one must
+    pass ``expected_entry_points``.
+    """
 
     project = load_json(project_dir / "project.uiproj")
     operate = load_json(project_dir / "operate.json")
@@ -211,11 +217,16 @@ def assert_generated_project_scaffold(
         fail("operate.json contentType must be ProcessOrchestration")
 
     entries = entry_points.get("entryPoints")
-    if not isinstance(entries, list) or len(entries) != 1:
-        fail("entry-points.json must contain exactly one manual entry point")
-    entry = entries[0]
-    if entry.get("filePath") != expected_main:
-        fail(f"entry-points.json filePath must be {expected_main}")
+    if not isinstance(entries, list) or len(entries) != expected_entry_points:
+        found = len(entries) if isinstance(entries, list) else "none"
+        fail(
+            f"entry-points.json must contain {expected_entry_points} manual "
+            f"entry point(s), found {found}"
+        )
+    matching = [e for e in entries if e.get("filePath") == expected_main]
+    if len(matching) != 1:
+        fail(f"entry-points.json must contain exactly one entry for {expected_main}")
+    entry = matching[0]
     if entry.get("type") != "ProcessOrchestration":
         fail("entry-points.json type must be ProcessOrchestration")
     if entry_point_id is not None and entry.get("uniqueId") != entry_point_id:
