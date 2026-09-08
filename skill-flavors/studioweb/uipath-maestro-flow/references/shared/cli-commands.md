@@ -17,7 +17,7 @@ Pass just the name (or `/solution/<ProjectName>`); a nested path is rejected, an
 <!--skill-flavor:pack-command-section:start-->
 ## uip maestro flow pack
 
-Not needed in Studio Web: `uip maestro flow pack` (and every `uip <family> pack`) exits 0 with a no-op message, because `uip solution publish` packages the open solution server-side. There is no `.nupkg` to produce locally.
+Not needed in Studio Web, and the two spellings behave differently. The two-token `uip flow pack` (and every two-token `uip <family> pack`) is intercepted by the host and exits 0 with a no-op message. The three-token `uip maestro flow pack` is NOT intercepted — like `uip maestro flow debug` it reaches the browser bundle, whose packager is excluded from that build, so it fails instead of no-opping. Do not script either form: `uip solution publish` packages the open solution server-side and there is no `.nupkg` to produce locally.
 <!--skill-flavor:pack-command-section:end-->
 
 <!--skill-flavor:solution-resources-refresh-section:start-->
@@ -106,6 +106,26 @@ Monitor jobs (auth comes from the host session):
 <!--skill-flavor:eval-login-note:start-->
 Evaluation surface: evaluator, eval-set, and data-point CRUD; Studio Web run start/status/results/list/compare. Local CRUD works with `--path /solution/<ProjectName>`. `eval run *` needs both ids passed explicitly (`--solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId>`), can hang on first use — call with `timeoutSeconds: 120`, never `--wait`; on a time-out hand the run to the user via the Studio Web Evaluations panel.
 <!--skill-flavor:eval-login-note:end-->
+
+<!--skill-flavor:eval-commands-synopsis:start-->
+```bash
+uip maestro flow eval add <name> --set <set> [flags] --output json
+uip maestro flow eval list --set <set> --path /solution/<ProjectName> --output json
+uip maestro flow eval remove <id> --set <set> --path /solution/<ProjectName> --output json
+uip maestro flow eval set add <name> [--evaluators <refs>] [--entry-point <id>] --path /solution/<ProjectName> --output json
+uip maestro flow eval set list --path /solution/<ProjectName> --output json
+uip maestro flow eval set remove <id> --path /solution/<ProjectName> --output json
+uip maestro flow eval evaluator add <name> --type <type> [--model <m>] [--target-key <k>] [--prompt <p>] --path /solution/<ProjectName> --output json
+uip maestro flow eval evaluator list --path /solution/<ProjectName> --output json
+uip maestro flow eval evaluator remove <id> --path /solution/<ProjectName> --output json
+# every `eval run` verb needs BOTH ids from the context and is called without --wait, with timeoutSeconds: 120
+uip maestro flow eval run start <name> --set <set> [--entry-point <e>] --solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId> --path /solution/<ProjectName> --output json
+uip maestro flow eval run status <run_id> --set <set> --solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId> --path /solution/<ProjectName> --output json
+uip maestro flow eval run results <run_id> --set <set> [--only-failed] [--verbose] [--export-format json|csv] --solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId> --path /solution/<ProjectName> --output json
+uip maestro flow eval run list --set <set> --solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId> --path /solution/<ProjectName> --output json
+uip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId> --path /solution/<ProjectName> --output json
+```
+<!--skill-flavor:eval-commands-synopsis:end-->
 
 <!--skill-flavor:registry-login-note:start-->
 Manage the local node-type cache. Tenant-specific connector nodes are returned with the host session; no login step exists:

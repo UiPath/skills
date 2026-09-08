@@ -16,7 +16,7 @@ Steps 0–6 are **logical phases**, not separate turns. In Studio Web project cr
 <!--skill-flavor:greenfield-init-batching:end-->
 
 <!--skill-flavor:greenfield-step-zero-heading:start-->
-## Step 0 — Command prefix **[T1]**
+## Step 1 — Command prefix **[T1]**
 
 In Studio Web `uip` is pre-installed and its version is fixed by the host — **never probe it** (`uip --version`, `which uip`, `command -v uip`, `npm install`, and `uip tools update` are forbidden; report a capability gap instead). Authoring commands use the `uip maestro flow <verb>` form written below. The one exception is debugging: the verb is the two-token `uip flow debug` — the `maestro flow` form of debug is not intercepted by the host and fails. <!-- uip-check-skip -->
 <!--skill-flavor:greenfield-step-zero-heading:end-->
@@ -60,7 +60,7 @@ In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB
 
 Host-generated files (`entry-points.json`, `new.bpmn`, `operate.json`, `package-descriptor.json`, `simulations.json`, `evals/`) appear after the first debug/publish, and `node configure` writes `bindings_v2.json` into the project directory — never hand-edit any of them and never treat their absence as an error.
 
-> **Bash session state persists across tool calls.** The `cd` into `/solution/<ProjectName>` stays in effect for every later `Bash` call (cwd is clamped inside `/solution`), so the commands below use the bare `new.flow`; use the absolute `/solution/<ProjectName>/new.flow` whenever the cwd is in doubt.
+> **Bash session state persists across tool calls — but only from a call that exited 0.** The `cd` into `/solution/<ProjectName>` carries over to every later `Bash` call (the cwd is clamped inside `/solution`), so the commands below use the bare `new.flow`. A `cd` inside a chain that then exits non-zero is NOT persisted: the shell keeps the last successful cwd, which after a failed T1 chain is still `/solution`. So in any recovery or retry step — and whenever the previous call exited non-zero — pass the absolute `/solution/<ProjectName>/new.flow` (or re-issue the `cd` in the same chain) instead of the bare name.
 
 See [shared/file-format.md](../shared/file-format.md) for the full project structure.
 <!--skill-flavor:project-creation:end-->
@@ -76,7 +76,7 @@ This is already a segment of the [canonical T1 chain](#canonical-t1-chain--issue
 <!--skill-flavor:greenfield-end-node-discovery:end-->
 
 <!--skill-flavor:greenfield-registry-auth-note:start-->
-> **Auth note**: Authentication is host-provided — your Studio Web session is injected on every `uip` call, so `registry pull` already returns OOTB **and** tenant connector/resource nodes; there is no login step. A 401/403 means the signed-in user lacks rights on the tenant or folder — report it, do not retry. **In-solution sibling projects** are listed with `uip solution resources list` — see below.
+> **Auth note**: Authentication is host-provided — your Studio Web session is injected on every `uip` call, so `registry pull` already returns OOTB **and** tenant connector/resource nodes; there is no login step. A 401/403 means the signed-in user lacks rights on the tenant or folder — report it, do not retry. **In-solution sibling projects** are listed with `uip solution resources list --kind Process --output json` — see below.
 <!--skill-flavor:greenfield-registry-auth-note:end-->
 
 <!--skill-flavor:greenfield-local-discovery:start-->
@@ -118,7 +118,7 @@ uip maestro flow format new.flow --output json
 <!--skill-flavor:greenfield-whats-next-dropdown:start-->
 | Option | What it does |
 | --- | --- |
-| **Publish** | Publish the open solution with `uip solution publish --location "<key or name>"`. Read the destinations from `uip solution publish --help` (`PublishLocations`) and ask the user which one when more than one exists and none was named; the personal workspace auto-deploys. |
+| **Publish** | Publish the open solution with `uip solution publish --location "<key or name>"`. Read the destinations from `uip solution publish --help` (`PublishLocations`) and ask the user which one when more than one exists and none was named; with no `--location` the host publishes to the personal workspace immediately and without a second confirmation. |
 | **Debug** | Run the saved project with `uip flow debug` (two-token verb). Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "publish to folder X"). |
 <!--skill-flavor:greenfield-whats-next-dropdown:end-->

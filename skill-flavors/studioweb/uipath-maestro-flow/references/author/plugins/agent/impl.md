@@ -13,7 +13,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
-Only published agents from the tenant appear. For in-solution agents, list the open solution's projects — `registry list|get --local` needs a `.uipx` and fails in Studio Web:
+Only published agents from the tenant appear. There is no `.uipx` in Studio Web, so the `--local` registry lookups do not exist here (`registry list|get --local` fails with `No .uipx solution file found`). List the open solution's projects instead:
 
 ```bash
 uip solution resources list --kind Process --output json   # solutionResources = in-solution projects (key, name, kind, type); --kind Agent is also accepted

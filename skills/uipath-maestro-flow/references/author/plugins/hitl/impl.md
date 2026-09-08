@@ -85,8 +85,8 @@ Filter returned Action Center app types (`vB Action`, `workflow Action`, `Coded 
 ```bash
 uip solution resources get <key> --output json
 ```
-
 <!--skill-flavor:hitl-impl-http-fallback:start-->
+
 If the CLI is unavailable, use:
 
 ```

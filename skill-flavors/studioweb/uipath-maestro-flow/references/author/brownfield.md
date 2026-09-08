@@ -40,7 +40,7 @@ uip maestro flow migrate new.flow --output json
 <!--skill-flavor:brownfield-whats-next-dropdown:start-->
 | Option | What it does |
 |---|---|
-| **Publish** | Publish the open solution with `uip solution publish --location "<key or name>"`. Read the destinations from `uip solution publish --help` (`PublishLocations`) and ask the user which one when more than one exists and none was named; the personal workspace auto-deploys. |
+| **Publish** | Publish the open solution with `uip solution publish --location "<key or name>"`. Read the destinations from `uip solution publish --help` (`PublishLocations`) and ask the user which one when more than one exists and none was named; with no `--location` the host publishes to the personal workspace immediately and without a second confirmation. |
 | **Debug** | Run the saved project with `uip flow debug` (two-token verb). Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Something else** | Last option. Accept free-form string input and act on it. |
 <!--skill-flavor:brownfield-whats-next-dropdown:end-->

@@ -9,7 +9,7 @@ API workflow nodes invoke API functions from within a flow. Published API workfl
 | Call an external REST API | No — use [HTTP](../http/planning.md) or [Connector](../connector/planning.md) |
 | Invoke a published RPA process | No — use [RPA Workflow](../rpa/planning.md) |
 | API workflow not yet published but in the same solution | Yes — find it with `uip solution resources list --kind Process` (no publish needed) |
-| API workflow does not exist yet | Create it in the open solution with `uip api-workflow init <Name>`, then find it with `uip solution resources list` |
+| API workflow does not exist yet | Create it in the open solution with `uip api-workflow init <Name>`, then find it with `uip solution resources list --kind Process --output json` |
 <!--skill-flavor:api-workflow-selection-table:end-->
 
 <!--skill-flavor:api-workflow-discovery:start-->

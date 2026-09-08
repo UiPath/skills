@@ -96,8 +96,8 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output
 
 `add` is idempotent on `(kind, name, folder)` for local resources and on resource key for remote resources; retries return `Status: "Unchanged"`. `edit` alone mutates an existing resource spec; `refresh` never overwrites and skips resources already in the solution. These commands do not modify `bindings_v2.json`; a later `refresh` re-imports a still-bound resource. See [uipath-solution Step 9–11](/uipath:uipath-solution).
 <!--skill-flavor:solution-resources-mutations:end-->
-
 <!--skill-flavor:upload-command-section:start-->
+
 ## uip solution upload
 
 Upload a solution directly to Studio Web; require `uip login`:
@@ -236,6 +236,7 @@ Evaluation surface: evaluator, eval-set, and data-point CRUD; Studio Web run sta
 **Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/upload-safety.md](../evaluate/upload-safety.md).
 <!--skill-flavor:upload-safety-eval-surface-note:end-->
 
+<!--skill-flavor:eval-commands-synopsis:start-->
 ```bash
 uip maestro flow eval add <name> --set <set> [flags] --output json
 uip maestro flow eval list --set <set> --path <flow_project> --output json
@@ -252,6 +253,7 @@ uip maestro flow eval run results <run_id> --set <set> [--only-failed] [--verbos
 uip maestro flow eval run list --set <set> --path <flow_project> --output json
 uip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --path <flow_project> --output json
 ```
+<!--skill-flavor:eval-commands-synopsis:end-->
 
 Evaluators: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`. For full flag tables, evaluator details, eval-set JSON shape, and run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).
 

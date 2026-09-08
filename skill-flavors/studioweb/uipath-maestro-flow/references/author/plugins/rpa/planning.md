@@ -8,7 +8,7 @@ RPA nodes invoke RPA processes (XAML or coded C# workflows) from within a flow. 
 | Desktop/browser automation via a published RPA process | Yes |
 | Target system has a REST API | No — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md) |
 | RPA process in the same solution but not yet published | Yes — find it with `uip solution resources list --kind Process` (see below) |
-| RPA process does not exist yet | Create it in the open solution with `uip rpa init <Name>` (implement it with `uipath-rpa`), then find it with `uip solution resources list` |
+| RPA process does not exist yet | Create it in the open solution with `uip rpa init <Name>` (implement it with `uipath-rpa`), then find it with `uip solution resources list --kind Process --output json` |
 | Need AI reasoning, not desktop automation | No — use [Agent](../agent/planning.md) |
 <!--skill-flavor:rpa-selection-table:end-->
 

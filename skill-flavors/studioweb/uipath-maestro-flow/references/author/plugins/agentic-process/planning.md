@@ -10,7 +10,7 @@ Agentic process nodes invoke orchestration processes from within a flow. Publish
 | Call another published flow | No — use [Flow](../flow/planning.md) |
 | Need desktop/browser automation | No — use [RPA Workflow](../rpa/planning.md) |
 | Process not yet published but in the same solution | Yes — find it with `uip solution resources list --kind Process` (no publish needed) |
-| Process does not exist yet | Create it in the open solution with `uip bpmn init <Name>`, then find it with `uip solution resources list` |
+| Process does not exist yet | Create it in the open solution with `uip bpmn init <Name>`, then find it with `uip solution resources list --kind Process --output json` |
 <!--skill-flavor:agentic-process-selection-table:end-->
 
 <!--skill-flavor:agentic-process-discovery:start-->

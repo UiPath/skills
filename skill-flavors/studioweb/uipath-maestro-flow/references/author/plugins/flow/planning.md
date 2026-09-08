@@ -9,7 +9,7 @@ Flow nodes invoke other flows as subprocesses from within a flow. Published flow
 | Group related steps with isolated scope (within same project) | No — use [Subflow](../subflow/planning.md) |
 | Invoke a published orchestration process | No — use [Agentic Process](../agentic-process/planning.md) |
 | Flow not yet published but in the same solution | Yes — find it with `uip solution resources list --kind Process` (no publish needed) |
-| Flow does not exist yet | Create it in the open solution with `uip flow init <Name>` (this skill), then find it with `uip solution resources list` |
+| Flow does not exist yet | Create it in the open solution with `uip flow init <Name>` (this skill), then find it with `uip solution resources list --kind Process --output json` |
 <!--skill-flavor:flow-selection-table:end-->
 
 <!--skill-flavor:flow-discovery:start-->

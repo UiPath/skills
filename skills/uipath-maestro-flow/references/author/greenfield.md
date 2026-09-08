@@ -59,12 +59,12 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 See [shared/cli-conventions.md](../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form. <!-- uip-check-skip -->
 <!--skill-flavor:greenfield-step-zero-heading:end-->
-
 <!--skill-flavor:greenfield-step-zero-concurrency:start-->
+
 This probe is read-only — emit as a parallel `Bash` alongside the Step 2 scaffold chain. It does not need its own turn.
 <!--skill-flavor:greenfield-step-zero-concurrency:end-->
-
 <!--skill-flavor:greenfield-author-login-boundary:start-->
+
 ## Step 1 — Check login status **[T1 — only if needed]**
 
 Greenfield steps 2–6 work without login (`flow init`, `validate`, `format`, registry OOTB nodes, `Edit` / `Write` edits). Login is required only when the registry needs tenant-specific connector/resource nodes, or before handing off to Operate.

@@ -42,7 +42,7 @@ An inbound flow does nothing until a trunk points at its deployed process. Nothi
 
 ```bash
 # 1. publish the open solution — nothing to pack or upload, the flow is already in Studio Web
-#    (a personal-workspace destination auto-deploys)
+#    (no --location publishes to the personal workspace immediately)
 uip solution publish --location "<FolderPathOrKey>" --output json
 
 # 2. read the release key + folder key back

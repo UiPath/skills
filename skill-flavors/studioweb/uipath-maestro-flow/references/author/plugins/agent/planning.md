@@ -4,7 +4,7 @@ Agent nodes invoke UiPath AI agents from within a flow. Published agents appear 
 
 <!--skill-flavor:agent-when-not-local:start-->
 - **Agent in the same solution but not yet published** — find it with `uip solution resources list --kind Process` (see below)
-- **Agent does not exist yet** — create it in the open solution with `uip agent init <Name>` (configure it with `uipath-agents`), then find it with `uip solution resources list`
+- **Agent does not exist yet** — create it in the open solution with `uip agent init <Name>` (configure it with `uipath-agents`), then find it with `uip solution resources list --kind Process --output json`
 <!--skill-flavor:agent-when-not-local:end-->
 
 <!--skill-flavor:agent-discovery:start-->

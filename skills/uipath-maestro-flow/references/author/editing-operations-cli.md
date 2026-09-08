@@ -14,6 +14,7 @@ The primitive commands below are support commands for carve-out workflows only. 
 
 ### Add a node
 
+<!--skill-flavor:cli-node-add-command:start-->
 ```bash
 uip maestro flow node add <ProjectName>.flow <node-type> --output json \
   --input '<INPUT_JSON>' \
@@ -21,6 +22,7 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
   --position <X>,<Y> \
   --parent <PARENT_NODE_ID>
 ```
+<!--skill-flavor:cli-node-add-command:end-->
 
 **What the CLI handles automatically:**
 - Inserts node into `nodes` array with a generated `id`
@@ -41,10 +43,12 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 
 ### Remove a node
 
+<!--skill-flavor:cli-node-remove-command:start-->
 ```bash
 uip maestro flow node remove <ProjectName>.flow <NODE_ID>
 uip maestro flow node remove <ProjectName>.flow <NODE_ID> --output json
 ```
+<!--skill-flavor:cli-node-remove-command:end-->
 
 **What the CLI handles automatically:**
 - Removes the node from `nodes`
@@ -55,19 +59,23 @@ uip maestro flow node remove <ProjectName>.flow <NODE_ID> --output json
 
 ### List nodes
 
+<!--skill-flavor:cli-node-list-command:start-->
 ```bash
 uip maestro flow node list <ProjectName>.flow --output json
 ```
+<!--skill-flavor:cli-node-list-command:end-->
 
 Returns all nodes with their `id`, `type`, and `display.label`. Use this to discover node IDs before wiring edges or removing nodes.
 
 ### Add an edge
 
+<!--skill-flavor:cli-edge-add-command:start-->
 ```bash
 uip maestro flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> --output json \
   --source-port <PORT> \
   --target-port <PORT>
 ```
+<!--skill-flavor:cli-edge-add-command:end-->
 
 **What the CLI handles automatically:**
 - Inserts edge into `edges` array with a generated `id`
@@ -77,16 +85,20 @@ See each plugin's `planning.md` or [file-format.md — Standard ports](../shared
 
 ### Remove an edge
 
+<!--skill-flavor:cli-edge-remove-command:start-->
 ```bash
 uip maestro flow edge remove <ProjectName>.flow <EDGE_ID>
 uip maestro flow edge remove <ProjectName>.flow <EDGE_ID> --output json
 ```
+<!--skill-flavor:cli-edge-remove-command:end-->
 
 ### List edges
 
+<!--skill-flavor:cli-edge-list-command:start-->
 ```bash
 uip maestro flow edge list <ProjectName>.flow --output json
 ```
+<!--skill-flavor:cli-edge-list-command:end-->
 
 Returns all edges with `id`, `sourceNodeId`, `sourcePort`, `targetNodeId`, `targetPort`.
 
@@ -94,10 +106,12 @@ Returns all edges with `id`, `sourceNodeId`, `sourcePort`, `targetNodeId`, `targ
 
 After adding a connector node with `node add`, configure it with connection details:
 
+<!--skill-flavor:cli-node-configure-connector-command:start-->
 ```bash
 uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
   --detail '<DETAIL_JSON>'
 ```
+<!--skill-flavor:cli-node-configure-connector-command:end-->
 
 <!--skill-flavor:cli-configure-connector-effects:start-->
 **What the CLI handles automatically:**
@@ -110,12 +124,14 @@ The `--detail` JSON schema differs between connector activity nodes, connector t
 
 **Shell quoting — write the JSON to a file first.** Never hand-escape quotes inside the shell command. `--detail` takes inline JSON only; there is no file flag. Write the payload with a quoted heredoc, then substitute the file:
 
+<!--skill-flavor:cli-node-configure-detail-file:start-->
 ```bash
 cat > /tmp/detail.json <<'EOF'
 {"connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>", "method": "POST", "endpoint": "/Account"}
 EOF
 uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat /tmp/detail.json)" --output json
 ```
+<!--skill-flavor:cli-node-configure-detail-file:end-->
 
 `<<'EOF'` (quoted delimiter) stops the shell from touching the body, so `=js:` expressions, backticks, `${...}`, and nested quotes reach the CLI byte for byte. Nesting an `=js:` expression inside `--detail '<json>'` instead doubles its backslashes; the saved expression then faults at runtime with `[400300] Error evaluating expression … Invalid or unexpected token`, and a stray quote aborts the command with a shell parse error (`zsh: parse error`, `bash: syntax error near unexpected token`).
 
@@ -123,6 +139,7 @@ uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat /tm
 
 After adding a `core.action.http.v2` node, configure it with target connector and connection details:
 
+<!--skill-flavor:cli-node-configure-http-command:start-->
 ```bash
 uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
   --detail '{
@@ -135,6 +152,7 @@ uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
     "query": {"param1": "value1"}
   }'
 ```
+<!--skill-flavor:cli-node-configure-http-command:end-->
 
 <!--skill-flavor:cli-configure-http-effects:start-->
 **What the CLI handles automatically:**
@@ -147,9 +165,11 @@ See [http/impl.md](plugins/http/impl.md) for the full configuration workflow and
 
 ### Validate
 
+<!--skill-flavor:cli-validate-command:start-->
 ```bash
 uip maestro flow validate <ProjectName>.flow --output json
 ```
+<!--skill-flavor:cli-validate-command:end-->
 
 Run **once** after all nodes, edges, and configuration are complete. Do not validate after each individual edit — intermediate states are expected to be invalid.
 
@@ -161,6 +181,7 @@ These combine primitives only for workflows that are themselves carve-outs. Do n
 
 ### Replace manual trigger with connector trigger
 
+<!--skill-flavor:cli-trigger-swap-steps:start-->
 1. Remove the manual trigger (also removes its edges and orphaned definition):
    ```bash
    uip maestro flow node remove <ProjectName>.flow start --output json
@@ -179,6 +200,7 @@ These combine primitives only for workflows that are themselves carve-outs. Do n
    ```bash
    uip maestro flow node configure <ProjectName>.flow <NEW_TRIGGER_ID> --detail '<TRIGGER_DETAIL_JSON>'
    ```
+<!--skill-flavor:cli-trigger-swap-steps:end-->
 
 See [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the full `--detail` schema.
 

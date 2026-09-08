@@ -51,12 +51,14 @@ references/
 
 ### Capability boundary
 
+<!--skill-flavor:maintenance-capability-boundary:start-->
 - **Author** = on disk, locally, **without `uip login`** (`flow init`, `validate`, `format`, registry, JSON edits)
 - **Operate** = touches the cloud, **requires `uip login`** (`solution upload`, `flow debug`, `flow pack`, `process run`, `instance ...`)
 - **Diagnose** = postmortem on a failed run, **requires `uip login`** (`instance incidents`, `instance variables`, `instance asset`, `incident get`, `job traces`)
 - **Evaluate** = evaluations against a flow already in Studio Web; local eval-set/evaluator CRUD needs no login, **`eval run *` requires `uip login`** (`eval set`, `eval evaluator`, `eval run`)
 
 Author terminates at `validate` + `format` and hands off to Operate. Operate hands off to Diagnose when a run faults. Diagnose hands off back to Author for the underlying fix. Evaluate attaches to a flow Operate has already uploaded.
+<!--skill-flavor:maintenance-capability-boundary:end-->
 
 ### Capability-index template
 

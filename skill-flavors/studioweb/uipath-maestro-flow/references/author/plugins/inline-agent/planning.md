@@ -10,5 +10,5 @@ For the tool's `resource.json` format and solution-level resource setup, see the
 <!--skill-flavor:inline-agent-tool-folderpath:end-->
 
 <!--skill-flavor:inline-agent-tool-add-antipattern:start-->
-Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json`, run `uip agent refresh --inline-in-flow --bindings-target` to write the binding, and make sure the referenced resource is on the open solution's Resources panel (`uip solution resources list`; `uip solution resources add` if missing).
+Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json`, run `uip agent refresh --inline-in-flow --bindings-target` to write the binding, and make sure the referenced resource is on the open solution's Resources panel (`uip solution resources list --kind <Kind> --output json`; `uip solution resources add` if missing).
 <!--skill-flavor:inline-agent-tool-add-antipattern:end-->
