@@ -102,11 +102,10 @@ _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 # the `retries` default.
 _POLL_TIMEOUT_ATTEMPTS = 2
 
-# A SIGKILLed attempt returns no envelope at all, so it cannot be classified as
-# transient or terminal — and it is observed to be flaky (skill-flow-cli-dice-
-# roller-simulated 2026-09-08 polled to 492s of a 540s CLI budget, then went
-# silent until the 600s cap). Its own allowance, like the poll-timeout and
-# unreadable-outputs paths; the deadline still bounds every attempt.
+# A SIGKILLed attempt returns no envelope, so `_is_transient_debug_error` can
+# neither classify nor reach it. Its own allowance, like the poll-timeout path;
+# the deadline still bounds every attempt. Flaky in practice: dice-roller
+# 2026-09-08 polled to 492s of a 540s CLI budget, then went silent to the cap.
 _SUBPROCESS_TIMEOUT_ATTEMPTS = 2
 
 # Named so `debug_budget` and the criterion guard cannot drift from the
@@ -429,9 +428,8 @@ def run_debug(
     unreadable: str | None = None
     unreadable_attempts = 0
     subprocess_timeouts = 0
-    # Carried across this call's timeouts only. The module globals persist
-    # between run_debug calls, so reading them back would resurrect a previous
-    # call's capture, and _LAST_DEBUG_STDERR starts as None.
+    # Call-scoped: the globals persist across run_debug calls, and
+    # _LAST_DEBUG_STDERR starts as None, so reading them back resurrects or crashes.
     timeout_stdout = ""
     timeout_stderr = ""
     overwrite_rotations = 0
@@ -456,10 +454,8 @@ def run_debug(
                 env=env,
             )
         except subprocess.TimeoutExpired as exc:
-            # Keep the richest partial output across timeouts, not the newest:
-            # a later attempt can die before printing anything, and the earlier
-            # one may hold the only instanceId the remote run can be inspected
-            # or cleaned up by.
+            # Richest, not newest: a later attempt can die before printing, and
+            # the earlier one may hold the only instanceId for the remote run.
             timeout_stdout = _as_text(exc.stdout) or timeout_stdout
             timeout_stderr = _as_text(exc.stderr) or timeout_stderr
             _LAST_DEBUG_RAW = timeout_stdout
@@ -471,9 +467,8 @@ def run_debug(
             if subprocess_timeouts < _SUBPROCESS_TIMEOUT_ATTEMPTS and fundable:
                 time.sleep(backoff_seconds)
                 attempt += 1
-                # Extend rather than assign: a retries=1 caller has no attempt
-                # left to spend here, and falling out of the loop would reach
-                # the `r.returncode` read with `r` unbound.
+                # Extend, not assign: a retries=1 caller has no attempt left
+                # here, and exiting the loop reads `r.returncode` with `r` unbound.
                 max_attempts = max(max_attempts, attempt + 1)
                 continue
             _fail_with_capture(
@@ -483,9 +478,8 @@ def run_debug(
                 + ("" if fundable else " and the remaining budget could not fund another")
                 + ". The stderr tail below is the last phase any attempt reported.\n"
                 f"stdout: {timeout_stdout}\n"
-                # Tail, not the whole stream: the grader truncates `details` from
-                # the front, and a polling run fills it, so inlining everything
-                # is what drops the phase this message points at.
+                # Tail only: the grader truncates `details` from the front and a
+                # polling run fills it, so the whole stream drops what this names.
                 f"stderr: {timeout_stderr[-_STDERR_CAPTURE_TAIL_CHARS:]}"
             )
         _LAST_DEBUG_RAW = r.stdout
