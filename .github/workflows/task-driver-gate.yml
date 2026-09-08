@@ -2,7 +2,7 @@ name: Task Driver Gate
 
 # Two gates over the task/experiment corpus:
 #   1. no coder-eval task YAML pins `sandbox.driver: tempdir`
-#   2. every experiment `pre_run`/`post_run` command is a single line
+#   2. every Windows-reachable `pre_run`/`post_run` command is a single line
 #
 # Gate 1:
 # The sandbox driver is chosen by the run environment, never by the task:
@@ -15,7 +15,8 @@ name: Task Driver Gate
 # scripts/check-task-driver.py for the full rationale.
 #
 # Gate 2: cmd.exe on the Windows split parses only the first line of a hook, so
-# a `|-` block scalar ERRORs every task (skills #2756 -> #3116).
+# a `|-` block scalar ERRORs every task (skills #2756 -> #3116). Scope is every
+# experiment hook plus the hooks of `windows`-tagged tasks.
 #
 # No `paths:` filter so this can be wired as a required check — it is a
 # sub-second full scan that always reports a definitive pass/fail. The job

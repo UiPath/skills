@@ -53,6 +53,23 @@ def _write_experiment(tmp_path: Path, hook: str, command: str) -> Path:
     return path
 
 
+def _write_task(tmp_path: Path, tags: list[str], hook: str, command: str) -> Path:
+    path = tmp_path / "task.yaml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "task_id": "fixture-task",
+                "description": "fixture",
+                "initial_prompt": "do a thing",
+                "tags": tags,
+                hook: [{"command": command, "timeout": 30}],
+            },
+            sort_keys=False,
+        )
+    )
+    return path
+
+
 class TestWouldHaveCaughtTheOutage:
     def test_would_have_caught_the_2026_09_04_outage(self, tmp_path):
         rc, out = _run(_write_experiment(tmp_path, "pre_run", BROKEN_HOOK))
@@ -105,6 +122,40 @@ class TestWouldHaveCaughtTheOutage:
         assert yaml.safe_load(blob)["defaults"]["pre_run"][0]["command"] == BROKEN_HOOK
 
 
+
+class TestHookScope:
+    """The gate scans what cmd.exe can reach, and nothing else."""
+
+    def test_windows_tagged_task_hook_is_caught(self, tmp_path):
+        path = _write_task(tmp_path, ["uipath-rpa", "windows"], "pre_run", BROKEN_HOOK)
+        rc, out = _run(path)
+        assert rc == 1, out
+        assert "pre_run[0].command" in out
+
+    def test_untagged_task_hook_is_left_alone(self, tmp_path):
+        """24 multi-line task hooks exist and none runs on Windows; don't flag them."""
+        rc, out = _run(_write_task(tmp_path, ["uipath-rpa"], "pre_run", BROKEN_HOOK))
+        assert rc == 0, out
+
+    def test_variant_level_hook_is_caught(self, tmp_path):
+        """`variants` is a list, so the scope walk has to descend into it."""
+        path = tmp_path / "experiment.yaml"
+        path.write_text(
+            yaml.safe_dump(
+                {
+                    "experiment_id": "test-experiment",
+                    "variants": [
+                        {"variant_id": "a", "pre_run": [{"command": BROKEN_HOOK}]}
+                    ],
+                },
+                sort_keys=False,
+            )
+        )
+        rc, out = _run(path)
+        assert rc == 1, out
+        assert "variants[0].pre_run[0].command" in out
+
+
 class TestDriverGate:
     def _write(self, tmp_path: Path, driver: str) -> Path:
         path = tmp_path / "task.yaml"
@@ -142,4 +193,4 @@ def test_live_corpus_passes_both_gates():
     rc, out = _run(REPO_ROOT / "tests" / "tasks", REPO_ROOT / "tests" / "experiments")
     assert rc == 0, out
     assert "no task pins `sandbox.driver: tempdir`" in out
-    assert "experiment hook command(s) are single-line" in out
+    assert "Windows-reachable hook command(s) are single-line" in out

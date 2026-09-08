@@ -32,6 +32,10 @@ therefore drops the rest, and ``PreRunCommand.fail_on_error`` defaults to
 #2756, fixed by #3116). Just the newline rule: no false positives, no config.
 It does not detect one-line POSIX sh; see the known-gap test for that cost.
 
+Scope is what cmd.exe can reach: every experiment hook (they run for all tasks,
+including the Windows split) plus the hooks of ``windows``-tagged tasks. A task
+without that tag never runs on Windows, so its hooks are left alone.
+
 Usage:
     python3 scripts/check-task-driver.py                              # tests/tasks
     python3 scripts/check-task-driver.py tests/tasks tests/experiments  # both gates
@@ -89,7 +93,14 @@ def _driver_line_number(path: Path) -> int:
 
 def _iter_hook_commands(doc: dict) -> Iterator[tuple[str, str]]:
     """Yield ``(yaml_path, command)`` for every pre_run/post_run command."""
-    scopes = [("", doc)] + [(k, v) for k, v in doc.items() if isinstance(v, dict)]
+    scopes: list[tuple[str, dict]] = [("", doc)]
+    for key, value in doc.items():
+        if isinstance(value, dict):
+            scopes.append((key, value))
+        elif isinstance(value, list):  # variants[] holds per-variant overrides
+            scopes.extend(
+                (f"{key}[{i}]", v) for i, v in enumerate(value) if isinstance(v, dict)
+            )
     for scope_name, scope in scopes:
         for hook in ("pre_run", "post_run"):
             steps = scope.get(hook)
@@ -128,7 +139,12 @@ def main(argv: list[str]) -> int:
         if not isinstance(doc, dict):
             continue
 
-        if "experiment_id" in doc or "variants" in doc:
+        tags = doc.get("tags")
+        if (
+            "experiment_id" in doc
+            or "variants" in doc
+            or (isinstance(tags, list) and "windows" in tags)
+        ):
             for yaml_path, command in _iter_hook_commands(doc):
                 hooks_checked += 1
                 if len(command.strip().splitlines()) > 1:
@@ -156,7 +172,7 @@ def main(argv: list[str]) -> int:
 
     if multi_line:
         rc = 1
-        print(f"FAIL — {len(multi_line)} experiment hook command(s) span multiple lines:\n")
+        print(f"FAIL — {len(multi_line)} Windows-reachable hook command(s) span multiple lines:\n")
         for path, line, yaml_path in multi_line:
             rel = _rel(path)
             loc = f"{rel}:{line}" if line else rel
@@ -171,7 +187,7 @@ def main(argv: list[str]) -> int:
         )
         print()
     elif hooks_checked:
-        print(f"OK — {hooks_checked} experiment hook command(s) are single-line.")
+        print(f"OK — {hooks_checked} Windows-reachable hook command(s) are single-line.")
 
     if not offenders:
         print("OK — no task pins `sandbox.driver: tempdir`.")
