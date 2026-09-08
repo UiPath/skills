@@ -187,11 +187,19 @@ The marketplace entry currently uses a `plugins/uipath` symlink so Codex can loa
 > ```bash
 > git clone -c core.symlinks=true https://github.com/UiPath/skills
 > ```
+>
 > If you've already cloned without symlink support, re-enable and re-checkout:
 > ```bash
 > git config core.symlinks true
 > git checkout -- .
 > ```
+>
+> If you encounter a `Filename too long` or `MAX_PATH` error during
+> checkout, enable Git long-path support:
+> ```bash
+> git config --global core.longpaths true
+> ```
+> Then retry the clone or checkout.
 
 ### Cursor IDE
 
