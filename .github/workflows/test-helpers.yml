@@ -12,7 +12,7 @@ on:
       - 'tests/tasks/uipath-admin/**'
       - 'tests/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
-      - 'tests/experiments/**'  # experiment hooks are gated by test_check_task_driver.py
+      - 'tests/experiments/**'  # hooks gated by test_check_task_driver.py
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
@@ -210,10 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
-          # The Windows-portability regression test replays the exact broken
-          # pre_run hook out of commit 80c757e03. It skips itself on a shallow
-          # clone, but a full history keeps it armed against a retyped fixture.
-          fetch-depth: 0
+          fetch-depth: 0  # the regression test reads the broken hook from 80c757e03
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
@@ -222,10 +219,7 @@ jobs:
       - name: Install pytest
         run: pip install pytest pyyaml
 
-      # Guards both gates in scripts/check-task-driver.py: the driver pin (which
-      # had no tests) and the single-line hook rule. The headline case replays
-      # the 2026-09-04 outage, a multi-line POSIX pre_run in nightly.yaml that
-      # took the Windows nightly split to 7/7 ERROR, and asserts the gate
-      # rejects it.
+      # Guards both gates in scripts/check-task-driver.py; the headline case
+      # replays the 2026-09-04 multi-line pre_run that ERRORed the Windows split.
       - name: Run task gate tests
         run: pytest tests/scripts/test_check_task_driver.py -v

@@ -25,33 +25,12 @@ pin the driver.
 Gate 2: experiment hook commands must be a single line
 ------------------------------------------------------
 
-coder_eval runs ``pre_run``/``post_run`` through
-``asyncio.create_subprocess_shell``, which on Windows is ``%COMSPEC% /c``:
-cmd.exe, not sh. cmd parses only the FIRST line of the string it is handed, so a
-YAML ``|-`` block scalar silently drops or misparses everything after line 1.
-
-On 2026-09-04 a multi-line POSIX sh ``pre_run`` hook landed in ``nightly.yaml``
-(skills #2756) and took the whole Windows nightly split to ``7/7
-status=ERROR score=0.000 iterations=0`` at setup, because
-``PreRunCommand.fail_on_error`` defaults to ``True``. skills #3116 fixed it by
-collapsing the hook to one line prefixed with ``:;``, since cmd reads a leading
-``:`` as a label and skips it while sh reads it as the no-op builtin and runs
-the rest. Nothing caught the original; this gate is the cheapest thing that
-would have.
-
-Deliberately just the newline rule, applied to every experiment. It is a
-syntactic fact rather than a heuristic, so it has no false positives and needs
-no per-experiment configuration, and every hook command in the corpus already
-satisfies it.
-
-It does NOT try to detect POSIX sh that happens to fit on one line. That needs a
-construct table, and a construct table needs quote-awareness (``python -c
-"import sys; sys.exit(0)"`` is genuinely cmd-safe, and every Windows-tagged
-``run_command`` criterion in the corpus is that shape), plus a list of which
-experiments can reach Windows, plus an exemption for the ``post_run`` cleanup
-that coder_eval_uipath's overlay translates to PowerShell. If a one-line POSIX
-hook ever does break a Windows run, that is the moment to add all that, not
-before.
+On Windows coder_eval runs hooks through ``create_subprocess_shell``, i.e.
+cmd.exe, which parses only the FIRST line it is handed. A ``|-`` block scalar
+therefore drops the rest, and ``PreRunCommand.fail_on_error`` defaults to
+``True``, so an unparseable ``pre_run`` ERRORs every task in the split (skills
+#2756, fixed by #3116). Just the newline rule: no false positives, no config.
+It does not detect one-line POSIX sh; see the known-gap test for that cost.
 
 Usage:
     python3 scripts/check-task-driver.py                              # tests/tasks
@@ -109,11 +88,7 @@ def _driver_line_number(path: Path) -> int:
 
 
 def _iter_hook_commands(doc: dict) -> Iterator[tuple[str, str]]:
-    """Yield ``(yaml_path, command)`` for every pre_run/post_run command.
-
-    Hooks live under ``defaults`` in practice, but the walk is shape-agnostic so
-    a root-level or per-variant hook is covered too.
-    """
+    """Yield ``(yaml_path, command)`` for every pre_run/post_run command."""
     scopes = [("", doc)] + [(k, v) for k, v in doc.items() if isinstance(v, dict)]
     for scope_name, scope in scopes:
         for hook in ("pre_run", "post_run"):
@@ -189,14 +164,10 @@ def main(argv: list[str]) -> int:
             print(f"  {loc}  ({yaml_path})")
         print()
         print(
-            "On Windows these strings go to cmd.exe (%COMSPEC% /c) via\n"
-            "create_subprocess_shell, and cmd parses only the FIRST line, so a `|-` block\n"
-            "scalar drops the rest. A pre_run cmd cannot parse ERRORs every task in the\n"
-            "split before the agent starts (skills #2756, fixed by #3116).\n"
-            "\n"
-            "Collapse it to one line. If it is POSIX sh that must not run on Windows at\n"
-            "all, prefix it with `:; ` as well: cmd skips a leading `:` as a label, sh\n"
-            "treats it as the no-op builtin. See tests/experiments/nightly.yaml."
+            "cmd.exe on the Windows split parses only the first line, so the rest is\n"
+            "dropped and an unparseable pre_run ERRORs every task (skills #2756/#3116).\n"
+            "Collapse it to one line; if it is POSIX sh that must not run on Windows,\n"
+            "prefix it with `:; ` too. See tests/experiments/nightly.yaml."
         )
         print()
     elif hooks_checked:

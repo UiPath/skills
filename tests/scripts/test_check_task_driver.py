@@ -1,20 +1,9 @@
-"""Regression tests for the two static gates in scripts/check-task-driver.py.
+"""Regression tests for the two gates in scripts/check-task-driver.py.
 
-Gate 1 (no `sandbox.driver: tempdir`) predates these tests and was previously
-unguarded; it is pinned here alongside the new one.
-
-Gate 2 (experiment hook commands must be a single line) exists because of the
-2026-09-04 outage: a multi-line POSIX sh `pre_run` hook landed in
-`tests/experiments/nightly.yaml` (skills #2756, commit 80c757e03), cmd.exe on
-the Windows split parses only the first line of what it is handed, and the whole
-split came back `7/7 status=ERROR score=0.000 iterations=0`. skills #3116 fixed
-the hook by collapsing it to one line.
-
-`test_would_have_caught_the_2026_09_04_outage` is the point of this file: it
-feeds the real historical command back through the gate and asserts it fails.
-
-Run from repo root:
-    pytest tests/scripts/test_check_task_driver.py
+Gate 1 (no `sandbox.driver: tempdir`) predates these tests and was unguarded.
+Gate 2 (single-line experiment hooks) exists because of the 2026-09-04 outage:
+a multi-line POSIX pre_run in nightly.yaml (skills #2756, 80c757e03) left the
+Windows split at 7/7 status=ERROR. #3116 fixed it; nothing caught it.
 """
 
 import subprocess
@@ -27,16 +16,14 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "check-task-driver.py"
 
-# The `pre_run` command exactly as it stood on main between skills #2756
-# (80c757e03, 2026-09-04) and #3116 (ead274593, 2026-09-07). Verified against
-# git history by `test_broken_hook_fixture_matches_git_history` below.
+# As it stood on main between #2756 and #3116. Pinned to git history below.
 BROKEN_HOOK = (
     'if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then\n'
     '  bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"\n'
     "fi"
 )
 
-# The command #3116 replaced it with, currently live in nightly.yaml.
+# What #3116 replaced it with, live in nightly.yaml today.
 FIXED_HOOK = (
     ':; if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then '
     'bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"; fi'
@@ -44,7 +31,7 @@ FIXED_HOOK = (
 
 
 def _run(*paths: Path) -> tuple[int, str]:
-    """Run the gate as the workflow does, returning (exit code, combined output)."""
+    """Run the gate as the workflow does: (exit code, combined output)."""
     proc = subprocess.run(
         ["python3", str(SCRIPT), *map(str, paths)], capture_output=True, text=True, check=False
     )
@@ -78,20 +65,19 @@ class TestWouldHaveCaughtTheOutage:
         assert rc == 0, out
 
     def test_post_run_is_covered_too(self, tmp_path):
-        """post_run failures only warn-log at runtime, so nothing else catches them."""
+        """post_run only warn-logs at runtime, so nothing else catches it."""
         rc, out = _run(_write_experiment(tmp_path, "post_run", "echo one\necho two"))
         assert rc == 1, out
         assert "defaults.post_run[0].command" in out
 
     def test_known_gap_single_line_posix_passes(self, tmp_path):
-        """Documents the deliberate limit of this gate.
+        """One-line POSIX still breaks cmd and is deliberately not caught.
 
-        A POSIX hook that fits on one line still breaks cmd.exe (no `[`, no
-        `test`, `==` not `=`, no `then`/`fi`) and this gate lets it through.
-        Catching it needs a construct table plus quote-awareness plus a
-        Windows-reachability list plus an exemption for the overlay-translated
-        cleanup. That was built and deliberately cut as too much machinery for a
-        failure mode that has not happened yet.
+        Catching it needs a construct table, quote-awareness (every
+        windows-tagged run_command is a cmd-safe `python -c "..."`), a
+        Windows-reachability list, and an exemption for the overlay-translated
+        cleanup. Built, then cut: too much machinery for a failure mode that
+        has not happened.
         """
         one_line = " ".join(line.strip() for line in BROKEN_HOOK.splitlines())
         rc, _ = _run(_write_experiment(tmp_path, "pre_run", one_line))

@@ -14,13 +14,8 @@ name: Task Driver Gate
 # tool-backed command (e.g. `uip maestro flow validate`). See
 # scripts/check-task-driver.py for the full rationale.
 #
-# Gate 2: on Windows, coder_eval hands pre_run/post_run to
-# create_subprocess_shell, which is cmd.exe, and cmd parses only the FIRST line
-# of the string it gets. A `|-` block scalar therefore drops the rest, and a
-# `pre_run` cmd cannot parse ERRORs every task in the split before the agent
-# starts (skills #2756 -> #3116, 2026-09-04). The newline rule is a syntactic
-# fact, so it has no false positives and no per-experiment config; it does not
-# try to detect one-line POSIX sh. See scripts/check-task-driver.py.
+# Gate 2: cmd.exe on the Windows split parses only the first line of a hook, so
+# a `|-` block scalar ERRORs every task (skills #2756 -> #3116).
 #
 # No `paths:` filter so this can be wired as a required check — it is a
 # sub-second full scan that always reports a definitive pass/fail. The job
@@ -49,10 +44,6 @@ jobs:
         with: { python-version: '3.13' }
       - name: Install PyYAML
         run: pip install --quiet pyyaml
-      # Both gates in one step so the job name -- and therefore the required
-      # status check registered in the `main` ruleset -- stays byte-identical.
-      # `tests/experiments` is passed because the cmd-safety gate covers
-      # experiment-level pre_run/post_run hooks, which apply to EVERY task in a
-      # run: the 2026-09-04 outage was one such hook, not a task.
+      # One step, so the required-check job name above stays byte-identical.
       - name: Check task drivers and experiment hook portability
         run: python3 scripts/check-task-driver.py tests/tasks tests/experiments

@@ -39,12 +39,9 @@ defaults:
   # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
   # sandboxes don't leak Node module resolution).
   #
-  # PowerShell, not `rm -rf`: this experiment only ever runs on
-  # `uipath-windows-latest` (smoke-rpa-skills.yml, run-coder-eval.yml), and
-  # coder_eval dispatches post_run through create_subprocess_shell, which is
-  # cmd.exe there. `rm` is not a cmd command, so the POSIX form warn-logged and
-  # left node_modules behind on every task. cmd passes this whole thing to pwsh
-  # as one quoted argument, so the inner single quotes are PowerShell's.
+  # PowerShell, not `rm -rf`: this experiment only runs on
+  # uipath-windows-latest, where post_run goes to cmd.exe and `rm` does not
+  # exist, so the POSIX form warn-logged and leaked node_modules every task.
   post_run:
     - command: 'pwsh -NoLogo -NoProfile -NonInteractive -Command "Remove-Item -LiteralPath ''node_modules'',''.npm-prefix'' -Recurse -Force -ErrorAction SilentlyContinue"'
       timeout: 30
