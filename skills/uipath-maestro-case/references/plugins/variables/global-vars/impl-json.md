@@ -280,14 +280,7 @@ Three entries — formal slot + companion + bridge:
 // No `id`, no `elementId` on bridge — FE convention. `type` matches the SDD row's Type column.
 ```
 
-> **An In-arg bridge carries `source`, never `value`.** The two Pattern C shapes immediately
-> above this section (§ Trigger-sourced Variable, § Trigger-sourced Variable — multi-trigger)
-> carry `value: "<companionName>"`; an In-arg bridge MUST NOT. Do not merge the two shapes.
-> The In-arg bridge's only copy instruction is `source: "=vars.<formal-slot-id>"` — the
-> formal slot's `id` from entry 1, not the argument's name. Emitting
-> `{name, var, type, value}` with no `source` produces a bridge that copies nothing:
-> `uip maestro case validate` still returns `Valid`, and `=vars.<name>` is undefined at
-> runtime. Step 12 Check 17 is the backstop.
+> **An In-arg bridge carries `source`, never `value`.** The two Pattern C shapes immediately above this section (§ Trigger-sourced Variable, § Trigger-sourced Variable — multi-trigger) carry `value: "<companionName>"`; an In-arg bridge MUST NOT. Do not merge the two shapes. The In-arg bridge's only copy instruction is `source: "=vars.<formal-slot-id>"` — the formal slot's `id` from entry 1, not the argument's name. Emitting `{name, var, type, value}` with no `source` produces a bridge that copies nothing: `uip maestro case validate` still returns `Valid`, and `=vars.<name>` is undefined at runtime. Step 12 Check 17 is the backstop.
 
 **Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.v<random8>` at trigger fire (because `inputs[].id` is `v<random8>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.v<random8>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
 
