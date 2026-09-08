@@ -472,8 +472,12 @@ def run_debug(
                 f"on {subprocess_timeouts} attempt(s); the CLI's own --timeout of "
                 f"{cli_timeout}s produced no envelope"
                 + ("" if fundable else " and the remaining budget could not fund another")
-                + ". The captured tail ends at the last phase the run reported.\n"
-                f"stdout: {_as_text(exc.stdout)}\nstderr: {_as_text(exc.stderr)}"
+                + ". The stderr tail below is the last phase the run reported.\n"
+                f"stdout: {_as_text(exc.stdout)}\n"
+                # Tail, not the whole stream: the grader truncates `details` from
+                # the front, and a polling run fills it, so inlining everything
+                # is what drops the phase this message points at.
+                f"stderr: {_as_text(exc.stderr)[-_STDERR_CAPTURE_TAIL_CHARS:]}"
             )
         _LAST_DEBUG_RAW = r.stdout
         # Keep the CLI's stderr too: it is where `flow debug` reports what it
