@@ -352,7 +352,15 @@ class SeedTests(unittest.TestCase):
             (HERE / "customer_escalation_triage.yaml").read_text(encoding="utf-8")
         )
         limits = task["run_limits"]
-        criteria = sum(c.get("timeout", 0) for c in task["success_criteria"])
+        # Only criterion types that carry a timeout field cost wall clock;
+        # skill_triggered and command_executed are in-process transcript scans.
+        # A run_command that omits `timeout:` still costs the model default 30.
+        timed = {"run_command": 30, "pytest": 60}
+        criteria = sum(
+            c.get("timeout", timed[c["type"]])
+            for c in task["success_criteria"]
+            if c["type"] in timed
+        )
         needed = limits["turn_timeout"] + criteria
         self.assertLessEqual(
             needed,
@@ -360,6 +368,29 @@ class SeedTests(unittest.TestCase):
             f"a full {limits['turn_timeout']}s turn plus {criteria}s of grading "
             f"needs {needed}s but task_timeout is {limits['task_timeout']}s -- "
             "the watchdog would report TIMEOUT and discard passing criteria",
+        )
+
+    def test_post_run_sweep_can_finish_before_it_is_killed(self):
+        """The journal sweep is the only cleanup that survives a SIGKILL.
+
+        If its post_run timeout is shorter than the calls it makes, it dies
+        mid-flight and leaks live Jira issues and Slack messages.
+        """
+
+        task = yaml.safe_load(
+            (HERE / "customer_escalation_triage.yaml").read_text(encoding="utf-8")
+        )
+        sweeps = [
+            step
+            for step in task["post_run"]
+            if "teardown_escalation.py" in step.get("command", "")
+        ]
+        self.assertEqual(len(sweeps), 1, "expected one journal sweep step")
+        self.assertLessEqual(
+            escalation_is.TEARDOWN_TIMEOUT,
+            sweeps[0]["timeout"],
+            f"the sweep can spend {escalation_is.TEARDOWN_TIMEOUT}s but post_run "
+            f"allows {sweeps[0]['timeout']}s -- it would be killed mid-cleanup",
         )
 
 

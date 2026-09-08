@@ -43,7 +43,12 @@ post_run:
   # Connector records the solution sweep cannot reach: replays the flat
   # journal of created Jira/Slack ids (teardown_jira.py precedent).
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/e2e/customer_escalation_triage/teardown_escalation.py"
-    timeout: 120
+    # Covers escalation_is.TEARDOWN_TIMEOUT: a connection lookup plus, per
+    # record, a delete, one retry and a confirming reread. Killing this sweep
+    # leaks live Jira issues and Slack messages, so it is budgeted for its
+    # worst case rather than its typical one. post_run runs outside the
+    # task_timeout watchdog, so this does not compete with grading.
+    timeout: 780
 
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project named

@@ -78,6 +78,18 @@ STEP_TIMEOUTS = (
     SLACK_DELETE_TIMEOUT,
 )
 
+# Worst case for the post_run journal sweep, which is the ONLY cleanup that
+# survives coder_eval SIGKILLing the graded command: one connection lookup,
+# then per Jira issue a delete + one retry + a confirming reread, and per Slack
+# message a delete + one retry. Its post_run `timeout:` must cover this or the
+# sweep is killed mid-flight and leaks live records in the shared CE project.
+TEARDOWN_TIMEOUT = (
+    CONNECTIONS_LIST_TIMEOUT
+    + 2 * JIRA_DELETE_TIMEOUT
+    + JIRA_READ_TIMEOUT
+    + 2 * SLACK_DELETE_TIMEOUT
+)
+
 
 def assert_live_target() -> dict[str, str]:
     """Refuse to run against anything but the Alpha codereval tenant."""
