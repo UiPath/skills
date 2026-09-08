@@ -268,7 +268,7 @@ evidence and obtain confirmation before migrating it.
 
 ```xml
 <uipath:inputOutput id="Var_ScriptResponse" name="scriptResponse"
-  type="double" elementId="Task_RiskScore" />
+  type="jsonSchema" elementId="Task_RiskScore" />
 <uipath:inputOutput id="Var_ScriptError" name="Error"
   type="jsonSchema" elementId="Task_RiskScore"><![CDATA[
 {"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"},"element":{"type":"string"}}}
@@ -282,7 +282,7 @@ evidence and obtain confirmation before migrating it.
         <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}},"required":[]}]]></uipath:inputSchema>
       </uipath:context>
       <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
-      <uipath:output name="scriptResponse" type="double" var="Var_ScriptResponse" source="=result.response" />
+      <uipath:output name="scriptResponse" type="jsonSchema" var="Var_ScriptResponse" source="=result.response" />
       <uipath:output name="Error" type="jsonSchema" var="Var_ScriptError" source="=Error" />
     </uipath:mapping>
     <uipath:scriptVersion value="v3" />

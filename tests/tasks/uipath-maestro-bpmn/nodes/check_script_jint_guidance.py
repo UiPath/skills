@@ -399,10 +399,13 @@ def main() -> None:
         variables, name="Error", kind="inputOutput", element_id=task_id
     )
     for variable, expected_type, description in (
-        (public_amount, "double", "public amount"),
+        # Public declarations reach entry-point schema derivation, so they use
+        # the refresh vocabulary (number), not the canvas float type.
+        (public_amount, "number", "public amount"),
         (public_days, "integer", "public daysOverdue"),
-        (public_risk, "double", "public riskScore"),
-        (response, "double", "scriptResponse"),
+        (public_risk, "number", "public riskScore"),
+        # The canvas emits no other type for scriptResponse.
+        (response, "jsonSchema", "scriptResponse"),
     ):
         if variable.attrib.get("type") != expected_type:
             fail(f"{description} variable must use type {expected_type!r}")
