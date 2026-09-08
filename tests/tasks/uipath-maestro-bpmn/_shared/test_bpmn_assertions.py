@@ -112,10 +112,6 @@ class GeneratedProjectScaffoldTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "current CLI root files map"):
             self.assert_scaffold()
 
-
-if __name__ == "__main__":
-    unittest.main()
-
     def test_rejects_a_second_entry_point_by_default(self) -> None:
         # refresh emits one entry per root manual start event; the default of 1
         # is the single-start subset, not the whole contract.
@@ -166,3 +162,7 @@ if __name__ == "__main__":
             expected_resource_count=0,
             expected_entry_points=2,
         )
+
+
+if __name__ == "__main__":
+    unittest.main()
