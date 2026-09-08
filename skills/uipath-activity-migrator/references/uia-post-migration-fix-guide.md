@@ -4,7 +4,7 @@ Classic UIA workflows commonly hold selectors in **string variables**. The Activ
 
 Run it before any selector recovery or hardening on a migrated project: these are structural defects. A selector rewrite (the UIA package's recover-selector or configure-target flows) cannot fix them, wastes runs, and destroys the config-driven variable binding.
 
-**Inputs.** `<PROJECT_DIR>` below is the migrated project: the workflow's `<OUTPUT_DIR>` after Step 5, or a project the user says was already migrated. Optionally one XAML file to restrict the scan. The sequence is fixed: scan, classify, report, one confirmation, fix, validate. Run it project-wide, not only on activities seen failing: a loose Check App State fails silently, so failure-driven discovery misses it. Use forward slashes in every path.
+**Inputs.** `<MIGRATED_DIR>` below is the migrated project: the workflow's `<OUTPUT_DIR>` once it has been built (SKILL.md Step 5), or the project the user pointed at in the fix-only entry. It is never the Legacy source (`<PROJECT_DIR>` in SKILL.md). Optionally one XAML file to restrict the scan. The sequence is fixed: scan, classify, report, one confirmation, fix, validate. Run it project-wide, not only on activities seen failing: a loose Check App State fails silently, so failure-driven discovery misses it. Use forward slashes in every path.
 
 **Never author or invent selector values.** The single sanctioned exception is Fix 1's OCR branch, where the enclosing card's literal selector is transcribed onto the generated card.
 
@@ -29,12 +29,12 @@ The marker is a no-op: at runtime the target's own resolution detects it in the 
 
 Detection is structural (marker text + card discriminators). A `[PostMigration Action Required]` annotation is a useful hint when present, it sits on the wrapped child and points straight at a finding, but never the filter: some defect shapes carry none.
 
-## Step 1 — Scan (structural)
+## Scan (structural)
 
 Grep shortlists candidates; **Read confirms structure before classifying**: attribute order and line breaks vary, and every signature below correlates two or more nodes.
 
 ```bash
-grep -rn "ToStringWithDelimiter\|IsLoose=\"True\"" --include=*.xaml "<PROJECT_DIR>"
+grep -rn "ToStringWithDelimiter\|IsLoose=\"True\"" --include=*.xaml "<MIGRATED_DIR>"
 ```
 
 With a single-file scope, grep only that file. For each hit file, Read the XAML and classify every marker-carrying construction:
@@ -57,11 +57,11 @@ Record per finding: file, activity type + `DisplayName`/`IdRef`, variable name(s
 
 `IsLoose="True"` with a **literal** (non-marker) scope selector is a valid cross-window probe, never a finding.
 
-## Step 2 — Classify variable values
+## Classify variable values
 
 Needed for every finding; every action is value-dependent. Trace each variable, bounded: find its assignment sites, take the value that reaches the activity, and stop there. Do not map every usage across the project.
 
-1. Grep the variable name across `<PROJECT_DIR>`: `Assign` activities and workflow-invocation arguments. An assignment that runs before the activity **overrides** any XAML `Variable` `Default`.
+1. Grep the variable name across `<MIGRATED_DIR>`: `Assign` activities and workflow-invocation arguments. An assignment that runs before the activity **overrides** any XAML `Variable` `Default`.
 2. No assignments → the XAML `Default` value is the value.
 3. The assignment pulls from a config source (config workbook, typically a Selectors sheet, or an Orchestrator asset) → read that source if locally available; otherwise ask the user for the value.
 
@@ -73,7 +73,7 @@ Value classes:
 - **cross-window full**: a full value that targets a different window than the enclosing card or element scope.
 - **unresolvable**: no authoritative value found.
 
-**Mis-trace check:** element-only on S1-top or S3 is near-impossible in a previously-working classic project (a classic top-level activity searched from desktop root; only full selectors ever worked there). Before concluding, re-verify the trace (right variable? right config sheet/environment?); if still element-only, confirm with the user via `AskUserQuestion` (skip the question in report-only mode).
+**Mis-trace check:** element-only on S1-top or S3 is near-impossible in a previously-working classic project (a classic top-level activity searched from desktop root; only full selectors ever worked there). Before concluding, re-verify the trace (right variable? right config sheet/environment?); if still element-only, confirm the value with the user.
 
 ## Decision table
 
@@ -85,17 +85,17 @@ Value classes:
 | S2 loose check (enclosing card or element scope) | — | **Fix 2: remove IsLoose** (hardening) — but **skip + report** when the value targets a *different* window than the enclosing scope | **Fix 2: remove IsLoose** (required) |
 | loose without any scope | report `loose-no-scope` | report `loose-no-scope` | report `loose-no-scope` |
 | S3 standalone | healthy | healthy (runtime loose fallback) | pre-existing — report only |
-| unresolvable | `AskUserQuestion` for the value; in report-only mode, report as unresolved | | |
+| unresolvable | ask the user for the value; if none can be supplied, report `unresolved` and plan no edit | | |
 
 Full values are healthy in generated cards: the runtime reduces a marker-bearing card selector to its window part before attaching, the same shape a human would author, so the card is redundant but working, and a working construction is never edited. Element-only values have no window part: the card attaches with a raw element selector and fails, which is why the S1 fixes are gated on the element-only class.
 
 **Pre-existing** = broken before migration too (an element-only value with no scope source is not a migration regression). Nothing to fix here: report it and explain that a scope source is needed, either a properly configured Use Application/Browser around the activity (the UIA package's configure-target flow) or a full selector (window + element) in the config value.
 
-## Step 3 — Report and confirm
+## Report and confirm
 
-Present a findings table: shape, file, activity, variable, value class, planned action. In report-only mode stop here. Otherwise confirm once, a single `AskUserQuestion` covering all planned edits, before editing.
+Present a findings table: shape, file, activity, variable, value class, planned action. Then ask once, a single `AskUserQuestion` with three options: apply all planned edits, apply a chosen subset, or apply none. This question is the only gate: nothing is edited before it, and "none" ends the procedure with the findings table as the result. When the user asked only to scan or report, they pick "none" here; there is no separate mode to track.
 
-## Step 4 — Fix
+## Fix
 
 **Apply every change with the `Edit` tool**: targeted find/replace on the exact attribute or element (drop `IsLoose="True"`, move/delete a specific `NApplicationCard`, rewrite one annotation line). Each fix is a handful of precise edits. **Do NOT** rewrite the file with a script (Bash/Python string surgery, XML re-serialization, whole-file `Write`): that reflows formatting, risks encoding/whitespace/BOM changes across untouched activities, and can corrupt the XAML. Read the surrounding XAML, edit the minimal snippet, move on. Annotation texts differ slightly between package versions; copy the exact line from the file into the edit, never from memory.
 
@@ -124,15 +124,15 @@ Migrator annotations are **one line per message**: each line is `[PostMigration 
 
 Where a fixed activity (the wrapped child or the card for Fix 1; the check for Fix 2) carries `sap2010:Annotation.AnnotationText`, replace **only the line whose message is the fixed defect** with `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <one line — what was done>`. Every other line, including the `[Existing annotation]: ` tail, stays verbatim. No line matches the fixed defect → leave the annotation untouched.
 
-## Step 5 — Validate
+## Validate
 
 After each edited file:
 
 ```bash
-uip rpa validate --project-dir "<PROJECT_DIR>" --file-path "<project-relative.xaml>" --min-severity error --output json
+uip rpa validate --project-dir "<MIGRATED_DIR>" --file-path "<project-relative.xaml>" --min-severity error --output json
 ```
 
-Must report 0 errors. `<PROJECT_DIR>` must be absolute; `--file-path` is relative to the project directory; `--min-severity error` matters, migrated projects routinely carry pre-existing warnings. Validation is also the safety net that catches a structurally wrong edit (e.g. an action left without a required scope). Rebuild the project afterwards (workflow Step 5).
+Must report 0 errors. `<MIGRATED_DIR>` must be absolute; `--file-path` is relative to the project directory; `--min-severity error` matters, migrated projects routinely carry pre-existing warnings. Validation is also the safety net that catches a structurally wrong edit (e.g. an action left without a required scope). Rebuild the project afterwards with the build and fix loop in the verification guide.
 
 ## Not auto-fixable (pre-existing)
 
@@ -140,4 +140,17 @@ Standalone activity or top-level generated card + element-only value: nothing su
 
 ## Output
 
-Per-finding result: `fixed` | `skipped-cross-window` | `manual-review` | `loose-no-scope` | `pre-existing` | `unresolved` | `healthy`, with one line of reasoning each. Applied fixes go into the report as actions taken; everything else that is not `healthy` goes under "Needs attention". The two transforms above double as manual recipes for the user when a finding is left for them.
+Every finding ends in one result: `fixed` | `skipped-cross-window` | `manual-review` | `loose-no-scope` | `pre-existing` | `unresolved` | `healthy`. Report in this shape, and nothing else:
+
+```markdown
+## Post-migration fix result
+Build <passed|failed>. <N> findings: fixed ×<a>, manual-review ×<b>, pre-existing ×<c>, healthy ×<d>.
+
+### Findings                         <- one line per finding that is not healthy
+- <file>: <activity> — <result> — <what was changed, or what the user must do>
+
+### Next steps
+- Open <MIGRATED_DIR> with Studio 2024.10 or later and run the affected workflows once in Debug.
+```
+
+Omit result kinds with a zero count. When this procedure runs inside the migration workflow, its `fixed` lines go into the report's "Fixes applied" block and everything else that is not `healthy` goes under "Needs attention"; do not produce this shape a second time there. The two transforms above double as manual recipes for the user when a finding is left to them.

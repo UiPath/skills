@@ -42,7 +42,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 
 ## Workflow
 
-**Fix-only entry.** When the user asks to fix or scan a project that was already migrated (its XAML carries `.ToStringWithDelimiter()` markers or `[PostMigration Action Required]` annotations), skip Steps 0 to 4: run [packages/uia-post-migration-fix-guide.md](references/packages/uia-post-migration-fix-guide.md) on that project as `<OUTPUT_DIR>`, then Steps 5 and 6.
+**Fix-only entry.** When the user asks to fix or scan a project that was already migrated (its XAML carries `.ToStringWithDelimiter()` markers or `[PostMigration Action Required]` annotations), none of the steps below apply. Run [uia-post-migration-fix-guide.md](references/uia-post-migration-fix-guide.md) with that project as `<MIGRATED_DIR>`, then build it with the build and fix loop in [verification-guide.md](references/verification-guide.md), and report in the shape given by the guide's Output section. Do not resolve a package version, do not run package-guide hooks, and do not use the Step 6 template: nothing was analyzed or upgraded.
 
 ### Step 0 — Preflight and acquire the tool
 
@@ -157,6 +157,9 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 - Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR>/.upgrade/<name>-<id>.html
 <items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
+### Fixes applied (<F>)              <- only when the post-migration fix edited the output
+- <file>: <activity> — <what was changed>
+
 ### Next steps
 - Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.
 - <package-specific runtime prerequisites, only when a package guide lists one>
@@ -183,8 +186,8 @@ The framework flip, package restore, reference fixing, and type checking are cor
 | [tool-behavior-guide.md](references/tool-behavior-guide.md) | Behavior `--help` cannot tell you: option binding, exit code, output streams, the `.upgrade` and output folders, restore version selection, the Orchestrator hand-off template, `bulk` |
 | [sarif-triage-guide.md](references/sarif-triage-guide.md) | Every analyze and upgrade run: status mapping, core rule IDs, stop conditions, summarizer usage |
 | [verification-guide.md](references/verification-guide.md) | Step 5: build and validate loop, expected warnings, fix policy, Studio version requirements |
+| [uia-post-migration-fix-guide.md](references/uia-post-migration-fix-guide.md) | The migrated output carries `.ToStringWithDelimiter()` markers (UIA Hook 3), or the user asks for a post-migration fix on an already-migrated project |
 | [packages/uia-guide.md](references/packages/uia-guide.md) | Project depends on `UiPath.UIAutomation.Activities` |
-| [packages/uia-post-migration-fix-guide.md](references/packages/uia-post-migration-fix-guide.md) | The migrated output carries `.ToStringWithDelimiter()` markers (UIA Hook 3), or the user asks for a post-migration fix on an already-migrated project |
 | [packages/mail-guide.md](references/packages/mail-guide.md) | Project depends on `UiPath.Mail.Activities` |
 | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) | Project depends on classic `UiPath.GSuite.Activities` |
 | [packages/microsoft-activities-guide.md](references/packages/microsoft-activities-guide.md) | Project depends on `Microsoft.Activities.Extensions` or `Microsoft.Activities` |
