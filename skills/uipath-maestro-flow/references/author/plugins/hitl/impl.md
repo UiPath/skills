@@ -62,6 +62,7 @@ Rules:
 - Output fields use `variable: "vars.<globalName>"` (`vars.` required) and no `binding`.
 - InOut fields use both properties in those formats.
 - Use `schemaId` (not `id`) at schema level and generate a fresh UUID.
+- `priority` is `"Low"` | `"Medium"` | `"High"` — the three options this node's manifest declares; there is no `Critical` here, unlike an Action Center case task. It defaults to `Low` and comes from the request, not from the literal in either option's example. Urgency stated or implied ("urgent", "high priority", "time-sensitive", an SLA) means `High` or `Medium`. The value must land in the node; acknowledging the urgency in conversation is not enough.
 - `typeVersion` — always `"1.0"` for this node. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - Do not include a `model` block on node instances; only the definition carries it.
 - `outputs` contains only `output` (with `properties` for output/inOut fields plus `Action`) and `status` (with outcome `enum`/`default`). Do not add per-field `custom: true` entries.
@@ -154,6 +155,7 @@ Rules:
 - Fill `typeVersion` with the version returned by `uip maestro flow registry get <appKey>` for the specific deployed app. Unlike QuickForm, AppTask versions vary by app definition.
 - `inputs.app.inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), not arrays.
 - `inputs.appInputBindings` maps names from `inputSchema.properties` to `"=vars.<path>"` expressions (with `=` and no `js:`). Without these bindings, input fields are blank.
+- `priority` follows Option 1's rule above — derived from the request, not the `"Medium"` literal in the example.
 
 ### If the app does not exist
 

@@ -143,7 +143,7 @@ Value flow is: caller input `text` → parent `start` through the parent's `trig
 5. Parent-scope `$vars` are not visible inside the subflow; pass values explicitly through inputs.
 6. Define inline `outputs` on every subflow node: Start needs `outputs.output`; Script nodes need `outputs.output` and `outputs.error`.
 7. Subflows may be nested up to 3 levels.
-8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections.
+8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections — and only those four. There is no per-subflow `definitions` array: `core.subflow` itself and every node type used inside a subflow take their entry in the flow's single top-level `definitions[]`, exactly like a main-flow node. A `definitions` array added under `subflows.<id>` is ignored. `flow validate` catches the omission at ``[subflows[<id>].nodes[<nodeId>].type] Node type `<type>:<version>` has no matching definition``.
 9. Put subflow node positions in that subflow's `layout.nodes`, not the top-level `layout.nodes`; scopes are independent.
 10. When the parent forwards an external input, its `in` variable must also set `triggerNodeId` to the parent trigger node ID. `uip maestro flow validate` does not detect this omission; the value silently arrives `null`. See [Passing a Flow Input Into the Subflow](#passing-a-flow-input-into-the-subflow).
 
