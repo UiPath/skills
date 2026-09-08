@@ -474,7 +474,7 @@ Four ways it refuses:
 |---|---|
 | `--patch` passed with `--source remote` | `--patch cannot be combined with --source remote` — two sources for the same spec would race |
 | `--force` passed without `--source remote` | `--force only applies to --source remote` |
-| The resource was never imported from the cloud | `Resource has no cloud definition to sync from` — a `--source local` stub or a project's own artefact resource has no cloud counterpart |
+| No cloud reference recorded for the resource | `Resource has no cloud definition to sync from`. Two causes: it has no cloud counterpart (a `--source local` stub, a project's own artefact resource), **or** the reference belongs to another user or tenant — it lives in `userProfile/<your-user-id>/debug_overwrites.json` and is not shared, so a teammate who cloned the solution hits this for a resource that *was* imported. Fix the second case with `resources add --source remote` to record a reference for yourself |
 | The cloud definition can't be read for the comparison | `Could not read the cloud definition to compare against` — it does **not** report "no drift" on evidence it doesn't have. Check the resource still exists in the cloud, or pass `--force` |
 
 > This replaces the old remove-and-re-add workaround. `resources remove <key>` followed by `refresh` still works, but it drops every local edit rather than the ones you were shown, and it needs the binding to still exist.
