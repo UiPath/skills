@@ -468,13 +468,14 @@ With `--force` it writes and reports what it replaced:
 
 **`--force` is destructive** — the local value of every listed property is gone. Run step 1 first and read `Changed`.
 
-Three ways it refuses:
+Four ways it refuses:
 
 | Situation | Message |
 |---|---|
 | `--patch` passed with `--source remote` | `--patch cannot be combined with --source remote` — two sources for the same spec would race |
 | `--force` passed without `--source remote` | `--force only applies to --source remote` |
 | The resource was never imported from the cloud | `Resource has no cloud definition to sync from` — a `--source local` stub or a project's own artefact resource has no cloud counterpart |
+| The cloud definition can't be read for the comparison | `Could not read the cloud definition to compare against` — it does **not** report "no drift" on evidence it doesn't have. Check the resource still exists in the cloud, or pass `--force` |
 
 > This replaces the old remove-and-re-add workaround. `resources remove <key>` followed by `refresh` still works, but it drops every local edit rather than the ones you were shown, and it needs the binding to still exist.
 
