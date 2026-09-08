@@ -2,7 +2,10 @@
 """Fail a task as ERROR, not FAILURE, when the tenant connection it needs is down.
 
 Usage:
-    preflight_connections.py <connector-key> [<connector-key> ...]
+    preflight_connections.py <selector> [<selector> ...]
+
+    <selector> := <connector-key>              any Enabled connection will do
+                | <connector-key>=<folder>     that folder's connection must be Enabled
 
 A `pre_run` failure lands the run as ``FinalStatus.ERROR``; a criterion failure
 lands it as ``FAILURE``. Without this, a revoked grant or an asleep tenant reads
@@ -14,9 +17,19 @@ as an agent mistake:
 Both were scored FAILURE on 2026-09-04 and root-caused as skill defects before
 anyone read far enough into the checker output to find the 403.
 
-Passes when at least one connection for each key reports Enabled. Connections
-live in several folders, so `--all-folders` is required; without it an empty
-result is a false negative.
+The bare form passes when at least one connection for the key reports Enabled.
+Connections live in several folders, so `--all-folders` is required; without it
+an empty result is a false negative.
+
+The `=<folder>` form is for a task whose fixture data lives in one specific
+workspace. A tenant carries several Enabled connections per connector, and the
+one flagged ``IsDefault`` is not necessarily the one holding the fixture:
+
+  skill-flow-slack-channel-description-simulated   default connection reached a
+                                                   workspace without the channel
+
+Naming the folder makes that an ERROR identifying the connection rather than a
+FAILURE scored against the skill.
 """
 
 from __future__ import annotations
@@ -41,9 +54,15 @@ def _connections(key: str) -> list[dict]:
     return payload.get("Data") or []
 
 
-def main(keys: list[str]) -> int:
+def main(selectors: list[str]) -> int:
     broken: list[str] = []
-    for key in keys:
+    for selector in selectors:
+        key, sep, folder = selector.partition("=")
+        # A trailing `=` would otherwise fall through to the bare check and
+        # silently drop the folder assertion the caller asked for.
+        if not key or (sep and not folder):
+            broken.append(f"{selector!r}: expected <connector-key> or <connector-key>=<folder>")
+            continue
         try:
             conns = _connections(key)
         except Exception as exc:  # noqa: BLE001 — any failure here is a blocked tenant
@@ -57,13 +76,25 @@ def main(keys: list[str]) -> int:
             states = ", ".join(f"{c.get('Name')}={c.get('State')}" for c in conns)
             broken.append(f"{key}: no Enabled connection ({states})")
             continue
-        print(f"OK: {key} — {len(enabled)}/{len(conns)} connection(s) Enabled")
+        if not folder:
+            print(f"OK: {key} — {len(enabled)}/{len(conns)} connection(s) Enabled")
+            continue
+        in_folder = [c for c in enabled if c.get("Folder") == folder]
+        if not in_folder:
+            where = ", ".join(f"{c.get('Name')}@{c.get('Folder')}" for c in enabled) or "none"
+            broken.append(
+                f"{key}: no Enabled connection in folder {folder!r} (Enabled elsewhere: {where})"
+            )
+            continue
+        named = ", ".join(f"{c.get('Name')} ({c.get('Id')})" for c in in_folder)
+        print(f"OK: {key} — Enabled in folder {folder!r}: {named}")
 
     if broken:
         print(
             "TENANT NOT READY — this is an environment failure, not an agent failure.\n  "
             + "\n  ".join(broken)
-            + "\n\nReauthorize the connection, or wake the provider instance, then re-run.",
+            + "\n\nReauthorize the connection, wake the provider instance, or restore the"
+            + " named folder's connection, then re-run.",
             file=sys.stderr,
         )
         return 1
