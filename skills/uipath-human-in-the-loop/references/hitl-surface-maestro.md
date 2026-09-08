@@ -1,7 +1,7 @@
 <!-- when: adding a HITL node to a Maestro BPMN (.bpmn) process -->
 # HITL on Maestro BPMN — Node Reference
 
-QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes. `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered as **registry shortcut names** in the BPMN validator ([bpmn-spec.json](../uipath-maestro-bpmn/validator/bpmn-spec.json)) — these are palette/discovery identifiers, not literal XML to write. There is no dedicated CLI subcommand for Maestro (unlike Flow's `uip maestro flow hitl add`) — write the node directly into the `.bpmn` XML.
+QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes. `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered as **registry shortcut names** in the BPMN validator ([bpmn-spec.json](../../uipath-maestro-bpmn/validator/bpmn-spec.json)) — these are palette/discovery identifiers, not literal XML to write. There is no dedicated CLI subcommand for Maestro (unlike Flow's `uip maestro flow hitl add`) — write the node directly into the `.bpmn` XML.
 
 Design the schema per Step 4b — never block waiting on the user, per Critical Rule 1 — then validate frequently (`uip maestro bpmn validate <file>.bpmn --output json`) while wiring the node so any shape mistakes surface immediately rather than at deploy time. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
