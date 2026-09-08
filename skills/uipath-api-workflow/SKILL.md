@@ -112,16 +112,16 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 22. **TDD gate.** Check `<project>/evals/` on every create/edit. Without it, do not offer tests, create the folder, or mention loop mode. With it, stop before modifying `Workflow.json` or evals and ask whether existing cases change or new cases are added, and whether to run/retry until all pass or author once. If rows exist, report their count and summarize each; if empty, propose 2–3 cases. After answers, declare `input.schema` and `output.schema`, update evals, author, then run rows only in loop mode or hand over in author-once mode. Behavior changes require identifying affected rows and asking whether expectations should change. A request not to ask keeps existing tests and does not authorize runtime. See [references/testing-and-evals.md](references/testing-and-evals.md) §3.
 
-23. **Files are references, not bytes — and base64 is a file too.** A file input or output is a `JobAttachment` (`{ ID, FullName, MimeType, Metadata? }`) pointing at a blob in Orchestrator storage; `$workflow.input.<file>` is that object, never the bytes.
-    - **The two activities.** Both are `run.script` tasks; the `$helpers.file.*` call in the script is what identifies them (it is what `validate` checks). **File to Base64** (`metadata.activityType: "FileToBase64"`, code `return { output: await $helpers.file.fileToBase64(<file ref>) }`) returns a NEW reference whose blob content IS the base64 text (`<name>.base64`, `text/plain`, `Metadata.Encoding: "base64"`). **Base64 to File** (`metadata.activityType: "Base64ToFile"`, code `return { output: await $helpers.file.base64ToFile({ base64: <ref or string>, fileName?, mimeType? }) }`) returns a binary reference. The script is that single `return` expression and nothing else: Studio Web rebuilds the script from the parsed call on every designer save and silently drops a preceding or trailing statement, a second argument, or an extra option key. `validate` warns only about the extra statements — an extra argument passes as `Valid` and still breaks — so put any pre-processing in a JavaScript activity before the conversion.
-    - **Reading results.** Read either activity's result as `$context.outputs.<Key>.output`.
-    - **Inlining file content.** To put a file's content INLINE in an HTTP request body or a Response field, call `<ref>.serializeData()` right there — it returns a deferred-read marker the engine fills at send time; never store it in a variable or use it in script logic. Nested in a JSON body it works **only for a base64 reference** (the File to Base64 output): a binary file's marker, or a bare reference, nested in a body is a send-time error — send a binary file as the *whole* body (bare reference) or convert it first.
-    - **Naming.** `fileName` / `mimeType` apply only to a raw base64 *string*; a reference keeps its own name and the engine sniffs the type from bytes (a `.txt` round-trips to an extension-less file).
+23. **Files are references, not bytes — and base64 is a file too.** File inputs and outputs are `JobAttachment` references (`{ ID, FullName, MimeType, Metadata? }`) to Orchestrator blobs; `$workflow.input.<file>` is never the bytes.
+    - **The two activities.** Both are `run.script` tasks identified by their `$helpers.file.*` call (what `validate` checks): File to Base64 returns a new reference containing base64 text; Base64 to File returns a binary reference. The script must be exactly one `return` expression and nothing else. Studio Web silently drops preceding/trailing statements, a second argument, or an extra option key; `validate` catches only extra statements, so an extra argument or key can still break the activity. Put preprocessing in a separate JavaScript activity. See [references/files-and-base64.md](references/files-and-base64.md) for exact shapes and examples.
+    - **Reading results.** Use `$context.outputs.<Key>.output`.
+    - **Inlining content.** Use `<ref>.serializeData()` directly in an HTTP body or Response field; it is a deferred-read marker, so do not store it or use it in script logic. Nested in a JSON body, it works only for a base64 reference (the File to Base64 output); nesting a binary file's marker or a bare reference is a send-time error. Send a binary file as the whole body or convert it first.
+    - **Naming.** `fileName` and `mimeType` apply only to a raw base64 string. References keep their name, and the engine sniffs type from bytes; a `.txt` round-trip can therefore become extensionless.
     - **Running.** Both helpers need Orchestrator blob storage:
 <!--skill-flavor:file-run-cli:start-->
     `uip api-workflow run --no-auth` refuses such a workflow up front; run it signed in (`uip login`, no `--no-auth`) — it still needs the rule-21 "yes". Pass local files with `--input-file <name>=<path>` (uploaded, arriving as `$workflow.input.<name>`), collect returned files with `--output-dir <dir>` (each reference in the output gains a `LocalPath`), and `--folder-key <guid>` if the tenant's Attachments API requires a folder. In the printed output the CLI PascalCases keys (`ID` → `Id`).
 <!--skill-flavor:file-run-cli:end-->
-    Shapes, worked example and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
+    Shapes, worked examples, and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
 
 ## Workflow Phases
 
@@ -131,14 +131,7 @@ Check the project directory for `evals/`, then read `evals/<scope>/eval-sets/*.j
 
 ### Phase 1: Plan
 
-Choose activities, unique keys, variables, inputs, outputs, and nesting. Use Assign for variables, JavaScript/JsInvoke for custom logic, If for branching, ForEach for collections, DoWhile for repetition, TryCatch for errors, Wait for pauses, Response for termination, Break inside an If, and registry-generated `UiPath.Http` or `UiPath.IntSvc` for HTTP/connectors. Use generic connector activities only when registry discovery finds no curated operation. Read [references/task-types.md](references/task-types.md).
-
-Files/base64 handling (rule 23):
-
-| User wants | Activity type | Key points |
-|------------|---------------|------------|
-| Encode a file (input or downloaded) as base64 for an API that wants inline base64 | **File to Base64** (`FileToBase64`) | `run.script` calling `await $helpers.file.fileToBase64(<ref>)`; output is a base64 FILE reference — inline it in the body with `.serializeData()`. Rule 23. |
-| Turn a base64 payload (API response string or a base64 file) back into a file | **Base64 to File** (`Base64ToFile`) | `run.script` calling `await $helpers.file.base64ToFile({ base64, fileName?, mimeType? })`; output is a binary file reference. Rule 23. |
+Choose activities, unique keys, variables, inputs, outputs, and nesting. Use Assign for variables, JavaScript/JsInvoke for custom logic, If for branching, ForEach for collections, DoWhile for repetition, TryCatch for errors, Wait for pauses, Response for termination, Break inside an If, and registry-generated `UiPath.Http` or `UiPath.IntSvc` for HTTP/connectors. For files/base64, **File to Base64** encodes a file (input or downloaded) as base64 for an inline API body and **Base64 to File** turns a base64 payload back into a file (rule 23). Use generic connector activities only when registry discovery finds no curated operation. Read [references/task-types.md](references/task-types.md).
 
 ### Phase 2: Generate or Edit
 
