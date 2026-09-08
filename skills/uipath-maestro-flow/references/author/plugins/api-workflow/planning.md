@@ -14,12 +14,12 @@ Use an API Workflow node when the flow needs to call a published UiPath API func
 
 ### Selection Heuristics
 
-<!--skill-flavor:api-workflow-selection-table:start-->
 | Situation | Use API Workflow? |
 | --- | --- |
 | Call a published UiPath API function | Yes |
 | Call an external REST API | No — use [HTTP](../http/planning.md) or [Connector](../connector/planning.md) |
 | Invoke a published RPA process | No — use [RPA Workflow](../rpa/planning.md) |
+<!--skill-flavor:api-workflow-selection-table:start-->
 | API workflow not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
 | API workflow does not exist yet | Create it in the same solution, then use `--local` discovery |
 <!--skill-flavor:api-workflow-selection-table:end-->
@@ -38,7 +38,6 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## Discovery
 
-<!--skill-flavor:api-workflow-discovery:start-->
 ### Published (tenant registry)
 
 ```bash
@@ -50,6 +49,7 @@ Requires `uip login`. Only published API workflows from your tenant appear.
 
 ### In-solution (sibling projects)
 
+<!--skill-flavor:api-workflow-discovery:start-->
 ```bash
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json

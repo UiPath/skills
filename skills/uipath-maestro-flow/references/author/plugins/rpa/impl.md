@@ -26,8 +26,8 @@ uip maestro flow registry get "<node-type>" --local --output json
 
 ## Registry Validation
 
-<!--skill-flavor:rpa-impl-registry-get:start-->
 ```bash
+<!--skill-flavor:rpa-impl-registry-get:start-->
 uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --output json
 uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
 ```
@@ -115,11 +115,11 @@ A freshly scaffolded RPA project has no implementation. The wired flow may pass 
 
 ## Debug
 
-<!--skill-flavor:rpa-impl-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:rpa-impl-debug-table:start-->
 | Node type not found in registry | Searched by process name (matches release name, not folder), process not published, or registry stale | Search the `uipath.core.rpa-workflow` token and match on folder path — not a name keyword. If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
+<!--skill-flavor:rpa-impl-debug-table:end-->
 | Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
 | Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
 | Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |
-<!--skill-flavor:rpa-impl-debug-table:end-->

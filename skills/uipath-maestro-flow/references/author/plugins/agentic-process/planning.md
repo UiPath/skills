@@ -14,13 +14,13 @@ Use an Agentic Process node when the flow needs to invoke a published orchestrat
 
 ### Selection Heuristics
 
-<!--skill-flavor:agentic-process-selection-table:start-->
 | Situation | Use Agentic Process? |
 | --- | --- |
 | Invoke a published orchestration process | Yes |
 | Invoke a published AI agent | No — use [Agent](../agent/planning.md) |
 | Call another published flow | No — use [Flow](../flow/planning.md) |
 | Need desktop/browser automation | No — use [RPA Workflow](../rpa/planning.md) |
+<!--skill-flavor:agentic-process-selection-table:start-->
 | Process not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
 | Process does not exist yet | Create it in the same solution, then use `--local` discovery |
 <!--skill-flavor:agentic-process-selection-table:end-->
@@ -39,7 +39,6 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## Discovery
 
-<!--skill-flavor:agentic-process-discovery:start-->
 ### Published (tenant registry)
 
 ```bash
@@ -51,6 +50,7 @@ Requires `uip login`. Only published agentic processes from your tenant appear.
 
 ### In-solution (sibling projects)
 
+<!--skill-flavor:agentic-process-discovery:start-->
 ```bash
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json

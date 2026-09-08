@@ -1,21 +1,13 @@
 <!--skill-flavor:sw-eval-intro:start-->
-Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and run start/status/results/list/compare against the open solution. Local CRUD writes under `/solution/<Project>/evals/` (a fresh project has no `evals/` folder; the CLI creates it on first use, and the host adds one itself after the first debug). Authentication is injected by the host — there is no `uip login`. `eval run *` works from the Studio Web shell only when both ids are passed explicitly (`--solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId>`; there is no `.uipx`/`SolutionStorage.json` to resolve them from) and it can hang on first use: call it with `timeoutSeconds: 120`, never with `--wait`, and if the call times out (exit 124) hand the run to the user via the Studio Web Evaluations panel instead of retrying in a loop.
+Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and run start/status/results/list/compare against the open solution. Local CRUD is offline and writes under `/solution/<Project>/evals/` (a fresh project has no `evals/` folder; the CLI creates it on first use, and the host adds one itself after the first debug); runs require `uip login`. `eval run *` works from the Studio Web shell only when both ids are passed explicitly (`--solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId>`; there is no `.uipx`/`SolutionStorage.json` to resolve them from) and it can hang on first use: call it with `timeoutSeconds: 120`, never with `--wait`, and if the call times out (exit 124) hand the run to the user via the Studio Web Evaluations panel instead of retrying in a loop.
 <!--skill-flavor:sw-eval-intro:end-->
 
 <!--skill-flavor:sw-eval-orientation:start-->
 > **Where you came from / where to go next.** Evaluate follows Author (save the `.flow` → validate → evaluate it) and feeds back into Author (failing eval → fix the `.flow` → save + validate → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish and run management live in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
->
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.
 <!--skill-flavor:sw-eval-orientation:end-->
 
 <!--skill-flavor:sw-eval-when-to-use:start-->
-- Add or remove data points (test cases) on a Flow eval set
-- Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*` types) for a Flow project
-- Create or remove eval sets, link them to evaluators, pin entry points
-- Add, list, or remove simulations on data points (`uip maestro flow eval simulation`)
-- Add, list, or remove child tool simulations on agent nodes (`--parent` flag)
 - Start an eval run on the open solution (ids from the context), poll its status, fetch detailed results — or hand the run to the user's Evaluations panel when the shell call times out
-- Compare two eval runs to verify a change improved scores without regressions
 <!--skill-flavor:sw-eval-when-to-use:end-->
 
 <!--skill-flavor:sw-eval-cli-availability:start-->
@@ -28,7 +20,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 
 <!--skill-flavor:sw-eval-path-login-rules:start-->
 3. **Always pass `--path /solution/<Project>`.** Every eval command needs the Flow project directory (`CurrentProject.AbsolutePath`). The shell starts in `/solution`, which is the solution root and not a project — never use `--path .` or `--path /solution`.
-4. **No login step.** Authentication is injected by the host on every `uip` call — never run `uip login`, `uip login status`, or `uip logout`. `add`, `remove`, `list` (data points / eval sets / evaluators / simulations) edit JSON under `/solution/<Project>/evals/`; `uip maestro flow eval run *` additionally needs `--solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId>` from the context. A 401/403 means the signed-in user lacks rights on the tenant or folder — report it, do not retry.
+4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators / simulations) edit JSON under `/solution/<Project>/evals/`. Only `uip maestro flow eval run *` requires `uip login`, plus `--solution-id <CurrentSolution.SolutionId> --project-id <CurrentProject.ProjectId>` from the context.
 <!--skill-flavor:sw-eval-path-login-rules:end-->
 
 <!--skill-flavor:sw-eval-variable-add-rule:start-->
@@ -43,7 +35,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 Standard workflow: scaffold evaluators → create eval set → add data points → run against the open solution. Every command takes `--path /solution/<Project>`; run commands also take the ids from the context (`CurrentSolution.SolutionId`, `CurrentProject.ProjectId`).
 
 ```bash
-# 1. Add an evaluator (local; the CLI creates /solution/<Project>/evals/ on first use)
+# 1. Add an evaluator (local; no login required — the CLI creates /solution/<Project>/evals/ on first use)
 uip maestro flow eval evaluator add greeting-quality \
   --type llm-judge-output \
   --model gpt-4.1-2025-04-14 \
@@ -90,24 +82,10 @@ If a run call times out (exit 124), hand the run to the user — "Open the Evalu
 <!--skill-flavor:sw-eval-quick-start:end-->
 
 <!--skill-flavor:sw-eval-workflow-table:start-->
-| Journey | Read |
-| --- | --- |
-| Look up any `uip maestro flow eval` subcommand syntax, flags, defaults, output codes | [commands-reference.md](commands-reference.md) |
-| Choose among the 7 evaluator types, write custom prompts, hand-write evaluator JSON | [evaluators-guide.md](evaluators-guide.md) |
-| Create eval sets, add data points, map `--inputs`/`--expected`/`--criteria` to evaluator types, attach files | [eval-sets-guide.md](eval-sets-guide.md) |
 | Start a run with the context ids, poll status, read results, compare two runs, fall back to the Evaluations panel on a time-out | [running-guide.md](running-guide.md) |
 <!--skill-flavor:sw-eval-workflow-table:end-->
 
 <!--skill-flavor:sw-eval-common-tasks-table:start-->
-| I need to... | Read these |
-| --- | --- |
-| **Add an evaluator** | [evaluators-guide.md](evaluators-guide.md) + [commands-reference.md — Evaluators](commands-reference.md#evaluators) |
-| **Pick the right evaluator type** | [evaluators-guide.md — When to Pick Each Type](evaluators-guide.md#when-to-pick-each-type) |
-| **Create an eval set and pin an entry point** | [eval-sets-guide.md — Eval Set Lifecycle](eval-sets-guide.md#eval-set-lifecycle) |
-| **Add a data point with file attachments** | [eval-sets-guide.md — `--input-file`](eval-sets-guide.md#--input-file-keypath) |
-| **Set per-data-point criteria for trajectory evaluators** | [eval-sets-guide.md — `--criteria`](eval-sets-guide.md#--criteria) |
-| **Add a simulation to a data point** | [eval-sets-guide.md — Simulations](eval-sets-guide.md#simulations-on-data-points) + [commands-reference.md — Simulations](commands-reference.md#simulations) |
-| **Add a child tool simulation to an agent node** | [eval-sets-guide.md — Child Simulations](eval-sets-guide.md#child-simulations-agent-tool-simulation) + [commands-reference.md — Simulations](commands-reference.md#simulations) |
 | **Start an eval run (ids from the context)** | [running-guide.md — Start a Run](running-guide.md#start-a-run) |
 | **Poll run status (never `--wait`)** | [running-guide.md — Check Status](running-guide.md#check-status) |
 | **Inspect only failed data points** | [running-guide.md — Detailed Results](running-guide.md#detailed-results) (`--only-failed --verbose`) |
@@ -120,8 +98,6 @@ If a run call times out (exit 124), hand the run to the user — "Open the Evalu
 <!--skill-flavor:upload-safety-antipattern:end-->
 
 <!--skill-flavor:sw-eval-antipatterns:start-->
-- **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer the default all-evaluators behavior so the CLI writes generated file refs, or pass generated evaluator ids/file refs explicitly. Do not pass evaluator display names to `--evaluators`.
-- **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.
 - **Don't use `--wait` or retry a timed-out run call in a loop.** Start without `--wait`, poll `eval run status`, and on exit 124 hand the run to the user's Evaluations panel.
 - **Don't compare runs from different eval sets.** `eval run compare` aligns by data-point name within the set; cross-set deltas are meaningless.
 - **Don't omit `--model` on LLM-judge evaluators.** The cloud worker fail-fasts before calling the LLM gateway.
@@ -130,10 +106,6 @@ If a run call times out (exit 124), hand the run to the user — "Open the Evalu
 
 <!--skill-flavor:sw-eval-completion-report:start-->
 After a run completes (from `run status`, or from the result the user pasted back from the Evaluations panel), report:
-
-1. **Eval set run ID** and aggregate score (from `run status`)
-2. **Failed data points** (from `run results --only-failed --verbose`)
-3. **Comparison delta** vs the previous run (`run compare`) if one exists
 <!--skill-flavor:sw-eval-completion-report:end-->
 
 <!--skill-flavor:upload-safety-next-step:start-->
@@ -142,7 +114,3 @@ After a run completes (from `run status`, or from the result the user pasted bac
 
 <!--skill-flavor:upload-safety-reference-entry:start-->
 <!--skill-flavor:upload-safety-reference-entry:end-->
-
-<!--skill-flavor:sw-eval-conventions-reference:start-->
-- [shared/cli-conventions.md](../shared/cli-conventions.md) — `--output json`, JSON output shape
-<!--skill-flavor:sw-eval-conventions-reference:end-->

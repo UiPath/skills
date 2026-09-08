@@ -14,12 +14,12 @@ Use a Flow node when you need to call another published flow as a subprocess.
 
 ### Selection Heuristics
 
-<!--skill-flavor:flow-selection-table:start-->
 | Situation | Use Flow? |
 | --- | --- |
 | Call another published flow as a subprocess | Yes |
 | Group related steps with isolated scope (within same project) | No — use [Subflow](../subflow/planning.md) |
 | Invoke a published orchestration process | No — use [Agentic Process](../agentic-process/planning.md) |
+<!--skill-flavor:flow-selection-table:start-->
 | Flow not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
 | Flow does not exist yet | Create it in the same solution with `uipath-maestro-flow`, then use `--local` discovery |
 <!--skill-flavor:flow-selection-table:end-->
@@ -36,7 +36,6 @@ Use a Flow node when you need to call another published flow as a subprocess.
 
 ## Discovery
 
-<!--skill-flavor:flow-discovery:start-->
 ### Published (tenant registry)
 
 ```bash
@@ -48,6 +47,7 @@ Requires `uip login`. Only published flows from your tenant appear.
 
 ### In-solution (sibling projects)
 
+<!--skill-flavor:flow-discovery:start-->
 ```bash
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json

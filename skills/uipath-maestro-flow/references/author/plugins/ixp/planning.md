@@ -1,8 +1,6 @@
 # IxP Extraction Node — Planning
 
-<!--skill-flavor:ixp-intro:start-->
 IxP Extraction nodes invoke a **trained, published** UiPath Intelligent eXtraction Platform (IxP) model to pull structured fields out of unstructured or semi-structured documents (PDFs, photos, scanned forms). They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
-<!--skill-flavor:ixp-intro:end-->
 
 In the IxP product these published models are also called **runtime projects** — the bundle published to the tenant runtime and callable from a flow. Treat "what IxP models do I have", "what runtime projects do I have access to in flow", and "list published extractors" as the same listing question — see [Listing Available Models / Runtime Projects](#listing-available-models--runtime-projects).
 
@@ -38,11 +36,9 @@ Don't use IxP as a generic OCR. IxP is field-oriented — it extracts named fiel
 
 ## Prerequisites
 
-<!--skill-flavor:ixp-prerequisites:start-->
 - `uip login` — IxP nodes only appear in the registry after authentication.
 - `uip maestro flow registry pull --force` must be run to cache IxP model node types locally.
 - A trained IxP model must be **deployed to an Orchestrator folder** — the flow registry lists folder deployments only. Create one via the `uipath-ixp` skill. If none exists, see [No published model](#no-published-model-branch-on-documents).
-<!--skill-flavor:ixp-prerequisites:end-->
 
 ## Ports
 
@@ -62,9 +58,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
 
-<!--skill-flavor:ixp-discovery-note:start-->
 Requires `uip login`. Only models with a folder deployment on your tenant appear — publishing alone does not surface a model here. The returned node type uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike `uipath.core.*` siblings which use a single-segment tail. Both tail segments are sanitized: lowercase, then runs of any character outside `[a-z0-9]` → single `-`. So an FQN of `Shared/invoice-model` lands as `shared-invoice-model`. See [impl.md](impl.md) for the full rule and worked examples.
-<!--skill-flavor:ixp-discovery-note:end-->
 
 ### No published model: branch on documents
 
@@ -81,13 +75,13 @@ Q&A use case from a Maestro-flow context: user asks "what IxP models can I acces
 
 Read-only listing — **do not** scaffold a solution, init a flow, or write a `.flow` file:
 
-<!--skill-flavor:ixp-listing-steps:start-->
 1. Confirm `uip login status --output json`. Without login, only OOTB nodes are returned and tenant IxP models will not appear.
 2. Refresh the cache and search:
    ```bash
    uip maestro flow registry pull --force
    uip maestro flow registry search "uipath.ixp" --output json
    ```
+<!--skill-flavor:ixp-listing-steps:start-->
 3. Format `Data[]` as a table — `DisplayName`, `NodeType`, `Version`. Each entry is one published model / runtime project. See [impl.md — Listing Published Models](impl.md#listing-published-models) for parsing details.
 <!--skill-flavor:ixp-listing-steps:end-->
 

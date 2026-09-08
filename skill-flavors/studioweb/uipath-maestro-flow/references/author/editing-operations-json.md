@@ -7,17 +7,10 @@
 <!--skill-flavor:json-colocation-antipattern:end-->
 
 <!--skill-flavor:json-edit-tooling-table:start-->
-| Operation | Mechanic | Rule |
-|---|---|---|
-| Surgical leaf string/number/bool | `Edit` | Use one unique substring; re-`Read` after rewrites because matching is whitespace-sensitive. |
-| New node, edge, definition, or variable | `Read` whole file → reconstruct in chat → `Write` whole file | Preserve field order; avoid dropping fields on files >1000 lines. |
 | Nested replacement, field insertion, idempotent splice | `Edit` / `Write`; a `jq` or `node` script only after explicit user approval (there is no `python` in Studio Web) | Prefer direct authoring; scripts bypass safeguards and require diff review. |
-| One-shot extraction/single-field CLI JSON mutation | `jq` | Use only when `--output-filter` cannot express it. |
 <!--skill-flavor:json-edit-tooling-table:end-->
 
 <!--skill-flavor:json-scripted-rewrite:start-->
-### Scripted structural rewrite
-
 Use only after explicit approval. Studio Web has no `python`; the scripting runtimes are `jq` and `node` (QuickJS sandbox: `fs`, `fs/promises`, `path`, `process`, `buffer` only — no `crypto`, no npm). `/solution` accepts writes but rejects `rm`/`mv`, so write the result to `/tmp` and copy it back:
 
 ```bash
@@ -31,13 +24,13 @@ Preserve canonical 2-space indent (`jq`'s default). `flow format` normalizes lay
 <!--skill-flavor:json-scripted-rewrite:end-->
 
 <!--skill-flavor:json-output-filter-examples:start-->
-```bash
 uip maestro flow validate new.flow --output json --output-filter "Warnings"
 uip maestro flow registry get <node-type> --output json --output-filter "Node"
-```
-
-Use `jq` (or `node` in the QuickJS sandbox) only when JMESPath cannot express multi-step joins, format conversion, or conditional output computed from multiple fields. On `list` commands, `--output-filter` requires an explicit `--limit <n>`.
 <!--skill-flavor:json-output-filter-examples:end-->
+
+<!--skill-flavor:json-output-filter-examples-2:start-->
+Use `jq` (or `node` in the QuickJS sandbox) only when JMESPath cannot express multi-step joins, format conversion, or conditional output computed from multiple fields. On `list` commands, `--output-filter` requires an explicit `--limit <n>`.
+<!--skill-flavor:json-output-filter-examples-2:end-->
 
 <!--skill-flavor:json-add-node-format:start-->
 Run `uip maestro flow format new.flow` after structural edits. It regenerates `variables.nodes[]`, arranges nodes horizontally, sets canvas sizes (inline agents 288×96, containers 560×320, others 96×96), and recurses into subflows. Do not calculate coordinates manually.

@@ -14,15 +14,15 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 
 ### Selection Heuristics
 
-<!--skill-flavor:rpa-selection-table:start-->
 | Situation | Use RPA? |
 | --- | --- |
 | Desktop/browser automation via a published RPA process | Yes |
 | Target system has a REST API | No — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md) |
+<!--skill-flavor:rpa-selection-table:start-->
 | RPA process in the same solution but not yet published | Yes — use `--local` discovery (see below) |
 | RPA process does not exist yet | Create it in the same solution with `uipath-rpa`, then use `--local` discovery |
-| Need AI reasoning, not desktop automation | No — use [Agent](../agent/planning.md) |
 <!--skill-flavor:rpa-selection-table:end-->
+| Need AI reasoning, not desktop automation | No — use [Agent](../agent/planning.md) |
 
 ## Ports
 
@@ -39,7 +39,6 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## Discovery
 
-<!--skill-flavor:rpa-discovery:start-->
 **Published (tenant registry):**
 
 ```bash
@@ -49,6 +48,7 @@ uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 
 Requires `uip login`. Only published processes from your tenant appear.
 
+<!--skill-flavor:rpa-discovery:start-->
 **In-solution (local, no login required):**
 
 ```bash

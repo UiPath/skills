@@ -10,8 +10,8 @@
 
 ## Start a Run
 
-<!--skill-flavor:sw-eval-run-start-syntax:start-->
 ```bash
+<!--skill-flavor:sw-eval-run-start-syntax:start-->
 uip maestro flow eval run start \
   --set "<set_name>" \
   --path <flow_project> \
@@ -21,9 +21,9 @@ uip maestro flow eval run start \
   [--folder-key <key>] \
   [--debug-mode <mode>] \
   [--wait [--timeout <seconds>]] \
+<!--skill-flavor:sw-eval-run-start-syntax:end-->
   --output json
 ```
-<!--skill-flavor:sw-eval-run-start-syntax:end-->
 
 <!--skill-flavor:sw-eval-id-resolution:start-->
 ### Resolution order for `--solution-id` / `--project-id`
@@ -43,14 +43,16 @@ The Orchestrator folder key that scopes the run. Defaults to the user's personal
 Without `--wait`, the command returns immediately with `EvalSetRunId`. With `--wait`, the CLI blocks until the run reaches a terminal state (`Completed` or `Failed`) or `--timeout` elapses (default 600s, hardcoded by the CLI).
 
 `--timeout` only stops the local CLI from blocking. The server-side run continues regardless. Query progress with:
+<!--skill-flavor:sw-eval-wait-timeout:end-->
 
+<!--skill-flavor:sw-eval-wait-timeout-2:start-->
 ```bash
 uip maestro flow eval run status <eval_set_run_id> \
   --set "<set_name>" --path <flow_project> --output json
 ```
 
 Polling cadence is not part of the public CLI contract — do not depend on a specific interval.
-<!--skill-flavor:sw-eval-wait-timeout:end-->
+<!--skill-flavor:sw-eval-wait-timeout-2:end-->
 
 ### Output (no `--wait`)
 
@@ -72,14 +74,14 @@ The CLI emits a summary plus per-data-point results. Use `run results` for the s
 
 ## Check Status
 
-<!--skill-flavor:sw-eval-run-status-syntax:start-->
 ```bash
 uip maestro flow eval run status <eval_set_run_id> \
   --set "<set_name>" \
+<!--skill-flavor:sw-eval-run-status-syntax:start-->
   --path <flow_project> \
+<!--skill-flavor:sw-eval-run-status-syntax:end-->
   --output json
 ```
-<!--skill-flavor:sw-eval-run-status-syntax:end-->
 
 ```json
 {
@@ -97,17 +99,17 @@ Status values: `Pending`, `Running`, `Completed`, `Failed`. `Completed` and `Fai
 
 ## Detailed Results
 
-<!--skill-flavor:sw-eval-run-results-syntax:start-->
 ```bash
 uip maestro flow eval run results <eval_set_run_id> \
   --set "<set_name>" \
+<!--skill-flavor:sw-eval-run-results-syntax:start-->
   --path <flow_project> \
   [--only-failed] \
   [--verbose] \
   [--export-format json|csv] \
+<!--skill-flavor:sw-eval-run-results-syntax:end-->
   --output json
 ```
-<!--skill-flavor:sw-eval-run-results-syntax:end-->
 
 Per-data-point fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Error` (plus `Justifications` when `--verbose`).
 
@@ -129,44 +131,46 @@ Write results to a file alongside the project (e.g., `eval-results-<timestamp>.j
 
 `--output-filter` takes a JMESPath expression and applies it to the JSON payload before printing. Useful for triage:
 
-<!--skill-flavor:sw-eval-output-filter-examples:start-->
 ```bash
 # Show only data points named "checkout-flow"
 uip maestro flow eval run results <run_id> \
+<!--skill-flavor:sw-eval-output-filter-examples:start-->
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json \
+<!--skill-flavor:sw-eval-output-filter-examples:end-->
   --output-filter 'Data.Results[?DataPoint==`checkout-flow`]'
 
 # Show only score and name per row
 uip maestro flow eval run results <run_id> \
+<!--skill-flavor:sw-eval-output-filter-examples-2:start-->
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json \
+<!--skill-flavor:sw-eval-output-filter-examples-2:end-->
   --output-filter 'Data.Results[*].{name: DataPoint, score: Score}'
 ```
-<!--skill-flavor:sw-eval-output-filter-examples:end-->
 
 ## List Past Runs
 
-<!--skill-flavor:sw-eval-run-list-syntax:start-->
 ```bash
 uip maestro flow eval run list \
   --set "<set_name>" \
+<!--skill-flavor:sw-eval-run-list-syntax:start-->
   --path <flow_project> \
+<!--skill-flavor:sw-eval-run-list-syntax:end-->
   --output json
 ```
-<!--skill-flavor:sw-eval-run-list-syntax:end-->
 
 Per-row: `EvalSetRunId`, `Status`, `Score`, `DataPoints`, `Duration`, `CreatedAt`.
 
 ## Compare Two Runs
 
-<!--skill-flavor:sw-eval-run-compare-syntax:start-->
 ```bash
 uip maestro flow eval run compare <run_id_a> \
   --compare-to <run_id_b> \
   --set "<set_name>" \
+<!--skill-flavor:sw-eval-run-compare-syntax:start-->
   --path <flow_project> \
+<!--skill-flavor:sw-eval-run-compare-syntax:end-->
   --output json
 ```
-<!--skill-flavor:sw-eval-run-compare-syntax:end-->
 
 Output:
 
@@ -194,8 +198,8 @@ Use `compare` after each prompt or flow change to verify the change improved sco
 
 ## Workflow Example
 
-<!--skill-flavor:sw-eval-workflow-example:start-->
 ```bash
+<!--skill-flavor:sw-eval-workflow-example:start-->
 # 1. Verify the solution is in Studio Web (do NOT auto-upload — see upload-safety.md)
 #    If unsure, list runs first; absence of any error here implies the solution exists.
 uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
@@ -207,9 +211,11 @@ uip maestro flow eval run start \
   --wait --timeout 600 --output json
 
 # 3. Inspect failures with justifications
+<!--skill-flavor:sw-eval-workflow-example:end-->
 uip maestro flow eval run results <run_id> \
   --set "Smoke Tests" \
   --only-failed --verbose \
+<!--skill-flavor:sw-eval-workflow-example-2:start-->
   --path ./MySolution/MyFlow --output json
 
 # 4. After fixing the flow, re-run and compare
@@ -217,7 +223,7 @@ uip maestro flow eval run start --set "Smoke Tests" --path ./MySolution/MyFlow -
 uip maestro flow eval run compare <new_run_id> --compare-to <old_run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
-<!--skill-flavor:sw-eval-workflow-example:end-->
+<!--skill-flavor:sw-eval-workflow-example-2:end-->
 
 ## Failure Detection
 

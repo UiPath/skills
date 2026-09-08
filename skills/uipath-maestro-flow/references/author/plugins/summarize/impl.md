@@ -135,9 +135,10 @@ Without `=js:`, the runtime stores the literal expression string. Use only `.Tex
 
 The `uip maestro flow node add` / `edge add` CLI is not canonical for OOTB pattern nodes; use it only when scripting where Edit/Write is unavailable. Run:
 
-<!--skill-flavor:sum-node-add-cli:start-->
 ```bash
+<!--skill-flavor:sum-node-add-cli:start-->
 uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
+<!--skill-flavor:sum-node-add-cli:end-->
   --label "<LABEL>" \
   --input '{
     "attachment": "=js:$vars.<triggerId>.output.<fileVarId>",
@@ -146,7 +147,6 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
   }' \
   --output json
 ```
-<!--skill-flavor:sum-node-add-cli:end-->
 
 `attachment` must resolve to `{ ID, FullName, MimeType, Metadata }` through `$vars.<triggerId>.output.<fileVarId>`. Do not pass a bare GUID, URL, byte stream, or path. Set `returnCitations: false` or omit it when provenance is unnecessary.
 
@@ -166,26 +166,26 @@ Use PascalCase: `Text`, `Citations`, `Ordinal`, `PageNumber`, `Source`, and `Ref
 
 Run:
 
-<!--skill-flavor:sum-validate-command:start-->
 ```bash
+<!--skill-flavor:sum-validate-command:start-->
 uip maestro flow validate <FlowName>.flow --output json
-```
 <!--skill-flavor:sum-validate-command:end-->
+```
 
 The validator checks that required inputs (`attachment`, `prompt`) are present and non-empty. A bare attachment id can pass validation but fail at runtime.
 
 ## Debug
 
-<!--skill-flavor:sum-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:sum-debug-table:start-->
 | `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | Run `uip tools update` and `uip maestro flow registry pull --force`; if still missing, check with an admin that `canvas.nodes.summarize` is enabled |
+<!--skill-flavor:sum-debug-table:end-->
 | Runtime: synthesis returns empty `content.Text` | Prompt is vague, or attachment is unreadable, such as an image-only PDF with no OCR or a corrupted file | Tighten the prompt; confirm the attachment type is supported and has selectable text |
 | `content.Citations` missing despite `returnCitations: true` | A downstream consumer read `inputDefaults` before runtime output existed | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
 | Downstream `result.content.text` / `result.content.citations` is `undefined` | Lowercase field names were used | Use `result.content.Text` / `result.content.Citations` |
 | Large documents time out | Synthesis cost scales with document size and one call is bounded | Split upstream into per-section Summarize calls plus a final merge, or use a published [Agent](../agent/impl.md) with a context-grounding resource |
 | Wrong citations, such as pages off by one or wrong source | Document page numbering differs from displayed page ordinal | Treat `Ordinal` and `PageNumber` as advisory; present `Source`/`Reference` and let the reader verify |
-<!--skill-flavor:sum-debug-table:end-->
 
 ## What not to do
 

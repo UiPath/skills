@@ -1,5 +1,5 @@
 <!--skill-flavor:rpa-impl-local-discovery:start-->
-**In-solution (sibling projects of the open solution):** `registry list|get --local` needs a `.uipx` and fails in Studio Web. List the siblings instead:
+**In-solution (sibling projects of the open solution, no login required):** `registry list|get --local` needs a `.uipx` and fails in Studio Web. List the siblings instead:
 
 ```bash
 uip solution resources list --kind Process --output json   # solutionResources = in-solution projects (key, name, kind, type)
@@ -8,7 +8,6 @@ uip solution resources get <key> --output json
 <!--skill-flavor:rpa-impl-local-discovery:end-->
 
 <!--skill-flavor:rpa-impl-registry-get:start-->
-```bash
 uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --output json   # published only
 ```
 
@@ -20,10 +19,5 @@ Use this path only after completing the empty-result confirmation in [Discovery]
 <!--skill-flavor:rpa-impl-not-published:end-->
 
 <!--skill-flavor:rpa-impl-debug-table:start-->
-| Error | Cause | Fix |
-| --- | --- | --- |
-| Node type not found in registry | Searched by process name (matches release name, not folder), process not published, or registry stale | Search the `uipath.core.rpa-workflow` token and match on folder path — not a name keyword. If in same solution: `uip solution resources list --kind Process --output json`. Otherwise: `uip maestro flow registry pull --force` (auth is host-provided; a 401/403 means missing rights) |
-| Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
-| Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
-| Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |
+| Node type not found in registry | Searched by process name (matches release name, not folder), process not published, or registry stale | Search the `uipath.core.rpa-workflow` token and match on folder path — not a name keyword. If in same solution: `uip solution resources list --kind Process --output json`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
 <!--skill-flavor:rpa-impl-debug-table:end-->

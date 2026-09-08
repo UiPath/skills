@@ -201,9 +201,10 @@ Follow the [CLI: Replace manual trigger with connector trigger](../../editing-op
 
 Use `node configure` with trigger-specific `--detail` fields:
 
-<!--skill-flavor:ct-configure-command:start-->
 ```bash
+<!--skill-flavor:ct-configure-command:start-->
 uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail '{
+<!--skill-flavor:ct-configure-command:end-->
   "connectionId": "<CONNECTION_ID>",
   "folderKey": "<FOLDER_KEY>",
   "eventMode": "<EVENT_MODE>",
@@ -222,7 +223,6 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
   }
 }'
 ```
-<!--skill-flavor:ct-configure-command:end-->
 
 **`--detail` fields for triggers:**
 
@@ -270,12 +270,12 @@ A **Wait for events** node waits for an external event **mid-flow** instead of s
 
 Add and wire:
 
-<!--skill-flavor:ct-event-node-add:start-->
 ```bash
+<!--skill-flavor:ct-event-node-add:start-->
 uip maestro flow node add <PROJECT>.flow uipath.connector.event.<key>.<event> \
+<!--skill-flavor:ct-event-node-add:end-->
   --label "<LABEL>" --position 400,144 --output json
 ```
-<!--skill-flavor:ct-event-node-add:end-->
 
 Wire an incoming edge into `input` and an outgoing edge from `output` per [editing-operations-json.md — Insert a node between two existing nodes](../../editing-operations-json.md#insert-a-node-between-two-existing-nodes). Downstream reads `$vars.{eventNodeId}.output` (payload) and `$vars.{eventNodeId}.error`. Wire `error` only when the requirements say what an event-wait failure should do — otherwise leave it unwired and let the failure fault the flow ([file-format.md — Default: off](../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles)).
 
@@ -405,15 +405,14 @@ Trigger nodes require more binding resources than activity nodes: `Connection` +
 
 - **Connection bindings** — created in the `.flow` file by `node configure` (Step 6)
 - **EventTrigger + Property bindings** — generated into `bindings_v2.json` during `flow debug` or packaging from the trigger node's `inputs.detail`
+<!--skill-flavor:ct-bindings:end-->
 
 You do **not** need to manually create or edit `bindings_v2.json` for trigger nodes.
-<!--skill-flavor:ct-bindings:end-->
 
 ---
 
 ## CLI Commands
 
-<!--skill-flavor:ct-cli-commands:start-->
 ```bash
 # Discovery
 uip maestro flow registry search trigger --output json               # find trigger node types
@@ -423,9 +422,11 @@ uip maestro flow registry pull --force                                # refresh 
 uip maestro flow registry get <trigger-node-type> --connection-id <connection-id> --output json
 
 # Node lifecycle
+<!--skill-flavor:ct-cli-commands:start-->
 uip maestro flow node remove <PROJECT>.flow start --output json       # remove manual trigger
 uip maestro flow node add <PROJECT>.flow <trigger-node-type> --label "<LABEL>" --position 200,144 --output json
 uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
+<!--skill-flavor:ct-cli-commands:end-->
 
 # Trigger object metadata (MANDATORY — Steps 1b and 1b-2)
 uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json   # Step 1b: objects + parameters[]
@@ -445,7 +446,6 @@ uip is webhooks config "<connector-key>" \
   --connection-id "<connection-guid>" \
   --element-instance-id <number> --output json
 ```
-<!--skill-flavor:ct-cli-commands:end-->
 
 ---
 
@@ -453,6 +453,7 @@ uip is webhooks config "<connector-key>" \
 
 <!--skill-flavor:ct-testing:start-->
 `uip maestro flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.
+<!--skill-flavor:ct-testing:end-->
 
 ### How debug works for triggers
 
@@ -462,20 +463,24 @@ uip is webhooks config "<connector-key>" \
 4. The flow executes immediately with that event data
 5. If **no matching events** exist in the lookback window, debug fails with error code `3005` (TriggerNoMatches)
 
+<!--skill-flavor:ct-testing-2:start-->
 ```bash
 uip maestro flow debug . --output json
 # → Fetches most recent matching event from the past ~1 hour
 # → Flow executes immediately with that event data
 ```
 
+<!--skill-flavor:ct-testing-2:end-->
 ### Polling vs webhook triggers in debug
 
+<!--skill-flavor:ct-testing-3:start-->
 | Trigger mode | Debug support | Behavior |
 |---|---|---|
 | `polling` | Supported | Pulls recent events via debug API, executes immediately |
 | `webhooks` | **Not supported** | Webhook triggers cannot be tested in Studio debug mode — debug requires Orchestrator |
 
 > **If the trigger uses `webhooks` event mode**, tell the user that debug is not available for webhook triggers. They must deploy to Orchestrator and test with a real webhook event.
+<!--skill-flavor:ct-testing-3:end-->
 
 ### Key differences from manual-trigger debug
 
@@ -489,8 +494,9 @@ uip maestro flow debug . --output json
 
 1. **Verify the connection is healthy** — `uip is connections ping "<id>"`
 2. **Confirm a matching event exists** — the user should have produced the event (e.g., sent an email, created a Jira issue) within the past hour
+<!--skill-flavor:ct-testing-4:start-->
 3. **Check event mode** — if `webhooks`, debug is not supported; inform the user
-<!--skill-flavor:ct-testing:end-->
+<!--skill-flavor:ct-testing-4:end-->
 
 ---
 
@@ -498,7 +504,6 @@ uip maestro flow debug . --output json
 
 ### Common Errors
 
-<!--skill-flavor:ct-debug-table:start-->
 | Error | Cause | Fix |
 |---|---|---|
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
@@ -514,7 +519,6 @@ uip maestro flow debug . --output json
 | Trigger faults at runtime with webhook-related error | Standard (non-BYOA) connection used for a trigger that requires `byoaConnection: true` | Run `uip is triggers objects` (Step 1b) to check `byoaConnection` flag, then switch to a BYOA connection with `uip is connections list "<connector-key>" --byoa --output json`. If no BYOA connections exist, user must create one. |
 | `connections list` returns empty but connections exist in the IS portal | CLI is using cached connection data that is stale | Retry with `--refresh` flag: `uip is connections list "<connector-key>" --refresh --output json` |
 | `ElementInstanceId` is empty on the selected connection | Connection is not a BYOA connection, or connector does not support webhooks on this connection type | Verify the trigger requires BYOA (Step 1b `byoaConnection` flag). If `true`, switch to a BYOA connection. |
-<!--skill-flavor:ct-debug-table:end-->
 
 ### Debug Tips
 

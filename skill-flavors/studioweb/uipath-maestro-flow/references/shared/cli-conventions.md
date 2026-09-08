@@ -5,11 +5,9 @@
 <!--skill-flavor:resolve-uip-prefix:end-->
 
 <!--skill-flavor:json-output-examples:start-->
-```bash
 uip maestro flow validate /solution/<ProjectName>/new.flow --output json
 uip maestro flow registry list --output json
 uip maestro flow instance incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
-```
 <!--skill-flavor:json-output-examples:end-->
 
 <!--skill-flavor:output-filter-failure-exception:start-->
@@ -23,14 +21,6 @@ Use `jq` or `node` only when JMESPath cannot perform a multi-step join across CL
 <!--skill-flavor:response-shape-debug-note:start-->
 Always check `Result` first. On failure, use `Message` and `Instructions` for diagnostics. A failure envelope may still carry `Data`. The host's `uip flow debug` is the exception to this shape: it prints plain text, not an envelope — see §7.
 <!--skill-flavor:response-shape-debug-note:end-->
-
-<!--skill-flavor:login-state-section:start-->
-<a id="5-login-state"></a>
-
-## 5. Authentication
-
-Authentication is injected by the host on every `uip` call — Author, Operate, and Diagnose commands all carry the Studio Web session, and the registry returns tenant-specific connector nodes without any extra step. Never run `uip login`, `uip login status`, `uip logout`, `uip auth` or `uip config` (the host refuses them). A 401/403 means the signed-in user lacks rights on the tenant or folder — report it, do not retry. In-solution sibling projects are listed with `uip solution resources list --kind Process --output json`; `registry … --local` needs a `.uipx` and fails here.
-<!--skill-flavor:login-state-section:end-->
 
 <!--skill-flavor:debug-log-level-section:start-->
 <a id="7-use-uip_log_levelinfo-for-debug-runs"></a>

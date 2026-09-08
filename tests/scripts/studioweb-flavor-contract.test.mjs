@@ -64,10 +64,14 @@ test("the default flavor keeps `uip solution init` (the guard is not vacuous)", 
 
 // The Flow skill audit (2026-09-07, verified live on alpha) found the same
 // class of dead end for a handful of other commands: the Studio Web host has no
-// `.uipx`, injects auth, runs debug through its own service and ships no
-// python. Each of these is a command the agent copied straight out of a fenced
-// block, so the guard scans fenced code in the composed Flow skill — prose may
-// still name them when it says "never run".
+// `.uipx`, runs debug through its own service and ships no python. Each of
+// these is a command the agent copied straight out of a fenced block, so the
+// guard scans fenced code in the composed Flow skill — prose may still name
+// them when it says "never run".
+//
+// `uip login` is deliberately NOT guarded: the Studio Web system prompt already
+// tells the agent the session is authenticated and not to log in, so the flavor
+// keeps the canonical login wording rather than overriding it.
 //
 // `defaultMustMatch: false` marks a needle the canonical flavor legitimately
 // never scripts, so its non-vacuity cannot be asserted against `default`:
@@ -77,7 +81,6 @@ test("the default flavor keeps `uip solution init` (the guard is not vacuous)", 
 // the regression it guards).
 const FLOW_SKILL = "uipath-maestro-flow";
 const FORBIDDEN_FENCED_COMMANDS = [
-  { needle: /^\s*(?:[A-Z_]+=\S+\s+)*uip login\b/, label: "uip login" },
   { needle: /^\s*uip solution resources refresh\b/, label: "uip solution resources refresh" },
   { needle: /^\s*uip solution upload\b/, label: "uip solution upload" },
   { needle: /^\s*uip solution projects add\b/, label: "uip solution projects add" },

@@ -1,14 +1,4 @@
 <!--skill-flavor:flow-impl-discovery:start-->
-### Published (tenant registry)
-
-```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.flow" --output json
-```
-
-### In-solution (sibling projects)
-
-```bash
 uip solution resources list --kind Process --output json   # solutionResources = in-solution projects (key, name, kind, type)
 uip solution resources get <key> --output json
 ```
@@ -17,7 +7,6 @@ uip solution resources get <key> --output json
 <!--skill-flavor:flow-impl-discovery:end-->
 
 <!--skill-flavor:flow-impl-registry-get:start-->
-```bash
 # Published — the registry serves manifests for published resources only
 uip maestro flow registry get "uipath.core.flow.{key}" --output json
 ```
@@ -26,8 +15,5 @@ For an unpublished in-solution sibling, inspect it with `uip solution resources 
 <!--skill-flavor:flow-impl-registry-get:end-->
 
 <!--skill-flavor:flow-impl-debug-table:start-->
-| Error | Cause | Fix |
-| --- | --- | --- |
-| Node type not found in registry | Flow not published or registry stale | Run `uip maestro flow registry pull --force` (auth is host-provided; a 401/403 means missing rights); for in-solution flows use `uip solution resources list --kind Process` |
-| Flow execution failed | Underlying flow errored | Check `$vars.{nodeId}.error` for details |
+| Node type not found in registry | Flow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution flows use `uip solution resources list --kind Process` |
 <!--skill-flavor:flow-impl-debug-table:end-->

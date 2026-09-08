@@ -1,8 +1,6 @@
 # Author — Create and edit `.flow` files
 
-<!--skill-flavor:author-intro-scope:start-->
 Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
-<!--skill-flavor:author-intro-scope:end-->
 
 > **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >

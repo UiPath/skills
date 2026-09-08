@@ -1,8 +1,6 @@
 # Connector Activity Nodes — Planning
 
-<!--skill-flavor:connector-intro:start-->
 Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
-<!--skill-flavor:connector-intro:end-->
 
 ## When to Use
 
@@ -21,11 +19,9 @@ Prefer higher tiers when connecting to external services:
 
 ### Prerequisites
 
-<!--skill-flavor:connector-prerequisites:start-->
 - `uip login` required — connector nodes only appear in the registry after authentication
 - A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
 - `uip maestro flow registry pull` must be run to cache connector node types locally
-<!--skill-flavor:connector-prerequisites:end-->
 
 ### When NOT to Use
 

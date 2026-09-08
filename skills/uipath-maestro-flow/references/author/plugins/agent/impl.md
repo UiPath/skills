@@ -2,18 +2,17 @@
 
 Agent nodes invoke UiPath AI agents through `uipath.core.agent.{key}`. Coded (Python) agents always use this plugin. Standalone low-code (`agent.json`) agents use it when in-solution siblings or published; inline low-code agents embedded as a UUID subdirectory use `uipath.agent.autonomous`—see the [inline-agent plugin](../inline-agent/impl.md).
 
-<!--skill-flavor:agent-impl-kinds:start-->
 Agents are either:
 
+<!--skill-flavor:agent-impl-kinds:start-->
 - **In this solution**: a sibling project. `{key}` is the local `resource.key` minted by `uip solution projects add` and written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`. Runtime resolution uses the Studio Web projects API after `uip solution upload`; `definitions[]` uses `model.section: "In this solution"`.
-- **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `category: "agent.published"` (registry output omits `model.section`).
 <!--skill-flavor:agent-impl-kinds:end-->
+- **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `category: "agent.published"` (registry output omits `model.section`).
 
 The `nodes[]` shape is the same; only the `definitions[]` manifest differs.
 
 ## Discovery and Registry Validation
 
-<!--skill-flavor:agent-impl-discovery:start-->
 Run these commands for published agents (requires `uip login`):
 
 ```bash
@@ -21,6 +20,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
+<!--skill-flavor:agent-impl-discovery:start-->
 Only published agents from the logged-in tenant appear. Run these commands inside the flow project directory for in-solution agents; no login is required:
 
 ```bash
@@ -30,15 +30,17 @@ uip maestro flow registry get "<node-type>" --local --output json
 
 These discover sibling agent projects in the same `.uipx` solution.
 
+<!--skill-flavor:agent-impl-discovery:end-->
 Run:
 
+<!--skill-flavor:agent-impl-discovery-2:start-->
 ```bash
 uip maestro flow registry get "uipath.core.agent.{key}" --output json
 uip maestro flow registry get "uipath.core.agent.{key}" --local --output json
 ```
 
 The non-local command requires `uip login` and shows only published tenant agents. Confirm from `registry get`:
-<!--skill-flavor:agent-impl-discovery:end-->
+<!--skill-flavor:agent-impl-discovery-2:end-->
 
 - Ports are input `input` and output `output`.
 - `outputDefinition.output.schema` contains `content` (string).
@@ -207,9 +209,9 @@ return { result: response };
 
 ## If the Agent Does Not Exist Yet
 
-<!--skill-flavor:agent-impl-create:start-->
 Create it before wiring:
 
+<!--skill-flavor:agent-impl-create:start-->
 - **In-solution sibling, coded or low-code**: scaffold with `uipath-agents`, register with `uip solution projects add` to mint `resource.key`, then discover with `uip maestro flow registry list --local`. For coded agents, see [coded/embedding-in-flows.md](../../../../../uipath-agents/references/coded/embedding-in-flows.md).
 - **Published coded**: run `uip codedagent deploy`, then `uip maestro flow registry pull --force`.
 - **Published low-code**: run `uip solution deploy`, then `uip maestro flow registry pull --force`.
@@ -226,12 +228,12 @@ For format and wiring details, see the `uipath-agents` skill:
 
 ## Debug
 
-<!--skill-flavor:agent-impl-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:agent-impl-debug-table:start-->
 | Node type not found in registry | Agent is unpublished or registry is stale | For an in-solution agent, run `registry list --local`. Otherwise run `uip login` then `uip maestro flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully. |
 | In-solution node does not resolve | `resourceKey` was invented, or `uip solution projects add` was not run | Run `uip maestro flow registry list --local` and use its `resourceKey`, which must equal `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`. |
 | Agent execution failed | Underlying agent error | Inspect `$vars.{nodeId}.error`; for coded agents, test locally with `uip codedagent run`. |
 | Empty `output.content` | Agent returned no response | Verify configuration in Orchestrator for published agents or Studio Web for in-solution agents. |
-| `inputDefinition` is empty | Agent declares no typed input schema (free-form) | Wire upstream data through `jsExpression` inputs; see [Wiring Inputs](#wiring-inputs). |
 <!--skill-flavor:agent-impl-debug-table:end-->
+| `inputDefinition` is empty | Agent declares no typed input schema (free-form) | Wire upstream data through `jsExpression` inputs; see [Wiring Inputs](#wiring-inputs). |

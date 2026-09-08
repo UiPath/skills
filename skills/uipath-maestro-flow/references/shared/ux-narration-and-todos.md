@@ -27,7 +27,6 @@ A logical step is the smallest user-meaningful outcome, usually 1–5 actions gr
 
 ## Narration cadence
 
-<!--skill-flavor:narration-cadence-table:start-->
 | Situation | Rule |
 |---|---|
 | Start of logical step | Narrate one short line in plain English. |
@@ -35,10 +34,11 @@ A logical step is the smallest user-meaningful outcome, usually 1–5 actions gr
 | Step transition | Narrate the next step. |
 | Decision point | Give a brief line before asking the user; explain the decision's consequence. |
 | Failure/retry | Always narrate what failed and what will be tried next, even in silent mode. |
+<!--skill-flavor:narration-cadence-table:start-->
 | Trivial probe (`uip --version`, repeated `login status` in the same minute) | Skip. |
+<!--skill-flavor:narration-cadence-table:end-->
 | Non-`uip` shell plumbing (`ls`, `cat`, `mkdir`, `cd`) | Skip; the step line covers it. |
 | File reads/edits inside a step | Skip; the step line covers them. |
-<!--skill-flavor:narration-cadence-table:end-->
 
 ## Narration lines
 
@@ -46,25 +46,28 @@ Keep each line to approximately 15 words or fewer, as one sentence or fragment. 
 
 Use or adapt these patterns:
 
-<!--skill-flavor:flow-project-creation-narration:start-->
 | Step | Narration |
 |---|---|
+<!--skill-flavor:flow-project-creation-narration:start-->
 | Login probe | "Checking whether you're logged in to the UiPath tenant…" |
 | Solution scaffold | "Scaffolding a new solution at `<path>` so the Flow project has a parent." |
 | Flow init | "Initializing the Flow project. This creates the `.flow` file you'll edit." |
 | Verify project layout | "Confirming the solution/project layout is correct before continuing." |
+<!--skill-flavor:flow-project-creation-narration:end-->
 | Registry discovery | "Looking up `<node-type>` in the registry so I can wire its inputs correctly…" |
 | Node add | "Adding the `<node-type>` node and copying its registry definition into the file…" |
 | Edit flow JSON | "Editing the flow JSON to add the `<thing>`." |
 | Edge wiring | "Wiring `<from>` → `<to>` so data flows in the right order." |
 | Variable mapping | "Mapping output variables on the End node — every reachable End needs them." |
 | Script body update | "Updating the script body in the `<nodeId>` node." |
+<!--skill-flavor:flow-project-creation-narration-2:start-->
 | Resource refresh | "Syncing connection and resource declarations into the solution before upload…" |
 | Validate | "Running validate. This catches missing edges, bad expressions, and wiring mistakes." |
 | Format | "Formatting the layout. Studio Web renders nodes correctly only after format normalizes their sizes." |
 | Studio Web upload | "Pushing to Studio Web. This is the safe path — no execution, just the visual editor." |
 | Pack for Orchestrator | "Packing the solution for Orchestrator deploy…" |
 | Orchestrator publish | "Publishing the package to Orchestrator…" |
+<!--skill-flavor:flow-project-creation-narration-2:end-->
 | Debug consent | "Running debug end-to-end. Real systems will be hit (emails sent, Slack posts, API calls)." |
 | Process run | "Triggering the deployed process now…" |
 | Job status | "Checking the job's current status…" |
@@ -77,20 +80,19 @@ Use or adapt these patterns:
 | Variable inspection | "Reading the runtime variable state at the moment of failure…" |
 | Flow correlation | "Mapping the faulting element ID back to a node in your `.flow` file…" |
 | Traces, last resort | "Pulling traces. Last resort — the previous steps weren't enough." |
-<!--skill-flavor:flow-project-creation-narration:end-->
 
 ## Progress-list threshold
 
 This applies only when narration/todos are engaged. In silent mode, journey size never creates a user-facing list.
 
-<!--skill-flavor:progress-list-threshold-table:start-->
 | Journey | Narration | Progress list |
 |---|---|---|
 | Single edit: 1–2 actions, no decisions | One line | None |
 | Small edit: 3–5 actions or one decision | One line per step | Optional |
+<!--skill-flavor:progress-list-threshold-table:start-->
 | Standard: greenfield, multi-node brownfield, ship, or full diagnose | One line per step | Required and granular |
-| Complex: 10+ nodes, multiple resource bindings, or planning phase | Denser cadence | Required, granular, with sub-todos |
 <!--skill-flavor:progress-list-threshold-table:end-->
+| Complex: 10+ nodes, multiple resource bindings, or planning phase | Denser cadence | Required, granular, with sub-todos |
 
 ## Todo rules
 

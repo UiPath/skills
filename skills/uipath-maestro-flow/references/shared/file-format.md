@@ -53,9 +53,9 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 
 > **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/plugins/connector/impl.md) for the connector-binding shape.
 
-<!--skill-flavor:project-structure-scaffold:start-->
 ## Project structure (generated scaffold)
 
+<!--skill-flavor:project-structure-scaffold:start-->
 ```
 <ProjectName>/
 ├── project.uiproj          # { "Name": "...", "ProjectType": "Flow" }
@@ -242,11 +242,11 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 }
 ```
 
-<!--skill-flavor:edge-id-ncname-gotcha:start-->
 > **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] Invalid input: expected string, received undefined` at validate time.
 >
 > **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
 >
+<!--skill-flavor:edge-id-ncname-gotcha:start-->
 > **Gotcha — edge `id` MUST start with a letter (XML NCName).** Never use a bare UUID or any id with a leading digit (`"12bd09dd-…"`, `"1edge-start"`). Edge ids become BPMN `<bpmn:incoming>/<bpmn:outgoing>` IDREFs; a leading digit makes the converter silently drop those references while still emitting the `sequenceFlow`, so `flow validate` passes and upload succeeds — but the engine cannot traverse: the run reports **Completed having executed only the start node**, every output null. Use descriptive ids (`e-<source>-<target>`, e.g. `e-start-agent`); prefixing a letter (`e12bd09dd-…`) also works. Same rule applies to node ids.
 <!--skill-flavor:edge-id-ncname-gotcha:end-->
 
@@ -356,16 +356,16 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 
 ### Wiring the error port
 
-<!--skill-flavor:error-edge-add-example:start-->
 ```bash
 # Confirm the node supports error handling
 uip maestro flow registry get <node-type> --output json --output-filter "Node.SupportsErrorHandling"
 
 # Add an outgoing edge with sourcePort: "error"
+<!--skill-flavor:error-edge-add-example:start-->
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
+<!--skill-flavor:error-edge-add-example:end-->
   --source-port error --target-port input --output json
 ```
-<!--skill-flavor:error-edge-add-example:end-->
 
 `uip maestro flow edge add --source-port error` and `uip maestro flow format` set `inputs.errorHandlingEnabled: true` on the source node automatically — only for nodes that have an error edge. When editing `.flow` JSON directly, set the flag yourself **on those nodes only**:
 

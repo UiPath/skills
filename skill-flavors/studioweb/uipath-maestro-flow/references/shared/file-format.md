@@ -7,8 +7,6 @@ The `.flow` file is a JSON document at `/solution/<ProjectName>/new.flow` — th
 <!--skill-flavor:flow-format-version-source:end-->
 
 <!--skill-flavor:project-structure-scaffold:start-->
-## Project structure (generated scaffold)
-
 A fresh `uip flow init <ProjectName>` project contains only:
 
 ```
@@ -22,22 +20,11 @@ After the first debug or publish the host adds `entry-points.json`, `new.bpmn`, 
 <!--skill-flavor:project-structure-scaffold:end-->
 
 <!--skill-flavor:edge-id-ncname-gotcha:start-->
-> **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] Invalid input: expected string, received undefined` at validate time.
->
-> **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
->
 > **Gotcha — edge `id` MUST start with a letter (XML NCName).** Never use a bare UUID or any id with a leading digit (`"12bd09dd-…"`, `"1edge-start"`). Edge ids become BPMN `<bpmn:incoming>/<bpmn:outgoing>` IDREFs; a leading digit makes the converter silently drop those references while still emitting the `sequenceFlow`, so `flow validate` passes and the file saves — but the engine cannot traverse: the run reports **Completed having executed only the start node**, every output null. Use descriptive ids (`e-<source>-<target>`, e.g. `e-start-agent`); prefixing a letter (`e12bd09dd-…`) also works. Same rule applies to node ids.
 <!--skill-flavor:edge-id-ncname-gotcha:end-->
 
 <!--skill-flavor:error-edge-add-example:start-->
-```bash
-# Confirm the node supports error handling
-uip maestro flow registry get <node-type> --output json --output-filter "Node.SupportsErrorHandling"
-
-# Add an outgoing edge with sourcePort: "error"
 uip maestro flow edge add /solution/<ProjectName>/new.flow <actionNodeId> <errorHandlerId> \
-  --source-port error --target-port input --output json
-```
 <!--skill-flavor:error-edge-add-example:end-->
 
 <!--skill-flavor:minimal-example-version-source:start-->

@@ -14,11 +14,13 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 - Push a flow to Studio Web (`uip solution upload`)
 - Deploy a flow to Orchestrator (`uip maestro flow pack` + `uip solution publish`)
 - Run a flow end-to-end via `uip maestro flow debug` (cloud round-trip with real side effects)
+<!--skill-flavor:upload-scope-bullets:end-->
 - Trigger a deployed process via `uip maestro flow process run`
 - Check job status or stream traces with `uip maestro flow job status` / `job traces`
 - Manage a running instance — pause, resume, cancel, or retry
+<!--skill-flavor:upload-scope-bullets-2:start-->
 - Refresh solution resources after binding changes (`uip solution resources refresh`)
-<!--skill-flavor:upload-scope-bullets:end-->
+<!--skill-flavor:upload-scope-bullets-2:end-->
 
 ## Critical rules
 
@@ -35,25 +37,26 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 ## Workflow
 
-<!--skill-flavor:ship-journey-row:start-->
 | Journey | Read |
 | --- | --- |
+<!--skill-flavor:ship-journey-row:start-->
 | Publish a flow (Studio Web default, Orchestrator on request) | [ship.md](ship.md) |
+<!--skill-flavor:ship-journey-row:end-->
 | Run a flow on demand or check progress | [run.md](run.md) |
 | Intervene in a running instance | [manage.md](manage.md) |
-<!--skill-flavor:ship-journey-row:end-->
 
 ## Common tasks
 
-<!--skill-flavor:ship-common-tasks-rows:start-->
 | I need to... | Read these |
 | --- | --- |
+<!--skill-flavor:ship-common-tasks-rows:start-->
 | **Publish a flow to Studio Web** | [ship.md — Path 1](ship.md#path-1--studio-web-upload-default) |
 | **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-solution](/uipath:uipath-solution) |
 | **Sync solution resource declarations** | [ship.md — Pre-flight](ship.md#pre-flight) (the `uip solution resources refresh` step) |
 | **Debug a flow end-to-end** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) |
 | **Pass input arguments to `flow debug`** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
 | **Bind local files to file-typed inputs** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) and [run.md — Process run](run.md#process-run--trigger-a-deployed-process) (same `--attachment <variableId>=<localPath>` flag on both, repeatable; `--attachment` overrides `--inputs` on key collisions) |
+<!--skill-flavor:ship-common-tasks-rows:end-->
 | **Trigger a deployed process** | [run.md — Process run](run.md#process-run--trigger-a-deployed-process) |
 | **Check status of a running job** | [run.md — Job inspection](run.md#job-inspection--status-and-traces) |
 | **Stream verbose execution traces** | [run.md — Job inspection](run.md#job-inspection--status-and-traces) (use sparingly — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
@@ -61,9 +64,10 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Resume a paused instance** | [manage.md](manage.md) |
 | **Cancel an instance** | [manage.md](manage.md) |
 | **Retry a faulted instance** | [manage.md](manage.md) (after diagnosing root cause via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
+<!--skill-flavor:ship-common-tasks-rows-2:start-->
 | **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) |
+<!--skill-flavor:ship-common-tasks-rows-2:end-->
 | **My flow run failed** | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
-<!--skill-flavor:ship-common-tasks-rows:end-->
 
 ## Anti-patterns
 
@@ -90,9 +94,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-shared-cli-entry:start-->
 - [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `solution upload`, `solution resources refresh`, `flow pack`, `flow debug`, `flow process`, `flow job`, `flow instance`
 <!--skill-flavor:upload-shared-cli-entry:end-->
-<!--skill-flavor:conventions-reference-entry:start-->
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, FOLDER_KEY, UIP_LOG_LEVEL, JSON output shape
-<!--skill-flavor:conventions-reference-entry:end-->
 - [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) — `--inputs` JSON shape for `flow debug`
 
 <!--skill-flavor:upload-orchestrator-pointer:start-->

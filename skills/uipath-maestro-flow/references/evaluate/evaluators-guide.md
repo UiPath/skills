@@ -28,22 +28,24 @@ The four classification and tool-call evaluators (`uipath-binary-classification`
 
 ## Adding an Evaluator (CLI)
 
-<!--skill-flavor:sw-eval-evaluator-add-examples:start-->
 ```bash
 # Deterministic — no model needed
 uip maestro flow eval evaluator add exact-greeting \
   --type exact-match \
   --target-key "greeting" \
+<!--skill-flavor:sw-eval-evaluator-add-examples:start-->
   --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-add-examples:end-->
 
 # LLM-judge — model is effectively required
 uip maestro flow eval evaluator add greeting-quality \
   --type llm-judge-output \
   --model gpt-4.1-2025-04-14 \
   --description "Score greeting tone and completeness" \
+<!--skill-flavor:sw-eval-evaluator-add-examples-2:start-->
   --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-add-examples-2:end-->
 ```
-<!--skill-flavor:sw-eval-evaluator-add-examples:end-->
 
 Critical: pass `--model` on every `llm-judge-*` evaluator. Empty `model` triggers a 500 from the LLM gateway only after retries — unfriendly to debug.
 
@@ -114,32 +116,34 @@ When `--prompt` is omitted, the CLI inserts a built-in default for each type. Ov
 
 ## Custom Prompts
 
-<!--skill-flavor:sw-eval-custom-prompt-example:start-->
 ```bash
 uip maestro flow eval evaluator add strict-match \
   --type llm-judge-output \
   --model gpt-4.1-2025-04-14 \
   --prompt 'Score 0-1 how closely {{ActualOutput}} matches {{ExpectedOutput}}. Return JSON {"score": N, "reason": "..."}.' \
+<!--skill-flavor:sw-eval-custom-prompt-example:start-->
   --path ./MySolution/MyFlow --output json
-```
 <!--skill-flavor:sw-eval-custom-prompt-example:end-->
+```
 
 Unknown placeholders are passed through to the LLM as literal text — they are not silent errors but they will not be substituted with run data.
 
 ## Removing an Evaluator
 
-<!--skill-flavor:sw-eval-evaluator-remove-examples:start-->
 ```bash
 uip maestro flow eval evaluator remove greeting-quality \
+<!--skill-flavor:sw-eval-evaluator-remove-examples:start-->
   --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-remove-examples:end-->
 ```
 
 Removing an evaluator does NOT auto-clean `evaluatorRefs` arrays in eval sets that reference it. After removing, re-list eval sets and reconcile any stale refs:
 
 ```bash
+<!--skill-flavor:sw-eval-evaluator-remove-examples-2:start-->
 uip maestro flow eval set list --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-remove-examples-2:end-->
 ```
-<!--skill-flavor:sw-eval-evaluator-remove-examples:end-->
 
 ## Anti-patterns
 

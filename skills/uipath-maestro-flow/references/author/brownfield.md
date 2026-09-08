@@ -31,7 +31,6 @@ Make all edits first. Then run `uip maestro flow validate` once, followed by `ui
 
 For edits touching multiple top-level arrays, follow [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits): anchor each Edit on its array's opening key, never on top-level key order.
 
-<!--skill-flavor:brownfield-common-edits-table:start-->
 | Edit | Required operation and guide |
 |---|---|
 | **Change a script body or node inputs** | Use `Edit` on `inputs`; do not delete/re-add because node IDs and `$vars` expressions must remain stable. Script nodes must return an object (`return { key: value }`). See [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs). |
@@ -45,11 +44,12 @@ For edits touching multiple top-level arrays, follow [parallel same-file Edit ru
 | **Create a subflow** | Add a `core.subflow` parent and `subflows.{nodeId}` with nested nodes, edges, and variables (`Edit`-only, or `Write` for template scaffolding). See [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) and [subflow/impl.md](plugins/subflow/impl.md). |
 | **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. See [Edit/Write: Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) and [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md). |
 | **Add a connector trigger** | Remove the manual trigger; add and configure the connector trigger with a connection. Use [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) and [connector-trigger/impl.md](plugins/connector-trigger/impl.md). |
+<!--skill-flavor:brownfield-common-edits-table:start-->
 | **Add a resource node** | Discover through the registry (`--local` for in-solution, or tenant registry for published); add with `Edit`; wire edges. Use the relevant plugin's `impl.md` and [editing-operations-json.md](editing-operations-json.md). |
+<!--skill-flavor:brownfield-common-edits-table:end-->
 | **Add an inline agent node** | Embed `uipath.agent.autonomous` with an inline agent definition in the flow project. See [inline-agent/planning.md](plugins/inline-agent/planning.md) for inline versus published selection and [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, JSON, and validation. |
 | **Add voice nodes** | Turn a flow into a phone conversation: a `uipath.agent.voice` inline conversational agent wired to a live call, plus the trigger, create-call, and end-call nodes. Binding an inbound number happens at deploy time, not in the `.flow`. See [inline-voice-agent/planning.md](plugins/inline-voice-agent/planning.md) for the two topologies and trunk requirements, and [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) for node JSON, `callContext` wiring, and number binding. |
 | **Add a HITL QuickForm node** | Insert the human approval/review/enrichment checkpoint and wire its `completed` port. See [Edit/Write: Add a node](editing-operations-json.md) and [hitl/impl.md](plugins/hitl/impl.md). |
-<!--skill-flavor:brownfield-common-edits-table:end-->
 
 OOTB structural CRUD uses Edit/Write only; there is no CLI opt-in path for other flow-graph edits.
 
@@ -88,13 +88,13 @@ When editing finishes, report:
 
 Authoring ends here. For any selected option, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow; do not run operate commands from this document.
 
-<!--skill-flavor:brownfield-whats-next-dropdown:start-->
 | Option | What it does |
 |---|---|
+<!--skill-flavor:brownfield-whats-next-dropdown:start-->
 | **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
 | **Debug the solution** | Execute the flow end-to-end against real systems. Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen; see [/uipath:uipath-platform](/uipath:uipath-platform). |
-| **Something else** | Last option. Accept free-form string input and act on it. |
 <!--skill-flavor:brownfield-whats-next-dropdown:end-->
+| **Something else** | Last option. Accept free-form string input and act on it. |
 
 When the original request already named the next step ("publish it", "deploy to Orchestrator", "run debug and iterate"), that instruction **is** the selection — act on it and skip the menu. Show the menu only when the next step was left unspecified, and then do not run any option without explicit user selection.

@@ -35,9 +35,7 @@ uip conversational trunks list --direction inbound  --output json   # inbound bi
   # e.g. https://alpha.uipath.com/conversationalagents/agents_/phone-numbers
   ```
 
-<!--skill-flavor:voice-portal-url-source:start-->
   It is org-scoped (no tenant segment) — build it from `uip login status --output json` (`Data.BaseUrl` + `Data.Organization`). There is no `trunks create`.
-<!--skill-flavor:voice-portal-url-source:end-->
 
 Numbers referenced in older examples go stale — always re-list rather than copying a number out of a doc or an existing flow. Binding an inbound number is a deploy-time step, not a `.flow` edit: [impl.md § Bind an Inbound Phone Number](impl.md#bind-an-inbound-phone-number).
 
@@ -79,7 +77,9 @@ core.trigger.manual (output) → uipath.conversational.voice.create-outgoing-cal
 
 <!--skill-flavor:voice-topology-testing:start-->
 Only a real inbound call can raise a `core.trigger.voice`, so **`uip maestro flow debug` refuses an inbound flow outright** (`Inbound voice flows cannot be debugged from the CLI.`). Testing it means the full deploy path — publish, bind a number, then dial it — while an outbound flow runs under `flow debug` directly and places its call from the CLI.
+<!--skill-flavor:voice-topology-testing:end-->
 
+<!--skill-flavor:voice-topology-testing-2:start-->
 | | Inbound | Outbound |
 | --- | --- | --- |
 | Trigger | `core.trigger.voice` | `core.trigger.manual` (or any other trigger) |
@@ -88,7 +88,7 @@ Only a real inbound call can raise a `core.trigger.voice`, so **`uip maestro flo
 | Needs a deploy to test at all | Yes | No |
 
 Outbound is the only shape with a local test loop; inbound cannot be exercised at all until it is deployed and a number is bound to it.
-<!--skill-flavor:voice-topology-testing:end-->
+<!--skill-flavor:voice-topology-testing-2:end-->
 
 ## Ports
 
@@ -116,10 +116,10 @@ Outbound is the only shape with a local test loop; inbound cannot be exercised a
 
 The voice agent's backing directory is created with the same command as any inline agent, plus the conversational flag:
 
-<!--skill-flavor:voice-scaffold-command:start-->
 ```bash
 uip agent init "<FlowProjectDir>" --inline-in-flow --conversational --output json
 ```
+<!--skill-flavor:voice-scaffold-command:start-->
 <!--skill-flavor:voice-scaffold-command:end-->
 
 Record the returned `ProjectId` — the voice node's `inputs.source` must match it exactly. The scaffold produces a conversational agent (`settings.engine: "conversational-v1"`, `metadata.isConversational: true`) **without** a `settings.voice` block — adding it by hand is mandatory, or `flow validate` fails. Shape and defaults: [impl.md § Configure `agent.json`](impl.md#configure-agentjson).

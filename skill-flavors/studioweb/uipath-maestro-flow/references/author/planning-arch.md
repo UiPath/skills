@@ -3,7 +3,7 @@
 <!--skill-flavor:planning-arch-registry-rules:end-->
 
 <!--skill-flavor:planning-arch-registry-auth:start-->
-Authentication is host-provided — the registry already includes tenant connector and resource nodes, there is no login step, and a 401/403 means the signed-in user lacks rights on the tenant or folder. For sibling projects in the open solution, list them with:
+Without `uip login`, the registry shows OOTB nodes only. For sibling projects in the open solution, list them with:
 
 ```bash
 uip solution resources list --kind Process --output json   # solutionResources = in-solution projects; availableResources = deployed processes per folder
@@ -18,10 +18,6 @@ Prefer in-solution resources over mocks. `registry list|search|get --local` need
 
 Run `registry get` for OOTB actions during discovery. Defer connector `registry get --connection-id` and resource resolution (in-solution or published) to Phase 2.
 <!--skill-flavor:planning-arch-discovery-record:end-->
-
-<!--skill-flavor:planning-arch-connector-nodes:start-->
-Connector nodes are Integration Service nodes, not built-in. They appear after `uip maestro flow registry pull` (the host injects your session; there is no login step). Use [connector](plugins/connector/planning.md) when a pre-built connector exists. In Phase 1 record `connector: <service-name>` and intended operation; Phase 2 resolves exact type, connection, and fields.
-<!--skill-flavor:planning-arch-connector-nodes:end-->
 
 <!--skill-flavor:planning-arch-output-location:start-->
 Generate `<SolutionName>.uipath.flow.arch.plan.md` inside the Flow project directory (`/solution/<ProjectName>/`) — there is no solution folder on disk in Studio Web — or under `/tmp` if the user does not want the plan in the project. Use `$SOLUTION` (or `CurrentSolution.SolutionName`) for the solution name; the plan covers the entire solution.

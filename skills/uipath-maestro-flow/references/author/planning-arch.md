@@ -137,9 +137,7 @@ Every flow has exactly one trigger, first in topology. IS connector triggers rep
 
 ### Connector Nodes
 
-<!--skill-flavor:planning-arch-connector-nodes:start-->
 Connector nodes are Integration Service nodes, not built-in. They appear after `uip login` and `uip maestro flow registry pull`. Use [connector](plugins/connector/planning.md) when a pre-built connector exists. In Phase 1 record `connector: <service-name>` and intended operation; Phase 2 resolves exact type, connection, and fields.
-<!--skill-flavor:planning-arch-connector-nodes:end-->
 
 ### Agent Nodes
 

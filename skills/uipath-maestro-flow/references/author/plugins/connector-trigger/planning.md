@@ -23,11 +23,9 @@ Connector trigger nodes start a flow when an external event fires (e.g., "email 
 
 ### Prerequisites
 
-<!--skill-flavor:ct-prerequisites:start-->
 - `uip login` required — trigger nodes only appear in the registry after authentication
 - A healthy IS connection must exist for the connector. Before concluding none exists: derive the connector key from a `registry search` node type (never inferred from the service's brand name — the registry key is frequently prefixed or qualified differently), list with `uip is connections list "<connector-key>" --all-folders --output json`, and retry once with `--refresh`. An empty result from an unverified key or without `--all-folders` is a false negative, not "no connection." Only when absence is confirmed must the user create one before proceeding.
 - `uip maestro flow registry pull` must be run to cache trigger node types locally
-<!--skill-flavor:ct-prerequisites:end-->
 
 ### When NOT to Use
 
@@ -68,14 +66,12 @@ uip maestro flow registry search outlook trigger --output json
 
 Confirm `tags` includes both `"connector"` and `"trigger"` in the results.
 
-<!--skill-flavor:ct-repull:start-->
 If the trigger doesn't appear, re-pull the registry (triggers require authentication):
 
 ```bash
 uip login status --output json
 uip maestro flow registry pull --force
 ```
-<!--skill-flavor:ct-repull:end-->
 
 ## Ports
 

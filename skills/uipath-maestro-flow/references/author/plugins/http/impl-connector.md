@@ -8,12 +8,12 @@ Before starting, read [impl.md](impl.md) for the node type, registry validation,
 
 ## Step 1 — Add the node
 
-<!--skill-flavor:http-connector-node-add:start-->
 ```bash
+<!--skill-flavor:http-connector-node-add:start-->
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+<!--skill-flavor:http-connector-node-add:end-->
   --label "<HTTP node label>" --output json
 ```
-<!--skill-flavor:http-connector-node-add:end-->
 
 > **Inside a loop body?** Add `--parent <LOOP_NODE_ID>` to set `parentId`. Without it, the node runs outside the loop context and outputs are null. See [loop/impl.md](../loop/impl.md).
 
@@ -49,9 +49,10 @@ Record the chosen connection's `Id` and `FolderKey` — Step 3 needs both.
 > - **If the target connector is listed in that skill's `vendor-docs-registry.json`:** you MUST follow its **Step 0 (Ground Against the Vendor's API Docs)** — read the `docsUrl` + `notes` and confirm the exact endpoint with the `http-request` probe before running `node configure`. Pass the endpoint path verbatim: vendor method names can contain literal dots (Slack ``chat.postMessage`) — the dot is part of the path segment.
 > - **If the connector is NOT listed:** the registry-grounding step does not apply — resolve missing values via the `http-request` probe / vendor docs as usual.
 
-<!--skill-flavor:http-connector-configure:start-->
 ```bash
+<!--skill-flavor:http-connector-configure:start-->
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
+<!--skill-flavor:http-connector-configure:end-->
   --detail '{
     "authentication": "connector",
     "targetConnector": "<target-connector-key>",
@@ -62,15 +63,14 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
     "query": {"param1": "value1"}
   }' --output json
 ```
-<!--skill-flavor:http-connector-configure:end-->
 
 > **Connector mode supports `application/json` request and response bodies only.**
 
 The CLI:
 
-<!--skill-flavor:http-connector-cli-effects:start-->
 - Builds the full `inputs.detail` (connector, connectionId, bodyParameters, essentialConfiguration)
 - Auto-fills both `bodyParameters.path` and `bodyParameters.url` from the single `url` value you pass
+<!--skill-flavor:http-connector-cli-effects:start-->
 - Generates `bindings_v2.json`
 - Creates a connection resource file under `resources/solution_folder/connection/`
 <!--skill-flavor:http-connector-cli-effects:end-->

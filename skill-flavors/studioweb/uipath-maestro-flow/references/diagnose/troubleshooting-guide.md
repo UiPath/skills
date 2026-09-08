@@ -1,7 +1,3 @@
-<!--skill-flavor:troubleshooting-intro:start-->
-Diagnostic workflow for failed debug runs and deployed process runs. Authentication is injected by the host on every `uip` call — never run `uip login` or `uip login status`; a 401/403 means the signed-in user lacks rights on the tenant or folder — report it, do not retry.
-<!--skill-flavor:troubleshooting-intro:end-->
-
 <!--skill-flavor:priority-step-0-item:start-->
 0. The failed `uip flow debug` output you already have (status line, `Run logs:`, `Execution trace:` — no extra call)
 <!--skill-flavor:priority-step-0-item:end-->
@@ -34,14 +30,16 @@ sed -n '/^Execution trace:/,$p' /tmp/flow-debug.txt | tail -20                  
 ### Match the fault marker
 
 Match the marker found in `Run logs:` to a known cause:
+<!--skill-flavor:step-0-body:end-->
 
+<!--skill-flavor:step-0-body-2:start-->
 | Fault marker | Cause and fix |
 |---|---|
 | `AGENT_STARTUP.INPUT_VALIDATION_ERROR` | Declared `type` does not match the bound node's real output shape — the runtime strict-validates agent inputs. The detail names the failing key and the real type (for example `input_type=list`). See [author/plugins/inline-agent/impl.md — Anti-patterns](../author/plugins/inline-agent/impl.md#anti-patterns). |
 | `Folder does not exist or the user does not have access to the folder` | Missing top-level `bindings[]` entries on a resource node — see [failure-modes.md — Missing `bindings[]`](failure-modes.md#missing-bindings-on-resource-node). |
 
 No match, or the log line is not enough → `uip maestro flow job traces <TRACE_ID> --output json` returns the full execution timeline (only with a real Trace ID, `timeoutSeconds: 120` — an unknown key hangs until the tool timeout). For a deployed process run, continue with Step 1.
-<!--skill-flavor:step-0-body:end-->
+<!--skill-flavor:step-0-body-2:end-->
 
 <!--skill-flavor:step-1-body:start-->
 The `Trace ID` printed by `uip flow debug` is the **job key**, not an instance id. Resolve the instance and folder from it (real key only, `timeoutSeconds: 120`):
@@ -57,14 +55,10 @@ For a deployed process run, use the job key from `process run` / `job list` the 
 
 <!--skill-flavor:step-5-body:start-->
 Traces are verbose but contain the full execution timeline. Use them only when incidents and variables are insufficient (for a `uip flow debug` run, the job key is the printed Trace ID; call with `timeoutSeconds: 120` and only with a real key):
-
-```bash
-uip maestro flow job traces <JOB_KEY> --output json
-```
 <!--skill-flavor:step-5-body:end-->
 
 <!--skill-flavor:instance-command-reference:start-->
-Inspect and manage Flow process instances. Authentication is injected by the host. All subcommands require `--folder-key <FOLDER_KEY>` (`-f` shorthand) — `instance list` rejects the call without it.
+Inspect and manage Flow process instances. **Requires `uip login`.** All subcommands require `--folder-key <FOLDER_KEY>` (`-f` shorthand) — `instance list` rejects the call without it.
 
 ```bash
 uip maestro flow instance list -f <FOLDER_KEY> --output json                                        # list instances in a folder
@@ -77,7 +71,3 @@ uip maestro flow instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json     
 uip maestro flow instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json                       # get current execution cursor positions
 ```
 <!--skill-flavor:instance-command-reference:end-->
-
-<!--skill-flavor:incident-reference-intro:start-->
-Get incident details for failed flows. Authentication is injected by the host.
-<!--skill-flavor:incident-reference-intro:end-->

@@ -62,7 +62,6 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## Discovery
 
-<!--skill-flavor:agent-discovery:start-->
 **Published (tenant registry):**
 
 ```bash
@@ -70,6 +69,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
+<!--skill-flavor:agent-discovery:start-->
 Requires `uip login`. Returns published tenant resources only — for in-solution sibling projects, use the `--local` discovery below.
 
 **In-solution (local, no login required):**

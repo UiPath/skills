@@ -45,13 +45,13 @@ Run all commands below with `uip maestro flow ...`; if detection returns < 0.3.4
 
 Run programmatically parsed commands with `--output json`:
 
-<!--skill-flavor:json-output-examples:start-->
 ```bash
+<!--skill-flavor:json-output-examples:start-->
 uip maestro flow validate <ProjectName>.flow --output json
 uip maestro flow registry list --output json
 uip maestro flow instance incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
-```
 <!--skill-flavor:json-output-examples:end-->
+```
 
 Do not use `--format json`; it does not exist and produces `error: unknown option '--format'` with exit code 3 on every `uip` subcommand. Ignore the benign `--localstorage-file` warning when it appears.
 
@@ -122,7 +122,6 @@ Every `uip` command returns one of these shapes:
 Always check `Result` first. On failure, use `Message` and `Instructions` for diagnostics. A failure envelope may still carry `Data` — `flow debug` returns the full run payload on a fault.
 <!--skill-flavor:response-shape-debug-note:end-->
 
-<!--skill-flavor:login-state-section:start-->
 ## 5. Login state
 
 | Capability | Login required? |
@@ -145,7 +144,6 @@ Log in interactively by running:
 uip login
 uip login --authority https://alpha.uipath.com    # non-production environments
 ```
-<!--skill-flavor:login-state-section:end-->
 
 ## 6. `--folder-key` requirement
 

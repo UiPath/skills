@@ -1,8 +1,6 @@
 # Run — Execute a Flow
 
-<!--skill-flavor:run-intro:start-->
 Execute a flow on demand and monitor progress. Three modes: **debug** (controlled re-run with full Studio Web visibility), **process run** (trigger a deployed process), **job inspection** (status and traces). All require `uip login`.
-<!--skill-flavor:run-intro:end-->
 
 ## Pre-flight
 
@@ -34,16 +32,20 @@ The argument is the **project directory path** (the folder containing `project.u
 > 5. Re-run debug only after you changed the flow.
 
 > **Do not pass `--folder-path` or `--folder-key` to `flow debug`.** Debug provisions into your personal workspace. A shared or team folder fails with `HTTP 500` at `Stage: prepare-custom-debug` and no instance starts. Shared resources the flow uses (indexes, buckets, connections) reach the run through `uip solution resources refresh`, not through the debug folder. Use the flag only when your account has no personal workspace or the flow needs folder-scoped assets or queues that exist only in that folder.
+<!--skill-flavor:debug-run-body:end-->
 
 Pass input arguments when the flow has input parameters:
 
 ```bash
+<!--skill-flavor:debug-run-body-2:start-->
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
+<!--skill-flavor:debug-run-body-2:end-->
 ```
 
 Build those inputs from real records, never from invented values — an invented key matches no record, every lookup returns `[]`, and the run faults on empty data. Read the entity `Id` from `uip df entities list --output json`, then a live record from `uip df records list <ENTITY_ID> --output json`.
 
+<!--skill-flavor:debug-run-body-3:start-->
 Bind local files to file-typed input variables with `--attachment <variableId>=<localPath>` (repeatable). `<variableId>` (left of `=`) must match the `id` of a `variables.globals[]` entry with `direction:"in"` and `type:"file"`:
 
 ```bash
@@ -56,7 +58,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding).
 
 > **Reading the bound file.** At runtime a `file` variable is an object — a Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../shared/variables-and-expressions.md#file-input).
-<!--skill-flavor:debug-run-body:end-->
+<!--skill-flavor:debug-run-body-3:end-->
 
 ### Reporting debug runs to the user
 
@@ -98,7 +100,6 @@ uip maestro flow process list --output json                           # discover
 uip maestro flow process run <process-key> <folder-key> --output json # trigger a run
 ```
 
-<!--skill-flavor:process-run-inputs-attachment:start-->
 Pass input arguments and/or bind file-typed input variables:
 
 ```bash
@@ -108,6 +109,7 @@ uip maestro flow process run <process-key> <folder-key> --output json \
   --attachment <variableId>=<localPath>
 ```
 
+<!--skill-flavor:process-run-inputs-attachment:start-->
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
 <!--skill-flavor:process-run-inputs-attachment:end-->
 
@@ -115,11 +117,11 @@ Run `uip maestro flow process --help` for all subcommands and options.
 
 ## Job inspection — status and traces
 
-<!--skill-flavor:job-inspection-commands:start-->
 ```bash
 uip maestro flow job status <job-key> --output json   # check status of a running or completed job
 uip maestro flow job traces <job-key> --output json   # stream the verbose execution timeline
 ```
+<!--skill-flavor:job-inspection-commands:start-->
 <!--skill-flavor:job-inspection-commands:end-->
 
 > **Traces are verbose** and contain the full execution timeline. Use them only when needed for diagnosis — start from incidents first via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
@@ -131,8 +133,8 @@ uip maestro flow job traces <job-key> --output json   # stream the verbose execu
 
 ## Anti-patterns
 
-<!--skill-flavor:run-antipatterns:start-->
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
+<!--skill-flavor:run-antipatterns:start-->
 - **Never re-run a completed `flow debug` to re-read or reshape its output.** Each run re-uploads the solution and executes the flow again for real. Extract the report fields from the payload the completed run already returned — see [Reporting debug runs](#reporting-debug-runs-to-the-user). For a faulted run, read the cause first — see [When the run faults](#when-the-run-faults).
 - **Never skip `solution resources refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
 <!--skill-flavor:run-antipatterns:end-->

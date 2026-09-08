@@ -1,8 +1,6 @@
 # Troubleshooting Failed Flows
 
-<!--skill-flavor:troubleshooting-intro:start-->
 Diagnostic workflow for failed debug runs and deployed process runs. All commands require `uip login`.
-<!--skill-flavor:troubleshooting-intro:end-->
 
 > **`--folder-key` is required.** All `instance` and `incident get` commands require `--folder-key <FOLDER_KEY>`. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
@@ -69,14 +67,16 @@ The CLI applies `--output-filter` only when a command succeeds; a faulted run pr
 ### Match the fault code
 
 Match `dependentFaultCode`, or the failure marker on a run that never started, to a known cause:
+<!--skill-flavor:step-0-body:end-->
 
+<!--skill-flavor:step-0-body-2:start-->
 | Fault marker | Cause and fix |
 |---|---|
 | `dependentFaultCode: AGENT_STARTUP.INPUT_VALIDATION_ERROR` | Declared `type` does not match the bound node's real output shape — the runtime strict-validates agent inputs. `detail` names the failing key and the real type (for example `input_type=list`). See [author/plugins/inline-agent/impl.md — Anti-patterns](../author/plugins/inline-agent/impl.md#anti-patterns). |
 | `Stage: prepare-custom-debug` with `HttpStatus: 500`, and no `Data.incidents` | Debug was pointed at a shared folder with `--folder-path` or `--folder-key`. The server fails to prepare the run and no instance starts, so there is no incident to read. Re-run `flow debug` without the flag. See [operate/run.md — Debug](../operate/run.md#debug--controlled-end-to-end-run). |
 
 No match, or `detail` is not enough → `uip maestro flow debug-instance incidents <INSTANCE_ID> --output json` returns the full backend payload (incidentId, errorDetails, AI summary). For a deployed process run, continue with Step 1.
-<!--skill-flavor:step-0-body:end-->
+<!--skill-flavor:step-0-body-2:end-->
 
 ## Step 1 — Get the instance ID
 
@@ -145,11 +145,11 @@ uip maestro flow instance cursors <INSTANCE_ID> --folder-key <FOLDER_KEY> --outp
 
 <!--skill-flavor:step-5-body:start-->
 Traces are verbose but contain the full execution timeline. Use them only when incidents and variables are insufficient:
+<!--skill-flavor:step-5-body:end-->
 
 ```bash
 uip maestro flow job traces <JOB_KEY> --output json
 ```
-<!--skill-flavor:step-5-body:end-->
 
 > **Always use CLI commands for troubleshooting — never call the underlying APIs directly.**
 
@@ -176,9 +176,7 @@ uip maestro flow instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json   
 
 ### uip maestro flow incident
 
-<!--skill-flavor:incident-reference-intro:start-->
 Get incident details for failed flows. **Requires `uip login`.**
-<!--skill-flavor:incident-reference-intro:end-->
 
 ```bash
 uip maestro flow incident summary --output json                                    # get incident summaries across all processes

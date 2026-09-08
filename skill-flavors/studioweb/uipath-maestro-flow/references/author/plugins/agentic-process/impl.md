@@ -1,14 +1,4 @@
 <!--skill-flavor:agentic-process-impl-discovery:start-->
-### Published (tenant registry)
-
-```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.agentic-process" --output json
-```
-
-### In-solution (sibling projects)
-
-```bash
 uip solution resources list --kind Process --output json   # solutionResources = in-solution projects (key, name, kind, type)
 uip solution resources get <key> --output json
 ```
@@ -17,7 +7,6 @@ uip solution resources get <key> --output json
 <!--skill-flavor:agentic-process-impl-discovery:end-->
 
 <!--skill-flavor:agentic-process-impl-registry-get:start-->
-```bash
 # Published — the registry serves manifests for published resources only
 uip maestro flow registry get "uipath.core.agentic-process.{key}" --output json
 ```
@@ -26,8 +15,5 @@ For an unpublished in-solution sibling, inspect it with `uip solution resources 
 <!--skill-flavor:agentic-process-impl-registry-get:end-->
 
 <!--skill-flavor:agentic-process-impl-debug-table:start-->
-| Error | Cause | Fix |
-| --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | Run `uip maestro flow registry pull --force` (auth is host-provided; a 401/403 means missing rights); for in-solution processes use `uip solution resources list --kind Process` |
-| Process execution failed | Underlying orchestration errored | Check `$vars.{nodeId}.error` for details |
+| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution processes use `uip solution resources list --kind Process` |
 <!--skill-flavor:agentic-process-impl-debug-table:end-->

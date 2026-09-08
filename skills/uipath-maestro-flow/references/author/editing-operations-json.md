@@ -37,20 +37,20 @@ Before editing, complete all applicable items:
 
 ## Edit Tooling
 
-<!--skill-flavor:json-edit-tooling-table:start-->
 | Operation | Mechanic | Rule |
 |---|---|---|
 | Surgical leaf string/number/bool | `Edit` | Use one unique substring; re-`Read` after rewrites because matching is whitespace-sensitive. |
 | New node, edge, definition, or variable | `Read` whole file → reconstruct in chat → `Write` whole file | Preserve field order; avoid dropping fields on files >1000 lines. |
+<!--skill-flavor:json-edit-tooling-table:start-->
 | Nested replacement, field insertion, idempotent splice | `Edit` / `Write`; `python3` heredoc only after explicit user approval | Prefer direct authoring; scripts bypass safeguards and require diff review. |
-| One-shot extraction/single-field CLI JSON mutation | `jq` | Use only when `--output-filter` cannot express it. |
 <!--skill-flavor:json-edit-tooling-table:end-->
+| One-shot extraction/single-field CLI JSON mutation | `jq` | Use only when `--output-filter` cannot express it. |
 
 The CLI has no `node update`; directly author node `inputs`, definition swaps, and array splices. For several same-file `Edit`s, anchor each on its target array's opening key, never top-level key order; beware recurring `"nodes": [` / `"edges": [` inside `definitions[]` and `subflows.<id>`. See [editing-operations.md — Parallel same-file Edits](editing-operations.md#parallel-same-file-edits).
 
-<!--skill-flavor:json-scripted-rewrite:start-->
 ### Scripted structural rewrite
 
+<!--skill-flavor:json-scripted-rewrite:start-->
 Use only after explicit approval:
 
 ```bash
@@ -74,14 +74,16 @@ Preserve canonical 2-space indent. `flow format` normalizes layout but does not 
 
 Run the CLI's JMESPath filter for read-only extraction; expressions start at the `Data` envelope and omit `Data.`. See [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
 
-<!--skill-flavor:json-output-filter-examples:start-->
 ```bash
+<!--skill-flavor:json-output-filter-examples:start-->
 uip solution upload --output json --output-filter "DesignerUrl"
 uip maestro flow registry get <node-type> --output json --output-filter "Node"
+<!--skill-flavor:json-output-filter-examples:end-->
 ```
 
+<!--skill-flavor:json-output-filter-examples-2:start-->
 Use `jq` / `python3` only when JMESPath cannot express multi-step joins, format conversion, or conditional output computed from multiple fields.
-<!--skill-flavor:json-output-filter-examples:end-->
+<!--skill-flavor:json-output-filter-examples-2:end-->
 
 ## Primitive Operations
 

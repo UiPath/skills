@@ -375,11 +375,11 @@ Two wiring constraints unique to these nodes:
 
 ## Validate
 
-<!--skill-flavor:df-validate-command:start-->
 ```bash
+<!--skill-flavor:df-validate-command:start-->
 uip maestro flow validate <ProjectName>.flow --output json
-```
 <!--skill-flavor:df-validate-command:end-->
+```
 
 The validator enforces the "green but inert" cases it can see structurally:
 
@@ -406,10 +406,11 @@ Use `uip df entities get` and `uip df records list` to close that gap before shi
 
 ## Debug
 
-<!--skill-flavor:df-debug-table:start-->
 | Symptom | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:df-debug-table:start-->
 | `Node not found: core.datafabric.*` on `registry get` | Tenant flag off, or CLI predates the node | `uip tools update`, then `uip maestro flow registry pull --force`; then confirm that node's flag with the admin (see the table above) |
+<!--skill-flavor:df-debug-table:end-->
 | Node validates clean, runs green, nothing written | Most often a **selector** problem, not a binding one: `readEntityNodeId` names a missing node or a multi-record read, the read's filters do not compile, or the `fromRead` read matched more than one record at runtime | Check the Read node's `id` matches exactly and its `resultMode` is `single`; confirm the filter identifies exactly one record with `uip df records list` |
 | Write runs green, row unchanged | The body was rejected and the rejection swallowed — a federated entity, a system or attachment column, a choice-set label instead of its numeric id, an uncoercible value, or a null into a non-nullable column | Re-check the entity is native and each column against `uip df entities get` |
 | Downstream `$vars.<id>.output` is `undefined` | `variables.nodes[]` missing, or the read matched nothing | Run `uip maestro flow format`; if it persists, verify the filter matches a real record |
@@ -418,7 +419,6 @@ Use `uip df entities get` and `uip df records list` to close that gap before shi
 | `404 Entity <name> does not exist` | Folder-scoped entity queried without folder qualification, or a related-field join | Set `_folderKey` and its bindings. Joins across a folder-scoped entity are not supported — the join request carries a bare name with no folder qualifier |
 | Read returns every record | Filters compiled away — a blank expression row, or an `in` row in `single` mode | Check each row against [Filters](#filters) |
 | Console warning `… has no name/folderKey binding — serializing a non-portable literal` | Folder-scoped entity missing a `bindings[]` row | Add both rows — see [Folder-scoped entities and bindings](#folder-scoped-entities-and-bindings) |
-<!--skill-flavor:df-debug-table:end-->
 
 ## What not to do
 

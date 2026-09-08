@@ -46,12 +46,12 @@ uip maestro flow eval remove "<id_or_name>" --set "<set_name>" --path <flow_proj
 
 `--inputs` must contain only keys matching the chosen entry point's declared input variables. If a variable is missing, add it or change the input JSON. To add a string input named `name`, run:
 
-<!--skill-flavor:sw-eval-variable-add-example:start-->
 ```bash
+<!--skill-flavor:sw-eval-variable-add-example:start-->
 uip maestro flow variable add ./MySolution/MyFlow/MyFlow.flow name \
+<!--skill-flavor:sw-eval-variable-add-example:end-->
   --direction in --type string --output json
 ```
-<!--skill-flavor:sw-eval-variable-add-example:end-->
 
 Evaluator behavior:
 
@@ -122,11 +122,11 @@ Keep `version: "1.0"`; it identifies the new eval format. <!-- version-check-ski
 
 The data point's `inputs` must match the chosen entry point's input schema. Mismatches produce errors such as `Input "name" is not declared as an input variable in the flow`. Before adding data points, inspect `<flow>.flow` for `variables` entries with `direction: "in"`, or run:
 
-<!--skill-flavor:sw-eval-variable-list-example:start-->
 ```bash
+<!--skill-flavor:sw-eval-variable-list-example:start-->
 uip maestro flow variable list <flow_file> --output json
-```
 <!--skill-flavor:sw-eval-variable-list-example:end-->
+```
 
 ## Simulations on Data Points
 
@@ -165,9 +165,7 @@ uip maestro flow eval simulation remove <component-id> \
 | `Llm` | Plausible, non-deterministic output | `--simulation-instructions` (output schema auto-resolved) |
 | `Static` | Identical output every run | `--mock-value <json>` |
 
-<!--skill-flavor:sw-eval-schema-resolution-note:start-->
 The output schema is always auto-resolved — for both top-level and child (`--parent`) simulations. Top-level reads the `.flow` node outputs; child simulations resolve from the `.flow` edges (inline agents), `agent.json` resources (same-solution agents), or the platform API (published agents, requires `uip login`).
-<!--skill-flavor:sw-eval-schema-resolution-note:end-->
 
 Simulations are stored inline in the data point's `simulations` array. Adding one for an existing `<component-id>` and data point replaces the existing simulation.
 
@@ -220,9 +218,7 @@ When `--parent` is used, `--component-type` defaults to `Node` (the convention f
 The output schema is auto-resolved for child simulations on all agent types:
 - **Inline canvas agents** (`uipath.agent.*`): resolved from the child tool node's outputs in the `.flow` file.
 - **Same-solution agents** (with `inputs.source`): resolved from the inline agent's `agent.json` resources.
-<!--skill-flavor:sw-eval-published-agent-schema:start-->
 - **Published agents** (`uipath.core.agent.*`): resolved via the platform API (`simulatableComponents`). Requires `uip login`.
-<!--skill-flavor:sw-eval-published-agent-schema:end-->
 
 For `Static` strategy, the CLI also validates that `--mock-value` keys match the resolved schema properties, catching shape mismatches before the eval run.
 

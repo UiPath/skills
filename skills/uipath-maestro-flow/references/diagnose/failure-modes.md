@@ -6,9 +6,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 ## Index
 
-<!--skill-flavor:project-creation-recovery-index:start-->
 | Pattern | Symptom | Cause |
 |---|---|---|
+<!--skill-flavor:project-creation-recovery-index:start-->
 | [`=js:` prefix missing](#js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
 | [`variables.nodes[]` missing](#variablesnodes-missing--varsxoutput-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
 | [Misshapen nodes in Studio Web](#misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
@@ -16,9 +16,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [Run reports `Completed`, work not done](#run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
+<!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (the missing-`=js:` validator + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
-<!--skill-flavor:project-creation-recovery-index:end-->
 
 ---
 
@@ -108,19 +108,23 @@ One entry per declared output (trigger nodes: `output` only; action nodes: `outp
 
 <!--skill-flavor:misshapen-nodes-body:start-->
 After publish or debug upload, Studio Web renders nodes at the wrong dimensions for their shape — a square/circle node stretched into an oblong (e.g., 200×80), or an inline agent squashed to a 96×96 square instead of its 288×96 rectangle. Layout looks visually broken even though the flow runs correctly.
+<!--skill-flavor:misshapen-nodes-body:end-->
 
 ### Cause
 
+<!--skill-flavor:misshapen-nodes-body-2:start-->
 `uip maestro flow format` was not run before publishing or debugging. Hand-written or stale `layout` data with dimensions that don't match each node's shape remains in the `.flow` file and Studio Web renders it as-is.
+<!--skill-flavor:misshapen-nodes-body-2:end-->
 
 ### Fix
 
+<!--skill-flavor:misshapen-nodes-body-3:start-->
 Run format before any publish or debug operation:
 
 ```bash
 uip maestro flow format <ProjectName>.flow --output json
 ```
-<!--skill-flavor:misshapen-nodes-body:end-->
+<!--skill-flavor:misshapen-nodes-body-3:end-->
 
 Format:
 

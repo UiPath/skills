@@ -1,7 +1,3 @@
-<!--skill-flavor:run-intro:start-->
-Execute a flow on demand and monitor progress. Three modes: **debug** (controlled run of the saved open project through the host), **process run** (trigger a deployed process), **job inspection** (status and traces). Authentication is injected by the host on every `uip` call — never run `uip login` or `uip login status`; a 401/403 means the signed-in user lacks rights on the tenant or folder — report it, do not retry.
-<!--skill-flavor:run-intro:end-->
-
 <!--skill-flavor:run-preflight-steps:start-->
 1. **Project saved.** `uip flow debug` runs the project as it is persisted: files written under `/solution/<ProjectName>/` are persisted; unsaved canvas edits the user made in the designer are not — ask them to save first.
 2. **Validated.** Run `uip maestro flow validate /solution/<ProjectName>/new.flow --output json` first; debug is not a validation step.
@@ -25,18 +21,16 @@ uip flow debug "<ProjectName>"     # another project of the open solution, by na
 > 4. Re-run debug only after you changed the flow.
 
 > **Only `--inputs` is honoured.** The host accepts the project name and `-i` / `--inputs '<inline JSON>'`; `--folder-path`, `--folder-key`, `--attachment`, `--output`, `--timeout` and `@file` inputs are ignored or rejected. Debug runs in the user's own workspace — there is no folder to choose.
+<!--skill-flavor:debug-run-body:end-->
 
-Pass input arguments when the flow has input parameters:
-
-```bash
+<!--skill-flavor:debug-run-body-2:start-->
 uip flow debug --inputs '{"numberA": 5, "numberB": 7}'
 uip flow debug "<ProjectName>" --inputs '{"numberA": 5, "numberB": 7}'
-```
+<!--skill-flavor:debug-run-body-2:end-->
 
-Build those inputs from real records, never from invented values — an invented key matches no record, every lookup returns `[]`, and the run faults on empty data. Read the entity `Id` from `uip df entities list --output json`, then a live record from `uip df records list <ENTITY_ID> --output json`.
-
+<!--skill-flavor:debug-run-body-3:start-->
 **File-typed inputs cannot be bound from `uip flow debug` in Studio Web** — `--attachment` is ignored without warning. Tell the user, and test file inputs through a deployed process instead (see [Process run](#process-run--trigger-a-deployed-process)).
-<!--skill-flavor:debug-run-body:end-->
+<!--skill-flavor:debug-run-body-3:end-->
 
 <!--skill-flavor:debug-reporting-body:start-->
 `uip flow debug` prints plain text: line 1 is the **status** (`Successful`, `Faulted`, `Failed`, `TimedOut after 300s`), then `Trace ID: <id>` when the host determined one, then `Run logs:` and `Execution trace:`. **Always show the status and the Trace ID as the first two lines of the summary:**
@@ -68,29 +62,15 @@ For flows already deployed to Orchestrator:
 <!--skill-flavor:ship-orchestrator-path-pointer:end-->
 
 <!--skill-flavor:process-run-inputs-attachment:start-->
-Pass input arguments and/or bind file-typed input variables:
-
-```bash
-# Replace <variableId> and <localPath> placeholders below with your own values.
-uip maestro flow process run <process-key> <folder-key> --output json \
-  --inputs '{"numberA": 5, "numberB": 7}' \
-  --attachment <variableId>=<localPath>
-```
-
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`). `<localPath>` must be a file inside the iframe filesystem (`/solution/...` or `/tmp/...`); uploading it from the browser bundle is unverified — if the command rejects the attachment, report it and ask the user to start the process from Orchestrator.
 <!--skill-flavor:process-run-inputs-attachment:end-->
 
 <!--skill-flavor:job-inspection-commands:start-->
-```bash
-uip maestro flow job status <job-key> --output json   # check status of a running or completed job
-uip maestro flow job traces <job-key> --output json   # stream the verbose execution timeline
-```
 
 The `Trace ID` printed by `uip flow debug` is the job key. Only call `job status` / `job traces` with a real key — `job traces` on an unknown key hangs until the tool timeout — and give the shell call `timeoutSeconds: 120`.
 <!--skill-flavor:job-inspection-commands:end-->
 
 <!--skill-flavor:run-antipatterns:start-->
-- **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
 - **Never re-run a completed `flow debug` to re-read or reshape its output.** Each run executes the flow again for real (nothing is uploaded). Extract the report fields from the text the completed run already returned — see [Reporting debug runs](#reporting-debug-runs-to-the-user). For a faulted run, read the cause first — see [When the run faults](#when-the-run-faults).
 - **Never run `uip solution resources refresh` in Studio Web.** It is unavailable (needs a local `.uipx`); the open solution's resources are managed live with `uip solution resources list|add|edit` or the designer's Resources panel.
 <!--skill-flavor:run-antipatterns:end-->

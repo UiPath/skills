@@ -1,7 +1,3 @@
-<!--skill-flavor:author-intro-scope:start-->
-Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens in the project filesystem under `/solution`; authentication is provided by the Studio Web host, so there is no login step anywhere in these journeys. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
-<!--skill-flavor:author-intro-scope:end-->
-
 <!--skill-flavor:project-creation-scope:start-->
 - Create a new Flow project in the open solution with `uip flow init <ProjectName>` (alias `uip maestro flow init`) — the host creates the project entity and seeds `/solution/<ProjectName>/new.flow`; never try to create a second solution (the host refuses it)
 <!--skill-flavor:project-creation-scope:end-->

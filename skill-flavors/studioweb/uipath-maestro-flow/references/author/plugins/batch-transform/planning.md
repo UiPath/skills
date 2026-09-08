@@ -1,8 +1,3 @@
 <!--skill-flavor:bt-key-inputs-table:start-->
-| Input | Required | Type | Description |
-| --- | --- | --- | --- |
 | `attachment` | Yes | full Flow Attachment | The runtime engine wants the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. Source it as a flow-level `in` variable of `type: "file"` bound to the trigger via `triggerNodeId: "<triggerId>"`. In Studio Web `uip flow debug` cannot upload a file for it (`--attachment` is ignored) — test with a sample file from the designer's Debug panel or an upstream node that yields the attachment. Reference it on the Batch Transform node as `=js:$vars.<triggerId>.output.<fileVarId>` — that path resolves to the whole Attachment object at runtime. The OOTB `inputDefinition.attachment` declares `type: "string"` because Studio Web's file-picker form serializes the object into that string slot at save time; the engine deserializes it back. **Never** wire a bare GUID, URL, byte stream, file path, or `.ID`/`.FullName` subfield. |
-| `prompt` | Yes | string | The instruction describing what each output column should contain. Can reference column names from the source via natural language ("summarize the `Description` field"). |
-| `outputColumns` | Yes | array of `{ name, description }` | The columns to produce. Max 10. `name` is the column header; `description` tells the LLM what to put in it. |
-| `enableWebSearchGrounding` | No | boolean | When `true`, the LLM can issue web searches per row to ground its answer. Slower and costlier — use only when rows need external facts. Default `false`. |
 <!--skill-flavor:bt-key-inputs-table:end-->

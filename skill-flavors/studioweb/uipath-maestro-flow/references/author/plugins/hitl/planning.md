@@ -1,20 +1,5 @@
-<!--skill-flavor:hitl-quickform-availability:start-->
-Available: always — OOTB, no registry pull required.
-<!--skill-flavor:hitl-quickform-availability:end-->
-
-<!--skill-flavor:hitl-apptask-availability:start-->
-Available: tenant-specific resource — requires `uip maestro flow registry pull` (auth is host-provided).
-<!--skill-flavor:hitl-apptask-availability:end-->
-
 <!--skill-flavor:hitl-apptask-discovery:start-->
-**Published (tenant registry):**
-
-```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.human-task" --output json
-```
-
-**In-solution (apps in the open solution):**
+**In-solution (apps in the open solution, no login required):**
 
 ```bash
 uip solution resources list --kind App --output json

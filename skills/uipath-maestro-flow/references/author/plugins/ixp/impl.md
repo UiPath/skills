@@ -23,9 +23,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
 
-<!--skill-flavor:ixp-impl-discovery-note:start-->
 Requires `uip login`. Only models with a folder deployment on your tenant appear — publishing alone does not surface a model here (example `nodeType` in the response below).
-<!--skill-flavor:ixp-impl-discovery-note:end-->
 
 ### Response shape
 
@@ -68,13 +66,11 @@ None of those will find an extraction node. At most run one broader `registry se
 
 When the user is working with a Maestro flow and asks what IxP models are available — "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "list published extractors", "what extraction nodes are in the registry?" — answer with the same registry search **from the `uipath-maestro-flow` Skill**, not by switching to the `uipath-ixp` Skill (`uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro). Each `Data[]` entry corresponds to one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
 
-<!--skill-flavor:ixp-impl-listing-commands:start-->
 ```bash
 uip login status --output json                              # confirm auth — without login, tenant IxP nodes are hidden
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
-<!--skill-flavor:ixp-impl-listing-commands:end-->
 
 Parse `Data[].DisplayName`, `Data[].NodeType`, and `Data[].Version` and present them as a table. Example:
 
@@ -84,14 +80,12 @@ Parse `Data[].DisplayName`, `Data[].NodeType`, and `Data[].Version` and present 
 
 Rules for the listing path:
 
-<!--skill-flavor:ixp-impl-listing-rules:start-->
 - **Do NOT scaffold a solution, run `uip maestro flow init`, or write a `.flow` file.** Listing is read-only Q&A.
 - **Do NOT mock.** If `Data: []`, answer directly: no IxP models are published on this tenant. The `core.logic.mock` fallback is for build-time planning, not for listing-time Q&A.
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 - **Do NOT search by `"runtime"`, `"document extractor"`, `"extractor"`, or `"IXP"` (uppercase).** These return empty results or agent-tool variants — not extraction nodes. Use `"uipath.ixp"` (lowercase) only.
 - **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates *deployed flow process instances* (with `--folder-key`), not published models. Listing published IxP models always goes through `registry search "uipath.ixp"`.
 - **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist. The CLI returns `unknown command 'list-...'` and there is no fallback path to pursue. <!-- uip-check-skip -->
-<!--skill-flavor:ixp-impl-listing-rules:end-->
 
 ## Registry Validation
 
@@ -312,9 +306,7 @@ The `FieldName` values present in `ResultsDocument.Fields[]` depend on the train
 uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json
 ```
 
-<!--skill-flavor:ixp-impl-taxonomy-auth:start-->
 The positional is a project name from `uip ixp projects list`, and `--version` is required — get it from `uip ixp projects list-models "<project-name>"`. `Data.Node.inputDefaults.modelName` is frequently NOT a project name; passing it returns 404 `ProjectNotFoundError`, which is an ordinary outcome, not a problem to debug. Requires `uip login`; the command uses the user Bearer to call the same DU-App route that Studio Web's "Schema definition" panel uses.
-<!--skill-flavor:ixp-impl-taxonomy-auth:end-->
 
 Response shape:
 
@@ -348,9 +340,7 @@ Agent call sequence:
 3. `uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
 4. Author downstream consumers with `$vars.<id>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName from step 3>')?.Values?.[0]`.
 
-<!--skill-flavor:ixp-impl-taxonomy-fallback:start-->
 If the command fails (no matching project, login expired, deployment not yet published, transient failure), fall back to defensive `find`-by-`FieldName` patterns with assumed field names and surface the assumptions to the user under **Open Questions**. **One attempt** — a 404 or validation error will not resolve by reissuing the lookup under another spelling of the name, so do not iterate on name variants. Do NOT substitute a one-off extraction or IxP-product-UI inspection in the agent loop — `get-taxonomy` is the agent-loop path.
-<!--skill-flavor:ixp-impl-taxonomy-fallback:end-->
 
 ## Landing the node when you cannot fully configure it
 
@@ -395,7 +385,6 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 
 ## Debug
 
-<!--skill-flavor:ixp-impl-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry | Model not folder-deployed, or registry cache stale | Run `uip login` then `uip maestro flow registry pull --force` |
@@ -408,4 +397,3 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 | `uip maestro flow node configure` rejects with "not a connector type node" | Expected — IxP is not a connector. | Edit `inputs.*` in the `.flow` JSON directly. |
 | Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob missing/undefined | Copy `inputDefaults.model` verbatim into `inputs.model` (Authoring rule #1, [JSON Structure](#json-structure)). |
 | `flow validate` error `inputs.model must be an object with non-empty string modelName and folderKey` | `inputDefaults.model.modelName` was `null` and copied verbatim | Set `inputs.model.modelName` from `inputDefaults.model.modelDisplayName` (Authoring rule #1); if `folderKey` empty too, take flat `inputDefaults.folderKey`. |
-<!--skill-flavor:ixp-impl-debug-table:end-->

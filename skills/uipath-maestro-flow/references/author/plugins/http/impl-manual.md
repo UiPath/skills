@@ -10,12 +10,12 @@ Before starting, read [impl.md](impl.md) for the node type, registry validation,
 
 Run:
 
-<!--skill-flavor:http-manual-node-add:start-->
 ```bash
+<!--skill-flavor:http-manual-node-add:start-->
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+<!--skill-flavor:http-manual-node-add:end-->
   --label "<HTTP node label>" --output json
 ```
-<!--skill-flavor:http-manual-node-add:end-->
 
 > **Inside a loop body?** Add `--parent <LOOP_NODE_ID>` to set `parentId`. Without it, the node runs outside the loop context and outputs are null. See [loop/impl.md](../loop/impl.md).
 
@@ -27,9 +27,10 @@ Resolve missing values before composing `url`, `query`, or `body`, including IDs
 
 Run:
 
-<!--skill-flavor:http-manual-configure:start-->
 ```bash
+<!--skill-flavor:http-manual-configure:start-->
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
+<!--skill-flavor:http-manual-configure:end-->
   --detail '{
     "authentication": "manual",
     "method": "GET",
@@ -37,15 +38,15 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
     "query": {"param1": "value1"}
   }' --output json
 ```
-<!--skill-flavor:http-manual-configure:end-->
 
 The CLI builds `inputs.detail` with manual auth, `ImplicitConnection`, `bodyParameters`, and `essentialConfiguration`. It does **not** generate `bindings_v2.json` or a connection resource file; manual mode needs neither.
 
 Set `url` to a full URL (scheme + host + path). Pass controlled auth headers under `headers`; for example, run:
 
-<!--skill-flavor:http-manual-configure-headers:start-->
 ```bash
+<!--skill-flavor:http-manual-configure-headers:start-->
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
+<!--skill-flavor:http-manual-configure-headers:end-->
   --detail '{
     "authentication": "manual",
     "method": "GET",
@@ -53,7 +54,6 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
     "headers": {"Authorization": "=js:`Bearer ${$vars.apiToken}`"}
   }' --output json
 ```
-<!--skill-flavor:http-manual-configure-headers:end-->
 
 HTTP input fields do not resolve `{$vars.x}` brace-templates. Use `=js:` expressions for dynamic `url`, `headers`, `body`, or `query`, and pass each `=js:` string verbatim in `--detail`. See [impl.md — Dynamic values](impl.md#dynamic-values-in-url--headers--body--query).
 
