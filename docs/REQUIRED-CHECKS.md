@@ -189,6 +189,8 @@ Adding a context before the job has reported once blocks every open PR. Sequence
 
    The script builds the PUT body from the **live** ruleset and replaces only the required-status-check list. `name`, `enforcement`, `bypass_actors` and the `pull_request` parameters are carried through: GitHub's behaviour for fields omitted from `PUT /repos/{owner}/{repo}/rulesets/{id}` is undocumented, so sending a literal body risks clearing admin bypass on `main`, and hardcoding the review count silently reverts a change someone made in the Rules UI.
 
+<!-- Throwaway edit to verify all 24 contexts report on a post-merge PR. Revert. -->
+
 ## Checking for drift
 
 Every test in `tests/scripts/test_required_checks_contract.py` reads this doc and validates it against the workflows. **Nothing in CI compares it to the live ruleset**, and that direction fails in two ways no test can see:
