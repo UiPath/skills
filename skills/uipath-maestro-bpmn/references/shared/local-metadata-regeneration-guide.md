@@ -115,16 +115,43 @@ Do not derive metadata from stale package files first. Use existing generated fi
 
 If refresh fails, the atomic write contract leaves the prior four-file set
 unchanged. Fix the reported source or project precondition and run it again; do
-not patch generated JSON around the failure. The current contract requires
-exactly one project-root `.bpmn` file, one or more root processes, and at least
-one root manual start event overall. Each root manual start event must carry
-exactly one valid GUID `uipath:entryPointId`; refresh generates one
-`entry-points.json` entry for each such start event. Root `uipath:binding`
-nodes whose `resource` is not `Connection` are silently dropped, not reported —
-what refresh does reject is a connector `connection` that is not a
-`=bindings.<id>` reference, a referenced binding that is missing, a connection
-binding `default` that is not a GUID, and one `resourceKey` reused across
-different connectors or connections. If the installed CLI
+not patch generated JSON around the failure.
+
+Refresh checks the project preconditions before it reads any BPMN: the path
+must be a directory, it must hold exactly one root `.bpmn` file, and it must
+hold a `project.uiproj` that sets `ProjectType` to `ProcessOrchestration`. A
+missing one reports `Required file is missing: <path>`, and a wrong type
+reports `project.uiproj must set "ProjectType" to "ProcessOrchestration".` —
+neither is a defect in the BPMN, so do not go looking for one there.
+
+The source contract requires one or more root processes and at least one root
+manual start event overall. Each root manual start event must carry exactly one
+valid GUID `uipath:entryPointId`; refresh generates one `entry-points.json`
+entry for each such start event.
+
+Refresh rejects, with the message it reports:
+
+- A public `uipath:input`/`uipath:output` whose `type` is outside
+  `string`, `boolean`, `integer`, `number`, `array`, `object`, `json`:
+  `Unsupported process input/output type "<type>"`. The canvas float types
+  `double` and `float` are the common case — they are correct on a node-scoped
+  variable and rejected here. Either use `number`, or give the declaration an
+  inline JSON-schema CDATA body, which bypasses the type vocabulary entirely.
+- A root `uipath:output` whose `elementId` is not a root end event:
+  `Process output "<name>" must target a root end event.`
+- A repeated public name: `Duplicate process input/output "<name>".`
+- A declaration with neither a `type` nor an inline schema.
+- A connector `connection` that is not a `=bindings.<id>` reference, a
+  referenced binding that is missing, a connection binding `default` that is
+  not a GUID, and one `resourceKey` reused across different connectors or
+  connections.
+
+Root `uipath:binding` nodes are silently dropped, not reported, unless
+`resource` is `Connection` **and** `propertyAttribute` is `ConnectionId`. A
+connection binding with any other `propertyAttribute` therefore vanishes, and
+the failure surfaces one step away as `Activity "<name>" references missing
+Connection binding "<id>".` — read that message as "check the binding's
+attributes", not "check the activity". If the installed CLI
 does not expose this command, keep any stale generated files only as known
 comparison evidence and report package generation as blocked. A source-only
 project is not package-ready.

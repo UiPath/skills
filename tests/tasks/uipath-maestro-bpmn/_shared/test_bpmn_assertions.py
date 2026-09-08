@@ -115,3 +115,54 @@ class GeneratedProjectScaffoldTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_rejects_a_second_entry_point_by_default(self) -> None:
+        # refresh emits one entry per root manual start event; the default of 1
+        # is the single-start subset, not the whole contract.
+        self._write(
+            "entry-points.json",
+            {
+                "entryPoints": [
+                    {
+                        "filePath": "/content/Sample.bpmn#Event_start",
+                        "uniqueId": "11111111-1111-4111-8111-111111111111",
+                        "type": "ProcessOrchestration",
+                    },
+                    {
+                        "filePath": "/content/Sample.bpmn#Event_other",
+                        "uniqueId": "22222222-2222-4222-8222-222222222222",
+                        "type": "ProcessOrchestration",
+                    },
+                ]
+            },
+        )
+        with self.assertRaises(SystemExit):
+            self.assert_scaffold()
+
+    def test_accepts_multiple_entry_points_when_declared(self) -> None:
+        self._write(
+            "entry-points.json",
+            {
+                "entryPoints": [
+                    {
+                        "filePath": "/content/Sample.bpmn#Event_start",
+                        "uniqueId": "11111111-1111-4111-8111-111111111111",
+                        "type": "ProcessOrchestration",
+                    },
+                    {
+                        "filePath": "/content/Sample.bpmn#Event_other",
+                        "uniqueId": "22222222-2222-4222-8222-222222222222",
+                        "type": "ProcessOrchestration",
+                    },
+                ]
+            },
+        )
+        assert_generated_project_scaffold(
+            self.project,
+            "Sample",
+            "Sample.bpmn",
+            "Event_start",
+            entry_point_id="11111111-1111-4111-8111-111111111111",
+            expected_resource_count=0,
+            expected_entry_points=2,
+        )
