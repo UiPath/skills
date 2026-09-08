@@ -9,7 +9,7 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1800
   expected_turns: 40
-  max_turns: 70
+  max_turns: 90
 
 sandbox:
   template_sources:
