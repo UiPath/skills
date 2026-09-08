@@ -211,10 +211,10 @@ Infer the right option from the description below — do not pull the registry f
 
 ## Step 4 — Common configuration
 
-Never block on these — use the stated default when no answer is available, write it into the node, and note the default in the final report so the user can change it.
+These are facts you cannot infer with confidence — ask, don't guess, when a reply is possible. Ask both in one message. If the environment is non-interactive (no reply will come, or the request says not to ask for approval/confirmation), use the stated default instead of waiting. Either way, write the resulting value into the node's field — asking or defaulting is not enough on its own; the value must land in the node.
 
-| Timeout | Default: 24 hours. If the description states or implies a different duration, use that instead. |
-| Priority | Default: Low. If the description states or implies urgency (e.g. "high priority", "urgent", "time-sensitive"), use High or Medium accordingly. Write the chosen value into the node's `priority` field — asking the question is not enough; the value must land in the node. |
+| Timeout | "How long before the task times out if nobody acts?" Default if not asked or not answered: 24 hours. |
+| Priority | "What priority should this task have — Low, Medium, or High?" Default if not asked or not answered: Low. Also use the description's own urgency language ("high priority", "urgent", "time-sensitive") when present, whether or not you ask. |
 
 ---
 

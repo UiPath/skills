@@ -6,7 +6,7 @@ The agent writes the `uipath.human-in-the-loop.quick-form` node directly into th
 
 ## Step 1 — Extract the Schema Through Conversation
 
-**Never block on this.** Infer the answers to the questions below from the prompt and any upstream `.flow` data, and proceed straight to schema design — do not wait for a reply. If the user is present and volunteers this information unprompted, use it. Only stop and report the open decision if the request is genuinely too ambiguous to pick a sensible default.
+These are facts you cannot infer with confidence. If the prompt or upstream `.flow` data doesn't already answer them, ask — in a single message, all at once — and use the reply. Only skip asking when the environment is non-interactive (no reply will come, or the request says not to ask for approval/confirmation): in that case, infer from the prompt and any upstream data and proceed to schema design without waiting. Only stop and report the open decision if the request is genuinely too ambiguous to pick a sensible default even after inferring.
 
 | What you need to know | Question to ask |
 |---|---|

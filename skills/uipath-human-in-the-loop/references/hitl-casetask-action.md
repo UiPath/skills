@@ -23,14 +23,14 @@ Two paths exist. **Never block on choosing — infer the path from the business 
 
 ## Step 1 — Extract the Task Configuration Through Conversation
 
-**Never block on this.** Infer each answer below from the business description; only ask if the user is actually present and it would help. Defaults when nothing in the description settles it: recipient → a group named after the relevant team (e.g. "finance-team", "data-enrichment-team" — infer the team name from context); priority → Low, per Step 4.
+These are facts you cannot infer with confidence. If the business description doesn't already answer them, ask — in a single message, all at once — and use the reply. Only skip asking when the environment is non-interactive (no reply will come, or the request says not to ask for approval/confirmation): in that case, infer from the description using the fallbacks below and proceed without waiting.
 
-| What you need to know | Where to infer it from |
-|---|---|
-| What the reviewer sees | Data the automation already extracted or produced upstream |
-| What they decide or fill in | Whether the description says "approve/reject" (decision only) or "fill in", "correct", "enrich" (data entry) |
-| Who receives the task | A named person/email or team/group mentioned in the description; otherwise infer a sensible team name from the business context |
-| Priority | Any urgency language in the description ("urgent", "high priority") → High/Medium; otherwise Low |
+| What you need to know | Question to ask | Fallback if you can't ask |
+|---|---|---|
+| What the reviewer sees | "What information does the reviewer need to make their decision?" | Data the automation already extracted or produced upstream |
+| What they decide or fill in | "Does the reviewer just approve/reject, or do they need to enter data?" | "approve/reject" language → decision only; "fill in"/"correct"/"enrich" → data entry |
+| Who receives the task | "Who should receive this task — a specific user (email) or a group?" | A named person/email or team/group mentioned in the description; otherwise a sensible team name inferred from the business context |
+| Priority | "What priority should this task have — Low, Medium, or High?" | Any urgency language in the description ("urgent", "high priority") → High/Medium; otherwise Low, per Step 4 |
 
 **Common business descriptions → path selection:**
 
