@@ -1,13 +1,20 @@
 name: Validate Skill Status
 
 on:
+  # No `paths:` filter on purpose, for the same two reasons as
+  # validate-version-sync.yml and validate-skills-sh.yml:
+  #
+  # 1. Required-check safety: this job is wired as a required status check. If
+  #    `paths:` excluded a PR the workflow wouldn't run, no check would be
+  #    reported, and merge would block forever. It is a checkout plus a ~8s
+  #    dependency-free script, so just always run it.
+  # 2. A path list is not a reliable trigger for this drift. The manifest is
+  #    keyed on the set of `skills/<name>/` directories, so adding, renaming or
+  #    deleting a skill desyncs it even when no file the old list named was
+  #    touched — the same failure mode that kept validate-skills-sh.yml silent
+  #    on #2252.
   pull_request:
-    paths:
-      - 'skills/*/SKILL.md'
-      - 'assets/skill-status.json'
-      - 'scripts/check-skill-status.py'
-      - 'README.md'
-      - '.github/workflows/validate-skill-status.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

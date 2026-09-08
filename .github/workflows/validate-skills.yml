@@ -1,10 +1,21 @@
 name: Validate Skills
 
 on:
+  # No `paths:` filter on purpose, for the same two reasons as
+  # validate-version-sync.yml and validate-skills-sh.yml:
+  #
+  # 1. Required-check safety: this job is wired as a required status check. If
+  #    `paths:` excluded a PR the workflow wouldn't run, no check would be
+  #    reported, and merge would block forever. The job short-circuits below
+  #    when no SKILL.md changed, so always running it costs a checkout.
+  # 2. A path list is not a reliable trigger for this drift. The old filter
+  #    matched only `skills/*/SKILL.md`, so an edit that moved a description
+  #    into a skill via any other path was never validated.
   pull_request:
-    paths:
-      - 'skills/*/SKILL.md'
-      - '.github/workflows/validate-skills.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   validate-descriptions:
@@ -16,6 +27,28 @@ jobs:
           fetch-depth: 0
 
       - name: Check description lengths
+        # base_ref is empty on workflow_dispatch — fall back to main so manual
+        # re-runs against a feature branch still resolve a sane merge-base.
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
         run: |
-          FILES=$(git diff origin/${{ github.base_ref }}...HEAD --name-only --diff-filter=ACM | grep 'skills/.*/SKILL\.md$' || true)
+          set -euo pipefail
+
+          # Two steps, not one pipeline with a trailing `|| true`. `grep`
+          # exits 1 when nothing matches, which is the normal no-op case, but
+          # a single `|| true` over the whole pipeline also swallows a FAILED
+          # `git diff` (unresolvable ref, shallow clone) — leaving FILES empty
+          # and reporting this required check green having validated nothing.
+          CHANGED=$(git diff "origin/$BASE_REF"...HEAD --name-only --diff-filter=ACM)
+          FILES=$(printf '%s\n' "$CHANGED" | grep 'skills/.*/SKILL\.md$' || true)
+
+          # Explicit no-op instead of falling through to the hook with zero
+          # args: with no arguments the hook switches to pre-commit mode and
+          # reads `git diff --cached`, which is empty in a fresh CI checkout.
+          # That happens to exit 0 today, but only by accident — say so here.
+          if [ -z "$FILES" ]; then
+            echo "No SKILL.md added or modified — nothing to validate."
+            exit 0
+          fi
+
           bash hooks/validate-skill-descriptions.sh $FILES
