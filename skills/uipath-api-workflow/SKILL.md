@@ -107,7 +107,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 <!--skill-flavor:runtime-validation-limit:end-->
 
 <!--skill-flavor:runtime-execution-consent:start-->
-21. **Runtime consent.** Never run `uip api-workflow run` without explicit consent. After validation, ask whether to skip, run `--no-auth`, or run with auth. Recommend `--no-auth` for control-flow-only workflows and HTTP with `ImplicitConnection`; recommend authenticated execution only for IntSvc after confirming real side effects. Authenticated calls may send emails, create tickets, or upload files. Loop-mode consent authorizes eval rows with `--no-auth`, but authenticated connector runs still require explicit consent.
+21. **Runtime consent.** Never run `uip api-workflow run` without explicit consent. After validation, ask whether to skip, run `--no-auth`, or run with auth. Recommend `--no-auth` for control-flow-only workflows and HTTP with `ImplicitConnection`; recommend authenticated execution only for IntSvc after confirming real side effects. Authenticated calls may send emails, create tickets, or upload files. Loop-mode consent authorizes eval rows with `--no-auth`, but authenticated connector runs still require explicit consent. This gates only `uip api-workflow run`, never `uip solution pack`/`publish`: a build/package/publish request proceeds without the run question; a local run is a separate request, done only when asked.
 <!--skill-flavor:runtime-execution-consent:end-->
 
 22. **TDD gate.** Check `<project>/evals/` on every create/edit. Without it, do not offer tests, create the folder, or mention loop mode. With it, stop before modifying `Workflow.json` or evals and ask whether existing cases change or new cases are added, and whether to run/retry until all pass or author once. If rows exist, report their count and summarize each; if empty, propose 2–3 cases. After answers, declare `input.schema` and `output.schema`, update evals, author, then run rows only in loop mode or hand over in author-once mode. Behavior changes require identifying affected rows and asking whether expectations should change. A request not to ask keeps existing tests and does not authorize runtime. See [references/testing-and-evals.md](references/testing-and-evals.md) §3.
@@ -164,7 +164,7 @@ Triage failures as Structure > Expression > Activity Config > Logic; see [refere
 ### Phase 4: Package, Publish, and Operate
 
 <!--skill-flavor:deployment-lifecycle:start-->
-Confirm init-produced shape, then:
+Packaging needs a passing `validate` (rule 20), not a local run — on a build/package/publish request, pack right away (rule 21 gates `run`, never `pack`). Confirm init-produced shape, then:
 
 ```bash
 uip solution pack <solutionDir> <outputDir> --name <PACKAGE_NAME> --version 1.0.0 --output json
