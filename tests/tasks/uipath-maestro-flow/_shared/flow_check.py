@@ -429,6 +429,11 @@ def run_debug(
     unreadable: str | None = None
     unreadable_attempts = 0
     subprocess_timeouts = 0
+    # Carried across this call's timeouts only. The module globals persist
+    # between run_debug calls, so reading them back would resurrect a previous
+    # call's capture, and _LAST_DEBUG_STDERR starts as None.
+    timeout_stdout = ""
+    timeout_stderr = ""
     overwrite_rotations = 0
     rotated_solution_ids: list[str] = []
     # `max_attempts` starts at the transient allowance and is extended by one
@@ -451,10 +456,14 @@ def run_debug(
                 env=env,
             )
         except subprocess.TimeoutExpired as exc:
-            # Keep the partial output rather than dying on a traceback: its tail
-            # is the only record of how far the run got.
-            _LAST_DEBUG_RAW = _as_text(exc.stdout)
-            _LAST_DEBUG_STDERR = _as_text(exc.stderr)
+            # Keep the richest partial output across timeouts, not the newest:
+            # a later attempt can die before printing anything, and the earlier
+            # one may hold the only instanceId the remote run can be inspected
+            # or cleaned up by.
+            timeout_stdout = _as_text(exc.stdout) or timeout_stdout
+            timeout_stderr = _as_text(exc.stderr) or timeout_stderr
+            _LAST_DEBUG_RAW = timeout_stdout
+            _LAST_DEBUG_STDERR = timeout_stderr
             subprocess_timeouts += 1
             fundable = (
                 deadline - time.monotonic() - backoff_seconds >= _MIN_RETRY_BUDGET_SECONDS
@@ -469,15 +478,15 @@ def run_debug(
                 continue
             _fail_with_capture(
                 f"flow debug exceeded the {attempt_cap}s subprocess cap without returning "
-                f"on {subprocess_timeouts} attempt(s); the CLI's own --timeout of "
-                f"{cli_timeout}s produced no envelope"
+                f"on {subprocess_timeouts} subprocess timeout(s) across {attempt + 1} "
+                f"attempt(s); the CLI's own --timeout of {cli_timeout}s produced no envelope"
                 + ("" if fundable else " and the remaining budget could not fund another")
-                + ". The stderr tail below is the last phase the run reported.\n"
-                f"stdout: {_as_text(exc.stdout)}\n"
+                + ". The stderr tail below is the last phase any attempt reported.\n"
+                f"stdout: {timeout_stdout}\n"
                 # Tail, not the whole stream: the grader truncates `details` from
                 # the front, and a polling run fills it, so inlining everything
                 # is what drops the phase this message points at.
-                f"stderr: {_as_text(exc.stderr)[-_STDERR_CAPTURE_TAIL_CHARS:]}"
+                f"stderr: {timeout_stderr[-_STDERR_CAPTURE_TAIL_CHARS:]}"
             )
         _LAST_DEBUG_RAW = r.stdout
         # Keep the CLI's stderr too: it is where `flow debug` reports what it

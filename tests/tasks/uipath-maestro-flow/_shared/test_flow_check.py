@@ -1413,6 +1413,33 @@ def test_run_debug_retries_subprocess_timeout_then_completes(monkeypatch):
     assert flow_check._get_ci(payload, "finalStatus") == "Completed"
 
 
+def test_run_debug_keeps_the_richest_timeout_capture(monkeypatch):
+    """A later timeout that printed nothing must not erase the instanceId an
+    earlier one exposed — it is the only handle on the remote run."""
+    first = _subprocess_timeout("inst-from-attempt-1")
+    second = subprocess.TimeoutExpired(
+        cmd=["uip", "maestro", "flow", "debug"], timeout=240, output=b"", stderr=b""
+    )
+    _stub_debug(monkeypatch, [first, second])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=240)
+    assert "inst-from-attempt-1" in str(excinfo.value)
+    assert flow_check._LAST_DEBUG_RAW == '{"partial": true}'
+
+
+def test_run_debug_timeout_message_counts_all_attempts(monkeypatch):
+    """The two counters are distinct: a transient failure ahead of the timeouts
+    raises the attempt total without spending the timeout allowance."""
+    calls = _stub_debug(
+        monkeypatch,
+        [_cp(1, _TRANSIENT_504), _subprocess_timeout(), _subprocess_timeout()],
+    )
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=240)
+    assert calls["n"] == 3
+    assert "2 subprocess timeout(s) across 3 attempt(s)" in str(excinfo.value)
+
+
 def test_run_debug_refuses_a_subprocess_timeout_retry_it_cannot_fund(monkeypatch):
     """The allowance never outruns the deadline. Asserting the allowance has
     room first is what makes the budget the thing under test."""
@@ -1433,7 +1460,7 @@ def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
     assert calls["n"] == flow_check._SUBPROCESS_TIMEOUT_ATTEMPTS
     message = str(excinfo.value)
     assert "240s subprocess cap" in message
-    assert "on 2 attempt(s)" in message
+    assert "on 2 subprocess timeout(s) across 2 attempt(s)" in message
     assert "abc-123" in message  # without the instanceId the run is unrecoverable
     # The stall phase is not knowable from a SIGKILL; the tail is the evidence.
     assert "upstream of" not in message
