@@ -226,6 +226,13 @@ docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
+`agent.allowed_tools` is an **auto-approval** list, not a restriction: it reaches
+`ClaudeAgentOptions.allowed_tools`, which names the tools that skip a permission
+prompt. A tool left off it is still callable — on 2026-09-08 flow runs used
+`Agent` and `TaskOutput`, neither of which is listed, and one spent 420s of a
+900s turn blocked on `TaskOutput`. Use `agent.disallowed_tools` to actually
+withhold a tool.
+
 Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
 
 ```yaml
