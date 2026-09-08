@@ -251,6 +251,10 @@ template, in the first rule below:
 - Map the return through `source="=result.response"` for a scalar, or
   `source="=result.response.<field>"` for a field of a returned object; `var`
   points at a declared variable id (do not put the target id in `name`).
+- Type `scriptResponse` from the script's return: `jsonSchema` for an object
+  or array, `double` for a number, otherwise the primitive's own name. The
+  canvas retypes it on every script edit (`ScriptTaskProperties.tsx:347`);
+  `jsonSchema` is only the pre-edit default.
   Downstream nodes and the completion EndEvent can read the declared
   `scriptResponse` variable directly. Only when a distinct business variable
   is needed, add a custom output that reads `=vars.<script-response-id>` and
