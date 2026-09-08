@@ -282,7 +282,7 @@ If the solution's `.uipx` already carries a `SolutionId`, the upload overwrites 
 
 ## What NOT to Do
 
-- **Do not stop at `context` and `conversationId`.** That combination validates clean and still ships an agent with no chat history — write all five.
+- **Do not stop at `context` and `conversationId`** — see [§ The `conversationalAgentSettings` Wiring Rule](#the-conversationalagentsettings-wiring-rule).
 - **Do not invent output paths.** `waitForMessage1.output.exchangeId` and `conversationalAgent1.output.response` do not exist, and validate accepts both.
 - **Do not use `=js:` strings** for bindings in a `.flow`.
 - **Do not carry one flavor's agent port across.** Inline continues on `success`, in-solution and published on `output`.
