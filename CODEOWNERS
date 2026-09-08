@@ -150,8 +150,8 @@
 /tests/tasks/uipath-maestro-flow/conversational/ @UiPath/jarvis @UiPath/maestro-cli-team
 
 # Voice — inline voice agent node + the trigger, dial, and end-call nodes
-/skills/uipath-maestro-flow/references/author/plugins/inline-voice-agent/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le @UiPath/maestro-cli-team
-/tests/tasks/uipath-maestro-flow/voice/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/inline-voice-agent/ @UiPath/jarvis @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/voice/ @UiPath/jarvis @UiPath/maestro-cli-team
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
