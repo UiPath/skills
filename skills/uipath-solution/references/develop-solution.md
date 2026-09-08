@@ -138,7 +138,7 @@ uip solution resources refresh --solution-folder ./InvoiceAutomation --output js
 | `Skipped` | Resources already tracked in the solution |
 | `Warnings` | Bindings that couldn't be resolved (logged for follow-up) |
 
-A project that binds to a Data Fabric `Entity` in its `bindings_v2.json` will have that entity imported on refresh, the same way refresh handles queues, assets, or buckets. Any choice set the entity references is pulled in automatically as a dependency of the entity — don't add it separately.
+Refresh pulls in any choice set a Data Fabric `Entity` references automatically as a dependency of the entity — don't add it separately.
 
 ### What `refresh` actually does
 
@@ -306,11 +306,9 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 
 ### Data Fabric kinds
 
-For `Entity` and `ChoiceSet`, the typical flow is to create the resource on the tenant first with `uip df entities create` / `uip df choice-sets create --folder-key <…>`, then import it with `--source remote`. The import captures the full schema (fields, types, choice values) and pins the binding to the source folder.
+`--source remote` is the working path for `Entity` and `ChoiceSet` — create on the tenant first with `uip df entities create` / `uip df choice-sets create --folder-key <…>`, then import. Unlike other kinds, `--source local` produces an unusable schema-less stub (no CLI fills it in later), and once added, DF stubs report as "hidden resources" that `uip solution resources remove` won't drop — delete the JSON under `resources/<folder>/Entity/` or `resources/<folder>/ChoiceSet/` directly.
 
-`--source local` is also accepted for these kinds, but it creates an empty stub — no fields, no values — that is only usable if the schema is filled in later by hand or by another tool. Once added, a local DF stub cannot be removed with `uip solution resources remove` (the CLI reports it as a "hidden resource"); delete the JSON file under `resources/<folder>/Entity/` or `resources/<folder>/ChoiceSet/` directly if you need to drop one.
-
-> **Do not hand-write `configurations/default/configuration.json` for a DF resource.** Only `uip solution resources add --source remote` writes the shape the deploy validator accepts. Building the file from `uip df entities get` or any `@uipath/uipath-typescript` read produces `fieldDataType`-shaped fields — the pack succeeds and publishes silently, then upgrade fails with per-field `EntityConflict`. On schema drift, re-run `resources add` (idempotent; returns `Updated`).
+> **Do not hand-write `configurations/default/configuration.json` for a DF resource.** Only `uip solution resources add --source remote` writes the shape the deploy validator accepts. Building the file from `uip df entities get` produces `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Re-run `resources add` on drift.
 
 ### Ambiguous remote match
 
