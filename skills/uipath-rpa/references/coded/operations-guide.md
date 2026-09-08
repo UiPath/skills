@@ -394,7 +394,7 @@ The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.A
 - Add `using <ProjectNamespace>.ObjectRepository;` to any file referencing `Descriptors.*`
 - After target configuration, re-read `ObjectRepository.cs` — Studio regenerates it. Search for the reference IDs returned by `uia-configure-target` to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
 - **Regenerating `ObjectRepository.cs`.** Requires a `[Workflow]`/`[TestCase]` `.cs` on disk — write the coded stub before capture (SKILL.md § Capture-First Fast Path step 2a). Headless Studio writes the file during per-file `validate` on any `.cs` (not on the OR write, not during `build`): after capture run `uip rpa validate --file-path "<FILE>.cs" --project-dir "<PROJECT_DIR>" --output json` once, then read it. A Studio Desktop window open on the project regenerates on every OR write instead (package guide § Step 1). `uip rpa get-object-repository --project-dir "<PROJECT_DIR>" --output json` lists what the OR holds, as OR names, not C# members.
-- **Every Object Repository target is `Descriptors.<App>.<Screen>.<Element>`.** Do not substitute the `string target` overloads (`app.TypeInto("First Name Input", …)`) or a constants class of OR names when `ObjectRepository.cs` is missing — regenerate it. String overloads are for target names computed at runtime only.
+- **Every Object Repository target is `Descriptors.<App>.<Screen>.<Element>`.** Do not substitute the `string target` overloads (`app.TypeInto("First Name Input", …)`) or a constants class of OR names when `ObjectRepository.cs` is missing — regenerate it. String overloads are for target names computed at runtime only. Projects with no Object Repository by design (test suites, runtime-computed selectors) use the selector-only path — package coded authoring guide § Selector-Only Targets — with selectors captured by the UIA CLI, never typed.
 
 ---
 
@@ -520,7 +520,7 @@ UiPath ships first-class types for the patterns coded workflows most commonly ne
 | **`UiPath.Robot.Activities.BusinessException`** | `UiPath.Robot.Activities` | Same role as `BusinessRuleException` in robot-side custom activity packages. | Same — do not define your own. |
 | **`UiPath.Core.Activities.Storage.IResource` / `ILocalResource`** | `UiPath.Core.Activities.Storage` (in `UiPath.System.Activities`) | File / folder handles passed to activities that need an `IResource`. | Pass raw `string` paths or hand-roll a `LocalResource` constructor (the constructor is internal — see § IResource / ILocalResource below). |
 | **`UiPath.Orchestrator.Client.Models.QueueItemDto`** and related | `UiPath.Orchestrator.Client.Models` (in `UiPath.System.Activities`) | Queue-item shape returned by `GetTransactionItem` / pushed via `AddQueueItem`. | Define a project-local queue-item record that diverges from Orchestrator's schema. |
-| **OR descriptors `Descriptors.<App>.<Screen>.<Element>`** | Generated into `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs` | UI element targeting in coded UI automation. | Hand-roll selector strings or `TargetAppModel` instances; pass OR element names as strings (`app.Click("Submit Button")`) or through a constants class; bypass the Object Repository. |
+| **OR descriptors `Descriptors.<App>.<Screen>.<Element>`** | Generated into `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs` | UI element targeting in coded UI automation. | Type selector strings from memory; pass OR element names as strings (`app.Click("Submit Button")`) or through a constants class. Selector-only path (CLI-captured selectors into `TargetAppModel` / `Target.FromSelector`): package coded authoring guide § Selector-Only Targets. |
 | **`CodedWorkflow`** | Generated partial in the project namespace (`.local/.codedworkflows/CodedWorkflow.cs`), deriving from `UiPath.CodedWorkflows.CodedWorkflowBase` | Base class for `[Workflow]` and `[TestCase]` classes. | Inherit from a custom base; the Studio wrapper generation depends on this exact type. |
 
 #### Throwing `BusinessRuleException` correctly
@@ -564,7 +564,7 @@ Four built-in Workflow Analyzer rules with scope `Coded Workflow` run as Roslyn 
   2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa packages inspect`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use the `uia-configure-target` skill flow (found in the UIA activity-docs) to create targets. This handles capturing the application, discovering elements, generating selectors, improving them, and registering them in the OR. Do NOT manually call the internal `uip rpa uia` CLIs outside of the skill flow. Fallback: the indication commands (see UIA docs) when elements appear only after user interaction (e.g., a compose form that opens after clicking a button)
   4. UITask (ScreenPlay) is ONLY for when selectors are genuinely brittle/unreliable — NEVER as a first approach
-  5. NEVER bypass Object Repository by constructing `TargetAppModel` with raw URL/BrowserType
+  5. Selector-only targets (`TargetAppModel` + `Target.FromSelector`, selectors captured by the UIA CLI) replace descriptors only in the cases the package's coded authoring guide § Selector-Only Targets lists — no Object Repository by design, or runtime-computed selectors. Never as a shortcut around capture, never with hand-typed selectors or a raw URL/BrowserType `TargetAppModel`
 - Use `uip rpa packages inspect` for API discovery when documentation is unclear
 
 ### IResource / ILocalResource — Converting File Paths
@@ -643,14 +643,14 @@ C) <user-driven approach>
 
 ### UI Automation
 
-- Never hardcode UI selectors — use Object Repository descriptors
+- Never type selectors from memory — Object Repository descriptors by default; CLI-captured selector strings only on the selector-only path (package coded authoring guide § Selector-Only Targets)
 - Never pass Object Repository targets by string name or through a constants class of OR names because `ObjectRepository.cs` is missing or empty — regenerate it (§ Configure UI Targets) and use `Descriptors.*`
 - Never write UI code referencing descriptors without first reading `ObjectRepository.cs`
 - Never manually craft UI selectors by calling the internal `uip rpa uia` CLIs outside of the `uia-configure-target` skill flow — this skips selector improvement and OR registration
 - Never skip the target configuration step when a descriptor is missing — use the `uia-configure-target` skill flow (fallback: indication commands per the UIA docs)
 - Never use UITask (ScreenPlay) as the primary approach — resolve descriptors via Finding Descriptors hierarchy first (Critical Rule #15)
 - Never skip configuring targets because it "seems tedious" — configure ALL missing elements
-- Never construct `TargetAppModel` with raw URL/BrowserType to bypass Object Repository
+- Never construct `TargetAppModel` from a raw URL/BrowserType or a hand-typed selector — its `Selector` comes from the UIA CLI's app resolution, and only on the selector-only path
 - Never skip checking UILibrary/descriptor NuGet packages in `project.json`
 - Never use an element descriptor on the wrong screen handle — each `UiTargetApp` is bound to its screen. Wrong handle gives `"Target name 'X' is not part of the current screen."`
 - Never use `SelectItem` on web dropdowns without a `TypeInto` fallback — web `<select>` elements often fail with `"Cannot select item"`
