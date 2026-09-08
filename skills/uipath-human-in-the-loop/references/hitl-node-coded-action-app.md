@@ -1,26 +1,18 @@
 # HITL Coded Action App (Inline) — Project Scaffold and Node Reference
 
-Create a new coded action app project inside the solution using the user's own source code, then wire the HITL node to reference it.
-
-Use this path when the user selects **New Coded Action App** in Step 3.
-
----
+Create a coded action app project inside the solution from the user's source code and wire the HITL node to reference it. Use this path when the user selects **New Coded Action App** in Step 3.
 
 ## Overview
 
-| Step | Action |
-|---|---|
-| 1 | Generate keys |
-| 2 | Create project folder and copy source code (excluding `node_modules`) |
-| 3 | Add project to solution via CLI |
-| 4 | Write solution resource files |
-| 5 | Write HITL node into the `.flow` file |
-
----
+1. Generate keys.
+2. Create `<APP_NAME>` and copy source code, excluding `node_modules`.
+3. Add the project to the solution via CLI.
+4. Write solution resources.
+5. Write the HITL node in the `.flow` file.
 
 ## Step 1 — Generate Keys
 
-Generate three UUIDs before writing any files. All three are used across multiple files — generate them once and reuse.
+Generate three UUIDs before writing files and reuse them everywhere:
 
 ```bash
 node -e "
@@ -37,95 +29,78 @@ console.log('PROJECT_KEY=' + r());
 | `PACKAGE_KEY` | Package resource key, app resource `spec.package.key` |
 | `PROJECT_KEY` | `projectKey` in both resource files |
 
----
-
 ## Step 2 — Create Project Folder and Copy Source Code
 
-Create this structure relative to `<SOLUTION_DIR>` (the directory containing the `.uipx` file):
+Create this structure relative to `<SOLUTION_DIR>`, the directory containing the `.uipx` file:
 
 ```
 <SOLUTION_DIR>/
 └── <APP_NAME>/
     ├── project.uiproj
     ├── webAppManifest.json
-    └── source/          ← contents copied from <SOURCE_PATH> provided by the user
+    └── source/          ← contents copied from <SOURCE_PATH>
 ```
 
-### `<APP_NAME>/project.uiproj`
+Write `<APP_NAME>/project.uiproj`:
 
 ```json
 {
   "ProjectType": "AppV2",
-  "WebAppSettings": {
-    "AppId": null,
-    "IsCoreProject": false
-  },
+  "WebAppSettings": { "AppId": null, "IsCoreProject": false },
   "Name": "<APP_NAME>",
   "Description": null,
   "MainFile": null
 }
 ```
 
-### `<APP_NAME>/webAppManifest.json`
+Write `<APP_NAME>/webAppManifest.json`:
 
 ```json
 {
   "type": "Coded",
   "solutionResourceSubType": "CodedAction",
-  "config": {
-    "isCompiled": true,
-    "isActionApp": true,
-    "bundlePath": "source/dist"
-  }
+  "config": { "isCompiled": true, "isActionApp": true, "bundlePath": "source/dist" }
 }
 ```
 
-### Copy source code
-
-The source path provided by the user must already contain the built `dist/` folder. Copy its contents into `<APP_NAME>/source/`, skipping `node_modules`:
+Run:
 
 ```bash
 rsync -a --exclude='node_modules' "<SOURCE_PATH>/" "<SOLUTION_DIR>/<APP_NAME>/source/"
 ```
 
-> The `dist/` folder must exist inside `<SOURCE_PATH>` before copying — it is the compiled output that the solution packages. If it is missing, never block waiting for a build: fall back to QuickForm instead (per SKILL.md Step 3's fallback rule), proceed, and state that you did so — the user can ask you to swap in the Coded Action App once it's built.
-
----
+Require `<SOURCE_PATH>/dist/`, the compiled output packaged by the solution. If it is missing, never wait for a build: fall back to QuickForm per SKILL.md Step 3's fallback rule, proceed, and state that you did so; the user can request a Coded Action App after it is built.
 
 ## Step 3 — Add Project to Solution
+
+Run:
 
 ```bash
 uip solution projects add --project-path "<APP_NAME>/project.uiproj" --solution-path "<SOLUTION_DIR>"
 ```
 
-This updates `<SOLUTION_DIR>/SolutionStorage.json` with a new `Projects` entry for the app.
-
-> If the command reports the project is already registered, read `SolutionStorage.json` to confirm and skip this step.
-
----
+If the command reports that the project is already registered, read `SolutionStorage.json` to confirm and skip the command.
 
 ## Step 4 — Write Solution Resource Files
 
-Create directories as needed. All paths are relative to `<SOLUTION_DIR>`.
+Create directories as needed. Paths are relative to `<SOLUTION_DIR>`.
 
-### 4a — Read and transform `action-schema.json`
+### 4a — Transform `action-schema.json`
 
-Read `<SOURCE_PATH>/action-schema.json`. The file has this top-level shape:
+Read `<SOURCE_PATH>/action-schema.json`, shaped as:
 
 ```json
 {
-  "inputs":   { "type": "object", "properties": { ... } },
-  "outputs":  { "type": "object", "properties": { ... } },
-  "inOuts":   { "type": "object", "properties": { ... } },
+  "inputs": { "type": "object", "properties": { ... } },
+  "outputs": { "type": "object", "properties": { ... } },
+  "inOuts": { "type": "object", "properties": { ... } },
   "outcomes": { "type": "object", "properties": { ... } }
 }
 ```
 
-Transform it into a `ParsedActionSchema` object using the algorithm below. This object is used in two places: JSON-stringified into `spec.actionSchema` in the resource file, and directly as `inputSchema`/`inOutSchema` arrays in the HITL node.
+Build one `ParsedActionSchema` and reuse it in `spec.actionSchema` and directly for the HITL node's `inputSchema`/`inOutSchema`.
 
-**Transform each property in `inputs.properties`, `outputs.properties`, and `inOuts.properties`:**
-
-For each `{ propertyKey: propDef }` entry:
+For every property in `inputs.properties`, `outputs.properties`, and `inOuts.properties`, recursively create:
 
 ```json
 {
@@ -141,10 +116,7 @@ For each `{ propertyKey: propDef }` entry:
 }
 ```
 
-For arrays (`propDef.type === "array"`): use `propDef.items.type` and `propDef.items.format` to determine the .NET type; recurse on `propDef.items.properties` if the item type is `"object"`.
-For objects (`propDef.type === "object"`): recurse on `propDef.properties`.
-
-**Type mapping** (`itemType` = `propDef.type` for scalars, `propDef.items.type` for arrays; `itemFormat` = `propDef.format` or `propDef.items.format`):
+For arrays, use `propDef.items.type` and `propDef.items.format`; recurse through `propDef.items.properties` for item type `object`. For objects, recurse through `propDef.properties`. Use `itemType = propDef.type` for scalars or `propDef.items.type` for arrays, and `itemFormat = propDef.format` or `propDef.items.format`:
 
 | Condition | .NET type |
 |---|---|
@@ -157,7 +129,7 @@ For objects (`propDef.type === "object"`): recurse on `propDef.properties`.
 | `itemType === "object"` | `System.Object` |
 | `itemType === "file"` | `UiPath.Platform.ResourceHandling.IResource` |
 
-**Transform each property in `outcomes.properties`:**
+Transform each `outcomes.properties` entry to:
 
 ```json
 {
@@ -173,7 +145,7 @@ For objects (`propDef.type === "object"`): recurse on `propDef.properties`.
 }
 ```
 
-**Assemble the final `ParsedActionSchema`:**
+Assemble:
 
 ```json
 {
@@ -182,20 +154,18 @@ For objects (`propDef.type === "object"`): recurse on `propDef.properties`.
   "description": "Action Schema",
   "id": "ID<new UUID with dashes removed>",
   "name": "ActionSchema",
-  "inputs":   [ /* transformed inputs */ ],
-  "outputs":  [ /* transformed outputs */ ],
-  "inOuts":   [ /* transformed inOuts */ ],
+  "inputs": [ /* transformed inputs */ ],
+  "outputs": [ /* transformed outputs */ ],
+  "inOuts": [ /* transformed inOuts */ ],
   "outcomes": [ /* transformed outcomes */ ]
 }
 ```
 
 Set `ACTION_SCHEMA_JSON_STRING = JSON.stringify(parsedSchema)`.
 
-### 4b — Read `externalClientId` from `uipath.json`
+### 4b — Read `externalClientId` and write resources
 
-Read `<SOURCE_PATH>/uipath.json`. Use its `clientId` field as `externalClientId` in the resource file below.
-
-### File: `resources/solution_folder/app/codedAction/<APP_NAME>.json`
+Read `<SOURCE_PATH>/uipath.json` and use its `clientId` as `externalClientId`. Create `resources/solution_folder/app/codedAction/<APP_NAME>.json`:
 
 ```json
 {
@@ -207,9 +177,7 @@ Read `<SOURCE_PATH>/uipath.json`. Use its `clientId` field as `externalClientId`
     "apiVersion": "apps.uipath.com/v1",
     "projectKey": "<PROJECT_KEY>",
     "isOverridable": true,
-    "dependencies": [
-      { "name": "<APP_NAME>", "kind": "package" }
-    ],
+    "dependencies": [{ "name": "<APP_NAME>", "kind": "package" }],
     "runtimeDependencies": [],
     "files": [],
     "folders": [{ "fullyQualifiedName": "solution_folder" }],
@@ -229,9 +197,9 @@ Read `<SOURCE_PATH>/uipath.json`. Use its `clientId` field as `externalClientId`
 }
 ```
 
-> `appSystemName` is `null` for a new app; the platform populates it on first deployment.
+`appSystemName` is `null` for a new app; the platform populates it on first deployment.
 
-### File: `resources/solution_folder/package/<APP_NAME>.json`
+Create `resources/solution_folder/package/<APP_NAME>.json`:
 
 ```json
 {
@@ -258,17 +226,13 @@ Read `<SOURCE_PATH>/uipath.json`. Use its `clientId` field as `externalClientId`
 }
 ```
 
----
-
 ## Step 5 — Write the HITL Node
 
-All values below come directly from the `ParsedActionSchema` assembled in Step 4a — reuse the same objects and UUIDs, do not regenerate them.
+Reuse the same `ParsedActionSchema` objects and UUIDs; do not regenerate them:
 
-- `inputs.app.inputSchema` = the `inputs` array from `ParsedActionSchema`
-- `inputs.app.inOutSchema` = the `inOuts` array from `ParsedActionSchema`
-- `schema.outcomes` = for each entry in `ParsedActionSchema.outcomes`: `{ "name": outcome.name, "type": "string" }`
-
-### Full Node JSON
+- `inputs.app.inputSchema` = `ParsedActionSchema.inputs`
+- `inputs.app.inOutSchema` = `ParsedActionSchema.inOuts`
+- `schema.outcomes` = `{ "name": outcome.name, "type": "string" }` for each parsed outcome
 
 ```json
 {
@@ -304,7 +268,7 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
 }
 ```
 
-**`inputs.recipient` options** — same as AppTask:
+Use one of these `inputs.recipient` forms:
 
 ```json
 // Action Center, unassigned (default)
@@ -317,13 +281,11 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
 "recipient": { "channels": ["ActionCenter"], "assignee": { "type": "group", "value": "Finance Team" } }
 ```
 
-**Definition entry** — uses `nodeType: "uipath.human-in-the-loop.coded-action-app"` (NOT the QuickForm nodeType). See [hitl-node-apptask.md](hitl-node-apptask.md#definition-entry) for the full definition block. Add once to `workflow.definitions`, deduplicated by `nodeType`.
+Add one definition entry to `workflow.definitions`, deduplicated by `nodeType`, using `nodeType: "uipath.human-in-the-loop.coded-action-app"`—not the QuickForm nodeType. See [hitl-node-apptask.md](hitl-node-apptask.md#definition-entry) for the full definition block.
 
-**Edge wiring** — wire `completed` (only handle available in v1.0). See [hitl-node-quickform.md](hitl-node-quickform.md) for edge format.
+Wire the `completed` handle only; it is the only handle available in v1.0. See [hitl-node-quickform.md](hitl-node-quickform.md) for edge format.
 
-**`variables.nodes` regeneration** — add `output` and `status` entries for the new node, then replace the entire array. See [hitl-node-quickform.md](hitl-node-quickform.md) for the regeneration algorithm.
-
----
+Add `output` and `status` entries for the new node to `variables.nodes`, then replace the entire array. See [hitl-node-quickform.md](hitl-node-quickform.md) for the regeneration algorithm.
 
 ## Runtime Variables
 

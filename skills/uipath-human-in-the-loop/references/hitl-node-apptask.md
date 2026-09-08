@@ -1,45 +1,22 @@
 # HITL AppTask Node — Direct JSON Reference
 
-The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Same three handles (`input`, `completed`) as QuickForm. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema).
-
----
+The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. It has QuickForm's `input` and `completed` handles; `inputs.app` references a deployed app instead of an inline schema.
 
 ## App Lookup and Solution Registration
 
-Before writing the node JSON, resolve the app and register it with the solution. All API calls use auth from the stored login session (`uip login`).
+Before writing node JSON, resolve the app and register it with the solution. Run API calls with auth from the stored login session (`uip login`).
 
-### Step 1 — Resolve solution context and credentials
+### 1. Resolve context and credentials
 
-**Read credentials from the active `uip` session:**
+Run:
 
 ```bash
 source "$HOME/.uipath/.auth"
-# Variables now available:
-# UIPATH_ACCESS_TOKEN       — bearer token
-# UIPATH_URL                — e.g. https://cloud.uipath.com
-# UIPATH_ORGANIZATION_NAME  — org name (slug)
-# UIPATH_ORGANIZATION_ID    — org UUID
-# UIPATH_TENANT_NAME
-# UIPATH_TENANT_ID
-# UIPATH_PROJECT_ID
 ```
 
-Map to working variables:
+Map `UIPATH_ACCESS_TOKEN`, `UIPATH_URL`, `UIPATH_ORGANIZATION_NAME`, `UIPATH_ORGANIZATION_ID`, `UIPATH_TENANT_NAME`, `UIPATH_TENANT_ID`, and `UIPATH_PROJECT_ID` to `ACCESS_TOKEN`, `BASE_URL`, `ORG_NAME`, `ORG_ID`, and `TENANT_ID`. Derive `USER_ID` from the `sub` claim by base64url-decoding the middle `ACCESS_TOKEN` segment, parsing its JSON, and reading `sub`.
 
-| Variable | Source |
-|---|---|
-| `BASE_URL` | `$UIPATH_URL` |
-| `ORG_NAME` | `$UIPATH_ORGANIZATION_NAME` |
-| `ORG_ID` | `$UIPATH_ORGANIZATION_ID` |
-| `TENANT_ID` | `$UIPATH_TENANT_ID` |
-| `ACCESS_TOKEN` | `$UIPATH_ACCESS_TOKEN` |
-| `USER_ID` | `sub` claim — base64url-decode the middle segment of `ACCESS_TOKEN`, parse JSON, read `sub` |
-
-**Resolve solution context:**
-
-Find the `.uipx` file: look in the flow file's directory first, then its parent directory.
-
-Parse it as JSON:
+Find the `.uipx` file in the flow file's directory and parse it as JSON:
 
 ```json
 {
@@ -50,11 +27,11 @@ Parse it as JSON:
 }
 ```
 
-Extract `SolutionId` → `SOLUTION_ID`. Find the entry in `Projects[]` whose directory matches the flow file's directory → its `Id` is `PROJECT_KEY`.
+Set `SOLUTION_ID` from `SolutionId`. Select the `Projects[]` entry whose directory matches the flow file's directory and set `PROJECT_KEY` from `Id`. If none matches, run `uip solution projects add` first because the project is not registered.
 
-> If no project entry matches, the project is not registered. Run `uip solution projects add` first.
+### 2. Search for apps
 
-### Step 2 — Search for apps
+Run:
 
 ```
 GET {BASE_URL}/{ORG_NAME}/studio_/backend/api/resourcebuilder/solutions/{SOLUTION_ID}/resources/search
@@ -69,48 +46,27 @@ GET {BASE_URL}/{ORG_NAME}/studio_/backend/api/resourcebuilder/solutions/{SOLUTIO
   &searchTerm={APP_NAME}
 ```
 
-Headers: `Authorization: Bearer {ACCESS_TOKEN}`, `Accept: application/json`, `x-uipath-tenantid: {TENANT_ID}`
+Send `Authorization: Bearer {ACCESS_TOKEN}`, `Accept: application/json`, and `x-uipath-tenantid: {TENANT_ID}`. Flatten `solutionResources` and `availableResources`; follow `nextPageCursor` when present. For each folder group retain each item's `key`, `name`, `type`, `kind`, and parent `fullyQualifiedName`, `path`, and `folderKey`.
 
-Response:
+If the request returns 401, upload the solution `.uipx` file first by just using the solution-tool cli upload command; do not bundle the solution.
 
-```json
-{
-  "solutionResources": [
-    {
-      "fullyQualifiedName": "Shared",
-      "path": "Shared",
-      "key": "<folderKey>",
-      "resources": [
-        { "key": "<appKey>", "name": "Invoice Approval", "type": "Coded Action", "kind": "app" }
-      ]
-    }
-  ],
-  "availableResources": [...],
-  "nextPageCursor": null
-}
-```
+Apply these selection rules:
 
-If this returns 401, upload the solution uipx file first by just using the solution-tool cli upload command, do not bundle the solution.
+- Exactly one match: use it and continue.
+- Multiple matches: never block. Prefer an exact case-insensitive name match in a `Shared` folder; otherwise use the first result. State the selected app and alternatives so the user can correct it. Fetch more pages when truncated.
+- Zero matches: never block. Fall back to QuickForm per SKILL.md Step 3's fallback rule and continue. State: `No deployed app named <APP_NAME> was found, so I used QuickForm instead. Verify the name and that the app is deployed, then ask me to swap it in.`
 
-Flatten both `solutionResources` and `availableResources` folder groups into a single list. Each item carries: `key`, `name`, `type`, `kind`, and its parent `folder` (`fullyQualifiedName`, `path`, `folderKey`).
+### 3. Retrieve configuration
 
-**Selection rules:**
-
-- **Exactly one match** → use it, proceed to Step 3.
-- **Multiple matches** → never block waiting for a choice. Pick the best match automatically (prefer an exact case-insensitive name match in a `Shared` folder, else the first result), proceed, and state the choice plus the alternatives so the user can correct it:
-
-  > I found multiple apps matching that name and used **Invoice Approval** (Shared / Coded Action). Other matches, if this was the wrong one: **Invoice Approval** (Finance / VB Action). Tell me to swap it if I picked wrong.
-
-  Use `nextPageCursor` to fetch additional pages if the list is truncated.
-
-- **Zero matches** → never block. Fall back to QuickForm (per SKILL.md Step 3's fallback rule) and proceed. State: "No deployed app named `<APP_NAME>` was found, so I used QuickForm instead. Verify the name and that the app is deployed, then ask me to swap it in."
-
-### Step 3 — Retrieve app configuration
+Run:
 
 ```
 POST {BASE_URL}/{ORG_NAME}/studio_/backend/api/resourcebuilder/solutions/{SOLUTION_ID}/resources/retrieve-configuration
-Content-Type: application/json
+```
 
+Send `Content-Type: application/json`, `Authorization: Bearer {ACCESS_TOKEN}`, `Accept: application/json`, and `x-uipath-tenantid: {TENANT_ID}`. Use:
+
+```json
 {
   "key": "<selectedApp.key>",
   "name": "<selectedApp.name>",
@@ -120,26 +76,22 @@ Content-Type: application/json
 }
 ```
 
-Headers: `Authorization: Bearer {ACCESS_TOKEN}`, `Content-Type: application/json`, `Accept: application/json`, `x-uipath-tenantid: {TENANT_ID}`
+From the response set:
 
-The response is a resource object. Key extractions from `spec`:
+- `APP_SYSTEM_NAME` = `spec.appSystemName`
+- `APP_VERSION_REF` = `spec.appVersionRef` (`{ key, name }`)
+- `VERSION` = `spec.version`, default `"1.0.0"`
+- `inputSchema` = parsed JSON-string `spec.actionSchema`, then `.inputs`
+- `inOutSchema` = parsed JSON-string `spec.actionSchema`, then `.inOuts`
+- `folder` = `raw.folder.fullyQualifiedName`, `.path`, and `.folderKey`, falling back to selected-app folder values
 
-| Extract | Field | Notes |
-|---|---|---|
-| `APP_SYSTEM_NAME` | `spec.appSystemName` | |
-| `APP_VERSION_REF` | `spec.appVersionRef` | object `{ key, name }` |
-| `VERSION` | `spec.version` | default `"1.0.0"` if absent |
-| `inputSchema` | parsed from `spec.actionSchema` → `.inputs` | `spec.actionSchema` is a **JSON string** — parse it first |
-| `inOutSchema` | parsed from `spec.actionSchema` → `.inOuts` | |
-| `folder` | `raw.folder.fullyQualifiedName`, `.path`, `.folderKey` | fall back to `selectedApp.folder` values |
+If retrieval fails, warn and continue with empty `inputSchema` and `inOutSchema`. For node `outputSchema`, parse `spec.actionSchema` and read `.outputs`.
 
-> If this call fails, warn and continue with empty `inputSchema`/`inOutSchema`.
+### 4. Write solution resource files
 
-### Step 4 — Write solution resource files
+Create directories as needed. Paths are relative to `<solutionDir>`, the directory containing `.uipx`.
 
-Create directories as needed. All paths are relative to `<solutionDir>` (the directory containing the `.uipx` file).
-
-**File 1: `resources/solution_folder/app/<app.type>/<AppName>.json`**
+Write `resources/solution_folder/app/<app.type>/<AppName>.json`:
 
 ```json
 {
@@ -169,9 +121,7 @@ Create directories as needed. All paths are relative to `<solutionDir>` (the dir
 }
 ```
 
-> Write `spec.actionSchema` verbatim from the API response. Re-serializing it changes unicode escapes vs. plain quotes and will break schema matching.
-
-**File 2: `resources/solution_folder/appVersion/<AppName>.json`** *(skip if `APP_SYSTEM_NAME` or `APP_VERSION_REF` are absent)*
+Write `resources/solution_folder/appVersion/<AppName>.json`; skip it if `APP_SYSTEM_NAME` or `APP_VERSION_REF` is absent:
 
 ```json
 {
@@ -210,14 +160,19 @@ Create directories as needed. All paths are relative to `<solutionDir>` (the dir
 }
 ```
 
-`MAJOR_VERSION` = first segment of `VERSION` (e.g. `"2.0.1"` → `"2"`).
+Set `MAJOR_VERSION` to the first `VERSION` segment (for example, `"2.0.1"` becomes `"2"`). Write `spec.actionSchema` verbatim from the API response; do not re-serialize it because changed unicode escapes or quote representation breaks schema matching.
 
-### Step 5 — Register app reference
+### 5. Register the app reference
+
+Run:
 
 ```
 POST {BASE_URL}/{ORG_NAME}/studio_/backend/api/resourcebuilder/solutions/{SOLUTION_ID}/resources/reference?api-version=2&forceUpdate=true
-Content-Type: application/json
+```
 
+Send `Content-Type: application/json`, `Authorization: Bearer {ACCESS_TOKEN}`, `Accept: application/json`, and `x-uipath-tenantid: {TENANT_ID}`. Use:
+
+```json
 {
   "kind": "app",
   "type": "<app.type>",
@@ -230,13 +185,11 @@ Content-Type: application/json
 }
 ```
 
-> If this call fails, warn and continue.
+If registration fails, warn and continue.
 
-### Step 6 — Write debug overwrites
+### 6. Write debug overwrites
 
-Read `<solutionDir>/userProfile/<USER_ID>/debug_overwrites.json` if it exists. Merge in the new entry — do not overwrite unrelated entries.
-
-Structure:
+Read `<solutionDir>/userProfile/<USER_ID>/debug_overwrites.json` if it exists and merge the app entry without overwriting unrelated entries:
 
 ```json
 {
@@ -264,22 +217,16 @@ Structure:
 }
 ```
 
-Merge rules:
-- Tenant entry for `TENANT_ID` exists → find resource by `solutionResourceKey` and replace, or append if not found.
-- No tenant entry → add a new tenant object.
-
-> If this write fails, warn and continue.
-
----
+If the tenant exists, replace the resource matching `solutionResourceKey` or append it; otherwise add a tenant object. If writing fails, warn and continue.
 
 ## Full Node JSON
 
 ```json
 {
-  "id": "invoiceReview1",
+  "id": "<nodeId>",
   "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "1.0",
-  "display": { "label": "Invoice Review" },
+  "display": { "label": "<label>" },
   "inputs": {
     "recipient": {
       "channels": ["ActionCenter"],
@@ -287,27 +234,21 @@ Merge rules:
       "assignee": { "type": "group" }
     },
     "app": {
-      "displayName": "Invoice Approval",
-      "name": "Invoice Approval",
-      "key": "c0ba97df-8a30-4fe0-b4b4-4611a631d77b",
-      "folderPath": "Shared",
+      "displayName": "<app.name>",
+      "name": "<app.name>",
+      "key": "<app.key>",
+      "folderPath": "<folder.fullyQualifiedName>",
       "inputSchema": {
         "type": "object",
-        "properties": {
-          "AI Agent Decision": { "type": "string" },
-          "Invoice Amount":    { "type": "integer" }
-        }
+        "properties": { "<param>": { "type": "string" } }
       },
       "outputSchema": {
         "type": "object",
-        "properties": {
-          "Human Agent Decision": { "type": "string" }
-        }
+        "properties": { "<param>": { "type": "string" } }
       }
     },
     "appInputBindings": {
-      "AI Agent Decision": "=vars.<nodeId>.output.<field>",
-      "Invoice Amount":    "=metadata.InstanceId"
+      "<parameter>": "=vars.<nodeId>.output.<field>"
     },
     "schema": {
       "fields": [],
@@ -336,48 +277,42 @@ Merge rules:
 }
 ```
 
-### `inputs.app` field mapping
+### `inputs.app` mapping
 
-| Field | Source | Example |
-|---|---|---|
-| `displayName` | `selectedApp.name` from search | `"Invoice Approval"` |
-| `name` | `selectedApp.name` from search | `"Invoice Approval"` |
-| `key` | `selectedApp.key` from search | `"c0ba97df-8a30-4fe0-b4b4-4611a631d77b"` |
-| `folderPath` | `selectedApp.folder.fullyQualifiedName` from search | `"Shared"` |
-| `inputSchema` | JSON Schema object built from `config.actionSchema.inputs` — `{ "type": "object", "properties": { "<param>": { "type": "string" }, ... } }` | See note |
-| `outputSchema` | JSON Schema object built from `config.actionSchema.outputs` — `{ "type": "object", "properties": { "<param>": { "type": "string" }, ... } }` | See note |
+- `displayName`, `name`: `selectedApp.name`
+- `key`: `selectedApp.key`
+- `folderPath`: `selectedApp.folder.fullyQualifiedName`
+- `inputSchema`: JSON Schema object from parsed `config.actionSchema.inputs`
+- `outputSchema`: JSON Schema object from parsed `config.actionSchema.outputs`
 
-> `inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), **not arrays**. Parse `spec.actionSchema` (a JSON string) from the retrieve-configuration response and extract `inputs`/`outputs` to build the property maps.
+Both schemas must be `{ "type": "object", "properties": { ... } }`, not arrays. Parse `spec.actionSchema`, which is a JSON string, before extracting `inputs` and `outputs`.
 
-### `inputs.appInputBindings` format
+### `inputs.appInputBindings`
 
-Maps app parameter names to binding expressions. Format: `"=vars.<path>"` (with `=` prefix, no `js:`):
+Map app parameter names to expressions with an `=` prefix and no `js:`:
 
 ```json
 "appInputBindings": {
-  "AI Agent Decision": "=vars.<nodeId>.output.<field>",
-  "Invoice Amount":    "=metadata.InstanceId"
+  "<parameter>": "=vars.<path>"
 }
 ```
 
-### `inputs.recipient` options
+### `inputs.recipient`
 
 ```json
-// Action Center (default — no specific assignee)
+// Action Center, default; no specific assignee
 "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } }
 
 // Specific user by email
-"recipient": { "channels": ["Email"], "assignee": { "type": "user", "value": "user@company.com" } }
+"recipient": { "channels": ["Email"], "assignee": { "type": "user", "value": "<user@company.com>" } }
 
 // Everyone in a group
-"recipient": { "channels": ["ActionCenter"], "assignee": { "type": "group", "value": "Finance Team" } }
+"recipient": { "channels": ["ActionCenter"], "assignee": { "type": "group", "value": "<group>" } }
 ```
-
----
 
 ## Definition Entry
 
-AppTask uses a **separate** definition entry — `nodeType` is `"uipath.human-in-the-loop.coded-action-app"`, not `"uipath.human-in-the-loop.quick-form"`. Add it once to `workflow.definitions`, deduplicated by `nodeType`.
+Add exactly one definition entry to `workflow.definitions`, deduplicated by `nodeType`, using `nodeType` `"uipath.human-in-the-loop.coded-action-app"`, not `"uipath.human-in-the-loop.quick-form"`:
 
 ```json
 {
@@ -387,11 +322,7 @@ AppTask uses a **separate** definition entry — `nodeType` is `"uipath.human-in
   "description": "App-based human task using a deployed coded action app",
   "tags": ["human-task", "hitl", "human-in-the-loop", "coded-action-app", "approval"],
   "sortOrder": 28,
-  "display": {
-    "label": "App Task",
-    "icon": "users",
-    "shape": "square"
-  },
+  "display": { "label": "App Task", "icon": "users", "shape": "square" },
   "handleConfiguration": [
     {
       "position": "left",
@@ -400,9 +331,7 @@ AppTask uses a **separate** definition entry — `nodeType` is `"uipath.human-in
     },
     {
       "position": "right",
-      "handles": [
-        { "id": "completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
-      ],
+      "handles": [{ "id": "completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }],
       "visible": true
     }
   ],
@@ -414,29 +343,21 @@ AppTask uses a **separate** definition entry — `nodeType` is `"uipath.human-in
 }
 ```
 
----
-
 ## Edge Wiring
 
-Identical to QuickForm. Only the `completed` handle is available — there are no `cancelled` or `timeout` handles in v1.0:
+Wire only `completed`; v1.0 has no `cancelled` or `timeout` handles:
 
 ```json
-{ "id": "invoiceReview1-completed-nextNode1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "nextNode1", "targetPort": "input" }
+{ "id": "<nodeId>-completed-<targetNodeId>-input", "sourceNodeId": "<nodeId>", "sourcePort": "completed", "targetNodeId": "<targetNodeId>", "targetPort": "input" }
 ```
-
----
 
 ## `variables.nodes` — Regenerate After Adding
 
-Same rule as QuickForm — add `output` and `status` entries for the new node, then replace the entire `variables.nodes` array. See [hitl-node-quickform.md](hitl-node-quickform.md) for the regeneration algorithm.
-
----
+Use the same rule as QuickForm: add `output` and `status` entries for the new node, then replace the entire `variables.nodes` array. See [hitl-node-quickform.md](hitl-node-quickform.md) for the regeneration algorithm.
 
 ## Runtime Variables
 
-Same as QuickForm:
-
-| Variable | What it contains |
+| Variable | Contents |
 |---|---|
 | `$vars.<nodeId>.output` | Outputs the human filled in via the app |
 | `$vars.<nodeId>.status` | Selected outcome's action value (`"Continue"` or `"End"`) |
