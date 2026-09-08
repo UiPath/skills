@@ -118,7 +118,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added a Static child simulation with --parent and --mock-value"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+.*--parent\s+.*--strategy\s+Static\b.*--mock-value|--parent\s+.*--mock-value.*--strategy\s+Static|--strategy\s+Static.*--parent\s+.*--mock-value|--mock-value.*--parent\s+.*--strategy\s+Static'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--parent\b)(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -126,7 +126,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added an Llm child simulation with --parent and --strategy Llm"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+.*--parent\s+.*--strategy\s+Llm|--strategy\s+Llm.*--parent'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--parent\b)(?=.*--strategy\s+Llm\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -142,7 +142,7 @@ success_criteria:
   - type: command_executed
     description: "Agent removed a child simulation with --parent"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+remove\s+.*--parent|--parent.*simulation\s+remove'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+remove\s+(?=.*--parent\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
