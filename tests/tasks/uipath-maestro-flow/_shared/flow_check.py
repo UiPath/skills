@@ -102,6 +102,13 @@ _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 # the `retries` default.
 _POLL_TIMEOUT_ATTEMPTS = 2
 
+# A SIGKILLed attempt returns no envelope at all, so it cannot be classified as
+# transient or terminal — and it is observed to be flaky (skill-flow-cli-dice-
+# roller-simulated 2026-09-08 polled to 492s of a 540s CLI budget, then went
+# silent until the 600s cap). Its own allowance, like the poll-timeout and
+# unreadable-outputs paths; the deadline still bounds every attempt.
+_SUBPROCESS_TIMEOUT_ATTEMPTS = 2
+
 # Named so `debug_budget` and the criterion guard cannot drift from the
 # function they price. `_DEFAULT_RETRIES` was 3 until the budget started funding
 # every attempt it promises; 2 is a deliberate narrowing (one retry for a fast
@@ -349,7 +356,8 @@ def run_debug(
     Transient server-side errors (5xx / ``RetryLater``, or the CLI's own
     poll-budget expiry — see :func:`_is_transient_debug_error`) are retried up
     to ``retries`` times with ``backoff_seconds`` between attempts; poll
-    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS`, and any retry is skipped once
+    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS` and a SIGKILLed attempt gets
+    :data:`_SUBPROCESS_TIMEOUT_ATTEMPTS`, and any retry is skipped once
     the remainder drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real flow
     fault fails immediately without burning retries.
 
@@ -420,6 +428,7 @@ def run_debug(
 
     unreadable: str | None = None
     unreadable_attempts = 0
+    subprocess_timeouts = 0
     overwrite_rotations = 0
     rotated_solution_ids: list[str] = []
     # `max_attempts` starts at the transient allowance and is extended by one
@@ -442,15 +451,28 @@ def run_debug(
                 env=env,
             )
         except subprocess.TimeoutExpired as exc:
-            # The CLI's own --timeout never fired, so the stall is upstream of
-            # polling. Keep the partial output rather than dying on a traceback.
+            # Keep the partial output rather than dying on a traceback: its tail
+            # is the only record of how far the run got.
             _LAST_DEBUG_RAW = _as_text(exc.stdout)
             _LAST_DEBUG_STDERR = _as_text(exc.stderr)
+            subprocess_timeouts += 1
+            fundable = (
+                deadline - time.monotonic() - backoff_seconds >= _MIN_RETRY_BUDGET_SECONDS
+            )
+            if subprocess_timeouts < _SUBPROCESS_TIMEOUT_ATTEMPTS and fundable:
+                time.sleep(backoff_seconds)
+                attempt += 1
+                # Extend rather than assign: a retries=1 caller has no attempt
+                # left to spend here, and falling out of the loop would reach
+                # the `r.returncode` read with `r` unbound.
+                max_attempts = max(max_attempts, attempt + 1)
+                continue
             _fail_with_capture(
                 f"flow debug exceeded the {attempt_cap}s subprocess cap without returning "
-                f"(CLI --timeout was {cli_timeout}s, so the stall is upstream of "
-                "polling: solution upload, Studio Web debug provisioning, "
-                "begin-session, or create-instance).\n"
+                f"on {subprocess_timeouts} attempt(s); the CLI's own --timeout of "
+                f"{cli_timeout}s produced no envelope"
+                + ("" if fundable else " and the remaining budget could not fund another")
+                + ". The captured tail ends at the last phase the run reported.\n"
                 f"stdout: {_as_text(exc.stdout)}\nstderr: {_as_text(exc.stderr)}"
             )
         _LAST_DEBUG_RAW = r.stdout
