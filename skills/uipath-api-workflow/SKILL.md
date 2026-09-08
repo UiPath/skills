@@ -16,11 +16,14 @@ Build, run, and publish UiPath API Workflows: JSON conforming to CNCF Serverless
 
 ## When to Use This Skill
 
-Use for API workflow JSON creation/editing, local runs, validation, build/packaging, publishing, operating published workflows, and activities including Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, and connector activities. Use the connector and testing references for Studio Web connector workflows and project `evals/` layouts.
+Use for API workflow JSON creation/editing and activities including Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, and connector activities. Use the connector and testing references for Studio Web connector workflows and project `evals/` layouts.
+
 <!--skill-flavor:surface-lifecycle-scope:start-->
+- Local runs, validation, build/packaging, publishing
 <!--skill-flavor:surface-lifecycle-scope:end-->
 - User wants to **handle a file** in an API workflow — take a file input, send a file as base64 to an API, turn a base64 payload back into a file, or asks about `JobAttachment`, `$helpers.file`, `serializeData()`, `--input-file` / `--output-dir`. See [references/files-and-base64.md](references/files-and-base64.md)
 <!--skill-flavor:surface-operations-scope:start-->
+- Operating published workflows
 <!--skill-flavor:surface-operations-scope:end-->
 
 Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded RPA (`uipath-rpa`), coded agents (`uipath-agents`), or Coded Web Apps (`uipath-coded-apps`). API-workflow evals are only `evals/` beside `Workflow.json` using `evals/<scope>/eval-sets/`; `evals/eval-sets/` is for low-code agents and Flow evals for `uipath-maestro-flow`.
@@ -67,8 +70,9 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 14. **JavaScript.** Scripts read `$context`, `$workflow`, and `$input` as globals and must return a value. Keep standard Studio Web `run.script.arguments` scaffolding: `"${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"`; runtime ignores it.
 
+15. **Response.** `markJobAsFailed` is a sibling of `response`. Always use `then: "end"`; `then: "exit"` is for branches/loops. Object responses use one expression, e.g. `"${{ key: $context.variables.value }}"`, not independently interpolated fields. Single values may use `"${$context.outputs.Activity}"` or `"${'done'}"`. `${ { ... } }` and `${{ ... }}` are both valid; stay consistent.
 <!--skill-flavor:response-roundtrip-validation:start-->
-15. **Response.** `markJobAsFailed` is a sibling of `response`. Always use `then: "end"`; `then: "exit"` is for branches/loops. Object responses use one expression, e.g. `"${{ key: $context.variables.value }}"`, not independently interpolated fields. Single values may use `"${$context.outputs.Activity}"` or `"${'done'}"`. `${ { ... } }` and `${{ ... }}` are both valid; stay consistent. After Studio Web saves, treat disk as authoritative and rerun `uip api-workflow run --no-auth` after reapplying needed workarounds.
+    - **On-disk is authoritative.** After Studio Web saves, treat disk as authoritative and rerun `uip api-workflow run --no-auth` after reapplying needed workarounds.
 <!--skill-flavor:response-roundtrip-validation:end-->
 
 16. **Connectors and HTTP are registry-generated only.** Run `uip api-workflow registry resolve` then `stub`; never guess `uiPathActivityTypeId`, `metadata.configuration`, activity kind, endpoint, `SlotKey`, or `ExportBucketKey`; use stub output verbatim.
@@ -96,8 +100,10 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 19a. **Init shape and registration.** Run `uip api-workflow init <name> --output json` inside the solution directory. It creates `project.uiproj`, `Workflow.json`, `entry-points.json`, and `bindings_v2.json`, and registers the project in the nearest `.uipx`. Use `--skip-solution-registration` only when explicitly requested for a standalone CLI/local project. Always create a full project, never a lone workflow file. Do not use solution project add/remove or change existing project IDs. For legacy `project.json`, initialize a fresh sibling and move content into its `Workflow.json`, or convert in place; see [references/troubleshooting.md](references/troubleshooting.md). Runtime success does not prove Studio Web compatibility; init-produced shape does.
 <!--skill-flavor:project-creation:end-->
 
+20. **Static validation.** Run `uip api-workflow validate <Workflow.json> --output json` as the last autonomous command in every author/edit cycle. On `Result: "Failure"`, read `Instructions`, fix the activity at its JSON path, and repeat until `Data.Status: "Valid"`. Prioritize semantic-tail errors over duplicate `oneOf` noise.
+
 <!--skill-flavor:runtime-validation-limit:start-->
-20. **Static validation.** Run `uip api-workflow validate <Workflow.json> --output json` as the last autonomous command in every author/edit cycle. On `Result: "Failure"`, read `Instructions`, fix the activity at its JSON path, and repeat until `Data.Status: "Valid"`. Prioritize semantic-tail errors over duplicate `oneOf` noise. Validation catches malformed JSON, unknown types, required-field errors, bad evaluate settings, duplicate/empty variables, and empty task lists; not broken connections, wrong resource IDs, runtime expression errors, unwrapped literals, or multi-key Assign sets.
+    Validation catches malformed JSON, unknown types, required-field errors, bad evaluate settings, duplicate/empty variables, and empty task lists; not broken connections, wrong resource IDs, runtime expression errors, unwrapped literals, or multi-key Assign sets — those need `uip api-workflow run` once the user consents.
 <!--skill-flavor:runtime-validation-limit:end-->
 
 <!--skill-flavor:runtime-execution-consent:start-->

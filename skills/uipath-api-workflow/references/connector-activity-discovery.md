@@ -143,8 +143,6 @@ uip solution resources refresh --solution-folder Solution --output json
 
 If offline hand-authoring is unavoidable, write `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`, starting from [assets/templates/solution-connection-resource-template.json](../assets/templates/solution-connection-resource-template.json). Use the exact connection `Name`, `ConnectorKey`, `ConnectorName`, connector version from `essentialConfiguration.connectorVersion` (or `"1.0.0"` if unparseable), pinged UUID as `resource.key`, and the existing resource folder's `folders[0].fullyQualifiedName` (default `"solution_folder"`). The key must equal both workflow connection IDs and the binding key. Write one file per unique UUID. Do not hand-author `bindings_v2.json` or debug overwrites when the CLI commands are available.
 <!--skill-flavor:solution-metadata:end-->
-<!--skill-flavor:worked-example-solution-metadata:start-->
-<!--skill-flavor:worked-example-solution-metadata:end-->
 
 ## Http versus IntSvc
 
@@ -158,6 +156,12 @@ Never use Http kind with a vendor UUID, the simple `call: "http"` form, or a ven
 ### Http kind
 
 `with.method` is always `POST`; `with.endpoint` is always `/http-request`. Put the actual request in `bodyParameters`: `authentication` (`"manual"` or `"connector"`), actual `method`, `url`, `headers`, `body`, and other inputs. Output is an envelope; use `Data.ExportBucketKey`, then `.content`, `.statusCode`, `.headers`, etc.
+
+Example: stub the HTTP Request activity with `--inputs '{"url":"https://catfact.ninja/fact","method":"GET"}'`.
+
+<!--skill-flavor:http-example-execution-proof:start-->
+Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200`, `content.fact: "..."`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
+<!--skill-flavor:http-example-execution-proof:end-->
 
 ### IntSvc kind
 
@@ -201,8 +205,6 @@ Read the name and key from the corresponding Solution resource file. `Data.Solut
 ## Response shape and field rules
 
 Both Http and IntSvc outputs are envelopes: `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`. Read payloads under `.content`; IntSvc list payloads may be arrays directly, not `.content.value[]`. Inspect `optionalConfiguration.fieldsContainer.outputJsonSchema`: `type: "object"` means a single item; `type: "array"` means a list. Local CLI may return `content` as a JSON string while cloud returns a parsed value; normalize defensively in scripts. Use optional chaining and log the full output once if the expected shape is absent.
-<!--skill-flavor:runtime-content-normalization-comment:start-->
-<!--skill-flavor:runtime-content-normalization-comment:end-->
 
 ### Rule (a) — flat dotted keys
 
@@ -256,7 +258,3 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 <!--skill-flavor:solution-metadata-antipattern:start-->
 - **Do NOT skip the Solution catalogue sync in Solutions-mode projects.** Two files MUST exist: the catalogue resource (`Solution/resources/solution_folder/connection/<connector-key>/<name>.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`). Without both, the properties panel flags the activity with "to debug this resource, select a connection for it from the resource definition page" and clicking the activity nulls `with.connectionId`. Run `uip api-workflow bindings sync --workflow <Workflow.json>` followed by `uip solution resources refresh --solution-folder <path>` to write both. See [Step 5](#step-5--solutions-mode-intsvc-connection-synchronization).
 <!--skill-flavor:solution-metadata-antipattern:end-->
-
-<!--skill-flavor:http-example-execution-proof:start-->
-Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200`, `content.fact: "..."`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
-<!--skill-flavor:http-example-execution-proof:end-->
