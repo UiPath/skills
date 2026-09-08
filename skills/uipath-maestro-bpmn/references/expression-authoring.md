@@ -96,6 +96,9 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
   [Structural BPMN: Variables](structural-bpmn.md#variables-bpmnvariables).
   Do not route on a public input before its StartEvent bridge or treat a mutable
   internal value as an implicit public output.
+  Live debug may expose the root output definition while still returning its
+  value as `null`; treat that as a debug API limitation, not proof the authored
+  mapping is absent.
 - Subprocess variables stay scoped to that subprocess.
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.

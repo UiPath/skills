@@ -14,7 +14,7 @@ run_limits:
   max_turns: 90
 initial_prompt: |
   Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
-  - Manual start with caller inputs `expenseId` (string) and `amount` (double),
+  - Manual start with caller inputs `expenseId` (string) and `amount` (number),
     and returned output `decision` (string).
   - Service task that calls `Orchestrator.StartAgentJob` to triage the expense
     via a synthetic placeholder agent reference.

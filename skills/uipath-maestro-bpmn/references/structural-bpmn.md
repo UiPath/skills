@@ -91,10 +91,10 @@ BPMN files** — it is the main reason authoring runs out of time.
   <bpmn:process id="Process_1">
     <bpmn:extensionElements>
       <uipath:variables version="v1">
-        <uipath:input id="input_Var_Amount" name="Amount" type="double" elementId="Start_1" />
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="double" />
-        <uipath:output id="output_Var_Echo" name="Echo" type="double" elementId="End_1" />
-        <uipath:inputOutput id="Var_Echo" name="Echo" type="double" />
+        <uipath:input id="input_Var_Amount" name="Amount" type="number" elementId="Start_1" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
+        <uipath:output id="output_Var_Echo" name="Echo" type="number" elementId="End_1" />
+        <uipath:inputOutput id="Var_Echo" name="Echo" type="number" />
       </uipath:variables>
       <uipath:bindings version="v1" />
     </bpmn:extensionElements>
@@ -103,7 +103,7 @@ BPMN files** — it is the main reason authoring runs out of time.
         <uipath:entryPointId value="00000000-0000-4000-8000-000000000001" />
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="Amount" type="double" var="Var_Amount" source="=vars.input_Var_Amount" />
+          <uipath:output name="Amount" type="number" var="Var_Amount" source="=vars.input_Var_Amount" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
@@ -112,7 +112,7 @@ BPMN files** — it is the main reason authoring runs out of time.
       <bpmn:extensionElements>
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="Echo" type="double" var="Var_Echo" source="=vars.Var_Amount" />
+          <uipath:output name="Echo" type="number" var="Var_Echo" source="=vars.Var_Amount" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1</bpmn:incoming>
@@ -122,7 +122,7 @@ BPMN files** — it is the main reason authoring runs out of time.
       <bpmn:extensionElements>
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="Echo" type="double" var="output_Var_Echo" source="=vars.Var_Echo" />
+          <uipath:output name="Echo" type="number" var="output_Var_Echo" source="=vars.Var_Echo" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_2</bpmn:incoming>
@@ -143,6 +143,14 @@ BPMN files** — it is the main reason authoring runs out of time.
 ```
 
 ## Variables (`BPMN.Variables`)
+
+A root `uipath:input`/`uipath:output` accepts only `string`, `boolean`,
+`integer`, `number`, `array`, `object`, or `json` (or an inline JSON schema).
+The canvas float types `double` and `float` are NOT usable on a public
+declaration: `validate` reports `Valid`, then `refresh` fails with
+`Unsupported process input/output type`. Use `number`. The restriction is
+specific to public declarations — `double` on a node-scoped `uipath:inputOutput`
+never reaches schema derivation and is fine.
 
 Declare root variables with the `BPMN.Variables` registry template attached to
 the process via `extensionElements`, or use the canvas `<uipath:variables>`
@@ -185,8 +193,7 @@ complete while downstream decisions see empty values or the caller receives
 null outputs.
 
 See [expression-authoring.md](expression-authoring.md) for expression rules.
-Sub-process-scoped variables go in that sub-process's own
-`<uipath:variables>`.
+Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
 
 ## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
 
