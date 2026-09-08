@@ -13,9 +13,9 @@ description: >
   PHASE 1 CROSS-MACHINE HANDOFF — an approved sdd.md is staged without the
   Phase 0 tasks/registry-resolved.json cache. Its API-workflow and agent tasks
   retain concrete Resolved Resource names while Folder Path and Resource
-  Identity are unresolved. The skill must use those SDD names to run discovery,
-  emit tasks/tasks.md, and create a fresh registry-resolved.json before stopping
-  at the Phase 1 approval gate.
+  Identity are unresolved. The skill must use those SDD names to run discovery
+  and create a fresh registry-resolved.json before stopping at the end of
+  Phase 1.
 tags:
   - uipath-maestro-case
   - integration
@@ -44,10 +44,10 @@ initial_prompt: |
   This approved `sdd.md` was copied from another machine. Only the SDD was
   transferred; there is deliberately no Phase 0 `tasks/registry-resolved.json`.
 
-  Run Phase 1 planning only. Resolve the runnable resources using the concrete
-  `Resolved Resource` names in the SDD, then produce `tasks/tasks.md` and a fresh
-  `tasks/registry-resolved.json`. Stop at the Phase 1 plan-approval gate; do not
-  create a solution or caseplan.
+  Run Phase 1 resolution only. Resolve the runnable resources using the
+  concrete `Resolved Resource` names in the SDD and write a fresh
+  `tasks/registry-resolved.json`. Stop at the end of Phase 1; do not create a
+  solution or caseplan.
 
   The `uip` CLI is already available and authenticated. Use the approved SDD as
   written: do not redo Phase 0, re-interview me, or replace a resource name with
@@ -55,12 +55,6 @@ initial_prompt: |
   follow its workflow.
 
 success_criteria:
-  - type: file_exists
-    description: "Phase 1 produced tasks.md from the SDD-only handoff"
-    path: "tasks/tasks.md"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "Phase 1 regenerated the absent registry cache"
     path: "tasks/registry-resolved.json"
@@ -84,8 +78,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md keeps the intended resource names distinct from task display names"
-    command: "grep -Fq 'FinancialPostingFunction' tasks/tasks.md && grep -Fq 'EmailDrafter' tasks/tasks.md && grep -Fq 'Post Invoice' tasks/tasks.md && grep -Fq 'Draft Notification' tasks/tasks.md"
+    description: "the audit keeps the intended resource names distinct from task display names"
+    command: "grep -Fq 'FinancialPostingFunction' tasks/registry-resolved.json && grep -Fq 'EmailDrafter' tasks/registry-resolved.json && grep -Fq 'Post Invoice' tasks/registry-resolved.json && grep -Fq 'Draft Notification' tasks/registry-resolved.json"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -103,16 +97,16 @@ simulation:
   enabled: true
   persona: |
     You are the solution designer handing an approved Case Management SDD from
-    one build machine to another. You only need the Phase 1 plan and registry
-    audit regenerated on the new machine.
+    one build machine to another. You only need the Phase 1 registry audit
+    regenerated on the new machine.
   goal: |
-    Produce tasks/tasks.md and a fresh tasks/registry-resolved.json from the
-    staged sdd.md, then stop before any caseplan or solution build.
+    Produce a fresh tasks/registry-resolved.json from the staged sdd.md, then
+    stop before any caseplan or solution build.
   constraints:
     - "Do not change the SDD or provide alternate resource names."
     - "If asked to choose among exact-name registry matches, choose the match whose name exactly matches the SDD Resolved Resource and use its exact folder."
     - "If a resource is still missing after the required lookup gate, choose a placeholder rather than creating it inline; the test is about portable lookup intent, not resource creation."
-    - "When shown tasks.md for approval, say the plan is sufficient and ask the agent to stop before Phase 2."
+    - "When shown the resolution summary, say it is sufficient and ask the agent to stop before Phase 2."
     - "Do not ask for Phase 0, design, stage, task, variable, or I/O changes."
     - "Keep replies short — one sentence or a single option pick."
   max_turns: 12

@@ -102,7 +102,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
-| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
+| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
@@ -190,10 +190,16 @@ runner. The image build passes the package credential as
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
 
-`flow-v2-preview.yaml` runs the three `preview/uipath-maestro-{flow,case,bpmn}`
-builder-SDK skills as the ONLY skill catalog, shadowing the shipped v1 skills of
-the same name, so a run measures the Flow v2 authoring path rather than a mix of
-both generations. Narrowing `plugins.path` to `preview/` drops the automatic
+`flow-v2-preview.yaml` runs the three `preview/skills/uipath-maestro-{flow,case,bpmn}`
+builder-SDK skills as the ONLY skill catalog, so a run measures the Flow v2
+authoring path rather than a mix of both generations. `preview/` is a Claude Code
+**plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
+which is the one layout every harness loads: Claude Code requires it, the
+Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
+as `uipath-preview:uipath-maestro-flow` (the repo-root catalog is `uipath:`). Never
+point `plugins.path` at a bare directory of skill folders: Claude Code loads
+nothing from it and says so only as a per-task WARNING in task.log (every v2 run
+08-20 → 09-03 ran that way). Narrowing `plugins.path` to `preview/` drops the automatic
 repo-root bind mount, so the root is remounted explicitly; the image also needs
 runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
 identical to `nightly.yaml`. Confirm that mount resolves before a full run, or

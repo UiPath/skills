@@ -1,178 +1,158 @@
 # Role Management
 
-Multi-step workflows for managing custom role definitions via `uip admin authorization roles`. For per-command flag tables, output codes, and single-command examples, see [authorization-commands.md](authorization-commands.md).
+Use this skill for multi-step workflows managing custom roles with `uip admin authorization roles`. See [authorization-commands.md](authorization-commands.md) for per-command flags, output codes, and single-command examples.
 
-## Services That Manage Their Own Roles
+## Services and role ownership
 
-Listing always works; authoring is what's blocked.
+Listing works for all services; authoring does not for service-managed or platform-level roles.
 
-- **Service-managed:** `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, `processmining`. The Authorization service surfaces their roles in `roles list --service <svc>` and their assignments in `roles assignments list --service <svc>`, but `roles create / update / delete` against these services is rejected. Mutate them via the service's own CLI (e.g., `uip or roles create` for Orchestrator).
-- **Platform-level:** `authz`, `oms`, `platform`, `identity`, `licensing`. Same shape — listing works, authoring is rejected.
+- **Service-managed:** `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, `processmining`. Run `roles list --service <svc>` and `roles assignments list --service <svc>`; mutate with the service CLI, such as `uip or roles create` for Orchestrator.
+- **Platform-level:** `authz`, `oms`, `platform`, `identity`, `licensing`. Listing works; authoring is rejected.
 
-For *effective* access on a principal (PDP — includes server-side rules not visible via the catalog), use [check-access.md](check-access.md).
+For effective principal access, use PDP via [check-access.md](check-access.md); it includes server-side rules not visible in the catalog.
 
-## Role Shape (Scope) Modes
+## Role shape and service resolution
 
 `roles create --scope <type>` accepts:
 
-| Mode | When | `--service` semantics | `--tenant-id` semantics |
-|------|------|----------------------|--------------------------|
-| `Organization` | Role grants org-wide access (typical for `apps`, `studio`, `identity` permissions) | Optional. Used alone, infers `Organization` from the registry. **Omit** for a multi-service org role | Ignored |
-| `TenantGlobal` | Reusable template — visible/assignable inside every tenant in the org | Optional. **Omit** for a multi-service template | Ignored |
-| `Tenant` | Bound to one specific tenant — only assignable there | Optional. Used alone with a tenant-shape service, infers `Tenant`. **Omit** for a multi-service "Centralized Access" tenant role | Defaults to login tenant; pass explicitly for a non-login tenant |
-| `Project` | Project-shape role (Document Understanding, Reinfer) | **Required** | Defaults to login tenant |
+| Mode | Use | `--service` | `--tenant-id` |
+|---|---|---|---|
+| `Organization` | Organization-wide access, typically `apps`, `studio`, or `identity` permissions | Optional; omit for a multi-service org role | Ignored |
+| `TenantGlobal` | Reusable template visible/assignable in every tenant | Optional; omit for a multi-service template | Ignored |
+| `Tenant` | Bound to one tenant and assignable only there | Optional; omit for a multi-service Centralized Access tenant role | Defaults to login tenant; pass explicitly for another tenant |
+| `Project` | Project-shaped role, such as Document Understanding or Reinfer | Required | Defaults to login tenant |
 
-**`Folder` is not a valid `--scope` for `roles create/update`.** Folder-level scoping is expressed on the *assignment* (see [role-assignment-management.md](role-assignment-management.md)).
+`Folder` is invalid for `roles create/update`; express folder scope on the assignment in [role-assignment-management.md](role-assignment-management.md).
 
-> `--service` infers the scope from the service registry when `--scope` is omitted. Example: `roles create --service studio --name "..."` resolves to `Tenant`. Combine `--service` with `--scope` only to override the registry default (e.g., `--service documentunderstanding --scope Project`). **Unsure which `serviceName` to pass, or the CLI rejected the one you tried?** Never guess — the valid values and the command that re-derives them live in [permission-catalog.md — `--service` serviceNames](permission-catalog.md#--service-servicenames-and-how-to-re-derive-them).
+`--service` infers scope from the service registry when `--scope` is omitted. For example, `roles create --service studio --name "..."` resolves to `Tenant`; combine them only to override the registry, such as `--service documentunderstanding --scope Project`. Never guess a `serviceName`; use [permission-catalog.md — `--service` serviceNames](permission-catalog.md#--service-servicenames-and-how-to-re-derive-them) to find valid values and re-derive rejected ones.
 
-### Centralized Access — the "no --service" tenant role
+When the user says **tenant role**, **create role in Tenant scope**, or **centralized access** without naming a service, use `--scope Tenant` and omit `--service`. This multi-service role can carry any `TENANT`-scope catalog permission. Never pass `--service centralizedaccess`; the CLI rejects it with `'centralizedaccess' is not a valid --service value`. Omit the flag for `roles list`, `roles assignments list`, and `permissions list` too. Apply the same omission rule to multi-service `Organization` and `TenantGlobal` roles. `Project` always requires `--service`.
 
-When the user asks for a **"tenant role"** or **"create role in Tenant scope"** without naming a specific service, the correct shape is `--scope Tenant` **with no `--service` flag**. This is the multi-service "Centralized Access" tenant role and can carry any `TENANT`-scope permission across services in the catalog.
+Resolve intent as follows:
 
-- **CLI rejects `--service centralizedaccess`** with `'centralizedaccess' is not a valid --service value`. The same rejection applies on `roles list`, `roles assignments list`, and `permissions list`. Drop the flag entirely.
-- Same rule for `Organization` and `TenantGlobal`: omit `--service` for the multi-service variant; pass it only when the role wraps one specific service's catalog.
-- `Project` is the one exception — `--service` is **required**.
+| Intent | Resolution |
+|---|---|
+| Names a service or permission registered by one service | Pass `--service <svc>`; let the registry infer scope unless overriding it |
+| Says tenant role, tenant scope, or centralized access without a service | Omit `--service`; pass `--scope Tenant` (or `Organization` / `TenantGlobal`) |
+| Names a project-shape service | Pass `--scope Project` and `--service <svc>` |
 
-### Service inference — split
+After `roles create`, highlight the exact service: quote `--service <name>`, or state `no --service — multi-service tenant role` when omitted. Never silently substitute a service or scope.
 
-| User intent | Resolution |
-|-------------|------------|
-| Names a service, or asks for a permission only one service registers (e.g., "DU documents delete") | Pass `--service <svc>`. The registry infers `--scope` unless overridden. |
-| Says "tenant role" / "tenant scope" / "centralized access" with no service named | **Omit `--service`.** Pass `--scope Tenant` (or `Organization` / `TenantGlobal`) alone. |
-| Project-shape service (Document Understanding, Reinfer) | `--scope Project` + `--service <svc>` (required). |
+## Workflow: Grant Permission(s) to a Principal (Shortcut)
 
-> **Always highlight the resolved service when summarizing a `roles create` call.** Quote the exact `--service <name>` you used, or state "no `--service` — multi-service tenant role" when it was omitted. Never silently swap services or scopes.
-
-## Workflow: Grant Permission(s) to a Principal (shortcut)
-
-When the user names *permissions* without naming a role or scope (*"grant me X"*, *"give alice Y, Z"*), use [grant-permissions.md](grant-permissions.md) — a multi-step intersection-and-menu flow that picks the right role shape across the service catalog and umbrella scopes. This page covers the **role-first** entry path: user names a role shape, then we author the role and assignments.
+If the user names permissions but not a role or scope, such as “grant me X” or “give alice Y, Z,” use [grant-permissions.md](grant-permissions.md). It selects the role shape through intersection and menu steps. This document covers the role-first path: choose the shape, author it, then create assignments.
 
 ## Workflow: Create a Custom Role
 
-This is an interactive flow. Do NOT prompt the user with empty `<ROLE_NAME>` / `<PERMISSION_NAMES>` placeholders. Propose a name and a numbered permission menu, then confirm.
+This workflow is interactive. Do not ask for empty `<ROLE_NAME>` or `<PERMISSION_NAMES>` placeholders. Propose a name, show a numbered permission menu, and confirm.
 
-### Step 1 — Gather intent and pick a scope mode
+### Step 1 — Gather intent and choose scope
 
-Ask the user (free-form) what the role is for: target service(s) and the kind of access (read-only, operator, admin, etc.).
+Ask what the role is for, including target service(s) and access type such as read-only, operator, or admin.
 
-#### Step 1a — Service-bound role (the common case)
+#### Step 1a — Service-bound role
 
-If the role wraps **one** service's permissions, do not ask the user about org vs tenant scope. Probe the catalog:
+For one service, do not ask about organization versus tenant scope. Run:
 
 ```bash
 uip admin authorization permissions list --service <SERVICE> --output json
 ```
 
-`<SERVICE>` must be a real `serviceName` — look it up in [permission-catalog.md — `--service` serviceNames](permission-catalog.md#--service-servicenames-and-how-to-re-derive-them) rather than guessing from the service's display name.
+`<SERVICE>` must be a real `serviceName`; look it up in [permission-catalog.md — `--service` serviceNames](permission-catalog.md#--service-servicenames-and-how-to-re-derive-them). Use each record’s `scopeType`:
 
-The catalog response includes `scopeType` per record. Use it to pick the mode for Step 4:
+| Records' `scopeType` | Shape | Next action |
+|---|---|---|
+| All `ORGANIZATION` | Org-level service | `Organization` |
+| All `TENANT` | Tenant-level service | `Tenant`, then ask current-tenant binding versus `TenantGlobal` |
+| All `PROJECT` | Project-shape service | `Project`, with `--service` |
+| Mixed | Multi-scope service | Ask the target scope and show only that scope’s permissions |
 
-| Records' `scopeType` | Service shape | Use this for the rest of the flow |
-|----------------------|---------------|-----------------------------------|
-| All `ORGANIZATION` (e.g., `apps`, `studio`, `identity`) | Org-level service | **Organization** mode |
-| All `TENANT` (e.g., `documentunderstanding`, most Orchestrator-adjacent) | Tenant-level service | **Tenant** mode — then ask: bound to current tenant vs `TenantGlobal` template |
-| All `PROJECT` | Project-shape service | **Project** mode (requires `--service`) |
-| Mixed | Multi-scope service | Ask the user which scope to target; only show permissions for the chosen scope |
+If the user explicitly says Tenant scope, tenant role, or centralized access—even for a `PROJECT` permission—use the no-`--service` Tenant path in Step 1d. Do not substitute another permission; explain the mismatch and let the user choose. Catalog `scopeType` values are uppercase (`ORGANIZATION`, `TENANT`, `PROJECT`, `ANY`); CLI values are PascalCase: `ORGANIZATION` → `--scope Organization`, `TENANT` → `--scope Tenant` or `TenantGlobal`, and `PROJECT` → `--scope Project`.
 
-> **Override:** if the user explicitly says "Tenant scope" / "tenant role" / "centralized access" — even when the permission's catalog `scopeType` is `PROJECT` — switch to the **no-`--service`** Tenant path (Step 1d). Do not silently substitute a different permission to satisfy a service-bound shape. Surface the mismatch and let the user choose.
+#### Step 1b — Hoist overlapping permissions to the umbrella
 
-> **Casing quirk** — the *response field* `scopeType` returns ALL CAPS (`ORGANIZATION`, `TENANT`, `PROJECT`, `ANY`). The matching `--scope` *flag value* uses PascalCase (`Organization`, `Tenant`, `Project`, `TenantGlobal`). Map response → flag when constructing the create call: `ORGANIZATION` → `--scope Organization`, `TENANT` → `--scope Tenant` (or `TenantGlobal`), `PROJECT` → `--scope Project`.
+Unless the candidate is `Project`, run this service-versus-umbrella check between Steps 1a and 1c:
 
-#### Step 1b — Hoist check: prefer the umbrella when permissions overlap
+```bash
+# Tenant-service candidate (Step 1a returned `TENANT` scopeType)
+uip admin authorization permissions list --scope Tenant --output json > umbrella.json
 
-> **Sibling workflow.** This is the binary (service vs. umbrella) form of the same scope-selection problem the [Grant Permission(s) shortcut](grant-permissions.md) solves with a full N-scope intersection (Steps G2-G3). Use Step 1b when the user named the role shape first; use the Grant shortcut when the user named permissions only. Keep them in sync if either changes.
+# Org-service candidate (Step 1a returned `ORGANIZATION` scopeType)
+uip admin authorization permissions list --scope Organization --output json > umbrella.json
+```
 
-**Run this between Step 1a and Step 1c** unless the candidate shape is `Project` (which has no umbrella). When the permissions a user wants are available at **both** the service-bound catalog AND the umbrella scope (`Tenant` / `TenantGlobal` for tenant-services, `Organization` for org-services), the umbrella role is the better default — it can carry permissions from any other service in the same scope, so it's reusable beyond the single service the user originally named.
+Compare candidate permission `name` values with umbrella `name` values:
 
-1. Probe the umbrella catalog at the umbrella scope (no `--service`):
-   ```bash
-   # Tenant-service candidate (Step 1a returned `TENANT` scopeType)
-   uip admin authorization permissions list --scope Tenant --output json > umbrella.json
+- **No overlap:** keep the service-bound shape; continue to Step 1c for Tenant-shape, otherwise Step 2.
+- **Full overlap:** show the applicable menu and recommend the umbrella.
+- **Partial overlap:** show the split and stop; do not drop service-only permissions or silently add umbrella-only permissions.
 
-   # Org-service candidate (Step 1a returned `ORGANIZATION` scopeType)
-   uip admin authorization permissions list --scope Organization --output json > umbrella.json
-   ```
-2. Compare the candidate's permission `name` values (from `permissions list --service <SERVICE>` in Step 1a) against the umbrella's `name` values:
-   - **No overlap** — candidate permissions live only in the service catalog. Lock in the service-bound shape (`--service <SERVICE>`); go to Step 1c if the candidate is Tenant-shape, else Step 2.
-   - **Full overlap** — every candidate permission also exists in the umbrella. Surface the menu below and let the user pick.
-   - **Partial overlap** — some candidate permissions appear in the umbrella, others don't. Stop and show the user the split; do not silently drop the service-only permissions to fit the umbrella, and do not silently expand into umbrella-only permissions.
+For full overlap, render a numbered Markdown menu:
 
-3. On full overlap, render a numbered next-step menu and **recommend the umbrella** (numbered Markdown list so the user replies with a digit):
+**Tenant-service candidate:**
 
-   **Tenant-service candidate** (umbrella is Tenant):
-   ```
-   The permissions you picked are available at both the service level AND the umbrella Tenant scope. The umbrella role can carry permissions from any tenant-service, so it's more reusable. Pick:
+1. **Tenant level (Recommended)** — multi-service role bound to one tenant and reusable across tenant services.
+2. Service level — bound to `<SERVICE>` for strict isolation.
+3. Tenant Global scope — multi-service template visible in every tenant.
 
-   1. **Tenant level** (Recommended) — multi-service role bound to one tenant. Reusable across every tenant-service in this tenant.
-   2. Service level — bound to <SERVICE> only. Use when you want strict service isolation.
-   3. Tenant Global scope — multi-service template visible in every tenant of the org.
+Ask: `Reply with 1, 2, or 3.`
 
-   Reply with 1, 2, or 3.
-   ```
+**Org-service candidate:**
 
-   **Org-service candidate** (umbrella is Organization):
-   ```
-   The permissions you picked are available at both the service level AND the umbrella Organization scope. The umbrella role can carry permissions from any org-service, so it's more reusable. Pick:
+1. **Org level (Recommended)** — multi-service organization role.
+2. Service level — bound to `<SERVICE>` for strict isolation.
 
-   1. **Org level** (Recommended) — multi-service role at organization scope. Reusable across every org-service.
-   2. Service level — bound to <SERVICE> only. Use when you want strict service isolation.
+Ask: `Reply with 1 or 2.`
 
-   Reply with 1 or 2.
-   ```
+| Pick | Create-call shape | Continue at |
+|---|---|---|
+| Tenant level | `--scope Tenant` without `--service`; `--tenant-id` defaults to login | Step 2; binding already chosen |
+| Org level | `--scope Organization` without `--service` | Step 2 |
+| Service level | `--service <SERVICE>`; registry infers scope | Step 1c if Tenant-shape, otherwise Step 2 |
+| Tenant Global scope | `--scope TenantGlobal` without `--service` | Step 2 |
 
-4. Map the user's pick to the create-call shape:
+Project permissions have no umbrella; skip Step 1b and use `--scope Project` with required `--service`.
 
-   | Pick | Create-call shape | Continue at |
-   |------|--------------------|--------------|
-   | Tenant level | `--scope Tenant` **without** `--service` (`--tenant-id` defaults to login) | Step 2 — Tenant binding is already decided, skip Step 1c |
-   | Org level | `--scope Organization` **without** `--service` | Step 2 |
-   | Service level | `--service <SERVICE>` (registry infers `--scope`) | Step 1c if Tenant-shape; else Step 2 |
-   | Tenant Global scope | `--scope TenantGlobal` **without** `--service` | Step 2 |
+#### Step 1c — Tenant versus TenantGlobal
 
-> **Project-scope permissions have no umbrella.** `--scope Project` requires `--service` (see the "Centralized Access — the no --service tenant role" section above). Skip Step 1b entirely when Step 1a's `scopeType` is `PROJECT`.
+For Tenant-shape permissions that remain service-bound, ask whether the role is:
 
-#### Step 1c — Tenant-bound vs TenantGlobal
+- **Tenant:** bound to one tenant UUID with `--scope Tenant --tenant-id <UUID>` and assignable only there.
+- **TenantGlobal:** reusable across every tenant with `--scope TenantGlobal`.
 
-When Step 1a (or Step 1b's "Service level" pick on a Tenant-shape service) lands on Tenant-shape permissions, follow up: should the role be **bound to a single tenant** (`--scope Tenant --tenant-id <UUID>`) or **available across every tenant** (`--scope TenantGlobal`)?
+The Step 1b Tenant level and Tenant Global choices already decide this. Resolve the current tenant UUID by running `uip login status --output json` for the tenant name, then running `uip admin tenants list --filter <name> --output json` to map it to a UUID.
 
-> Step 1b's "Tenant level" and "Tenant Global scope" picks **bypass** this step — they have already chosen the binding.
+#### Step 1d — Multi-service tenant role
 
-- **Tenant** = bound to one tenant UUID. Assignable only inside that tenant.
-- **TenantGlobal** = reusable template. Visible/assignable in every tenant.
-
-> Resolving the current tenant UUID: `uip login status --output json` gives the tenant *name*; map it to a UUID with `uip admin tenants list --filter <name> --output json`.
-
-#### Step 1d — Multi-service tenant role ("Centralized Access")
-
-If the user said **"tenant role"** / **"tenant scope"** / **"centralized access"** without naming a service — or pivoted into Tenant scope from a service-bound flow — drop `--service` entirely and probe the multi-service catalog:
+If the user said tenant role, tenant scope, or centralized access without naming a service—or pivots to Tenant scope—omit `--service` and run:
 
 ```bash
 uip admin authorization permissions list --scope Tenant --output json
 ```
 
-This is the umbrella the UI calls *Centralized Access*. The resulting role can carry any `TENANT`-scope permission across services (Document Understanding `PROJECTS.*`, Licensing, IXP, Authz, etc.). Render the menu in Step 3 from this catalog.
+This is the UI’s Centralized Access catalog and can include any `TENANT`-scope permission across services, including Document Understanding `PROJECTS.*`, Licensing, IXP, and Authz. Render the Step 3 menu from this catalog.
 
-> If the user previously named a single permission that is `PROJECT`-scope only (e.g., `DOCUMENTUNDERSTANDING.DOCUMENTS.DELETE`) and then asks for "Tenant scope", state the mismatch — the permission cannot live on a Tenant-scope role — and offer:
-> 1. Closest TENANT-scope analog (e.g., `DOCUMENTUNDERSTANDING.PROJECTS.DELETE`)
-> 2. Keep the existing Project-scope role
-> 3. A different permission set
->
-> Never silently downshift to a similar-looking permission.
+If a named permission is `PROJECT`-only, explain that it cannot be placed in a Tenant role and offer:
+
+1. The closest `TENANT`-scope analog.
+2. Keep the existing Project-scope role.
+3. A different permission set.
+
+Never silently downshift to a similar-looking permission.
 
 ### Step 2 — Suggest a role name
 
-Propose **one** name derived from the intent. Pattern: `<Service><Scope>-<Capability>` in PascalCase or kebab-case, e.g. `OrchestratorTenant-ReadOnly`, `IdentityOrg-GroupAdmin`. Check for collisions before presenting:
+Propose one intent-derived name using `<Service><Scope>-<Capability>` in PascalCase or kebab-case, such as `OrchestratorTenant-ReadOnly` or `IdentityOrg-GroupAdmin`. Check collisions by running:
 
 ```bash
 uip admin authorization roles list --role-type Custom --filter "<SUGGESTED_NAME>" --output json
 ```
 
-If the filter returns a match, append a numeric suffix (`-2`, `-3`) and re-check until unique. Present the final suggestion to the user and let them accept or override with a single reply.
+If matched, append `-2`, `-3`, and so on, rechecking until unique. Present the final name and let the user accept or override it in one reply.
 
-### Step 3 — Present permissions as a numbered menu
+### Step 3 — Present a numbered permission menu
 
-Pull the catalog for each service named in Step 1, using the `--scope` from Step 1's mode:
+Run the catalog query for each service and selected scope:
 
 ```bash
 # Organization mode
@@ -185,24 +165,16 @@ uip admin authorization permissions list --service <SERVICE> --scope Tenant --ou
 uip admin authorization permissions list --service <SERVICE> --scope Project --output json
 ```
 
-Render **one Markdown table grouped by `serviceDisplayName`**, with a global running number so the user can reply with digits (`"1, 4, 7-9"`). Columns:
+For multi-service roles, omit `--service` as required above. Render one Markdown table grouped by `serviceDisplayName`, with one global running number so the user can reply with `1, 4, 7-9`:
 
 | # | Service | Permission | Scope | Description |
 |---|---------|------------|-------|-------------|
 
-- `#` — global 1-based index across all rows.
-- `Service` — `serviceDisplayName`. Repeat the value only on the first row of each group; leave blank on continuation rows so groups are visually distinct.
-- `Permission` — the `name` field (e.g., `IDENTITY.GROUP.UPDATE`). **This is the string that goes into `actions.json`.**
-- `Scope` — `scopeType` from the record.
-- `Description` — the record's `description` field verbatim. If missing, fall back to `<resourceAction> <resourceType>`.
+Use 1-based global indexes. Show `serviceDisplayName` only on the first row of each group. Use the permission `name` (the value placed in `actions.json`), record `scopeType`, and `description` verbatim; if description is missing, use `<resourceAction> <resourceType>`. Sort by `serviceDisplayName`, then `resourceType`, then `resourceAction`. If one service exceeds ~30 entries, ask which `resourceType`(s) to narrow before rendering. Ask: `Reply with the numbers to include (e.g. 1, 3, 5-7).` Map selections internally to permission `name` strings, never UUIDs.
 
-Sort rows by `serviceDisplayName`, then `resourceType`, then `resourceAction`. Keep the table to one screen where possible — if a single service exceeds ~30 entries, ask the user which `resourceType`(s) to narrow to before rendering.
+### Step 4 — Author `actions.json`
 
-After the table, prompt: *"Reply with the numbers to include (e.g. `1, 3, 5-7`)."* Map the selection back to permission **`name` strings** internally — never ask the user to copy UUIDs.
-
-### Step 4 — Author the actions file (`actions.json`)
-
-The `--file` for `roles create` is a **flat JSON array of permission `name` strings** — not a full role body. The CLI assembles the role envelope from `--name` / `--description` / `--service` / `--scope` / `--tenant-id`; you only supply the action set.
+`--file` takes a flat JSON array of permission `name` strings, not a role body. The CLI builds the envelope from `--name`, `--description`, `--service`, `--scope`, and `--tenant-id`:
 
 ```json
 ["STUDIO.X.Y", "STUDIO.A.B", "IDENTITY.GROUP.READ"]
@@ -210,43 +182,43 @@ The `--file` for `roles create` is a **flat JSON array of permission `name` stri
 
 ### Step 5 — Create and verify
 
-Pick the inline shape that matches Step 1's mode:
+Run the shape-matching command:
 
 ```bash
-# Multi-service tenant role ("Centralized Access") — NO --service
+# Multi-service tenant role (Centralized Access): NO --service
 uip admin authorization roles create \
   --scope Tenant \
   --tenant-id <TENANT_ID> \
   --name "<CONFIRMED_NAME>" \
   --file ./actions.json --output json
 
-# Service-bound tenant role — scope inferred from the service registry
+# Service-bound tenant role: scope inferred from registry
 uip admin authorization roles create \
   --service documentunderstanding \
   --tenant-id <TENANT_ID> \
   --name "<CONFIRMED_NAME>" \
   --file ./actions.json --output json
 
-# Organization — multi-service org role (no --service)
+# Organization: multi-service org role
 uip admin authorization roles create \
   --scope Organization \
   --name "<CONFIRMED_NAME>" \
   --description "<DESCRIPTION>" \
   --file ./actions.json --output json
 
-# TenantGlobal — reusable template across every tenant (no --service)
+# TenantGlobal: reusable template
 uip admin authorization roles create \
   --scope TenantGlobal \
   --name "<CONFIRMED_NAME>" \
   --file ./actions.json --output json
 
-# Service-inferred — let the registry pick scope (studio → Tenant)
+# Service-inferred: studio → Tenant
 uip admin authorization roles create \
   --service studio \
   --name "<CONFIRMED_NAME>" \
   --file ./actions.json --output json
 
-# Project — service required
+# Project: service required
 uip admin authorization roles create \
   --scope Project \
   --service documentunderstanding \
@@ -254,42 +226,41 @@ uip admin authorization roles create \
   --file ./actions.json --output json
 ```
 
-> **Never pass `--service centralizedaccess`** — the CLI rejects it (`'centralizedaccess' is not a valid --service value`). For the Centralized Access umbrella, omit `--service`.
+Never pass `--service centralizedaccess`; omit `--service` for Centralized Access.
 
-Verify:
+Verify by running:
 
 ```bash
 uip admin authorization roles get <NEW_ROLE_ID> --output json
 ```
 
-The endpoint is a PUT-style upsert. The CLI carries the role identity in the positional `<ID>` (on update) or generates one (on create); you never put `id` in the actions file.
+The endpoint is a PUT-style upsert. The positional `<ID>` carries identity on update; create generates it. Never put `id` in `actions.json`.
 
-### Step 6 — Summarize: highlight the resolved service
+### Step 6 — Summarize the resolved service
 
-After `roles create` succeeds, your reply to the user MUST quote the resolved service explicitly so the role's shape is unambiguous. Run a `roles get <NEW_ROLE_ID>` and read `ownerServiceName` directly from the response — that is the canonical service binding the platform will use to validate future assignments. Include a row for `Service` in the summary table:
+After success, run `roles get <NEW_ROLE_ID>` and read canonical `ownerServiceName`. The response summary must include:
 
 | Source | Render as |
 |---|---|
-| `ownerServiceName` from `roles get` | `service: <ownerServiceName>` (e.g., `service: DocumentUnderstanding`) |
-| `ownerServiceName == "CentralizedAccess"` | `service: CentralizedAccess — multi-service <scope> role` (any assignment scope-path must omit the service segment) |
+| `ownerServiceName` | `service: <ownerServiceName>` |
+| `ownerServiceName == "CentralizedAccess"` | `service: CentralizedAccess — multi-service <scope> role` |
 
-This field is what [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-roles-owning-service-vs-assignment-scope-path) checks against on every `assignments create`. Surface it early to avoid surprises later.
-
-Same applies on `roles update`.
+For Centralized Access, any assignment scope-path must omit the service segment. This value is validated by [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-role-service-binding-and-scope-path). Apply the same requirement to `roles update`.
 
 ## Workflow: Update a Custom Role
 
-The endpoint is the same upsert. The CLI assembles the body from the positional `<ID>` + inline flags + `--file` actions array. Re-fetch before editing — otherwise inline flags overwrite fields you didn't intend to change.
+The endpoint is the same upsert. The CLI builds the body from positional `<ID>`, inline flags, and the `--file` actions array. Re-fetch before editing because inline flags overwrite fields that are not supplied.
 
-1. Fetch the current role to see `name`, `description`, `scopeType`, `tenantId`, and the current actions:
+1. Run:
    ```bash
    uip admin authorization roles get <ROLE_ID> --output json
    ```
-2. Decide what to change. If you're only changing the action set, regenerate `actions.json` from a fresh `permissions list` query (Step 3 above) and skip the metadata flags:
+   Inspect `name`, `description`, `scopeType`, `tenantId`, and current actions.
+2. For action-only changes, regenerate `actions.json` from a fresh `permissions list` query as in Step 3 and run:
    ```bash
    uip admin authorization roles update <ROLE_ID> --file ./actions.json --output json
    ```
-3. If you're changing metadata too, **pass the metadata flags you want to keep along with the ones you're changing** — the CLI does not merge the current role's fields back in automatically:
+3. For metadata changes, pass every metadata field to retain as well as changed fields; the CLI does not merge omitted values:
    ```bash
    uip admin authorization roles update <ROLE_ID> \
      --scope Tenant \
@@ -301,10 +272,10 @@ The endpoint is the same upsert. The CLI assembles the body from the positional 
 
 ## Workflow: Delete a Custom Role
 
-1. Confirm the role is custom:
+1. Run:
    ```bash
    uip admin authorization roles get <ROLE_ID> --output json
    ```
-   Verify `type` is `Custom`. The CLI also pre-fetches and refuses service-managed / platform-owned roles with a redirect.
-2. Confirm with user.
+   Verify `type` is `Custom`. The CLI also pre-fetches and refuses service-managed or platform-owned roles with a redirect.
+2. Confirm deletion with the user.
 3. Run `roles delete <ROLE_ID>`.

@@ -66,6 +66,8 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 Some IS activities — most notably **List All Records** and other list/query operations — accept a server-side filter expressed in **CEQL** (Connector Expression Query Language). As with trigger filters (which compile to JMESPath), CEQL filters are authored as a **structured filter tree** and the CLI compiles them to a CEQL string. Authoring as a tree keeps the CLI and Studio Web in lockstep so the activity round-trips cleanly when re-opened in SW.
 
+**Never hand-write the CEQL string.** The tree is the only authored form; the grammar below describes what the compiler emits, so you can read a compiled query and recognize a malformed one. For a connector node in a Maestro flow, follow the filter-tree step in [uipath-maestro-flow — connector/impl.md Step 6a](../../../uipath-maestro-flow/references/author/plugins/connector/impl.md), which discovers the FilterBuilder parameter name from the node registry.
+
 ### Contract — three signals from IS metadata
 
 The CLI reads the live IS metadata response and uses three signals to wire the filter:
@@ -96,7 +98,7 @@ Identical to the trigger filter tree — the same `FilterTree` / `Filter` / `Wor
       "value": {
         "value": <typed value>,   // string / number / boolean / ISO-8601 date-time / array
         "rawString": "\"...\"",   // verbatim user-entered text (with quotes for strings)
-        "isLiteral": true         // literals only — expression values are not yet supported
+        "isLiteral": true         // false for a runtime expression operand
       }
     }
   ],
@@ -190,7 +192,7 @@ Logical operators between siblings:
 4. For each leaf, pick an operator from the field's `searchableOperators` list (when present). Date-time fields take ISO-8601 strings; enums take the literal enum value.
 5. Use the field's `name` as the leaf `id`. The CLI rewrites it to `searchableNames[0]` when emitting CEQL if the connector declares one — you don't need to use the alias yourself.
 6. Build one leaf per condition; place multiple conditions under the same `groupOperator` (0 for AND, 1 for OR). Use nested `groups` for mixed AND/OR.
-7. Wrap values in a `WorkflowValue` object with `value`, `rawString`, `isLiteral`. Strings, numbers, booleans, dates, and arrays are all valid `value` types; only `isLiteral: true` is currently supported by activity-side compilation.
+7. Wrap values in a `WorkflowValue` object with `value`, `rawString`, `isLiteral`. Strings, numbers, booleans, dates, and arrays are all valid `value` types. Set `isLiteral: false` for a runtime operand — the compiler emits a placeholder for it, so a runtime value never needs a hand-written query string.
 
 ### What NOT to generate
 
@@ -202,7 +204,8 @@ Logical operators between siblings:
 | `{ "value": "Active" }` on a leaf | Bare string — must be wrapped in the `WorkflowValue` object. | `{ "value": { "value": "Active", "rawString": "\"Active\"", "isLiteral": true } }` |
 | `{ "id": "fields.Status", ... }` | `fields.` prefix — use the bare field name from `is resources describe`. | `{ "id": "Status", ... }` |
 | `{ "id": "<field without searchable: true>", ... }` | The CLI checks `searchable` on the IS metadata entry; non-searchable fields are rejected even if their type looks filterable. | Pick a field where `searchable: true`. |
-| `"queryParameters": { "where": "..." }` alongside `filter` | Hardcoding `where` assumes that's the FilterBuilder param name — it isn't always (Salesforce uses `q`, etc.). | Pass `filter` only; the CLI discovers the right param name from `design.component === "FilterBuilder"`. |
+| `"queryParameters": { "where": "..." }` alongside `filter` | Hardcoding `where` assumes that's the FilterBuilder param name — it isn't always (Salesforce uses `q`, Data Service uses `queryExpression`). | Pass `filter` only; the CLI discovers the right param name from `design.component === "FilterBuilder"`. |
+| `"queryParameters": { "<filterParam>": "=js:\"Name = '\" + …" }` | A hand-written CEQL string. Validation cannot read it, and the design-time tree stays empty. | Structured tree under `filter`, with `isLiteral: false` on any runtime operand. |
 | `In` operator with a single value not in a list | `In` expects an array `value`. | Use `Equals`, or pass `value: ["one"]`. |
 
 ## Custom Fields (`objectActions[ActionType=Api]`)

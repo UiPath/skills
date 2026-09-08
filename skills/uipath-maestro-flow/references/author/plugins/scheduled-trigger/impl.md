@@ -6,11 +6,9 @@
 
 ## Registry Validation
 
-```bash
-uip maestro flow registry get core.trigger.scheduled --output json
-```
+Run `uip maestro flow registry get core.trigger.scheduled --output json`.
 
-Confirm: no input port, output port `output`, required inputs `timerType` and `timerPreset`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it (this node has already advanced past `1.0`).
+Confirm that the definition has no input port, output port `output`, and required inputs `timerType` and `timerPreset`. Set the node instance `typeVersion` to the response `version` field; do not hardcode it because this node has advanced past `1.0`.
 
 ## JSON Structure
 
@@ -63,17 +61,17 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
 }
 ```
 
-BPMN type (`bpmn:StartEvent`) and event definition (`bpmn:TimerEventDefinition`) come from the `core.trigger.scheduled` entry in `definitions[]` — never on the instance.
+Do not add BPMN type (`bpmn:StartEvent`) or event definition (`bpmn:TimerEventDefinition`) to the instance; they come from the `core.trigger.scheduled` entry in `definitions[]`.
 
 ## Replacing Manual Trigger with Scheduled
 
-For the step-by-step procedure, use [Edit/Write: Replace manual trigger with scheduled trigger](../../editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs`.
+Use [Edit/Write: Replace manual trigger with scheduled trigger](../../editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) for the step-by-step procedure, supplying the node-specific `inputs` above.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Invalid timer value | Malformed ISO 8601 repeating interval | Check format: `R/P[duration]` (e.g., `R/PT1H`) |
-| Missing `timerValue` | `timerPreset: "custom"` but no `timerValue` | Add `timerValue` with ISO 8601 repeating interval |
+| Missing `timerValue` | `timerPreset: "custom"` but no `timerValue` | Add `timerValue` with an ISO 8601 repeating interval |
 | BPMN timer event not emitted | `core.trigger.scheduled` definition wrong or missing | Re-copy from `uip maestro flow registry get core.trigger.scheduled --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |
 | Two triggers in flow | Both manual and scheduled triggers exist | Remove one — flows must have exactly one trigger |

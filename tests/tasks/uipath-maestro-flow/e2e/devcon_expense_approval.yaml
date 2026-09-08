@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-e2e-devcon-expense-approval
 description: >
   DevCon end-to-end scenario: developer gives a vague expense approval requirement.
@@ -33,6 +36,17 @@ initial_prompt: |
   Build the complete flow as a UiPath Flow project called "ExpenseApproval" in a
   solution of the same name. Wire everything end-to-end and validate it.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
     description: "Agent created a solution"
@@ -43,12 +57,12 @@ success_criteria:
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
-    description: "Agent initialized a Flow project"
+    description: "Flow-project initialization telemetry (report only; the artifact is graded below)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "Flow file exists (path-agnostic discovery)"
@@ -60,19 +74,19 @@ success_criteria:
 
   - type: run_command
     description: "Flow has semantically correct inline HITL schema, decision capture, completed wiring, and .output access paths"
-    command: "python3 $TASK_DIR/check_devcon_expense_approval.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/check_devcon_expense_approval.py"
     timeout: 30
     expected_exit_code: 0
     weight: 16.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent validated the flow"
+    description: "Flow-validation telemetry (report only; successful validation is graded below)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "Flow validates successfully"

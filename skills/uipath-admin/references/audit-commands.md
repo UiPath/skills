@@ -1,12 +1,12 @@
 # `uip admin audit` — CLI Command Reference
 
-Single source of truth for every `uip admin audit` subcommand, its flags, and its output shape. All commands return `{ "Result": "Success"|"Failure", "Code": "...", "Data": ... }`. Use `--output json` for programmatic parsing — every command in this skill should pass it.
+Single source of truth for every `uip admin audit` subcommand, flag, and output shape. Run every command with `--output json`; commands return `{ "Result": "Success"|"Failure", "Code": "...", "Data": ... }`.
 
-> For task workflows (investigate → query → export), see [audit-workflow-guide.md](./audit-workflow-guide.md). This file only documents the command surface.
+For task workflows (investigate → query → export), see [audit-workflow-guide.md](./audit-workflow-guide.md). This file documents only the command surface.
 
-The command tree:
+## Command tree and scope
 
-```
+```text
 uip admin audit
 ├── org
 │   ├── sources
@@ -18,89 +18,59 @@ uip admin audit
     └── export
 ```
 
-`org` and `tenant` are **subject subgroups** — pass scope as this **positional segment** (`uip admin audit org sources`, `uip admin audit tenant export`), **never as a `--scope` flag** (there is no `--scope` option; `audit sources --scope organization` is invalid). Same three verbs under each. The two trees are 100% verb-symmetric — any flag valid on `tenant events` is also valid on `org events` (except `--tenant-id`, which is tenant-only).
-
-## Output `Data` shape varies by verb — quick reference
+Run `uip admin audit org <verb>` or `uip admin audit tenant <verb>`. Never use `--scope`; `audit sources --scope organization` is invalid. Tenant commands additionally support `--tenant-id`.
 
 | Verb | `Data` shape |
 |---|---|
 | `audit <scope> sources` | array of `AuditEventSourceDto` |
 | `audit <scope> events` | object `{auditEvents, next, previous}` |
-| `audit <scope> export` | object `{Path, Format, Bytes, Days, NonEmptyDays}` (+ `Files` for `json`, + `Events` for `--file-format csv`) |
+| `audit <scope> export` | object `{Path, Format, Bytes, Days, NonEmptyDays}`; `Files` for `json`, `Events` for `--file-format csv` |
 
-`events` is the one verb that legitimately returns an object — pagination cursors live alongside the rows. Full shape detail per verb in the sections below.
+## `uip admin audit <scope> sources`
 
----
-
-## uip admin audit `<scope>` sources
-
-List the audit event sources visible at this scope. Each source is a top-level event category (Identity, Tenant, Robot, Governance, …) with nested `eventTargets[]` and `eventTypes[]`.
+Run:
 
 ```bash
 uip admin audit org sources --output json
 uip admin audit tenant sources --output json
 ```
 
-**Flags:**
+List visible audit event sources. Pass inner `id` GUIDs from `eventTargets[]` and `eventTypes[]` to `events --source/--target/--type`. `Data` is always an array, including when empty.
 
 | Flag | Required | Description |
 |---|---|---|
-| `--login-validity <minutes>` | no | Refresh the bearer if its remaining lifetime is below this threshold. Rarely needed. |
-| `--tenant-id <guid>` | no | **Tenant scope only.** Override the tenant from login context. Silently rejected on `org`. |
+| `--login-validity <minutes>` | no | Refresh the bearer when its remaining lifetime is below this threshold. |
+| `--tenant-id <guid>` | no | Tenant scope only; overrides the tenant from login context. Silently rejected on `org`. |
 
 **Output `Code`:** `AuditOrgSources` / `AuditTenantSources`.
 
-**Output `Data`:** Array of `AuditEventSourceDto`:
+**Output `Data`:** `AuditEventSourceDto` objects containing `id`, `name`, `eventTargets`, and `eventTypes`; nested targets and types contain `id` and `name`.
 
-```json
-[
-  {
-    "id": "692a7634-bdfc-4c77-a7ee-a8c7eef10457",
-    "name": "Organization Management",
-    "eventTargets": [
-      {
-        "id": "355b521a-4384-4d1b-8f39-e2769840d2d5",
-        "name": "Org Membership",
-        "eventTypes": [
-          { "id": "7fb44323-cb87-40ea-bee6-8dd14f5b2c06", "name": "User Manually Joined An Org Through Invite" }
-        ]
-      }
-    ]
-  }
-]
-```
+## `uip admin audit <scope> events`
 
-`Data` is **always** an array, even when empty. Pass the inner `id` GUIDs to `events --source/--target/--type`.
-
----
-
-## uip admin audit `<scope>` events
-
-Query audit events with filters and cursor pagination.
+Run queries with filters and cursor pagination:
 
 ```bash
 uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04-29T00:00:00Z --limit 50 --output json
 ```
 
-**Flags:**
-
 | Flag | Required | Description |
 |---|---|---|
-| `--from-date <iso>` | no | Start of time interval, ISO 8601. Inclusive. Recommended on any non-trivial query. |
-| `--to-date <iso>` | no | End of time interval, ISO 8601. Inclusive **of the exact instant** — pass the start of the next day (e.g. `2026-02-01`) or `T23:59:59.999Z` to capture a full final day. **`events` only** — on `export` both bounds are whole-day inclusive and the next-day trick over-exports (see export section). See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
-| `--source <guid...>` | no | Filter by event source IDs. Repeatable. Discover with `sources`. |
-| `--target <guid...>` | no | Filter by event target IDs. Repeatable. |
-| `--type <guid...>` | no | Filter by event type IDs. Repeatable. |
-| `--user-id <guid...>` | no | Filter by acting user IDs. Repeatable. |
+| `--from-date <iso>` | no | ISO 8601 start; inclusive. Recommended for non-trivial queries. |
+| `--to-date <iso>` | no | ISO 8601 end; inclusive of the exact instant. Pass the next day’s start (for example `2026-02-01`) or `T23:59:59.999Z` to capture a full final day. Applies only to `events`; `export` bounds are whole-day inclusive, so the next-day trick over-exports. See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
+| `--source <guid...>` | no | Repeatable event-source filter; discover IDs with `sources`. |
+| `--target <guid...>` | no | Repeatable event-target filter. |
+| `--type <guid...>` | no | Repeatable event-type filter. |
+| `--user-id <guid...>` | no | Repeatable acting-user filter. |
 | `--search <term>` | no | Server-side substring search across event content. |
-| `--status <Success\|Failure\|0\|1>` | no | Case-insensitive labels or the raw `AuditEventStatus` enum values. |
-| `--limit <n>` | no | Total events to return. **Must be between 1 and 10000** — a larger value is rejected up front with `Result: "ValidationError"` / `invalid_argument` before any HTTP call, so do NOT pass a huge number to mean "everything". To retrieve everything in a window, omit `--limit` or pass a value within the range. Server clamps each individual API call to **200**; values >200 trigger client-side pagination automatically (cursor handled internally). Omitted = single call with the server's default page size (typically up to 200 events). |
+| `--status <Success\|Failure\|0\|1>` | no | Case-insensitive labels or raw `AuditEventStatus` enum values. |
+| `--limit <n>` | no | Use 1–10000. Larger values fail before HTTP with `Result: "ValidationError"` / `invalid_argument`; do not use a huge value for “everything”. Each API call is clamped to 200; values above 200 trigger client-side pagination. Omit it for one call with the server default, typically up to 200 events. |
 | `--login-validity <minutes>` | no | Token-refresh hint. |
-| `--tenant-id <guid>` | no | **Tenant scope only.** Override the active tenant. |
+| `--tenant-id <guid>` | no | Tenant scope only; overrides the active tenant. |
 
 **Output `Code`:** `AuditOrgEvents` / `AuditTenantEvents`.
 
-**Output `Data`:** Object — NOT a bare array — with three fields:
+**Output `Data`:** always an object, never a bare array:
 
 ```json
 {
@@ -109,48 +79,42 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
       "id": "...",
       "createdOn": "2026-04-29T17:46:07.123Z",
       "organizationId": "...",
-      "organizationName": "Acme Corp",
-      "tenantId": "...",          // null on org-scope events
-      "tenantName": "Acme-Prod",  // null on org-scope events
+      "organizationName": "...",
+      "tenantId": "...",
+      "tenantName": "...",
       "actorId": "...",
-      "actorName": "Jane Doe",
-      "actorEmail": "jane@example.com",
-      "eventType": "Edited policy",
-      "eventSource": "Governance",
-      "eventTarget": "Policy management",
-      "eventDetails": "{...}",     // JSON-encoded string with type-specific fields
+      "actorName": "...",
+      "actorEmail": "...",
+      "eventType": "...",
+      "eventSource": "...",
+      "eventTarget": "...",
+      "eventDetails": "{...}",
       "eventSummary": "...",
-      "status": 0,                 // 0=Success, 1=Failure
-      "clientInfo": {              // optional; absent on server-originated events
-        "ipAddress": "203.0.113.42",
-        "ipCountry": "US"
+      "status": 0,
+      "clientInfo": {
+        "ipAddress": "...",
+        "ipCountry": "..."
       }
     }
   ],
-  "next":     null,                // cursor URL — events newer than this page
+  "next": null,
   "previous": "/{org}/{tenant}/tenantaudit_/api/query/events?to=...&before=...&beforeId=...&maxCount=...&qw=..."
 }
 ```
 
-**Cursor naming is chronological.** `next` = newer (often null when the page is anchored at "now"); `previous` = older (typically the one you follow to scroll backwards through history).
+`tenantId` and `tenantName` are null on org-scope events. `eventDetails` is a JSON-encoded string with type-specific fields. `clientInfo` is optional and absent on server-originated events; when present it contains `ipAddress` and `ipCountry`. `status` is `0=Success, 1=Failure`. Cursor naming is chronological: `next` means newer and is often null when anchored at now; `previous` means older and is normally followed to scroll backward.
 
----
+## `uip admin audit <scope> export`
 
-## uip admin audit `<scope>` export
-
-Export the long-term audit store covering `[--from-date, --to-date]` (**whole UTC days, inclusive on both ends** — see the flags table) into a **base directory** (`--output-path`). Each run creates a uniquely-named output inside it — a folder of day-wise JSON files (default) or a single merged CSV — named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports of the same window never collide.
-
-> This is the organization/tenant audit **event store** (LTS-schema columns like `Identifier`, `DateCreatedUtc`, `ActorId`, `Action`, `Source`, `Category`) — the surface for compliance dumps, login history, and cross-platform "who did what where." It is **not** `uip or audit-logs list --export` (the uipath-platform skill), which exports a single Orchestrator tenant's operational actions with `Component,User,Action,Operation,Time` columns. Any audit-event or compliance export scoped to the org/tenant — as JSON files or a spreadsheet/Excel CSV, with a date window and an `--output-path` directory — belongs here.
+Run the long-term audit store export for `[--from-date, --to-date]` as inclusive whole UTC days into the directory specified by `--output-path`:
 
 ```bash
-# Default (json) — all of January: creates ./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>/ with one JSON file per UTC day
 uip admin audit tenant export \
   --from-date 2026-01-01 \
   --to-date 2026-01-31 \
   --output-path ./audit-exports \
   --output json
 
-# Single merged CSV — creates ./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>.csv
 uip admin audit tenant export \
   --from-date 2026-01-01 \
   --to-date 2026-01-31 \
@@ -158,7 +122,6 @@ uip admin audit tenant export \
   --output-path ./audit-exports \
   --output json
 
-# Single day (e.g. "yesterday") — same date for both bounds; resolve relative phrases with the real UTC clock
 day=$(date -u -d 'yesterday' +%F)   # macOS/BSD: date -u -v-1d +%F
 uip admin audit tenant export \
   --from-date "$day" \
@@ -167,24 +130,25 @@ uip admin audit tenant export \
   --output json
 ```
 
-**Flags:**
+Pass a directory, never a filename or extension. Each run creates `audit_<from>_<to>_<generated-at>`: a folder of day-wise JSON files by default or one merged CSV. JSON output is `./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>/`; CSV output is `./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>.csv`. The generated-at value is to the second; repeated exports do not collide.
+
+This is the organization/tenant audit event store (LTS-schema columns such as `Identifier`, `DateCreatedUtc`, `ActorId`, `Action`, `Source`, `Category`) for compliance dumps, login history, and cross-platform “who did what where.” It is not `uip or audit-logs list --export` (the uipath-platform skill), which exports one Orchestrator tenant’s operational actions with `Component,User,Action,Operation,Time` columns. An org/tenant audit-event or compliance export with a date window and `--output-path`, whether JSON files or spreadsheet/Excel CSV, belongs here.
 
 | Flag | Required | Description |
 |---|---|---|
-| `--output-path <dir>` | **yes** | **Base directory** for the export (created if missing). **Pass a directory only — never a filename or extension**; the CLI generates the per-export name. A uniquely-named output is created inside it — a folder of day-wise JSON files (`json`) or a single `.csv` (`csv`), named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports never collide. Resolved to absolute internally. |
-| `--output-file <dir>` | no | **Deprecated** alias for `--output-path` (kept for backward compatibility; treated as a base directory, not a file). Prefer `--output-path` — using `--output-file` emits a deprecation warning. |
-| `--from-date <iso>` | **yes** | Start of time interval. Both bounds are required by Commander before any HTTP call. Interpreted as a **whole UTC day** — the server truncates any time component to the calendar day. |
-| `--to-date <iso>` | **yes** | End of time interval, **inclusive as a whole UTC day** (unlike `events`, where `--to-date` is instant-inclusive). `--from-date X --to-date X` exports the single day `X`; do **not** pass the next day to "capture the final day" — that exports an extra full day. |
-| `--file-format <json\|csv>` | no | Output shape. `json` (default) = a folder holding one `<YYYY-MM-DD>.json` file per UTC day. `csv` = every event merged into a single RFC 4180 CSV under a shared header. Invalid values fail before any HTTP call with `Invalid --file-format '<v>'. Use 'json' or 'csv'.` |
+| `--output-path <dir>` | **yes** | Base directory, created if missing. Pass a directory only, never a filename or extension. The CLI creates a uniquely named folder of day-wise JSON files (`json`) or a single `.csv` (`csv`) inside it using `audit_<from>_<to>_<generated-at>`. It resolves the path to an absolute path internally. |
+| `--output-file <dir>` | no | Deprecated alias for `--output-path`; it remains a base directory, not a file. Prefer `--output-path`; this flag emits a deprecation warning. |
+| `--from-date <iso>` | **yes** | Required by Commander before HTTP. Interpreted as a whole UTC day; time components are truncated to the calendar day. |
+| `--to-date <iso>` | **yes** | Required by Commander before HTTP. Inclusive as a whole UTC day. `--from-date X --to-date X` exports only day `X`; do not pass the next day to capture the final day. |
+| `--file-format <json\|csv>` | no | `json` default: one `<YYYY-MM-DD>.json` per UTC day in a folder. `csv`: all events in one RFC 4180 CSV under a shared header. Invalid values fail before HTTP with `Invalid --file-format '<v>'. Use 'json' or 'csv'.` |
 | `--login-validity <minutes>` | no | Token-refresh hint. |
-| `--tenant-id <guid>` | no | **Tenant scope only.** Override the active tenant. |
+| `--tenant-id <guid>` | no | Tenant scope only; overrides the active tenant. |
 
 **Output `Code`:** `AuditOrgExport` / `AuditTenantExport`.
 
-**Output `Data`:** `Format` echoes the chosen `--file-format`. `Path` is the **generated** output created under `--output-path` (the `audit_<from>_<to>_<generatedAt>` folder for `json`, or the `.csv` file for `csv`), and `GeneratedAt` is its ISO generation timestamp. The `json` path also reports `Files` (number of day-wise files written); the `csv` path reports `Events` (total rows, excluding the header).
+**Output `Data`:** contains `Path`, `Format`, `Bytes`, `Days`, `NonEmptyDays`, and `GeneratedAt`. `Format` echoes `--file-format`. `Path` is the generated folder under `--output-path` for JSON or the generated `.csv` for CSV. JSON additionally contains `Files`; CSV additionally contains `Events` (rows excluding the header).
 
 ```json
-// --file-format json (default) — Path is the generated folder under the base dir
 {
   "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-01-31_20260617T112630",
   "Format": "json",
@@ -194,43 +158,30 @@ uip admin audit tenant export \
   "NonEmptyDays": 27,
   "GeneratedAt": "2026-06-17T11:26:30.000Z"
 }
-
-// --file-format csv — Path is the generated .csv under the base dir
-{
-  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-01-31_20260617T112630.csv",
-  "Format": "csv",
-  "Bytes": 98765,
-  "Days": 31,
-  "NonEmptyDays": 27,
-  "Events": 1234,
-  "GeneratedAt": "2026-06-17T11:26:30.000Z"
-}
 ```
 
-**Implementation notes (worth knowing for diagnostic conversations):**
+For CSV, `Path` ends in `.csv`, `Format` is `csv`, and `Events` reports total rows; `Bytes`, `Days`, `NonEmptyDays`, and `GeneratedAt` remain present.
 
-- Both formats share the same fetch: the CLI issues **one HTTP call per UTC day** inside `[from, to]` and aggregates the per-day responses. Mirrors the `audit-dowload-from-longterm-store.sh` pattern in the AuditService repo.
-- **JSON (default):** a uniquely-named `audit_<from>_<to>_<generated-at>` **folder** is created under `--output-path`, holding one file per UTC day named `<YYYY-MM-DD>.json` (nested-ZIP entries from the server are flattened to `<inner>_<outer>.json`; same-name collisions get an iso-day suffix). The server names the per-day payloads `.txt`; the CLI writes them with a `.json` extension since each is a JSON array of events with LTS-schema keys (`Identifier`, `DateCreatedUtc`, `Action`, …). Entry names are validated as safe basenames and confirmed to resolve inside the folder before any write (no path traversal / Zip-Slip).
-- **CSV:** the same per-day JSON arrays are parsed and merged into **one** RFC 4180 CSV (CRLF line endings, header row first). Columns follow the long-term-store field order — `OrganizationId, TenantId, ActorId, ActorEmail, ActorDetails, EventDetails, Status, Identifier, DateCreatedUtc, User, Action, Source, Category, ClientInformation` — with any extra server fields appended (union across events) so no data is dropped. `Status` is the numeric enum (`0`=Success, `1`=Failure); nested objects (e.g. `ClientInformation`) are JSON-stringified into the cell. String cells beginning with `= + - @` (or TAB/CR) are prefixed with a single quote to neutralize spreadsheet formula injection.
-- On any single-day HTTP failure (or, for CSV, a day whose payload is not valid JSON), **nothing is written** — for `json` the output folder isn't even created — and the error message identifies which day failed. Earlier successful chunks are not preserved (atomic export).
-- `Days` reports the total number of UTC days requested; `NonEmptyDays` reports how many actually had data. A long export with `NonEmptyDays: 0` means the window was entirely idle, not that the export failed. For `json`, `Files` counts the day-wise files written; for `csv`, `Events: 0` yields a header-only file.
-- **LTS lag**: the long-term store trails the live `events` endpoint (typically by up to ~24–48 h). Exporting a window that includes today or yesterday succeeds, but those trailing days may come back empty even though `events` shows data for them. If completeness of recent days matters, tell the user and either end the window ≥2 days in the past or re-run the export later.
+### Export behavior and diagnostics
 
----
+- Run one HTTP call per UTC day in `[from, to]`; both formats aggregate those responses, mirroring `audit-dowload-from-longterm-store.sh`.
+- For JSON, create a uniquely named `audit_<from>_<to>_<generated-at>` folder with `<YYYY-MM-DD>.json` files. Write server `.txt` payloads with `.json` because they contain JSON arrays with LTS-schema keys (`Identifier`, `DateCreatedUtc`, `Action`, …). Flatten nested-ZIP entries to `<inner>_<outer>.json`; give same-name collisions an iso-day suffix. Validate entry names as safe basenames, confirm they resolve inside the folder before writing, and prevent path traversal / Zip-Slip.
+- For CSV, parse the same per-day JSON arrays into one RFC 4180 CSV with CRLF endings and a first header row. Use this field order: `OrganizationId, TenantId, ActorId, ActorEmail, ActorDetails, EventDetails, Status, Identifier, DateCreatedUtc, User, Action, Source, Category, ClientInformation`; append extra server fields by union across events. Stringify nested objects such as `ClientInformation`. Keep `Status` numeric (`0`=Success, `1`=Failure). Prefix string cells beginning with `= + - @` or TAB/CR with a single quote to neutralize spreadsheet formula injection.
+- On any single-day HTTP failure, or a CSV day with invalid JSON, write nothing. For JSON, do not create the output folder. Identify the failed day; discard earlier chunks to preserve atomic export.
+- `Days` is the requested UTC-day count; `NonEmptyDays` is the count containing data. `NonEmptyDays: 0` means an idle window, not failure. JSON `Files` counts written day files; CSV `Events: 0` produces a header-only file.
+- The long-term store lags live `events`, typically by up to ~24–48 h. Recent days can be empty even when `events` has data. For completeness, end the window ≥2 days in the past or rerun later.
 
 ## Cross-cutting flags from the CLI host
 
-These appear on every command (not just audit) — set at the program level by the `uip` host:
+These program-level `uip` flags appear on every command:
 
 | Flag | Description |
 |---|---|
-| `--output <table\|json\|yaml\|plain>` | Format of the success/failure envelope on stdout. Defaults to `json`. The exported files (the per-day JSON folder, or the CSV) are unaffected — `--output` only controls the metadata envelope, NOT `--file-format`. |
-| `--output-filter <jmespath>` | JMESPath query applied to the envelope before printing. Useful for `events`/`sources`. Less useful for `export` (envelope is small). |
-| `--log-level <debug\|info\|warn\|error>` | Logger threshold. Logs go to stderr. |
-| `--log-file <path>` | Redirect logs from stderr to a file. |
+| `--output <table\|json\|yaml\|plain>` | Success/failure envelope format; defaults to `json`. It does not change exported files (`--file-format` controls those). |
+| `--output-filter <jmespath>` | Applies a JMESPath query to the envelope; useful for `events`/`sources`, less useful for small `export` envelopes. |
+| `--log-level <debug\|info\|warn\|error>` | Logger threshold; logs go to stderr. |
+| `--log-file <path>` | Redirects logs from stderr to a file. |
 | `--help, -h` | Show help. |
-
----
 
 ## Error envelope
 
@@ -242,12 +193,10 @@ These appear on every command (not just audit) — set at the program level by t
 }
 ```
 
-Common failure modes and what they mean:
-
 | `Message` snippet | Likely cause | Fix |
 |---|---|---|
-| `Not logged in. Run 'uip login' first.` | No cached login state | `uip login` |
-| `Tenant ID required for tenant-scoped audit calls.` | `tenant` scope but no tenant in login context | Add `--tenant-id <guid>` or re-`uip login` selecting a tenant |
-| `HTTP 401 / WWW-Authenticate: Bearer` | Token's `aud` claim missing `Audit` | `uip logout && uip login` to mint a fresh token (the `Audit.Read` scope is in `DEFAULT_SCOPES` post-onboarding) |
-| `HTTP 504` on a single export day | Long-term store query timed out for that day's volume | Re-run the export — the failed day will be retried; OR narrow the window |
-| `Audit export failed for YYYY-MM-DD (HTTP 504)` | Single-day chunk failed during multi-day export | The whole export is rolled back. Re-run, or narrow `--from-date/--to-date` to skip the bad day. |
+| `Not logged in. Run 'uip login' first.` | No cached login state | Run `uip login`. |
+| `Tenant ID required for tenant-scoped audit calls.` | Tenant scope lacks a tenant in login context | Add `--tenant-id <guid>` or re-`uip login` selecting a tenant. |
+| `HTTP 401 / WWW-Authenticate: Bearer` | Token `aud` lacks `Audit` | Run `uip logout && uip login` to mint a fresh token; `Audit.Read` is in `DEFAULT_SCOPES` post-onboarding. |
+| `HTTP 504` on a single export day | Long-term-store query timed out | Rerun the export, or narrow the window. |
+| `Audit export failed for YYYY-MM-DD (HTTP 504)` | A single-day chunk failed during a multi-day export | The whole export is rolled back. Rerun, or narrow `--from-date/--to-date` to skip the bad day. |

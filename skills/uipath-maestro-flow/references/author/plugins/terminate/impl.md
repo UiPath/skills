@@ -6,11 +6,13 @@
 
 ## Registry Validation
 
+Run:
+
 ```bash
 uip maestro flow registry get core.logic.terminate --output json
 ```
 
-Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm the input port is `input` and there are no output ports. Set the node instance `typeVersion` to the response's `version` field; do not hardcode it.
 
 ## JSON Structure
 
@@ -24,9 +26,7 @@ Confirm: input port `input`, no output ports. Set the node instance `typeVersion
 }
 ```
 
-## Adding / Editing
-
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the structure above for node-specific `inputs`.
 
 ## Common Pattern — Error Handler
 
@@ -36,13 +36,13 @@ HTTP Request
   |-- error   -> Log Error (Script) -> Terminate
 ```
 
-Wire the action node's implicit `error` source port straight to the handler; the Script logs `$vars.httpCall.error`, then Terminate aborts the flow. Do **not** put a Decision downstream to test for an error — a failing node has already faulted the flow before execution reaches it.
+Wire the action node's implicit `error` source port directly to the handler. Have the Script log `$vars.httpCall.error`, then use Terminate to abort the flow. Do not put a Decision downstream to test for an error: a failing node has already faulted the flow before execution reaches it.
 
-Add this pattern only when the requirements state what a failure should do. With no error edge the failure faults the flow on its own, which is the correct default — and never set `inputs.errorHandlingEnabled: true` without the edge. See [file-format.md — Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+Add this pattern only when requirements specify failure behavior. Without an error edge, failure faults the flow on its own, which is the correct default. Never set `inputs.errorHandlingEnabled: true` without the edge. See [file-format.md — Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Terminate has outgoing edges | Wired an edge from Terminate to another node | Remove — Terminate has no output ports |
-| Workflow outputs missing | Expected outputs but hit Terminate | Terminate does not produce outputs — use End for paths that need output mapping |
+| Terminate has outgoing edges | An edge was wired from Terminate | Remove it; Terminate has no output ports |
+| Workflow outputs missing | Terminate was reached where outputs were expected | Use End for paths that need output mapping; Terminate does not produce outputs |

@@ -1,48 +1,48 @@
 # User Management
 
-Workflows for managing users via `uip admin users`. For full command syntax and flags, see [identity-commands.md](identity-commands.md#users--uip-admin-users).
+Workflows for `uip admin users`. See [identity-commands.md](identity-commands.md#users--uip-admin-users) for full syntax and flags.
 
-## Workflow: Onboard a User (canonical flow)
+## Onboard a User (canonical flow)
 
-The most common identity flow: invite the user, find them once they accept, and assign them to a group.
+1. Verify login:
 
-### Step 0 — Verify login
+   ```bash
+   uip login status --output json
+   ```
 
-```bash
-uip login status --output json
-```
+   If not logged in, run `uip login`. The CLI reads the org ID from the active session automatically.
 
-If not logged in: `uip login`. The CLI reads org ID from the active session automatically.
+2. Default to inviting human users:
 
-### Step 1 — Invite a user
+   ```bash
+   uip admin users invite \
+     --email "<USER_EMAIL>" \
+     --name "<FIRST_NAME>" \
+     --surname "<LAST_NAME>" \
+     --output json
+   ```
 
-```bash
-uip admin users invite \
-  --email "<USER_EMAIL>" \
-  --name "<FIRST_NAME>" \
-  --surname "<LAST_NAME>" \
-  --output json
-```
+   If the user asks to “add” or “create” a user, default to `invite` and confirm before using `create`. The invite sends an email for credential setup and organization acceptance; the user must accept it to complete onboarding. Include `--name` and `--surname` when known, parsing first and last names from context. Invite one user at a time; these flags apply to the entire request.
 
-### Step 2 — Find the user once they accept
+3. After acceptance, find the user once:
 
-```bash
-uip admin users list \
-  --search "<USER_EMAIL>" --output json
-```
+   ```bash
+   uip admin users list \
+     --search "<USER_EMAIL>" --output json
+   ```
 
-### Step 3 — Assign to a group
+4. List groups and assign the user:
 
-```bash
-uip admin groups list --output json
-uip admin groups members add <GROUP_ID> \
-  --user-ids "<USER_ID>" \
-  --output json
-```
+   ```bash
+   uip admin groups list --output json
+   uip admin groups members add <GROUP_ID> \
+     --user-ids "<USER_ID>" \
+     --output json
+   ```
 
-Apply the principal-resolution protocol before the `members add` call — echo `Principal: <displayName> (<userName>) — <id>` from the `users list` result (SKILL.md Rule 5).
+   Before `members add`, apply the principal-resolution protocol: echo `Principal: <displayName> (<userName>) — <id>` from the `users list` result (SKILL.md Rule 5).
 
-## Workflow: Discover Existing Users
+## Discover Existing Users
 
 ```bash
 uip admin users list --output json
@@ -50,43 +50,57 @@ uip admin users list --search "john" --output json
 uip admin users get <USER_ID> --output json
 ```
 
-## Workflow: Invite Users by Email (Preferred)
+## Create a User (Direct Provisioning)
 
-> **`users invite` is the preferred method for adding users.** It sends an invitation email, letting the user set up their own credentials and accept the org invitation. Use `users create` only when direct account provisioning is required (e.g., service accounts, migration scripts). If the user asks to "add" or "create" a user, default to `invite` and confirm before using `create` instead.
+Ask for confirmation before using `create`. Explain that `users invite` is standard for human onboarding and confirm that direct account creation is intended. Use `create` only when direct provisioning is required, such as service accounts, migrations, or batch imports.
 
-```bash
-uip admin users invite \
-  --email "user@example.com" \
-  --name "John" \
-  --surname "Doe" \
-  --output json
-```
+1. Check for duplicates:
 
-- **Always include `--name` and `--surname` when the user's name is known.** Parse first/last name from context (e.g., "Alice Chen" → `--name "Alice" --surname "Chen"`).
-- Invite one user at a time — `--name`/`--surname` apply to the entire request
-- The invited user receives an email and must accept to complete onboarding
+   ```bash
+   uip admin users list --search "<USERNAME>" --output json
+   ```
 
-## Workflow: Create a User (Direct Provisioning)
+2. Create the user:
 
-> **Ask for confirmation before using this command.** Explain that `users invite` is the standard method for human onboarding and confirm the user specifically wants direct account creation.
+   ```bash
+   uip admin users create "<USERNAME>" --email "<EMAIL>" --name "<FIRST_NAME>" --surname "<LAST_NAME>" --output json
+   ```
 
-Use `create` instead of `invite` when:
-- **Migrations & batch imports** — syncing users from external systems
+3. Verify:
 
-1. Check for duplicates: `uip admin users list --search "<USERNAME>" --output json`
-2. Create: `uip admin users create "<USERNAME>" --email "<EMAIL>" --name "<FIRST_NAME>" --surname "<LAST_NAME>" --output json`
-3. Verify: `uip admin users list --search "<USERNAME>" --output json`
+   ```bash
+   uip admin users list --search "<USERNAME>" --output json
+   ```
 
-## Workflow: Update a User
+## Update a User
 
-1. Get current details: `uip admin users get <USER_ID> --output json`
-2. Update (at least one field required): `uip admin users update <USER_ID> --email "<NEW_EMAIL>" --output json`
+1. Get current details:
 
-## Workflow: Delete a User
+   ```bash
+   uip admin users get <USER_ID> --output json
+   ```
 
-1. Confirm user ID: `uip admin users get <USER_ID> --output json`
-2. Confirm with user before proceeding.
-3. Delete: `uip admin users delete <USER_ID> --output json`
+2. Update at least one field:
+
+   ```bash
+   uip admin users update <USER_ID> --email "<NEW_EMAIL>" --output json
+   ```
+
+## Delete a User
+
+1. Confirm the user ID:
+
+   ```bash
+   uip admin users get <USER_ID> --output json
+   ```
+
+2. Confirm with the user before proceeding.
+
+3. Delete:
+
+   ```bash
+   uip admin users delete <USER_ID> --output json
+   ```
 
 ## Pagination and Sorting
 

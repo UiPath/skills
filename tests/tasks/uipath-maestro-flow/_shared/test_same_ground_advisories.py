@@ -183,6 +183,27 @@ def test_bindings_checker_accepts_v2_symbolic_key_with_real_values(tmp_path: Pat
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_bindings_checker_prefers_solution_flow_over_root_scratch(tmp_path: Path) -> None:
+    checker = FLOW_TASKS / "bindings" / "check_bindings.py"
+    project = tmp_path / "BindingsMulti" / "BindingsMulti"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    good = {"nodes": [], "bindings": []}
+    (project / "BindingsMulti.flow").write_text(json.dumps(good))
+    (tmp_path / "BindingsMulti.flow").write_text(json.dumps({"nodes": []}))
+
+    result = subprocess.run(
+        [sys.executable, str(checker), "structure", "**/BindingsMulti*.flow"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert str(project.relative_to(tmp_path)) in result.stdout
+
+
 def test_inline_agent_ignores_staging_trees(tmp_path: Path) -> None:
     valid = {
         "settings": {"model": "gpt-4.1"},
@@ -199,6 +220,35 @@ def test_inline_agent_ignores_staging_trees(tmp_path: Path) -> None:
     result = run_script("check_inline_agent.py", "**/agent.json", cwd=tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Solution" in result.stdout
+
+
+def test_inline_agent_scoped_checks_preserve_artifact_outcomes(tmp_path: Path) -> None:
+    agent = tmp_path / "agent-id" / "agent.json"
+    agent.parent.mkdir()
+    agent.write_text(json.dumps({"settings": {"model": "gpt-4.1"}}))
+
+    exists = run_script(
+        "check_inline_agent.py", "--check", "exists", "**/agent.json", cwd=tmp_path
+    )
+    model = run_script(
+        "check_inline_agent.py", "--check", "model", "**/agent.json", cwd=tmp_path
+    )
+
+    assert exists.returncode == 0, exists.stdout + exists.stderr
+    assert model.returncode == 0, model.stdout + model.stderr
+
+
+def test_inline_agent_model_scope_rejects_scaffold_default(tmp_path: Path) -> None:
+    agent = tmp_path / "agent-id" / "agent.json"
+    agent.parent.mkdir()
+    agent.write_text(json.dumps({"settings": {"model": "gpt-4o-2024-11-20"}}))
+
+    result = run_script(
+        "check_inline_agent.py", "--check", "model", "**/agent.json", cwd=tmp_path
+    )
+
+    assert result.returncode != 0
+    assert "not overridden" in result.stdout
 
 
 def test_reachability_excludes_the_loop_back_edge() -> None:

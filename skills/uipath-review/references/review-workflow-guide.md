@@ -306,7 +306,7 @@ Use when the issue is a **missed optimization** or **minor convention deviation*
 
 ## Report Format Specification
 
-The review report follows a fixed markdown structure. Produce it in chat — do NOT write it to a file.
+The review report follows a fixed markdown structure. Produce it in chat; **and when the task asks you to save it to a path (e.g. `./_review_report.md`), also write it to that exact path.** The read-only rule forbids creating or editing files **inside the project under review** — it does NOT forbid writing the requested report file.
 
 ```markdown
 ## Review Report: <Solution/Project Name>

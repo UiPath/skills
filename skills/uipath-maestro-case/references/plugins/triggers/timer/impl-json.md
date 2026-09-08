@@ -8,7 +8,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../
 
 Add a scheduled trigger to a case. Adapts shape to whether any Trigger node already exists in `schema.nodes`: emits the initial `trigger_1` minimal shape if none, or a secondary trigger with full render fields if one or more exist. Dual-file write: `caseplan.json` + `entry-points.json`.
 
-## Input spec (from `tasks.md`)
+## Input spec (from `sdd.md`)
 
 | Field | Required | Notes |
 |---|---|---|
@@ -39,7 +39,7 @@ Emit the canonical first-trigger shape with the timer `uipath` block:
     "inputs": {
       "serviceType": "timer",
       "timerType": "timeCycle",
-      "timeCycle": "<timeCycle from tasks.md>"
+      "timeCycle": "<timeCycle from sdd.md>"
     }
   }
 }
@@ -63,7 +63,7 @@ Emit a secondary trigger with `data.parentElement` included:
     "inputs": {
       "serviceType": "timer",
       "timerType": "timeCycle",
-      "timeCycle": "<timeCycle from tasks.md>"
+      "timeCycle": "<timeCycle from sdd.md>"
     }
   }
 }

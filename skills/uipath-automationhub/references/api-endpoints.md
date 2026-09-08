@@ -138,5 +138,27 @@ Linked components for the process.
 | 400 | Validation — missing required field, invalid enum, empty `user_inputs`, missing `OVERVIEW_NAME` |
 | 401 | Unauthorized — token missing/expired, or `x-ah-openapi-auth` was wrongly sent |
 | 403 | Forbidden — the user lacks the AH permission (authorization = the user's real AH role) |
-| 404 | Wrong URL, or AH not enabled on the tenant |
+| 404 | Wrong URL, or AH not available on the tenant — see **Automation Hub not available on this tenant** below |
 | 409 | Duplicate process name |
+
+### Automation Hub not available on this tenant
+
+Two distinct cases, with **different remedies** — don't collapse them, the advice differs:
+
+**1. AH is not enabled for the tenant.** The tenant has no Automation Hub service at all. Signals: a **404** whose body says `not found in organization`, or a **3xx redirect** to `portal_/unregistered` (following it would surface an HTML portal page as a JSON parse error). The user cannot fix this themselves — report exactly:
+
+> Please contact your administrator to enable Automation Hub on this tenant.
+
+**2. AH is reachable but the tenant was never onboarded into it.** The service answers **422 Tenant Lookup Error** on every call. This one *is* self-service — report exactly:
+
+> Automation Hub is reachable for this tenant but has not finished setup. Open Automation Hub in the browser once to complete it, then retry.
+
+In both cases: **stop after reporting** — do not retry, do not fall back to an admin OpenAPI token, and do not attempt the write against another tenant unless the user asks. Quote the message verbatim; don't paraphrase it.
+
+**Making the signals observable from `curl`.** `curl` reports the status but not *where* a 3xx points, so the first call each flow makes against the tenant asks for both:
+
+```bash
+curl -s -w "\n%{http_code} %{redirect_url}" …
+```
+
+The last line is then `<status> <redirect target>`: `%{redirect_url}` is empty on any non-3xx and carries the resolved `Location` on a 3xx — which is what makes the `portal_/unregistered` case above distinguishable from an ordinary redirect. **Never add `-L`.** Following the redirect throws away the one diagnosable signal and hands you an HTML portal page, which then fails as a JSON parse error — exactly the generic failure this section exists to prevent.

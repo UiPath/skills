@@ -107,8 +107,9 @@ Key options:
 # Get one process by key (cross-folder; resolved through the release lookup)
 uip or processes get <process-key-guid> --output json
 
-# Validation report — what does the runtime see when it tries to start this process?
-# Returns missing tools, missing assets, missing connections, schema mismatches.
+# Validation report — is everything this process needs actually present in its folder?
+# One row per resource the package declares (Queue, Asset, Bucket, Connection, Process,
+# EventTrigger, HttpTrigger, Entity, MCPServer, IXP, ProcessExecutionSettings, ...).
 uip or processes resources <process-key-guid> --output json
 
 # Edit fields after creation. Same flag set as `processes create` minus name/package-key/package-version,
@@ -134,6 +135,14 @@ uip or processes rollback <process-key-guid> --output json
 # Delete the process (release). Package itself stays in the feed.
 uip or processes delete <process-key-guid> --yes --output json
 ```
+
+> `processes resources` is the pre-flight check before `jobs start`. Read `ValidationResult` per row:
+> `Success` = the resource exists in the folder (`ResourceId` names it), `NotFound` = it is missing and
+> `ValidationError` says which one ("This queue cannot be found in the folder"), `Unknown` = not
+> folder-validated (connections, execution settings). Filter for the broken ones with
+> `--output-filter "[?ValidationResult=='NotFound']"`. The answer is release-specific: resource
+> overwrites configured on that process are applied first, so a resource pointed at a different
+> target than the package default still reports `Success`.
 
 `processes update` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
 

@@ -24,6 +24,7 @@ from flow_check import (  # noqa: E402
     assert_output_value,
     assert_outputs_contain,
     collect_outputs,
+    debug_budget,
     run_debug,
 )
 
@@ -595,6 +596,27 @@ def test_find_project_fails_when_multiple_flows(tmp_path, monkeypatch):
         _find_project("**/project.uiproj")
 
 
+def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypatch):
+    """stage-preview-sdk-workspace.sh symlinks the baked SDK tree to
+    ./node_modules; `glob('**')` follows it, so a fixture .flow/.uiproj inside
+    the SDK must never become a candidate (or a false `assert_no_flow_files`)."""
+    monkeypatch.chdir(tmp_path)
+    solution = tmp_path / "Real"
+    solution.mkdir()
+    _make_proj(solution, "Real", "Flow")
+    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "flow-sdk" / "fixtures"
+    sdk.mkdir(parents=True)
+    (sdk / "project.uiproj").write_text('{"ProjectType": "Flow"}')
+    (sdk / "Fixture.flow").write_text("{}")
+    os.symlink(sdk.parent.parent.parent, tmp_path / "node_modules")
+    assert _find_project("**/project.uiproj") == os.path.join("Real", "Real")
+    assert flow_check._rglob_pruned("**/*.flow") == []
+    flow_check.assert_no_flow_files()  # does not raise
+    (solution / "Real" / "Real.flow").write_text("{}")
+    with pytest.raises(SystemExit, match="Real.flow"):
+        flow_check.assert_no_flow_files()
+
+
 def test_find_project_fails_when_no_candidates(tmp_path, monkeypatch):
     """No project.uiproj at all — original failure message preserved."""
     monkeypatch.chdir(tmp_path)
@@ -787,34 +809,85 @@ _POLL_TIMEOUT = (
 )
 
 
+# Verbatim from `uip maestro flow debug` on 2026-09-02 07:48Z: Studio Web's
+# Overwrite answering 400/1001 for an EXISTING solution (UiPath/cli#3938).
+_OVERWRITE_400_1001 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Overwrite failed (400): {\\"code\\":\\"1001\\",\\"message\\":'
+    '\\"An argument had an invalid value.\\",\\"translatedMessage\\":null}",\n'
+    '  "Instructions": "Check that the flow project is valid, the selected folder '
+    'is accessible, and Studio Web debug is available, then retry.",\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
+# The 2026-08-26 shape: a real content error that must NOT be rotated around.
+# The staged envelope the CLI emits since UiPath/cli#3951 (main 2026-09-02): the
+# refusal is reported against its stage, the raw body is no longer echoed.
+_OVERWRITE_STAGED_400_1001 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Failed during overwrite-solution: HTTP 400 on POST '
+    '/codereval/studio_/backend/api/Solution/5ebc2eff-4eab-45a5-df6a-08df093139b4/Overwrite '
+    '\u2014 An argument had an invalid value.",\n'
+    '  "Instructions": "Studio Web refused to replace the contents of solution 5ebc2eff-4eab-45a5-df6a-08df093139b4. '
+    'Nothing was uploaded and nothing ran, so the flow is not the cause.",\n'
+    '  "Context": {"HttpStatus": 400, "Stage": "overwrite-solution", '
+    '"Endpoint": "/codereval/studio_/backend/api/Solution/5ebc2eff-4eab-45a5-df6a-08df093139b4/Overwrite", '
+    '"Method": "POST", "ErrorCode": "1001"},\n'
+    '  "ErrorCode": "invalid_argument",\n  "Retry": "RetryWillNotFix"\n}'
+)
+# Same stage, a different platform code: a content refusal, never rotated.
+_OVERWRITE_STAGED_400_20001 = _OVERWRITE_STAGED_400_1001.replace('"ErrorCode": "1001"', '"ErrorCode": "20001"').replace(
+    'An argument had an invalid value.',
+    'Archive is missing project directories referenced by solution metadata.',
+)
+# Another stage with the same code must not rotate either.
+_UPLOAD_STAGED_400_1001 = _OVERWRITE_STAGED_400_1001.replace('overwrite-solution', 'upload-solution')
+
+_OVERWRITE_400_20001 = _OVERWRITE_400_1001.replace('1001', '20001').replace(
+    'An argument had an invalid value.',
+    'Archive is missing project directories referenced by solution metadata: [X/temp/project.uiproj].',
+)
+
+
 def _cp(returncode, stdout="", stderr=""):
     return subprocess.CompletedProcess(
         args=["uip", "maestro", "flow", "debug"], returncode=returncode, stdout=stdout, stderr=stderr
     )
 
 
-def _stub_debug(monkeypatch, results):
-    """Feed run_debug a queue of CompletedProcess results, stub sleep to be
-    instant, and stub project discovery so no real tree is needed.
+def _stub_debug(monkeypatch, results, attempt_seconds=0):
+    """Feed run_debug a queue of CompletedProcess results off a fake monotonic
+    clock, and stub project discovery so no real tree is needed.
 
-    A queued ``BaseException`` is raised rather than returned, which is how the
-    ``subprocess.TimeoutExpired`` path is exercised. The last invocation's
-    ``cmd`` / ``env`` / ``timeout`` are recorded for assertions."""
-    calls = {"n": 0, "cmd": None, "env": None, "timeout": None}
+    The clock moves only on ``subprocess.run`` (``attempt_seconds``, clamped to
+    the cap given, mirroring the real SIGKILL) and on stubbed ``sleep``. The
+    default 0 never depletes the budget, so pre-deadline tests are unchanged.
+    Both stubs land on the stdlib ``time`` module and are process-wide for the
+    test; monkeypatch restores them, but do not add real sleeps under them.
+
+    A queued ``BaseException`` is raised, exercising ``TimeoutExpired``. Each
+    invocation's ``cmd`` / ``env`` / ``timeout`` is recorded; ``caps`` keeps the
+    per-attempt subprocess caps in order."""
+    calls = {"n": 0, "cmd": None, "env": None, "timeout": None, "caps": [], "clock": 0.0}
     queue = list(results)
     monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
-    monkeypatch.setattr(flow_check.time, "sleep", lambda *_: None)
+
+    def fake_sleep(seconds):
+        calls["clock"] += seconds
 
     def fake_run(cmd, **kwargs):
         calls["n"] += 1
         calls["cmd"] = cmd
         calls["env"] = kwargs.get("env")
         calls["timeout"] = kwargs.get("timeout")
+        calls["caps"].append(kwargs.get("timeout"))
+        calls["clock"] += min(attempt_seconds, kwargs.get("timeout"))
         result = queue.pop(0)
         if isinstance(result, BaseException):
             raise result
         return result
 
+    monkeypatch.setattr(flow_check.time, "sleep", fake_sleep)
+    monkeypatch.setattr(flow_check.time, "monotonic", lambda: calls["clock"])
     monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
     return calls
 
@@ -870,6 +943,319 @@ def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
 
 
+# ── run_debug: a faulted run carries the backend's incident details ──────────
+
+_FAULTED_102003 = (
+    '{\n  "Result": "Failure",\n  "Code": "FlowDebug",\n'
+    '  "Message": "Debug session Faulted. [102003] Integration Services bad request (element createIssue)",\n'
+    '  "Context": {"ErrorCode": "102003"},\n'
+    '  "Data": {"instanceId": "d007648d-8341-460c-92f8-c0fe4b8bde59", "finalStatus": "Faulted"}\n}'
+)
+_INCIDENTS = (
+    '{\n  "Result": "Success",\n  "Code": "DebugInstanceIncidents",\n  "Data": [{\n'
+    '    "ElementId": "createIssue", "ErrorCode": "102003",\n'
+    '    "ErrorMessage": "Integration Services bad request",\n'
+    '    "ErrorDetails": "Request to Integration Services failed with status code \'400\', message:  '
+    '{\\"providerMessage\\":\\"errors - {reporter=Specify a valid value for Reporter}\\"}"\n  }]\n}'
+)
+
+
+def test_run_debug_fault_appends_incident_details(monkeypatch):
+    """2026-09-01 escalation-jira-ticket: the CLI said `[102003]` and deferred the
+    provider's message to `debug-instance incidents`; the criterion output never
+    carried it. Now the failure text does, fetched while the instance still exists."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _FAULTED_102003), _cp(0, _INCIDENTS)])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    text = str(exc.value)
+    assert "flow debug exit 1" in text
+    assert "incidents (uip maestro flow debug-instance incidents):" in text
+    assert "element=createIssue code=102003" in text
+    assert "reporter=Specify a valid value for Reporter" in text
+    assert calls["n"] == 2
+    assert calls["cmd"][:5] == ["uip", "maestro", "flow", "debug-instance", "incidents"]
+    assert calls["cmd"][5] == "d007648d-8341-460c-92f8-c0fe4b8bde59"
+
+
+def test_run_debug_fault_without_instance_id_is_unchanged(monkeypatch):
+    bad = '{\n  "Result": "Failure",\n  "ErrorCode": "invalid_argument",\n  "Retry": "RetryWillNotFix"\n}'
+    calls = _stub_debug(monkeypatch, [_cp(1, bad)])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert "incidents" not in str(exc.value)
+    assert calls["n"] == 1  # no incidents call without an instance to ask about
+
+
+def test_run_debug_fault_incidents_read_failure_never_masks_the_fault(monkeypatch):
+    calls = _stub_debug(monkeypatch, [_cp(1, _FAULTED_102003), _cp(1, "", "Not logged in")])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert "flow debug exit 1" in str(exc.value)
+    assert "incidents (" not in str(exc.value)
+    assert calls["n"] == 2
+
+
+def test_run_debug_exit0_faulted_appends_incident_details(monkeypatch):
+    faulted = '{\n  "Result": "Success",\n  "Data": {"finalStatus": "Faulted", "instanceId": "abc"}\n}'
+    _stub_debug(monkeypatch, [_cp(0, faulted), _cp(0, _INCIDENTS)])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert "Flow did not complete (finalStatus=Faulted)" in str(exc.value)
+    assert "reporter=Specify a valid value for Reporter" in str(exc.value)
+
+
+# ── run_debug: completed but outputs unreadable (variables fetch failed) ─────
+
+# Verbatim shape of the 2026-09-01 move-node/v2 payload: every element
+# Completed, no `variables` key anywhere in Data.
+_COMPLETED_NO_VARIABLES = (
+    '{\n  "Result": "Success",\n  "Code": "FlowDebug",\n'
+    '  "Data": {"jobKey": "j", "instanceId": "609c57fa", "finalStatus": "Completed",\n'
+    '           "elementExecutions": [{"elementId": "end", "status": "Completed"}]},\n'
+    '  "Instructions": "Debug completed with status: Completed"\n}'
+)
+# Shape emitted by the fixed CLI: still no `variables`, plus the structured reason.
+_COMPLETED_VARIABLES_ERROR = (
+    '{\n  "Result": "Success",\n  "Code": "FlowDebug",\n'
+    '  "Data": {"instanceId": "609c57fa", "finalStatus": "Completed", "elementExecutions": [],\n'
+    '           "variablesError": {"message": "pims API request failed: 403 Forbidden", '
+    '"httpStatus": 403, "attempts": 4, "traceIds": ["t1"], '
+    '"endpoint": "/api/v1/debug-instances/609c57fa/variables"}}\n}'
+)
+# A run whose flow declares no outputs: `variables` is PRESENT and empty. Real result.
+_COMPLETED_EMPTY_VARIABLES = (
+    '{\n  "Result": "Success",\n'
+    '  "Data": {"finalStatus": "Completed", "variables": {"globals": {}, "elements": []}}\n}'
+)
+_CLI_STDERR = (
+    "Polling for completion...\nStatus: Completed (9/9 elements completed)\n"
+    "Fetching output variables...\n"
+    "[WARN] Could not fetch variables: pims API request failed: 403 Forbidden on GET "
+    "/api/v1/debug-instances/609c57fa/variables\n"
+)
+
+
+def test_run_debug_retries_completed_without_variables_then_returns_outputs(monkeypatch):
+    """A Completed payload with no `variables` key is a failed fetch, not a
+    result — retry the debug once; the second run's outputs are graded."""
+    calls = _stub_debug(
+        monkeypatch,
+        [_cp(0, _COMPLETED_NO_VARIABLES, _CLI_STDERR), _cp(0, _COMPLETED)],
+    )
+    payload = run_debug()
+    assert calls["n"] == 2
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+
+
+def test_run_debug_retries_variables_error_payload(monkeypatch):
+    calls = _stub_debug(
+        monkeypatch, [_cp(0, _COMPLETED_VARIABLES_ERROR), _cp(0, _COMPLETED)]
+    )
+    payload = run_debug()
+    assert calls["n"] == 2
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+
+
+def test_run_debug_persistent_unreadable_outputs_fails_as_infra(monkeypatch, capsys):
+    """Both attempts complete with unreadable outputs: fail with an INFRA
+    message and the capture (RAW + the CLI's STDERR), never as
+    'Outputs missing' — that verdict would blame the flow."""
+    calls = _stub_debug(
+        monkeypatch,
+        [
+            _cp(0, _COMPLETED_NO_VARIABLES, _CLI_STDERR),
+            _cp(0, _COMPLETED_NO_VARIABLES, _CLI_STDERR),
+        ],
+    )
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert calls["n"] == flow_check._VARIABLES_UNREADABLE_ATTEMPTS == 2
+    msg = str(exc.value)
+    assert "could not be read" in msg
+    assert "INFRA" in msg
+    assert "Outputs missing" not in msg
+    err = capsys.readouterr().err
+    assert "FLOW_DEBUG_RAW_CAPTURE BEGIN" in err
+    assert "STDERR (tail):" in err
+    assert "Could not fetch variables" in err
+
+
+def test_run_debug_does_not_retry_present_but_empty_variables(monkeypatch):
+    """`variables` present and empty is a genuine 'no outputs' result — return
+    it on the first attempt so the caller's assertion grades it."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED_EMPTY_VARIABLES)])
+    payload = run_debug()
+    assert calls["n"] == 1
+    assert flow_check.collect_outputs(payload) == []
+
+
+def _uipx_project(tmp_path, solution_id="79cda3cb-5a10-4f37-e091-08df08c2afbe"):
+    """`uip solution init` layout: `<Sol>/<Sol>.uipx` beside `<Sol>/<Proj>/`."""
+    sol = tmp_path / "Sol"
+    proj = sol / "Proj"
+    proj.mkdir(parents=True)
+    (sol / "Sol.uipx").write_text(
+        '{\n  "SolutionId": "%s",\n  "Name": "Sol",\n  "Projects": []\n}\n' % solution_id
+    )
+    return sol, proj
+
+
+def test_run_debug_rotates_the_solution_id_on_overwrite_1001_then_imports(monkeypatch, tmp_path, capsys):
+    """INTERIM (UiPath/cli#3938): the Studio Web Overwrite 400/1001 regression is
+    met with ONE retry as a new import — the bundled SolutionId is rotated first."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001), _cp(0, _COMPLETED)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    payload = run_debug(retries=1)
+    assert calls["n"] == 2
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+    text = (sol / "Sol.uipx").read_text()
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" not in text
+    assert flow_check._SOLUTION_ID_RE.search(text) is not None
+    err = capsys.readouterr().err
+    assert "INTERIM (UiPath/cli#3938" in err
+    assert "rotated the bundled SolutionId 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
+    assert "previous: 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
+    # The rotated-away id is recorded beside the .uipx so cleanup_solutions.py
+    # deletes the tenant solution it still names (nothing leaks).
+    sidecar = sol / flow_check.ROTATED_SOLUTION_IDS_SIDECAR
+    assert sidecar.read_text().splitlines() == ["79cda3cb-5a10-4f37-e091-08df08c2afbe"]
+
+
+def test_cleanup_solutions_deletes_rotated_ids_from_the_sidecar(monkeypatch, tmp_path):
+    """The sidecar written by the rotation is a cleanup input, not a log line."""
+    import importlib.util
+
+    sol, _ = _uipx_project(tmp_path, solution_id="11111111-1111-4111-8111-111111111111")
+    (sol / flow_check.ROTATED_SOLUTION_IDS_SIDECAR).write_text(
+        "22222222-2222-4222-8222-222222222222\n\n11111111-1111-4111-8111-111111111111\n"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "cleanup_solutions", os.path.join(os.path.dirname(flow_check.__file__), "cleanup_solutions.py")
+    )
+    cleanup = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cleanup)
+    deleted: list[str] = []
+
+    def fake_run(cmd, **kwargs):
+        deleted.append(cmd[3])
+        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(cleanup.subprocess, "run", fake_run)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("FLOW_E2E_CLEANUP", raising=False)
+    assert cleanup.main() == 0
+    # current id + rotated id, each exactly once (the sidecar's duplicate of the
+    # current id and its blank line are ignored)
+    assert sorted(deleted) == [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+    ]
+
+
+def test_run_debug_rotates_the_solution_id_on_the_staged_overwrite_envelope(monkeypatch, tmp_path, capsys):
+    """Same rotation, driven by the CLI's post-UiPath/cli#3951 envelope
+    (``Context.Stage == "overwrite-solution"``, ``Context.ErrorCode == "1001"``)."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_STAGED_400_1001), _cp(0, _COMPLETED)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    payload = run_debug(retries=1)
+    assert calls["n"] == 2
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+    text = (sol / "Sol.uipx").read_text()
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" not in text
+    assert "INTERIM (UiPath/cli#3938" in capsys.readouterr().err
+
+
+def test_run_debug_rotates_only_once(monkeypatch, tmp_path):
+    _, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001), _cp(1, _OVERWRITE_400_1001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit) as exc:
+        run_debug(retries=1)
+    assert calls["n"] == 2
+    assert "Overwrite failed (400)" in str(exc.value)
+
+
+def test_run_debug_does_not_rotate_on_a_content_overwrite_error(monkeypatch, tmp_path):
+    """Code 20001 (2026-08-26) is the archive being wrong; rotating would hide it."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_20001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit):
+        run_debug(retries=1)
+    assert calls["n"] == 1
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" in (sol / "Sol.uipx").read_text()
+
+
+def test_run_debug_overwrite_1001_without_a_uipx_fails_plainly(monkeypatch, tmp_path):
+    proj = tmp_path / "Proj"
+    proj.mkdir()
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit):
+        run_debug(retries=1)
+    assert calls["n"] == 1
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(1, _OVERWRITE_400_1001), True),
+        (_cp(1, _OVERWRITE_400_20001), False),
+        (_cp(0, _OVERWRITE_400_1001), False),
+        (_cp(1, _TRANSIENT_504), False),
+        # UiPath/cli#3951 staged envelope
+        (_cp(1, _OVERWRITE_STAGED_400_1001), True),
+        (_cp(1, _OVERWRITE_STAGED_400_20001), False),
+        (_cp(1, _UPLOAD_STAGED_400_1001), False),
+        (_cp(0, _OVERWRITE_STAGED_400_1001), False),
+    ],
+)
+def test_is_overwrite_stuck(cp, expected):
+    assert flow_check._is_overwrite_stuck(cp) is expected
+
+
+def test_run_debug_unreadable_retry_does_not_burn_the_transient_budget(monkeypatch):
+    """The unreadable-outputs retry is its own budget (2), independent of the
+    3 attempts reserved for 5xx/RetryLater."""
+    calls = _stub_debug(
+        monkeypatch,
+        [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED_NO_VARIABLES), _cp(0, _COMPLETED)],
+    )
+    payload = run_debug()
+    assert calls["n"] == 3
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+
+
+@pytest.mark.parametrize(
+    "stdout,expected",
+    [
+        (_COMPLETED, None),
+        (_COMPLETED_EMPTY_VARIABLES, None),
+        ('{"Result": "Success", "Data": {"finalStatus": "Faulted"}}', None),  # not Completed: other path
+        (_COMPLETED_NO_VARIABLES, "no `variables` key"),
+        (_COMPLETED_VARIABLES_ERROR, "variablesError after 4 attempt(s)"),
+    ],
+)
+def test_variables_unreadable_classifier(stdout, expected):
+    reason = flow_check._variables_unreadable(flow_check._parse_json(stdout))
+    if expected is None:
+        assert reason is None
+    else:
+        assert expected in reason
+
+
+def test_capture_includes_cli_stderr_tail(capsys, _reset_debug_raw, monkeypatch):
+    monkeypatch.setattr(flow_check, "_LAST_DEBUG_STDERR", _CLI_STDERR)
+    flow_check._LAST_DEBUG_RAW = _COMPLETED_NO_VARIABLES
+    with pytest.raises(SystemExit):
+        flow_check._fail_with_capture("boom")
+    err = capsys.readouterr().err
+    assert "STDERR (tail): Polling for completion..." in err
+    assert "Could not fetch variables" in err
+
+
 # ── run_debug timeout budget + diagnostics ───────────────────────────────────
 #
 # Regression cover for skill-flow-wiki-pageviews: the subprocess cap fired below
@@ -922,6 +1308,94 @@ def test_run_debug_caps_poll_timeout_attempts(monkeypatch):
     assert calls["n"] == flow_check._POLL_TIMEOUT_ATTEMPTS == 2
 
 
+# ── run_debug total-budget deadline ──────────────────────────────────────────
+#
+# Regression cover for skill-flow-api-workflow: `timeout` was a per-attempt cap
+# while the task YAML's `timeout:` caps the whole check, so a retry ran past the
+# criterion budget and the grader SIGKILLed the check mid-attempt. Nothing was
+# left to diagnose from, and a gating criterion scored 0 on a live-tenant hiccup.
+
+
+def test_default_budget_funds_the_poll_timeout_retry(monkeypatch):
+    """Exactly two attempts plus one backoff, and not a second more."""
+    assert debug_budget(timeout=240, backoff_seconds=5) == 485
+    calls = _stub_debug(
+        monkeypatch, [_cp(1, _POLL_TIMEOUT), _cp(0, _COMPLETED)], attempt_seconds=240
+    )
+    payload = run_debug(timeout=240, backoff_seconds=5)
+    assert calls["caps"] == [240, 240]  # both attempts run at full length
+    assert calls["clock"] == 485
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_budget_for_retries_1_is_a_single_attempt(monkeypatch):
+    """`retries=1` must not reserve time for a retry it will not make."""
+    assert debug_budget(timeout=300, retries=1) == 300
+
+
+def test_run_debug_never_exceeds_its_budget(monkeypatch):
+    """The deadline beats `retries`. Only an explicit budget can cut a retry
+    short, since the default is sized on `retries`."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
+    with pytest.raises(SystemExit):
+        run_debug(timeout=200, budget=405, retries=3, backoff_seconds=5)
+    assert calls["n"] == 2  # 405 - 200 - 5 - 200 = 0 left for a third
+    assert calls["clock"] <= 405
+
+
+def test_default_budget_funds_every_retry_the_caller_asked_for(monkeypatch):
+    """Sizing on `_POLL_TIMEOUT_ATTEMPTS` silently downgraded `retries=3` to
+    two attempts for slow 5xx transients."""
+    assert debug_budget(timeout=200, retries=3, backoff_seconds=5) == 610
+    calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
+    with pytest.raises(SystemExit):
+        run_debug(timeout=200, retries=3, backoff_seconds=5)
+    assert calls["n"] == 3
+
+
+def test_budget_below_the_cli_floor_is_rejected(monkeypatch):
+    """A budget under the floor hands the subprocess a smaller cap than the
+    CLI's own `--timeout`: the #2776 SIGKILL, rebuilt from the other side."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="at or below the CLI's 30s"):
+        run_debug(timeout=240, budget=25)
+    assert calls["n"] == 0  # rejected before spawning anything
+
+
+def test_retries_1_below_the_retry_threshold_is_allowed(monkeypatch):
+    """`_MIN_RETRY_BUDGET_SECONDS` funds ANOTHER attempt, so flooring the total
+    against it rejected `retries=1` budgets that only ever need one."""
+    assert debug_budget(45, retries=1) < flow_check._MIN_RETRY_BUDGET_SECONDS
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(timeout=45, retries=1)
+    assert calls["caps"] == [45]
+
+
+def test_run_debug_refuses_a_retry_it_cannot_fund(monkeypatch):
+    """A budget too small for a second attempt must not start one."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _POLL_TIMEOUT)] * 2, attempt_seconds=180)
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=180, budget=240, backoff_seconds=5)
+    assert calls["n"] == 1  # 240 - 180 - 5 = 55, under the 90s retry floor
+    assert "could not fund another" in str(excinfo.value)
+
+
+def test_run_debug_caps_the_last_attempt_at_the_remainder(monkeypatch):
+    """A remainder smaller than `timeout` shrinks the attempt to fit."""
+    calls = _stub_debug(
+        monkeypatch, [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED)], attempt_seconds=100
+    )
+    run_debug(timeout=240, budget=300, backoff_seconds=5)
+    assert calls["caps"] == [240, 195]  # 300 - 100 spent - 5 backoff
+
+
+def test_run_debug_retry_floor_matches_the_cli_minimum():
+    """The floor is the smallest attempt the CLI could actually run."""
+    assert flow_check._MIN_RETRY_BUDGET_SECONDS == (
+        flow_check._MIN_CLI_TIMEOUT_SECONDS + flow_check._CLI_TIMEOUT_HEADROOM_SECONDS
+    )
+
+
 def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
     """A stall upstream of polling exits as a graded FAIL carrying the partial
     output, not as an uncaught TimeoutExpired traceback."""
@@ -952,3 +1426,80 @@ def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
 )
 def test_as_text_decodes_defensively(raw, expected):
     assert flow_check._as_text(raw) == expected
+
+
+def test_retries_zero_runs_one_attempt_not_none(monkeypatch):
+    """`debug_budget` prices `max(1, retries)`, so the loop must make that many.
+    `range(0)` left `r` unbound and crashed with UnboundLocalError instead of
+    grading the criterion (found by Copilot review)."""
+    assert debug_budget(240, retries=0) == 240
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    payload = run_debug(retries=0)
+    assert calls["n"] == 1
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_timeout_at_or_below_the_cli_minimum_is_rejected(monkeypatch):
+    """The aggregate floor guards a fundable retry; this one guards the invariant
+    that the subprocess outlives the CLI's own `--timeout`. `timeout=20,
+    retries=10` clears the first and still SIGKILLs the CLI mid-poll."""
+    assert debug_budget(20, retries=10) >= flow_check._MIN_RETRY_BUDGET_SECONDS
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="at or below the CLI's 30s"):
+        run_debug(timeout=20, retries=10)
+    assert calls["n"] == 0
+
+
+def test_first_attempt_cap_must_strictly_outlive_the_cli(monkeypatch):
+    """An integer budget floors one second short, so `budget=31` yields a 30s
+    cap against a 30s CLI timeout: no room for the CLI to report first."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="cap its first attempt at 30s"):
+        run_debug(timeout=240, budget=31)
+    assert calls["n"] == 0
+    run_debug(timeout=240, budget=32)  # one more second is enough
+
+
+@pytest.mark.parametrize("seed", range(25))
+def test_run_debug_invariants_under_random_schedules(seed, monkeypatch):
+    """Random (timeout, budget, retries, backoff) against random attempt
+    durations and outcomes. Three invariants, none of which held by inspection
+    alone: the call never outlives its budget, every attempt gets a positive cap
+    that strictly outlives the CLI's own timeout, and nothing escapes as a crash
+    rather than a graded failure."""
+    import random
+
+    rng = random.Random(seed)
+    timeout = rng.choice([31, 45, 120, 180, 240, 480, 840])
+    retries = rng.choice([1, 2, 3, 5])
+    backoff = rng.choice([0, 1, 2.5, 5.0])
+    budget = rng.choice(
+        [None, None, debug_budget(timeout, retries, backoff), timeout + 60, 5000]
+    )
+    outs = [rng.choice([_COMPLETED, _POLL_TIMEOUT, _TRANSIENT_504]) for _ in range(10)]
+    spend = [rng.choice([1, timeout // 2, timeout, timeout * 3]) for _ in range(10)]
+
+    clock, caps, n = [0.0], [], [0]
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
+    monkeypatch.setattr(flow_check.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(flow_check.time, "sleep", lambda s: clock.__setitem__(0, clock[0] + s))
+
+    def fake_run(cmd, **kwargs):
+        cap = kwargs["timeout"]
+        caps.append((cap, int(cmd[cmd.index("--timeout") + 1])))
+        i = n[0]
+        n[0] += 1
+        clock[0] += min(spend[i % 10], cap)
+        return _cp(0 if outs[i % 10] is _COMPLETED else 1, outs[i % 10])
+
+    monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
+    try:
+        run_debug(timeout=timeout, budget=budget, retries=retries, backoff_seconds=backoff)
+    except SystemExit:
+        pass  # a graded failure is a valid outcome; a crash is not
+
+    granted = budget if budget is not None else debug_budget(timeout, retries, backoff)
+    assert clock[0] <= granted, f"spent {clock[0]}s of a {granted}s budget"
+    for cap, cli in caps:
+        assert cap > 0, f"non-positive subprocess cap {cap}"
+        assert cli < cap, f"CLI timeout {cli} does not fit inside the {cap}s cap"

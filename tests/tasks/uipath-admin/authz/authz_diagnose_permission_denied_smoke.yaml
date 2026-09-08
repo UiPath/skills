@@ -4,8 +4,9 @@ description: >
   a built-in directory group by resolving the group, running the effective-access
   (PDP) evaluation on it, and looking the governing permission up in the catalog.
   Graded on both tenant read-backs plus an llm_judge on the conclusion — not on
-  the command string. Validates the diagnostic workflow from
-  references/diagnose/references/troubleshooting-guide.md Steps 3 and 3b.
+  the command string. Validates Steps 1-2 and the Cause A branch of the unified
+  Access Denied (HTTP 403) scenario in
+  skills/uipath-admin/references/diagnose/failure-modes.md.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, authz, permission-denied]
 
 run_limits:

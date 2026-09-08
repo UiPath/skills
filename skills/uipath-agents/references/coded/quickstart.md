@@ -167,7 +167,9 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
 8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**
 
+<!--skill-flavor:local-workspace-delivery:start-->
    - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask the user (single choice, "Delivery"):
+<!--skill-flavor:local-workspace-delivery:end-->
 
      **Question:** *Studio Web is auto-syncing this workspace. Do you want a local dev console too?*
 
@@ -189,12 +191,15 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
      | # | Label (≤5 words) | Description |
      |---|---|---|
      | A | Studio Web — you set it up | You open Studio Web, create a Coded Agent project inside a solution, paste the project ID. I'll write `UIPATH_PROJECT_ID` to `.env` and run `uip codedagent push`. |
+<!--skill-flavor:delivery-option-b-row:start-->
      | B | Studio Web — I package & upload | I run `uip solution init`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
+<!--skill-flavor:delivery-option-b-row:end-->
      | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Nothing is published. |
      | — | Skip — I'm done | Stop here. The agent is built and evaluated. |
 
      On reply:
      - **A** → wait for the project ID, write `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagent push`.
+<!--skill-flavor:delivery-option-b:start-->
      - **B** → run the local-solution flow. `uip solution init "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
 
        ```bash
@@ -205,10 +210,13 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
        ```
+<!--skill-flavor:delivery-option-b:end-->
      - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
      - **Skip** → continue to step 9.
 
+<!--skill-flavor:deploy-reachability:start-->
 9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask the user (single choice, "Deploy target").
+<!--skill-flavor:deploy-reachability:end-->
 
    **Question:** *Do you want to deploy the agent? If yes, which target?*
 
@@ -328,7 +336,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
 ## Framework Selection
 
-> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Python Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill instead of this one. Coded Functions use typed I/O (`@dataclass`, Pydantic `BaseModel`, or a thin Python class with typed annotations) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
+> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill (Python or TypeScript/JavaScript) instead of this one. Coded Functions use typed I/O (Pydantic `BaseModel` in Python, `defineSchema<T>()` in TS) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
 
 If the task needs LLM reasoning, infer the framework from the user's prompt when possible. If ambiguous, ask them to choose:
 

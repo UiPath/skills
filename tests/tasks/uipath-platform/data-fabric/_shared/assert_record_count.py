@@ -19,6 +19,9 @@ Exit codes:
          call failed (the criterion will FAIL, surfacing the mismatch)
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess

@@ -1,6 +1,6 @@
 ---
 name: uipath-api-workflow
-description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Load for ANY create or edit of a `Workflow.json` / API workflow project (even one line); with `evals/` present, tests come first (TDD). Covers Sequence, Assign, JavaScript, If (#Wrapper/#Then/#Else), ForEach, DoWhile, Break, TryCatch, Wait, Response, nested; AND HTTP / IS connector activities via `uip api-workflow registry`. Operate: run locally, IS connections, pack/publish/deploy via `uip solution`, triggers. Test/eval: `evals/<scope>/eval-sets/` datasets (exact-match, Evaluations panel); loop until green. Diagnose: validate → run --no-auth loop, root-cause. Triggers on API workflows, project type \"Api\", JSON with `document.dsl`/`do[]`, those activity types, or public API fetch. Agent evals (`evals/eval-sets/`, no scope) and coded agents→uipath-agents. Flow (.flow) incl. its evals→uipath-maestro-flow. .xaml/coded RPA→uipath-rpa. Coded Apps→uipath-coded-apps."
+description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Load for ANY create/edit of a `Workflow.json` / API workflow project; with `evals/` present, tests come first (TDD). Covers Sequence, Assign, JavaScript, If (#Wrapper/#Then/#Else), ForEach, DoWhile, Break, TryCatch, Wait, Response, nested; files as JobAttachment refs via File to Base64 / Base64 to File (`$helpers.file.*`, `serializeData()`, `--input-file`/`--output-dir`); HTTP / IS connector activities via `uip api-workflow registry`. Operate: run, IS connections, pack/publish/deploy. Test/eval: `evals/<scope>/eval-sets/` datasets (exact-match, Evaluations panel); loop until green. Triggers on API workflows, project type \"Api\", JSON with `document.dsl`/`do[]`, those activity types, or file/base64 handling. Agent evals (`evals/eval-sets/`, no scope) & coded agents→uipath-agents. Flow & its evals→uipath-maestro-flow. .xaml/coded RPA→uipath-rpa. Coded Apps→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -19,6 +19,7 @@ Build, run, and publish UiPath API Workflows: JSON conforming to CNCF Serverless
 Use for API workflow JSON creation/editing, local runs, validation, build/packaging, publishing, operating published workflows, and activities including Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, and connector activities. Use the connector and testing references for Studio Web connector workflows and project `evals/` layouts.
 <!--skill-flavor:surface-lifecycle-scope:start-->
 <!--skill-flavor:surface-lifecycle-scope:end-->
+- User wants to **handle a file** in an API workflow — take a file input, send a file as base64 to an API, turn a base64 payload back into a file, or asks about `JobAttachment`, `$helpers.file`, `serializeData()`, `--input-file` / `--output-dir`. See [references/files-and-base64.md](references/files-and-base64.md)
 <!--skill-flavor:surface-operations-scope:start-->
 <!--skill-flavor:surface-operations-scope:end-->
 
@@ -105,6 +106,17 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 22. **TDD gate.** Check `<project>/evals/` on every create/edit. Without it, do not offer tests, create the folder, or mention loop mode. With it, stop before modifying `Workflow.json` or evals and ask whether existing cases change or new cases are added, and whether to run/retry until all pass or author once. If rows exist, report their count and summarize each; if empty, propose 2–3 cases. After answers, declare `input.schema` and `output.schema`, update evals, author, then run rows only in loop mode or hand over in author-once mode. Behavior changes require identifying affected rows and asking whether expectations should change. A request not to ask keeps existing tests and does not authorize runtime. See [references/testing-and-evals.md](references/testing-and-evals.md) §3.
 
+23. **Files are references, not bytes — and base64 is a file too.** A file input or output is a `JobAttachment` (`{ ID, FullName, MimeType, Metadata? }`) pointing at a blob in Orchestrator storage; `$workflow.input.<file>` is that object, never the bytes.
+    - **The two activities.** Both are `run.script` tasks; the `$helpers.file.*` call in the script is what identifies them (it is what `validate` checks). **File to Base64** (`metadata.activityType: "FileToBase64"`, code `return { output: await $helpers.file.fileToBase64(<file ref>) }`) returns a NEW reference whose blob content IS the base64 text (`<name>.base64`, `text/plain`, `Metadata.Encoding: "base64"`). **Base64 to File** (`metadata.activityType: "Base64ToFile"`, code `return { output: await $helpers.file.base64ToFile({ base64: <ref or string>, fileName?, mimeType? }) }`) returns a binary reference. The script is that single `return` expression and nothing else: Studio Web rebuilds the script from the parsed call on every designer save and silently drops a preceding or trailing statement, a second argument, or an extra option key. `validate` warns only about the extra statements — an extra argument passes as `Valid` and still breaks — so put any pre-processing in a JavaScript activity before the conversion.
+    - **Reading results.** Read either activity's result as `$context.outputs.<Key>.output`.
+    - **Inlining file content.** To put a file's content INLINE in an HTTP request body or a Response field, call `<ref>.serializeData()` right there — it returns a deferred-read marker the engine fills at send time; never store it in a variable or use it in script logic. Nested in a JSON body it works **only for a base64 reference** (the File to Base64 output): a binary file's marker, or a bare reference, nested in a body is a send-time error — send a binary file as the *whole* body (bare reference) or convert it first.
+    - **Naming.** `fileName` / `mimeType` apply only to a raw base64 *string*; a reference keeps its own name and the engine sniffs the type from bytes (a `.txt` round-trips to an extension-less file).
+    - **Running.** Both helpers need Orchestrator blob storage:
+<!--skill-flavor:file-run-cli:start-->
+    `uip api-workflow run --no-auth` refuses such a workflow up front; run it signed in (`uip login`, no `--no-auth`) — it still needs the rule-21 "yes". Pass local files with `--input-file <name>=<path>` (uploaded, arriving as `$workflow.input.<name>`), collect returned files with `--output-dir <dir>` (each reference in the output gains a `LocalPath`), and `--folder-key <guid>` if the tenant's Attachments API requires a folder. In the printed output the CLI PascalCases keys (`ID` → `Id`).
+<!--skill-flavor:file-run-cli:end-->
+    Shapes, worked example and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
+
 ## Workflow Phases
 
 ### Phase 0: Discovery
@@ -114,6 +126,13 @@ Check the project directory for `evals/`, then read `evals/<scope>/eval-sets/*.j
 ### Phase 1: Plan
 
 Choose activities, unique keys, variables, inputs, outputs, and nesting. Use Assign for variables, JavaScript/JsInvoke for custom logic, If for branching, ForEach for collections, DoWhile for repetition, TryCatch for errors, Wait for pauses, Response for termination, Break inside an If, and registry-generated `UiPath.Http` or `UiPath.IntSvc` for HTTP/connectors. Use generic connector activities only when registry discovery finds no curated operation. Read [references/task-types.md](references/task-types.md).
+
+Files/base64 handling (rule 23):
+
+| User wants | Activity type | Key points |
+|------------|---------------|------------|
+| Encode a file (input or downloaded) as base64 for an API that wants inline base64 | **File to Base64** (`FileToBase64`) | `run.script` calling `await $helpers.file.fileToBase64(<ref>)`; output is a base64 FILE reference — inline it in the body with `.serializeData()`. Rule 23. |
+| Turn a base64 payload (API response string or a base64 file) back into a file | **Base64 to File** (`Base64ToFile`) | `run.script` calling `await $helpers.file.base64ToFile({ base64, fileName?, mimeType? })`; output is a binary file reference. Rule 23. |
 
 ### Phase 2: Generate or Edit
 
@@ -183,6 +202,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Nested If, loops, TryCatch, Break, branching, key uniqueness |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Expressions, context, inputs, scripts, exports, strict mode |
+| [references/files-and-base64.md](references/files-and-base64.md) | **Files & base64** — `JobAttachment` references, the File to Base64 / Base64 to File activities (exact JSON, `$helpers.file.*`), `serializeData()` for inline bodies/Responses, passing local files in and getting files out of a run, pitfalls |
 <!--skill-flavor:cli-reference-navigation:start-->
 | [references/cli-reference.md](references/cli-reference.md) | API workflow, solution, login, build, pack, validate, publish |
 <!--skill-flavor:cli-reference-navigation:end-->
@@ -200,6 +220,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - [assets/templates/conditional-workflow-example.json](assets/templates/conditional-workflow-example.json) — conditional branching/error handling.
 - [assets/templates/loop-aggregation-example.json](assets/templates/loop-aggregation-example.json) — loop aggregation.
 - [assets/templates/nested-control-flow-example.json](assets/templates/nested-control-flow-example.json) — deeply nested control flow.
+- [assets/templates/file-base64-roundtrip-example.json](assets/templates/file-base64-roundtrip-example.json) — **Files** — a `document` file input → File to Base64 → Base64 to File → Response returning both references. The exact `run.script` shape Studio Web writes for the two activities (rule 23). Verified end-to-end with a signed-in run: local file in → `.base64` reference → decoded file out, bytes identical.
 <!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
 <!--skill-flavor:template-execution-proof:end-->
@@ -214,6 +235,8 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - Do not wrap connector parameter literals as `${'literal'}`.
 - Do not ship connection or URL replacement sentinels.
 - Do not read later workflow inputs from `$input.<name>`.
+- **Do NOT** treat a file input or a File to Base64 result as a string — both are `JobAttachment` references. Inline a file's content only with `<ref>.serializeData()` inside an HTTP body / Response, never in an Assign or script — and inside a JSON body field only on the File to Base64 output (`$workflow.input.document.serializeData()` nested in a body fails with "Raw bytes cannot be embedded in JSON"). See rule 23.
+- **Do NOT** write `$helpers.fileToBase64(...)` / `$helpers.base64ToFile(...)` — the helpers live under `$helpers.file.`; `validate` rejects the task and the runtime says `is not a function`. See rule 23.
 <!--skill-flavor:runtime-execution-antipattern:start-->
 - Do not run autonomously or authenticated vendor calls without consent.
 <!--skill-flavor:runtime-execution-antipattern:end-->

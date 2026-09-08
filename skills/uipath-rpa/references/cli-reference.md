@@ -361,7 +361,7 @@ uip rpa run --file-path "<FILE>" --skip-build --input-arguments key=value --outp
 uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 ```
 
-`--skip-build` still compiles the workflow it executes — it skips the project build/pack step, not compilation. A post-build edit **is** picked up: an edit that introduces a compile error under `--skip-build` aborts the run with that error rather than silently executing the previous artifact. So `--skip-build` is safe after any edit, and there is no stale-artifact caveat to work around.
+`--skip-build` executes the existing compiled artifact — any edit since the last successful `build` is silently ignored. Use bare `run` after edits.
 
 **When to run:**
 1. Workflow has no compilation errors but you want to verify runtime behavior

@@ -32,7 +32,6 @@ import sys
 import time
 from pathlib import Path
 
-SOLUTION_DIR = "FaultSolution"
 PROJECT_NAME = "OrderStatus"
 # The fixture faults on the first poll in practice (the throw is immediate), so a
 # short budget is plenty and keeps the phase inside coder-eval's 300s pre_run cap.
@@ -72,6 +71,12 @@ uuid8 = seed.get("uuid8")
 parent = seed.get("parent_folder_path") or "Shared"
 if not uuid8:
     die("seed.json has no uuid8")
+
+# The solution name becomes the deployed process key (`<solution>.api.<project>`).
+# A fixed name means every run deploys the same key, and a deployment left
+# standing by an interrupted run makes every later `deploy run` fail with
+# ValidationFailed. Suffixing uuid8 makes each run's key unique.
+SOLUTION_DIR = f"FaultSolution{uuid8}"
 
 package_name = f"apiwffault-pkg-{uuid8}"
 deploy_name = f"apiwffault-{uuid8}"

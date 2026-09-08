@@ -14,10 +14,10 @@ initial_prompt: |
   Work autonomously — take this end to end and don't stop to ask me anything.
 
   I want to expose the public Swagger Petstore API as tools in AgentHub. Register a swagger-type
-  MCP server in the Shared folder, name it "E2E Swagger", from this spec:
+  MCP server in the Shared folder, from this spec:
   https://petstore3.swagger.io/api/v3/openapi.json — then refresh its tools so the spec's
   operations actually show up. Give it a unique slug so reruns don't collide (append the Unix
-  epoch, e.g. swagger-e2e-<EPOCH>).
+  epoch, e.g. swagger-e2e-<EPOCH>). Use the same slug as the MCP's name.
 
   When it's done, leave a report.json in the working dir with the slug and folder so we can clean
   it up afterward: {"slug": "<slug>", "folder_path": "Shared"}

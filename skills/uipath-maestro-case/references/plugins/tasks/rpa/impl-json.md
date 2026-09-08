@@ -22,7 +22,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
-- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
+- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 - **Do not flip to `type: "process"`** based on registry. The `rpa` vs `process` distinction comes from sdd.md intent.
 
@@ -34,7 +34,7 @@
 uip maestro case tasks describe --type rpa --id "<entityKey>" --output json
 ```
 
-Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
+Fallback: planning-captured schema from `registry-resolved.json`. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 **Step 1 — Root-level bindings:**
 
@@ -42,7 +42,7 @@ Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../..
 
 - `resource`: `"process"`
 - `resourceSubType`: omit (no resourceSubType for rpa tasks)
-- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime.
+- `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime.
 
 Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
