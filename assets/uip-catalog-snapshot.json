@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-07T04:06:51Z",
-  "cli_version": "1.203.0-dev.8556",
+  "generated_at": "2026-09-08T04:07:47Z",
+  "cli_version": "1.203.0-dev.8563",
   "verbs": [
     "admin",
     "admin audit",
@@ -175,6 +175,8 @@
     "agent model list",
     "agent refresh",
     "agent review",
+    "agent review-history",
+    "agent review-history add",
     "agent tool",
     "agent tool list",
     "agent validate",
