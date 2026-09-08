@@ -170,6 +170,4 @@ Any error not in this table → Rule 18. Topic-specific error tables live in the
 
 ## Packaging into a Solution
 
-To ship a folder-scoped entity or choice set as part of a deployable solution (`.uipx` → `.zip`), use [`uipath-solution`](/uipath:uipath-solution). Create the resource on the tenant first via `uip df entities create` / `uip df choice-sets create --folder-key <…>`, then in the solution run `uip solution resources add --source remote --kind Entity|ChoiceSet --name <…> --folder-path <…>`. `--source local` also works but creates an empty schema-less stub.
-
-**Do not populate the solution's `configuration.json` from `uip df entities get`.** SDK reads shape fields as `fieldDataType` and break upgrade with per-field `EntityConflict`. Only `uip solution resources add --source remote` writes the shape the deploy validator accepts — see [`develop-solution.md`](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).
+To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).

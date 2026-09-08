@@ -279,15 +279,6 @@ Effect on the file: appends `linkToResource: { name, folderPath }` to the matche
 
 When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
 
-For Data Fabric kinds (`Entity`, `ChoiceSet`), `link` chooses which Orchestrator entity or choice set the deployment will bind to. A common case is shipping the same solution to multiple tenants or folders: the package was built against an entity in a dev folder, and the deployment needs to use the prod copy of the same entity.
-
-```bash
-uip solution deploy config link config.json Customer \
-  --name Customer --folder-path "Prod/CRM"
-```
-
-The first `Customer` is the resource name inside the solution. `--name` and `--folder-path` identify the entity in Orchestrator to bind to. The two names don't have to match — link the solution's `Customer` to a `CustomerV2` entity in a different folder if that's what the target environment has.
-
 ### Unlink a Resource
 
 Remove the link so the resource is provisioned fresh in the deployment folder:
@@ -442,19 +433,7 @@ Folder filtering with `--folder-path` happens **after** fetching `--limit` resul
 
 ### Data Fabric Resources — Pointer, Not Copy
 
-When the solution imports `Entity` or `ChoiceSet` resources via `solution resources add --source remote`, the package stores a **pointer** to the resource in its source folder — it does not embed a copy. `uip df entities create` / `uip df choice-sets create --folder-key <…>` owns the resource; the solution just records `(name, sourceFolder)` and the deployed projects bind to it there.
-
-On a plain deploy, the pointer is honored as-is: the entity / choice set stays in the source folder, and the deployment folder holds only the binding. To retarget the binding to a different Orchestrator entity or choice set at deploy time — e.g. shipping the same solution to dev vs. prod — use [`solution deploy config link`](#link-to-an-existing-orchestrator-resource) to override the resource before running deploy.
-
-Verify a plain deploy by querying the **source** folder, not the deployment folder:
-
-```bash
-# Source folder (where `uip df entities create --folder-key <X>` placed it)
-uip df entities list --folder-key <SOURCE_FOLDER_KEY> --output json
-
-# Deployment folder — will NOT contain the entity
-uip df entities list --folder-key <DEPLOY_FOLDER_KEY> --output json
-```
+Unlike other remote-imported kinds, `Entity` and `ChoiceSet` are not provisioned into the deployment folder on a plain deploy — they stay in the folder where `uip df entities create --folder-key <…>` / `uip df choice-sets create --folder-key <…>` placed them, and the deployment folder holds only the binding. Verify with `uip df entities list --folder-key <SOURCE_FOLDER_KEY> --output json` against the source folder, not the deployment folder. To retarget the binding at deploy time (dev vs. prod), use [`config link`](#link-to-an-existing-orchestrator-resource) to override the resource.
 
 ---
 
