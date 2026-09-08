@@ -186,7 +186,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    expression/error mappings, retry attributes), then run
    `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For a new local project, initialize the
    supported scaffold with `uip maestro bpmn init <ProjectName> --output json`,
-   edit at the returned `Data.Path`, and preserve its generated metadata — see
+   edit at the returned `Data.Path`, and preserve its generated metadata. For a
+   source-only draft the user has not asked to package or operate, pass
+   `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
+   created. See
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
    The runnable BPMN/start-event path belongs in lowercase `operate.json.main`,
    never `project.uiproj.main`.
@@ -216,7 +219,7 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
    If the user asks for the package metadata files, or to package or operate,
-   run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
+   run `uip maestro bpmn refresh <project-path>` to generate the four
    files, and keep its output as written — that shape is the contract `pack`
    consumes. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)

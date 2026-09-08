@@ -82,11 +82,7 @@ def main() -> None:
     process = root.find("bpmn:process", NS)
     if process is None:
         fail("missing bpmn:process element")
-    # `isExecutable` is deliberately not graded: nothing in the CLI reads it
-    # (no reference in maestro-sdk/maestro-tool outside the spec), so pack,
-    # validate, and the canvas all tolerate any value. The skill documents the
-    # scaffold default; failing an agent over an inert attribute would grade
-    # style, not behaviour -- see .claude/rules/test-writing.md.
+    # `isExecutable` is not graded: no CLI code path reads it.
 
     starts = process.findall("bpmn:startEvent", NS)
     if len(starts) != 1:
@@ -166,9 +162,9 @@ def main() -> None:
     migration_versions = {
         elem.attrib.get("version") for elem in root.findall(".//uipath:migrationVersion", NS)
     }
-    numeric_versions = {v for v in migration_versions if v and any(ch.isdigit() for ch in v)}
-    if not numeric_versions:
-        fail('missing numeric uipath:migrationVersion (e.g. version="11" or "11.5")')
+    integer_versions = {v for v in migration_versions if v and v.isdigit()}
+    if not integer_versions:
+        fail('missing integer uipath:migrationVersion (e.g. version="15")')
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)

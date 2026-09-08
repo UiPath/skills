@@ -38,9 +38,17 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
+    description: "BPMN source was authored"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('LeaveRequestBpmn.bpmn')) else 'LeaveRequestBpmn.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "An Actions.HITL BPMN exists and routes its outcome through an exclusive gateway into three distinct paths"
     command: "python3 $TASK_DIR/check_smoke_multi_outcome_routing.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 3.0
     pass_threshold: 1.0

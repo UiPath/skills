@@ -68,11 +68,14 @@ def test_minimal_example_has_complete_di_coverage() -> None:
     process = root.find("bpmn:process", NS)
     assert process is not None
 
+    # Derived, not whitelisted: adding a node type to the doc example must not
+    # surface as a DI-coverage mismatch.
     node_ids = {
         element.attrib["id"]
         for element in process
-        if element.tag.rsplit("}", 1)[-1]
-        in ("startEvent", "task", "endEvent", "exclusiveGateway")
+        if element.get("id")
+        and element.tag.rsplit("}", 1)[-1]
+        not in ("sequenceFlow", "extensionElements")
     }
     flow_ids = {
         flow.attrib["id"] for flow in process.findall("bpmn:sequenceFlow", NS)
@@ -83,9 +86,12 @@ def test_minimal_example_has_complete_di_coverage() -> None:
     assert {shape.attrib["bpmnElement"] for shape in shapes} == node_ids
     assert {edge.attrib["bpmnElement"] for edge in edges} == flow_ids
     assert all(len(edge.findall("di:waypoint", NS)) >= 2 for edge in edges)
+
+
 def test_variable_and_migration_examples_use_serializer_attributes() -> None:
     text = REFERENCE.read_text(encoding="utf-8")
     variables_section = text.split("## Variables (`BPMN.Variables`)", maxsplit=1)[1]
+    variables_section = variables_section.split("\n## ", 1)[0]
     match = re.search(r"```xml\n(?P<xml>.*?)\n```", variables_section, re.DOTALL)
     assert match, "structural-bpmn.md is missing its variable declaration example"
 

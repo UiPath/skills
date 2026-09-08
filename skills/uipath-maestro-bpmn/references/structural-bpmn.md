@@ -41,7 +41,7 @@ namespace, at least one `<bpmn:process>`, and (to render) a
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
-    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+    exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.203.0">
   <bpmn:process id="Process_1">
     <!-- variables, flow nodes, sequence flows -->
   </bpmn:process>
@@ -86,7 +86,7 @@ reason authoring runs out of time.
     xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
-    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+    exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.203.0">
   <bpmn:process id="Process_1">
     <bpmn:extensionElements>
       <uipath:variables version="v1" />
@@ -516,7 +516,10 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
   second diagram plane for the subprocess so nested content renders.
 - **Add an entry point**: use a root-level start event and generate a stable,
   unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
-  example UUID; this scaffold field is not a registry-owned node payload.
+  example UUID; this scaffold field is not a registry-owned node payload. Also
+  declare the public input/output variables whose `elementId` matches that
+  start event — without the match, `refresh` derives an empty `input` schema
+  for the entry point.
 
 Do not patch generated JSON to fix source behavior — change the `.bpmn` and
 regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.
