@@ -25,13 +25,19 @@ Use a Scheduled Trigger to start the flow on a recurring schedule instead of man
 
 | Input | Required | Description |
 | --- | --- | --- |
-| `timerType` | Yes | Always `timeCycle` for scheduled triggers |
-| `timerPreset` | Yes | Preset value or `custom` |
-| `timerValue` | Conditional | Required when `timerPreset: "custom"` (ISO 8601 repeating interval) |
+| `timerValue` | Yes | The cycle expression — ISO 8601 repeating interval or Quartz cron |
+| `timerType` | No | `timeCycle` for scheduled triggers |
 
-## Frequency Presets
+There is no `timerPreset` input on this node. Every frequency, common or not,
+goes in `timerValue`.
 
-| Preset Value | Frequency |
+## Cycle Expression Formats
+
+### ISO 8601 Repeating Interval
+
+`R/P[duration]` — `R` means repeat indefinitely, followed by duration.
+
+| Value | Frequency |
 | --- | --- |
 | `R/PT5M` | Every 5 minutes |
 | `R/PT15M` | Every 15 minutes |
@@ -41,13 +47,18 @@ Use a Scheduled Trigger to start the flow on a recurring schedule instead of man
 | `R/PT12H` | Every 12 hours |
 | `R/P1D` | Daily |
 | `R/P1W` | Weekly |
-| `custom` | Use `timerValue` for custom ISO 8601 repeating interval |
 
-## ISO 8601 Repeating Interval Format
+Any other interval uses the same form: `R/PT10M` (every 10 min), `R/P2D` (every 2 days).
 
-`R/P[duration]` — `R` means repeat indefinitely, followed by duration.
+Exactly one duration unit, non-zero, and in range — `Y` 1-9999, `M` 1-12, `W` 1-52, `D` 1-31, `H` 1-23, `T…M` 1-59, `S` 1-59. `R/PT2H30M` (two units), `R/PT24H` (out of range), and `R/PT0H` (zero) are all rejected. Express those as a cron expression instead.
 
-Examples: `R/PT10M` (every 10 min), `R/P2D` (every 2 days), `R/PT2H30M` (every 2.5 hours)
+An interval may be anchored to a start instant: `R/2026-05-14T09:00:00Z/P1W`.
+
+### Quartz Cron
+
+Six or seven whitespace-separated fields, for schedules a single-unit interval cannot express (every 2.5 hours, 09:00 every weekday).
+
+Examples: `0 0 */1 * * ? *` (hourly on the hour), `0 30 */2 * * ? *` (every 2.5 hours), `0 0 9 ? * MON-FRI` (weekdays at 09:00)
 
 ## Key Rules
 

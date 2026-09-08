@@ -32,7 +32,7 @@ def _out(r: subprocess.CompletedProcess[str]) -> str:
 
 
 def _scheduled_node(**inputs: Any) -> dict[str, Any]:
-    base = {"entryPointId": "ep-1", "timerType": "timeCycle", "timerPreset": "R/PT1H"}
+    base = {"entryPointId": "ep-1", "timerType": "timeCycle", "timerValue": "R/PT1H"}
     base.update(inputs)
     return {
         "id": "start",
@@ -57,18 +57,52 @@ def _well_formed() -> dict[str, Any]:
     }
 
 
-def test_preset_passes(tmp_path: Path) -> None:
+def test_interval_passes(tmp_path: Path) -> None:
     _write_flow(tmp_path, _well_formed())
     r = _run(tmp_path)
     assert r.returncode == 0, r.stdout + r.stderr
 
 
-def test_custom_with_timer_value_passes(tmp_path: Path) -> None:
+def test_anchored_interval_passes(tmp_path: Path) -> None:
     p = _well_formed()
-    p["nodes"][0] = _scheduled_node(timerPreset="custom", timerValue="R/PT45M")
+    p["nodes"][0] = _scheduled_node(timerValue="R/2026-05-14T09:00:00Z/P1W")
     _write_flow(tmp_path, p)
     r = _run(tmp_path)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_cron_passes(tmp_path: Path) -> None:
+    """A cron expression is the documented escape hatch for a schedule the
+    single-unit interval form cannot express (09:00 every weekday)."""
+    p = _well_formed()
+    p["nodes"][0] = _scheduled_node(timerValue="0 0 9 ? * MON-FRI")
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_stray_timer_preset_is_ignored(tmp_path: Path) -> None:
+    """`timerPreset` is not in the node's schema; validate tolerates it as an
+    extra key, so an agent that writes both must not be docked here."""
+    p = _well_formed()
+    p["nodes"][0] = _scheduled_node(timerPreset="R/PT1H")
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_cycle_in_timer_preset_only_fails(tmp_path: Path) -> None:
+    """The exact regression this checker missed: the cycle expression written to
+    `timerPreset` with no `timerValue` passed the old checker but failed
+    `uip maestro flow validate` with REQUIRED_FIELD timerValue."""
+    p = _well_formed()
+    node = _scheduled_node(timerPreset="R/PT1H")
+    node["inputs"].pop("timerValue")
+    p["nodes"][0] = node
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode != 0
+    assert "timervalue" in _out(r)
 
 
 def test_manual_node_present_fails(tmp_path: Path) -> None:
@@ -100,27 +134,51 @@ def test_wrong_timer_type_fails(tmp_path: Path) -> None:
     assert "timecycle" in _out(r)
 
 
-def test_bad_preset_fails(tmp_path: Path) -> None:
+def test_bad_cycle_fails(tmp_path: Path) -> None:
     p = _well_formed()
-    p["nodes"][0] = _scheduled_node(timerPreset="hourly")
+    p["nodes"][0] = _scheduled_node(timerValue="hourly")
     _write_flow(tmp_path, p)
     r = _run(tmp_path)
     assert r.returncode != 0
     assert "iso 8601" in _out(r)
 
 
-def test_zero_duration_preset_fails(tmp_path: Path) -> None:
+def test_zero_duration_fails(tmp_path: Path) -> None:
+    """R/PT0H is a never-firing schedule; the registry pattern rejects a zero
+    duration outright, so no separate all-zero guard is needed."""
     p = _well_formed()
-    p["nodes"][0] = _scheduled_node(timerPreset="R/PT0H")
+    p["nodes"][0] = _scheduled_node(timerValue="R/PT0H")
     _write_flow(tmp_path, p)
     r = _run(tmp_path)
     assert r.returncode != 0
-    assert "all-zero" in _out(r)
+    assert "iso 8601" in _out(r)
 
 
-def test_custom_missing_timer_value_fails(tmp_path: Path) -> None:
+def test_multi_unit_duration_fails(tmp_path: Path) -> None:
+    """The registry pattern allows exactly one duration unit — R/PT2H30M is
+    rejected by `validate`, so the checker must reject it too."""
     p = _well_formed()
-    p["nodes"][0] = _scheduled_node(timerPreset="custom")
+    p["nodes"][0] = _scheduled_node(timerValue="R/PT2H30M")
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode != 0
+    assert "iso 8601" in _out(r)
+
+
+def test_out_of_range_duration_fails(tmp_path: Path) -> None:
+    p = _well_formed()
+    p["nodes"][0] = _scheduled_node(timerValue="R/PT24H")
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode != 0
+    assert "iso 8601" in _out(r)
+
+
+def test_missing_timer_value_fails(tmp_path: Path) -> None:
+    p = _well_formed()
+    node = _scheduled_node()
+    node["inputs"].pop("timerValue")
+    p["nodes"][0] = node
     _write_flow(tmp_path, p)
     r = _run(tmp_path)
     assert r.returncode != 0
