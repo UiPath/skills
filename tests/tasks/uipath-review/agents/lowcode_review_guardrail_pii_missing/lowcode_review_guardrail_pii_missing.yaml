@@ -34,7 +34,7 @@ initial_prompt: |
   including its guardrail configuration. Save the report to
   `./_review_report.md` at the sandbox root.
 
-  This is a read-only review — do not modify anything inside `ReviewSol/`.
+  Do not manually edit files inside `ReviewSol/`.
 
 success_criteria:
   - type: skill_triggered
