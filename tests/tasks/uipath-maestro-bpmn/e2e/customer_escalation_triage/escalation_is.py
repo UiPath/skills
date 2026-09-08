@@ -57,11 +57,30 @@ EXPECTED_LIVE_TARGET = {
 # SIGKILLed. Follows the `.created_keys` precedent in the flow suite.
 JOURNAL = Path(".created-ids.jsonl")
 
+# Per-call budgets for the live CLI steps this module contributes to the
+# behavior criterion. The criterion's `timeout:` must cover their sum plus the
+# checker's own steps -- test_behavior_checker.py asserts exactly that, so
+# raising one of these without raising the criterion is a test failure, not a
+# surprise timeout kill mid-cleanup.
+LOGIN_STATUS_TIMEOUT = 30
+CONNECTIONS_LIST_TIMEOUT = 120
+JIRA_READ_TIMEOUT = 120
+JIRA_DELETE_TIMEOUT = 120
+SLACK_DELETE_TIMEOUT = 120
+
+STEP_TIMEOUTS = (
+    LOGIN_STATUS_TIMEOUT,
+    CONNECTIONS_LIST_TIMEOUT,
+    JIRA_READ_TIMEOUT,
+    JIRA_DELETE_TIMEOUT,
+    SLACK_DELETE_TIMEOUT,
+)
+
 
 def assert_live_target() -> dict[str, str]:
     """Refuse to run against anything but the Alpha codereval tenant."""
 
-    completed = run_cli(["uip", "login", "status"], timeout=60)
+    completed = run_cli(["uip", "login", "status"], timeout=LOGIN_STATUS_TIMEOUT)
     _payload, data = payload_data(completed, "read active UiPath login")
     if not isinstance(data, dict):
         raise CheckFailure("UiPath login status returned no data object")
@@ -86,7 +105,7 @@ def connection_ids() -> dict[str, str]:
 
     listed = run_cli(
         ["uip", "is", "connections", "list", "--all-folders"],
-        timeout=180,
+        timeout=CONNECTIONS_LIST_TIMEOUT,
     )
     _payload, rows = payload_data(listed, "discover connector connections")
     if not isinstance(rows, list):
@@ -131,7 +150,7 @@ def get_issue_fields(connection_id: str, issue_key: str) -> dict:
             "--query",
             json.dumps({"issueId": issue_key}, separators=(",", ":")),
         ],
-        timeout=120,
+        timeout=JIRA_READ_TIMEOUT,
     )
     _payload, data = payload_data(fetched, f"read Jira issue {issue_key}")
     if not isinstance(data, dict) or get_ci(data, "key") != issue_key:
@@ -163,7 +182,7 @@ def delete_jira_issue(connection_id: str, issue_id: str) -> bool:
             json.dumps({"issueId": issue_id}, separators=(",", ":")),
             "--yes",
         ],
-        timeout=120,
+        timeout=JIRA_DELETE_TIMEOUT,
     )
     try:
         payload_data(completed, f"delete Jira issue {issue_id}")
@@ -195,7 +214,7 @@ def delete_slack_message(
             ),
             "--yes",
         ],
-        timeout=120,
+        timeout=SLACK_DELETE_TIMEOUT,
     )
     try:
         payload_data(completed, f"delete Slack message {timestamp}")

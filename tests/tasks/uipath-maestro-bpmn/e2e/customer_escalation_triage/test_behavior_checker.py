@@ -16,6 +16,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+import yaml
 from pathlib import Path
 from unittest.mock import patch
 
@@ -308,16 +310,35 @@ class SeedTests(unittest.TestCase):
         for name in SEED["inputs"]:
             self.assertIn(name, task_text, f"prompt never names input {name}")
 
-    def test_yaml_timeout_covers_debug_budget(self):
-        task_text = (HERE / "customer_escalation_triage.yaml").read_text(
-            encoding="utf-8"
+    def test_yaml_timeout_covers_every_step_budget(self):
+        """The criterion must outlast the sum of the live CLI calls it makes.
+
+        A substring match on the whole YAML would also match `turn_timeout`,
+        and comparing against DEBUG_TIMEOUT_SECONDS alone ignores the other
+        nine calls -- both pass by construction. Parse the criterion's own
+        timeout and compare it against the real sum, so raising any one step
+        budget past the ceiling fails here rather than as a SIGKILL that
+        strands created Jira and Slack ids for post_run to sweep.
+        """
+
+        task = yaml.safe_load(
+            (HERE / "customer_escalation_triage.yaml").read_text(encoding="utf-8")
         )
-        self.assertIn(
-            "timeout: 1200",
-            task_text,
-            "behavior criterion timeout drifted from the checker's budget",
+        behavior = [
+            criterion
+            for criterion in task["success_criteria"]
+            if "check_customer_escalation_behavior.py" in criterion.get("command", "")
+        ]
+        self.assertEqual(len(behavior), 1, "expected one behavior criterion")
+        criterion_timeout = behavior[0]["timeout"]
+
+        budget = sum(checker.STEP_TIMEOUTS)
+        self.assertLessEqual(
+            budget,
+            criterion_timeout,
+            f"step budgets sum to {budget}s but the behavior criterion allows "
+            f"{criterion_timeout}s -- raise the criterion or lower a step",
         )
-        self.assertLess(checker.DEBUG_TIMEOUT_SECONDS, 1200)
 
 
 class PackageBindingTests(unittest.TestCase):

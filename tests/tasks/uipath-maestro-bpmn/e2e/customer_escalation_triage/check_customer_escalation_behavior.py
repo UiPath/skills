@@ -65,6 +65,21 @@ BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path(".customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = 480
+SOLUTION_INIT_TIMEOUT = 90
+SOLUTION_IMPORT_TIMEOUT = 180
+VARIABLES_ALL_TIMEOUT = 120
+INCIDENTS_TIMEOUT = 120
+
+# Every live CLI call on the worst-case path, this module's plus escalation_is'.
+# The behavior criterion's `timeout:` must cover the sum; test_behavior_checker
+# asserts it against the YAML so the two cannot drift apart silently.
+STEP_TIMEOUTS = (
+    DEBUG_TIMEOUT_SECONDS,
+    SOLUTION_INIT_TIMEOUT,
+    SOLUTION_IMPORT_TIMEOUT,
+    VARIABLES_ALL_TIMEOUT,
+    INCIDENTS_TIMEOUT,
+) + escalation_is.STEP_TIMEOUTS
 OUTPUT_TYPES = {
     "severity": "string",
     "caseKey": "string",
@@ -375,8 +390,18 @@ def main() -> None:
 
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
     solution_dir = LIVE_RUN_DIR / "CustomerEscalationLiveEval"
-    initialized = run_cli(["uip", "solution", "init", str(solution_dir)], timeout=120)
+    initialized = run_cli(
+        ["uip", "solution", "init", str(solution_dir)],
+        timeout=SOLUTION_INIT_TIMEOUT,
+    )
     payload_data(initialized, "initialize ephemeral solution")
+    solution_files = sorted(solution_dir.glob("*.uipx"))
+    if len(solution_files) != 1:
+        raise CheckFailure(
+            f"solution init produced {len(solution_files)} .uipx files in "
+            f"{solution_dir}, expected exactly one"
+        )
+    solution_file = solution_files[0]
     imported = run_cli(
         [
             "uip",
@@ -385,9 +410,9 @@ def main() -> None:
             "import",
             str(PROJECT.resolve()),
             "--solutionFile",
-            str(next(solution_dir.glob("*.uipx"))),
+            str(solution_file),
         ],
-        timeout=180,
+        timeout=SOLUTION_IMPORT_TIMEOUT,
     )
     payload_data(imported, "import exact BPMN project")
     imported_project = solution_dir / PROJECT.name
@@ -405,7 +430,7 @@ def main() -> None:
     # journal even if this process is killed mid-assertion.
     variables = run_cli(
         ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=180,
+        timeout=VARIABLES_ALL_TIMEOUT,
     )
     _payload, variables_data = payload_data(variables, "variables-all")
     effects = harvest_side_effects(contract, variables_data)
@@ -416,7 +441,7 @@ def main() -> None:
 
     incidents = run_cli(
         ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=180,
+        timeout=INCIDENTS_TIMEOUT,
     )
     _payload, incidents_data = payload_data(incidents, "incidents")
 
