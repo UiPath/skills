@@ -246,7 +246,7 @@ initial_prompt: |
 
 ## Checker Context
 
-`checker_context.api_route` overrides which backend grades `llm_judge` criteria, decoupled from the agent's own route. Requires a coder_eval version with the simulator decoupled from this override (`Orchestrator.simulator_route`, unreleased as of `tests/.coder-eval-version` — bump the pin once released). This repo's experiment defaults (`default`/`smoke`/`smoke-windows`/`nightly`/`activation`) route `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in judge (Bedrock/Anthropic):
+`checker_context.api_route` overrides which backend grades `llm_judge` criteria, decoupled from the agent's own route. Requires coder_eval ≥ 0.11.5, where the simulator resolves its own route independently of this override (`Orchestrator.simulator_route`). This repo's experiment defaults (`default`/`smoke`/`smoke-windows`/`nightly`/`activation`) route `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in judge (Bedrock/Anthropic):
 
 ```yaml
 checker_context:
