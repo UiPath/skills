@@ -5,6 +5,7 @@ Run with ``pytest tests/tasks/uipath-maestro-flow/smoke/test_check_scheduled_tri
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -12,6 +13,12 @@ from pathlib import Path
 from typing import Any
 
 CHECKER = Path(__file__).resolve().parent / "check_scheduled_trigger_flow.py"
+
+_spec = importlib.util.spec_from_file_location("_check_scheduled_trigger", CHECKER)
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+CYCLE_RE = _mod.CYCLE_RE
+REQUESTED_CYCLE = _mod.REQUESTED_CYCLE
 
 
 def _write_flow(tmp_path: Path, payload: dict[str, Any]) -> None:
@@ -63,22 +70,21 @@ def test_interval_passes(tmp_path: Path) -> None:
     assert r.returncode == 0, r.stdout + r.stderr
 
 
-def test_anchored_interval_passes(tmp_path: Path) -> None:
+def test_valid_but_wrong_cadence_fails(tmp_path: Path) -> None:
+    """Grammar validity is not the bar. The task asks for hourly; a daily flow
+    is well-formed and the wrong answer, and must not score full credit."""
     p = _well_formed()
-    p["nodes"][0] = _scheduled_node(timerValue="R/2026-05-14T09:00:00Z/P1W")
+    p["nodes"][0] = _scheduled_node(timerValue="R/P1D")
     _write_flow(tmp_path, p)
     r = _run(tmp_path)
-    assert r.returncode == 0, r.stdout + r.stderr
+    assert r.returncode != 0
+    assert "not the one the task asked for" in _out(r)
 
 
-def test_cron_passes(tmp_path: Path) -> None:
-    """A cron expression is the documented escape hatch for a schedule the
-    single-unit interval form cannot express (09:00 every weekday)."""
-    p = _well_formed()
-    p["nodes"][0] = _scheduled_node(timerValue="0 0 9 ? * MON-FRI")
-    _write_flow(tmp_path, p)
-    r = _run(tmp_path)
-    assert r.returncode == 0, r.stdout + r.stderr
+def test_requested_cycle_matches_the_task_yaml() -> None:
+    """The pinned cadence must stay in step with the prompt that asks for it."""
+    yaml = (Path(__file__).resolve().parent / "scheduled_trigger.yaml").read_text()
+    assert f"`{REQUESTED_CYCLE}`" in yaml
 
 
 def test_stray_timer_preset_is_ignored(tmp_path: Path) -> None:
@@ -246,3 +252,34 @@ def test_missing_scheduled_definition_fails(tmp_path: Path) -> None:
     r = _run(tmp_path)
     assert r.returncode != 0
     assert "definitions" in _out(r)
+
+
+# ── Cycle-expression grammar (registry pattern, independent of cadence) ──────
+
+
+def test_grammar_accepts_midnight_cron_with_no_digit_one_to_nine() -> None:
+    """Regression for the deleted all-zero guard. The old checker rejected any
+    cycle expression containing no digit 1-9 as "never-firing"; that reasoning
+    holds for an interval but not for cron, where `0 0 0 * * ? *` is daily at
+    midnight. Every other cron fixture here contains a 9 or a 2, so only this
+    case would catch the guard being reintroduced."""
+    assert CYCLE_RE.match("0 0 0 * * ? *")
+
+
+def test_grammar_accepts_cron_and_anchored_intervals() -> None:
+    for value in (
+        "0 0 */1 * * ? *",              # hourly on the hour
+        "0 0 9 ? * MON-FRI",            # weekdays at 09:00
+        "0 0 2 1 * ? *",                # 02:00 on the 1st
+        "R/2026-05-14T09:00:00Z/P1W",   # weekly, anchored to a start instant
+        "R/PT5M",
+        "R/P1W",
+    ):
+        assert CYCLE_RE.match(value), value
+
+
+def test_grammar_rejects_multi_unit_out_of_range_and_zero_durations() -> None:
+    """The interval form takes exactly ONE non-zero, in-range unit — so no
+    arbitrary period (every 2.5 hours, every 90 minutes) is expressible."""
+    for value in ("R/PT2H30M", "R/PT150M", "R/PT90M", "R/PT24H", "R/PT60M", "R/PT0H", "custom", "hourly"):
+        assert not CYCLE_RE.match(value), value

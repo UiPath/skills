@@ -18,7 +18,11 @@ trigger and carries a valid recurring schedule:
        - `timerType == "timeCycle"`;
        - `timerValue` present, non-empty, and matching the registry's own
          `timerValue` pattern — an ISO 8601 repeating interval (`R/PT1H`) or a
-         Quartz cron expression (`0 0 9 ? * MON-FRI`).
+         Quartz cron expression (`0 0 9 ? * MON-FRI`);
+       - `timerValue == REQUESTED_CYCLE`. The grammar check alone would award
+         full credit to a daily flow when the task asked for an hourly one, so
+         the cadence the prompt names is graded too. CYCLE_RE still runs first
+         so a malformed value reports as bad syntax rather than wrong cadence.
      `core.trigger.scheduled` has no `timerPreset` input; a cycle expression
      written there fails `validate` with `REQUIRED_FIELD timerValue`.
   5. `typeVersion` present and non-empty (the agent-under-test copies the
@@ -46,6 +50,11 @@ from _shared.flow_check import find_flow_file  # noqa: E402
 SCHEDULED = "core.trigger.scheduled"
 MANUAL = "core.trigger.manual"
 TRIGGER_PREFIX = "core.trigger."
+
+# The cadence scheduled_trigger.yaml asks for ("every hour, expressed as
+# R/PT1H"). Grammar validity is necessary but not sufficient: R/P1D is a
+# well-formed cycle expression and the wrong answer to this task.
+REQUESTED_CYCLE = "R/PT1H"
 
 # `timerValue` pattern, copied verbatim from the `core.trigger.scheduled`
 # registry definition (inputDefinition.properties.timerValue.pattern) so this
@@ -133,6 +142,12 @@ def _check_schedule_config(inputs: dict) -> None:
             f"inputs.timerValue={cycle!r} is neither an ISO 8601 repeating interval "
             "with a single non-zero duration unit (e.g. R/PT1H, R/P1D) nor a Quartz "
             "cron expression (e.g. 0 0 9 ? * MON-FRI)."
+        )
+
+    if cycle != REQUESTED_CYCLE:
+        _fail(
+            f"inputs.timerValue={cycle!r} is a valid cycle expression but not the "
+            f"one the task asked for ({REQUESTED_CYCLE!r}, every hour)."
         )
 
 
