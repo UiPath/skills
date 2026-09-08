@@ -134,6 +134,20 @@ def test_wrong_timer_type_fails(tmp_path: Path) -> None:
     assert "timecycle" in _out(r)
 
 
+def test_missing_timer_type_fails(tmp_path: Path) -> None:
+    """`validate` tolerates a missing `timerType` (the definition's `required`
+    array names only `timerValue`), but `model.values` consumes it, so the task
+    and this checker both demand it."""
+    p = _well_formed()
+    node = _scheduled_node()
+    node["inputs"].pop("timerType")
+    p["nodes"][0] = node
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode != 0
+    assert "timecycle" in _out(r)
+
+
 def test_bad_cycle_fails(tmp_path: Path) -> None:
     p = _well_formed()
     p["nodes"][0] = _scheduled_node(timerValue="hourly")

@@ -123,10 +123,9 @@ def _check_schedule_config(inputs: dict) -> None:
     cycle = inputs.get("timerValue")
     if not isinstance(cycle, str) or not cycle.strip():
         _fail(
-            "inputs.timerValue missing or empty — it carries the cycle expression "
-            "and is the node's only required input. `core.trigger.scheduled` has no "
-            "`timerPreset`; a cycle expression written there fails validate with "
-            'REQUIRED_FIELD "timerValue".'
+            "inputs.timerValue missing or empty — it carries the cycle expression. "
+            "`core.trigger.scheduled` has no `timerPreset`; a cycle expression "
+            'written there fails validate with REQUIRED_FIELD "timerValue".'
         )
 
     if not CYCLE_RE.match(cycle):
