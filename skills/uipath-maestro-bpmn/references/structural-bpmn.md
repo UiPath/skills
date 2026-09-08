@@ -233,24 +233,28 @@ evidence and obtain confirmation before migrating it.
 - Read process data in JavaScript through `vars.<stable-variable-id>`.
 - Return the intended scalar or object directly. Map the standard
   `scriptResponse` output from `=result.response` and `Error` from `=Error`.
-  Fill `{scriptResponseType}` with the declared response variable's exact BPMN
-  type so the mapping and returned value agree.
+  Leave `scriptResponse` at `type="jsonSchema"` — the canvas emits no other
+  value for it.
   Downstream nodes and the completion EndEvent can read the declared
   `scriptResponse` variable directly. Only when a distinct business variable
   is needed, add a custom output that reads `=vars.<script-response-id>` and
-  writes that variable.
-- In BPMN variable and mapping attributes, a JSON Schema `number` result uses
-  `type="double"` and an `integer` result uses `type="integer"`. Keep JSON
+  writes that variable, and mark it `custom="true"` — that is how the canvas
+  tags a user-added mapping and how it keeps the standard `scriptResponse` and
+  `Error` outputs separate from yours.
+- In node-scoped variable and mapping attributes, a JSON Schema `number` result
+  uses `type="double"` and an `integer` result uses `type="integer"`. Keep JSON
   Schema names inside schema bodies; structured object or array results use a
   declared `jsonSchema`. Do not use `number` or `long` as BPMN primitive
-  mapping types.
+  mapping types. This is the inverse of the public declaration rule above: a
+  root `uipath:input`/`uipath:output` must use `number`, because only public
+  declarations reach entry-point schema derivation.
 - **v2+ only:** do not add an extra `{ response: ... }` wrapper around the
   script return — the runtime already exposes the direct return beneath
   `result.response`, so wrapping yields `result.response.response`. Under v1
   (the default when the marker is absent) the runtime spreads the returned
   object's keys instead, so there the wrapper is required. Note the marker is
-  matched as `/^v(\d+)$/i` with no trimming: `3`, `v3.1` and `" v3 "` all fall
-  back to v1 semantics silently, flipping this rule.
+  matched as `/^v(\d+)$/` — case-sensitive, no trimming: `V3`, `3`, `v3.1` and
+  `" v3 "` all fall back to v1 semantics silently, flipping this rule.
 - Inputs merge: a ScriptTask's declared inputs are replaced by one `args` JSON
   input at `target="bodyField"`; sibling `uipath:input` elements are not
   supported. `var` holds the declared variable id — never put the target id in

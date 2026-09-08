@@ -2,7 +2,7 @@ task_id: skill-bpmn-script-jint-guidance
 description: >
   Script task eval: agent authors the supported ScriptTask runtime contract and
   stays within the Jint runtime boundary.
-tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:single-node", "node:script"]
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "node:script"]
 
 run_limits:
   expected_turns: 36
@@ -28,7 +28,7 @@ success_criteria:
     command: "python3 $TASK_DIR/check_script_jint_guidance.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 6.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -36,5 +36,5 @@ success_criteria:
     command: "bpmn=$(find . -type f -name 'RiskScoreScriptBpmn.bpmn'); test \"$(printf '%s\\n' \"$bpmn\" | grep -c .)\" -eq 1 && uip maestro bpmn validate \"$bpmn\" --output json"
     timeout: 30
     expected_exit_code: 0
-    weight: 2.0
+    weight: 1.5
     pass_threshold: 1.0

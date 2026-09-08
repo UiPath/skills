@@ -44,6 +44,9 @@ def _template_root() -> ET.Element:
 
 def test_script_task_registry_entry_uses_supported_shape() -> None:
     entry = _script_task_entry()
+    # Two spellings of one fact, deliberately: bpmnElement is the PascalCase
+    # model type (as for all 47 spec entries), while the serialized tag below
+    # is its lower-camel form. Asserting both keeps them from drifting apart.
     assert entry["bpmnElement"] == "bpmn:ScriptTask"
     assert entry["extensionTag"] == "uipath:mapping"
     assert entry["inputPattern"] == "scriptArgs"
@@ -85,7 +88,7 @@ def test_script_task_registry_entry_uses_supported_shape() -> None:
     assert outputs == {
         "scriptResponse": {
             "name": "scriptResponse",
-            "type": "{scriptResponseType}",
+            "type": "jsonSchema",
             "source": "=result.response",
             "var": "{scriptResponseVarId}",
         },
