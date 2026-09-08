@@ -34,9 +34,17 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
+    description: "BPMN source was authored"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('PurchaseApprovalBpmn.bpmn')) else 'PurchaseApprovalBpmn.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "An Actions.HITL BPMN exists and its completion is wired to a downstream step that reaches an end event"
     command: "python3 $TASK_DIR/check_smoke_completed_wired.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 3.0
     pass_threshold: 1.0

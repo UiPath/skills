@@ -142,11 +142,11 @@ jobs:
       - name: Run contract guard
         run: pytest tests/scripts/test_runtime_payload_key_casing.py -v
 
-  # One job for every BPMN contract guard. Globbed on purpose: a PR adding a
-  # guard drops in a `tests/scripts/test_bpmn_*_contract.py` file and touches
-  # no workflow, so sibling PRs stop colliding on this file.
+  # One job for every BPMN contract guard, listed explicitly: a glob that stops
+  # matching is a silently green job, and `-k` over the directory couples this
+  # job to unrelated files' collection. Add new guards to the run step.
   bpmn-contract-guards:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: maestro-bpmn contract guards
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
@@ -159,7 +159,7 @@ jobs:
         run: pip install pytest
 
       - name: Run BPMN contract guards
-        run: pytest tests/scripts/test_bpmn_*_contract.py -v
+        run: pytest tests/scripts/test_bpmn_project_scaffold_contract.py -v
 
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest

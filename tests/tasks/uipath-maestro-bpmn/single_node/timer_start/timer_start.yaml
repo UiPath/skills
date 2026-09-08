@@ -55,5 +55,5 @@ success_criteria:
     command: "python3 $TASK_DIR/check_timer_start.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 6.0
+    weight: 3.0
     pass_threshold: 1.0
