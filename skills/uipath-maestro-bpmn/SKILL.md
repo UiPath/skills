@@ -205,6 +205,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
+   For an Integration Service draft or boundary handoff (author locally, hand
+   enrichment to the CLI, no pack/upload/operate asked for), emit **only** the
+   `.bpmn` plus the notes file — do NOT create the four generated package files
+   (Rule 16); authoring them fails the boundary the task tests.
    For Integration Service draft notes, name every CLI-owned blocker literally,
    including the exact phrase `connection binding`, plus dynamic schemas,
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
