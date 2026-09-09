@@ -55,7 +55,12 @@ Output ports: `true` and `false`. Both branches must be wired. See [editing-oper
 
 ## Outputs
 
-A Decision has **no `.output`**. Downstream nodes read which branch ran as `$vars.<decisionId>.matchedCaseId` (`"true"` or `"false"`) or `$vars.<decisionId>.matchedCase` (the branch label) — e.g. `$vars.checkStatus.matchedCaseId === "true"`. `$vars.<decisionId>.output.matchedCaseId` is undefined and faults the reader at runtime (`[300501]`).
+A Decision is **not readable from downstream at all**. It never enters a downstream node's expression scope, so every form — `$vars.<decisionId>.matchedCaseId`, `.matchedCase`, `.output.matchedCaseId` — resolves to `undefined`. This holds whether or not the branches rejoin. `flow validate` reports it as `[EXPRESSION_DIAGNOSTIC] Property '<decisionId>' does not exist on type '{…}'`, listing a scope the Decision is absent from; the flow still validates, then reads `undefined` at runtime and silently takes the wrong branch of the reader's own logic.
+
+To act on which branch ran, use one of:
+
+- **Recompute the condition** from a node that is upstream of the Decision and therefore still in scope — `$vars.getWeather.output.tempF > 60` rather than the Decision's result. Cheapest when the condition's inputs are still reachable.
+- **Write an `inout` global on each branch** with [`variables.variableUpdates`](../../editing-operations-json.md#add-a-variable-update), then read `$vars.<globalId>` at the node the branches rejoin. Use this when the condition cannot be recomputed. Map the global on every End node or it raises `MISSING_OUTPUT_MAPPING`.
 
 ## Debug
 

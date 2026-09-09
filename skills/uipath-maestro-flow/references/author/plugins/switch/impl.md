@@ -50,6 +50,12 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 
 Each case creates a dynamic output port `case-{id}`. An optional `default` port handles unmatched values. Ensure edge `sourcePort` matches `case-{id}` exactly. See [editing-operations.md](../../editing-operations.md) for edge add procedures.
 
+## Outputs
+
+A Switch is **not readable from downstream at all**, exactly as a Decision is not — see [decision/impl.md — Outputs](../decision/impl.md#outputs) for the rule and the two supported ways to act on which branch ran. `$vars.<switchId>.matchedCaseId` and `.matchedCase` resolve to `undefined` from every downstream node, merge or no merge, and `flow validate` reports `[EXPRESSION_DIAGNOSTIC] Property '<switchId>' does not exist on type '{…}'`.
+
+With three or more outcomes the condition is usually not worth recomputing per branch: prefer the `inout` global written on each branch.
+
 ## Debug
 
 | Error | Cause | Fix |
