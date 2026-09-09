@@ -99,4 +99,4 @@ tests/tasks/**/seed.json
 # Cleanup journal of created Jira/Slack ids, consumed by the post_run sweep:
 .created-ids.jsonl
 # Ephemeral solution .uipx (post_run globs it) plus debug logs:
-.customer-escalation-live/
+customer-escalation-live/

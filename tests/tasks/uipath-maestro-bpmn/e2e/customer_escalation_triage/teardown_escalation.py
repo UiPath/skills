@@ -37,8 +37,10 @@ try:
         )
         if not ok:
             ok = escalation_is.delete_jira_issue(
-            jira_connection, issue, timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT
-        )
+                jira_connection,
+                issue,
+                timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT,
+            )
         if not ok and escalation_is.jira_issue_absent(
             jira_connection, issue, timeout=escalation_is.TEARDOWN_READ_TIMEOUT
         ):
@@ -48,8 +50,18 @@ try:
                    f"-- may be leaked in the {escalation_is.PROJECT_KEY} project")
         leaked += 0 if ok else 1
     slack_connection = connections[escalation_is.SLACK_CONNECTOR]
+    seen: set = set()
     for record in records.get("slack_message", []):
+        # A malformed record must not abort the sweep and strand every id
+        # after it -- read_journal already tolerates bad lines, so this
+        # consumer does too. Dedup on the pair; lists are not hashable.
+        if not isinstance(record, (list, tuple)) or len(record) != 2:
+            print(f"WARN: skipping malformed Slack journal record {record!r}")
+            continue
         channel_id, timestamp = record
+        if (channel_id, timestamp) in seen:
+            continue
+        seen.add((channel_id, timestamp))
         ok = escalation_is.delete_slack_message(
             slack_connection, channel_id, timestamp,
             timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT,

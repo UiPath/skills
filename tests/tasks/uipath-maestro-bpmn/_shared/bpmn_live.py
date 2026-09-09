@@ -33,10 +33,6 @@ BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 
 # Absolute monotonic deadline capping every CLI subprocess. A task assigns
-# `bpmn_live.ACTIVE_CLI_DEADLINE` while it owns live resources so a hung call
-# cannot eat the window before coder_eval SIGKILLs the grader; None disables
-# capping and leaves each call to its own timeout.
-ACTIVE_CLI_DEADLINE: float | None = None
 
 
 class CheckFailure(RuntimeError):
@@ -47,8 +43,6 @@ def q(namespace: str, name: str) -> str:
     return f"{{{namespace}}}{name}"
 
 
-def local(tag: str) -> str:
-    return tag.rsplit("}", 1)[-1]
 
 
 def normalized_identifier(value: object) -> str:
@@ -165,15 +159,6 @@ def run_cli(
     log_file: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     effective_timeout: float = timeout
-    # Module-level, assigned by the owning task; see ACTIVE_CLI_DEADLINE above.
-    if ACTIVE_CLI_DEADLINE is not None:
-        remaining = ACTIVE_CLI_DEADLINE - time.monotonic()
-        if remaining <= 0:
-            raise CheckFailure(
-                "live Alpha operation deadline reached before running "
-                f"{' '.join(arguments[:5])}"
-            )
-        effective_timeout = min(effective_timeout, remaining)
     command = [*arguments, "--output", "json"]
     if log_file is not None:
         command.extend(["--log-file", str(log_file)])
@@ -276,23 +261,6 @@ def _element_output_records(
     return records
 
 
-def runtime_variable_values(
-    variables_data: Any,
-    variable_id: str,
-) -> list[Any]:
-    values: list[Any] = []
-    wanted = normalized_identifier(variable_id)
-    scopes = get_ci(variables_data, "Variables", [])
-    if not isinstance(scopes, list):
-        return values
-    for scope in scopes:
-        globals_map = get_ci(scope, "Globals", {})
-        if not isinstance(globals_map, dict):
-            continue
-        for key, value in globals_map.items():
-            if normalized_identifier(key) == wanted:
-                values.append(value)
-    return values
 
 
 def connector_response_values(outputs: list[Any], name: str) -> list[Any]:

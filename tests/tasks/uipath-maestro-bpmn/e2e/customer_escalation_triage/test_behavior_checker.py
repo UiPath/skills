@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Unit tests for the escalation e2e graders. Stdlib + pytest only (CI
-installs pytest and nothing else — see .github/workflows/test-helpers.yml).
+"""Unit tests for the escalation e2e graders. Stdlib, pytest and PyYAML (the
+budget guards parse the task YAML; the workflow installs pyyaml for this job
+— see .github/workflows/test-helpers.yml).
 
 Proportionate by design: the live CLI surface is exercised by the eval run
 itself; these tests pin the pure logic — contract resolution, runtime
@@ -87,7 +88,7 @@ SEED = {
         "correlationId": "ESC-BPMN-test",
         "jiraProjectKey": "CE",
         "jiraIssueTypeId": "11457",
-        "slackChannelId": "C01H4SPS77W",
+        "slackChannelId": "C0B2FDZD1M3",
     },
     "expected": {"severity": "Sev1", "caseKey": "ESC-BPMN-test"},
 }
@@ -138,7 +139,7 @@ def good_variables_data() -> dict:
                         "Outputs": {
                             "response": {
                                 "ts": "111.222",
-                                "channel": "C01H4SPS77W",
+                                "channel": "C0B2FDZD1M3",
                                 "message": {
                                     "text": "[Sev1] ESC-BPMN-test escalation",
                                     "ts": "111.222",
@@ -265,7 +266,7 @@ class SideEffectHarvestTests(unittest.TestCase):
         effects = checker.harvest_side_effects(CONTRACT, good_variables_data())
         self.assertEqual(effects["jira_keys"], ["CE-101"])
         self.assertEqual(effects["jira_issues"], ["10001"])
-        self.assertEqual(effects["slack_messages"], [["C01H4SPS77W", "111.222"]])
+        self.assertEqual(effects["slack_messages"], [["C0B2FDZD1M3", "111.222"]])
 
     def test_falls_back_to_key_when_no_id(self):
         variables = copy.deepcopy(good_variables_data())
@@ -281,13 +282,13 @@ class JournalTests(unittest.TestCase):
             with patch.object(escalation_is, "JOURNAL", journal):
                 escalation_is.record_created_id("jira_issue", "10001")
                 escalation_is.record_created_id(
-                    "slack_message", ["C01H4SPS77W", "111.222"]
+                    "slack_message", ["C0B2FDZD1M3", "111.222"]
                 )
                 with journal.open("a", encoding="utf-8") as handle:
                     handle.write("not json\n")
                 records = escalation_is.read_journal(journal)
         self.assertEqual(records["jira_issue"], ["10001"])
-        self.assertEqual(records["slack_message"], [["C01H4SPS77W", "111.222"]])
+        self.assertEqual(records["slack_message"], [["C0B2FDZD1M3", "111.222"]])
 
     def test_missing_journal_reads_empty(self):
         self.assertEqual(
@@ -431,8 +432,6 @@ class PackageBindingTests(unittest.TestCase):
         self.assertFalse(packager.is_real_connection_key("not-a-uuid"))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class ConnectionResolutionTests(unittest.TestCase):
@@ -660,3 +659,7 @@ class SendIdentityTests(unittest.TestCase):
 
     def test_user_identity_passes(self):
         self.assertTrue(self._contract_from(SAMPLE_BPMN).slack_send_ids)
+
+
+if __name__ == "__main__":
+    unittest.main()

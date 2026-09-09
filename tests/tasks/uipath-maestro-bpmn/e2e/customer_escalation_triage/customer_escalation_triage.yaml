@@ -16,7 +16,7 @@ description: >
   (is-sandboxes-test@uipath.com-uipath-sandbox-380) and
   `uipath-salesforce-slack` (is-sandboxes) connections in folder
   `Shared/uipath-maestro-flow`, reaching the `CE` / "Coder Eval" Jira project
-  (issue type Task) and Slack channel C01H4SPS77W. Targets live in the task's
+  (issue type Task) and Slack channel C0B2FDZD1M3. Targets live in the task's
   `escalation_is.py`.
 tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
 

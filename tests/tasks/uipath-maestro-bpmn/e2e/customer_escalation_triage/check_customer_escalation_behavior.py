@@ -65,7 +65,7 @@ from _shared.bpmn_live import (  # noqa: E402
 PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
 BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
-LIVE_RUN_DIR = Path(".customer-escalation-live")
+LIVE_RUN_DIR = Path("customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
 SOLUTION_INIT_TIMEOUT = 90
 SOLUTION_IMPORT_TIMEOUT = 180
@@ -150,8 +150,8 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
     # expected severity.
     classifier_ids = tuple(
         element.attrib["id"]
-        for element in process
-        if element.tag == q(BPMN_NS, "scriptTask") and element.attrib.get("id")
+        for element in process.iter(q(BPMN_NS, "scriptTask"))
+        if element.attrib.get("id")
     )
     if not classifier_ids:
         raise CheckFailure(
@@ -179,7 +179,7 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
     # default bot instead of the prompt-required user has an indistinguishable
     # runtime response, so it can only be caught on the authored artifact.
     slack_ids = set(ids_for(*SLACK_SEND))
-    for element in process:
+    for element in process.iter():
         if element.attrib.get("id") not in slack_ids:
             continue
         sends_as = [

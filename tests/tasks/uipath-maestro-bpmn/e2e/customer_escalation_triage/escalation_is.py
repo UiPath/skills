@@ -47,11 +47,9 @@ FOLDER_PATH = "Shared/uipath-maestro-flow"
 FOLDER_NAME = "uipath-maestro-flow"  # leaf of the path, as reported
 PROJECT_KEY = "CE"  # "Coder Eval" project on uipath-sandbox-380
 ISSUETYPE_ID = "11457"  # "Task" issue type, scoped to the CE project
-# NOT verified against the workspace: the flow suite pins C0B2FDZD1M3 for
-# "coding-agent-testing" on this same connection, so this id is a different
-# channel and the name is unconfirmed. Runs post here successfully; settle the
-# identity before adopting flow's name-to-id discovery step.
-SLACK_CHANNEL = "C01H4SPS77W"
+# The flow suite's identified target on this same connection
+# (escalation_slack_alert/check_escalation_slack_alert.py).
+SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 EXPECTED_LIVE_TARGET = {
     "BaseUrl": "https://alpha.uipath.com",
     "Organization": "codereval",
