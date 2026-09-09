@@ -12,7 +12,7 @@ The flow is **surface-agnostic**; one conversational flow is consumed from many 
 | `uipath.conversational.wait-for-message` | Pauses until the user sends a message (initiates an exchange). Returns the conversation context (which includes the recent exchanges in the chat history), intended for input into a conversational agent node. |
 | conversational agent node | Requires the user to initiate an exchange first. Given the conversation context, runs a single response turn, streaming its messages and tool-calls back to the chat. Which node type depends on where the agent lives — see below. |
 | `uipath.conversational.send-message` | Requires the user to initiate an exchange first. Sends a flow-composed message (e.g. a handoff notice, results/updates from other nodes) back to the chat. |
-| `uipath.conversational.get-conversation-context` | Immediately reads the conversation context without waiting for a user message. Note that wait-for-message already returns the conversation context, so this node should only be used when the direct fetching of the conversation context is truly needed. |
+| `uipath.conversational.get-conversation-context` | Immediately reads the conversation context without waiting for a user message. Rarely needed, and constrained — see [§ Get Conversation Context](#get-conversation-context). |
 
 ### Pick the agent flavor before you build
 
@@ -21,7 +21,7 @@ The trigger and message nodes are identical whichever you pick. Only the agent n
 | Flavor | Node type | Where the agent lives | Choose it when |
 | --- | --- | --- | --- |
 | **Inline** | `uipath.agent.conversational` | A UUID subdirectory inside this flow project | The agent exists only as part of this conversational flow, or you need [structured outputs](impl.md#structured-outputs) to route on — only inline has them. You scaffold it with `agent init --inline-in-flow --conversational`. |
-| **In-solution** | `uipath.core.agent.<projectId>` | A sibling project in the same solution | The agent is its own project, versioned separately, maybe reused by other flows in the solution. Discover it with `registry list --local`. |
+| **In-solution** | `uipath.core.agent.{key}` — the resource key from `resources/solution_folder/process/agent/<Project>.json`, **not** `agent.json`'s `projectId` | A sibling project in the same solution | The agent is its own project, versioned separately, maybe reused by other flows in the solution. Discover it with `registry list --local`. |
 | **Published** | `uipath.core.agent.<guid>` | The tenant, already published | The user names an existing agent, or one is already deployed. Discover it with `registry search`. Nothing to scaffold. |
 
 **If the user names an existing agent, it is not inline.** Run `uip maestro flow registry search "<name>" --output json` (and `registry list --local` for solution siblings) before scaffolding anything — the same rule the [agent](../agent/planning.md) plugin states for autonomous agents.

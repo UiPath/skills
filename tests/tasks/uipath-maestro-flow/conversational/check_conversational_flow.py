@@ -527,6 +527,17 @@ def check_agent_json(flow_path: str, flow: dict) -> int:
             if _grade_agent_json(path, problems):
                 graded.add(path)
 
+    # The project-backed candidate list is filtered on `engine ==
+    # "conversational-v1"`, which is a field `_grade_agent_json` also asserts —
+    # so a misconfigured sibling is dropped from the set rather than failed.
+    # Compare the graded count against the agent nodes to surface the shortfall.
+    if len(graded) < len(agents):
+        problems.append(
+            f"graded {len(graded)} agent.json file(s) for {len(agents)} agent node(s) — "
+            "an agent's project is missing, unreadable, or not conversational "
+            '(settings.engine must be "conversational-v1")'
+        )
+
     if problems:
         return _fail("; ".join(problems))
     print(f"OK: {len(graded)} conversational agent.json file(s) configured")

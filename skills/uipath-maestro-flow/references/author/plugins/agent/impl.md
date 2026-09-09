@@ -196,7 +196,7 @@ A conversational (text chat) agent uses this node type with a different input sh
 All of that — the five-key settings block, the node JSON, the loop, and the ports — lives in [conversational-agent/impl.md](../conversational-agent/impl.md). Come back here only for discovery: an in-solution agent is visible only with `--local`.
 
 ```bash
-uip maestro flow registry get "uipath.core.agent.<projectId>" --local --output json
+uip maestro flow registry get "uipath.core.agent.{key}" --local --output json
 ```
 
 ## Accessing Output

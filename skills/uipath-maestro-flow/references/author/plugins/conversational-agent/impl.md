@@ -91,7 +91,7 @@ This is the one that goes wrong silently. The agent reads the conversation throu
 }
 ```
 
-**`mode` selects the contract.** `simple` (the default) takes the single `context` binding and lets the platform derive the rest; `custom` means you bind each field yourself and `conversationId` becomes mandatory. The examples here are all `simple`.
+**`mode` selects the contract.** `simple` (the default) is authored from a single `context` binding — Studio Web's panel and the SDK both expand it into the other four at author time. Nothing expands it at run time, so a hand-authored `.flow` writes all five whichever mode it declares. `custom` is for a turn assembled from more than one source, and makes `conversationId` mandatory. The field is optional and ungraded; the examples here all declare `simple`.
 
 **Write all five.** In Studio Web the author fills `context` and the panel derives the other four, but that derivation only runs in the editor — nothing derives them when the file is authored from the CLI.
 
@@ -161,7 +161,7 @@ Same settings block, different node type, and `isConversational` alongside it in
 ```json
 {
   "id": "supportAgent1",
-  "type": "uipath.core.agent.<projectId-or-guid>",
+  "type": "uipath.core.agent.{key}",
   "typeVersion": "<version from registry get>",
   "inputs": {
     "isConversational": true,
@@ -192,7 +192,7 @@ An in-solution agent needs its `definitions[]` entry fetched with `--local`; a p
 
 ### Get conversation context (usually not needed)
 
-Reads recent exchanges without waiting. wait-for-message already returns the same context, so reach for this only when the flow needs the history at a point where it is not waiting - see [planning.md § Get Conversation Context](planning.md#get-conversation-context).
+Reads recent exchanges without waiting. Rarely needed, and constrained — see [planning.md § Get Conversation Context](planning.md#get-conversation-context).
 ```json
 {
   "id": "getConversationContext1",
