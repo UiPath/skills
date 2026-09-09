@@ -43,6 +43,25 @@ initial_prompt: |
   row; do not add a second, non-completing row.
 
 success_criteria:
+  # The finalize fast path is a WRITE path: three reads, then the seed Write
+  # (case-design-lane-guide.md § Resumption step 1). audit_sdd.py is RUN — its findings
+  # are the interface — so any read of its source is the validator archaeology that
+  # burned the whole turn wall in run 2026-09-08_05-15-45 with zero bytes written.
+  # Graded so the next regression fails in minutes instead of timing out silently.
+  - type: command_not_executed
+    description: "audit_sdd.py is RUN, never read — no validator archaeology before the write"
+    tool_name: "Read"
+    command_pattern: 'audit_sdd\.py'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "audit_sdd.py source is never grepped, paged, or hunted for"
+    tool_name: "Bash"
+    command_pattern: '(grep|rg|sed|awk|cat|head|tail|less|find)\b[^\n]*audit_sdd\.py'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "Finalization produced the approved sdd.md"
     path: "sdd.md"

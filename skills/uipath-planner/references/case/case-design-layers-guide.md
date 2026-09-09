@@ -380,7 +380,9 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 ### Defaults when the source is silent
 
 - SLA exists only where the source mentions timing, read literally ("about a day" → 1 day). No timing → `—`, no SLA rule. Scope, status, and response are chosen separately (§ Choosing the response).
-- No stated response → both statuses `notify-only`. Never invent a stage, task, or routing change.
+- Every (scope, SLA) authors BOTH statuses, always — a stated response for one never removes the other's
+  row, and a status the source is silent on is `notify-only`, not an omitted row (audit_sdd.py enforces
+  the pair). Never invent a stage, task, or routing change.
 - At-risk threshold: SLA ≤ 3 days → 75%; 3–10 days → 70%; > 10 days → 80%.
 - Recipients: at-risk → the owner persona's user group; breached → the leadership tier (Compliance for regulation-driven cases). Record substituted defaults with provenance.
 

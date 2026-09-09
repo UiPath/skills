@@ -138,10 +138,11 @@ duration and points here; nothing restates a response.
 
 <!-- Section required whenever ANY SLA exists (case, stage, or action task); omit only in a case with no
 SLA at all. The case-level Scope cell is the bare word `case` — not `case: root` and not the case
-name; only the stage and task scopes take a `: <name>` qualifier. One row per (Scope, SLA, Status),
-at-risk and breached separately. Source states no response
--> both statuses notify-only with Target and Interrupting `—`; never invent a stage, task, or routing
-change to carry a notification. Legal Response values and the Interrupting value each implies:
+name; only the stage and task scopes take a `: <name>` qualifier. EXACTLY two rows per (Scope, SLA) —
+one `At-Risk`, one `Breached` — always, enforced by audit_sdd.py. A status the source says nothing about
+is still authored: `notify-only` with Target and Interrupting `—`. An omitted row is never how "nothing
+was asked for" gets expressed, and a stated response for one status never removes the other status's row;
+never invent a stage, task, or routing change to carry a notification. Legal Response values and the Interrupting value each implies:
 case-design-layers-guide.md § Choosing the response. Two-way closure against the SDD's
 `sla-status-change` rows is enforced by audit_sdd.py — it is not re-checked by hand. -->
 
