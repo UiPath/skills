@@ -281,7 +281,7 @@ Only `inout` variables can be updated; `in` variables are read-only. `expression
 "inputs": {
   "entryPointId": "<existing-uuid>",
   "timerType": "timeCycle",
-  "timerPreset": "R/PT1H"
+  "timerValue": "R/PT1H"
 }
 ```
 
