@@ -40,27 +40,35 @@ const managedDirectories = [
   'preview/skills/uipath-maestro-bpmn/examples',
 ];
 
-const oldSiblingParagraph = [
-  'The sibling authoring surfaces have their own:',
-  '[`references/case-api.md`](references/case-api.md) for `@uipath/flow-sdk/case`',
-  'and [`references/bpmn-api.md`](references/bpmn-api.md) for',
-  '`@uipath/flow-sdk/bpmn`. Neither is needed to build a Flow.',
-].join('\n');
+/**
+ * The upstream paragraph pointing at sibling `references/*.md`, rewritten to
+ * point at sibling SKILLS — the catalog splits Flow, Case and BPMN into three,
+ * so a cross-reference to a file the reader does not have is a dead end.
+ *
+ * Matched by SHAPE, not by literal text. Three literal variants used to be
+ * listed here, all three spelling `@uipath/flow-sdk`, and the rename to
+ * `@uipath/maestro-builder-sdk` matched none of them — so this script threw
+ * `expected source text is absent` and the daily re-sync would have failed
+ * until someone added a fourth. The package specifier is the upstream's to
+ * choose; this only cares that the paragraph is there and what it says about
+ * the two siblings.
+ */
+const SIBLING_PARAGRAPH = new RegExp(
+  'The sibling authoring surfaces have their own:\\n'
+  + '\\[`references/case-api\\.md`\\]\\(references/case-api\\.md\\) for `(?<pkg>@[^`/]+/[^`/]+)/case`'
+  // Everything to the first "build a Flow." — the paragraph has had a short
+  // form ("Neither is needed to build a Flow.") and a long one that adds the
+  // two runtime references and wraps before "build a Flow.". A three-way merge
+  // can start from a pin carrying either, so match to the sentence end rather
+  // than to a particular wrapping.
+  + '[\\s\\S]*?build a Flow\\.',
+);
 
-const currentSiblingParagraph = [
-  'The sibling authoring surfaces have their own:',
-  '[`references/case-api.md`](references/case-api.md) for `@uipath/flow-sdk/case`',
-  'and [`references/bpmn-api.md`](references/bpmn-api.md) for',
-  '`@uipath/flow-sdk/bpmn`; their runtime-only decisions are in',
-  '[`references/case-runtime.md`](references/case-runtime.md) and',
-  '[`references/bpmn-runtime.md`](references/bpmn-runtime.md). None are needed to',
-  'build a Flow.',
-].join('\n');
-
-const newSiblingParagraph = [
+/** What replaces it, carrying whatever specifier the upstream paragraph used. */
+const siblingParagraphFor = (pkg) => [
   'The sibling authoring surfaces have their own skills:',
-  '`uipath-maestro-case` for `@uipath/flow-sdk/case` and `uipath-maestro-bpmn`',
-  'for `@uipath/flow-sdk/bpmn`. Neither is needed to build a Flow.',
+  `\`uipath-maestro-case\` for \`${pkg}/case\` and \`uipath-maestro-bpmn\``,
+  `for \`${pkg}/bpmn\`. Neither is needed to build a Flow.`,
 ].join('\n');
 
 const oldStagingParagraph = [
@@ -347,15 +355,14 @@ function replaceRequired(text, before, after, label) {
 
 export function adaptFlowSkill(text) {
   let adapted = text.replaceAll('`example/', '`examples/');
-  if (!adapted.includes(newSiblingParagraph)) {
-    const siblingParagraph = adapted.includes(currentSiblingParagraph)
-      ? currentSiblingParagraph
-      : oldSiblingParagraph;
-    adapted = replaceRequired(
-      adapted,
-      siblingParagraph,
-      newSiblingParagraph,
-      'Flow sibling-skill adaptation',
+  const sibling = SIBLING_PARAGRAPH.exec(adapted);
+  if (sibling) {
+    adapted = adapted.replace(sibling[0], siblingParagraphFor(sibling.groups.pkg));
+  } else if (!/sibling authoring surfaces have their own skills:/.test(adapted)) {
+    fail(
+      'Could not apply Flow sibling-skill adaptation: the upstream SKILL.md has '
+      + 'neither the sibling `references/*` paragraph this rewrites nor the '
+      + 'rewritten form. Upstream changed that section — update SIBLING_PARAGRAPH.',
     );
   }
   adapted = replaceRequired(

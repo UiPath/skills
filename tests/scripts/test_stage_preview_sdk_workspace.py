@@ -16,12 +16,12 @@ def _write_executable(path: Path, body: str) -> None:
 
 def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
     sdk_root = tmp_path / "sdk"
-    package_dir = sdk_root / "node_modules/@uipath/flow-sdk"
+    package_dir = sdk_root / "node_modules/@uipath/maestro-builder-sdk"
     package_dir.mkdir(parents=True)
     (package_dir / "package.json").write_text(
         json.dumps(
             {
-                "name": "@uipath/flow-sdk",
+                "name": "@uipath/maestro-builder-sdk",
                 "version": "3.20.0",
                 "gitref": "efd27ce4c90ad76fc7f3c9b67f4920997b2cf0a8",
                 "type": "module",
@@ -73,15 +73,15 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
         text=True,
     )
 
-    assert "@uipath/flow-sdk@3.20.0" in completed.stdout
+    assert "@uipath/maestro-builder-sdk@3.20.0" in completed.stdout
     assert (workspace / "node_modules").is_symlink()
     assert (workspace / "node_modules").resolve() == sdk_root / "node_modules"
     package_json = json.loads((workspace / "package.json").read_text())
     assert package_json["scripts"] == {"keep": "true"}
-    assert package_json["devDependencies"] == {"@uipath/flow-sdk": "3.20.0"}
+    assert package_json["devDependencies"] == {"@uipath/maestro-builder-sdk": "3.20.0"}
     assert "flowSdk" not in package_json
     assert json.loads((workspace / "preview-sdk-provenance.json").read_text()) == {
-        "package": "@uipath/flow-sdk",
+        "package": "@uipath/maestro-builder-sdk",
         "version": "3.20.0",
         "gitref": "efd27ce4c90ad76fc7f3c9b67f4920997b2cf0a8",
         "connector_library": True,

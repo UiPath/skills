@@ -1,11 +1,11 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER for authoring or editing UiPath Maestro Flow sources as `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/flow-sdk`) and running the `uip maestro flow` check/compile/validate loop. Covers graph structure, expressions, nodes, bindings, connectors, brownfield edits, and emitted `.flow` validation. Case plans (`caseplan.json`, reference-mode) → uipath-maestro-case; structural-core BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
+description: "TRIGGER for authoring or editing UiPath Maestro Flow sources as `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`) and running the `uip maestro flow` check/compile/validate loop. Covers graph structure, expressions, nodes, bindings, connectors, brownfield edits, and emitted `.flow` validation. Case plans (`caseplan.json`, reference-mode) → uipath-maestro-case; structural-core BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 4aa3d67. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 00c5c56. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -14,14 +14,14 @@ This file is deliberately a router. Node-specific detail belongs in
 
 # UiPath Flow — TypeScript Builder SDK
 
-UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/flow-sdk` package.
+UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/maestro-builder-sdk` package.
 The SDK provides a builder API to construct a Flow graph, allowing developers to define inputs, outputs, steps, and control flow in a type-safe manner.
 The graph is "compiled" down to a Flow JSON, which is the artifact used for executing the Flow on the UiPath platform.
 An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
 ## Project layout
 
-The workspace installs `@uipath/flow-sdk` in `node_modules/`; `examples/` contains authored examples, and `references/` contains the details routed from this guide.
+The workspace installs `@uipath/maestro-builder-sdk` in `node_modules/`; `examples/` contains authored examples, and `references/` contains the details routed from this guide.
 To author a Flow, create a root-level `<Name>.flow.ts` and import the package directly.
 
 **The source lives at the root; the compiled artifact does not.** Scaffold the project
@@ -48,26 +48,38 @@ Connectors require a root-level [`bindings.json`](references/bindings.md).
 `uip maestro registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
 Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
 
-### Schema-dynamic connector gate
+### The connector loop: author → check → prepare → check → compile
 
-If the request mentions `loadByDefault`, dependent dropdowns, preselected
-reference values, `customFieldsRequestDetails`, or other connection-specific
-fields, the static library descriptor is not sufficient. Before authoring the
-connector call, resolve the real parent values, run
-`npx flow-sdk registry prepare <connector-key> <action>` with every required
-`-f NAME=VALUE`, and import the generated `connectors-local/<key>.ts` descriptor.
-It finds the connection itself and writes `bindings.json`.
+Authoring never waits on `prepare`, and no discovery command precedes the
+source. Write the connector step from the task's own words — the fields you
+intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }`
+for a generic operation — then run `uip maestro flow check <Name>.flow.ts
+--source`. Check names every prepare you owe, with the exact command:
+`OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED`
+for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a
+lookup token with no recorded value, `CONNECTOR_INPUT` for a field the
+operation does not declare. Run that one
+`npx flow-sdk registry prepare <connector-key> <action>` — `--object`,
+`--resolve` and `-f` compose in a single invocation, it finds the connection
+itself and writes `bindings.json` — switch the import to the generated
+`connectors-local/<key>.ts` descriptor where it printed one, and re-run
+`check`, then compile.
 
-Do not substitute manual `resources run list` lookups plus a static
-`connectors/<key>.ts` import: the lookups choose values but do not create the
-design-time schema-replay cache. After compiling, inspect the emitted connector
-configuration. `flow validate` can accept a missing cache, so completion requires
-non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
+The gate this replaces still holds for schema-dynamic operations
+(`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the
+static library descriptor is not sufficient there, and the prepare that check
+names — with every required `-f NAME=VALUE` — is what creates the design-time
+schema-replay cache. Do not substitute manual `resources run list` lookups
+plus a static `connectors/<key>.ts` import: the lookups choose values but do
+not create that cache. After compiling, inspect the emitted connector
+configuration. `flow validate` can accept a missing cache, so completion
+requires non-null `customFieldsRequestDetails` whose parent values match the
+runtime inputs.
 
 ### Hello world Flow
 
 ```ts
-import { flow, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, script, input, out, types } from '@uipath/maestro-builder-sdk';
 export default flow('hello').name('Hello')
   .input({ name: types.string }).output({ greeting: types.string })
   .step('greet', script({ code: 'return `Hello ${$vars.start.output.name}`;' }))
@@ -81,7 +93,7 @@ A Flow can have outputs, which are returned to the caller when the flow complete
 ## Lifecycle
 
 The `uip maestro flow` commands keep source checks, emission, and
-compiled-artifact checks explicit while the installed `@uipath/flow-sdk` owns
+compiled-artifact checks explicit while the installed `@uipath/maestro-builder-sdk` owns
 their semantics. A workspace with `{ "flowSdk": { "emitOnly": true } }` in
 `package.json`, or `FLOW_SDK_EMIT_ONLY=1`, makes `uip maestro flow compile`
 emit-only and makes both `flow check` modes refuse. Product validate owns final
@@ -136,8 +148,8 @@ continuation is often clearer than duplicating work in several arms; use
 Exact function signatures and option shapes:
 [`references/api.md`](references/api.md) — the builders too (`FlowBuilder`,
 `StepList`, `ArmBuilder`). The sibling authoring surfaces have their own skills:
-`uipath-maestro-case` for `@uipath/flow-sdk/case` and `uipath-maestro-bpmn`
-for `@uipath/flow-sdk/bpmn`. Neither is needed to build a Flow.
+`uipath-maestro-case` for `@uipath/maestro-builder-sdk/case` and `uipath-maestro-bpmn`
+for `@uipath/maestro-builder-sdk/bpmn`. Neither is needed to build a Flow.
 
 Those pages are **compact** — signature, summary, one line per field — because
 they are read under a token budget. The unabridged declarations they are
@@ -145,8 +157,8 @@ generated from ship in the installed package and are the authority when a
 signature names a type whose members or rules you need:
 
 ```bash
-grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
-#  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts   (full @param prose, all five field values)
+grep -rln "declare function err" node_modules/@uipath/maestro-builder-sdk/dist --include="*.d.ts"
+#  -> node_modules/@uipath/maestro-builder-sdk/dist/core/expr.d.ts   (full @param prose, all five field values)
 ```
 
 Grep the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and
@@ -297,10 +309,9 @@ export default flow('mail').trigger(onEvent(mail))
   .step('reply', script({ code: 'return $vars.start.output.subject;' })).build();
 ```
 
-Resolve scope names and ids from the bound connection; preserve filter casing.
+An id-valued `where` parameter is a `lookup()` token: `registry prepare <key> <event>` resolves it, writes bindings, and stores the vocabulary `check` validates `where`/`filters` against (a wrong-case filter field is an error — the platform drops it silently).
 A generic event (`record-created`/`record-updated`) needs `object: '<Entity>'` — never put it in `where`.
-Use the reference's completion contract before debugging: an injected start
-payload can exercise downstream wiring, but it is not a subscription witness.
+Use the reference's completion contract before debugging: an injected start payload exercises downstream wiring but is not a subscription witness.
 
 **Reference: [`references/event-trigger.md`](references/event-trigger.md)**
 

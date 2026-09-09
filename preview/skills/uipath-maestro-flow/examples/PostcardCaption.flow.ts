@@ -15,7 +15,7 @@
  *
  * Generic scenario: draft a short caption for a travel postcard.
  */
-import { flow, inlineAgent, script, out, input, types } from '@uipath/flow-sdk';
+import { flow, inlineAgent, script, out, input, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('postcard-caption')
   .name('PostcardCaption')

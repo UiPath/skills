@@ -6,7 +6,7 @@
  *
  * Generic scenario: ask a community-planning process for a neighborhood walk.
  */
-import { flow, agenticProcess, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, agenticProcess, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('neighborhood-walk-planner')
   .name('NeighborhoodWalkPlanner')

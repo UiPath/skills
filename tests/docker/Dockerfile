@@ -22,6 +22,15 @@ ARG CLI_VERSION=dev
 # override this with an exact version for a reproducible comparison.
 ARG FLOW_SDK_VERSION=latest
 
+# The package NAME is a build arg for the same reason the version is: the rename
+# split the published history. `@uipath/maestro-builder-sdk` starts at 5.0.0;
+# everything at or below 4.0.0 exists only under `@uipath/flow-sdk`. So a
+# baseline comparison against a pre-rename build passes both:
+#   --build-arg FLOW_SDK_PKG_NAME=@uipath/flow-sdk --build-arg FLOW_SDK_VERSION=4.0.0
+# The CLI resolves either name (UiPath/cli#4009), and stage-preview-sdk-workspace.sh
+# reads the same variable so the workspace agrees with what the image installed.
+ARG FLOW_SDK_PKG_NAME=@uipath/maestro-builder-sdk
+
 # Floor on the number of tool plugins that must install for the image to be
 # usable. Discovery returns the CLI's full whitelist; a few may lack a build on
 # the current train (e.g. model-hub-tool has no `-dev` build), so individual
@@ -108,11 +117,11 @@ RUN --mount=type=secret,id=npm_auth_token \
       > "$PREVIEW_FLOW_SDK_ROOT/package.json" && \
     npm install --prefix "$PREVIEW_FLOW_SDK_ROOT" \
       --save-exact --no-audit --no-fund --userconfig "$npmrc" \
-      "@uipath/flow-sdk@${FLOW_SDK_VERSION}" && \
+      "${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION}" && \
     resolved_sdk_version="$(node -p \
-      "require('$PREVIEW_FLOW_SDK_ROOT/node_modules/@uipath/flow-sdk/package.json').version")" && \
+      "require('$PREVIEW_FLOW_SDK_ROOT/node_modules/${FLOW_SDK_PKG_NAME}/package.json').version")" && \
     printf '%s\n' "$resolved_sdk_version" > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version" && \
-    echo "Installed @uipath/flow-sdk@${resolved_sdk_version}" && \
+    echo "Installed ${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}" && \
     test -x "$PREVIEW_FLOW_SDK_ROOT/node_modules/.bin/flow-sdk" && \
     uip --version && \
     uip tools search --output json > /tmp/uip-tools-search.json && \
@@ -185,6 +194,12 @@ RUN cd "$PREVIEW_FLOW_SDK_ROOT" && \
     mkdir -p "$PREVIEW_FLOW_SDK_ASSETS_ROOT" && \
     ln -s "$registry_snapshot/library-json" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-json" && \
     ln -s "$registry_snapshot/library-md" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-md"
+
+# Persist the built-with name into the image. `ARG` is build-time only, and
+# `stage-preview-sdk-workspace.sh` reads this at TASK time — without it a
+# non-default build (an old-name baseline) would install one name and have the
+# stager look for the other.
+ENV FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}
 
 ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
     FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md

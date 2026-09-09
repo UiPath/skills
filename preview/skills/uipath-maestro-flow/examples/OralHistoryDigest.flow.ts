@@ -6,7 +6,7 @@
  *
  * Generic scenario: condense a community oral-history interview for an archive.
  */
-import { flow, summarize, out, err, tmpl, js, types } from '@uipath/flow-sdk';
+import { flow, summarize, out, err, tmpl, js, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('oral-history-digest')
   .name('OralHistoryDigest')

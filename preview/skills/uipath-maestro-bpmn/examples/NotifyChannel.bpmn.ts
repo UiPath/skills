@@ -14,7 +14,7 @@
  * `uip maestro bpmn compile NotifyChannel.bpmn.ts -o NotifyChannel.bpmn
  * --library "$FLOW_SDK_LIBRARY_JSON"`, then `uip maestro bpmn validate`.
  */
-import { bpmn } from '@uipath/flow-sdk/bpmn';
+import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
 export default bpmn('notify-channel')
   .name('NotifyChannel')

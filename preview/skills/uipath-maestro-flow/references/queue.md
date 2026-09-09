@@ -14,6 +14,24 @@ Signature:
   reference: input('invoiceId'), wait: false }))
 ```
 
+## Reading what the create returned
+
+The node's output carries the Orchestrator record of the item it created — `Id`,
+`Key`, `UniqueKey`, `Reference`, `Status` and the rest of the queue-item schema.
+Read a field with `out('<step>', '<Field>')`; do NOT add a script step to
+re-derive it, and do not invent a variable for the item:
+
+```ts
+.step('enqueue', queueItem({ queue: 'Invoices', folderPath: 'Shared',
+  key: queueKey, item: { InvoiceId: input('invoiceId') } }))
+.return({ itemKey: out('enqueue', 'Key') })
+```
+
+`out('enqueue', 'Key')` is the whole read. It serializes to
+`$vars.enqueue.response.Key`, which is the spelling the runtime resolves — so a
+hand-written `$vars.enqueue.output.Key`, or a `script()` step that reads the
+node and republishes the key, is both longer and wrong.
+
 ## Tenant settings
 
 Queue-level settings are not present in source. A queue may require unique

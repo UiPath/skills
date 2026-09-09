@@ -13,7 +13,7 @@
  * Generic scenario: a season of hiking-trail logs → miles walked per difficulty
  * band. Static data lives in a variable default because `collection` is a path.
  */
-import { flow, transform, v, out, types } from '@uipath/flow-sdk';
+import { flow, transform, v, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('trail-log-summary')
   .name('TrailLogSummary')

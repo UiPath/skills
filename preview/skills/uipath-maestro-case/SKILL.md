@@ -1,11 +1,11 @@
 ---
 name: uipath-maestro-case
-description: "TRIGGER for authoring UiPath Maestro Case plans as `<Name>.case.ts` with the reference-mode TypeScript builder SDK (`@uipath/flow-sdk/case`), compiling to `caseplan.json`, and running the `uip maestro case` check/compile/validate loop. Covers stages, tasks, rules, bindings, published-resource references, and brownfield decompile/edit/recompile. Flow builder authoring → uipath-maestro-flow; structural-core BPMN → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
+description: "TRIGGER for authoring UiPath Maestro Case plans as `<Name>.case.ts` with the reference-mode TypeScript builder SDK (`@uipath/maestro-builder-sdk/case`), compiling to `caseplan.json`, and running the `uip maestro case` check/compile/validate loop. Covers stages, tasks, rules, bindings, published-resource references, and brownfield decompile/edit/recompile. Flow builder authoring → uipath-maestro-flow; structural-core BPMN → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ 4aa3d67. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ 00c5c56. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -24,7 +24,7 @@ Use this as a router: read only the capability reference you need, then let Type
 1. Scaffold with `uip solution init <SolutionName>`, then run `uip maestro case init <CaseName>` inside it. Scaffold once: exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates. If a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
 2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
-4. Import from `@uipath/flow-sdk/case`; default-export a chain ending in `.build()`.
+4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
 5. Start from the closest staged `examples/*.case.ts`; change only scenario data.
 6. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
@@ -50,7 +50,7 @@ Use this as a router: read only the capability reference you need, then let Type
 ## Minimal shape
 
 ```ts
-import { casePlan, rule } from '@uipath/flow-sdk/case';
+import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
 export default casePlan('loan-approval')
   .name('Loan Approval')
