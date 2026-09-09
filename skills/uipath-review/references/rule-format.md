@@ -2,7 +2,7 @@
 
 Schema for every row in `agents-*-rules.md` judgment catalogs. The catalog is the contract: reason about each rule and emit findings with its `rule_id`, `severity`, and `suggested_fix`.
 
-The catalog is **judgment-only**. Read source and reason about prompt quality, tool-selection ambiguity, framework fit, and semantic schema/eval mismatches. Put deterministic checks (file presence, schema walks, counts, regex, and run-artifact analysis) in the `uip agent review` / `uip codedagent review` CLI (SKILL.md Step 2.5a), which emits `RuleId`, `Severity`, `Category`, `Description`, `File`, and `SuggestedFix`.
+The catalog is **judgment-only**. Read source and reason about prompt quality, tool-selection ambiguity, framework fit, and semantic schema/eval mismatches. Put deterministic checks (file presence, schema walks, counts, regex, and run-artifact analysis) in the `uip agent review` / `uip codedagent review` CLI (agent-review-guide.md Step 2.5a), which emits `RuleId`, `Severity`, `Category`, `Description`, `File`, and `SuggestedFix`.
 
 ## Row schema
 
