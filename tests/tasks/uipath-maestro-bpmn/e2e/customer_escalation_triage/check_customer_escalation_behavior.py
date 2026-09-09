@@ -37,6 +37,7 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # local escalation_is (which also wires up _shared)
 import escalation_is  # noqa: E402
+from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     CheckFailure,
@@ -52,6 +53,7 @@ from _shared.bpmn_live import (  # noqa: E402
     resolve_runtime_key,
     root_scope,
     run_cli,
+    run_debug,
     sha256,
     tail_log,
     UIPATH_NS,
@@ -64,7 +66,7 @@ PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
 BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path(".customer-escalation-live")
-DEBUG_TIMEOUT_SECONDS = 480
+DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
 SOLUTION_INIT_TIMEOUT = 90
 SOLUTION_IMPORT_TIMEOUT = 180
 VARIABLES_ALL_TIMEOUT = 120
@@ -350,33 +352,6 @@ def assert_jira_issue_on_tenant(
         )
 
 
-def run_debug(project_dir: Path, inputs: dict, log_file: Path) -> tuple:
-    """Run one `uip maestro bpmn debug`; return (debug_data, instance_id)."""
-
-    completed = run_cli(
-        [
-            "uip",
-            "maestro",
-            "bpmn",
-            "debug",
-            str(project_dir),
-            "--poll-interval",
-            "500",
-            "--inputs",
-            json.dumps(inputs, separators=(",", ":")),
-        ],
-        timeout=DEBUG_TIMEOUT_SECONDS,
-        log_file=log_file,
-    )
-    payload = parse_json_output(completed.stdout or completed.stderr, "debug")
-    debug_data = get_ci(payload, "Data", {})
-    instance_id = get_ci(debug_data, "InstanceId")
-    if not isinstance(instance_id, str) or not instance_id:
-        raise CheckFailure(
-            f"debug returned no instance id (exit {completed.returncode}); "
-            f"log: {tail_log(log_file)}"
-        )
-    return debug_data, instance_id
 
 
 def main() -> None:

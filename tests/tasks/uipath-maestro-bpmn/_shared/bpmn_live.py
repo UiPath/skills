@@ -400,3 +400,41 @@ def delete_target_is_absent(
         is not None
     )
 
+
+def run_debug(
+    project_dir,
+    inputs: dict,
+    log_file,
+    *,
+    timeout: int = DEBUG_BUDGET_DEFAULT_TIMEOUT,
+) -> tuple:
+    """Run one `uip maestro bpmn debug`; return (debug_data, instance_id).
+
+    Lives here rather than in a task checker so test_criterion_budgets.py can
+    price it, the same way flow_check.run_debug is priced in the flow suite.
+    """
+
+    completed = run_cli(
+        [
+            "uip",
+            "maestro",
+            "bpmn",
+            "debug",
+            str(project_dir),
+            "--poll-interval",
+            "500",
+            "--inputs",
+            json.dumps(inputs, separators=(",", ":")),
+        ],
+        timeout=timeout,
+        log_file=log_file,
+    )
+    payload = parse_json_output(completed.stdout or completed.stderr, "debug")
+    debug_data = get_ci(payload, "Data", {})
+    instance_id = get_ci(debug_data, "InstanceId")
+    if not isinstance(instance_id, str) or not instance_id:
+        raise CheckFailure(
+            f"debug returned no instance id (exit {completed.returncode}); "
+            f"log: {tail_log(log_file)}"
+        )
+    return debug_data, instance_id
