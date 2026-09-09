@@ -67,31 +67,30 @@ def test_minimal_example_has_complete_di_coverage() -> None:
     assert process is not None
 
     # Derived, not whitelisted: adding a node type to the doc example must not
-    # surface as a DI-coverage mismatch.
+    # surface as a DI-coverage mismatch. Sort every id-bearing process child
+    # into the DI it needs, so growing the example moves an id between these
+    # sets rather than breaking an assertion.
+    EDGE_ELEMENTS = ("sequenceFlow", "association")
+    NO_DI_ELEMENTS = ("dataObject", "dataObjectReference", "extensionElements")
+
+    def local(element: ET.Element) -> str:
+        return element.tag.rsplit("}", 1)[-1]
+
     node_ids = {
         element.attrib["id"]
         for element in process
-        if element.get("id")
-        and element.tag.rsplit("}", 1)[-1]
-        not in (
-            # An association needs a BPMNEdge, a dataObject needs neither, and
-            # neither is a flow node -- demanding a shape for them would
-            # false-fail the first time the example grows one.
-            "sequenceFlow",
-            "association",
-            "dataObject",
-            "dataObjectReference",
-            "extensionElements",
-        )
+        if element.get("id") and local(element) not in EDGE_ELEMENTS + NO_DI_ELEMENTS
     }
-    flow_ids = {
-        flow.attrib["id"] for flow in process.findall("bpmn:sequenceFlow", NS)
+    edge_ids = {
+        element.attrib["id"]
+        for element in process
+        if element.get("id") and local(element) in EDGE_ELEMENTS
     }
     shapes = root.findall(".//bpmndi:BPMNShape", NS)
     edges = root.findall(".//bpmndi:BPMNEdge", NS)
 
     assert {shape.attrib["bpmnElement"] for shape in shapes} == node_ids
-    assert {edge.attrib["bpmnElement"] for edge in edges} == flow_ids
+    assert {edge.attrib["bpmnElement"] for edge in edges} == edge_ids
     assert all(len(edge.findall("di:waypoint", NS)) >= 2 for edge in edges)
 
 

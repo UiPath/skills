@@ -64,6 +64,7 @@ def main() -> None:
             fail(f"{name} is missing beside {BPMN_NAME}")
 
     process = one_or_more(root, "process")[0]
+
     scripts = elements(root, "scriptTask")
     if len(scripts) < 3:
         fail(f"expected at least 3 script tasks (fetch + filter + aggregate), found {len(scripts)}")

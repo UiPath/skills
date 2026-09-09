@@ -60,6 +60,7 @@ def main() -> None:
     path, root = parse_bpmn("CustomerEscalation")
 
     process = one_or_more(root, "process")[0]
+
     scripts = elements(root, "scriptTask")
     if len(scripts) < 3:
         fail(f"expected at least 3 script tasks (2 classifiers + ticket), found {len(scripts)}")
