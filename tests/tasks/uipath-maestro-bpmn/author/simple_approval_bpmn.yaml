@@ -30,8 +30,8 @@ initial_prompt: |
     user names.
   - Declare root `uipath:variables version="v1"` entries for `expenseId`,
     `amount`, and `decision` with documented types.
-  - Include an integer `uipath:migrationVersion` element (for example
-    `version="15"`) on the process.
+  - Include an integer `uipath:migrationVersion` element on the process, set
+    to the serializer's current top migration number.
   - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`, include
     `uipath:scriptVersion`, prefer `v3`, and keep the script compatible with
     the Jint runtime (no Node.js, browser, filesystem, or network APIs).

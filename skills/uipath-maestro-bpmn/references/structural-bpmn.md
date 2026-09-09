@@ -41,7 +41,7 @@ namespace, at least one `<bpmn:process>`, and (to render) a
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
-    exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.203.0">
+    exporter="UiPath Maestro (https://uipath.com)">
   <bpmn:process id="Process_1">
     <!-- variables, flow nodes, sequence flows -->
   </bpmn:process>
@@ -70,7 +70,9 @@ file will fail to parse. Never paste CLI commands or flags
 
 This is a minimal CLI-compatible authoring scaffold with a stable manual entry
 point, one structural task, and complete diagram interchange. The CLI
-initializer omits `isExecutable`; preserve that shape. If existing source
+initializer omits `isExecutable`; preserve that shape. `init` and `format`
+write `exporterVersion`; leave it to them rather than pinning a release into
+hand-authored source. If existing source
 includes the equivalent default `isExecutable="false"`, preserve it. Do not
 force `isExecutable="true"`. Author from this skeleton plus the registry
 templates for the nodes your process needs. **Do not
@@ -86,7 +88,7 @@ reason authoring runs out of time.
     xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
-    exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.203.0">
+    exporter="UiPath Maestro (https://uipath.com)">
   <bpmn:process id="Process_1">
     <bpmn:extensionElements>
       <uipath:variables version="v1" />
@@ -99,6 +101,11 @@ reason authoring runs out of time.
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:task id="Task_1" name="Work">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1</bpmn:incoming>
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:task>

@@ -59,9 +59,7 @@ def test_minimal_example_has_complete_di_coverage() -> None:
 
     Deliberately narrow: this pins DI *coverage* over the canonical example
     agents copy, which is what the CLI's `validate` still does not enforce
-    (0x0 bounds and single-waypoint edges report Valid on uip 1.202.0).
-    It does not re-assert the example's graph wiring -- that is a hand-written
-    snippet checked into this repo, not a regression surface.
+    (0x0 bounds and single-waypoint edges report Valid on uip 1.203.0).
     """
 
     root = _minimal_example()
