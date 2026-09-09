@@ -95,9 +95,9 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
 
-The response adds an `IsEnrichment` block with the live field metadata (the
-CLI builds it as `ISEnrichment`; the output formatter normalizes the key, so
-`--output json` emits `IsEnrichment` — read that one). Write
+The response adds an enrichment block with the live field metadata. Match the
+key case-insensitively — the CLI's output formatter has changed key casing
+before, and pinning a spelling is what breaks on the next change. Write
 the activity's `body` input (`target="body"`) and `context` (`connectorKey`,
 `objectName`) from that enrichment — do not hand-author connector schemas. The
 connection is referenced through a connection binding, `=bindings.<bindingId>`
@@ -105,10 +105,12 @@ connection is referenced through a connection binding, `=bindings.<bindingId>`
 
 ### Body shape: hand-authored files need ONE `target="body"` input
 
-The manifest declares `inputPattern: separateInputs` with `inputTarget: body`,
-and its `InputNotes` tell you to add each request field as its own
-`uipath:input`. Studio Web's canvas does emit that shape. **The runtime does
-not consume it:** several `target="body"` inputs do not merge — each claims to
+This holds for every `Intsvc.*` type whose `inputTarget` is `body` —
+`ActivityExecution`, `AsyncExecution`, `SyncAgentExecution`,
+`AsyncAgentExecution`, `SyncWorkflowExecution`, `AsyncWorkflowExecution`. Each
+declares `inputPattern: separateInputs`, which reads as an instruction to add
+one `uipath:input` per request field. **The runtime does not consume that
+shape:** several `target="body"` inputs do not merge — each claims to
 be the entire body, the last one wins, and the provider receives that single
 value as a bare scalar. Integration Service answers `500 Internal failure`, or
 the provider reports the other fields missing (Slack:
@@ -120,7 +122,7 @@ the complete request object as JSON element content, nested the way the
 provider's API nests it:
 
 ```xml
-<uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_TargetProject"},"issuetype":{"id":"3"},"summary":"=js:'Created from Maestro at ' + vars.Var_RunLabel}}]]></uipath:input>
+<uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_TargetProject"},"issuetype":{"id":"=vars.Var_IssueTypeId"},"summary":"=js:'Created from Maestro at ' + vars.Var_RunLabel}}]]></uipath:input>
 ```
 
 Take every body field name from the operation's `RequestFields` in
@@ -179,9 +181,9 @@ unrecognized input name all pass `validate` and `pack`. The failure is a
 runtime one. This is why a clean `validate` is not evidence the body shape is
 right.
 
-Dotted Integration Service field names are also nested into objects on the way
-out, not sent as literal flat keys, so a flat `fields.project.key` leaves the
-provider never seeing `fields.project`.
+Nest a dotted `RequestFields` name yourself: `fields.project.key` becomes
+`{"fields":{"project":{"key": …}}}`. A literal `"fields.project.key"` key is
+sent as-is, and the provider never sees `fields.project`.
 
 Take `operation` from the `Operation.Name` reported by
 `uip is resources describe` (for example `Create`); `path` and `objectName`
@@ -236,10 +238,12 @@ discovery or the user.
   Integration Services invalid value in input` (the connection resolves to null).
 
 Declare all bindings in a single process-level `<uipath:bindings version="v1">`
-block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,
-`resourceKey`, and a `default` value. **`resourceKey` is required** — omitting
-it fails `validate` with `Integration Service activity connection binding
-"<id>" is missing resourceKey`.
+block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, and a
+`default` value (the resolved key or id). On a **connection** binding
+`resourceKey` is required too — omitting it fails `validate` with
+`Integration Service activity connection binding "<id>" is missing
+resourceKey`. Other binding kinds (`process`, `queue`, `businessRule`) carry
+no `resourceKey`; do not invent one.
 
 A folder-scoped connector activity needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
@@ -257,10 +261,16 @@ Only the `ConnectionId` binding becomes a `bindings_v2.json` resource — the
 folder binding exists for authoring and validation. `buildConnectionResources`
 (`connection-resources.ts`) keeps a binding only when `resource` is
 `Connection` **and** `propertyAttribute` is `ConnectionId`, so counting two
-bindings in and one resource out is expected, not a dropped binding. The same
-filter is why a `Connection` binding with any other `propertyAttribute`
-vanishes without a diagnostic and resurfaces as
-`Activity "<name>" references missing Connection binding "<id>"`.
+bindings in and one resource out is expected, not a dropped binding.
+
+The folder binding is exempt from the missing-binding error because nothing
+resolves it through that map: `buildConnectionResources` looks up only the
+binding named by the activity's **`connection`** input. Point that input at a
+binding whose `propertyAttribute` is anything other than `ConnectionId` and the
+lookup misses, producing
+`Activity "<name>" references missing Connection binding "<id>"` — an error
+naming the activity when the defect is one attribute on the binding. The
+`folderKey` input is read separately and never goes through the lookup.
 
 ## Agent wrapper selection — pick by `processType`, not the label
 

@@ -1,9 +1,10 @@
-"""Shared loader for the canonical BPMN example in the maestro-bpmn skill.
+"""Shared loader for the doc examples the maestro-bpmn contract guards assert.
 
-The contract guards in this directory all assert properties of the same
-`## A complete minimal file` example, which agents copy verbatim. Loading it
+The guards in this directory pin examples agents copy verbatim. Loading them
 in one place keeps them from drifting apart on which section is canonical or
-on how the XML block is extracted.
+on how the XML block is extracted. `minimal_example` is the canonical
+`## A complete minimal file`; `section_blocks` serves guards bound to a
+different section, whose fragments need the namespace wrapper.
 """
 
 from __future__ import annotations
@@ -48,3 +49,37 @@ def minimal_example() -> ET.Element:
         f"found {len(blocks)}"
     )
     return blocks[0]
+
+
+REGISTRY_REFERENCE = (
+    ROOT
+    / "skills"
+    / "uipath-maestro-bpmn"
+    / "references"
+    / "registry-workflow.md"
+)
+
+
+def section_blocks(reference: Path, section: str) -> list[ET.Element]:
+    """Every XML block under one heading, wrapped so fragments resolve.
+
+    A block that will not parse even wrapped is a defect in the doc: agents
+    copy these verbatim, and an unescaped `<placeholder>` in an attribute
+    makes the file not well-formed.
+    """
+
+    content = reference.read_text(encoding="utf-8")
+    _, heading, remainder = content.partition(section)
+    assert heading, f"{reference.name} is missing its {section!r} section"
+    body = remainder.partition("\n## ")[0]
+
+    blocks, broken = [], []
+    for xml in re.findall(r"```xml\n(.*?)\n```", body, re.DOTALL):
+        wrapped = f'<doc xmlns:uipath="{NS["uipath"]}" xmlns:bpmn="{NS["bpmn"]}">{xml}</doc>'
+        try:
+            blocks.append(ET.fromstring(wrapped))
+        except ET.ParseError as error:
+            broken.append((xml.splitlines()[0][:80], str(error)))
+    assert not broken, f"{reference.name} {section!r} has XML that does not parse: {broken}"
+    assert blocks, f"{reference.name} has no XML block under {section!r}"
+    return blocks
