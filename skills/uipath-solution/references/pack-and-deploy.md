@@ -431,10 +431,6 @@ Folder filtering with `--folder-path` happens **after** fetching `--limit` resul
 
 `--poll-interval` is in **milliseconds** (default 5000ms = 5s). `--timeout` is in **seconds** (default 360s = 6min). Do not confuse the two.
 
-### Data Fabric Resources — Pointer, Not Copy
-
-Unlike other remote-imported kinds, `Entity` and `ChoiceSet` are not provisioned into the deployment folder on a plain deploy — they stay in the folder where `uip df entities create --folder-key <…>` / `uip df choice-sets create --folder-key <…>` placed them, and the deployment folder holds only the binding. Verify with `uip df entities list --folder-key <SOURCE_FOLDER_KEY> --output json` against the source folder, not the deployment folder. To retarget the binding at deploy time (dev vs. prod), use [`config link`](#link-to-an-existing-orchestrator-resource) to override the resource.
-
 ---
 
 ## Related
