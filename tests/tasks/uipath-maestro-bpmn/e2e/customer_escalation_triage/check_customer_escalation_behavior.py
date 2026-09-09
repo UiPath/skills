@@ -107,6 +107,7 @@ class Contract:
     output_ids: dict[str, str]
     jira_create_ids: tuple[str, ...]
     slack_send_ids: tuple[str, ...]
+    classifier_ids: tuple[str, ...]
 
 
 def resolve_contract(path: Path = BPMN_FILE) -> Contract:
@@ -141,6 +142,22 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
     if missing:
         raise CheckFailure(f"public outputs not declared: {missing}")
 
+    # Every scriptTask that could be the classifier. The flow suite binds
+    # severity to the executed Script whose own output carries it; without an
+    # equivalent, a process that exposes a literal "Sev1" -- computing nothing
+    # -- satisfies every other criterion, because the seed declares the one
+    # expected severity.
+    classifier_ids = tuple(
+        element.attrib["id"]
+        for element in process
+        if element.tag == q(BPMN_NS, "scriptTask") and element.attrib.get("id")
+    )
+    if not classifier_ids:
+        raise CheckFailure(
+            "no bpmn:scriptTask to classify severity; the value would be a "
+            "literal rather than computed"
+        )
+
     connectors = index_runtime_connectors(process)
 
     def ids_for(connector_key: str, path_needle: str) -> tuple[str, ...]:
@@ -161,6 +178,7 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
         output_ids=output_ids,
         jira_create_ids=ids_for(*JIRA_CREATE),
         slack_send_ids=ids_for(*SLACK_SEND),
+        classifier_ids=classifier_ids,
     )
 
 
@@ -277,6 +295,37 @@ def assert_outcome(
             raise CheckFailure(
                 f"output {name} expected {expected!r}, got {actual.get(name)!r}"
             )
+
+    # Severity must be COMPUTED, not exposed as a literal. Bind it to the
+    # executed scriptTask whose own runtime output carries it -- the flow
+    # suite's classification binding. The seed declares the one expected
+    # severity, so without this a process that computes nothing and returns
+    # "Sev1" satisfies every other criterion here.
+    severity = actual.get("severity")
+    classifier_outputs = element_output_records(
+        variables_data, contract.classifier_ids
+    )
+    if not classifier_outputs:
+        raise CheckFailure(
+            f"no executed scriptTask among {list(contract.classifier_ids)} "
+            "produced runtime output; severity was not computed"
+        )
+
+    def carries(record: object) -> bool:
+        """The severity appears in this node's own response, scalar or field."""
+
+        response = get_ci(record, "response")
+        if response == severity:
+            return True
+        if isinstance(response, dict):
+            return severity in response.values()
+        return False
+
+    if not any(carries(record) for record in classifier_outputs):
+        raise CheckFailure(
+            f"severity {severity!r} is not in any executed scriptTask's own "
+            "output; it was not computed by the classification node"
+        )
 
     # The exposed jiraIssueKey must be the executed Create-Issue node's OWN
     # response key — harvesting some other key cannot satisfy this.

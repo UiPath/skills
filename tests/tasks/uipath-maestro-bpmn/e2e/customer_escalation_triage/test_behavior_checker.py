@@ -50,6 +50,9 @@ SAMPLE_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
         <uipath:output name="jiraIssueKey" id="var_jiraKey" type="string"/>
       </uipath:variables>
     </bpmn:extensionElements>
+    <bpmn:scriptTask id="Classify1" scriptFormat="JavaScript">
+      <bpmn:script><![CDATA[return "Sev1";]]></bpmn:script>
+    </bpmn:scriptTask>
     <bpmn:serviceTask id="JiraCreate1">
       <bpmn:extensionElements>
         <uipath:activity>
@@ -96,6 +99,7 @@ CONTRACT = checker.Contract(
     },
     jira_create_ids=("JiraCreate1",),
     slack_send_ids=("SlackSend1",),
+    classifier_ids=("Classify1",),
 )
 
 
@@ -140,6 +144,11 @@ def good_variables_data() -> dict:
                                 },
                             }
                         },
+                    },
+                    # Appended, not prepended: tests index Elements[0].
+                    {
+                        "ElementId": "Classify1",
+                        "Outputs": {"response": "Sev1"},
                     },
                 ],
             }
@@ -573,3 +582,48 @@ class DeleteConfirmationTests(unittest.TestCase):
                 self._completed(observed), "slack message", "1788913576.470749"
             )
         )
+
+
+class ComputedSeverityTests(unittest.TestCase):
+    """Severity must come from a node that ran, not from a literal.
+
+    The seed declares the one expected severity, so a process that computes
+    nothing and returns "Sev1" would satisfy every other criterion. The flow
+    suite binds severity to the executed Script whose own output carries it.
+    """
+
+    def test_literal_severity_with_no_classifier_output_fails(self):
+        variables = good_variables_data()
+        elements = variables["Variables"][0]["Elements"]
+        variables["Variables"][0]["Elements"] = [
+            e for e in elements if e["ElementId"] != "Classify1"
+        ]
+        with self.assertRaisesRegex(checker.CheckFailure, "severity was not computed"):
+            checker.assert_outcome(
+                CONTRACT, SEED, good_debug_data(), variables, []
+            )
+
+    def test_classifier_output_disagreeing_with_the_exposed_value_fails(self):
+        variables = good_variables_data()
+        for element in variables["Variables"][0]["Elements"]:
+            if element["ElementId"] == "Classify1":
+                element["Outputs"]["response"] = "Sev3"
+        with self.assertRaisesRegex(checker.CheckFailure, "not in any executed"):
+            checker.assert_outcome(
+                CONTRACT, SEED, good_debug_data(), variables, []
+            )
+
+    def test_bpmn_without_a_scripttask_is_refused_at_contract_time(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "NoClassifier.bpmn"
+            path.write_text(
+                SAMPLE_BPMN.replace(
+                    '<bpmn:scriptTask id="Classify1" scriptFormat="JavaScript">\n'
+                    '      <bpmn:script><![CDATA[return "Sev1";]]></bpmn:script>\n'
+                    "    </bpmn:scriptTask>\n    ",
+                    "",
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(checker.CheckFailure, "no bpmn:scriptTask"):
+                checker.resolve_contract(path)
