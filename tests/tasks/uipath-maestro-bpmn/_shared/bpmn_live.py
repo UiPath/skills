@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import subprocess
 import time
@@ -133,6 +134,28 @@ def exact_type(value: Any, declared_type: str) -> bool:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+# Worst-case wall clock for one `run_debug` call, mirroring
+# flow_check.debug_budget so test_criterion_budgets.py can hold both suites to
+# the same arithmetic. BPMN's run_debug makes a single attempt with no backoff,
+# so the budget is the call's own timeout; the retries/backoff parameters exist
+# to keep the two signatures interchangeable if that changes.
+# Headroom a criterion needs beyond the calls it makes, for process start and
+# teardown. Mirrors flow_check.CRITERION_MARGIN_SECONDS; test_criterion_budgets
+# enforces the pair.
+CRITERION_MARGIN_SECONDS = 60
+
+DEBUG_BUDGET_DEFAULT_TIMEOUT = 480
+
+
+def debug_budget(
+    timeout: int = DEBUG_BUDGET_DEFAULT_TIMEOUT,
+    retries: int = 1,
+    backoff_seconds: float = 0.0,
+) -> int:
+    attempts = max(1, retries)
+    return timeout * attempts + math.ceil(backoff_seconds) * (attempts - 1)
 
 
 def run_cli(
