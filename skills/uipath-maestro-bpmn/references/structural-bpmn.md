@@ -526,9 +526,10 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
   unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
   example UUID; this scaffold field is not a registry-owned node payload. Also
   declare the public variables it needs: each `uipath:input`'s `elementId` must
-  match that start event, and each `uipath:output`'s must match the end event
-  that returns it. Without the match, `refresh` derives an empty schema for
-  that side of the entry point.
+  match that start event, and each `uipath:output`'s must match a root end
+  event. The two mismatches fail differently: an unmatched input is dropped
+  silently, leaving an empty `input` schema, while an unmatched output fails
+  the project with `Process output "<name>" must target a root end event.`
 
 Do not patch generated JSON to fix source behavior — change the `.bpmn` and
 regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.

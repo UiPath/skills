@@ -66,11 +66,15 @@ def _prefixes_used(text: str) -> set[str]:
     ids=lambda p: str(p.name),
 )
 def test_skeleton_declares_every_prefix_its_fragments_use(path: Path) -> None:
-    """An agent pastes this file's fragments into this file's skeleton.
+    """An agent pastes this file's fragments into whichever skeleton it copied.
 
     The skeleton lost `xmlns:xsi` when an example moved; the file still used
     `xsi:type` in four fragments, so anyone following the docs produced
     `unbound prefix`. `validate` does not catch it -- `ET.parse` does.
+
+    Check each skeleton on its own. Against the union of all of them, a file
+    with two skeletons hides the original defect: one loses the declaration,
+    the other still supplies it, and the check stays green.
     """
 
     text = path.read_text(encoding="utf-8")
@@ -80,9 +84,15 @@ def test_skeleton_declares_every_prefix_its_fragments_use(path: Path) -> None:
     ]
     if not skeletons:
         pytest.skip("no full skeleton in this file")
-    declared = set(re.findall(r"xmlns:([\w.-]+)=", " ".join(skeletons)))
-    missing = sorted(_prefixes_used(text) - declared)
-    assert not missing, (
-        f"{path.name}: fragments use prefixes the skeleton never declares: "
-        f"{missing} -- pasting them yields 'unbound prefix'"
+    used = _prefixes_used(text)
+    gaps = []
+    for index, skeleton in enumerate(skeletons):
+        declared = set(re.findall(r"xmlns:([\w.-]+)=", skeleton))
+        missing = sorted(used - declared)
+        if missing:
+            gaps.append(f"skeleton {index}: {missing}")
+
+    assert not gaps, (
+        f"{path.name}: fragments use prefixes a skeleton never declares: "
+        f"{gaps} -- pasting them yields 'unbound prefix'"
     )
