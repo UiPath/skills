@@ -28,7 +28,7 @@ uip maestro flow registry list --local --output json
 uip maestro flow registry search "<agent name>" --output json
 ```
 
-Both of the latter give a `uipath.core.agent.{key}` node type. `registry get` on it returns `inputDefaults` holding `isConversational: true` and `conversationalAgentSettings`, which is how you confirm the agent really is a chat agent rather than an autonomous one. Discovery details live in [agent/impl.md](../agent/impl.md#discovery-and-registry-validation).
+Both of the latter give a `uipath.core.agent.*` node type — suffixed with the solution resource key in-solution, the Orchestrator-assigned UUID when published. `registry get` on it returns `inputDefaults` holding `isConversational: true` and `conversationalAgentSettings`, which is how you confirm the agent really is a chat agent rather than an autonomous one. Discovery details live in [agent/impl.md](../agent/impl.md#discovery-and-registry-validation).
 
 **If an in-solution agent comes back autonomous**, the registry could not read its `agent.json` — it builds that node from the sibling project's file, and falls back to autonomous when the file is missing or malformed. Re-run with `--log-level debug` and it names the reason:
 
@@ -93,7 +93,7 @@ This is the one that goes wrong silently. The agent reads the conversation throu
 
 **`mode` and `context` exist only to restore the editor UI.** The four individual fields are what the runtime reads, in either mode, and validation requires `conversationId` regardless. `custom` is for a turn assembled from more than one source. `mode` is optional; the examples here all declare `simple`.
 
-**Write all five**, whichever mode is declared. In Studio Web the author fills `context` and the panel derives the other four, but that derivation only runs in the editor — nothing derives them when the file is authored from the CLI.
+**Write all five.** In Studio Web the author fills `context` and the panel derives the other four, but that derivation only runs in the editor — nothing derives them when the file is authored from the CLI.
 
 Validation only requires `conversationId`, so it half-helps: leave that out and validate fails, but bind `context` and `conversationId` while dropping `exchangeId`, `messages` and `userSettings` and validate passes. The runtime reads all four, so that flow ships an agent with no chat history and no user settings.
 
