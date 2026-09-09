@@ -586,7 +586,7 @@ The production runtime uses **Jint** (a .NET JavaScript interpreter, ES2020 subs
 
 A node's output (`$vars.{nodeId}.output`) is available to **all downstream nodes** connected via edges. If a node has not executed (e.g., on an untaken branch), its `$vars` entry is `undefined`.
 
-**Gateways are the exception.** A Decision (`core.logic.decision`) or Switch (`core.logic.switch`) never enters a downstream node's scope, even when it is directly upstream on every path. `$vars.<gatewayId>.matchedCaseId` and `.matchedCase` read `undefined` from anywhere downstream. To act on which branch ran, recompute the condition from a node upstream of the gateway, or write an `inout` global on each branch — see [decision/impl.md — Outputs](../author/plugins/decision/impl.md#outputs).
+**Gateways are the exception.** A Decision (`core.logic.decision`) or Switch (`core.logic.switch`) never enters a downstream node's scope, even when it is directly upstream on every path. The registry declares `matchedCase` and `matchedCaseId` on both, but nothing ever assigns them — the branch choice lives on the outgoing edges, not in a variable — so a downstream read is declared, unassigned, and silently `undefined`. To act on which branch ran, recompute the condition from a node upstream of the gateway, or write an `inout` global on each branch — see [decision/impl.md — Outputs](../author/plugins/decision/impl.md#outputs).
 
 ### Loop Scope
 

@@ -52,9 +52,9 @@ Each case creates a dynamic output port `case-{id}`. An optional `default` port 
 
 ## Outputs
 
-A Switch is **not readable from downstream at all**, exactly as a Decision is not — see [decision/impl.md — Outputs](../decision/impl.md#outputs) for the rule and the two supported ways to act on which branch ran. `$vars.<switchId>.matchedCaseId` and `.matchedCase` resolve to `undefined` from every downstream node, merge or no merge, and `flow validate` reports `[EXPRESSION_DIAGNOSTIC] Property '<switchId>' does not exist on type '{…}'`.
+`registry get` shows a Switch declaring `matchedCase` and `matchedCaseId`, exactly as a Decision does, and neither is ever assigned at runtime. **Ignore both.** Reading one from any downstream node passes validate with `[EXPRESSION_DIAGNOSTIC] Property '<switchId>' does not exist on type '{…}'` and then reads `undefined`, merge or no merge. See [decision/impl.md — Outputs](../decision/impl.md#outputs) for why, the `.output.` variant that fails validate outright, and the two supported ways to act on which branch ran.
 
-With three or more outcomes the condition is usually not worth recomputing per branch: prefer the `inout` global written on each branch.
+With three or more outcomes the condition is rarely worth recomputing per branch: prefer the `inout` global written on each branch.
 
 ## Debug
 
