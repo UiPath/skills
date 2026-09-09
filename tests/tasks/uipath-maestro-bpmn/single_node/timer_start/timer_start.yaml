@@ -37,7 +37,7 @@ initial_prompt: |
     for every sequence flow.
   - Validate the generated project BPMN is well-formed XML with an explicit
     Bash command before finishing, e.g.
-    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('<path>/ScheduledReportBpmn.bpmn')"`.
+    `python3 -c "import xml.etree.ElementTree as ET, pathlib; ET.parse(next(pathlib.Path('.').rglob('ScheduledReportBpmn.bpmn')))"`.
   - Do not upload, publish, deploy, debug, run, or pack anything, and do not
     pause for approval or confirmation.
 
