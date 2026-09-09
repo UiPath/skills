@@ -50,9 +50,17 @@ The performer's start event **is** the queue trigger, so this shape always begin
 the process. It cannot be inserted into an existing path or nested in a
 subprocess, and it has no Entry row in the droppable sense.
 
+**Author the start as structural BPMN — do not search the registry for it.** The
+queue trigger is not a registry extension type, a connector, or a login-gated
+payload: it is a plain `bpmn:startEvent` (a `bpmn:messageEventDefinition` child
+is optional and semantic only). There is no `uipath:*` payload and no
+`registry get` for it — the check grades exactly one start event with nothing
+flowing back in. Model it directly and move on; do not spend turns hunting the
+registry or `uip login` for a "queue trigger" type.
+
 | Node | Element | Role |
 | --- | --- | --- |
-| `start` | `bpmn:startEvent` + message event definition, bound to the queue trigger | Mechanism |
+| `start` | `bpmn:startEvent` (optional `bpmn:messageEventDefinition`) — structural, no registry payload | Mechanism |
 | `per_item_action` | `bpmn:serviceTask` | Placeholder |
 | `outcome_gate` | `bpmn:exclusiveGateway` | Mechanism |
 | `set_successful` | `bpmn:serviceTask` | Mechanism |
