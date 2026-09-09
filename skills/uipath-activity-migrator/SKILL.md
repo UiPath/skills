@@ -210,4 +210,4 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
-- Padding the report with checks that found nothing, a classic-to-modern mapping table, or guesses about how the migrated activities will behave at runtime
+- Padding the report with checks that found nothing, a classic-to-modern mapping table, or guesses about how the migrated activities will behave at runtime. Typical offenders: "both edited files validate with 0 errors", "left alone (valid cross-window probes)", "the project now mixes two package lines", "the framework step was a no-op"

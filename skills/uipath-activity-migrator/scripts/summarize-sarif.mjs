@@ -153,7 +153,7 @@ for (const r of results) {
     reason = (body.split(/(?<=[.!?])\s/)[0] || 'warning').replace(/[.!?]$/, '').trim().slice(0, 110);
   }
   else if (bareOutcome) reason = { ERROR: 'not migrated', PARTIAL: 'partial' }[bareOutcome[1]];
-  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), guid: propsOf(r).activityGuid || '', destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', reason, bare: Boolean(bareOutcome), outcome: (bareOutcome || reasonMatch ? (id.match(/-(ERROR|WARNING|PARTIAL|INFO)(?:-|$)/) || [])[1] : '') || '', message: msgOf(r) };
+  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), guid: propsOf(r).activityGuid || '', property: propsOf(r).propertyName || '', reason, bare: Boolean(bareOutcome), outcome: (bareOutcome || reasonMatch ? (id.match(/-(ERROR|WARNING|PARTIAL|INFO)(?:-|$)/) || [])[1] : '') || '', message: msgOf(r) };
 
   const critical = isCritical(id, lvl);
   if (critical) hasCriticalError = true;

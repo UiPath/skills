@@ -44,8 +44,6 @@ Goal: the latest stable patch of the release line the client's robots run.
 4. Ask once with `AskUserQuestion`. Newest line first, labeled `(Recommended)`. Option label: `<line>.x → <resolved version>`. Option description for the newest: "Longest support ahead; requires Studio and robots at or above the minimum this package version lists in its release notes." For the older: "Safe pick when the fleet is behind that minimum."
 5. Script prints `error` (feed unreachable): use the tool default, do not ask, and record "target version: tool default (feed unreachable)" for the report.
 
-Mixed-line caution for the report: the core restore step moves every other package to the smallest Windows-compatible line above its current version. Choosing a line far ahead of the rest of the project is legitimate but should be stated.
-
 ### Stop conditions specific to this package
 
 None before analyze. Project setting conflicts and unsupported languages surface in the analyze results (Hook 2).

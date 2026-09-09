@@ -92,7 +92,8 @@ if (-not $Exe) {
         $remoteLm = Get-LastModified $head.Headers
     } catch { $remoteLm = '' }
     $localLm = ''
-    if (Test-Path -LiteralPath $Stamp) { $localLm = ((Get-Content -LiteralPath $Stamp -Raw) -replace "[`r`n]", '').Trim() }
+    # A stamp written by hand may carry a UTF-8 BOM; strip it or every run looks like an update.
+    if (Test-Path -LiteralPath $Stamp) { $localLm = ((Get-Content -LiteralPath $Stamp -Raw) -replace "[`r`n]", '' -replace ("^" + [char]0xFEFF), '').Trim() }
     if ($remoteLm -and $localLm -and ($remoteLm -ne $localLm)) {
         $NeedDownload = $true
         $IsUpdate = $true
@@ -105,7 +106,8 @@ if (-not $Exe) {
 # --- 4. Download and extract ----------------------------------------------
 if ($NeedDownload) {
     New-Item -ItemType Directory -Force -Path $Root | Out-Null
-    $tmpZip = Join-Path $Root 'UiPath.Upgrade.Cli.zip.tmp'
+    # Must end in .zip: Windows PowerShell 5.1's Expand-Archive rejects any other extension.
+    $tmpZip = Join-Path $Root 'UiPath.Upgrade.Cli.download.zip'
     if (Test-Path -LiteralPath $tmpZip) { Remove-Item -LiteralPath $tmpZip -Force }
     $newLm = ''
     try {
@@ -126,8 +128,14 @@ if ($NeedDownload) {
     try {
         Expand-Archive -LiteralPath $tmpZip -DestinationPath $stage -Force
     } catch {
-        Remove-Item -LiteralPath $stage -Recurse -Force
-        Emit-Error 'extract-failed' ('Could not extract ' + $tmpZip + ': ' + $_.Exception.Message + '. Extract it manually into ' + $Current + '.')
+        # Second extractor, so this twin also survives a failing primary like the bash twin does; the .NET zip API ignores the file extension.
+        try {
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($tmpZip, $stage)
+        } catch {
+            Remove-Item -LiteralPath $stage -Recurse -Force
+            Emit-Error 'extract-failed' ('Could not extract ' + $tmpZip + ' with Expand-Archive or ZipFile: ' + $_.Exception.Message + '. Extract it manually into ' + $Current + '.')
+        }
     }
     if (-not (Test-Path -LiteralPath (Join-Path $stage 'UiPath.Upgrade.exe')) -or -not (Test-Path -LiteralPath (Join-Path $stage 'Extensions'))) {
         Remove-Item -LiteralPath $stage -Recurse -Force

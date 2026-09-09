@@ -23,7 +23,7 @@ Default root: `%LOCALAPPDATA%\UiPath\ActivityMigrator` (`$LOCALAPPDATA/UiPath/Ac
 ActivityMigrator/
   current/                 extracted tool; UiPath.Upgrade.exe lives here
   .last-modified           Last-Modified header of the archive that produced current/
-  UiPath.Upgrade.Cli.zip.tmp   transient during download; removed on success
+  UiPath.Upgrade.Cli.download.zip   transient during download; removed on success, kept on an extraction failure so it can be extracted by hand
 ```
 
 Resolution order used by the scripts:

@@ -88,7 +88,8 @@ else
     rm -f "$HEAD_FILE"
   fi
   LOCAL_LM=""
-  [ -f "$STAMP" ] && LOCAL_LM="$(tr -d '\r\n' < "$STAMP")"
+  # A stamp written by hand may carry a UTF-8 BOM; strip it or every run looks like an update.
+  [ -f "$STAMP" ] && LOCAL_LM="$(tr -d '\r\n' < "$STAMP" | sed 's/^\xEF\xBB\xBF//')"
   if [ -n "$REMOTE_LM" ] && [ -n "$LOCAL_LM" ] && [ "$REMOTE_LM" != "$LOCAL_LM" ]; then
     NEED_DOWNLOAD=1
     IS_UPDATE=1
@@ -102,7 +103,8 @@ fi
 if [ "$NEED_DOWNLOAD" = 1 ]; then
   command -v curl >/dev/null 2>&1 || emit_error download-failed "curl not found. Download $URL manually; see references/acquisition-guide.md § Manual placement."
   mkdir -p "$ROOT" || emit_error download-failed "Cannot create $(to_win "$ROOT")."
-  TMP_ZIP="$ROOT/UiPath.Upgrade.Cli.zip.tmp"
+  # Must end in .zip: Windows PowerShell 5.1's Expand-Archive rejects any other extension.
+  TMP_ZIP="$ROOT/UiPath.Upgrade.Cli.download.zip"
   HEADERS="$ROOT/.headers.tmp"
   CURL_ERR="$ROOT/.curl-error.tmp"
   rm -f "$TMP_ZIP" "$HEADERS" "$CURL_ERR"
