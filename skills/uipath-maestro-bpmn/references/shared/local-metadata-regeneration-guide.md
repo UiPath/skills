@@ -70,7 +70,11 @@ Do not derive metadata from stale package files first. Use existing generated fi
 ## Safe Local Workflow
 
 1. Edit `.bpmn` first.
-2. Run local validation for XML, diagrams, entry point IDs, variables, mappings, binding references, and package metadata drift.
+2. Check the source itself: well-formed XML, diagrams, entry point IDs,
+   variables, mappings, binding references. Do not run `uip maestro bpmn
+   validate` yet — it cross-checks `entry-points.json` against the source, so it
+   reports the pre-refresh state as an error whenever an edit renamed a start
+   event. Run it after step 3.
 3. Regenerate package metadata from the BPMN source:
 
    ```bash

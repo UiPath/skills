@@ -218,18 +218,20 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
-   If the user asks for the package metadata files, or to package or operate,
-   run `uip maestro bpmn refresh <project-path>` to generate the four
-   files, and keep its output as written — that shape is the contract `pack`
-   consumes. `refresh` requires an init-generated project: with no
+   Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
+   start event id or adds or removes an entry point — **not only when packaging
+   or operating**. `operate.json` and `entry-points.json` are generated once and
+   do not follow source edits, so step 4's validator fails on the mismatch:
+   `entry-points.json references start event "Event_start" via filePath, but no
+   <bpmn:startEvent id="Event_start"> exists`. Authoring from the skeleton above
+   renames the initializer's `Event_start`, so a source-only draft needs this
+   too. Keep the output as written — that shape is the contract `pack` consumes.
+   `refresh` requires an init-generated project: with no
    `project.uiproj` it fails `Required file is missing` / `RetryWillNotFix`.
    For a bare `.bpmn` (the shape of this repo's edit fixtures), write the
    two-key `project.uiproj` first — `{ "Name": "<ProjectName>",
    "ProjectType": "ProcessOrchestration" }` — then refresh, which writes the
-   rest. Re-run it after changing a start event's id or adding or removing an
-   entry point: `operate.json.main` and `entry-points.json` are generated once
-   and do not follow later source edits, so a renamed start event leaves the
-   runtime pointing at an entry point that no longer exists. Only fall back to the equivalent hand-authored shape in
+   rest. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
    synthetic local project. Every root start event needs a
