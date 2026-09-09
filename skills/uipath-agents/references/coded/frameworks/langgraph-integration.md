@@ -8,12 +8,12 @@ If there is **no existing agent code**, scaffold a LangGraph project with:
 
 ```bash
 mkdir my-agent && cd my-agent
-uip codedagent new my-agent
+uip codedagent new my-agent --type agent --agent-framework langchain
 ```
 
 This generates `main.py` (with a StateGraph template), `langgraph.json`, and `pyproject.toml`. Then modify `main.py` to implement your actual agent logic.
 
-> **Prerequisite:** `uipath-langchain` must be installed for the LangGraph template to be used. If you get a base template instead, install `uipath-langchain` first.
+> **Prerequisite:** `uipath-langchain` must be installed in the active venv **and** `--type agent --agent-framework langchain` must be passed. The installed package alone does not select the template: without `--type agent`, `new` writes a Coded Function project (`uipath.json` with a `functions` map, no `langgraph.json`). If that happens, install `uipath-langchain` if missing, delete `main.py`, `pyproject.toml`, `uipath.json`, and re-run with both flags. If the CLI answers `No such option '--type'`, the installed `uipath` predates the flag — re-run `uip codedagent new my-agent` without the flags.
 
 ## Project Structure
 

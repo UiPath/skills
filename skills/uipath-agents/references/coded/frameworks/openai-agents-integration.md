@@ -12,12 +12,12 @@ If there is **no existing agent code**, scaffold an OpenAI Agents project with:
 
 ```bash
 mkdir my-agent && cd my-agent
-uip codedagent new my-agent
+uip codedagent new my-agent --type agent --agent-framework openai-agents
 ```
 
 This generates `main.py` (with an Agent + tool template), `openai_agents.json`, `AGENTS.md`, and `pyproject.toml`. Then modify `main.py` to implement your actual agent logic.
 
-> **Prerequisite:** `uipath-openai-agents` must be installed for the OpenAI Agents template to be used.
+> **Prerequisite:** `uipath-openai-agents` must be installed in the active venv **and** `--type agent --agent-framework openai-agents` must be passed. Without `--type agent`, `new` writes a Coded Function project (`uipath.json` with a `functions` map, no `openai_agents.json`). If that happens, install `uipath-openai-agents` if missing, delete `main.py`, `pyproject.toml`, `uipath.json`, and re-run with both flags. If the CLI answers `No such option '--type'`, the installed `uipath` predates the flag — re-run `uip codedagent new my-agent` without the flags.
 
 ## Project Structure
 

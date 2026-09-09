@@ -10,13 +10,13 @@ which uip > /dev/null 2>&1 || echo "install uip: npm install -g @uipath/cli"
 
 ## Framework Selection
 
-Pick the framework before starting. The package installed in the Workflow determines which scaffold `uip codedagent new` produces.
+Pick the framework before starting. `uip codedagent new` needs two things for an agent scaffold: the framework package installed in the active venv **and** `--type agent --agent-framework <AGENT_FRAMEWORK>`. The installed package alone does not select the scaffold — without `--type agent`, `new` produces a Coded Function project (`uipath.json` with a `functions` map, no `<framework>.json`).
 
-| Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
-|---|---|---|---|
-| LangGraph | `"uipath-langchain"` | `langgraph.json` | [langgraph-integration.md](../frameworks/langgraph-integration.md) |
-| LlamaIndex | `uipath-llamaindex` | `llama_index.json` | [llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
-| OpenAI Agents | `uipath-openai-agents` | `openai_agents.json` | [openai-agents-integration.md](../frameworks/openai-agents-integration.md) |
+| Agent Type | `<FRAMEWORK_PACKAGE>` | `<AGENT_FRAMEWORK>` | Framework config | Guide |
+|---|---|---|---|---|
+| LangGraph | `uipath-langchain` | `langchain` | `langgraph.json` | [langgraph-integration.md](../frameworks/langgraph-integration.md) |
+| LlamaIndex | `uipath-llamaindex` | `llamaindex` | `llama_index.json` | [llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
+| OpenAI Agents | `uipath-openai-agents` | `openai-agents` | `openai_agents.json` | [openai-agents-integration.md](../frameworks/openai-agents-integration.md) |
 
 ## Starting Points
 
@@ -35,7 +35,8 @@ uv venv --python 3.13                        # uv defaults to the latest Python;
 source .venv/bin/activate                    # Windows: .venv\Scripts\activate
 uv pip install <FRAMEWORK_PACKAGE>
 uip codedagent setup --force
-uip codedagent new <PROJECT_NAME>
+uip codedagent new <PROJECT_NAME> --type agent --agent-framework <AGENT_FRAMEWORK>
+# verify: <framework>.json must exist — see § Verify the Scaffold
 uv add uipath-dev --dev                      # required by `uip codedagent dev` (local dev web server)
 uv sync
 uip codedagent init
@@ -45,9 +46,17 @@ uip codedagent init
 
 **What `uip codedagent setup` does:** locates a Python that has `uipath` installed and caches its path, so later commands (`init`/`run`/`eval`/`pack`) can invoke the Python SDK. It searches PATH (`python3.x`, `python3`, `python`) and uses your `.venv` only when activated. So when using uv, always `uv sync` then activate the venv before the `setup` command.
 
+## Verify the Scaffold
+
+After `uip codedagent new`, check the directory before running anything else:
+
+1. `<framework>.json` present (`langgraph.json` / `llama_index.json` / `openai_agents.json`) → agent scaffold. Continue.
+2. `uipath.json` with a `functions` map and no `<framework>.json` → function scaffold. Cause: `--type agent --agent-framework` omitted, or `<FRAMEWORK_PACKAGE>` not installed in the active venv. Fix: `uv pip install <FRAMEWORK_PACKAGE>` if missing, delete `main.py`, `pyproject.toml`, `uipath.json`, then re-run `uip codedagent new <PROJECT_NAME> --type agent --agent-framework <AGENT_FRAMEWORK>`. Do not hand-write `<framework>.json` on top of the function scaffold, and do not hand off to `uipath-functions` — the project was never meant to be a function.
+3. `Error: No such option '--type'` → the installed `uipath` predates the flag. Re-run `uip codedagent new <PROJECT_NAME>` without the two flags; on those releases the installed framework package selects the agent scaffold.
+
 ## Coded Function Agents
 
-`uipath.json` carries the entrypoint mapping:
+Scaffolded by `uip codedagent new <PROJECT_NAME>` without `--type agent` (the default is `--type function`); no framework package needed. `uipath.json` carries the entrypoint mapping:
 
 ```json
 {
@@ -65,7 +74,7 @@ Edit the scaffolded `main.py`'s `Input` / `Output` models and `async def main` t
 |---|---|
 | `pyproject.toml` | Project metadata and dependencies |
 | `main.py` | Agent entrypoint |
-| `<framework>.json` | Framework config (LangGraph / LlamaIndex / OpenAI Agents) |
+| `<framework>.json` | Framework config (LangGraph / LlamaIndex / OpenAI Agents) — written only with `--type agent` |
 | `uipath.json` | Runtime options, pack options, `functions` map |
 | `entry-points.json` | Input / output schemas from Pydantic models |
 | `bindings.json` | Runtime bindings |
@@ -124,4 +133,6 @@ When the agent project is registered in a solution and uploaded via `uip solutio
 | `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` |
 | `NameError` during `init` | Framework not installed when `init` imports `main.py` | Run `uv sync` before `uip codedagent init` |
 | `No entrypoints found in uipath.json` | Framework config or package missing | Verify `uv pip install` succeeded, then re-run `uip codedagent init` |
+| `new` produced `uipath.json` with a `functions` map and no `<framework>.json` | `--type agent --agent-framework` omitted, or framework package not installed | See § Verify the Scaffold — install the package, delete the three generated files, re-run `new` with both flags |
+| `Error: No such option '--type'` from `uip codedagent new` | Installed `uipath` predates the `--type` option | Re-run `uip codedagent new <PROJECT_NAME>` without `--type` / `--agent-framework` |
 | `ModuleNotFoundError` for a package you just installed, even after activating `.venv` | A shell `python` alias points at a different interpreter (uv-managed, system, etc.) | Use `.venv/bin/python` directly for sanity checks, or `unalias python` for the session |
