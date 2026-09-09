@@ -1,70 +1,58 @@
 # Consumables Report
 
-Report consumption of consumable license units (`AIU`, `AGU`, `RU`, `PLTU`, `HEAL`, `SPR`, `LU`, etc.) across the organization. Three report shapes: account-wide summary, daily breakdown by service, folder breakdown.
+Report consumption of consumable license units (`AIU`, `AGU`, `RU`, `PLTU`, `HEAL`, `SPR`, `LU`, etc.) by organization account, day/service, or folder.
 
-> For full option details, run `uip platform licenses consumables get --help`.
+> Run `uip platform licenses consumables get --help` for full option details.
 
-## Command Shape
+## Command and prerequisites
 
-ONE verb produces all three reports:
+Run:
 
 ```bash
 uip platform licenses consumables get [--mode <summary|daily|folders>] [flags] --output json
 ```
 
-1. `get` is mandatory. `uip platform licenses consumables` alone prints group help — no report.
-2. `summary` / `daily` / `folders` are `--mode` VALUES, never subcommands or positionals.
-3. Summary report: omit `--mode` (summary is the default) or pass `--mode summary`.
+- Run `get`; `uip platform licenses consumables` alone prints group help.
+- Use `summary`, `daily`, and `folders` only as `--mode` values, never as subcommands or positionals.
+- Omit `--mode` for the default `summary`, or pass `--mode summary`.
+- Run `uip login status`. If unauthenticated, ask the user to run `uip login` (interactive browser flow).
+- Require organization-admin permission to read account product allocations.
+- For `daily` and `folders`, obtain the exact target tenant name and consumable unit code.
 
-| Wrong | Right |
-|-------|-------|
-| `uip platform licenses consumables --output json` (missing `get`) | `uip platform licenses consumables get --output json` |
-| `uip platform licenses summary` (verb does not exist) | `uip platform licenses consumables get --output json` |
-| `uip platform licenses consumables get summary` (mode as positional) | `uip platform licenses consumables get --mode summary --output json` |
-
----
-
-## When to Use
-
-- Monthly chargeback / cost-allocation reporting per tenant
-- Capacity planning: confirm allocated vs consumed before bundle renewal
-- Drill into which folders are driving consumption of a specific unit (`folders` mode)
-- Daily trend analysis for a specific tenant × unit (`daily` mode)
-- Compare consumption across tenant pool vs overflow into org pool
-
-## Prerequisites
-
-1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
-2. Org admin permissions to read account product allocations
-3. For `daily` / `folders` modes: know the target tenant name and consumable unit code
-
----
+Use these reports for tenant chargeback/cost allocation, bundle-renewal capacity planning, folder investigations, daily tenant/unit trends, and tenant-pool versus organization-pool comparisons.
 
 ## Modes
 
-| Mode | Scope | Required Flags | Output |
-|------|-------|----------------|--------|
-| `summary` (default) | All active consumables × all tenants (or one tenant if `--tenant`) | None | One row per consumable × tenant; allocation + pool consumption columns |
-| `daily` | One tenant × one unit, day-by-day | `--tenant`, `--unit`, `--start-date`, `--end-date` | One row per (date, service) |
-| `folders` | One tenant × one unit, broken down by folder | `--tenant`, `--unit`, `--start-date`, `--end-date` | One row per folder |
+| Mode | Scope | Required flags | Output |
+|---|---|---|---|
+| `summary` (default) | All active consumables × all tenants, or one tenant with `--tenant` | None | One row per consumable × tenant, with allocation and pool-consumption columns |
+| `daily` | One tenant × one unit, day by day | `--tenant`, `--unit`, `--start-date`, `--end-date` | One row per (date, service) |
+| `folders` | One tenant × one unit, by folder | `--tenant`, `--unit`, `--start-date`, `--end-date` | One row per folder |
 
----
+## Summary
 
-## Mode 1: Summary
-
-Default mode. Iterates every active consumable in the account.
+Run:
 
 ```bash
-# All consumables, all tenants, each consumable's bundle window
 uip platform licenses consumables get --output json
-
-# Scope to one tenant
 uip platform licenses consumables get --tenant "<TENANT_NAME>" --output json
-
-# Override every consumable's window with a custom date range
-uip platform licenses consumables get \
-  --start-date 2026-04-01 --end-date 2026-04-30 --output json
+uip platform licenses consumables get --start-date <ISO_START> --end-date <ISO_END> --output json
 ```
+
+The default reports every active consumable. Without dates, each uses its own bundle window; a supplied date pair overrides every consumable's window.
+
+Response fields are:
+
+- `code` / `name`: product code and friendly name.
+- `totalUnitsInAccount`: account purchase total.
+- `allocated`: account-level allocation.
+- `consumedFromOrgWithoutTenant`: consumption not attributable to a tenant; zero when `--tenant` is set.
+- `startDate` / `endDate`: effective bundle window, or the override range.
+- `tenantId` / `tenantName`: tenant breakdown.
+- `consumedFromTenantPool`: consumption from the tenant's reserved allocation.
+- `consumedFromOrgPool`: consumption from the remaining account pool (overflow).
+
+Response shape:
 
 ```json
 {
@@ -72,15 +60,15 @@ uip platform licenses consumables get \
   "Code": "LicensesConsumablesSummary",
   "Data": [
     {
-      "code": "AIU",
-      "name": "AI Units",
+      "code": "<UNIT_CODE>",
+      "name": "<UNIT_NAME>",
       "totalUnitsInAccount": 5000,
       "allocated": 1200,
       "consumedFromOrgWithoutTenant": 30,
-      "startDate": "2023-11-14T22:13:20.000Z",
-      "endDate": "2027-09-15T18:40:00.000Z",
-      "tenantId": "296b7134-6691-43db-b48a-2d95ed3ab031",
-      "tenantName": "default",
+      "startDate": "<START_DATE>",
+      "endDate": "<END_DATE>",
+      "tenantId": "<TENANT_ID>",
+      "tenantName": "<TENANT_NAME>",
       "consumedFromTenantPool": 800,
       "consumedFromOrgPool": 150
     }
@@ -88,144 +76,108 @@ uip platform licenses consumables get \
 }
 ```
 
-Field reference:
+Row rules:
 
-| Field | Meaning |
-|-------|---------|
-| `code` / `name` | Product code and friendly name |
-| `totalUnitsInAccount` | Account purchase total for this consumable |
-| `allocated` | Account-level allocation |
-| `consumedFromOrgWithoutTenant` | Consumption not attributable to any tenant (zero when `--tenant` is set) |
-| `startDate` / `endDate` | Window in effect — bundle window by default, override range if `--start-date`/`--end-date` provided |
-| `tenantId` / `tenantName` | Per-tenant breakdown |
-| `consumedFromTenantPool` | Drawn from the tenant's reserved allocation |
-| `consumedFromOrgPool` | Drawn from the remaining account pool (overflow) |
+- Without `--tenant`, return one row per (consumable, tenant) when tenant consumption exists.
+- Without `--tenant`, return one row for a consumable with no tenant consumption, using `tenantId: null`, `tenantName: ""`, and zeroed pool columns; `consumedFromOrgWithoutTenant` may be non-zero.
+- With `--tenant`, return one row per consumable for that tenant, including zero-activity consumables with zeroed pool columns.
 
-Row-shape rules:
-- **No `--tenant`, consumption across multiple tenants**: one row per (consumable, tenant)
-- **No `--tenant`, no tenant consumption**: single row per consumable with `tenantId: null`, `tenantName: ""`, and pool columns zeroed; `consumedFromOrgWithoutTenant` may be non-zero
-- **With `--tenant`**: one row per consumable for that tenant. Consumables with zero tenant activity still appear with zeroed pool columns
+## Daily breakdown
 
-## Mode 2: Daily Breakdown
+Run:
 
 ```bash
 uip platform licenses consumables get \
-  --mode daily \
-  --tenant "<TENANT_NAME>" \
-  --unit AIU \
-  --start-date 2026-04-01 \
-  --end-date 2026-04-30 \
-  --output json
+  --mode daily --tenant "<TENANT_NAME>" --unit <UNIT_CODE> \
+  --start-date <ISO_START> --end-date <ISO_END> --output json
 ```
+
+Return `Result`, `Code: "LicensesConsumablesDaily"`, and `Data` rows containing:
 
 ```json
 {
-  "Result": "Success",
-  "Code": "LicensesConsumablesDaily",
-  "Data": [
-    {
-      "code": "AIU",
-      "name": "AI Units",
-      "tenantId": "296b7134-6691-43db-b48a-2d95ed3ab031",
-      "tenantName": "default",
-      "date": "2026-04-15",
-      "service": "orchestrator",
-      "consumedAmount": 24
-    }
-  ]
+  "code": "<UNIT_CODE>",
+  "name": "<UNIT_NAME>",
+  "tenantId": "<TENANT_ID>",
+  "tenantName": "<TENANT_NAME>",
+  "date": "YYYY-MM-DD",
+  "service": "<SERVICE>",
+  "consumedAmount": 24
 }
 ```
 
-`date` is `YYYY-MM-DD`. One row per (date, service) inside the range. `service` is the service that emitted the consumption (e.g., `orchestrator`, `aicenter`, `dataservice`).
+Return one row per (date, service) in the range. `service` identifies the emitting service, such as `orchestrator`, `aicenter`, or `dataservice`.
 
-## Mode 3: Folder Breakdown
+## Folder breakdown
+
+Run:
 
 ```bash
 uip platform licenses consumables get \
-  --mode folders \
-  --tenant "<TENANT_NAME>" \
-  --unit AIU \
-  --start-date 2026-04-01 \
-  --end-date 2026-04-30 \
-  --output json
+  --mode folders --tenant "<TENANT_NAME>" --unit <UNIT_CODE> \
+  --start-date <ISO_START> --end-date <ISO_END> --output json
 ```
+
+Return `Result`, `Code: "LicensesConsumablesFolders"`, and `Data` rows containing:
 
 ```json
 {
-  "Result": "Success",
-  "Code": "LicensesConsumablesFolders",
-  "Data": [
-    {
-      "code": "AIU",
-      "name": "AI Units",
-      "tenantId": "296b7134-6691-43db-b48a-2d95ed3ab031",
-      "tenantName": "default",
-      "folderKey": "11111111-1111-1111-1111-111111111111",
-      "folderName": "Shared",
-      "parentFolderKey": null,
-      "consumedBySelf": 42,
-      "processCountSelf": 3
-    }
-  ]
+  "code": "<UNIT_CODE>",
+  "name": "<UNIT_NAME>",
+  "tenantId": "<TENANT_ID>",
+  "tenantName": "<TENANT_NAME>",
+  "folderKey": "<FOLDER_ID>",
+  "folderName": "<FOLDER_NAME>",
+  "parentFolderKey": null,
+  "consumedBySelf": 42,
+  "processCountSelf": 3
 }
 ```
 
-| Field | Meaning |
-|-------|---------|
-| `folderKey` / `folderName` | Folder GUID and display name |
-| `parentFolderKey` | Parent GUID for nested folders; `null` at the root |
-| `consumedBySelf` | Consumption attributed to this folder only — does not include descendants |
-| `processCountSelf` | Distinct processes in this folder that contributed |
+- `folderKey` / `folderName`: folder GUID and display name.
+- `parentFolderKey`: parent GUID, or `null` at the root.
+- `consumedBySelf`: consumption attributed only to this folder; descendants are excluded.
+- `processCountSelf`: distinct contributing processes in this folder.
+- The API returns non-recursive per-folder rows. Aggregate descendants client-side for rolled-up totals.
 
-Aggregate descendants client-side if needed — the API returns per-folder rows only.
+## Flags and dates
 
----
-
-## Flag Reference
-
-| Flag | Required In | Default | Notes |
-|------|-------------|---------|-------|
+| Flag | Required in | Default | Notes |
+|---|---|---|---|
 | `--mode <summary\|daily\|folders>` | All modes | `summary` | Determines output shape |
 | `--tenant <name>` | `daily`, `folders` | All tenants | Matched by exact tenant name |
 | `--unit <code>` | `daily`, `folders` | All consumables | Case-insensitive product code (`AIU`, `aiu`, `Aiu` all match) |
-| `--start-date <iso>` | `daily`, `folders` | Bundle window | ISO 8601 (e.g., `2026-04-01` or `2026-04-01T00:00:00Z`) |
-| `--end-date <iso>` | `daily`, `folders` | Bundle window | ISO 8601, must be strictly after `--start-date` |
+| `--start-date <iso>` | `daily`, `folders` | Bundle window | ISO 8601, such as `2026-04-01` or `2026-04-01T00:00:00Z` |
+| `--end-date <iso>` | `daily`, `folders` | Bundle window | ISO 8601; must be strictly after `--start-date` |
 
-Date range rules:
-- `--start-date` and `--end-date` must be passed together; passing only one is rejected
-- Both must parse as valid ISO 8601
-- `startDate >= endDate` is rejected
-- In `summary` mode, the range overrides each consumable's own bundle window
-- In `daily` / `folders` modes, the range is required
+- Pass `--start-date` and `--end-date` together; passing only one is rejected.
+- Both must be valid ISO 8601.
+- `startDate >= endDate` is rejected.
+- In `summary`, the pair overrides each consumable's bundle window.
+- In `daily` and `folders`, the pair is required.
 
----
-
-## Error Conditions
+## Error conditions
 
 | Error | Cause | Resolution |
-|-------|-------|------------|
-| `Invalid --mode '<value>'.` | Mode is not summary/daily/folders | Use one of the three allowed values |
-| `--mode daily requires: --tenant, --unit, --start-date, --end-date.` | Missing required flag(s) for the mode | Pass all four |
-| `--start-date and --end-date must be provided together.` | Only one of the pair was supplied | Pass both, or omit both |
-| `Invalid --start-date: '<value>'.` | Date doesn't parse as ISO 8601 | Use `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SSZ` |
-| `--start-date must be strictly before --end-date.` | Range is empty or inverted | Provide a non-empty forward range |
-| `Tenant '<name>' not found in the current organization.` | No tenant with that exact name | Check spelling against `uip login tenant list`; available tenants are listed in the error |
-| `Unit '<code>' is not an active consumable in this organization.` | Code is not a consumable, or its bundle window is not currently active | Error lists available codes; pick one of those |
-
----
+|---|---|---|
+| `Invalid --mode '<value>'.` | Mode is not `summary`, `daily`, or `folders` | Use an allowed value |
+| `--mode daily requires: --tenant, --unit, --start-date, --end-date.` | Required flag missing | Pass all four flags |
+| `--start-date and --end-date must be provided together.` | Only one date supplied | Pass both or omit both |
+| `Invalid --start-date: '<value>'.` | Date is not ISO 8601 | Use `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SSZ` |
+| `--start-date must be strictly before --end-date.` | Empty or inverted range | Provide a non-empty forward range |
+| `Tenant '<name>' not found in the current organization.` | Exact tenant name not found | Check spelling with `uip login tenant list`; available tenants are listed in the error |
+| `Unit '<code>' is not an active consumable in this organization.` | Code is not consumable or its bundle window is inactive | Choose an available code listed in the error |
 
 ## Gotchas
 
-- **`summary` reports every active consumable.** It is potentially heavy on large accounts — scope with `--tenant` or `--unit` when iterating.
-- **Bundle window vs override.** With no `--start-date`/`--end-date`, every consumable in the summary uses its own window — rows can have different date ranges. The override applies the same range to all rows.
-- **`consumedFromOrgWithoutTenant` is zero under `--tenant`.** The CLI suppresses cross-tenant pool numbers when scoped to a single tenant; only `consumedFromTenantPool` and `consumedFromOrgPool` are populated.
-- **`consumedAmount` and `consumedBySelf` are point-in-time totals over the requested range** — not running totals. Re-running the same query later returns the same value once the window has closed.
-- **`--unit` is case-insensitive**, but other code references (`tenant licenses set`) are exact-case — don't carry the assumption.
-- **No pagination.** `daily` and `folders` modes return all rows in one response. For very large windows or folder counts, consider narrower ranges.
-- **`folders` mode is non-recursive.** `consumedBySelf` excludes child folders. Reconstruct the tree yourself if you need rolled-up totals.
-- **`PLTU` is dual-purpose.** It appears in both runtime allocation (`tenants licenses get`) and consumables reporting. Same code, different reporting axes.
-
----
+- `summary` reports every active consumable and can be heavy on large accounts; scope with `--tenant` or `--unit` when iterating.
+- Without an override range, summary rows can have different bundle windows.
+- With `--tenant`, `consumedFromOrgWithoutTenant` is zero; only `consumedFromTenantPool` and `consumedFromOrgPool` are populated.
+- `consumedAmount` and `consumedBySelf` are point-in-time totals over the requested range, not running totals. Once the window closes, repeating the query returns the same value.
+- `--unit` is case-insensitive, but other code references (`tenant licenses set`) are exact-case; do not carry the assumption over.
+- There is no pagination. `daily` and `folders` return all rows in one response; use narrower ranges for very large windows or folder counts.
+- `folders` is non-recursive: `consumedBySelf` excludes child folders. Reconstruct the tree for rolled-up totals.
+- `PLTU` is dual-purpose: it appears in runtime allocation (`tenants licenses get`) and consumables reporting, which have different reporting axes.
 
 ## Related
 
