@@ -77,9 +77,9 @@ initial_prompt: |
      `/rest/api/3/issue` is the generic-HTTP fallback and is NOT acceptable:
      if you cannot find the curated activity, STOP and say so.
   3. Send exactly one Slack message with the Slack "Send Message to Channel"
-     connector activity to slackChannelId; the text MUST include the
-     correlationId and the computed severity. Use the Slack connection named
-     "is-sandboxes" in the same folder.
+     connector activity to slackChannelId, sending as `user`; the text MUST
+     include the correlationId and the computed severity. Use the Slack
+     connection named "is-sandboxes" in the same folder.
   4. End the process, exposing three PUBLIC OUTPUTS a caller receives:
      severity (string), caseKey (string, = the incoming correlationId), and
      jiraIssueKey (string, the created issue's key). A process that computes

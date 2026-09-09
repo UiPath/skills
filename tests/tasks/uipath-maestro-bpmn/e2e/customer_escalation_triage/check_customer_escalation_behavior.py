@@ -91,6 +91,7 @@ OUTPUT_TYPES = {
 # registry may emit versioned or templated paths, and the runtime correlates
 # on the element id either way.
 JIRA_CREATE = (escalation_is.JIRA_CONNECTOR, "curated_create_issue")
+SLACK_SEND_AS = "user"
 SLACK_SEND = (escalation_is.SLACK_CONNECTOR, "send_message_to_channel")
 COMPLETED_STATUSES = {"Completed", "Successful"}
 
@@ -173,6 +174,25 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
                 f"containing {path_needle!r}"
             )
         return found
+
+    # Send identity, as the flow suite grades it: a node that posts as the
+    # default bot instead of the prompt-required user has an indistinguishable
+    # runtime response, so it can only be caught on the authored artifact.
+    slack_ids = set(ids_for(*SLACK_SEND))
+    for element in process:
+        if element.attrib.get("id") not in slack_ids:
+            continue
+        sends_as = [
+            item.attrib.get("value")
+            for item in element.iter(q(UIPATH_NS, "input"))
+            if item.attrib.get("name") == "send_as"
+        ]
+        if sends_as != [SLACK_SEND_AS]:
+            raise CheckFailure(
+                f"Slack node {element.attrib.get('id')!r} must carry exactly "
+                f"one send_as input with value {SLACK_SEND_AS!r}, found "
+                f"{sends_as!r}"
+            )
 
     return Contract(
         output_ids=output_ids,

@@ -70,6 +70,7 @@ SAMPLE_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
             <uipath:input name="connectorKey" value="uipath-salesforce-slack"/>
             <uipath:input name="path" value="/send_message_to_channel_v2"/>
           </uipath:context>
+          <uipath:input target="query" name="send_as" value="user"/>
         </uipath:activity>
       </bpmn:extensionElements>
     </bpmn:serviceTask>
@@ -627,3 +628,35 @@ class ComputedSeverityTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(checker.CheckFailure, "no bpmn:scriptTask"):
                 checker.resolve_contract(path)
+
+
+class SendIdentityTests(unittest.TestCase):
+    """Flow grades send_as because the runtime response cannot reveal it.
+
+    A node posting as the default bot returns the same ts/channel/content as
+    one posting as the required user, so this is only catchable on the
+    authored artifact.
+    """
+
+    def _contract_from(self, bpmn: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "Identity.bpmn"
+            path.write_text(bpmn, encoding="utf-8")
+            return checker.resolve_contract(path)
+
+    def test_default_bot_identity_fails(self):
+        with self.assertRaisesRegex(checker.CheckFailure, "send_as"):
+            self._contract_from(
+                SAMPLE_BPMN.replace('name="send_as" value="user"', 'name="send_as" value="bot"')
+            )
+
+    def test_missing_send_as_fails(self):
+        with self.assertRaisesRegex(checker.CheckFailure, "send_as"):
+            self._contract_from(
+                SAMPLE_BPMN.replace(
+                    '<uipath:input target="query" name="send_as" value="user"/>', ""
+                )
+            )
+
+    def test_user_identity_passes(self):
+        self.assertTrue(self._contract_from(SAMPLE_BPMN).slack_send_ids)
