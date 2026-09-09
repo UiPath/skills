@@ -12,6 +12,9 @@ agent:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: templates/case_single_stage_no_app
 
 initial_prompt: |
   I have a UiPath case management project. Our agent extracts vendor
@@ -20,99 +23,13 @@ initial_prompt: |
   the missing fields and submit. I do NOT have a deployed Action Center
   app for this — please use whatever approach works without one.
 
-  First, create the starting caseplan.json at ./caseplan.json:
-
-  {
-    "root": {
-      "id": "root",
-      "name": "Vendor Enrichment Case",
-      "type": "case-management:root",
-      "caseIdentifier": "VEN",
-      "caseAppEnabled": false,
-      "caseIdentifierType": "constant",
-      "version": "v19",
-      "publishVersion": 2,
-      "data": {
-        "intsvcActivityConfig": "v2",
-        "uipath": {
-          "variables": {
-            "inputs": [
-              { "id": "var_rawExtract", "name": "rawExtract", "type": "string" }
-            ],
-            "outputs": [],
-            "inputOutputs": []
-          },
-          "bindings": []
-        }
-      },
-      "description": "Vendor data enrichment case"
-    },
-    "nodes": [
-      {
-        "id": "trigger_xY2mNp",
-        "type": "case-management:Trigger",
-        "position": { "x": 200, "y": 0 },
-        "data": { "label": "Start" }
-      },
-      {
-        "id": "Stage_aB3kL9",
-        "type": "case-management:Stage",
-        "position": { "x": 100, "y": 200 },
-        "style": { "width": 304, "opacity": 0.8 },
-        "measured": { "width": 304, "height": 128 },
-        "width": 304,
-        "zIndex": 1001,
-        "data": {
-          "label": "Enrich",
-          "parentElement": { "id": "root", "type": "case-management:root" },
-          "isInvalidDropTarget": false,
-          "isPendingParent": false,
-          "entryConditions": [
-            {
-              "id": "Condition_uqCYDc",
-              "displayName": "Case Entered",
-              "rules": [ [ { "id": "Rule_GGCJC6", "rule": "case-entered" } ] ]
-            }
-          ],
-          "exitConditions": [
-            {
-              "id": "Condition_FSPwx7",
-              "displayName": "Stage Done",
-              "rules": [ [ { "id": "Rule_M3P1RF", "rule": "required-tasks-completed" } ] ],
-              "marksStageComplete": true
-            }
-          ],
-          "tasks": []
-        }
-      }
-    ],
-    "edges": [
-      {
-        "id": "edge_Qz7hVr",
-        "type": "case-management:TriggerEdge",
-        "source": "trigger_xY2mNp",
-        "target": "Stage_aB3kL9",
-        "sourceHandle": "trigger_xY2mNp____source____right",
-        "targetHandle": "Stage_aB3kL9____target____left",
-        "data": {}
-      }
-    ],
-    "metadata": {
-      "caseExitRules": [
-        {
-          "id": "Condition_xC1XyX",
-          "displayName": "Case resolved",
-          "marksCaseComplete": true,
-          "rules": [
-            [ { "id": "Rule_jdBFrJ", "rule": "required-stages-completed" } ]
-          ]
-        }
-      ]
-    }
-  }
+  The starting caseplan.json already exists on disk at ./caseplan.json.
+  It has one stage (Stage_aB3kL9, "Review") and no HITL task yet.
 
   Add a HITL action task to Stage_aB3kL9. The reviewer:
-    - sees the raw extract from the agent (read-only, bound to vars.var_rawExtract)
+    - sees the raw extract from the agent (read-only, bound to an
+      existing case variable — read the available variables from
+      caseplan.json)
     - fills in vendorName (text, required) and costCenter (text, required)
     - clicks Submit
 
