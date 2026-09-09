@@ -33,8 +33,8 @@ without `timerType` passes `validate`, but `model.values` maps
 `timerType -> inputs.timerType` to build the BPMN timer event. Omitting it
 leaves the event without its cycle type.
 
-There is no `timerPreset` input on this node. Every frequency, common or not,
-goes in `timerValue`.
+The definition the registry serves (1.2) has no `timerPreset` input. Every
+frequency, common or not, goes in `timerValue`.
 
 ## Cycle Expression Formats
 
@@ -71,15 +71,20 @@ Six or seven whitespace-separated fields. Use it for a clock-aligned schedule
 an interval cannot express: a fixed time of day, a set of weekdays, a day of
 the month.
 
-Examples: `0 0 */1 * * ? *` (hourly on the hour), `0 0 9 ? * MON-FRI` (weekdays at 09:00), `0 0 2 1 * ? *` (02:00 on the 1st)
+Examples: `0 0 9 ? * MON-FRI` (weekdays at 09:00), `0 0 2 1 * ? *` (02:00 on the 1st)
+
+Put `?` in day-of-month or day-of-week, never a value in both.
+
+`validate` checks cron field shape only, never semantics: `0 0 12 * * *` (no
+`?`) and even `ABC ABC ABC ABC ABC ABC` pass it. Read the expression back field
+by field before shipping.
 
 Cron does not extend the set of *periods* available. An arbitrary period is
-expressible in neither form: the interval takes one in-range unit (`R/PT2H30M`,
-`R/PT150M`, and `R/PT90M` are all rejected) and no single cron expression
-carries a sub-hour period across the hour boundary. Every 2.5 hours and every
-90 minutes have no representation here — pick a period one of the two forms
-accepts (`R/PT2H`, `R/PT3H`) and say so, rather than shipping a cron that
-silently fires on a different cadence.
+expressible in neither form: the interval takes one in-range unit and no single
+cron expression carries a sub-hour period across the hour boundary. Every 2.5
+hours and every 90 minutes have no representation here — pick a period one of
+the two forms accepts (`R/PT2H`, `R/PT3H`) and say so, rather than shipping a
+cron that silently fires on a different cadence.
 
 ## Key Rules
 

@@ -263,7 +263,7 @@ def test_grammar_accepts_midnight_cron_with_no_digit_one_to_nine() -> None:
     holds for an interval but not for cron, where `0 0 0 * * ? *` is daily at
     midnight. Every other cron fixture here contains a 9 or a 2, so only this
     case would catch the guard being reintroduced."""
-    assert CYCLE_RE.match("0 0 0 * * ? *")
+    assert CYCLE_RE.fullmatch("0 0 0 * * ? *")
 
 
 def test_grammar_accepts_cron_and_anchored_intervals() -> None:
@@ -275,11 +275,18 @@ def test_grammar_accepts_cron_and_anchored_intervals() -> None:
         "R/PT5M",
         "R/P1W",
     ):
-        assert CYCLE_RE.match(value), value
+        assert CYCLE_RE.fullmatch(value), value
+
+
+def test_grammar_rejects_a_trailing_newline() -> None:
+    """`fullmatch`, not `match`: Python's `$` also matches before a trailing
+    newline, the JavaScript `$` the platform runs the same pattern under does
+    not."""
+    assert not CYCLE_RE.fullmatch(f"{REQUESTED_CYCLE}\n")
 
 
 def test_grammar_rejects_multi_unit_out_of_range_and_zero_durations() -> None:
     """The interval form takes exactly ONE non-zero, in-range unit — so no
     arbitrary period (every 2.5 hours, every 90 minutes) is expressible."""
     for value in ("R/PT2H30M", "R/PT150M", "R/PT90M", "R/PT24H", "R/PT60M", "R/PT0H", "custom", "hourly"):
-        assert not CYCLE_RE.match(value), value
+        assert not CYCLE_RE.fullmatch(value), value

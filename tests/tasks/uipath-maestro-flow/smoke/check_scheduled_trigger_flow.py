@@ -137,7 +137,7 @@ def _check_schedule_config(inputs: dict) -> None:
             'written there fails validate with REQUIRED_FIELD "timerValue".'
         )
 
-    if not CYCLE_RE.match(cycle):
+    if not CYCLE_RE.fullmatch(cycle):
         _fail(
             f"inputs.timerValue={cycle!r} is neither an ISO 8601 repeating interval "
             "with a single non-zero duration unit (e.g. R/PT1H, R/P1D) nor a Quartz "

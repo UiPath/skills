@@ -38,27 +38,7 @@ Confirm that the definition has no input port, output port `output`, and the req
 
 ### Cron Expression
 
-```json
-{
-  "id": "scheduledStart",
-  "type": "core.trigger.scheduled",
-  "typeVersion": "<DEFINITION_VERSION>",
-  "display": { "label": "Every Hour On The Hour" },
-  "inputs": {
-    "entryPointId": "<uuid>",
-    "timerType": "timeCycle",
-    "timerValue": "0 0 */1 * * ? *"
-  },
-  "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the trigger.",
-      "source": "=result.response",
-      "var": "output"
-    }
-  }
-}
-```
+Same node with a clock-aligned `timerValue`: `"timerValue": "0 0 9 ? * MON-FRI"` (weekdays at 09:00).
 
 Do not add BPMN type (`bpmn:StartEvent`) or event definition (`bpmn:TimerEventDefinition`) to the instance; they come from the `core.trigger.scheduled` entry in `definitions[]`.
 
@@ -70,7 +50,7 @@ Use [Edit/Write: Replace manual trigger with scheduled trigger](../../editing-op
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Cycle expression must be either an ISO 8601 repeating interval or a Quartz cron expression | Malformed `timerValue` | Use `R/P[duration]` (e.g. `R/PT1H`) or a 6-7 field cron (e.g. `0 0 */1 * * ? *`) |
+| Cycle expression must be either an ISO 8601 repeating interval or a Quartz cron expression | Malformed `timerValue` | Use `R/P[duration]` (e.g. `R/PT1H`) or a 6-7 field cron (e.g. `0 0 9 ? * MON-FRI`) |
 | `[REQUIRED_FIELD] "timerValue" is required` | Cycle expression written to `timerPreset` | `core.trigger.scheduled` has no `timerPreset` input — put the cycle expression in `timerValue` |
 | BPMN timer event not emitted | `core.trigger.scheduled` definition wrong or missing | Re-copy from `uip maestro flow registry get core.trigger.scheduled --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |
 | Two triggers in flow | Both manual and scheduled triggers exist | Remove one — flows must have exactly one trigger |
