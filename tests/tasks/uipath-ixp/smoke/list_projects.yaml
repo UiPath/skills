@@ -11,9 +11,11 @@ run_limits:
   expected_turns: 4
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   A document automation engineer wants to see every IXP project on the
@@ -27,10 +29,11 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  # No positional facet: `projects list` takes none. The verb is matched token-wise,
+  # so it does not credit the near-name `projects list-models`.
+  - type: cli_called
     description: "Agent invoked `uip ixp projects list`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+list(\s|$))[^\r\n]*$
+    verb: "ixp projects list"
+    tool: "uip"
     weight: 2.0
     pass_threshold: 1.0

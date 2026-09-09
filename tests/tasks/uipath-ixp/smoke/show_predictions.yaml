@@ -11,9 +11,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, show the values the model
@@ -26,10 +28,13 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  # The project is named because positionals are ordered: doc-abc-123 can only be
+  # asserted as the DOCUMENT argument by pinning the slot before it. The regex this
+  # replaced matched the id anywhere, so a get-predictions on another project counted.
+  - type: cli_called
     description: "Agent fetched predictions via `labellings get-predictions … doc-abc-123`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions\b(?=.*doc-abc-123).*)[^\r\n]*$
+    verb: "ixp labellings get-predictions"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
     weight: 3.0
     pass_threshold: 1.0

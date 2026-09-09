@@ -10,9 +10,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, add a new field named "email"
@@ -25,10 +27,17 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Agent added field \"email\" to \"Subscriber information\" via `fields add`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Subscriber information)(?=.*--field\s+["']?email).*)[^\r\n]*$
+    verb: "ixp fields add"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      group: "Subscriber information"
+      field: "email"
+    # --type/--instructions carry values but get no predicate here, so they must be
+    # declared: undeclared, their values stay non-flag and shift the positional slot
+    # the project name is asserted in.
+    value_flags: ["type", "instructions", "output"]
     weight: 3.0
     pass_threshold: 1.0

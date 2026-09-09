@@ -12,9 +12,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, delete the field group
@@ -27,10 +29,15 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Agent deleted the group via `groups delete … -y/--yes`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+groups\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["']?name group)(?=.*(--yes\b|-y\b)).*)[^\r\n]*$
+    verb: "ixp groups delete"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      name: "name group"
+      # Quoted: bare `yes` is a YAML 1.1 boolean, and the key must reach the
+      # grader as the string flag name.
+      "yes": {present: true, aliases: ["y"]}
     weight: 3.0
     pass_threshold: 1.0
