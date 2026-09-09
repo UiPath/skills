@@ -49,18 +49,18 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
       "Bash(which uip)",
 
       // discovery — registry + Integration Service + Orchestrator list ops (all read-only)
-      "Bash(uip flow registry *)",
+      "Bash(uip maestro flow registry *)",
       "Bash(uip is *)",               // Integration Service (connections, connectors, resources, triggers)
       "Bash(uip or folders *)",       // Orchestrator folders
 
       // local-only flow / solution / agent scaffolding
-      "Bash(uip flow init *)",
-      "Bash(uip flow validate *)",
-      "Bash(uip flow tidy *)",
-      "Bash(uip flow node *)",
-      "Bash(uip flow edge *)",
-      "Bash(uip solution new *)",
-      "Bash(uip solution project *)",
+      "Bash(uip maestro flow init *)",
+      "Bash(uip maestro flow validate *)",
+      "Bash(uip maestro flow format *)",
+      "Bash(uip maestro flow node *)",
+      "Bash(uip maestro flow edge *)",
+      "Bash(uip solution init *)",
+      "Bash(uip solution projects *)",
       "Bash(uip solution resources *)",
       "Bash(uip agent init)",
       "Bash(uip agent init *)",
@@ -72,7 +72,7 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 
       // uipath-troubleshoot — read-only diagnostics. Scoped PER VERB on purpose:
       // a bare `uip or jobs *` would also allow stop/start/restart/resume;
-      // `uip resource *` would allow delete/upload/add; `uip maestro bpmn instance *`
+      // `uip or queue-items *` would allow add/delete/set-result; `uip maestro bpmn instance *`
       // would allow cancel/retry/goto/variables-set. Mutating verbs are left out so
       // they keep prompting (fails closed — a new CLI verb is never auto-allowed).
       "Bash(uip or jobs get *)",
@@ -87,14 +87,12 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
       "Bash(uip or licenses list *)",
       "Bash(uip or users get *)",
       "Bash(uip or users list *)",
-      "Bash(uip resource assets get *)",
-      "Bash(uip resource assets list *)",
-      "Bash(uip resource queue-items get *)",
-      "Bash(uip resource queue-items get-history *)",
-      "Bash(uip resource queue-items get-last-retry *)",
-      "Bash(uip resource queue-items list *)",
-      "Bash(uip resource queues get *)",
-      "Bash(uip resource queues list *)",
+      "Bash(uip or queue-items get *)",
+      "Bash(uip or queue-items get-history *)",
+      "Bash(uip or queue-items get-last-retry *)",
+      "Bash(uip or queue-items list *)",
+      "Bash(uip or queues get *)",
+      "Bash(uip or queues list *)",
       "Bash(uip docsai ask *)",
       "Bash(uip traces spans get *)",
       "Bash(uip maestro bpmn instance get *)",
@@ -113,10 +111,10 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
     "ask": [
       "Bash(uip login)",
       "Bash(uip login --authority *)",
-      "Bash(uip flow debug)",
-      "Bash(uip flow debug *)",
-      "Bash(uip flow pack)",
-      "Bash(uip flow pack *)",
+      "Bash(uip maestro flow debug)",
+      "Bash(uip maestro flow debug *)",
+      "Bash(uip maestro flow pack)",
+      "Bash(uip maestro flow pack *)",
       "Bash(uip solution upload)",
       "Bash(uip solution upload *)",
       "Bash(uip solution publish)",
@@ -133,10 +131,11 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 - Rule precedence in Claude Code is `deny > ask > allow`, and rules are evaluated **before** `defaultMode` / `--dangerously-skip-permissions`. So the `ask` list in the full variant still forces a prompt under YOLO mode — that is the point of it, and it is the difference between the two variants offered in step 1.
 - If the user has existing `permissions.deny` rules mentioning `uip`, do not remove them — respect explicit denials even if they conflict with the recommended allowlist. Surface the conflict in chat and ask.
 - Never modify `~/.claude/settings.json` without explicit consent — that file often contains secrets (tokens, env vars) and should not be edited casually. If the user picks the global option, re-confirm before writing.
-- The full variant's `ask` block intentionally guards `uip solution upload`, `uip flow debug`, `uip flow pack`, `uip solution publish`, and `uip login` — these produce real cloud side effects (publishing, executing flows, tenant auth). The `uipath-maestro-flow` skill's rules explicitly require user consent before cloud-executing a flow.
-- `uip agent init` is in `allow` (scaffolding — same as `uip flow init`). It does not publish to the cloud; it creates local agent project files.
+- The full variant's `ask` block intentionally guards `uip solution upload`, `uip maestro flow debug`, `uip maestro flow pack`, `uip solution publish`, and `uip login` — these produce real cloud side effects (publishing, executing flows, tenant auth). The `uipath-maestro-flow` skill's rules explicitly require user consent before cloud-executing a flow.
+- `uip agent init` is in `allow` (scaffolding — same as `uip maestro flow init`). It does not publish to the cloud; it creates local agent project files.
 - `uip rpa *` covers the full RPA subcommand tree (`build`, `get-errors`, `create-project`, `find-activities`, `inspect-package`, `focus-activity`, etc.). None of these publish to the cloud — RPA deployment flows through `uip solution upload` / `publish` (already guarded in `ask`).
-- The `uipath-troubleshoot` skill is read-only — it inspects jobs, assets, queue-items, traces, and Maestro instances but never mutates them. Its verbs are allowlisted **per read verb** (e.g. `uip or jobs get *`, not `uip or jobs *`) so mutating siblings keep prompting: `or jobs stop/start/restart/resume`, `or assets create/delete/update/share`, `or licenses toggle`, `resource … delete/upload/add/update`, and `maestro bpmn instance cancel/retry/goto/pause/resume/migrate/message send/variables-set`. This fails closed — a newly shipped CLI verb is never auto-allowed.
+- The `uipath-troubleshoot` skill is read-only — it inspects jobs, assets, queue-items, traces, and Maestro instances but never mutates them. Its verbs are allowlisted **per read verb** (e.g. `uip or jobs get *`, not `uip or jobs *`) so mutating siblings keep prompting: `or jobs stop/start/restart/resume`, `or assets create/delete/update/share`, `or licenses toggle`, `or queue-items add/delete/set-result`, `or queues create/delete`, and `maestro bpmn instance cancel/retry/goto/pause/resume/migrate/message send/variables-set`. This fails closed — a newly shipped CLI verb is never auto-allowed.
+- Verbs track the current CLI surface (catalog snapshot `1.200.0-dev.8173`). Renames already folded in: `resource …`→`or …` (1.196.0), `flow …`→`maestro flow …` (1.2.0), `solution new`→`solution init` (1.2.0), `solution project`→`solution projects` (1.199.0). `flow tidy` was dropped outright — `maestro flow format` is its successor. When the CLI renames a verb, update these patterns: a stale prefix silently stops matching, so the command prompts again rather than failing loudly. See [.claude/rules/cli-renames.md](../.claude/rules/cli-renames.md).
 - The troubleshoot rules cover the canonical short form `uip or …`. If the agent uses the long-form alias `uip orchestrator …`, it will still prompt; the fix is to keep the skill on the short form, not to widen the allowlist.
 - `Read/Write/Edit(.local/investigations/**)` cover the throwaway investigation workspace the troubleshoot sub-agents write to (`state.json`, `hypotheses.json`, `evidence/`, `raw/`, `depth-check.json`, etc.). Without the `Write`/`Edit` rules every investigation step prompts.
 - `Read(//**/uipath-troubleshoot/references/**)` matches the skill's bundled playbooks wherever the plugin is installed (`//` anchors to the filesystem root; `**/` matches arbitrary intermediate dirs). Per the Claude Code docs, file reads are never gated, so this rule is insurance rather than load-bearing.
