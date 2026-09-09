@@ -142,11 +142,11 @@ schema bodies are JSON text or CDATA.
 </uipath:variables>
 ```
 
-`uip maestro bpmn init` omits the optional migration marker — omit it in new
-source too, so nothing has to track the serializer's migration count. When it
-is present, the attribute is `version`, not `value`, and its value is an
-**integer** migration number: `<uipath:migrationVersion version="20" />`. The
-reader does `Number.parseInt` (PO.Frontend
+The migration marker is optional and `uip maestro bpmn init` omits it, so new
+source needs one only when asked for it. Where it appears, the attribute is
+`version`, not `value`, and its value is an **integer** migration number:
+`<uipath:migrationVersion version="20" />` — illustrative, not a number to keep
+current. The reader does `Number.parseInt` (PO.Frontend
 `src/services/serialization/bpmn-from-xml.ts`), so a decimal such as `11.5`
 truncates to `11`. Preserve an existing value byte-for-byte when editing rather
 than normalising or bumping it — the serializer runs whatever migrations sit

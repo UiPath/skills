@@ -164,7 +164,7 @@ def main() -> None:
     }
     integer_versions = {v for v in migration_versions if v and v.isdigit()}
     if not integer_versions:
-        fail('missing integer uipath:migrationVersion (e.g. version="15")')
+        fail('missing integer uipath:migrationVersion (e.g. version="20")')
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)
