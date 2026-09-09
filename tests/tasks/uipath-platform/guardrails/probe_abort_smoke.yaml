@@ -1,0 +1,117 @@
+task_id: skill-platform-guardrails-byog-probe-abort
+description: >
+  Smoke test: the probe that guards `guardrails byo-configurations create` is
+  proven, not just described. The prompt hands over a connection id that
+  belongs to a Slack connection (the kind of wrong id that gets pasted off a
+  ticket), so the pair cannot be registered. Either correct route passes —
+  attempt the create and read the VALIDATOR_NOT_SUPPORTED abort, or pre-check
+  with probe/list-validators and decline to create — but never reaching the
+  byo-configurations command family at all does not. Asserts deterministically
+  that NOTHING was persisted, reading the shim's state file rather than
+  trusting the agent's account; that the agent did not manufacture a success
+  by retrying against a connection or validator type the user never asked
+  for; and that it told the user the configuration is not live and why.
+  Complements create_configuration_smoke.yaml, which covers the path where the
+  probe passes: together they show the probe gates the save in both directions.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, guardrail]
+
+run_limits:
+  expected_turns: 12
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: mock_template}
+
+initial_prompt: |
+  Ops gave me the connection to use for our new PII guardrail:
+  `7c2a91e4-5b83-4d1f-9a06-3e5f8b1c204d`. Register it as a bring-your-own
+  guardrail configuration called `byog-abort-pii` for the `pii_detection`
+  validator type, and have it fall back to the UiPath built-in check if our
+  provider is unreachable.
+
+  Then tell me straight whether the guardrail is live. If it isn't, tell me
+  what's wrong with the connection they gave me so I can go back to them.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  # Two correct routes exist and both are accepted: attempt the create and read
+  # the probe failure, or pre-check with probe/list-validators (which the doc
+  # recommends as cheaper than a failed create) and correctly decline to create.
+  # What is NOT acceptable is never reaching the `guardrails byo-configurations`
+  # family at all — an agent that concludes the CLI has no BYOG command has
+  # failed to find the surface this skill documents.
+  - type: command_executed
+    description: "Agent used guardrails byo-configurations against the supplied connection — create attempt, or probe/list-validators pre-check"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+(create|probe|list-validators)(?=[\s\S]*7c2a91e4-5b83-4d1f-9a06-3e5f8b1c204d)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The point of this task: the platform refused to save the bad pair. Checked
+  # against the shim's own state file, so it holds regardless of what the agent
+  # claims in its summary. Passes when the file is absent (no write ever
+  # happened) or present without the record (other writes, not this one).
+  - type: run_command
+    description: "Probe aborted the create — no byog-abort-pii record was persisted"
+    command: >-
+      python3 -c "import json, os, sys;
+      s = json.load(open('.byog-state.json')) if os.path.exists('.byog-state.json') else {};
+      sys.exit(1 if any(c.get('ValidatorName') == 'byog-abort-pii' for c in s.get('created', [])) else 0)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # No criterion demands a *separate* probe/list-validators call. Reading
+  # `ConnectorName: Slack` out of `is connections list` and explaining the
+  # failure from that is a complete diagnosis, and a run that did exactly
+  # that was failed by an earlier version of this task for no good reason.
+  # The criterion above already requires engaging the byo-configurations
+  # surface; the judge below requires explaining it correctly.
+  - type: command_not_executed
+    description: "Agent did not manufacture a success by re-creating against a connection or validator type the user never asked for"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+create(?=[\s\S]*(18fb337c-29b7-4162-a9e8-0c05b01cf4df|9d5e21ab-4c07-4f3e-8b62-1a7c0e93f5d8|--validator-type[= ]\s*["'']?harmful_content))'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported the guardrail is NOT live and that the connection does not serve pii_detection"
+    include_agent_output: true
+    prompt: |
+      The user asked to register a BYO guardrail (BYOG) configuration named
+      `byog-abort-pii` for `pii_detection` through connection
+      `7c2a91e4-5b83-4d1f-9a06-3e5f8b1c204d`, then asked to be told straight
+      whether the guardrail is live and, if not, what is wrong with the
+      connection.
+
+      What actually happened: that connection is a Slack connection. It serves
+      no guardrail validators. `create` always probes the connection/validator
+      pair server-side before saving, so the pair cannot be registered —
+      either the agent attempted the create and the probe aborted it with
+      `VALIDATOR_NOT_SUPPORTED`, or the agent pre-checked with
+      `probe`/`list-validators` and correctly declined to create. Both are
+      acceptable routes. Either way nothing was saved and the configuration
+      does NOT exist.
+
+      Score 1.0 only if the response does BOTH of these:
+        (a) states the configuration is not live / was not created / was
+            rejected — it must not present the registration as done, pending,
+            or partially complete; and
+        (b) attributes the failure to the connection itself — that this
+            connection does not support/serve the requested `pii_detection`
+            validator (naming Slack, "wrong connector", "serves no
+            validators", or `VALIDATOR_NOT_SUPPORTED` all count).
+
+      Score 0.0 if the response claims or implies the guardrail was created,
+      is live, or merely "needs enabling"; if it blames something unrelated
+      (auth, permissions, the feature flag, a transient error) rather than the
+      connection not serving the validator; or if it never says whether the
+      configuration exists.
+    weight: 2.0
+    pass_threshold: 1.0

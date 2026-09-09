@@ -29,6 +29,12 @@ STUB_UUID = re.compile(r"^0{8}-0{4}-0{4}-0{4}-")
 VAR_REF = re.compile(r"\$vars\.([A-Za-z_$][\w$]*)")
 FILTER_REF = re.compile(r"\{([A-Za-z_$][\w$]*)\}")
 FAILED_PORTS = {"error", "failed", "failure", "faulted"}
+# Inner target handles on `core.logic.loop` that carry an edge from the last body
+# node back into the loop container. Excluding them keeps a loop from turning a
+# reachability walk cyclic. `loopBack` is NOT one of them — it never existed, and
+# `flow validate` rejects it ("Edge references undeclared target handle") — but it
+# is kept here so any legacy fixture still filters.
+LOOP_BACK_PORTS = {"continue", "break", "loopBack"}
 SKIPPED_VALUE_KEYS = {
     "configuration",
     "description",
@@ -152,7 +158,7 @@ def successful_end_ids(
     for edge in edges:
         source = str(edge.get("sourceNodeId") or "")
         target = str(edge.get("targetNodeId") or "")
-        if not source or not target or edge.get("targetPort") == "loopBack":
+        if not source or not target or edge.get("targetPort") in LOOP_BACK_PORTS:
             continue
         if source == producer and str(edge.get("sourcePort") or "").lower() in FAILED_PORTS:
             continue

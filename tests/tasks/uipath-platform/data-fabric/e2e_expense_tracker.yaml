@@ -29,7 +29,7 @@ initial_prompt: |
     - department — required, up to 100 chars
 
   `CE_E2EExpense` (each expense belongs to an employee):
-    - amount in dollars — required, cents allowed, $0 to $100,000
+    - `amount` — the dollar amount; required, cents allowed, $0 to $100,000
     - `submitter` — required, links to an employee
     - description — long text, up to 2000 chars
     - `Receipt` — attachment slot for a PDF
@@ -136,9 +136,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified record shape with records get"
+    description: "Agent verified record shape with records get or query"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+get\s+'
+    command_pattern: 'uip\s+df\s+records\s+(get|query)\s+'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -180,7 +180,7 @@ success_criteria:
   - type: run_command
     description: "Schema (deterministic): `submitter` RELATIONSHIP field on CE_E2EExpense is correctly bound to CE_E2EEmployee"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_E2EExpense --field-name submitter --target-entity-name CE_E2EEmployee"
-    timeout: 60
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

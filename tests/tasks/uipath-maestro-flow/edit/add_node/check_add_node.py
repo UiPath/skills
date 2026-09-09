@@ -3,6 +3,7 @@
 
 import json
 import os
+import re
 import sys
 
 sys.path.insert(
@@ -10,7 +11,8 @@ sys.path.insert(
 )
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
-    assert_outputs_contain,
+    find_node_output_field,
+    find_node_output_value,
     find_project_dir,
     run_debug,
 )
@@ -39,9 +41,31 @@ def _assert_edge_exists(source_id: str, target_id: str) -> None:
         with open(path) as f:
             flow = json.load(f)
         for edge in flow.get("edges") or []:
-            if edge.get("sourceNodeId") == source_id and edge.get("targetNodeId") == target_id:
+            if (
+                edge.get("sourceNodeId") == source_id
+                and edge.get("targetNodeId") == target_id
+            ):
                 return
     sys.exit(f"FAIL: no edge from '{source_id}' to '{target_id}'")
+
+
+def _assert_celsius_output(payload: dict) -> None:
+    value = find_node_output_value(
+        payload, "temperatureC", node_ids={"convertToCelsius"}
+    )
+    try:
+        celsius = float(value)
+    except (TypeError, ValueError):
+        sys.exit("FAIL: convertToCelsius output has no numeric temperatureC value")
+
+    summary = find_node_output_field(payload, "summary", node_ids={"formatSummary"})
+    match = re.search(r"(-?\d+(?:\.\d+)?)\s*°?C\b", summary or "", re.IGNORECASE)
+    if match is None:
+        sys.exit("FAIL: formatSummary output does not include a Celsius value")
+    if abs(float(match.group(1)) - celsius) > 0.2:
+        sys.exit(
+            "FAIL: formatSummary Celsius value does not match convertToCelsius output"
+        )
 
 
 def main():
@@ -53,9 +77,8 @@ def main():
     # Must still have the HTTP node
     assert_flow_has_node_type(["core.action.http"])
 
-    # Runtime check: debug must complete and output should contain "C" (Celsius marker)
     payload = run_debug(timeout=240)
-    assert_outputs_contain(payload, ["nice day", "bring a jacket"], require_all=False)
+    _assert_celsius_output(payload)
     print("OK: convertToCelsius node present, wired correctly, debug output valid")
 
 

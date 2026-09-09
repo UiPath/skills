@@ -31,7 +31,7 @@ Local operations (managing evaluators, eval sets, test cases) do **not** require
 - [Evaluators](evaluators.md) — evaluator types, adding/removing, default prompts
 - [Evaluation Sets and Test Cases](evaluation-sets.md) — creating sets, adding test cases, simulation options
 - [Running Evaluations](running-evaluations.md) — start, status, results, compare
-- [Orchestrator Package Offline Evals](orchestrator-eval-run.md) — run evals against published Orchestrator packages (use when agent is deployed, not local)
+- [Orchestrator Runtime Eval Commands](orchestrator-eval-run.md) — full CRUD for evaluators, eval sets, data points, run/schedule/results against published Orchestrator packages
 
 Read Evaluators before choosing an evaluator type, and Evaluation Sets before writing test cases.
 
@@ -71,7 +71,7 @@ CLI-added evaluators are written as `evaluator-<uuid8>.json` (first 8 hex chars 
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| Solution ID could not be resolved | Agent's solution not uploaded to Studio Web | Run `uip solution upload . --output json` (add `--force` to replace an existing cloud solution), or pass `--solution-id <id>` explicitly to `uip agent eval run start` |
+| Solution ID could not be resolved | Agent's solution not uploaded to Studio Web | Run `uip solution upload . --output json` (imports as new or overwrites the existing cloud solution in place), or pass `--solution-id <id>` explicitly to `uip agent eval run start` |
 | `No evaluators found` | Empty `evals/evaluators/` directory | Run `uip agent eval evaluator add` or re-init with `uip agent init` |
 | `No test cases in eval set` | Eval set has no evaluations | Run `uip agent eval add` to add test cases |
 | `Unknown evaluator type "X"` | Wrong case on `--type` value | Use kebab-case only: `semantic-similarity`, `trajectory` |

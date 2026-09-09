@@ -1,0 +1,88 @@
+task_id: skill-api-workflow-httpretry
+description: >
+  Build: author a workflow-level `httpRetryConfig` with exponential backoff. The
+  156-line references/http-retry-config.md had zero coverage.
+
+  The graded detail is the constraint the reference documents: `backoff.multiplier`
+  is REQUIRED when strategy is "exponential". **`validate` does NOT enforce it** —
+  measured on uip 1.199.0, exponential-without-multiplier, constant-WITH-multiplier
+  and even `"strategy": "banana"` all return Status: Valid. The `json`-shape check
+  below is therefore the only gate that grades the rule; the validate criterion is
+  kept at low weight as a syntax sanity check and proves nothing about the retry
+  config.
+
+  Local-only: no HTTP call is made, only the retry declaration is authored. Retry
+  behaviour itself is not observable offline (it needs a failing GET against a live
+  endpoint), which is why this grades the declaration and not a retry count.
+
+  The prompt names `Workflow.json` and forbids hand-written retry code on purpose:
+  an earlier revision said only "give the workflow a retry policy", and an agent
+  read that as an instruction to implement retrying, producing a Python module with
+  urllib and a backoff loop while never touching the workflow file or running the
+  CLI.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:http]
+
+sandbox:
+  python: {}
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  Create an API workflow project `FlakyFetch` returning { "ok": true }, and declare
+  the workflow's HTTP retry policy in `Workflow.json` itself — a top-level setting,
+  not retry code you write.
+
+  Policy: 4 retries, 2s initial delay, exponential backoff, 60s cap, retry on 429
+  and 503 and on network errors, honour Retry-After.
+
+  Validate. Do not run.
+
+success_criteria:
+  - type: run_command
+    description: "httpRetryConfig declared at the top level of the workflow"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      python3 -c "import json,sys; wf=json.load(open(sys.argv[1]));
+      sys.exit(0 if isinstance(wf.get('httpRetryConfig'),dict) else 'no top-level httpRetryConfig')" "$WF"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exponential strategy carries the required multiplier, and the requested bounds"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      python3 -c "import json,sys; c=json.load(open(sys.argv[1]))['httpRetryConfig'];
+      b=c.get('backoff',{});
+      errs=[];
+      errs.append('strategy') if b.get('strategy')!='exponential' else None;
+      errs.append('multiplier missing') if 'multiplier' not in b else None;
+      errs.append('maxRetries') if c.get('maxRetries')!=4 else None;
+      errs.append('delayMs') if c.get('delayMs')!=2000 else None;
+      errs.append('statusCodes') if not {429,503}.issubset(set(c.get('statusCodes') or [])) else None;
+      sys.exit('; '.join([e for e in errs if e]) or 0)" "$WF"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow still validates (syntax only — validate accepts invalid retry configs)"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow validate "$WF" --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated its work"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

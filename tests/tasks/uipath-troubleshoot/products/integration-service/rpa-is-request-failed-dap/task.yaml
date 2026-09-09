@@ -32,7 +32,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   I have deployed a new solution under this folder uipath-rpa-isActivities/RequestFailed_DAPRuntime and recently I run one job there but it failed, can you help me in troubleshooting the error i am getting there
@@ -48,7 +48,9 @@ success_criteria:
     description: "Agent reached the same root cause and fix as RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
     include_dialog: true
     include_agent_output: true
     include_tool_calls: true

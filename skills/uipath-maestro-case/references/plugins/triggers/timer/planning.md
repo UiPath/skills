@@ -63,14 +63,15 @@ R[<count>]/[<start-iso>/]<duration>
 
 When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat count), **AskUserQuestion** with 2–3 candidate interpretations + "Something else". Do not silently default timezone or count.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T02: Configure timer trigger "<display-name>"
+A timer trigger has no registry dependency, so it produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
+```text
+timer trigger "<display-name>"
 - timeCycle: R12/2026-04-21T22:00:00.000-07:00/PT10M
 - displayName: "<optional — defaults to Trigger N>"
 - sdd-intent: "<prose restatement for reviewer — e.g. Every 10 min, starting 2026-04-21 22:00 PDT, 12 times>"
-- order: after T01
 - verify: node added to schema.nodes with data.inputs.serviceType == timer; entry-points.json has matching entry; timeCycle exact match
 ```
 

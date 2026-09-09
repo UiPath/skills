@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TriageAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b241f38d-52dc-458e-b519-50aca567a334",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TriageAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "TriageAgent",
+      "package": {
+        "key": "b0b62a19-8214-471b-b742-02a8e66d3bd7"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "cc69f9ae-9085-49bd-8cea-7ba56024706a",
+    "files": []
+  }
+}

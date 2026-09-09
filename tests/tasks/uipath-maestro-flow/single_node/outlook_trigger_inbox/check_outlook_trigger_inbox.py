@@ -4,31 +4,78 @@
 Two checks:
 
   check_trigger_node      Structural — flow contains the email-received trigger.
+  check_folder_binding    Structural — trigger binds both an Outlook connection
+                          and a non-empty MailFolder reference.
   check_folder_id_fresh   Regression — parentFolderId written into the flow is
                           a live MailFolder ID on the currently-bound Outlook
                           connection. Catches "agent resolved-but-reused a
                           stale ID" (the `command_executed` check in the YAML
                           catches "agent skipped the resolve entirely").
+                          Reports three causes separately: dead connection,
+                          displayName written instead of id, stale id.
 
 A `flow debug` check is intentionally omitted from this task — see the task
 YAML description for the infrastructure rationale.
 
-Privacy: never logs folder display names. Only counts + truncated IDs.
+Privacy: never logs folder display names, nor the configured reference value
+(which may itself be a name). Only counts and lengths.
 """
 
-import glob
 import json
-import os
 import subprocess
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 CONNECTOR_KEY = "uipath-microsoft-outlook365"
 TRIGGER_TYPE_MARKER = "uipath.connector.trigger.uipath-microsoft-outlook365.email-received"
 TEST_FOLDER_PATH = "Shared/uipath-maestro-flow"
 
 
+# Credential failures: the tenant's grant, not anything the agent built.
+_CONNECTION_DEAD_MARKERS = (
+    "invalid_grant",
+    "aadsts50173",  # grant revoked
+    "aadsts700082",  # refresh token expired
+    "reauthorize your account",
+)
+
+
+def _connection_is_dead(blob: str) -> bool:
+    lowered = blob.lower()
+    return any(marker in lowered for marker in _CONNECTION_DEAD_MARKERS)
+
+
+def _dead_credential_remedy(args: list[str]) -> str:
+    """Which credential to reauthorize. The MailFolder resolve runs on the
+    Outlook connection's grant; every other call in this checker (`or folders
+    get`, `is connections list`) runs on the CLI's own session. Both are
+    environment failures, but they are fixed in different places, so a dead CLI
+    login must not be reported as a dead Outlook connection."""
+    if "resources" in args:
+        return (
+            "The tenant's Outlook connection cannot authenticate, so no MailFolder ID "
+            "can be resolved and this task's assertion never ran. Reauthorize the "
+            f"connection in {TEST_FOLDER_PATH} and re-run"
+        )
+    return (
+        "The CLI's own session cannot authenticate, so this checker never reached the "
+        "MailFolder resolve. Re-run `uip login` and re-run this task"
+    )
+
+
 def _parse_uip_stdout(args: list[str], result: subprocess.CompletedProcess) -> dict:
     if result.returncode != 0:
+        blob = f"{result.stdout}\n{result.stderr}"
+        if _connection_is_dead(blob):
+            sys.exit(
+                f"FAIL (ENVIRONMENT, not a skill regression): {' '.join(args)} "
+                f"exit={result.returncode}. {_dead_credential_remedy(args)}; do not "
+                "read this as the agent reusing or inventing an ID.\n"
+                f"stderr: {result.stderr}\nstdout: {result.stdout}"
+            )
         sys.exit(
             f"FAIL: {' '.join(args)} exit={result.returncode}\n"
             f"stderr: {result.stderr}\nstdout: {result.stdout}"
@@ -75,11 +122,9 @@ def _uip_resources_run(tail_args: list[str]) -> dict:
 
 
 def _read_flow() -> tuple[dict, str]:
-    flows = glob.glob("**/OutlookTriggerInbox*.flow", recursive=True)
-    if not flows:
-        sys.exit("FAIL: no OutlookTriggerInbox*.flow found under cwd")
-    with open(flows[0]) as f:
-        return json.load(f), flows[0]
+    path = find_flow_file(flow_glob="OutlookTriggerInbox*.flow")
+    with open(path) as f:
+        return json.load(f), path
 
 
 def _find_test_folder_key() -> str:
@@ -88,6 +133,17 @@ def _find_test_folder_key() -> str:
     if not key:
         sys.exit(f"FAIL: no '{TEST_FOLDER_PATH}' folder in Orchestrator")
     return key
+
+
+def _bound_connection_id(trigger: dict) -> str:
+    """The connection the trigger is actually bound to, from its persisted
+    ``inputs.detail.connectionId``. `node configure` requires the field, so it
+    is present on any flow that validated. Falling back to the folder's default
+    connection would validate the ID against the wrong grant whenever the two
+    differ — a dead default would then mask a healthy bound connection."""
+    detail = trigger.get("inputs", {}).get("detail", {}) or {}
+    conn_id = detail.get("connectionId")
+    return conn_id if isinstance(conn_id, str) and conn_id.strip() else ""
 
 
 def _find_default_outlook_connection() -> tuple[str, str, str]:
@@ -138,6 +194,19 @@ def check_trigger_node():
     print("OK: Outlook email-received trigger node present")
 
 
+def check_folder_binding():
+    flow, _ = _read_flow()
+    trigger = _find_trigger_node(flow)
+    detail = trigger.get("inputs", {}).get("detail", {}) or {}
+    connection_id = detail.get("connectionId")
+    parent_folder_id = (detail.get("eventParameters") or {}).get("parentFolderId")
+    if not connection_id:
+        sys.exit("FAIL: trigger.inputs.detail.connectionId is missing")
+    if not parent_folder_id:
+        sys.exit("FAIL: trigger.inputs.detail.eventParameters.parentFolderId is missing")
+    print("OK: Outlook connection and MailFolder reference are both bound")
+
+
 # ── subcommand: check_folder_id_fresh ──────────────────────────────────
 def check_folder_id_fresh():
     flow, _ = _read_flow()
@@ -150,7 +219,9 @@ def check_folder_id_fresh():
             "The agent did not configure the required reference field."
         )
 
-    conn_id, _folder_key, _conn_name = _find_default_outlook_connection()
+    # Prefer the trigger's own binding; fall back to the folder default only
+    # when the flow never persisted one.
+    conn_id = _bound_connection_id(trigger) or _find_default_outlook_connection()[0]
     live = _uip_resources_run(
         ["list", CONNECTOR_KEY, "MailFolder", "--connection-id", conn_id, "--output", "json"]
     )
@@ -167,19 +238,40 @@ def check_folder_id_fresh():
             "FAIL: resources run/execute list MailFolder returned no folders on the bound connection"
         )
 
-    if flow_folder_id not in live_ids:
-        # Truncate the IDs in the error to avoid leaking full Exchange IDs while
-        # still giving enough signal to diagnose.
+    if flow_folder_id in live_ids:
+        print(f"OK: parentFolderId resolves on current connection ({len(live_ids)} folders checked)")
+        return
+
+    # describe declares Reference{LookupNames:["displayName"], LookupValue:"id"},
+    # so a display name here means the resolve was skipped, not a stale id.
+    live_names = {
+        name.lower()
+        for f in _extract_list_items(live)
+        if (name := (f.get("displayName") or f.get("DisplayName")))
+    }
+    if flow_folder_id.lower() in live_names:
         sys.exit(
-            f"FAIL (PR #348 regression): parentFolderId={flow_folder_id[:12]}... is NOT among "
-            f"the {len(live_ids)} MailFolder IDs on the current connection. The agent "
-            f"reused a reference ID from another connection or session."
+            "FAIL: parentFolderId holds a folder's displayName, not its id. The field "
+            "is a reference (LookupNames=[displayName], LookupValue=id), so the agent "
+            "must write the `id` returned by `resources run list MailFolder`. This is a "
+            "skipped or failed resolve, NOT the PR #348 stale-reference regression."
         )
-    print(f"OK: parentFolderId resolves on current connection ({len(live_ids)} folders checked)")
+
+    # The configured value is never echoed, not even truncated: reaching here
+    # means it matched no live id AND no live display name, so it can still BE a
+    # display name (a renamed or deleted folder, or one past the returned page).
+    # Report its shape instead.
+    sys.exit(
+        f"FAIL (PR #348 regression): the configured parentFolderId ({len(flow_folder_id)} chars) "
+        f"is not among the {len(live_ids)} MailFolder IDs on the bound connection, and is not "
+        "one of their display names either. The agent reused a reference ID from another "
+        "connection or session."
+    )
 
 
 DISPATCH = {
     "check_trigger_node": check_trigger_node,
+    "check_folder_binding": check_folder_binding,
     "check_folder_id_fresh": check_folder_id_fresh,
 }
 

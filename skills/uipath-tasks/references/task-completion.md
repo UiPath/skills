@@ -88,7 +88,9 @@ Before completing a task, always verify:
 
 3. **Folder ID matches:**
    ```bash
-   # The "folderId" field in the response gives you the --folder-id value
+   # The "folderId" field in the response gives you the --folder-id value.
+   # If you only know the folder from `uip or folders list`, pass its Path or
+   # Key instead: --folder-path <path> / --folder-key <guid>.
    ```
 
 ## SLA Tracking

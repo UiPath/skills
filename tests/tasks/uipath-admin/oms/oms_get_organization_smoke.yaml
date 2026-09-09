@@ -1,0 +1,41 @@
+task_id: skill-admin-oms-get-organization-smoke
+description: >
+  Smoke test (outcome-graded): agent fetches the caller's organization record.
+  Graded on the record read back from the platform (name, id, status and the
+  provisioned service instances), not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, oms]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  Show me the details of my current UiPath organization, and save the complete
+  JSON result to ./organization.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "organization.json holds the platform's organization record (name, id, status, service instances)"
+    command: |
+      python3 -c "
+      import json, re
+      d = json.load(open('organization.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      assert isinstance(data, dict), f'organization record is {type(data).__name__}, expected an object'
+      for field in ('Name', 'Id'):
+          assert data.get(field) or data.get(field[0].lower() + field[1:]), f'record missing {field}; keys={list(data)[:12]}'
+      org_id = str(data.get('Id') or data.get('id'))
+      assert re.fullmatch(r'[0-9a-fA-F-]{36}', org_id), f'Id is not an organization UUID: {org_id!r}'
+      status = data.get('Status') or data.get('status')
+      assert status, 'record carries no Status'
+      instances = data.get('OrganizationServiceInstances') or data.get('organizationServiceInstances') or []
+      assert isinstance(instances, list) and instances, 'no provisioned service instances on the record — not a real organization read'
+      print(f'OK: organization {data.get(\"Name\")} ({org_id}) status={status}, {len(instances)} service instances')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

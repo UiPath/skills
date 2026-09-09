@@ -164,7 +164,11 @@ template, but the runtime contract is fixed:
   with `type="json"` and `target="bodyField"`, and maps each field by variable
   id (`=vars.Var_Amount`). Include `<uipath:input name="args" type="json"
   target="bodyField"><![CDATA[{}]]></uipath:input>` even when there are no
-  inputs; this is part of the `BPMN.ScriptTask` registry template.
+  inputs; this is part of the `BPMN.ScriptTask` registry template. This rule
+  applies to nodes you author and to mappings an edit explicitly targets;
+  never retrofit these attributes onto an untouched node's mapping — a
+  pre-existing `<uipath:input name="args">` outside the edit's target stays
+  byte-identical.
 - Map the returned object's property back through `source="=result.response"`
   (the conventional scalar property) or `source="=result.response.<field>"`
   (another object field); `var` points at a declared variable id (do not put the
@@ -271,11 +275,11 @@ Payload shapes the canvas serializes:
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
   `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare
   `<bpmn:messageEventDefinition />` (see their registry templates).
-  A mid-flow wait for an inbound message is a
+  A mid-process wait for an inbound message is a
   `<bpmn:intermediateCatchEvent>` with incoming and outgoing sequence flows,
   the registry-provided `Maestro.ReceiveMessageEvent` payload under
   `bpmn:extensionElements`, and a sibling `<bpmn:messageEventDefinition />`.
-  Do not model a mid-flow receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
+  Do not model a mid-process receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
   start event, or the PascalCase `bpmn:IntermediateCatchEvent`.
 - **Error**: `<bpmn:errorEventDefinition errorRef="Error_1" />` with a
   `<bpmn:error id="Error_1" name="…" errorCode="…"/>` at definitions level. An
@@ -333,18 +337,36 @@ UiPath-specific retry and error-mapping metadata live inside an activity's
 </uipath:retry>
 <uipath:errorMapping version="v1">
   <uipath:error id="Mapped_ServiceUnavailable" errorRef="Error_ServiceUnavailable"
-                priority="1" condition="=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;"
+                priority="1" condition="=vars.Error.code == &quot;SERVICE_UNAVAILABLE&quot;"
                 detail="Service unavailable" retryable="true" />
 </uipath:errorMapping>
 ```
 
 - `uipath:retry` attributes: `maxRetryCount`, `retryBackoff`, `retryBackoffType`,
   `maxDuration`, `exponentialBase`, `retryAllErrors`. Do not use stale aliases
-  (`maxAttempts`, `interval`).
+  (`maxAttempts`, `interval`). `retryAllErrors="false"` with no
+  `uipath:errorDefinition` children retries nothing at all.
 - `uipath:error` (mapping) fields: `id`, `errorRef`, `priority`, `condition`,
   `detail`, `retryable` (`true`/`false`). Conditions read the runtime error via
-  `vars.error` and contain no assignments. Do not put `code=` on `uipath:error`;
+  `vars.Error` (capital `E`, lowercase fields — see
+  [expression-authoring.md](expression-authoring.md#stored-expression-shape))
+  and contain no assignments. Do not put `code=` on `uipath:error`;
   model the code on `bpmn:error errorCode` and reference via `errorRef`.
+
+### Choosing an error-handling construct
+
+Three constructs catch failures at different scopes. A failure tries them in
+order, so pick by intent:
+
+- **`uipath:retry` on the activity** — transient failures, resolved in place.
+- **Error boundary event on the activity** — recover and continue. The token
+  leaves the failed step onto a branch that rejoins the main path.
+- **Error event subprocess in the container** — escalate and terminate.
+  Code-specific nets match before a catch-all.
+
+Unhandled failures propagate outward container by container, so one net at
+process level covers every nested subprocess. Do not author a net per
+container.
 
 ## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
 
@@ -453,7 +475,7 @@ unsupported for generation until current tooling confirms them.
 The registry emits no diagram. Import is **diagram-driven**: the canvas builds
 nodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking
 `flowElements`. **A node with no shape is invisible; a flow with no edge is
-dropped.** You must generate the full `BPMNDiagram` yourself.
+dropped.** Generate the full `BPMNDiagram` with `uip maestro bpmn format <file.bpmn>`.
 
 - One `<bpmndi:BPMNShape id="S_<nodeId>" bpmnElement="<nodeId>">` per node, with
   `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.
@@ -481,13 +503,15 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
 
 - **Add / delete / reconnect a node**: add the element with a stable id and its
   `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the
-  owning scope, and add/update its `BPMNShape` and edge waypoints. On delete,
-  remove orphaned flows and DI edges and recheck entry-point variables, output
-  mappings, and binding references.
+  owning scope. On delete, remove orphaned flows and recheck entry-point variables,
+  output mappings, and binding references. Then regenerate the diagram:
+  `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: add/update `BPMNShape`
+  and edge waypoints manually.
 - **Insert a gateway**: split the existing sequence flow into an incoming and an
   outgoing flow, add conditions to the outgoing flows plus one `default`, add a
-  matching join only if branches actually need synchronization, then re-waypoint
-  the diagram (gateway shape + all edges).
+  matching join only if branches actually need synchronization. Then regenerate the
+  diagram: `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: re-waypoint
+  manually (gateway shape + all edges).
 - **Move logic into a subprocess**: move only elements that share a valid scope,
   re-scope their variables, recreate legal subprocess flow boundaries, and add a
   second diagram plane for the subprocess so nested content renders.

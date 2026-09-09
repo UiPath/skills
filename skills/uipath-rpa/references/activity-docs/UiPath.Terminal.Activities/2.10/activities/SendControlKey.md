@@ -6,7 +6,7 @@ Sends a single control key (such as Tab, Enter/Transmit, F1–F24, arrow keys, o
 
 **Package:** `UiPath.Terminal.Activities`  
 **Category:** App Integration.Terminals  
-**Required Scope:** `TerminalSession`
+**Required Scope:** `TerminalSession` — place inside a `TerminalSession.Body` `Sequence`. See [child-activity skeleton](TerminalSession.md#child-activity-skeleton) for a multi-activity example.
 
 ## Properties
 
@@ -18,15 +18,9 @@ Sends a single control key (such as Tab, Enter/Transmit, F1–F24, arrow keys, o
 
 ### Options
 
-| Name | Display Name | Kind | Type | Default | Description |
-|------|-------------|------|------|---------|-------------|
-| `TimeoutMS` | TimeoutMS | `InArgument` | `int` | `5000` | Milliseconds to wait for the operation to complete. |
-| `DelayMS` | DelayMS | `InArgument` | `int` | `1000` | Milliseconds to wait after executing the activity. |
-| `WaitType` | WaitType | `Property` | `WaitMode` | `READY` | Determines how to wait for the terminal screen before sending. |
+Standard `TimeoutMS` / `DelayMS` / `WaitType` (defaults `5000` / **`1000`** / `READY`) — see [_common-options.md](TerminalSession/_common-options.md). Note the higher `DelayMS` default (1000 ms vs the usual 300 ms) — pressing a control key typically triggers host-side processing, so a longer post-execute pause lets the screen settle before the next activity. Lower it only if you follow immediately with a `Wait*` activity that already blocks.
 
 ### Enum Reference
-
-**`WaitMode`**: `NONE`, `READY`, `COMPLETE`
 
 **`ControlKey`** (selected values):
 

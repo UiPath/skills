@@ -25,14 +25,13 @@ Asserts:
 
 from __future__ import annotations
 
-import glob
 import json
 import sys
 from pathlib import Path
 from typing import Any, NoReturn
 
-
-FLOW_GLOB = "CustomerEscalation/CustomerEscalation/CustomerEscalation.flow"
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 
 def fail(msg: str) -> NoReturn:
@@ -40,10 +39,7 @@ def fail(msg: str) -> NoReturn:
 
 
 def load_flow() -> dict[str, Any]:
-    matches = glob.glob(FLOW_GLOB)
-    if not matches:
-        fail(f"No flow file matching {FLOW_GLOB}")
-    path = Path(matches[0])
+    path = Path(find_flow_file(flow_glob="CustomerEscalation*.flow"))
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError as exc:

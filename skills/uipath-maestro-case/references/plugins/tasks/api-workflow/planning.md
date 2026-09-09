@@ -11,11 +11,11 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 | Field | Source | Notes |
 |-------|--------|-------|
 | `display-name` | Task `Task Name` | |
-| `name` | Resolved registry entry's **`name` field** (NOT the sdd.md "Resolved Resource") | Binds to `data.name` AND forms the `resourceKey` suffix `<folderPath>.<name>`. The sdd.md "Resolved Resource" is only the **search query** (matches `folders[0].displayName`). For `api-index.json` the entry `name` is the literal constant **`"API Workflow"`** — NOT the workflow's own name. See [§ Registry Resolution](#registry-resolution). |
+| `name` | Resolved registry entry's **`name` field** (NOT the sdd.md "Resolved Resource") | Binds to `data.name` AND forms the `resourceKey` suffix `<folderPath>.<name>`. The sdd.md "Resolved Resource" is only the **search query** (matches `folders[0].displayName`). Read the fetched entry's `name` field verbatim — value varies per entry (generic `"API Workflow"` on auto-scaffolded workflows, a real name like `"ContractOperationsApi"` otherwise); never assume which. See [§ Registry Resolution](#registry-resolution). |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | Binds to `data.folderPath`; Orchestrator starts the workflow here at runtime. The sdd.md "Folder" only seeds the lookup and may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). For an API workflow **built inline** as an in-solution sibling, the runtime `folder-path` is **empty `""`** (co-located — the case starts the workflow in its own deployed folder) while `resourceKey` stays `solution_folder.<name>`; do NOT put the `solution_folder` sentinel in `folder-path` (runtime `folder not exist`). See [§ Creating an API workflow inline](#creating-an-api-workflow-inline). |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `api-index.json` |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 | `isRequired` | sdd.md (default `true`) | |
 
@@ -24,7 +24,7 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 1. **Primary cache file:** `api-index.json`.
 2. **Identifier field:** `entityKey`.
 3. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 4). Do NOT treat a folder difference as no-match or fall through to the Create gate — the gate is only for names **no** registry entry carries at all. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 17 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 4).
-4. **Take BOTH `name` and `folder-path` from the SELECTED entry, never the sdd.md** (which only seeds the lookup): `folder-path` = `folders[0].fullyQualifiedName`; `name` = the entry's `name` field (`"API Workflow"` for `api-index.json` — see field table). So `resourceKey` = `<folders[0].fullyQualifiedName>.API Workflow`, NOT `<…>.<workflow name>` — the wrong suffix passes `validate` but faults at `case debug` (process unresolvable). Fall back to the sdd.md folder/name only on no registry match (Unresolved path).
+4. **Take BOTH `name` and `folder-path` from the SELECTED entry, never the sdd.md** (which only seeds the lookup): `folder-path` = `folders[0].fullyQualifiedName`; `name` = the entry's own `name` field, read verbatim — don't assume it's the generic `"API Workflow"` literal; some entries carry a real name instead (e.g. `"ContractOperationsApi"`). Guessing wrong either way passes `validate` but faults at `resources refresh` / `case debug` (`process "<name>" not found`). Fall back to the sdd.md folder/name only on no registry match (Unresolved path).
 5. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
 ### No tenant-index match → check in-solution siblings BEFORE the gate
@@ -41,7 +41,7 @@ Same pre-gate check as agents — [agent/planning.md § No tenant-index match](.
 
 > **Build it inline first (creatable kind).** At the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing API workflow as an in-solution sibling — see [§ Creating an API workflow inline](#creating-an-api-workflow-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
 
-Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
+Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit the resolved-schema keys `inputs` / `outputs`; capture the intended wiring in the entry's `wiringNotes` string array. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Creating an API workflow inline
 
@@ -108,7 +108,7 @@ The brief is self-contained — it carries the Step-1b Purpose and the pinned I/
 
 Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Api"`**, shared `resourceKey="solution_folder.<WorkflowName>"`; `name` default `<WorkflowName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there — except debug provisioning, which differs for Api: next blockquote).
 
-> **Runtime: full deploy YES — `case debug` NO (e2e-verified 2026-07).** `uip solution pack` → `publish` → `deploy run` provisions the sibling as a runnable process in the case's own Orchestrator folder (process key `<Package>.Api.<Name>`), and the case task invokes it successfully at runtime. **`uip maestro case debug` does NOT provision Api siblings** (unlike agent siblings, which resolve in debug) — the task reaches `Orchestrator.StartJob` and faults with incident `170007` "The job's associated process could not be found" even though the binding is valid. Verify an inline API workflow's runtime behavior via a full solution deploy, never via `case debug`. `validate` and binding correctness are unaffected by this limitation.
+> **Runtime: full deploy YES — `case debug` NO (e2e-verified 2026-07).** `uip maestro case pack` → `uip solution pack` → `publish` → `deploy run` provisions the sibling as a runnable process in the case's own Orchestrator folder (process key `<Package>.Api.<Name>`), and the case task invokes it successfully at runtime. **`uip maestro case debug` does NOT provision Api siblings** (unlike agent siblings, which resolve in debug) — the task reaches `Orchestrator.StartJob` and faults with incident `170007` "The job's associated process could not be found" even though the binding is valid. Verify an inline API workflow's runtime behavior via a full solution deploy, never via `case debug`. `validate` and binding correctness are unaffected by this limitation.
 
 ### Failure — surface and re-prompt, never stall
 
@@ -116,24 +116,28 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). api-workflow tokens for that procedure: init verb `uip api-workflow init`; kind markers `Category: "api"` (registered) / `project.uiproj` `ProjectType: "Api"` (unregistered); stale-declaration category subpath `process/api/`.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T<n>: Add api-workflow task "<display-name>" to "<stage>"
-- name: "<resource-name>"
-- taskTypeId: <entityKey>
-- folder-path: "<folder>"
-- inputs:
-  - <input_name> = "<value>"
-- outputs:
-  - <SDD output row, copied verbatim>
-- runOnlyOnce: false
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus this type's lookup output:
+
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "api-workflow",
+  "cacheFile": "api-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<resource-name>",
+  "taskTypeId": "<entityKey>",
+  "folder-path": "<folder>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object (or `null` after a genuine empty lookup — see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape)).
+
+Everything else the SDD declares — inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. The ledger holds only what the registry lookup produced; Phase 2 reads the contract straight from the SDD ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

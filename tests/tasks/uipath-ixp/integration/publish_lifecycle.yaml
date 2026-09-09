@@ -14,7 +14,7 @@ description: >
   version left and could not complete the sequence.
 
   Version numbers also come from `list-models`, never from training order.
-tags: [uipath-ixp, integration, mode:operate]
+tags: [uipath-ixp, integration, mode:operate, lifecycle:setup]
 
 run_limits:
   max_turns: 68

@@ -1,0 +1,102 @@
+task_id: skill-insights-smoke-filter-discovery
+description: >
+  Smoke test: agent uses the uipath-insights skill to discover valid
+  scope candidates before acting. Given a prompt about finding folders,
+  processes, queues, and machines to scope an investigation, the agent
+  should run all four filter discovery commands instead of guessing
+  identifiers, and treat an empty result as normal rather than an
+  error. The CLI is authenticated; the tenant may or may not have
+  recent activity, and both are valid outcomes.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  I want to set up monitoring scoped to whatever we actually run. Find
+  out which folders, processes, queues, and machines have had Insights
+  activity recently, and give me their names plus the exact keys the
+  commands return alongside them, so I can pick a scope. If nothing shows up in
+  a category, say so and move on. If the output says more rows exist,
+  page through them before you summarize. Run each discovery command at
+  most once per page; do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-folders list to discover folders"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-folders\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-processes list to discover processes"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-processes\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-queues list to discover queues"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-queues\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-machines list to discover machines"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-machines\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the four criteria above
+  # pass even when the verbs don't exist in the installed CLI. This gate
+  # re-runs one discovery command at grading time and requires exit 0, so the
+  # task can only pass against a CLI that actually ships filter-*.
+  - type: run_command
+    description: "CLI path is real: filter-folders list exits 0 against the live tenant"
+    command: "uip insights filter-folders list --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not pass time flags to filter commands"
+    tool_name: "Bash"
+    # Not .* : the grader compiles patterns with re.DOTALL, so .* would bleed
+    # across command separators and false-fail a batched call like
+    # `filter-folders list ... && jobs summary --time-range ...`. Excluding
+    # & ; | is not enough on its own, because the grader also matches a
+    # shlex-normalized haystack where newlines collapse to spaces
+    # (coder_eval/criteria/command_executed.py, _normalize_shell), so a
+    # newline-separated batch survives a [^&;|\n] class. The `uip` lookahead
+    # stops the scan at the next invocation, which is what holds on the
+    # normalized haystack. Same construct as the alerts and rbac smoke tasks.
+    command_pattern: 'uip\s+insights\s+filter-\S+\s+list(?:(?!uip\s)[^&;|])*--(time-range|started-after|started-before)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on discovery commands"
+    tool_name: "Bash"
+    # Same non-bleeding construct as the negative criterion above: a bare .*
+    # under re.DOTALL would credit an --output json belonging to a different
+    # chained command. [\s=] accepts the --output=json spelling.
+    command_pattern: 'uip\s+insights\s+filter-\S+\s+list(?:(?!uip\s)[^&;|])*--output[\s=]+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 0

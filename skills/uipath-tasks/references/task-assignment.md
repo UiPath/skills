@@ -6,6 +6,11 @@ Before assigning a task, discover which users have task permissions in the folde
 
 ```bash
 uip tasks users <folder-id> --output json
+
+# Or by folder path/key — the values `uip or folders list` prints.
+# Quote the path: folder paths may contain spaces.
+uip tasks users --folder-path "<folder-path>" --output json
+uip tasks users --folder-key <folder-key> --output json
 ```
 
 Response includes user details:

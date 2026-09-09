@@ -33,7 +33,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   The LeadImport job in our CRM folder started failing this morning on every run. It ran fine for weeks and nobody changed the workflow. Can you troubleshoot?
@@ -49,7 +49,9 @@ success_criteria:
     description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
     include_dialog: true
     include_agent_output: true
     prompt: |

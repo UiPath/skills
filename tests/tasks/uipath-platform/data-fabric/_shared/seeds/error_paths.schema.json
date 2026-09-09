@@ -3,24 +3,29 @@
   "description": "Seed entity for integration_error_paths brownfield test. Schema demonstrates isRequired and isUnique constraints used to trigger validation errors.",
   "fields": [
     {
-      "fieldName": "Code",
+      "name": "Code",
       "displayName": "Code",
       "type": "STRING",
       "isRequired": true,
       "lengthLimit": 50
     },
     {
-      "fieldName": "Score",
+      "name": "Score",
       "displayName": "Score",
       "type": "DECIMAL",
       "decimalPrecision": 0
     },
     {
-      "fieldName": "Tag",
+      "name": "Tag",
       "displayName": "Tag",
       "type": "STRING",
       "isUnique": true,
       "lengthLimit": 50
+    },
+    {
+      "name": "Attachment",
+      "displayName": "Attachment",
+      "type": "FILE"
     }
   ]
 }

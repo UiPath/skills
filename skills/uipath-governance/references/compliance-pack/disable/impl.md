@@ -4,6 +4,8 @@
 
 Removes all policy deployments configured by the compliance standard.
 
+`<packId>` / `<packName>` below = the standard to remove, resolved via [`../catalog/impl.md` § Pack ID lookup](../catalog/impl.md#pack-id-lookup). Disable is per standard — removing one leaves any other configured standard untouched. If the user did not name one and `state list` shows more than one active, ask which before touching anything.
+
 ## Check current state first
 
 ```bash
@@ -12,13 +14,13 @@ uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json
 ```
 
 Decide from the `state get` result:
-- **Confirmed inactive** — a successful response with `Data.active == false`, or a 404: reply "ISO 42001 recommended settings are not currently configured on this tenant." and stop (nothing to remove).
+- **Confirmed inactive** — a successful response with `Data.active == false`, or a 404: reply "<packName> recommended settings are not currently configured on this tenant." and stop (nothing to remove).
 - **State could not be read** — `state get` failed with an auth/connection error (401 / 5xx) so `active` is unknown: do NOT claim "not configured." Proceed to the disable step and report whatever error that call surfaces. (A **403** → preview gate: see [preview-gate.md](../preview-gate.md).)
 
 ## Confirmation
 
 ```
-This will remove all ISO 42001 recommended settings from <tenantName>.
+This will remove all <packName> recommended settings from <tenantName>.
 
 Policies that will be removed:
   <list Data.policies[].policyType: Data.policies[].externalPolicyId>
@@ -36,4 +38,4 @@ uip gov compliance-packs state disable tenant $TENANT_ID <packId> --output json
 
 ## Report
 
-"ISO 42001 recommended settings removed from `<tenantName>`. All associated policy deployments have been deleted."
+"<packName> recommended settings removed from `<tenantName>`. All associated policy deployments have been deleted."

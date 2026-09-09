@@ -24,6 +24,8 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 - Entity type names or their allowed values
 - Import paths
 
+> **That authority covers shape, not availability.** These pages carry `Platform Availability` notes for features still rolling out (BYOG, LLM-as-judge). Those notes are product-wide, never a statement about the tenant in front of you — [Check Tenant Availability](#check-tenant-availability-mandatory-for-built-in-ai-validators) below is the only authority for that. A validator the docs describe as "not enabled on every tenant yet" can still be `Available` here; author it.
+
 When available, the `langchain/guardrails/` page documents three actions — **`LogAction`**, **`BlockAction`**, and
 **`EscalateAction`** (human-in-the-loop). Treat the fetched page as the source of truth for `EscalateAction`'s
 parameters, supported scopes, and stages; the operational wiring it doesn't cover (the suspend->resume UX, the
@@ -74,7 +76,7 @@ A validator can be fulfilled by a tenant-registered **external** provider (a "BY
 >
 > The usual [Imports Pattern](#imports-pattern) rule still governs which module you import from: a LangChain agent imports from `uipath_langchain.guardrails` (adapter registration — see Critical Rule 8), everything else from `uipath.platform.guardrails`. And on a framework with no published adapter, the decorator carries the same silent-no-op risk it does for every other validator — that caveat belongs to the decorator *mechanism*, not to BYO.
 
-**Wire format** — both styles emit the same thing: `validatorType: "byo"` plus `byoValidatorName: "<name>"`. That is the identical field a low-code `agent.json` guardrail uses to pin a BYO configuration, so coded and low-code agents reference BYOG the same way.
+**Wire format** — both coded styles emit `validatorType: "byo"` plus `byoValidatorName: "<name>"`. The only field shared with low-code is `byoValidatorName`: a low-code `agent.json` pins the same BYOG configuration by adding `byoValidatorName` while keeping `validatorType` = the real validator id (e.g. `pii_detection`). `validatorType: "byo"` is the coded SDK wire format — never write it in a low-code `agent.json`.
 
 Discovery steps (in addition to the fetched docs):
 

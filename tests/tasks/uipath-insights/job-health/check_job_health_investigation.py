@@ -22,10 +22,14 @@ invokes run_command criteria with cwd set to the sandbox root).
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared = (Path(os.environ["SKILLS_REPO_PATH"]) / "tests" / "tasks" / "uipath-insights" / "_shared"
+           if os.environ.get("SKILLS_REPO_PATH")
+           else Path(__file__).resolve().parent.parent / "_shared")
+sys.path.insert(0, str(_shared))
 from envelope_check import (
     CODES,
     check_envelope,

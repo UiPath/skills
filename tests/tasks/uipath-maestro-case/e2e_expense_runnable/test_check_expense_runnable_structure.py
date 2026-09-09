@@ -13,6 +13,7 @@ from check_expense_runnable_structure import (  # noqa: E402
     _assert_bindings_v2_metadata,
     _assert_required_external_bindings,
 )
+from _shared.case_check import selected_stage_ids, stage_transitions  # noqa: E402
 
 
 class BindingsV2MetadataTests(unittest.TestCase):
@@ -78,44 +79,85 @@ class RunLimitTests(unittest.TestCase):
         self.assertEqual(limits["turn_timeout"], limits["task_timeout"])
 
 
-class ResourceBindingTests(unittest.TestCase):
-    def test_accepts_runnable_resource_display_names(self) -> None:
-        _assert_required_external_bindings(
-            {
-                "resources": [
-                    {
-                        "key": "Shared/uipath-maestro-case/NameToAgeFixed2.API Workflow",
-                        "value": {"name": {"defaultValue": "API Workflow"}},
+class StageTransitionTests(unittest.TestCase):
+    def test_selected_stage_ids_prefers_v30_plural_and_accepts_legacy_singular(self) -> None:
+        self.assertEqual(
+            selected_stage_ids({"selectedStageIds": ["first", "second"]}),
+            ["first", "second"],
+        )
+        self.assertEqual(selected_stage_ids({"selectedStageId": "legacy"}), ["legacy"])
+
+    def test_reads_v30_plural_and_legacy_singular_stage_ids(self) -> None:
+        plan = {
+            "nodes": [
+                {
+                    "id": "target",
+                    "type": "case-management:Stage",
+                    "data": {
+                        "entryConditions": [
+                            {
+                                "rules": [
+                                    [
+                                        {
+                                            "rule": "selected-stage-completed",
+                                            "selectedStageIds": ["first", "second"],
+                                        },
+                                        {
+                                            "rule": "selected-stage-exited",
+                                            "selectedStageId": "legacy",
+                                        },
+                                    ]
+                                ]
+                            }
+                        ]
                     },
-                    {
-                        "key": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
-                        "value": {"name": {"defaultValue": "CountLetters"}},
-                    },
-                    {
-                        "key": "Shared/uipath-agents/ProcurementProcess.ProcurementProcess",
-                        "value": {"name": {"defaultValue": "ProcurementProcess"}},
-                    },
-                    {
-                        "key": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
-                        "value": {"name": {"defaultValue": "RPA Workflow"}},
-                    },
-                    {
-                        "key": "Shared/uipath-maestro-case/CaseTest.Maestro Case",
-                        "value": {"name": {"defaultValue": "Maestro Case"}},
-                    },
-                ]
-            }
+                }
+            ]
+        }
+
+        self.assertEqual(
+            stage_transitions(plan),
+            [
+                {"source": "first", "target": "target"},
+                {"source": "legacy", "target": "target"},
+                {"source": "second", "target": "target"},
+            ],
         )
 
+
+def _valid_resources() -> list[dict]:
+    """bindings_v2.json resources whose deployed names all match the tenant."""
+    return [
+        {
+            "key": "Shared/uipath-agents/WeatherAPI.WeatherAPI",
+            "value": {"name": {"defaultValue": "WeatherAPI"}},
+        },
+        {
+            "key": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
+            "value": {"name": {"defaultValue": "CountLetters"}},
+        },
+        {
+            "key": "Shared/uipath-agents/ProcurementProcess.ProcurementProcess",
+            "value": {"name": {"defaultValue": "ProcurementProcess"}},
+        },
+        {
+            "key": "Shared/uipath-maestro-flow/HelpDeskLookup RPA.HelpDeskLookup",
+            "value": {"name": {"defaultValue": "HelpDeskLookup"}},
+        },
+        {
+            "key": "Shared/uipath-maestro-case/CaseTest.Maestro Case",
+            "value": {"name": {"defaultValue": "Maestro Case"}},
+        },
+    ]
+
+
+class ResourceBindingTests(unittest.TestCase):
+    def test_accepts_runnable_resource_display_names(self) -> None:
+        _assert_required_external_bindings({"resources": _valid_resources()})
+
     def test_rejects_resource_alias_in_place_of_display_name(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "API Workflow"):
-            _assert_required_external_bindings(
-                {
-                    "resources": [
-                        {
-                            "key": "Shared/uipath-maestro-case/NameToAgeFixed2.NameToAgeFixed2",
-                            "value": {"name": {"defaultValue": "NameToAgeFixed2"}},
-                        }
-                    ]
-                }
-            )
+        # The SDD alias "CaseTest" is not the deployed name "Maestro Case".
+        resources = _valid_resources()
+        resources[4]["value"]["name"]["defaultValue"] = "CaseTest"
+        with self.assertRaisesRegex(SystemExit, "Maestro Case"):
+            _assert_required_external_bindings({"resources": resources})

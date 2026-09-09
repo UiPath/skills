@@ -89,7 +89,7 @@ After any solution-level edit, run a sanity check:
 uip solution resources list --kind <kind> --solution-folder . --source local --output json
 ```
 
-The list should show your resource with the new spec. If `resource refresh` reverts the change on the next run, you edited a field the bindings re-derive — back out and use the deploy-config path or SW UI instead.
+The list should show your resource with the new spec. If `resources refresh` reverts the change on the next run, you edited a field the bindings re-derive — back out and use the deploy-config path or SW UI instead.
 
 ## Deploy config files (`deploy-config.json`)
 

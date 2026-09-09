@@ -6,7 +6,7 @@ Reads text starting at a specific row and column position on the terminal screen
 
 **Package:** `UiPath.Terminal.Activities`  
 **Category:** App Integration.Terminals.Advanced  
-**Required Scope:** `TerminalSession`
+**Required Scope:** `TerminalSession` — place inside a `TerminalSession.Body` `Sequence`. See [child-activity skeleton](TerminalSession.md#child-activity-skeleton) for a multi-activity example.
 
 ## Properties
 
@@ -26,15 +26,7 @@ Reads text starting at a specific row and column position on the terminal screen
 
 ### Options
 
-| Name | Display Name | Kind | Type | Default | Description |
-|------|-------------|------|------|---------|-------------|
-| `TimeoutMS` | TimeoutMS | `InArgument` | `int` | `5000` | Milliseconds to wait for the operation to complete. |
-| `DelayMS` | DelayMS | `InArgument` | `int` | `300` | Milliseconds to wait after executing the activity. |
-| `WaitType` | WaitType | `Property` | `WaitMode` | `READY` | Determines how to wait for the terminal screen before reading. |
-
-### Enum Reference
-
-**`WaitMode`**: `NONE`, `READY`, `COMPLETE`
+Standard `TimeoutMS` / `DelayMS` / `WaitType` (defaults `5000` / `300` / `READY`) — see [_common-options.md](TerminalSession/_common-options.md). Defaults work for typical sessions; tune only when scripted activities run faster than the host responds.
 
 ## XAML Example
 

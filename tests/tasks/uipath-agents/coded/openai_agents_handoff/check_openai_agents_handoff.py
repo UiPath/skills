@@ -147,10 +147,11 @@ def check_main_py(factory_symbol: str) -> None:
             "instead of UiPath's gateway."
         )
     # Three named agents: triage, billing, technical. Normalize "BillingAgent" /
-    # "billing_agent" / "billing" all to "billing" so role-equivalent names pass.
-    name_pattern = re.compile(r'name\s*=\s*"([^"]+)"')
+    # "billing_agent" / "billing-agent" / "Billing Agent" / "billing" all to
+    # "billing" so role-equivalent names pass.
+    name_pattern = re.compile(r'''name\s*=\s*['"]([^'"]+)['"]''')
     declared_names = {
-        n.lower().removesuffix("_agent").removesuffix("agent")
+        re.sub(r"[\s_-]*agents?$", "", n.lower())
         for n in name_pattern.findall(text)
     }
     expected = {"triage", "billing", "technical"}

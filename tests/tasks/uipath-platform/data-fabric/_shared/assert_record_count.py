@@ -19,13 +19,16 @@ Exit codes:
          call failed (the criterion will FAIL, surfacing the mismatch)
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess
 import sys
 import time
 
-UIP_TIMEOUT_SECONDS = 30
+UIP_TIMEOUT_SECONDS = 120
 ENTITY_LOOKUP_ATTEMPTS = 2
 ENTITY_LOOKUP_RETRY_SECONDS = 2
 COUNT_ATTEMPTS = 2

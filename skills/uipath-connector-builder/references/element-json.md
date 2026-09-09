@@ -50,8 +50,10 @@ GET/GETBYID/POST/PATCH/DELETE has 5 entries (one `activity create` call writes t
 | `expressions` | no | `requestBodyRoot` / `responseBodyRoot` for JSON-path wrap/unwrap. |
 
 For by-id methods (`GETBYID`/`PATCH`/`PUT`/`DELETE`) `activity create` auto-adds the
-`/{primaryKey}` path param — ALWAYS for `GETBYID`, and for the write methods only on a CRUD
+`/{id}` path param — ALWAYS for `GETBYID`, and for the write methods only on a CRUD
 activity (one that also has `GET`/`GETBYID`); a write-only activity keeps its base path.
+The token names a URL slot only; it is not the primary key and is never read back from the
+vendor response.
 Details in [standard-resources.md](standard-resources.md) §"by-id methods".
 
 ### Resource types

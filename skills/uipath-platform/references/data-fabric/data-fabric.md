@@ -72,7 +72,7 @@ Do not change field types, create federated entities, or write federated records
 
 10. **Entity delete — dependent discovery.** Gating lives in the Destructive Operations block. Scan for inbound references (`entities list --output json` → `Fields[].ReferenceEntity.Id == <id>`) and choice sets used by the entity's fields (`Fields[].ChoiceSetId`). Ask per dependent: delete, leave, or stop. Full sequence: [`entity-schema.md` → Deleting an Entity](entity-schema.md#deleting-an-entity).
 
-11. **Field delete — `removeFields` uses `{"fieldName":"…"}`** (NOT `id` like `updateFields`). For `CHOICE_SET_*` / `RELATIONSHIP` fields, raise a cascade-ask dropdown before invoking (`Delete only the field` / `Also delete the referenced choice set / target entity` / `Stop`) and echo other bindings so the user sees blast radius. `FILE` field delete drops only the column — never offer to delete the platform-managed storage entity. Full sequence: [`entity-schema.md` → Deleting a Field](entity-schema.md#deleting-a-field).
+11. **Field delete — `removeFields` uses `{"name":"…"}`** (NOT `id` like `updateFields`). For `CHOICE_SET_*` / `RELATIONSHIP` fields, raise a cascade-ask dropdown before invoking (`Delete only the field` / `Also delete the referenced choice set / target entity` / `Stop`) and echo other bindings so the user sees blast radius. `FILE` field delete drops only the column — never offer to delete the platform-managed storage entity. Full sequence: [`entity-schema.md` → Deleting a Field](entity-schema.md#deleting-a-field).
 
 12. **Complex fields need extra config and lookups.** `CHOICE_SET_*` needs `choiceSetId`; `RELATIONSHIP` needs `referenceEntityId` + `referenceFieldId`; `FILE` needs neither (server auto-wires). When the user describes a link ("each order has a Customer"), the type is `RELATIONSHIP` — never substitute `STRING` or `UUID`. Target entity must exist first. Full shape: [`entity-schema.md` → Supported Field Types](entity-schema.md#supported-field-types).
 
@@ -165,3 +165,9 @@ For topic-specific errors, use the relevant reference. Cross-cutting failures:
 | Entity / choice set created via `--folder-key <X>` doesn't appear in list | Lists default to tenant-only | Re-run with `--folder-key <X>` or `--include-folders` |
 
 Any error not in this table → Rule 18. Topic-specific error tables live in the topic references.
+
+---
+
+## Packaging into a Solution
+
+To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).

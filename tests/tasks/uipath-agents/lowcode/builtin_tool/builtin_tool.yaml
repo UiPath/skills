@@ -75,8 +75,20 @@ success_criteria:
     pass_threshold: 1.0
 
 
+  # Critical Rule LC20 — built-in tools are self-contained: they need no
+  # solution-level resource files and no `solution resources refresh`. The task
+  # passes today whether or not the agent runs it, so the rule was unenforced;
+  # a gratuitous refresh here signals the agent mistook a built-in for an
+  # external resource.
+  - type: command_not_executed
+    description: "Agent did not run solution resources refresh for a built-in tool (Critical Rule LC20)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
-    description: "Built-in tool resource shape + job-attachment input wiring"
+    description: "Built-in tool resource shape + job-attachment input wiring + canonical x-uipath-resource-kind"
     command: "python3 $TASK_DIR/check_builtin_tool.py"
     timeout: 30
     expected_exit_code: 0

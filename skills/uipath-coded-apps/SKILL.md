@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution."
+description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution, JS/TS function backends (`defineFunction`, `uip function serve`)→uipath-functions."
 when_to_use: "User wants to scaffold, build, push/pull, pack, publish, or deploy a Coded Web App or Coded Action App, or use the `@uipath/uipath-typescript` SDK inside one. Also dashboard requests: 'build me a dashboard', 'show agent health / error rate / KPIs / governance violations', 'generate an analytics or observability dashboard', edit an existing one (add/remove/change a widget, change time range, deploy), or fix/diagnose a dashboard that won't build (a metric that fails to compile, a bad SDK call, a broken widget). For RPA→uipath-rpa; Python agents→uipath-agents; Maestro flows→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Task
 ---
@@ -20,6 +20,8 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
 - User wants to **generate an agent-monitoring / analytics dashboard** from a natural-language description — e.g. "show agent health, error rates, invocation volume, latency, active agents, KPIs, governance metrics, or consumption trends"
 - User says "build/create/generate a dashboard", describes metrics to visualize, or asks for an agent observability, operations, or cost view
+
+For the app's **JS/TS function backend** — authoring the `defineFunction` endpoint the app calls, tokens, CORS, the local two-server dev loop → `uipath-functions`.
 
 ## App Types
 
@@ -133,19 +135,22 @@ uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
 
-# Client-credentials (headless/CI) — MUST include Apps.Read Apps.Write or publish's
-# "Registering coded app" step fails with 401 even though package upload succeeds.
-# OR.Default alone is NOT sufficient — it covers Orchestrator but not the Apps service.
+# Client-credentials (headless/CI) — scope MUST name one Orchestrator scope AND
+# the two Apps-service scopes. Neither set covers the other:
+#   OR.Default            → Orchestrator
+#   Apps.Read Apps.Write  → Apps-service registration in `uip codedapp publish`
+# Do NOT substitute granular Orchestrator scopes (OR.Folders/OR.Execution/
+# OR.Administration) for OR.Default.
 uip login \
   --client-id <id> \
   --client-secret <secret> \
   --organization <org> \
   --tenant <tenant> \
-  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write" \
+  --scope "OR.Default Apps.Read Apps.Write" \
   --authority https://alpha.uipath.com   # omit --authority for production
 ```
 
-> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs Orchestrator scopes) **and** registers the coded app (needs `Apps.Read Apps.Write`). Omitting the Apps scopes lets the upload succeed but silently 401s the registration.
+> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs `OR.Default`) **and** registers the coded app (needs `Apps.Read Apps.Write`). For what each failure looks like, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 ## SDK Config (web app)
 
@@ -171,11 +176,11 @@ To change any of these values, edit `uipath.json`.
 
 **Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
 
-1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. If using **client credentials** (headless/CI), always include `Apps.Read Apps.Write` in `--scope` — required by the Apps service registration inside `uip codedapp publish`. `OR.Default` alone covers Orchestrator (package upload) but not Apps registration; omitting them causes a silent 401 on the second half of publish.
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. With **client credentials** (headless/CI), use `--scope "OR.Default Apps.Read Apps.Write"` — all three names are required: `OR.Default` for Orchestrator, `Apps.Read` and `Apps.Write` for the Apps-service registration in `uip codedapp publish`. The External Application itself needs only `Apps.Read` and `Apps.Write`; `OR.Default` is auto-granted and not portal-selectable, so name it in `--scope`. If publish or deploy then fails, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 2. **Build** — `npm run build`. Verify `ls dist/`.
 3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
-5. **Deploy** — `uip codedapp deploy -n <name> --folder-key <GUID>`. Resolve the GUID from the chosen folder: a personal workspace (`Type == "Personal"`), a named existing folder, or a freshly `uip or folders create`d one — via `uip or folders list --output json`. Dashboards additionally choose a **deploy mode** (standalone / governance-pinned / governance) that sets `--tags`; see [dashboards deploy impl](references/dashboards/plugins/deploy/impl.md). Never let the command go interactive. Share the app URL with the user.
+5. **Deploy** — `uip codedapp deploy -n <name> --folder-key <GUID>`. Resolve the GUID from the chosen folder: a personal workspace (`Type == "Personal"`), a named existing folder, or a freshly `uip or folders create`d one — via `uip or folders list --output json`. Dashboards additionally choose a **deploy mode** (standalone / governance-pinned / governance) that sets `--tags`; see [dashboards deploy impl](references/dashboards/plugins/deploy/impl.md). Never let the command go interactive. Share the app URL with the user. **Deploy is done when the CLI reports success — do not poll or `curl` the app URL to confirm it.** Activation lags the deploy by minutes, so a fresh URL returning 404/503 is expected and proves nothing; waiting on it only burns time.
 
 ## SDK Module Imports
 

@@ -25,7 +25,7 @@ conversation (see the resolution order in the Pipeline section). Without one, as
 - A Test Manager **project key**.
 - A **completed** scenario execution (dry run or full run). Meaningful pass/fail appears on
   full executions; dry runs typically show per-group status `none`.
-- CLI surface probed (see [/uipath:uipath-test § Critical Rules](../SKILL.md#critical-rules)). Always pass `--output json`; translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table on a pre-rename CLI.
+- Always pass `--output json` on every `uip` command (see [SKILL.md § Critical Rules](../SKILL.md#critical-rules)).
 
 ## Command surface (target `uip tm perf-scenario` commands)
 

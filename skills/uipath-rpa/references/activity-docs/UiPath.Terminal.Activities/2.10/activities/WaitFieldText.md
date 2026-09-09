@@ -6,7 +6,7 @@ Waits until a specific input field on the terminal screen contains the expected 
 
 **Package:** `UiPath.Terminal.Activities`  
 **Category:** App Integration.Terminals  
-**Required Scope:** `TerminalSession`
+**Required Scope:** `TerminalSession` — place inside a `TerminalSession.Body` `Sequence`. See [child-activity skeleton](TerminalSession.md#child-activity-skeleton) for a multi-activity example.
 
 ## Properties
 
@@ -27,15 +27,7 @@ Waits until a specific input field on the terminal screen contains the expected 
 
 ### Options
 
-| Name | Display Name | Kind | Type | Default | Description |
-|------|-------------|------|------|---------|-------------|
-| `TimeoutMS` | TimeoutMS | `InArgument` | `int` | `30000` | Milliseconds to wait for the field text before throwing a timeout error. |
-| `DelayMS` | DelayMS | `InArgument` | `int` | `300` | Milliseconds to wait after executing the activity. |
-| `WaitType` | WaitType | `Property` | `WaitMode` | `READY` | Determines how to wait for the terminal screen. |
-
-### Enum Reference
-
-**`WaitMode`**: `NONE`, `READY`, `COMPLETE`
+Standard `TimeoutMS` / `DelayMS` / `WaitType` (defaults **`30000`** / `300` / `READY`) — see [_common-options.md](TerminalSession/_common-options.md). The higher `TimeoutMS` default is appropriate for host responses that take seconds; raise further for slow scripted flows.
 
 ## Notes
 

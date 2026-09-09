@@ -1,59 +1,62 @@
-task_id: skill-gov-access-policy-access-evaluate-smoke
+task_id: skill-gov-access-policy-evaluate-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-governance skill to
-  evaluate whether current access policies would allow a Maestro flow
-  to invoke an RPA process. Tests that the agent invokes
-  `uip gov access-policy evaluate` with `--resource-type` and
-  `--actor-process-type` flags and `--output json`.
-
-  Platform note: the smoke test runs without an authenticated tenant, so
-  `uip gov access-policy` commands that hit the service will fail with an
-  auth error. That is acceptable — what matters is that the agent invokes
-  the correct commands with the correct flags.
-tags: [uipath-governance, smoke, mode:operate, access-policy, evaluate, lifecycle:discover]
+  Smoke test (outcome-graded): the agent asks the Policy Decision Point to
+  resolve a request context. Graded on the decision the service returned — the
+  PolicyEvaluated response code plus an enforcement value from the real enum.
+  The service requires the complete context (resource type and id AND actor
+  process type and id); any subset is rejected with HTTP 400, so a decision
+  document can only exist if the agent supplied all four.
+tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, access-policy, evaluate]
 
 run_limits:
-  expected_turns: 5
+  expected_turns: 8
 
 initial_prompt: |
-  Evaluate whether the current access policies would allow a Maestro
-  flow to invoke an RPA process. Save every command's stdout+stderr to
-  ./output.txt (use `> output.txt 2>&1` for the first command and
-  `>> output.txt 2>&1` for subsequent ones).
+  Ask the policy decision point whether the current access policies would let a
+  Flow invoke an RPA workflow, for this request context:
 
-  Details:
   - Resource type: `RPAWorkflow`
-  - Resource ID: `11111111-1111-1111-1111-111111111111`
+  - Resource ID: `9f1c77aa-1111-4222-8333-0000000000a1`
   - Actor process type: `Flow`
-  - Actor process ID: `22222222-2222-2222-2222-222222222222`
+  - Actor process ID: `9f1c77aa-1111-4222-8333-0000000000b2`
 
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live governance
-    tenant in this environment. Commands WILL fail with auth errors —
-    that is expected. Run each command exactly once, capture stdout+stderr
-    to ./output.txt, and move on. Do NOT retry or attempt to login.
-  - Use --output json on every uip gov access-policy command.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  The actor identity is the account this CLI is logged in as. Save the raw JSON
+  of the decision verbatim to ./decision.json.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent invoked `uip gov access-policy evaluate` with --resource-type"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+evaluate\s+[\s\S]*--resource-type'
-    min_count: 1
-    weight: 2.5
+  - type: run_command
+    description: "decision.json is a real PDP decision (service response code + enforcement from the enum)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('decision.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'the evaluation did not succeed: Result={res}'
+      code = d.get('Code') if isinstance(d, dict) else None
+      assert code in (None, 'PolicyEvaluated'), f'unexpected response code {code!r}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rec = next((x for x in dicts(d) if x.get('Enforcement')), None)
+      assert rec, 'saved JSON carries no Enforcement — this is not a decision document'
+      enf = rec.get('Enforcement')
+      assert enf in ('Allow', 'Deny', 'NoOp'), f'enforcement {enf!r} is not a PDP verdict'
+      assert 'EffectivePolicies' in rec or 'EvaluationDetails' in rec, 'decision has neither EffectivePolicies nor EvaluationDetails'
+      print(f'OK: PDP returned enforcement {enf} for the requested context')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent passed --actor-process-type on the evaluate command"
+  - type: command_not_executed
+    description: "a dry-run evaluation must not author or change any policy"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+evaluate\s+[\s\S]*--actor-process-type\s+'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Command output captured to ./output.txt"
-    path: "output.txt"
-    weight: 1.0
+    command_pattern: 'access-policy\s+(create|update|delete)'
+    weight: 2.0
     pass_threshold: 1.0

@@ -14,7 +14,7 @@ What this looks like:
 What can cause it:
 - A gateway/proxy (Azure Application Gateway, Cloudflare, nginx) times out before Orchestrator returns. Typical with synchronous call mode where the HTTP connection is held until the job completes
 - Many concurrent action-center tasks each spawning a job — resource contention pushes individual call latency past the gateway threshold
-- Serverless/coded RPA timing out at the serverless layer ("automation cancelled because it reached the time limit") — root cause is on the robot side, not Maestro (tracked in past Slack threads as `MST-6379`)
+- Serverless/coded RPA timing out at the serverless layer ("automation cancelled because it reached the time limit") — root cause is on the robot side, not Maestro
 
 What to look for:
 - Whether the underlying child job is actually `Successful` in Orchestrator while Maestro reports timeout — indicates gateway timeout, not runtime failure

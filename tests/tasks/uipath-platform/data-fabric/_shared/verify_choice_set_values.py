@@ -19,12 +19,15 @@ Exit codes:
     1 — choice set missing, any required value missing, or uip call failed
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess
 import sys
 
-UIP_TIMEOUT_SECONDS = 60
+UIP_TIMEOUT_SECONDS = 120
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:

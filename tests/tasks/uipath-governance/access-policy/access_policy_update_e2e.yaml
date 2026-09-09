@@ -1,0 +1,50 @@
+task_id: skill-gov-access-policy-update-e2e
+description: >
+  End-to-end (outcome-graded): the agent edits a policy it did not create, so
+  folding the change into a fresh create cannot satisfy the check — the seeded
+  policy's own record has to show the new description while its selectors,
+  executable rule and actor rule survive and its status stays Simulated.
+  `access-policy update` replaces the whole body and only accepts recursive
+  camelCase, so re-submitting `get` output verbatim fails with HTTP 400 and a
+  partial body drops the rules.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, access-policy, update]
+
+pre_run:
+  - command: 'GOV_SEED_KEY="draft" GOV_POLICY_BASE="ce-gov-update" GOV_POLICY_DESCRIPTION="Provisional - pending review" GOV_RESOURCE_TYPE="Agent" GOV_ACTOR_PROCESS_TYPE="Flow" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''setup_access_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''cleanup_access_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 22
+
+initial_prompt: |
+  The access policy named in `seed.json` (the `draft.name` field) has finished
+  review. Change its description to exactly:
+
+    Approved - owner signed off
+
+  Everything else about the policy must stay as it is - same selectors, same
+  executable rule, same actor rule, and still in simulation mode.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the seeded policy now carries the new description, with its rules and Simulated status intact"
+    command: 'GOV_SEED_KEY="draft" GOV_CHECK="updated" GOV_EXPECT_STATUS="Simulated" GOV_EXPECT_DESCRIPTION="Approved - owner signed off" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''verify_access_policy.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "the policy was edited in place, not deleted and recreated"
+    tool_name: "Bash"
+    command_pattern: 'access-policy\s+delete'
+    weight: 2.0
+    pass_threshold: 1.0

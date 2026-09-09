@@ -7,7 +7,13 @@ name: Skill Activation Gate
 
 concurrency:
   group: activation-gate-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Allow-list, not deny-list: `synchronize` is the only event that arrives with
+  # a new head SHA, so it is the only one where cancelling is free. `opened`,
+  # `reopened` and `ready_for_review` all fire on a commit a run can already be
+  # in flight for, and a cancelled run reports the required context as
+  # `cancelled` — non-passing, exactly like `failure`. See
+  # docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No paths: filter — see smoke-skills.yml for the required-check rationale.
@@ -20,6 +26,13 @@ on:
 
 permissions:
   contents: read
+
+# Exempt the first-party `coder-eval` wheel from safe-chain's
+# minimum-package-age suppression so a same-day pin in
+# tests/.coder-eval-version still resolves — see smoke-skills.yml for the full
+# rationale. Workflow-level so any job added later inherits it.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
 
 jobs:
   detect:
@@ -108,3 +121,60 @@ jobs:
           # baselines are model-specific, so re-baseline when this moves.
           AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         run: python tests/scripts/activation_gate.py --skill "$SKILL"
+
+  # Fixed-name aggregator. The `gate` job above is named `${{ matrix.skill }}`,
+  # so its check name changes with every skill added or renamed — 61 distinct
+  # names in one quarter. Required-status-check contexts are literal strings, so
+  # a matrix leg can never be required: a name that doesn't run leaves the
+  # context pending forever. This job's name is constant, so require THIS one.
+  # It rolls up `detect` + every `gate` leg into a single pass/fail.
+  gate-summary:
+    name: Skill activation gate
+    needs: [detect, gate]
+    # Runs whatever `detect` and `gate` did, so the required context always
+    # reports; the rollup below is what turns their results into pass/fail.
+    # `!cancelled()` rather than `always()`, and the `${{ }}` wrapper is
+    # required (bare `!` starts a YAML tag) — docs/REQUIRED-CHECKS.md
+    # § Why `!cancelled()` and not `always()`.
+    if: ${{ !cancelled() }}
+    runs-on: uipath-ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Roll up gate results
+        # Job results via env, not inline ${{ }} in run: — these are workflow-
+        # controlled values, but the repo keeps every interpolation out of the
+        # shell body regardless.
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+          GATE_RESULT: ${{ needs.gate.result }}
+        run: |
+          set -euo pipefail
+          echo "detect=$DETECT_RESULT gate=$GATE_RESULT"
+
+          # `needs.<matrix job>.result` is already the rollup of every leg:
+          # 'success' only when all legs succeeded, 'failure' when any failed.
+          # 'skipped' is the healthy no-op path and must pass.
+          #
+          # ALLOW-list the two good values rather than deny-listing the two bad
+          # ones. This is the repo's merge gate: an empty result, or a value
+          # GitHub adds later, must fail closed rather than fall through to
+          # "passed".
+          for result in "$DETECT_RESULT" "$GATE_RESULT"; do
+            case "$result" in
+              success|skipped) ;;
+              failure|cancelled) ;;
+              *) echo "::error::unrecognized job result '$result' — failing closed"; exit 1 ;;
+            esac
+          done
+
+          if [ "$DETECT_RESULT" = "failure" ] || [ "$DETECT_RESULT" = "cancelled" ]; then
+            echo "::error::activation gate could not determine which skills to gate (detect: $DETECT_RESULT)"
+            exit 1
+          fi
+
+          if [ "$GATE_RESULT" = "failure" ] || [ "$GATE_RESULT" = "cancelled" ]; then
+            echo "::error::at least one activation gate leg failed — see the per-skill jobs above"
+            exit 1
+          fi
+
+          echo "Activation gate passed."

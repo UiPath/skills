@@ -9,9 +9,10 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      `definitions[].model` only — rule 16).
   3. `typeVersion` is exactly `"1.0"` (matches `definitions[<dr>].version`).
   4. `inputs.prompt` is non-empty.
-  5. `inputs.attachment` matches the canonical canvas-produced wiring:
-     `=js:$vars.<triggerId>.output.<fileVarId>` — referencing a flow `in`
-     variable of `type: "file"` bound to the trigger via `triggerNodeId`.
+  5. `inputs.attachment` matches the canonical trigger-output wiring, either
+     as the v1 string `=js:$vars.<triggerId>.output.<fileVarId>` or the SDK's
+     equivalent typed expression envelope — referencing a flow `in` variable
+     of `type: "file"` bound to the trigger via `triggerNodeId`.
   6. `inputs.returnCitations` is the boolean `true` (per the prompt's request).
   7. The instance `outputs.output.source` is the literal `=response`.
   8. The flow declares `out` variables `summary` and `citations`, and at least
@@ -22,20 +23,26 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      PascalCase; lowercase resolves to undefined at runtime).
 """
 
-import glob
 import json
+import os
 import re
 import sys
 from typing import NoReturn
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from _shared.advisory_flow_utils import unwrap  # noqa: E402
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "uipath.pattern.deep-rag"
 EXPECTED_TYPE_VERSION = "1.0"
 EXPECTED_OUTPUT_SOURCE = "=response"
 
 _ATTACHMENT_REF = re.compile(
-    r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.([A-Za-z_][A-Za-z0-9_]*)\s*$"
+    r"^\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.([A-Za-z_][A-Za-z0-9_]*)\s*$"
 )
-_OUTPUT_MAPPING_BASE = re.compile(r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.content\.")
+_OUTPUT_MAPPING_BASE = re.compile(
+    r"^\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.content\."
+)
 
 
 def _fail(msg: str) -> NoReturn:
@@ -43,10 +50,8 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/SummarizeDemo*.flow", recursive=True)
-    if not flows:
-        _fail("no SummarizeDemo*.flow found under cwd")
-    with open(flows[0]) as f:
+    path = find_flow_file(flow_glob="SummarizeDemo*.flow")
+    with open(path) as f:
         return json.load(f)
 
 
@@ -63,10 +68,23 @@ def _find_node(flow: dict) -> dict:
     return matches[0]
 
 
+def _js_expression(value) -> str | None:
+    if isinstance(value, str) and value.startswith("=js:"):
+        return value[len("=js:") :].strip()
+    if isinstance(value, dict) and value.get("type") == "jsExpression":
+        expression = value.get("expression")
+        if isinstance(expression, str) and expression.strip():
+            return expression.strip()
+    return None
+
+
 def _check_attachment_canonical(flow: dict, attachment) -> None:
-    if not isinstance(attachment, str) or not attachment.strip():
-        _fail("inputs.attachment missing or empty — wire it to the trigger output binding")
-    m = _ATTACHMENT_REF.match(attachment.strip())
+    expression = _js_expression(attachment)
+    if expression is None:
+        _fail(
+            "inputs.attachment missing or empty — wire it to the trigger output binding"
+        )
+    m = _ATTACHMENT_REF.match(expression)
     if not m:
         _fail(
             f"inputs.attachment={attachment!r} is not the canonical canvas-produced shape. "
@@ -85,7 +103,10 @@ def _check_attachment_canonical(flow: dict, attachment) -> None:
             f"inputs.attachment references `$vars.{trigger_id}.output...` but no node with "
             f"id={trigger_id!r} exists in the flow."
         )
-    if not isinstance(trigger_node.get("type"), str) or "trigger" not in trigger_node["type"]:
+    if (
+        not isinstance(trigger_node.get("type"), str)
+        or "trigger" not in trigger_node["type"]
+    ):
         _fail(
             f"node id={trigger_id!r} has type={trigger_node.get('type')!r}; expected a trigger."
         )
@@ -131,7 +152,7 @@ def _check_type_version(node: dict) -> None:
 
 
 def _check_output_source(node: dict) -> None:
-    src = ((node.get("outputs") or {}).get("output") or {}).get("source")
+    src = unwrap(((node.get("outputs") or {}).get("output") or {}).get("source"))
     if src != EXPECTED_OUTPUT_SOURCE:
         _fail(
             f"outputs.output.source={src!r}; must be {EXPECTED_OUTPUT_SOURCE!r} (the BPMN "
@@ -147,13 +168,17 @@ def _check_pascal_output_mappings(flow: dict, dr_node_id: str) -> None:
     """
     globals_ = (flow.get("variables") or {}).get("globals") or []
     for var_id in ("summary", "citations"):
-        if not any(v.get("id") == var_id and v.get("direction") == "out" for v in globals_):
+        if not any(
+            v.get("id") == var_id and v.get("direction") == "out" for v in globals_
+        ):
             _fail(
                 f"flow has no `out` variable with id={var_id!r}. The task prompt asks for "
                 f"`{var_id}` to be surfaced as a flow output."
             )
 
-    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    end_nodes = [
+        n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"
+    ]
     if not end_nodes:
         _fail("flow has no End node — required to terminate the path and map outputs")
 
@@ -165,19 +190,19 @@ def _check_pascal_output_mappings(flow: dict, dr_node_id: str) -> None:
         mapped = False
         for end in end_nodes:
             src = ((end.get("outputs") or {}).get(var_id) or {}).get("source")
-            if not isinstance(src, str) or not src.strip():
+            expression = _js_expression(src)
+            if expression is None:
                 continue
-            src_stripped = src.strip()
-            base_m = _OUTPUT_MAPPING_BASE.match(src_stripped)
+            base_m = _OUTPUT_MAPPING_BASE.match(expression)
             if not base_m or base_m.group(1) != dr_node_id:
                 continue
             # Ensure the Pascal field is in the path
-            if f".content.{pascal_field}" in src_stripped:
+            if f".content.{pascal_field}" in expression:
                 mapped = True
                 break
             # Detect lowercase mistake explicitly
             lowercase_field = pascal_field[0].lower() + pascal_field[1:]
-            if f".content.{lowercase_field}" in src_stripped:
+            if f".content.{lowercase_field}" in expression:
                 _fail(
                     f"End node maps `outputs.{var_id}.source={src!r}` using lowercase "
                     f"`.content.{lowercase_field}` — the response shape is PascalCase "

@@ -6,7 +6,7 @@ description: >
   case-exit conditions covering three rule-types and both marks-case-complete
   shapes: required-stages-completed (true) + selected-stage-exited on Audit
   (false) + selected-stage-completed on Archive (false).
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:case-exit, feature:conditions, feature:stages]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:case-exit, feature:conditions, feature:stages]
 max_iterations: 1
 
 run_limits:
@@ -204,7 +204,7 @@ initial_prompt: |
   | Required | Yes (default) |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on

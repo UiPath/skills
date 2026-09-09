@@ -1,0 +1,55 @@
+task_id: skill-bpmn-ai-decision-review-brownfield
+description: >
+  Insert the AI-decision-review shape into a process that already runs and
+  already produces a confidence score. Verifies the agent inserts only the part
+  the process lacks, binds to the existing score variable instead of declaring
+  a duplicate, and leaves everything it did not author untouched. The prompt
+  never names the pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A running Maestro BPMN file `ClaimsIntake.bpmn` is in the working directory.
+  Today every claim is scored and then settled automatically.
+
+  Change it so that only claims the scoring step is confident about settle
+  automatically. Anything below the confidence bar goes to a person first: if
+  they approve, it settles the same way it would have; if they reject, the
+  process ends with that recorded as its outcome.
+
+  Make a SURGICAL edit. Everything you are not changing — element ids, the
+  existing variables, the uipath:* extension payloads, and
+  uipath:migrationVersion — must round-trip untouched, and the file must still
+  carry a complete diagram.
+
+  Validate the edited file locally before finishing. Do not upload, publish,
+  deploy, debug, run, or pack anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "ClaimsIntake.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Review branch was inserted, bound to the existing score variable, with the
+      original process preserved and no duplicate scoring step
+    command: "python3 $TASK_DIR/check_brownfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

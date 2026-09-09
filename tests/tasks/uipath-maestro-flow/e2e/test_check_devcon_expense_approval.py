@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -58,6 +60,9 @@ def _flow_doc(
 def _write_flow(tmp_path: Path, doc: dict[str, Any]) -> None:
     project = tmp_path / "ExpenseApproval" / "ExpenseApproval"
     project.mkdir(parents=True)
+    (project / "project.uiproj").write_text(
+        json.dumps({"ProjectType": "Flow"}), encoding="utf-8"
+    )
     (project / "ExpenseApproval.flow").write_text(json.dumps(doc), encoding="utf-8")
 
 
@@ -117,6 +122,40 @@ def test_accepts_expression_hitl_input_binding(tmp_path: Path) -> None:
     _write_approve_reject_flow(tmp_path, "=js:$vars.fetchExpense.output.amount")
 
     result = _run_checker(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_accepts_root_level_sdk_emit(tmp_path: Path) -> None:
+    doc = _flow_doc(
+        fields=_approve_reject_fields("vars.fetchExpense.output.amount"),
+        outcomes=_APPROVE_REJECT_OUTCOMES,
+    )
+    (tmp_path / "ExpenseApproval.flow").write_text(json.dumps(doc), encoding="utf-8")
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_accepts_checker_frozen_without_sibling_shared_directory(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    _write_approve_reject_flow(workspace, "vars.fetchExpense.output.amount")
+    frozen_checker = tmp_path / "frozen" / CHECKER.name
+    frozen_checker.parent.mkdir()
+    shutil.copyfile(CHECKER, frozen_checker)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(CHECKER.parents[1])
+
+    result = subprocess.run(
+        [sys.executable, str(frozen_checker)],
+        cwd=workspace,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
     assert result.returncode == 0, result.stderr
 

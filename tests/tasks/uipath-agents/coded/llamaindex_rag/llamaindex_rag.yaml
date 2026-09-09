@@ -2,9 +2,12 @@ task_id: skill-agent-coded-llamaindex-rag
 description: >
   LlamaIndex Workflow + UiPath Context Grounding RAG. Verifies the
   skill picks LlamaIndex for a RAG scenario, scaffolds the project,
-  wires `ContextGroundingQueryEngine` from
-  `uipath_llamaindex.query_engines`, and binds it to the named
-  index in the prompt. The framework choice is a deliberate test of
+  wires a `uipath-llamaindex` Context Grounding primitive —
+  `ContextGroundingQueryEngine` (query_engines) or
+  `ContextGroundingRetriever` (retrievers) — and binds it to the
+  named index in the prompt. Raw `sdk.context_grounding.search()` /
+  `search_async()` fails: the skill's LlamaIndex guide requires the
+  framework primitives. The framework choice is a deliberate test of
   the skill's framework-selection logic — the prompt names neither
   the framework nor the RAG primitive.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-llamaindex, feature:rag-coded]
@@ -58,7 +61,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "LlamaIndex Workflow shape + UiPath ContextGroundingQueryEngine wired to the `hr-policy` index"
+    description: "LlamaIndex Workflow shape + a uipath-llamaindex Context Grounding primitive (query engine or retriever) wired to the `hr-policy` index"
     command: "python3 $TASK_DIR/check_llamaindex_rag.py"
     timeout: 30
     expected_exit_code: 0

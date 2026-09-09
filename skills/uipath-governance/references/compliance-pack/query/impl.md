@@ -4,6 +4,8 @@
 
 Pure information — no state commands, no mutations. Uses `catalog get` data only.
 
+`<packId>` / `<packName>` below = the standard the user asked about, resolved via [`../catalog/impl.md` § Pack ID lookup](../catalog/impl.md#pack-id-lookup). If the question names no standard and more than one pack is available, ask which before fetching — a clause id alone does not identify the pack.
+
 ## When to use
 
 - "What does clause A.6.2.8 recommend?"
@@ -20,7 +22,7 @@ SESSION_TEMP=$(cat "$HOME/.uipath-compliance-current-session" 2>/dev/null) || {
   SESSION_TEMP=$(mktemp -d)
   echo "$SESSION_TEMP" > "$HOME/.uipath-compliance-current-session"
 }
-uip gov compliance-packs catalog get iso-42001-2023 --output json > "$SESSION_TEMP/catalog.json"
+uip gov compliance-packs catalog get <packId> --output json > "$SESSION_TEMP/catalog.json"
 ```
 
 ## Filter from catalog
@@ -52,7 +54,7 @@ For each matched clause:
 [repeat per matched clause]
 
 Current posture on <tenantName>: <appliedControlCount> / <checkableControlCount> settings Applied
-→ 'Check my ISO 42001 posture'  to see all gaps
+→ 'Check my <packName> posture'  to see all gaps
 → 'Apply <clauseName> settings'  to configure these
 ```
 

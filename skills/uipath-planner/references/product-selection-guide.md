@@ -73,6 +73,8 @@ Operationalizes item 2. Best-effort and auth-required — same rules as tenant l
 
 CLI surfaces drift across versions. When the installed CLI rejects a listed verb (`unknown command` / `unknown option`), discover the supported surface with `uip <group> --help`, or fall back to the platform API (Orchestrator OData for `or` resources) using the existing authenticated context — never invent a verb. Note any substitution in the Recommended Scope reasoning.
 
+**One round, then stop.** Issue the whole sweep as a single batch of `list` calls, read the results once, and decide. Do NOT re-run the sweep with new filters, keyword permutations, or client-side post-processing after a round that returned zero rows or an empty `Data` array — an empty estate is a final answer (`no reuse candidates`), not a signal to search harder. Do NOT retry a rejected flag with a guessed alternative: apply the drift rule above once, and if that call also fails, record the estate as unknown in the Recommended Scope reasoning and proceed. Every extra sweep round costs a full reasoning cycle inside the same turn that still has to author §1–§18.
+
 Record every covering hit as a reuse candidate in the Recommended Scope reasoning (Level 0 outcome line) and in the consuming template section (§Packages, Integrated Components, or connector rows). A hit that covers steps flips those steps to reuse — outcome `partial` or a downscoped to-be.
 
 ### Do-not-automate findings note
@@ -144,7 +146,7 @@ Signals that match *below* the primary become candidate additional projects in a
 
 Apply the [Constraint Gate](#constraint-gate) to the matched primary before presenting it — a first-match product that is blocked on the customer's delivery model is replaced by the matrix's alternative, not presented with a caveat.
 
-> Row 8 (Solution) is a **packaging/composition outcome** (layer 4), not a runtime product: reaching it means the design has multiple buildable components, each already typed by rows 1–7 and the placement table. A single-component design ships as that product — standalone package or single-project Solution per the template's packaging decision.
+> Row 8 (Solution) is a **packaging/composition outcome** (layer 4), not a runtime product: it is reached ONLY via a [Solution Signal](#solution-signals) — the PDD itself names multiple top-level deliverables, each already typed by rows 1–7 and the placement table. Components the design derives never count toward row 8 ([derived-component rule](#solution-signals)). A single-component design ships as that product — standalone package or single-project Solution per the template's packaging decision.
 
 ### Maestro disambiguation — BPMN vs Flow vs Case
 
@@ -173,6 +175,8 @@ A Solution is the correct primary when any of the following applies, even if a s
 - The PDD describes **multiple independent streams** with no single runtime orchestrator (e.g., separate dispatchers feeding separate performers with no Flow tying them together).
 
 When any of the above applies, set the default primary to **Solution** and pre-compose the product list from the matched signals. Otherwise default to the highest single-product match.
+
+**Derived components never escalate scope.** Deliverables named by the requirements set the scope; the part count of the design never does. Solution Signals test what the **PDD names as deliverables** — every scope-shaped decision downstream (single-product vs Solution, template choice, SDD file layout, packaging) follows that answer, never the number of buildable parts the design ends up with. Any supporting component the design introduces (wrapper API Workflow, custom connector, IXP model, Coded Function, Library) inherits its consumer's scope: an integrated-component row in the primary's template plus a build task ordered before its consumer — no solution overview, no per-project SDD, no `SDD scope: solution` flip.
 
 > **Ambiguous dual-product PDDs:** If exactly two products match with similar strength and no Solution signal applies, mark the higher-priority match as the default single-product recommendation and offer Solution (customize) as an alternative in the recommendation screen. Let the user confirm via `AskUserQuestion`.
 
@@ -515,18 +519,18 @@ uip is connectors list --filter "<KEYWORD>" --output json     # narrow by system
 
 - **Connector exists →** reuse it. Flag `Access Method = Integration Service — <CONNECTOR_SLUG>`; the planner adds a "Configure <X> connector" task routed to `uipath-platform`.
 - **No connector, and the consumer can call HTTP directly** — API Workflows (Unified HTTP Request activity), RPA (HTTP Request activity), coded Agents (Python HTTP client) → call the API directly. Flag `Access Method = Direct HTTP`. This is the default; do not create a connector or API Workflow project for a single host-capable consumer (extraction test — placement rule 6).
-- **No connector, and the consumer's integration surface is IS-only** (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) → either build a **custom connector** (flag `Access Method = Custom connector — <CONNECTOR_SLUG>`; task routed to `uipath-connector-builder`, ordered before its consumer) or wrap the call in a small **API Workflow** the host invokes. Prefer the custom connector when the integration is reused by 2+ projects or needs IS-level connection governance. An unverified connector is an `[SME REVIEW]` item — never assume one exists.
+- **No connector, and the consumer's integration surface is IS-only** (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) → either build a **custom connector** (flag `Access Method = Custom connector — <CONNECTOR_SLUG>`; task routed to `uipath-connector-builder`, ordered before its consumer) or wrap the call in a small **API Workflow** the host invokes. Prefer the custom connector when the integration is reused by 2+ projects or needs IS-level connection governance. An unverified connector is an `[SME REVIEW]` item — never assume one exists. Either way the wrapper is an integrated component — scope is unchanged ([derived-component rule](#solution-signals)).
 
 ### API Workflow (as integrated component)
 
-**Scope:** When API Workflow is NOT the primary but is called by the primary (Flow, Agent, Case Management, another API Workflow).
+**Scope:** When API Workflow is NOT the primary but is called by the primary (Maestro Flow, Maestro BPMN, Case Management, Agent, another API Workflow).
 
 **Signals** (must also pass the extraction test — [placement rule 6](#per-task-component-placement-the-to-be-per-step)):
 - The primary product invokes a callable system-to-system integration with structured JSON input/output (not UI), AND at least one extraction justifier holds: the host cannot make the call natively (IS-only surface), 2+ consumers share the integration, or it needs independent versioning / scaling / ownership.
 
 A host that can call the API itself keeps the call in-host (`Access Method = Direct HTTP` — see Integration Service above): no API Workflow project, no task.
 
-**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`.
+**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, BPMN Activities Inventory serviceTask rows, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`. Scope is unchanged ([derived-component rule](#solution-signals)).
 
 ### Reusability & shared assets
 
@@ -550,7 +554,7 @@ Based on the Level 1 primary, select one template:
 | RPA Process, Library, Test Automation | `../assets/templates/rpa-sdd-template.md` |
 | Maestro Flow | `../assets/templates/flow-sdd-template.md` |
 | Maestro BPMN | `../assets/templates/bpmn-sdd-template.md` |
-| Case Management | `../assets/templates/case-sdd-template.md` |
+| Case Management | `../assets/templates/case/case-sdd-template.md` |
 | Agents | `../assets/templates/agent-sdd-template.md` |
 | Coded Apps | `../assets/templates/coded-app-sdd-template.md` |
 | API Workflows | `../assets/templates/api-workflow-sdd-template.md` |

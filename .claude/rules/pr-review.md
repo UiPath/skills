@@ -15,6 +15,7 @@ When reviewing or creating pull requests for this repository, enforce these rule
 - [ ] Reference files use kebab-case naming
 - [ ] All relative links resolve to existing files
 - [ ] CODEOWNERS has been updated with the new skill path
+- [ ] Registered in `assets/skill-status.json` and grouped in `skills.sh.json` (run `python3 scripts/check-skill-status.py` and `python3 scripts/check-skills-sh.py`)
 - [ ] No secrets, tokens, or personal paths committed
 
 ### Existing Skill Modification Checklist
@@ -23,6 +24,7 @@ When reviewing or creating pull requests for this repository, enforce these rule
 - [ ] Critical Rules have not been removed without justification in the PR description
 - [ ] No new structural cross-skill dependencies (runtime delegation to a same-plugin sibling that degrades gracefully is allowed)
 - [ ] Reference file naming conventions preserved
+- [ ] **If the PR renames or removes a skill folder:** `skills.sh.json` and `assets/skill-status.json` are updated in the same PR — the old name is gone from both and the new one is present. Neither file is derived from disk, so a stale entry has no other symptom than the `Validate skills.sh.json against skills/` check
 - [ ] Changes are scoped to the skill being modified (no unrelated changes)
 
 ### Hook Changes Checklist

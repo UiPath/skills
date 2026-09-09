@@ -504,13 +504,18 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   assert.match(builtContract, /RunProject/);
   assert.match(builtContract, /explicit (?:user )?consent[\s\S]*RunProject/);
   assert.match(builtContract, /actual (?:host )?tool result as execution evidence/);
-  assert.match(builtContract, /uip solution publish --help/);
+  assert.doesNotMatch(builtContract, /uip solution publish --help/);
   assert.match(builtContract, /explicit user publish request or approval/);
   assert.match(builtContract, /active Studio Web solution is implicit/);
   assert.match(
     builtContract,
-    /uip solution publish \[--description <text>\].*\[--release-notes <text>\].*\[--version <version>\].*\[--location <value>\].*\[--location-name <value>\].*\[--personal-workspace\]/,
+    /ask the user which destination to use \(personal workspace vs shared location\)/,
   );
+  assert.match(
+    builtContract,
+    /uip solution publish --location "<key or name>" \[--description <text>\] \[--release-notes <text>\] \[--version <version>\]/,
+  );
+  assert.match(builtContract, /--personal-workspace/);
   assert.match(builtContract, /request was accepted[\s\S]*Publish history/);
   assert.doesNotMatch(builtContract, /--input-arguments/);
   assert.doesNotMatch(builtContract, /uip is resources run/);
@@ -564,6 +569,42 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
     ),
     /--input-arguments '\{"name":"Alice","count":3\}'/,
   );
+});
+
+test("Studio Web replaces the solution lifecycle with the destination-choice publish flow", () => {
+  const canonicalPath = join(REPO_ROOT, "skills", "uipath-solution", "SKILL.md");
+  const overridePath = join(
+    REPO_ROOT,
+    "skill-flavors",
+    "studioweb",
+    "uipath-solution",
+    "SKILL.md",
+  );
+  const canonical = readFileSync(canonicalPath, "utf8");
+  const override = readFileSync(overridePath, "utf8");
+  const findings = [];
+  const composed = stripMarkerBoundaries(
+    composeText(
+      canonical,
+      parseMarkerBlocks(canonicalPath, canonical, findings),
+      parseMarkerBlocks(overridePath, override, findings),
+    ),
+  );
+
+  assert.deepEqual(findings, []);
+  assert.ok(!containsFlavorMarker(composed));
+  assert.match(canonical, /4\. pack\s+→ Produce deployable \.zip package/);
+  assert.doesNotMatch(composed, /pack\s+→ Produce deployable \.zip package/);
+  assert.doesNotMatch(composed, /`restore` is an optimization/);
+  assert.match(
+    composed,
+    /3\. publish\s+→ uip solution publish \(packaging and auth handled by Studio Web\)/,
+  );
+  assert.match(composed, /\*\*Publish destination — the user's choice\.\*\*/);
+  assert.match(composed, /ask the user in chat which destination to use/);
+  assert.match(composed, /--location "<key or name>"/);
+  assert.match(composed, /`--personal-workspace`/);
+  assert.match(composed, /verify the terminal state in Studio Web's Publish history/i);
 });
 
 test("new canonical skills are automatically included in existing flavors", (t) => {
@@ -1147,7 +1188,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   );
   const customPublishDryRun = invokeNpm(
     repo,
-    ["publish", selectedStudioWeb, "--dry-run"],
+    ["publish", selectedStudioWeb, "--dry-run", "--tag", "preview"],
     { npm_config_userconfig: forcedPublicUserConfig },
   );
   assert.equal(
@@ -1214,6 +1255,54 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     assert.ok(repackedEntries.has("package/skills/uipath-changed/SKILL.md"));
     assert.ok(!repackedEntries.has("package/scripts/compose-skill-flavor.mjs"));
   }
+});
+
+test("npm pack output parses on both the npm 11 array and npm 12 object shapes", (t) => {
+  // npm <= 11 prints `[ { ...packResult } ]`; npm >= 12 prints
+  // `{ "<packageName>": { ...packResult } }`. Reshape the real npm output into
+  // each form so both are covered whatever npm major runs the suite -- the
+  // object shape broke publishing to npmjs when CI's unpinned `npm@latest`
+  // moved to npm 12.
+  for (const shape of ["array", "object"]) {
+    const repo = fixtureRepo(t);
+    addSkill(repo, "uipath-example");
+    addPackageManifest(repo);
+
+    const runNpmPack = (options) => {
+      const result = runRealNpmPack(options, repo);
+      if (result.status !== 0) return result;
+      const parsed = JSON.parse(result.stdout);
+      const results = Array.isArray(parsed) ? parsed : Object.values(parsed);
+      const reshaped =
+        shape === "array"
+          ? results
+          : Object.fromEntries(results.map((entry) => [entry.name, entry]));
+      return { ...result, stdout: JSON.stringify(reshaped, null, 2) };
+    };
+
+    const packages = withNpmCache(repo, () =>
+      packAllVariants(repo, { runNpmPack }),
+    );
+    assert.equal(packages.length, 1, `${shape}: expected one package`);
+    assert.equal(packages[0].packageName, "@uipath/skills", `${shape}: package name`);
+    assert.ok(existsSync(packages[0].tarball), `${shape}: tarball exists`);
+  }
+});
+
+test("npm pack output that names no tarball still fails loudly", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example");
+  addPackageManifest(repo);
+
+  assert.throws(
+    () =>
+      withNpmCache(repo, () =>
+        packAllVariants(repo, {
+          runNpmPack: () => ({ status: 0, stdout: "{}", stderr: "" }),
+        }),
+      ),
+    /could not parse npm pack output/,
+  );
 });
 
 test("a failed npm pack preserves every last successful generated output", (t) => {
@@ -1400,7 +1489,16 @@ test("root npm publish dry-run keeps the old default-only behavior and restores 
   addPackageManifest(repo);
   const canonicalBefore = treeFileBytes(join(repo, "skills"));
 
-  const result = runNpm(repo, "publish", "--dry-run", "--json", "--access", "public");
+  const result = runNpm(
+    repo,
+    "publish",
+    "--dry-run",
+    "--json",
+    "--access",
+    "public",
+    "--tag",
+    "test",
+  );
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(`${result.stdout}\n${result.stderr}`, /@uipath\/skills|"name"\s*:\s*"@uipath\/skills"/);
   assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /skills-studioweb/);

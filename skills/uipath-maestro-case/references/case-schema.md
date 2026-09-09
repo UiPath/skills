@@ -195,7 +195,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | Field | Type | Description |
 |-------|------|-------------|
 | `stageType` | `"primary" \| "secondary"` ? | Stage kind discriminator. Omitted on a primary stage (do NOT emit `"primary"`); set to `"secondary"` for a secondary stage, where it is the FIRST field in `data` (before `label`). See §2c. |
-| `label` | string? | Display label; required, unique across stages, and must not contain `:` |
+| `label` | string? | Display label; required, unique across **all** node labels in the case, and must not contain `:` |
 | `description` | string? | Stage description |
 | `isRequired` | boolean? | Whether the stage must complete before case exit (used by case-exit rule `required-stages-completed`) |
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
@@ -268,12 +268,26 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 All conditions share the same shape but attach at different levels. Per-level field tables and `--rule-type` semantics live in the corresponding condition plugin's `impl-json.md`.
 
+<a id="condition-name-uniqueness"></a>
+
+### Condition name uniqueness
+
+Every condition `displayName` must be unique across the **whole case**. One flat pool of literal strings spans all four scopes at once — stage `data.entryConditions[]`, stage `data.exitConditions[]`, task `entryConditions[]`, `metadata.caseExitRules[]` — so conditions in different stages, or different scopes, collide exactly like two in one array.
+
+`validate` enforces it as a hard **error**: `Rule name '<displayName>' is not unique`, reported once per node holding the name (`nodes[<stageId>]`, or `nodes[root]` for a case-exit rule). A name repeated in two stages errors on each, so a stage holding only one instance is still reported.
+
+The plugin defaults `Entry Rule {N}` / `Complete Rule {N}` / `Exit Rule {N}` share this pool with SDD-authored names. **Number them with a case-wide counter per label kind — highest existing number in the pool + 1 — never a per-array counter.** A per-array counter restarts at `1` in every stage and on every task, which is the usual cause of a collision.
+
+An SDD `Display Name` cell holding the default pattern (`Entry Rule <n>` etc.) is the SDD echoing the default: renumber it case-wide, which is not a divergence from the SDD. Only a **semantic** name repeated across stages is a planning defect — rename it in the SDD and re-emit.
+
+> **Never repair a collision by deleting a condition.** `validate` downgrades a task left with no entry rules to a warning (`CASE_MGMT_STAGE_TASK_ENTRY_CONDITION_MISSING`), so emptying `entryConditions[]` turns the build green while destroying authored behaviour — an `adhoc` task becomes unreachable, a gated task ungated. Always rename; never remove.
+
 ### EntryCondition (stage-level)
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 | `isInterrupting` | boolean? | Whether the condition interrupts the current stage |
 
@@ -282,7 +296,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 | `type` | string? | `"exit-only"` \| `"wait-for-user"` \| `"return-to-origin"` |
 | `exitToStageId` | string? | Target stage ID when routing to a specific stage |
@@ -293,7 +307,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 
 ### CaseExitCondition (case-level)
@@ -453,7 +467,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 |-------|------|-------------|
 | `id` | string | Unique task ID, `t` + 8 random chars (e.g. `t8GQTYo8O`) |
 | `elementId` | string | Composite `${stageId}-${taskId}` (e.g. `Stage_aB3kL9-t8GQTYo8O`) |
-| `displayName` | string? | Human-readable label shown in the UI |
+| `displayName` | string? | Human-readable label shown in the UI; unique across the **whole case** (not per stage) and must not contain `:`. Omitted resolves to the bound resource name, which shares the pool. |
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | `=js:` expression — skip the task when truthy. Use strict equality ([`bindings-and-expressions.md`](bindings-and-expressions.md#equality-operators)). |

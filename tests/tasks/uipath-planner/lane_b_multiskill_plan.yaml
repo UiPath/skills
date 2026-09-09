@@ -53,11 +53,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Mandatory Testing task present for the generation skills"
-    path: "solution-plan.md"
-    includes:
-      - "Testing (MANDATORY)"
+  - type: run_command
+    description: "Mandatory Testing task present for the generation skills (a Task heading carrying Testing ... (MANDATORY), wording-insertions tolerated)"
+    command: "grep -qE '^#+ *Task T[0-9]+.*Testing.*\\(MANDATORY\\)' solution-plan.md"
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

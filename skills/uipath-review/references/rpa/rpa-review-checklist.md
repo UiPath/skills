@@ -346,7 +346,7 @@ Run Workflow Analyzer and verify no Error-level violations. Key rules to check:
 | No debug artifacts or test data included | Info | Check for leftover files |
 | Global Exception Handler configured | Info | Check project settings |
 | Project validates clean | Critical | `uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json` returns 0 errors for every entry point |
-| Project builds clean | Critical | `uip rpa build "<PROJECT_DIR>" --output json` — catches unknown member names and invalid enum values that `validate` misses (SKILL.md Critical Rule 2) |
+| Project builds clean | Critical | `uip rpa build "<PROJECT_DIR>" --output json` — compiles every workflow in the project, including files per-file `validate` never covered (SKILL.md Critical Rule 2) |
 | Recent successful run evidence (job history, test results) | Info | Do NOT run the automation during review — `uip rpa run` executes UI actions and writes. Check existing evidence; runtime verification routes to `uipath-rpa` |
 
 ## 10. Windows-Legacy Compatibility

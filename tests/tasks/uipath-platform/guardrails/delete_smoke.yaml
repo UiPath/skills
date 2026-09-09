@@ -1,0 +1,93 @@
+task_id: skill-platform-guardrails-byog-delete
+description: >
+  Smoke test: agent permanently removes a BYOG configuration —
+  `guardrails byo-configurations delete <id> --force`. The prompt names the
+  configuration, never its id, so the agent resolves it through `list` (there
+  is no `get <id>` verb). Verifies it supplies `--force` (the command refuses
+  without it), does not substitute `update --disabled` as a soft delete when
+  the user asked for permanent removal, and that the record is really gone —
+  asserted against the shim's state file. Also checks the agent surfaces the
+  consequence the doc calls out: a guardrail still referencing the deleted
+  configuration by ByoValidatorName fails at runtime.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:teardown, guardrail]
+
+run_limits:
+  expected_turns: 10
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: mock_template}
+
+initial_prompt: |
+  We've dropped the contract for the external provider behind our
+  `byog-legacy-harmful` guardrail configuration, so it needs to go —
+  permanently, not just switched off.
+
+  Remove it, and tell me what happens to any agent still pointing at it.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed BYOG configurations to resolve byog-legacy-harmful to its Id (there is no get verb)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+list(?![\w-])'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the configuration by id with the mandatory --force"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+delete\s+["'']?(b41d0c77-9e52-4a8f-b3d1-08de7f19aa02|\$)(?=[\s\S]*--force)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not soft-delete with `update --disabled` when asked for permanent removal"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+update(?=[\s\S]*--disabled)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The record is really gone — tombstoned, so `list` no longer returns it.
+  - type: run_command
+    description: "Configuration was actually deleted (tombstoned in the shim's state)"
+    command: >-
+      python3 -c "import json, os, sys;
+      s = json.load(open('.byog-state.json')) if os.path.exists('.byog-state.json') else {};
+      sys.exit(0 if 'b41d0c77-9e52-4a8f-b3d1-08de7f19aa02' in s.get('deleted', []) else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent warned that an agent still referencing the deleted configuration by validator name fails at runtime"
+    include_agent_output: true
+    prompt: |
+      The user permanently deleted a BYO guardrail (BYOG) configuration named
+      `byog-legacy-harmful` and asked what happens to any agent still pointing
+      at it.
+
+      The correct answer: deletion is permanent, and any guardrail — low-code
+      (`byoValidatorName`) or coded (`ByoValidator("byog-legacy-harmful")`) —
+      that still references the deleted configuration by that validator name
+      will fail at runtime, because the platform can no longer resolve the name
+      to a connection. The fix is to remove or repoint those guardrails (or
+      re-create a configuration under the same ValidatorName).
+
+      Score 1.0 if the response conveys that agents/guardrails still
+      referencing the configuration will now break or fail (at runtime, on
+      their next run, when the guardrail is evaluated — any equivalent
+      wording), and that they need updating or repointing.
+
+      Score 0.0 if it claims nothing breaks, that the guardrails silently fall
+      back to the UiPath built-in check, that they keep working, or if it says
+      nothing at all about the effect on referencing agents.
+    weight: 1.5
+    pass_threshold: 1.0

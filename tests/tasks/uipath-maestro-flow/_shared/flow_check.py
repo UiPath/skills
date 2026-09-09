@@ -34,7 +34,9 @@ Two distinct sources with two casings:
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -52,7 +54,77 @@ from typing import Any, Iterable, Sequence
 # the exact payload (finalStatus, elementExecutions, globals, incidents) that the
 # checker saw — which is otherwise ephemeral and unrecoverable post-run.
 _LAST_DEBUG_RAW: str | None = None
+_LAST_DEBUG_STDERR: str | None = None
 
+# Variable ids the most recent :func:`run_debug` bound as INPUTS (via ``--inputs``
+# / ``--attachment``). Stashed because the runtime returns every global — `in` and
+# `out` alike — in one ``variables.globals`` dict with no direction marker, so
+# this is the only exact way to tell a result from an echo of what we just fed
+# in. Consumed by :func:`_declared_input_global_keys`; see the input-echo note on
+# :func:`assert_outputs_contain`.
+_LAST_DEBUG_INPUT_IDS: set[str] = set()
+
+# Project dir :func:`run_debug` resolved for the most recent run. Stashed so the
+# source-declared `direction:"in"` signal works automatically instead of needing
+# every call site to opt in — and so the lookup is scoped to the project that
+# actually ran, never a bare glob from an arbitrary CWD.
+_LAST_DEBUG_PROJECT_DIR: str | None = None
+
+
+# Without an explicit `--timeout` (CLI default 600s) we SIGKILL the CLI
+# mid-poll and keep nothing. The headroom covers the phases `--timeout` does
+# not bound (upload, provisioning, begin-session, create-instance), so the CLI
+# self-terminates first, with a parseable envelope.
+_CLI_TIMEOUT_HEADROOM_SECONDS = 60
+_MIN_CLI_TIMEOUT_SECONDS = 30
+
+# Below this a retry cannot fund the CLI floor plus headroom, so it would be
+# killed mid-run and yield nothing.
+_MIN_RETRY_BUDGET_SECONDS = _MIN_CLI_TIMEOUT_SECONDS + _CLI_TIMEOUT_HEADROOM_SECONDS
+
+# What a check spends outside `run_debug`: interpreter start, static asserts,
+# teardown. A CHOSEN floor, not a measured one — it matches the gap the suite
+# already used most often (240s debug under a 300s criterion). Public alongside
+# `debug_budget`; test_criterion_budgets.py enforces the pair.
+CRITERION_MARGIN_SECONDS = 60
+
+# `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL` — the CLI never reads the latter. At
+# `info` it narrates jobKey / instanceId / Studio Web URL to stderr, the only
+# way to find the instance after a timeout.
+_DEBUG_LOG_LEVEL = "info"
+
+# Matched on the message: the CLI labels this path `Retry: RetryWillNotFix`,
+# which is wrong for a poll timeout.
+_DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
+
+# A poll timeout burns a whole attempt for no new information, so it caps
+# tighter than `retries`, which still governs cheap transients. Independent of
+# the `retries` default.
+_POLL_TIMEOUT_ATTEMPTS = 2
+
+# A SIGKILLed attempt returns no envelope, so `_is_transient_debug_error` can
+# neither classify nor reach it. Its own allowance, like the poll-timeout path;
+# the deadline still bounds every attempt. Flaky in practice: dice-roller
+# 2026-09-08 polled to 492s of a 540s CLI budget, then went silent to the cap.
+_SUBPROCESS_TIMEOUT_ATTEMPTS = 2
+
+# Named so `debug_budget` and the criterion guard cannot drift from the
+# function they price. `_DEFAULT_RETRIES` was 3 until the budget started funding
+# every attempt it promises; 2 is a deliberate narrowing (one retry for a fast
+# 5xx, matching the CLI's own "retry once before reporting") that keeps a third
+# full-length attempt out of every criterion ceiling. `retries=3` still works.
+_DEFAULT_RETRIES_TIMEOUT = 240
+# One backend read of a faulted instance's incidents; never worth more of the criterion budget.
+_INCIDENTS_TIMEOUT_SECONDS = 60
+_DEFAULT_RETRIES = 2
+_DEFAULT_BACKOFF_SECONDS = 5.0
+
+# ``finalStatus: Completed`` with NO ``variables`` key (or a ``variablesError``)
+# means the CLI's post-completion outputs fetch failed — infrastructure to retry,
+# not an empty result to grade (a flow with no outputs still returns the key).
+# Retries and the CLI-side fix: UiPath/cli#3929.
+_VARIABLES_UNREADABLE_ATTEMPTS = 2
+_STDERR_CAPTURE_TAIL_CHARS = 4000
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -63,17 +135,127 @@ _LAST_DEBUG_RAW: str | None = None
 # check (customer-escalation-triage). Distinct from a real flow failure (a
 # `finalStatus` that completed-with-fault, or wrong outputs), which must fail
 # immediately. Retry ONLY on the transient markers below.
-_DEBUG_RETRY_MARKERS = ('"retry": "retrylater"', '"errorcode": "server_error"')
+_DEBUG_RETRY_MARKERS = (
+    '"retry": "retrylater"',
+    '"errorcode": "server_error"',
+    _DEBUG_POLL_TIMEOUT_MARKER,
+)
+
+
+def _rglob_pruned(pattern: str) -> list[str]:
+    """``glob.glob(pattern, recursive=True)`` from the CWD, but never descending
+    into ``node_modules`` (the preview workspace symlinks the baked SDK tree
+    there, and ``glob`` follows directory symlinks under ``**``)."""
+    if "**" not in pattern:
+        return sorted(glob.glob(pattern, recursive=True))
+    prefix, _, suffix = pattern.partition("**")
+    root = prefix.rstrip("/") or "."
+    suffix = suffix.lstrip("/")
+    matches: list[str] = []
+    for dirpath, dirnames, _ in os.walk(root, followlinks=True):
+        dirnames[:] = [d for d in dirnames if d != "node_modules"]
+        matches.extend(glob.glob(os.path.join(glob.escape(dirpath), suffix)))
+    if root == ".":
+        matches = [m[2:] if m.startswith("./") else m for m in matches]
+    return sorted(set(matches))
+
+
+def _output_blob(result: subprocess.CompletedProcess) -> str:
+    """Both streams, lowercased, for case-insensitive marker matching."""
+    return f"{result.stdout}\n{result.stderr}".lower()
+
+
+# INTERIM — Studio Web answers 400/1001 when an EXISTING solution is overwritten
+# (UiPath/cli#3938 has the evidence). `flow debug` #2 of a project is an
+# overwrite, so on exactly that signature the bundled SolutionId is rotated and
+# the debug retried ONCE as a new import. Delete this block when Overwrite works.
+_OVERWRITE_STUCK_ISSUE = "UiPath/cli#3938"
+_OVERWRITE_STUCK_MARKER = "overwrite failed (400)"
+_OVERWRITE_STUCK_CODE = re.compile(r'\\?"code\\?":\s*\\?"1001\\?"')
+# Since UiPath/cli#3951 the CLI reports the refusal as
+# Context: {"HttpStatus": 400, "Stage": "overwrite-solution", "ErrorCode": "1001"}
+# instead of echoing the raw body; both envelopes must rotate.
+_OVERWRITE_STUCK_STAGE = "overwrite-solution"
+_OVERWRITE_STUCK_ATTEMPTS = 2  # the failed overwrite + one import-as-new retry
+_SOLUTION_ID_RE = re.compile(r'("SolutionId"\s*:\s*")([0-9a-fA-F-]{36})(")')
+# Rotated-away ids, one per line, beside the `.uipx`; `cleanup_solutions.py`
+# deletes them alongside the current id so the rotation leaks nothing.
+ROTATED_SOLUTION_IDS_SIDECAR = ".rotated-solution-ids"
+
+
+def _is_overwrite_stuck(result: subprocess.CompletedProcess) -> bool:
+    """True iff ``flow debug`` died on the Studio Web Overwrite 400/1001 regression
+    (see :data:`_OVERWRITE_STUCK_ISSUE`) — never on any other overwrite failure.
+
+    Matches the legacy envelope (``Overwrite failed (400): {"code":"1001",…}``)
+    and the staged one the CLI emits since UiPath/cli#3951 (``Context.Stage ==
+    "overwrite-solution"`` with ``Context.ErrorCode == "1001"``, or HTTP 400 and
+    the platform's "invalid value" wording when the code is absent)."""
+    if result.returncode == 0:
+        return False
+    blob = _output_blob(result)
+    if _OVERWRITE_STUCK_MARKER in blob and _OVERWRITE_STUCK_CODE.search(blob) is not None:
+        return True
+    data = _parse_json(result.stdout)
+    context = _get_ci(data or {}, "Context", default={})
+    if not isinstance(context, dict):
+        return False
+    stage = _get_ci(context, "Stage")
+    if not isinstance(stage, str) or stage.lower() != _OVERWRITE_STUCK_STAGE:
+        return False
+    code = _get_ci(context, "ErrorCode")
+    if str(code) == "1001":
+        return True
+    http = _get_ci(context, "HttpStatus")
+    return http == 400 and "invalid value" in blob
+
+
+def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
+    """Give the project's solution a fresh bundled ``SolutionId`` so the next
+    ``flow debug`` imports it as a NEW Studio Web solution instead of overwriting.
+
+    Walks up from ``project_dir`` to the nearest ancestor holding exactly one
+    ``*.uipx`` (a JSON text file; ``uip solution init`` writes it beside the
+    project directory). Returns ``(old, new)``, or ``None`` when no unambiguous
+    ``.uipx`` is found — the caller then fails the plain way. The previous id is
+    appended to :data:`ROTATED_SOLUTION_IDS_SIDECAR` next to the ``.uipx`` so
+    ``cleanup_solutions.py`` can delete the solution it still names on the tenant."""
+    import uuid
+
+    here = os.path.abspath(project_dir)
+    for _ in range(4):
+        uipx = sorted(glob.glob(os.path.join(glob.escape(here), "*.uipx")))
+        if len(uipx) == 1:
+            try:
+                with open(uipx[0], encoding="utf-8") as handle:
+                    text = handle.read()
+            except OSError:
+                return None
+            match = _SOLUTION_ID_RE.search(text)
+            if match is None:
+                return None
+            new = str(uuid.uuid4())
+            with open(uipx[0], "w", encoding="utf-8") as handle:
+                handle.write(text[: match.start(2)] + new + text[match.end(2):])
+            sidecar = os.path.join(here, ROTATED_SOLUTION_IDS_SIDECAR)
+            with open(sidecar, "a", encoding="utf-8") as handle:
+                handle.write(match.group(2) + "\n")
+            return match.group(2), new
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+    return None
 
 
 def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     """True iff a failed ``flow debug`` invocation looks like a transient
-    server-side error (5xx / RetryLater) worth retrying, rather than a real
-    flow fault. Case-insensitive so CLI key casing can't slip past."""
+    server-side error (5xx / RetryLater / poll-budget expiry) worth retrying,
+    rather than a real flow fault. Case-insensitive so CLI key casing can't
+    slip past."""
     if result.returncode == 0:
         return False
-    blob = f"{result.stdout}\n{result.stderr}".lower()
-    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+    if any(marker in _output_blob(result) for marker in _DEBUG_RETRY_MARKERS):
         return True
     # Fall back to an explicit 5xx HttpStatus in the error Context.
     data = _parse_json(result.stdout)
@@ -82,54 +264,303 @@ def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     return isinstance(http, int) and 500 <= http < 600
 
 
+def _is_poll_timeout(result: subprocess.CompletedProcess) -> bool:
+    """True iff the CLI gave up on its own poll budget, rather than any other
+    transient error — see :data:`_POLL_TIMEOUT_ATTEMPTS`."""
+    return result.returncode != 0 and (
+        _DEBUG_POLL_TIMEOUT_MARKER in _output_blob(result)
+    )
+
+
+def _variables_unreadable(data: dict | None) -> str | None:
+    """Return a reason when a *completed* debug payload's outputs could not be
+    read (see :data:`_VARIABLES_UNREADABLE_ATTEMPTS`), else ``None``.
+
+    Exact by construction: only the ``variables`` key being absent from ``Data``
+    (or an explicit ``variablesError``) counts. A present-but-empty
+    ``variables`` is a real result and is returned to the caller as-is."""
+    payload = _get_ci(data or {}, "Data") or {}
+    if not isinstance(payload, dict):
+        return None
+    status = _get_ci(payload, "finalStatus", "FinalStatus")
+    if status != "Completed":
+        return None
+    err = _get_ci(payload, "variablesError", "VariablesError")
+    if isinstance(err, dict):
+        attempts = _get_ci(err, "attempts", "Attempts")
+        message = _get_ci(err, "message", "Message") or "unknown error"
+        return (
+            f"the CLI could not read the output variables (variablesError after "
+            f"{attempts} attempt(s): {message})"
+        )
+    has_key = any(str(k).lower() == "variables" for k in payload)
+    if not has_key:
+        return (
+            "the CLI returned no `variables` key at all — the post-completion "
+            "fetch of /debug-instances/{id}/variables failed and was dropped"
+        )
+    return None
+
+
+def _as_text(raw: bytes | str | None) -> str:
+    """Decode captured child output. ``subprocess.TimeoutExpired`` carries it as
+    bytes even under ``text=True``, unlike ``CompletedProcess``."""
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace")
+    return raw
+
+
 # ── Public helpers ──────────────────────────────────────────────────────────
+
+
+def debug_budget(
+    timeout: int = _DEFAULT_RETRIES_TIMEOUT,
+    retries: int = _DEFAULT_RETRIES,
+    backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
+) -> int:
+    """Worst-case wall clock for one :func:`run_debug` call.
+
+    Sized on ``retries``, not :data:`_POLL_TIMEOUT_ATTEMPTS`: the poll cap binds
+    only the poll-timeout path, while a slow 5xx can consume every attempt
+    ``retries`` allows, and funding fewer would let the deadline cancel a retry
+    the caller asked for. Public so test_criterion_budgets.py holds every task
+    YAML to the same arithmetic."""
+    attempts = max(1, retries)
+    return timeout * attempts + math.ceil(backoff_seconds) * (attempts - 1)
 
 
 def run_debug(
     *,
     inputs: dict | None = None,
     attachments: dict[str, str] | None = None,
-    timeout: int = 240,
+    timeout: int = _DEFAULT_RETRIES_TIMEOUT,
+    budget: int | None = None,
     project_glob: str = "**/project.uiproj",
-    retries: int = 3,
-    backoff_seconds: float = 5.0,
+    retries: int = _DEFAULT_RETRIES,
+    backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
 
-    Transient server-side errors (5xx / ``RetryLater`` while polling the debug
-    instance — see :func:`_is_transient_debug_error`) are retried up to
-    ``retries`` times with ``backoff_seconds`` between attempts. A real flow
-    fault (non-transient failure, or a run that completes with the wrong
-    ``finalStatus``) fails immediately without burning retries.
+    ``timeout`` caps ONE attempt; the CLI gets a strictly smaller ``--timeout``
+    so an overrun ends with its own diagnosable envelope instead of a SIGKILL.
+    ``budget`` is the deadline for the whole call, defaulting to
+    :func:`debug_budget`. They are separate because a flow needs the attempt it
+    needs (an Orchestrator job is not a Script node) while the criterion bounds
+    the check as a whole; the deadline is what stops a retry outliving the
+    ``timeout:`` the task YAML granted and dying with nothing to diagnose.
+
+    Transient server-side errors (5xx / ``RetryLater``, or the CLI's own
+    poll-budget expiry — see :func:`_is_transient_debug_error`) are retried up
+    to ``retries`` times with ``backoff_seconds`` between attempts; poll
+    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS` and a SIGKILLed attempt gets
+    :data:`_SUBPROCESS_TIMEOUT_ATTEMPTS`, and any retry is skipped once
+    the remainder drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real flow
+    fault fails immediately without burning retries.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
     ``id`` must match a ``variables.globals[]`` entry with ``direction:"in"`` and
     ``type:"file"`` — see :func:`read_flow_file_input_vars`."""
     project_dir = _find_project(project_glob)
-    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
+    cmd = [
+        "uip",
+        "maestro",
+        "flow",
+        "debug",
+        project_dir,
+        "--output",
+        "json",
+    ]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    global _LAST_DEBUG_RAW
-    for attempt in range(retries):
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    env = dict(os.environ)
+    env.setdefault("UIP_LOG_LEVEL", _DEBUG_LOG_LEVEL)
+    global _LAST_DEBUG_RAW, _LAST_DEBUG_STDERR, _LAST_DEBUG_INPUT_IDS
+    global _LAST_DEBUG_PROJECT_DIR
+    # Record what we bound as input, and where the project lives, so output
+    # assertions can discount echoes of our own inputs.
+    _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
+        str(k) for k in (attachments or {})
+    }
+    _LAST_DEBUG_PROJECT_DIR = project_dir
+
+    # One deadline for the whole call: an attempt gets `timeout`, or the
+    # remainder when that is smaller.
+    derived = budget is None
+    if derived:
+        budget = debug_budget(timeout, retries, backoff_seconds)
+    # Both floors, because they guard different quantities: the aggregate keeps
+    # a retry fundable, the per-attempt one keeps the subprocess cap above the
+    # CLI's own `--timeout` minimum. `timeout=20, retries=10` clears the first
+    # and still SIGKILLs the CLI before it can return an envelope.
+    if timeout <= _MIN_CLI_TIMEOUT_SECONDS:
+        _fail(
+            f"run_debug timeout of {timeout}s is at or below the CLI's "
+            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum, so the subprocess "
+            "cap could not outlive it; raise `timeout`"
+        )
+    # Floored at the CLI minimum, not at _MIN_RETRY_BUDGET_SECONDS: that is the
+    # threshold for funding ANOTHER attempt, and `retries=1` never wants one.
+    # `budget - 1`: the deadline is read microseconds after it is set, so an
+    # integer budget always floors one second short. The first attempt's cap has
+    # to STRICTLY outlive `cli_timeout`, or the CLI loses the race to report.
+    if min(timeout, budget - 1) <= _MIN_CLI_TIMEOUT_SECONDS:
+        _fail(
+            f"run_debug would cap its first attempt at "
+            f"{min(timeout, budget - 1)}s, at or below the CLI's "
+            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum, so the CLI could "
+            "not self-terminate first; "
+            + ("raise `timeout`" if derived else "raise `budget`, or omit it so "
+               "debug_budget(timeout, ...) derives the deadline")
+        )
+
+    deadline = time.monotonic() + budget
+    out_of_budget = False
+
+    # Mirrors debug_budget: pricing an attempt the loop never makes left `r` unbound.
+    attempts = max(1, retries)
+
+    unreadable: str | None = None
+    unreadable_attempts = 0
+    subprocess_timeouts = 0
+    # Call-scoped: the globals persist across run_debug calls, and
+    # _LAST_DEBUG_STDERR starts as None, so reading them back resurrects or crashes.
+    timeout_stdout = ""
+    timeout_stderr = ""
+    overwrite_rotations = 0
+    rotated_solution_ids: list[str] = []
+    # `max_attempts` starts at the transient allowance and is extended by one
+    # for an unreadable-outputs retry (see _VARIABLES_UNREADABLE_ATTEMPTS): that
+    # retry has its own allowance, never the 5xx/RetryLater one. The deadline
+    # below still bounds every attempt, so the criterion budget holds.
+    max_attempts = attempts
+    attempt = 0
+    while attempt < max_attempts:
+        attempt_cap = min(timeout, int(deadline - time.monotonic()))
+        cli_timeout = max(
+            _MIN_CLI_TIMEOUT_SECONDS, attempt_cap - _CLI_TIMEOUT_HEADROOM_SECONDS
+        )
+        try:
+            r = subprocess.run(
+                [*cmd, "--timeout", str(cli_timeout)],
+                capture_output=True,
+                text=True,
+                timeout=attempt_cap,
+                env=env,
+            )
+        except subprocess.TimeoutExpired as exc:
+            # Richest, not newest: a later attempt can die before printing, and
+            # the earlier one may hold the only instanceId for the remote run.
+            timeout_stdout = _as_text(exc.stdout) or timeout_stdout
+            timeout_stderr = _as_text(exc.stderr) or timeout_stderr
+            _LAST_DEBUG_RAW = timeout_stdout
+            _LAST_DEBUG_STDERR = timeout_stderr
+            subprocess_timeouts += 1
+            fundable = (
+                deadline - time.monotonic() - backoff_seconds >= _MIN_RETRY_BUDGET_SECONDS
+            )
+            if subprocess_timeouts < _SUBPROCESS_TIMEOUT_ATTEMPTS and fundable:
+                time.sleep(backoff_seconds)
+                attempt += 1
+                # Extend, not assign: a retries=1 caller has no attempt left
+                # here, and exiting the loop reads `r.returncode` with `r` unbound.
+                max_attempts = max(max_attempts, attempt + 1)
+                continue
+            _fail_with_capture(
+                f"flow debug exceeded the {attempt_cap}s subprocess cap without returning "
+                f"on {subprocess_timeouts} subprocess timeout(s) across {attempt + 1} "
+                f"attempt(s); the CLI's own --timeout of {cli_timeout}s produced no envelope"
+                + ("" if fundable else " and the remaining budget could not fund another")
+                + ". The stderr tail below is the last phase any attempt reported.\n"
+                f"stdout: {timeout_stdout}\n"
+                # Tail only: the grader truncates `details` from the front and a
+                # polling run fills it, so the whole stream drops what this names.
+                f"stderr: {timeout_stderr[-_STDERR_CAPTURE_TAIL_CHARS:]}"
+            )
         _LAST_DEBUG_RAW = r.stdout
-        if r.returncode == 0 or not _is_transient_debug_error(r):
+        # Keep the CLI's stderr too: it is where `flow debug` reports what it
+        # could not do (e.g. the output-variables fetch). Dropping it on a zero
+        # exit is how the 2026-08-31/09-01 move-node failures lost their cause.
+        _LAST_DEBUG_STDERR = r.stderr
+        if r.returncode == 0:
+            unreadable = _variables_unreadable(_parse_json(r.stdout))
+            if unreadable is None:
+                break
+            unreadable_attempts += 1
+            if unreadable_attempts >= _VARIABLES_UNREADABLE_ATTEMPTS:
+                break
+            max_attempts = max(max_attempts, attempt + 2)
+        elif _is_overwrite_stuck(r) and overwrite_rotations < _OVERWRITE_STUCK_ATTEMPTS - 1:
+            # INTERIM (see _OVERWRITE_STUCK_ISSUE): its own single allowance, like
+            # the unreadable-outputs retry; the deadline below still bounds it.
+            rotated = _rotate_solution_id(project_dir)
+            if rotated is None:
+                break
+            overwrite_rotations += 1
+            rotated_solution_ids.append(rotated[0])
+            print(
+                f"INTERIM ({_OVERWRITE_STUCK_ISSUE}: Studio Web Overwrite → 400/1001 for an "
+                f"existing solution since 2026-09-02): rotated the bundled SolutionId "
+                f"{rotated[0]} → {rotated[1]}; retrying as a new import. The solution "
+                f"{rotated[0]} is recorded in {ROTATED_SOLUTION_IDS_SIDECAR} for cleanup.",
+                file=sys.stderr,
+                flush=True,
+            )
+            max_attempts = max(max_attempts, attempt + 2)
+        elif not _is_transient_debug_error(r):
             break
-        if attempt + 1 < retries:
+        elif _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
+            break
+        if attempt + 1 < max_attempts:
+            left = deadline - time.monotonic() - backoff_seconds
+            if left < _MIN_RETRY_BUDGET_SECONDS:
+                out_of_budget = True
+                break
             time.sleep(backoff_seconds)
+        attempt += 1
+
     if r.returncode != 0:
-        _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
+        spent = (
+            f" (stopped after {attempt + 1} attempt(s): the remaining budget "
+            "could not fund another)"
+            if out_of_budget
+            else ""
+        )
+        _fail(
+            f"flow debug exit {r.returncode}{spent}\n"
+            f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            + _incident_details(_parse_json(r.stdout))
+        )
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
     payload = _get_ci(data, "Data") or {}
+    if rotated_solution_ids:
+        print(
+            f"INTERIM ({_OVERWRITE_STUCK_ISSUE}): debug ran as a new import; Studio Web "
+            f"solution {_get_ci(payload, 'solutionId', 'SolutionId')} (previous: "
+            f"{', '.join(rotated_solution_ids)}).",
+            file=sys.stderr,
+            flush=True,
+        )
     status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
-        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
+        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}" + _incident_details(data))
+    if unreadable is not None:
+        # Every attempt completed, and every attempt's outputs were unreadable.
+        # This is an infrastructure failure (INFRA), not a verdict on the flow:
+        # the run reached its End node, we just never saw what it returned.
+        _fail_with_capture(
+            f"flow debug completed but its outputs could not be read on "
+            f"{unreadable_attempts} attempt(s): {unreadable}. "
+            "Classify as INFRA (outputs unknown), not as a flow defect; the "
+            "elements all ran. See the captured STDERR for the CLI's own account."
+        )
     return payload
 
 
@@ -318,6 +749,68 @@ def assert_flow_uses_connector_target(
     )
 
 
+def assert_loop_body_nodes_parented(
+    *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Assert every node wired inside a loop body has ``parentId`` set to the
+    loop's ID. Without ``parentId``, the runtime executes the node outside the
+    loop context — per-iteration variables like ``currentItem`` are
+    inaccessible and outputs come back null."""
+    for path in find_flow_files(project_glob):
+        with open(path) as f:
+            flow = json.load(f)
+        nodes_by_id = {n["id"]: n for n in flow.get("nodes") or []}
+        edges = flow.get("edges") or []
+        loops = [n for n in nodes_by_id.values() if n.get("type") == "core.logic.loop"]
+        for loop_node in loops:
+            loop_id = loop_node["id"]
+            body_ids = _collect_loop_body_ids(loop_id, edges, nodes_by_id)
+            for nid in body_ids:
+                node = nodes_by_id[nid]
+                actual_parent = node.get("parentId")
+                if actual_parent != loop_id:
+                    _fail(
+                        f"Node {nid!r} is wired inside loop {loop_id!r} but "
+                        f"{'has no parentId' if actual_parent is None else f'has parentId={actual_parent!r}'}. "
+                        f"Add \"parentId\": \"{loop_id}\" to the node."
+                    )
+
+
+def _collect_loop_body_ids(
+    loop_id: str, edges: list[dict], nodes_by_id: dict[str, dict]
+) -> list[str]:
+    """Walk edges from a loop's ``start`` port and collect reachable node IDs,
+    stopping at the loop's ``continue`` and ``break`` ports."""
+    outgoing: dict[str, list[tuple[str, str, str]]] = {}
+    for e in edges:
+        src = e.get("sourceNodeId", "")
+        src_port = e.get("sourcePort", "")
+        tgt = e.get("targetNodeId", "")
+        tgt_port = e.get("targetPort", "")
+        outgoing.setdefault(src, []).append((src_port, tgt, tgt_port))
+    body: list[str] = []
+    visited: set[str] = set()
+    stack = [
+        tgt
+        for src_port, tgt, _ in outgoing.get(loop_id, [])
+        if src_port == "start" and tgt != loop_id
+    ]
+    while stack:
+        nid = stack.pop()
+        if nid in visited or nid == loop_id:
+            continue
+        visited.add(nid)
+        if nid not in nodes_by_id:
+            continue
+        body.append(nid)
+        for _, tgt, tgt_port in outgoing.get(nid, []):
+            if tgt == loop_id and tgt_port in ("continue", "break"):
+                continue
+            if tgt not in visited:
+                stack.append(tgt)
+    return body
+
+
 def collect_outputs(payload: dict) -> list[Any]:
     """Return the declared output values — global variables and per-element
     outputs only. Excludes metadata (IDs, timestamps, status strings).
@@ -329,18 +822,115 @@ def collect_outputs(payload: dict) -> list[Any]:
     runtime (as a name→value dict). ``variables.globalVariables`` is the
     SDK-typed array shape; in practice the runtime populates the dict form.
     Both are walked to be safe.
+
+    NOTE: ``variables.globals`` holds every global — ``in`` as well as ``out``
+    — so this includes the flow's own INPUT values. That is deliberate for
+    callers doing a "did the run produce anything at all" check, but it makes
+    the set unsafe for grading a needle that is also an input. See
+    :func:`assert_outputs_contain`, which subtracts the declared inputs.
     """
+    return _global_leaves(payload)
+
+
+def _global_leaves(payload: dict, *, skip_keys: Iterable[str] = ()) -> list[Any]:
+    """Flattened global + element-output leaves, optionally skipping globals by
+    key. ``skip_keys`` is how :func:`assert_outputs_contain` drops declared
+    inputs; element outputs are never skipped (they are genuine node results)."""
+    skip = {str(k).lower() for k in skip_keys}
     out: list[Any] = []
     variables = _get_ci(payload, "variables", "Variables") or {}
-    for val in (_get_ci(variables, "globals", "Globals") or {}).values():
+    for key, val in (_get_ci(variables, "globals", "Globals") or {}).items():
+        if str(key).lower() in skip:
+            continue
         out.extend(_leaves(val))
     for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+        name = str(_get_ci(v, "id", "Id", "name", "Name") or "")
+        if name.lower() in skip:
+            continue
         value = _get_ci(v, "value", "Value")
         if value is not None:
             out.extend(_leaves(value))
     for e in _get_ci(variables, "elements", "Elements") or []:
         out.extend(_leaves(_get_ci(e, "outputs", "Outputs") or {}))
     return out
+
+
+def _declared_input_global_keys(
+    payload: dict, *, project_dir: str | None = None
+) -> set[str]:
+    """Return the ``variables.globals`` keys that hold INPUT values, not results.
+
+    Three signals, unioned, because no single one is complete. All are cheap:
+    none of them globs the filesystem, which matters because the module is
+    imported from an arbitrary CWD (at a repo root, ``**/*.flow`` matches
+    hundreds of unrelated flows through a ``plugins/`` symlink loop and would
+    read whichever one sorted first).
+
+    1. **Key shape.** A trigger-scoped input is keyed
+       ``<triggerNodeId>.output.<varId>`` at runtime — e.g.
+       ``start.output.inputDoc``. Outputs are keyed by bare id (``fileName``),
+       so this shape is unambiguously an input.
+    2. **What the checker itself bound.** :func:`run_debug` stashes the variable
+       ids it passed via ``--inputs`` / ``--attachment``. Those are inputs by
+       construction, and this is exact — no parsing, no guessing. It covers the
+       plain (non-trigger) inputs that signal 1 cannot see.
+    3. **Source declaration.** Reads the project's first ``.flow`` and collects
+       ``variables.globals[].id`` where ``direction == "in"``. Catches inputs the
+       checker never passed — an ``in`` global with a ``defaultValue`` still gets
+       a runtime value and still echoes. The project defaults to the one
+       :func:`run_debug` resolved, so this needs no per-call-site opt-in;
+       ``project_dir`` overrides it for a caller holding a payload from
+       elsewhere. Parse failures degrade to signals 1-2 rather than erroring.
+
+    Why not read direction from the payload? The runtime does return a
+    ``variables.globalDefinitions`` map, but it carries only ``name`` and
+    ``type`` — no direction — so it cannot separate an input from an output::
+
+        "globalDefinitions": {"start.output.inputDoc": {"name": "inputDoc", "type": "file"},
+                              "fileName": {"name": "fileName", "type": "string"}}
+
+    Verified against a live debug payload. It is useful only for mapping a
+    trigger-scoped key back to its declared id, which the leaf split below
+    already does.
+    """
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    keys = list((_get_ci(variables, "globals", "Globals") or {}).keys())
+    keys += [
+        str(_get_ci(v, "id", "Id", "name", "Name") or "")
+        for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []
+    ]
+
+    # Signal 1 — trigger-scoped key shape.
+    inputs = {k for k in keys if re.match(r"^[^.]+\.output\.[^.]+$", str(k))}
+
+    # Signals 2 and 3 — ids known to be inputs, matched to keys by exact name or
+    # by the leaf of a `<trigger>.output.<id>` key.
+    declared = {str(i).lower() for i in _LAST_DEBUG_INPUT_IDS}
+    project_dir = project_dir or _LAST_DEBUG_PROJECT_DIR
+    if project_dir:
+        try:
+            flows = sorted(
+                glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+            )
+            if flows:
+                with open(flows[0]) as f:
+                    flow = json.load(f)
+                src = (
+                    flow.get("variables")
+                    or flow.get("workflow", {}).get("variables")
+                    or {}
+                )
+                declared |= {
+                    str(v["id"]).lower()
+                    for v in (src.get("globals") or [])
+                    if v.get("direction") == "in" and v.get("id")
+                }
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+    for k in keys:
+        if str(k).lower() in declared or str(k).rsplit(".", 1)[-1].lower() in declared:
+            inputs.add(k)
+    return inputs
 
 
 def _leaves(v: Any):
@@ -355,25 +945,78 @@ def _leaves(v: Any):
 
 
 def assert_outputs_contain(
-    payload: dict, needles: str | Sequence[str], *, require_all: bool = True
+    payload: dict,
+    needles: str | Sequence[str],
+    *,
+    require_all: bool = True,
+    allow_input_echo: bool = False,
+    project_dir: str | None = None,
 ) -> None:
-    """Assert the stringified outputs contain the given needle(s).
+    """Assert the stringified outputs contain the given needle(s), IGNORING the
+    flow's own input values.
 
     ``require_all=True`` (default): every needle must appear.
     ``require_all=False``: at least one needle must appear.
+
+    Input echoes do not count (MST — see below). ``variables.globals`` carries
+    every global, ``in`` included, and :func:`_leaves` flattens nested objects —
+    so a needle that is also an input is matched by the input's own value and
+    the assertion becomes a tautology, passing regardless of what the flow
+    computed. Observed live on the file-attachment task: binding
+    ``--attachment inputDoc=<random>.txt`` puts the whole attachment object in
+    ``globals``, so ``assert_outputs_contain(payload, "<random>.txt")`` passed a
+    flow whose End node mapped the output to a hardcoded ``"sample-report.txt"``::
+
+        {"start.output.inputDoc": {"ID": ..., "FullName": "evidence-<rand>.txt", ...},
+         "fileName": "sample-report.txt"}
+
+    Declared inputs are therefore subtracted before matching (see
+    :func:`_declared_input_global_keys`). When a needle is absent from the
+    outputs but WOULD have matched an input, the failure says so explicitly
+    rather than reporting a bare "missing" — that case means the check was
+    previously passing vacuously and the task needs a real output assertion,
+    usually :func:`assert_named_output_contains`.
+
+    Inputs this checker never passed are covered too — an ``in`` global with a
+    ``defaultValue`` also echoes — by reading the project :func:`run_debug`
+    resolved; ``project_dir`` overrides that. ``allow_input_echo=True``
+    restores the old whole-payload behavior for the rare check that legitimately
+    grades a round-trip; prefer naming the output variable instead, so the
+    subtraction is never a reason to weaken an assertion elsewhere.
     """
     if isinstance(needles, str):
         needles = [needles]
-    haystack = _stringify(collect_outputs(payload))
+    all_leaves = _stringify(collect_outputs(payload))
+    if allow_input_echo:
+        haystack = all_leaves
+        input_keys: set[str] = set()
+    else:
+        input_keys = _declared_input_global_keys(payload, project_dir=project_dir)
+        haystack = _stringify(_global_leaves(payload, skip_keys=input_keys))
     present = [n for n in needles if n.lower() in haystack]
     missing = [n for n in needles if n.lower() not in haystack]
     ok = len(missing) == 0 if require_all else len(present) > 0
     if not ok:
         mode = "all of" if require_all else "any of"
+        echo_only = [n for n in missing if n.lower() in all_leaves]
+        detail = ""
+        if echo_only:
+            detail = (
+                f"\nINPUT ECHO: {echo_only} appear ONLY in the flow's input globals "
+                f"{sorted(input_keys)}, not in its outputs. Before this guard existed "
+                f"the match was satisfied by the input itself, so this check passed "
+                f"vacuously. Grade the real output instead — "
+                f"assert_named_output_contains(payload, '<outVarId>', ...)."
+            )
         _fail_with_capture(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
-            f"missing={missing}\nOutputs: {haystack[:1000]}"
+            f"missing={missing}\nOutputs: {haystack[:1000]}{detail}"
         )
+
+
+def get_last_debug_stderr() -> str | None:
+    """Return the stderr of the most recent ``run_debug`` call, or ``None``."""
+    return _LAST_DEBUG_STDERR
 
 
 def get_last_debug_raw() -> str | None:
@@ -475,6 +1118,605 @@ def assert_output_value(payload: dict, expected: Any) -> None:
     )
 
 
+def normalized(value: Any, *, case_fold: bool = True) -> Any:
+    """Normalize a scalar output for equality comparison: trim strings, coerce
+    ``"true"``/``"false"`` to booleans, and (by default) fold case for enum-like
+    values. Pass ``case_fold=False`` for OPAQUE identifiers (correlation ids,
+    Jira keys) that must match exactly."""
+    if isinstance(value, str):
+        text = value.strip()
+        lowered = text.casefold()
+        if lowered == "true":
+            return True
+        if lowered == "false":
+            return False
+        return lowered if case_fold else text
+    return value
+
+
+def assert_named_equals(
+    payload: dict, name: str, expected: Any, *, case_sensitive: bool = False
+) -> None:
+    """Assert a named ``out`` variable is present, non-empty, and equals
+    ``expected``. Enum-like values compare case-insensitively; pass
+    ``case_sensitive=True`` for opaque identifiers (caseKey, jiraIssueKey)."""
+    actual = assert_output_nonempty(payload, name)
+    if normalized(actual, case_fold=not case_sensitive) != normalized(
+        expected, case_fold=not case_sensitive
+    ):
+        _fail(f"output {name!r}: expected {expected!r}, got {actual!r}")
+
+
+_SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
+
+
+def _op_matches(hint: str, text: str) -> bool:
+    """Separator- and case-insensitive operation match. A connector op is spelled
+    hyphenated in a native node type (``…send-message-to-channel``) but with
+    underscores (and a version suffix) in an HTTP-proxy endpoint path
+    (``/send_message_to_channel_v2``). Fold both to letters-only so either shape
+    of the same op matches."""
+    norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
+    return norm(hint) in norm(text)
+
+
+def _is_connector_node(n: dict) -> bool:
+    """True if ``n`` is ANY connector invocation — a native connector node, or a
+    connector-authenticated ``core.action.http`` proxy (authentication=connector +
+    a targetConnector/connectorKey + a bound connectionId). Connector-agnostic
+    (no key/op filter): used to reject error handlers that merely route into
+    another fallible connector, whichever form that connector takes."""
+    t = str(n.get("type", ""))
+    if "uipath.connector." in t:
+        return True
+    detail = (n.get("inputs") or {}).get("detail") or {}
+    if not isinstance(detail, dict):
+        return False
+    body = detail.get("bodyParameters") or {}
+    body = body if isinstance(body, dict) else {}
+    target = body.get("targetConnector") or body.get("connectorKey")
+    return bool(
+        t.lower().startswith("core.action.http")
+        and target
+        and str(body.get("authentication") or "").lower() == "connector"
+        and _non_empty_binding_value(detail.get("connectionId"))
+    )
+
+
+def _connector_node_ids(
+    connector_key: str, project_glob: str, *, native_op_hint: str | None = None
+) -> set:
+    """Node ids that reach ``connector_key`` — a native connector node OR a
+    connector-mode ``core.action.http`` proxy carrying real connector auth
+    (authentication=connector + non-empty connectionId + connectionFolderKey),
+    the same shapes :func:`assert_flow_uses_connector_target` accepts. Shared so
+    the message check and the branch-routing check agree on what counts.
+
+    ``native_op_hint`` pins the operation: when set, a node counts only if the
+    hint (e.g. ``send-message-to-channel``) appears in its node type — so a Slack
+    *read/search* activity that merely contains ``connector_key`` is not accepted
+    as send/delivery evidence."""
+    ids: set = set()
+    for n in _iter_flow_nodes(project_glob):
+        t = str(n.get("type", ""))
+        if connector_key in t and (native_op_hint is None or _op_matches(native_op_hint, t)):
+            ids.add(n.get("id"))
+            continue
+        detail = (n.get("inputs") or {}).get("detail") or {}
+        if not isinstance(detail, dict):
+            continue
+        body = detail.get("bodyParameters") or {}
+        body = body if isinstance(body, dict) else {}
+        target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
+        # For connector-mode HTTP proxies the operation lives in the endpoint, not
+        # the node type; pin via a separator-insensitive match on the serialized
+        # detail so a proxy to the documented /send_message_to_channel_v2 endpoint
+        # is accepted while a proxy to a read endpoint is excluded.
+        op_ok = native_op_hint is None or _op_matches(native_op_hint, json.dumps(detail))
+        if (
+            t.lower().startswith("core.action.http")
+            and target == connector_key.lower()
+            and str(body.get("authentication") or "").lower() == "connector"
+            and _non_empty_binding_value(detail.get("connectionId"))
+            and _non_empty_binding_value(detail.get("connectionFolderKey"))
+            and op_ok
+        ):
+            ids.add(n.get("id"))
+    return ids
+
+
+def find_node_output_field(payload: dict, field: str, *, node_ids=None) -> "str | None":
+    """Return the first non-empty string value of ``field`` found in a node's
+    ``.output`` object (``globals["<id>.output"]``). Used to require an
+    intermediate Script output (e.g. ``nextSteps``) that the flow computes but
+    does not map to a named End ``out``. The field name is matched
+    separator/case-insensitively (``next_steps`` matches ``nextSteps``).
+
+    Pass ``node_ids`` to restrict the search to specific nodes (e.g. the executed
+    classification Script) so an unrelated/cosmetic node can't supply the value."""
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    if not isinstance(gvars, dict):
+        return None
+    allow = set(node_ids) if node_ids is not None else None
+    norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
+    want = norm(field)
+    for k, v in gvars.items():
+        if not (isinstance(k, str) and k.endswith(".output") and isinstance(v, dict)):
+            continue
+        if allow is not None and k[: -len(".output")] not in allow:
+            continue
+        for kk, vv in v.items():
+            if isinstance(kk, str) and norm(kk) == want and isinstance(vv, str) and vv.strip():
+                return vv.strip()
+    return None
+
+
+_UNSET = object()
+
+
+def find_node_output_value(payload: dict, field: str, *, node_ids=None) -> Any:
+    """Like :func:`find_node_output_field` but returns the raw value of any type
+    (bool, number, string) — the first non-None ``field`` found in a node's
+    ``.output``. Returns ``None`` when absent. Use for intermediate classification
+    outputs like ``engineeringNeeded`` (a boolean) that aren't mapped to a named
+    End ``out``. Field name matched separator/case-insensitively.
+
+    Pass ``node_ids`` to restrict the search to specific nodes (e.g. the executed
+    classification Script) so an unrelated/cosmetic node can't supply the value."""
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    if not isinstance(gvars, dict):
+        return None
+    allow = set(node_ids) if node_ids is not None else None
+    norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
+    want = norm(field)
+    for k, v in gvars.items():
+        if not (isinstance(k, str) and k.endswith(".output") and isinstance(v, dict)):
+            continue
+        if allow is not None and k[: -len(".output")] not in allow:
+            continue
+        for kk, vv in v.items():
+            if isinstance(kk, str) and norm(kk) == want and vv is not None:
+                return vv
+    return None
+
+
+def assert_slack_message_posted(
+    payload: dict,
+    name: str,
+    *,
+    connector_key: str = "uipath-salesforce-slack",
+    project_glob: str = "**/project.uiproj",
+    expected_channel: str | None = None,
+    must_contain: "str | list[str] | None" = None,
+    must_contain_loose: "str | list[str] | None" = None,
+    send_op: str = "send-message-to-channel",
+) -> str:
+    """Assert a Slack message was actually sent in this debug run.
+
+    Two independent gates, so a flow can't fake delivery:
+
+    1. **Shape** — the named output is a Slack message ``ts``
+       (``\\d{9,11}\\.\\d{4,6}``, e.g. ``1786647595.771239``), rejecting a
+       hard-coded placeholder like ``"ok"`` / ``"sent"`` / ``"1"``.
+    2. **Trace** — at least one ``connector_key`` node in the flow has a
+       ``Completed`` ``elementExecution`` in the debug payload. A disconnected
+       or unexecuted connector node produces no such record, so a constant ``ts``
+       mapped past an idle node fails here. This is the "confirm the timestamp
+       came from an executed connector send" check.
+
+    Returns the ts."""
+    value = assert_output_nonempty(payload, name)
+    text = str(value).strip()
+    if not _SLACK_TS_RE.match(text):
+        _fail(
+            f"output {name!r}={text!r} is not a Slack message ts (expected "
+            r"\d{9,11}\.\d{4,6}); the flow did not actually post to Slack"
+        )
+
+    # A Slack SEND node (native send-message-to-channel, or a connector-mode HTTP
+    # proxy to that op) — a read/search activity that returns a message object is
+    # not delivery evidence, so it is excluded via send_op.
+    slack_ids = _connector_node_ids(connector_key, project_glob, native_op_hint=send_op)
+    if not slack_ids:
+        _fail(f"no connected {connector_key} {send_op} node found in the flow")
+
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    completed = [
+        e
+        for e in els
+        if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in slack_ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+    ]
+    if not completed:
+        _fail_with_capture(
+            f"no {connector_key} node completed in the debug trace "
+            f"(slack nodes {sorted(i for i in slack_ids if i)}); ts {text} did "
+            "not come from an executed Slack send"
+        )
+
+    # Tie the mapped ts to an executed Slack node's OWN response. The runtime
+    # surfaces each node's output at globals["<nodeId>.output"]; a real send's
+    # response carries its ``ts``. If any executed Slack node exposes a ts, the
+    # mapped slackMessageId must be one of them — so executing a Slack node while
+    # mapping a different hard-coded ts is rejected.
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    matched_out = None
+    for e in completed:
+        nid = _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
+        out = gvars.get(f"{nid}.output") if isinstance(gvars, dict) else None
+        if not isinstance(out, (dict, list)):
+            continue
+        ts_leaves = {
+            str(x).strip()
+            for x in _leaves(out)
+            if isinstance(x, str) and _SLACK_TS_RE.match(str(x).strip())
+        }
+        if text in ts_leaves:
+            matched_out = out
+            break
+    # A real send's response always carries its ts; require the mapped
+    # slackMessageId to be that response's ts. If no executed Slack node's output
+    # exposes this exact ts, the value was not produced by the executed send.
+    if matched_out is None:
+        _fail_with_capture(
+            f"slackMessageId {text} does not match any executed Slack node's response "
+            "ts; the mapped ts was not produced by the executed send"
+        )
+
+    # Channel + content of the actual send (from the connector's own echoed
+    # response), so posting a generic message or to the wrong channel is rejected.
+    if matched_out is not None:
+        if expected_channel:
+            posted = str(_get_ci(matched_out, "channel", "Channel") or "")
+            if posted != expected_channel:
+                _fail_with_capture(
+                    f"Slack message posted to channel {posted!r}, expected {expected_channel!r}"
+                )
+        if must_contain or must_contain_loose:
+            content = " ".join(str(x) for x in _leaves(matched_out) if isinstance(x, str))
+        if must_contain:
+            required = [must_contain] if isinstance(must_contain, str) else list(must_contain)
+            missing = [s for s in required if s not in content]
+            if missing:
+                _fail_with_capture(
+                    f"posted Slack message is missing required text {missing} — the "
+                    "message must carry every required field (severity, correlationId, "
+                    "next steps), not just some"
+                )
+        if must_contain_loose:
+            loose = [must_contain_loose] if isinstance(must_contain_loose, str) else list(must_contain_loose)
+            # Separator/case-insensitive: the escalationPath enum "unknown_customer"
+            # matches a rendered "unknown customer" / "Unknown Customer" too.
+            missing_loose = [s for s in loose if not _op_matches(s, content)]
+            if missing_loose:
+                _fail_with_capture(
+                    f"posted Slack message is missing required field(s) {missing_loose} "
+                    "(separator/case-insensitive) — e.g. the escalationPath"
+                )
+    return text
+
+
+def assert_node_type_executed(
+    payload: dict, type_hint: str, *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Assert at least one flow node whose ``type`` contains ``type_hint`` has a
+    ``Completed`` ``elementExecution`` in this debug run — i.e. the node type is
+    actually on the executed path, not merely present-but-disconnected in the
+    source. Complements :func:`assert_flow_has_node_type` (source-only)."""
+    ids = {
+        n.get("id")
+        for n in _iter_flow_nodes(project_glob)
+        if type_hint in str(n.get("type", ""))
+    }
+    if not ids:
+        _fail(f"no node of type {type_hint!r} in the flow")
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    if not any(
+        _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+        for e in els
+    ):
+        _fail_with_capture(
+            f"no {type_hint!r} node executed in the debug trace (nodes {sorted(i for i in ids if i)}); "
+            "it is present in the source but not on the executed path"
+        )
+
+
+def completed_node_ids_of_type(
+    payload: dict, type_hint: str, *, project_glob: str = "**/project.uiproj"
+) -> set:
+    """Return ids of flow nodes whose ``type`` contains ``type_hint`` that have a
+    ``Completed`` elementExecution in this run — the executed subset of that node
+    type. Used to tie structural checks (e.g. Decision branch routing) to the node
+    that actually ran, not merely one present in the source."""
+    ids = {
+        n.get("id")
+        for n in _iter_flow_nodes(project_glob)
+        if type_hint in str(n.get("type", ""))
+    }
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    return {
+        _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
+        for e in els
+        if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+    }
+
+
+def assert_connector_error_handlers(
+    connector_key: str,
+    *,
+    project_glob: str = "**/project.uiproj",
+    native_op_hint: "str | None" = None,
+) -> None:
+    """Assert every matching connector node degrades gracefully on failure: its
+    ``error`` port must route to a NON-connector handler (not a self-loop back to
+    the failing node, and not another connector that can fault again) from which a
+    terminating node (End, or a node with no outgoing edge) is reachable. A
+    dangling error port, a self-loop, or an error edge into another connector all
+    fail, so a flow that only appears to handle failures cannot get full credit."""
+    from collections import defaultdict, deque
+
+    flow = _load_flow(project_glob)
+    edges = flow.get("edges") or []
+    nodes = {n.get("id"): n for n in (flow.get("nodes") or [])}
+    node_ids = {i for i in _connector_node_ids(connector_key, project_glob, native_op_hint=native_op_hint) if i}
+    if not node_ids:
+        _fail(f"no {connector_key} node found to check error handlers on")
+
+    adj = defaultdict(list)
+    for e in edges:
+        adj[e.get("sourceNodeId")].append((str(e.get("sourcePort") or "").lower(), e.get("targetNodeId")))
+
+    def is_connector(nid: str) -> bool:
+        # Native connector OR a connector-authenticated HTTP proxy — an error edge
+        # into either just invokes another fallible connector, not a real handler.
+        return _is_connector_node(nodes.get(nid, {}) or {})
+
+    # EVERY branch of the handler must degrade gracefully: connector-free, acyclic,
+    # and terminating. A DFS with GRAY/BLACK coloring rejects (a) any connector on
+    # the path (can fault again), and (b) any cycle — a back-edge to a GRAY node is
+    # a loop that never completes. Returns True only when all reachable paths end at
+    # a terminating node, so a fork to End + a non-connector cycle no longer passes.
+    _GRAY, _BLACK = 1, 2
+
+    def reaches_terminating(start: str) -> bool:
+        color: dict = {}
+
+        def dfs(n: str) -> bool:
+            if is_connector(n):
+                return False  # connector branch can fault → not graceful
+            color[n] = _GRAY
+            outs = [tgt for _, tgt in adj.get(n, []) if tgt]
+            t = str(nodes.get(n, {}).get("type", "")).lower()
+            if "end" in t or not outs:  # End node, or non-connector dead-end handler
+                color[n] = _BLACK
+                return True
+            for tgt in outs:
+                c = color.get(tgt, 0)
+                if c == _GRAY:
+                    return False  # back-edge → cycle: this branch never terminates
+                if c == _BLACK:
+                    continue  # already validated as gracefully terminating
+                if not dfs(tgt):
+                    return False
+            color[n] = _BLACK
+            return True
+
+        return dfs(start)
+
+    bad = []
+    for sid in sorted(nid for nid in node_ids if nid):
+        # Non-connector error targets, excluding a self-loop back to the send node.
+        handlers = [
+            t for p, t in adj.get(sid, [])
+            if p == "error" and t and t != sid and not is_connector(t)
+        ]
+        if not handlers:
+            bad.append((sid, "no non-connector error handler (dangling, self-loop, or into another connector)"))
+        elif not any(reaches_terminating(h) for h in handlers):
+            bad.append((sid, "error handler does not reach a terminating path"))
+    if bad:
+        _fail_with_capture(
+            f"{connector_key} node(s) do not degrade gracefully on failure: {bad}"
+        )
+
+
+def assert_connector_send_identity(
+    connector_key: str,
+    *,
+    expected: str = "user",
+    param: str = "send_as",
+    project_glob: str = "**/project.uiproj",
+    native_op_hint: "str | None" = None,
+) -> None:
+    """Assert every matching connector send node carries the requested identity
+    binding (``queryParameters.<param> == expected``, e.g. ``send_as == "user"``).
+    A node that sends as the default bot instead of the prompt-required ``user``
+    fails here even though its runtime response (ts/channel/content) looks the same."""
+    send_ids = {i for i in _connector_node_ids(connector_key, project_glob, native_op_hint=native_op_hint) if i}
+    if not send_ids:
+        _fail(f"no {connector_key} send node found to check {param!r} on")
+    bad = []
+    for n in _iter_flow_nodes(project_glob):
+        if n.get("id") not in send_ids:
+            continue
+        detail = (n.get("inputs") or {}).get("detail") or {}
+        qp = detail.get("queryParameters") if isinstance(detail, dict) else None
+        val = str((qp or {}).get(param, "")).strip().lower()
+        if val != expected.strip().lower():
+            bad.append((n.get("id"), val or None))
+    if bad:
+        _fail_with_capture(
+            f"{connector_key} send node(s) do not set {param}={expected!r}: {bad}; "
+            "the prompt requires sending as the requested identity"
+        )
+
+
+def node_output_leaves(payload: dict, node_ids) -> set:
+    """String leaves of the given nodes' outputs (``globals["<id>.output"]``) —
+    used to tie a flow output back to the connector node that actually produced
+    it (e.g. a Jira key must appear in the executed Create Issue node's response)."""
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    out: set = set()
+    for nid in node_ids:
+        v = gvars.get(f"{nid}.output") if isinstance(gvars, dict) else None
+        for x in _leaves(v):
+            if isinstance(x, str):
+                out.add(x.strip())
+    return out
+
+
+def _load_flow(project_glob: str) -> dict:
+    """Load the single discovered flow artifact."""
+    path = find_flow_file(project_glob)
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def assert_decision_branches_reach(
+    branch_a_targets: set,
+    branch_b_targets: set,
+    *,
+    decision_type: str = "core.logic.decision",
+    project_glob: str = "**/project.uiproj",
+    executed_decision_ids: "set | None" = None,
+) -> None:
+    """Assert some ``decision_type`` node has TWO distinct outgoing ports whose
+    downstream reach separates ``branch_a_targets`` from ``branch_b_targets`` —
+    i.e. the Decision itself routes to the two target groups (all A reachable from
+    one port, all B from another, with no cross-contamination). Proves the two
+    groups are the Decision's branches, not just nodes that happened to fire on
+    different cases behind a cosmetic always-true Decision.
+
+    When ``executed_decision_ids`` is given, only Decisions that actually executed
+    in the run are considered candidates — so a second, unexecuted Decision that
+    merely has the two source edges cannot satisfy the check while routing really
+    happens through a cosmetic Decision elsewhere."""
+    from collections import defaultdict, deque
+
+    flow = _load_flow(project_glob)
+    edges = flow.get("edges") or []
+    nodes = flow.get("nodes") or []
+    decisions = [n.get("id") for n in nodes if decision_type in str(n.get("type", ""))]
+    if executed_decision_ids is not None:
+        decisions = [d for d in decisions if d in executed_decision_ids]
+        if not decisions:
+            _fail_with_capture(
+                f"no EXECUTED {decision_type!r} node in the run "
+                f"(executed={sorted(i for i in executed_decision_ids if i)}); routing did "
+                "not go through a Decision that actually ran"
+            )
+    if not decisions:
+        _fail(f"no {decision_type!r} node in the flow")
+
+    adj = defaultdict(list)
+    for e in edges:
+        adj[e.get("sourceNodeId")].append((e.get("sourcePort"), e.get("targetNodeId")))
+
+    def reach(start: str) -> set:
+        seen: set = set()
+        q = deque([start])
+        while q:
+            n = q.popleft()
+            if n in seen:
+                continue
+            seen.add(n)
+            for _, t in adj.get(n, []):
+                q.append(t)
+        return seen
+
+    a, b = set(branch_a_targets), set(branch_b_targets)
+    for d in decisions:
+        port_reach = defaultdict(set)
+        for port, tgt in adj.get(d, []):
+            port_reach[port].update(reach(tgt))
+        for pa, ra in port_reach.items():
+            if not a <= ra:
+                continue
+            for pb, rb in port_reach.items():
+                if pb != pa and b <= rb and not (a & rb) and not (b & ra):
+                    return  # clean two-branch separation via this Decision
+    _fail_with_capture(
+        f"no {decision_type!r} routes {sorted(a)} and {sorted(b)} through separate "
+        "branches; the distinct Slack nodes are not the Decision's two outgoing paths"
+    )
+
+
+def assert_distinct_branch_ends(
+    branch_a_nodes: set,
+    branch_b_nodes: set,
+    *,
+    end_type: str = "core.control.end",
+    project_glob: str = "**/project.uiproj",
+) -> None:
+    """Assert each branch reaches its OWN End node — the prompt's two-End-nodes
+    requirement. From the ``branch_a``/``branch_b`` nodes (e.g. the escalation vs
+    triage Slack sends) BFS downstream to reachable ``end_type`` nodes; require an
+    End reachable from A but not B AND one reachable from B but not A. A flow that
+    merges both branches into a single shared End (then conditionally maps the
+    timestamp) fails here."""
+    from collections import defaultdict, deque
+
+    flow = _load_flow(project_glob)
+    edges = flow.get("edges") or []
+    nodes = flow.get("nodes") or []
+    end_ids = {n.get("id") for n in nodes if end_type in str(n.get("type", ""))}
+    adj = defaultdict(list)
+    for e in edges:
+        adj[e.get("sourceNodeId")].append(e.get("targetNodeId"))
+
+    def reachable_ends(starts: set) -> set:
+        seen: set = set()
+        q = deque(s for s in starts if s)
+        found: set = set()
+        while q:
+            n = q.popleft()
+            if n in seen:
+                continue
+            seen.add(n)
+            if n in end_ids:
+                found.add(n)
+            for t in adj.get(n, []):
+                if t:
+                    q.append(t)
+        return found
+
+    ends_a = reachable_ends(set(branch_a_nodes))
+    ends_b = reachable_ends(set(branch_b_nodes))
+    if not (ends_a - ends_b) or not (ends_b - ends_a):
+        _fail_with_capture(
+            "escalation and triage branches do not each reach their OWN End node "
+            f"(escalation-reachable ends={sorted(ends_a)}, triage-reachable ends={sorted(ends_b)}); "
+            "the prompt requires two branch-specific End nodes, not a single merged End"
+        )
+
+
+def completed_connector_node_ids(
+    payload: dict,
+    connector_key: str,
+    *,
+    project_glob: str = "**/project.uiproj",
+    native_op_hint: "str | None" = None,
+) -> set:
+    """Return the ids of ``connector_key`` nodes with a ``Completed``
+    elementExecution in this run — i.e. which connector node actually fired.
+    Used to prove branch routing across cases (escalation vs triage must fire
+    different nodes, not one dynamic node behind a cosmetic Decision).
+
+    ``native_op_hint`` pins the operation so a connector-mode HTTP proxy (whose
+    ``targetConnector`` is the bare key, with the op in the endpoint) is matched by
+    op — pass ``connector_key`` as the bare key and the op separately."""
+    ids = _connector_node_ids(connector_key, project_glob, native_op_hint=native_op_hint)
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    return {
+        _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
+        for e in els
+        if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+    }
+
+
 def read_flow_input_vars(project_dir: str) -> list[str]:
     """Return the ordered list of input variable IDs declared on the first
     ``.flow`` file in ``project_dir``."""
@@ -512,7 +1754,141 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
     return _find_project(pattern)
 
 
+def find_flow_files(
+    project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
+) -> list[str]:
+    """Return flow artifacts from the selected solution, or one root emit.
+
+    A substantive Flow solution project wins whenever one exists. This keeps a
+    root-level SDK scratch file from competing with the linked solution copy.
+    When no project exists, or every project is only an abandoned scaffold,
+    validate and source-structure checks may consume a substantive root-level
+    SDK emit. Multiple genuinely distinct root emits are ambiguous and fail
+    with their paths rather than selecting one by glob order.
+
+    Debug callers intentionally do not use this helper: ``uip maestro flow
+    debug`` is project-scoped and must continue through :func:`find_project_dir`.
+    """
+    project_candidates = _rglob_pruned(project_pattern)
+    flow_projects = [path for path in project_candidates if _is_flow_project(path)]
+    root_matches = _dedupe_flow_candidates(
+        sorted(glob.glob(os.path.basename(flow_glob)))
+    )
+
+    # A preview author may compile a complete root-level SDK source before a
+    # later CLI command leaves an untouched trigger-only project scaffold. For
+    # file-scoped checks the substantive artifact is the build; the scaffold is
+    # not allowed to shadow it merely because it carries project.uiproj.
+    if flow_projects and len(root_matches) == 1:
+        project_counts = [
+            _flow_node_count(os.path.dirname(path)) for path in flow_projects
+        ]
+        root_count = _flow_file_node_count(root_matches[0])
+        if (
+            root_count is not None
+            and root_count > _HUSK_MAX_NODES
+            and all(
+                count is not None and count <= _HUSK_MAX_NODES
+                for count in project_counts
+            )
+        ):
+            print(
+                "note: ignoring abandoned project scaffold(s) in favor of "
+                f"substantive root Flow emit: {root_matches[0]}"
+            )
+            return root_matches
+
+    if flow_projects:
+        project_dir = _find_project(project_pattern)
+        matches = sorted(
+            glob.glob(
+                os.path.join(project_dir, "**", os.path.basename(flow_glob)),
+                recursive=True,
+            )
+        )
+        if not matches:
+            _fail(
+                f"No .flow file matching {flow_glob!r} under selected Flow "
+                f"project {project_dir}"
+            )
+        return matches
+
+    if not root_matches:
+        _fail(
+            f"No Flow project found matching {project_pattern!r}, and no "
+            f"root-level .flow file matching {os.path.basename(flow_glob)!r}"
+        )
+    if len(root_matches) > 1:
+        joined = "\n  - ".join(root_matches)
+        _fail(
+            "Multiple distinct root-level .flow files found — refusing to "
+            f"guess:\n  - {joined}"
+        )
+    return root_matches
+
+
+def find_flow_file(
+    project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
+) -> str:
+    """Return one unambiguous flow artifact using :func:`find_flow_files`."""
+    matches = find_flow_files(project_pattern, flow_glob=flow_glob)
+    if len(matches) > 1:
+        joined = "\n  - ".join(matches)
+        _fail(f"Multiple .flow files match {flow_glob!r}:\n  - {joined}")
+    return matches[0]
+
+
+def assert_no_flow_files() -> None:
+    """Require that the sandbox contains no ``.flow`` artifact anywhere.
+
+    This is the negative counterpart to :func:`find_flow_files` for read-only
+    tasks. It deliberately scans every location because any emitted Flow is a
+    failure; there is no preferred artifact to select in the absence case.
+    """
+    matches = _rglob_pruned("**/*.flow")
+    if matches:
+        joined = "\n  - ".join(matches)
+        _fail(f"Unexpected .flow file(s) found:\n  - {joined}")
+
+
 # ── Internals ───────────────────────────────────────────────────────────────
+
+
+def _incident_details(envelope: dict | None) -> str:
+    """The backend's own account of a faulted debug run, for the failure text.
+
+    `flow debug` reports a fault as one line per incident (`[102003] Integration
+    Services bad request (element createIssue)`) and defers the provider's
+    message to `uip maestro flow debug-instance incidents <id>`. That message is
+    the cause — 2026-09-01: `errors - {reporter=Specify a valid value for
+    Reporter}` behind six identical `[102003]` failures across three arms and two
+    weeks, none of whose task.json said so. Fetch it while the instance is still
+    on the tenant (it is gone within days) so the criterion output carries it.
+
+    Best-effort and side-effect-free: returns "" when there is no instance id,
+    the CLI is unavailable, or the tenant answers with anything but a list.
+    """
+    data = _get_ci(envelope, "Data") or {}
+    instance_id = _get_ci(data, "instanceId", "InstanceId")
+    if not instance_id:
+        return ""
+    try:
+        r = subprocess.run(
+            ["uip", "maestro", "flow", "debug-instance", "incidents", str(instance_id), "--output", "json"],
+            capture_output=True, text=True, timeout=_INCIDENTS_TIMEOUT_SECONDS,
+        )
+        parsed = _parse_json(r.stdout) or {}
+        incidents = _get_ci(parsed, "Data")
+        if not isinstance(incidents, list) or not incidents:
+            return ""
+        lines = [
+            f"  - element={_get_ci(i, 'elementId', 'ElementId')} code={_get_ci(i, 'errorCode', 'ErrorCode')} "
+            f"{_get_ci(i, 'errorMessage', 'ErrorMessage')}: {_get_ci(i, 'errorDetails', 'ErrorDetails')}"
+            for i in incidents if isinstance(i, dict)
+        ]
+        return "\nincidents (uip maestro flow debug-instance incidents):\n" + "\n".join(lines)
+    except Exception:  # noqa: BLE001 — diagnostics must never mask the real failure
+        return ""
 
 
 def _parse_json(stdout: str) -> dict | None:
@@ -553,8 +1929,7 @@ def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
 
 
 def _iter_flow_nodes(project_glob: str):
-    project_dir = _find_project(project_glob)
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+    for path in find_flow_files(project_glob):
         with open(path) as f:
             flow = json.load(f)
         yield from flow.get("nodes") or []
@@ -571,6 +1946,23 @@ def _non_empty_binding_value(value: Any) -> bool:
 _HUSK_MAX_NODES = 1
 
 
+def _dedupe_flow_candidates(paths: list[str]) -> list[str]:
+    """Collapse aliases and byte-identical copies before ambiguity checks."""
+    by_realpath: dict[str, str] = {}
+    for path in paths:
+        by_realpath.setdefault(os.path.realpath(path), path)
+
+    by_content: dict[str, str] = {}
+    for path in by_realpath.values():
+        try:
+            with open(path, "rb") as f:
+                key = hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            key = f"unreadable:{path}"
+        by_content.setdefault(key, path)
+    return sorted(by_content.values())
+
+
 def _find_project(pattern: str) -> str:
     """Locate the *Flow* project directory matching ``pattern``.
 
@@ -583,10 +1975,11 @@ def _find_project(pattern: str) -> str:
     Filtering by manifest avoids a 1-of-N glob collision the symptom of
     MST-9734.
 
-    Two Flow projects can also mean one build plus one abandoned scaffold —
-    see :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
+    Two Flow projects can also mean byte-identical copies, or one build plus one
+    abandoned scaffold — see :func:`_dedupe_flow_projects` and
+    :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
     """
-    candidates = sorted(glob.glob(pattern, recursive=True))
+    candidates = _rglob_pruned(pattern)
     if not candidates:
         _fail(f"No project.uiproj found matching {pattern}")
     flow_projects = [p for p in candidates if _is_flow_project(p)]
@@ -597,6 +1990,15 @@ def _find_project(pattern: str) -> str:
             f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
+        original_count = len(flow_projects)
+        flow_projects = _dedupe_flow_projects(flow_projects)
+        if len(flow_projects) == 1:
+            print(
+                "note: ignoring "
+                f"{original_count - 1} byte-identical Flow project duplicate(s)"
+            )
+            return os.path.dirname(flow_projects[0])
+
         counts = [(p, _flow_node_count(os.path.dirname(p))) for p in flow_projects]
         selected, husks = _split_off_scaffold_husks(counts)
         if selected is not None:
@@ -643,16 +2045,52 @@ def _flow_node_count(project_dir: str) -> int | None:
         return None
     total = 0
     for path in flows:
-        try:
-            with open(path, encoding="utf-8") as f:
-                flow = json.load(f)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        count = _flow_file_node_count(path)
+        if count is None:
             return None
-        nodes = flow.get("nodes") if isinstance(flow, dict) else None
-        if not isinstance(nodes, list):
-            return None
-        total += len(nodes)
+        total += count
     return total
+
+
+def _flow_file_node_count(path: str) -> int | None:
+    """Return one Flow file's node count, or ``None`` when unreadable."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            flow = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    nodes = flow.get("nodes") if isinstance(flow, dict) else None
+    return len(nodes) if isinstance(nodes, list) else None
+
+
+def _dedupe_flow_projects(project_uiprojs: list[str]) -> list[str]:
+    """Collapse projects whose relative Flow files are byte-for-byte equal.
+
+    Missing or unreadable Flow files stay distinct so project-scoped debug never
+    guesses across candidates whose equivalence cannot be proved.
+    """
+    by_content: dict[tuple[tuple[str, str], ...] | tuple[str, str], str] = {}
+    for project_uiproj in project_uiprojs:
+        project_dir = os.path.dirname(project_uiproj)
+        flows = sorted(
+            glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+        )
+        fingerprints: list[tuple[str, str]] = []
+        try:
+            for path in flows:
+                with open(path, "rb") as f:
+                    digest = hashlib.sha256(f.read()).hexdigest()
+                fingerprints.append((os.path.relpath(path, project_dir), digest))
+        except OSError:
+            fingerprints = []
+
+        key: tuple[tuple[str, str], ...] | tuple[str, str]
+        if fingerprints:
+            key = tuple(fingerprints)
+        else:
+            key = ("unknown", project_uiproj)
+        by_content.setdefault(key, project_uiproj)
+    return sorted(by_content.values())
 
 
 def _describe_candidate(project_uiproj: str, node_count: int | None) -> str:
@@ -729,6 +2167,11 @@ def _dump_debug_capture(context: str = "") -> None:
     except Exception as exc:  # noqa: BLE001 — diagnostics must never mask the real failure
         lines.append(f"SUMMARY: <unparsable: {exc!r}>")
     lines.append("RAW: " + raw.strip())
+    stderr = (_LAST_DEBUG_STDERR or "").strip()
+    if stderr:
+        # The CLI's own account of the run (progress, warnings such as a failed
+        # output-variables fetch). Tail only: the head is login/upload noise.
+        lines.append("STDERR (tail): " + stderr[-_STDERR_CAPTURE_TAIL_CHARS:])
     lines.append("=== FLOW_DEBUG_RAW_CAPTURE END ===")
     print("\n".join(lines), file=sys.stderr)
 

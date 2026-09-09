@@ -2,8 +2,8 @@
 
 Shape-only smoke tasks under `../../smoke/` must not authenticate or hit a live
 tenant — the smoke harness injects a live alpha bot token, so a bare `uip ixp …`
-would otherwise reach designtime-api on alpha (404-ing on fixture ids). Every
-smoke task therefore mocks `uip` with this template:
+would otherwise reach designtime-api on alpha (404-ing on fixture ids). Most
+smoke tasks therefore mock `uip` with this template:
 
 ```yaml
 sandbox:
@@ -79,6 +79,18 @@ from a reformat: the sh → Python rewrite deleted that redirect and pinned
 
 Integration/e2e tasks use `live_calls_template`; its wrapper writes the same two
 sinks in the same format, then delegates unchanged to the real CLI.
+
+## Not every task uses this template
+
+Tasks graded with `cli_called` declare `sandbox.record_cli` instead, and the
+framework generates the recorders, seeds the log and PATH-prepends `cli_mocks/`
+itself — no `mock_path_dirs`, no `template_sources`, no `log:` on the criterion.
+Prefer that for a new structured task. This template remains the answer whenever
+a recorder is not enough: `file_matches_regex` over the flat `calls.log`, a read
+that must return fixture data (`mock_template_taxonomy`), or per-invocation
+responses, none of which `record_cli` serves. `calls.jsonl` here has no consumer
+today for that reason — it is the structured sink for tasks that need this
+template's other behavior too.
 
 A task whose correct path reads before it writes cannot be graded on this mock
 alone — the read fails, so there is nothing to carry into the graded write, and

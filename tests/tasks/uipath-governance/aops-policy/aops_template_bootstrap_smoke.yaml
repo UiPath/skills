@@ -1,0 +1,50 @@
+task_id: skill-gov-aops-policy-template-bootstrap-smoke
+description: >
+  Smoke test (outcome-graded): the agent bootstraps every product's template into
+  a working directory. Graded on the tree the CLI wrote — one subdirectory per
+  product, each holding parsable template artifacts — which only a real bulk
+  template fetch produces.
+tags: [uipath-governance, smoke, mode:build, lifecycle:generate, aops-policy, template]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  I am starting a governance policy authoring session. Bootstrap the templates
+  for every available product into ./session/products/ so I can review which
+  products exist and inspect their form schemas.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "session/products holds per-product template artifacts written by the CLI"
+    command: |
+      python3 -c "
+      import json, os
+      root = 'session/products'
+      assert os.path.isdir(root), f'{root} was not created'
+      products = [d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d))]
+      assert len(products) >= 5, f'only {len(products)} product directories: {products}'
+      parsed = 0
+      for p in products:
+          files = [f for f in os.listdir(os.path.join(root, p)) if f.endswith('.json')]
+          assert files, f'product directory {p} holds no JSON artifact'
+          for f in files:
+              with open(os.path.join(root, p, f), encoding='utf-8-sig') as fh:
+                  json.load(fh)
+                  parsed += 1
+      assert 'AITrustLayer' in products, f'AITrustLayer was not bootstrapped: {sorted(products)[:8]}'
+      print(f'OK: {len(products)} product directories bootstrapped, {parsed} template artifacts parsed')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

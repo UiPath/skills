@@ -10,16 +10,16 @@ uip df entities create "MyEntity" \
     "displayName": "My Entity",
     "description": "Optional description",
     "fields": [
-      {"fieldName": "Title",       "type": "STRING",   "isRequired": true},
-      {"fieldName": "Score",       "type": "DECIMAL",  "decimalPrecision": 0},
-      {"fieldName": "Active",      "type": "BOOLEAN"},
-      {"fieldName": "CreatedDate", "type": "DATE"}
+      {"name": "Title",       "type": "STRING",   "isRequired": true},
+      {"name": "Score",       "type": "DECIMAL",  "decimalPrecision": 0},
+      {"name": "Active",      "type": "BOOLEAN"},
+      {"name": "CreatedDate", "type": "DATE"}
     ]
   }' \
   --output json
 ```
 
-- `fields` array is **required**. Each entry must include `fieldName`.
+- `fields` array is **required**. Each entry must include `name`.
 - `displayName`, `description`, and `isRbacEnabled` are optional top-level keys.
 - Response: `{ Code: "EntityCreated", Data: { Id: "<entity-id>" } }` — save `Data.Id` for subsequent operations.
 - Alternatively use `--file <path>` pointing to a JSON file with the same structure.
@@ -85,7 +85,7 @@ Very large text. Contract differs from `MULTILINE_TEXT`:
 
 ```bash
 uip df entities create "Documents" \
-  --body '{"fields":[{"fieldName":"Title","type":"STRING","isRequired":true},{"fieldName":"Body","type":"MULTILINE_MAX"}]}' \
+  --body '{"fields":[{"name":"Title","type":"STRING","isRequired":true},{"name":"Body","type":"MULTILINE_MAX"}]}' \
   --output json
 ```
 
@@ -111,7 +111,7 @@ Within one create/add batch, field names and effective display names must each b
 
 ```json
 {
-  "fieldName": "AccountNumber",
+  "name": "AccountNumber",
   "type": "STRING",
   "displayName": "Account Number",
   "description": "Customer bank account number",
@@ -126,9 +126,9 @@ Within one create/add batch, field names and effective display names must each b
 
 | Option | Type | Default | Notes |
 |--------|------|---------|-------|
-| `fieldName` | string | required | 3–100 chars, starts with letter, letters and digits only |
+| `name` | string | required | 3–100 chars, starts with letter, letters and digits only |
 | `type` | `EntityFieldDataType` | `STRING` | See type table above |
-| `displayName` | string | fieldName | Human-readable label, max 128 chars |
+| `displayName` | string | name | Human-readable label, max 128 chars |
 | `description` | string | `""` | Optional description, max 512 chars |
 | `isRequired` | boolean | `false` | Field must have a value on insert |
 | `isUnique` | boolean | `false` | Value must be unique across all records |
@@ -136,6 +136,19 @@ Within one create/add batch, field names and effective display names must each b
 | `isEncrypted` | boolean | `false` | Encrypted at rest |
 | `defaultValue` | string | — | Default value (always a string representation) |
 | `lengthLimit`, `maxValue`, `minValue`, `decimalPrecision` | number | type-specific | Advanced per-type constraints — see below |
+
+### Round-trip: `get` shape into `create` / `update`
+
+Paste a field straight from `entities get` (read shape) into `create` `fields` or `update` `addFields` — the CLI normalizes it to the write shape; no translation layer. Each object must be wholly one shape (a field already carrying `name`/`type` is passed through unchanged). Read-only keys (`Id`, `System`, `PrimaryKey`, …) are dropped.
+
+| Read (`entities get`) | Write (`create` / `addFields`) |
+|-----------------------|--------------------------------|
+| `Name` | `name` |
+| `FieldDataType.Name` | `type` |
+| `FieldDataType.{LengthLimit,MaxValue,MinValue,DecimalPrecision}` | `lengthLimit`/`maxValue`/`minValue`/`decimalPrecision` |
+| `DisplayName`, `Description`, `DefaultValue` | `displayName`, `description`, `defaultValue` |
+| `IsRequired`, `IsUnique`, `IsRbacEnabled`, `IsEncrypted`, `IsHiddenField` | `isRequired`, `isUnique`, `isRbacEnabled`, `isEncrypted`, `isHiddenField` |
+| `ReferenceEntity.Id`, `ReferenceField.Id`, `ReferenceChoiceSet.Id` | `referenceEntityId`, `referenceFieldId`, `choiceSetId` |
 
 ### Advanced Field Constraints
 
@@ -151,9 +164,9 @@ Accepted on `entities create` and on `addFields` / `updateFields` in `entities u
 uip df entities create "Orders" \
   --body '{
     "fields": [
-      {"fieldName": "ProductName", "type": "STRING",  "lengthLimit": 500, "isRequired": true},
-      {"fieldName": "Price",       "type": "DECIMAL", "decimalPrecision": 4, "maxValue": 999999, "minValue": 0},
-      {"fieldName": "Quantity",    "type": "DECIMAL", "decimalPrecision": 0, "maxValue": 10000, "minValue": 1}
+      {"name": "ProductName", "type": "STRING",  "lengthLimit": 500, "isRequired": true},
+      {"name": "Price",       "type": "DECIMAL", "decimalPrecision": 4, "maxValue": 999999, "minValue": 0},
+      {"name": "Quantity",    "type": "DECIMAL", "decimalPrecision": 0, "maxValue": 10000, "minValue": 1}
     ]
   }' \
   --output json
@@ -172,8 +185,8 @@ uip df entities update <entity-id> \
 ### Choice Set Fields
 
 ```json
-{ "fieldName": "Status", "type": "CHOICE_SET_SINGLE",   "choiceSetId": "<choice-set-id>" }
-{ "fieldName": "Tags",   "type": "CHOICE_SET_MULTIPLE", "choiceSetId": "<choice-set-id>" }
+{ "name": "Status", "type": "CHOICE_SET_SINGLE",   "choiceSetId": "<choice-set-id>" }
+{ "name": "Tags",   "type": "CHOICE_SET_MULTIPLE", "choiceSetId": "<choice-set-id>" }
 ```
 
 `choiceSetId` is the UUID from `uip df choice-sets list`. If a needed choice set doesn't exist, ask the user — then author it with `choice-sets create` + `choice-set-values create` (do not fall back to `STRING`). Record value is the integer `NumberId` (single) or integer array (multi), from `choice-sets list-values`. Filter semantics — including the `CHOICE_SET_MULTIPLE` `=` vs `contains` distinction — are in [records-query.md](records-query.md#filtering-on-choice-set-fields). Full workflow in [`choice-sets.md`](choice-sets.md).
@@ -181,7 +194,7 @@ uip df entities update <entity-id> \
 ### Relationship Fields
 
 ```json
-{ "fieldName": "customerId", "type": "RELATIONSHIP", "referenceEntityId": "<target-entity-uuid>", "referenceFieldId": "<target-field-uuid>" }
+{ "name": "customerId", "type": "RELATIONSHIP", "referenceEntityId": "<target-entity-uuid>", "referenceFieldId": "<target-field-uuid>" }
 ```
 
 - `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
@@ -217,7 +230,7 @@ Surface this constraint to the user **before** invoking `entities create` / `add
 > **Never include a FILE-typed key in `records insert` or `records update` payloads (data-fabric.md Rule 6).** Expected behavior: the platform silently strips FILE values — UUID, file path, filename, base64, `null` — and returns `Result: Success` with no error. Do not read Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required path: `files upload` to attach or replace, `files delete` to clear, `files download` to retrieve. Sequence to seed a file on a new row: `records insert` without the FILE column → `files upload <entity-id> <record-id> <field-name> --file <path>` against the returned `Id`. CSV `records import` drops FILE columns too (Rule 20).
 
 ```json
-{ "fieldName": "EvidenceFile", "type": "FILE" }
+{ "name": "EvidenceFile", "type": "FILE" }
 ```
 
 - **No reference fields required or accepted.** Server auto-wires to the tenant `EntityAttachment` system entity; any caller-supplied `referenceEntityId` / `referenceFieldId` is stripped by the SDK. Never treat these as user-domain choices — no `AskUserQuestion` about which field to bind. The Rule 14 display-field dropdown fires only for `RELATIONSHIP`.
@@ -241,12 +254,12 @@ Apply only the choices the user confirms — never cascade silently. If the user
 ```bash
 uip df entities update <entity-id> \
   [--folder-key <…>] \
-  --body '{"removeFields":[{"fieldName":"<exact-field-name>"}]}' \
+  --body '{"removeFields":[{"name":"<exact-field-name>"}]}' \
   --yes --reason "<why>" \
   --output json
 ```
 
-Irreversible — drops the column and every record's value in it. Note the body shape: `removeFields` takes `{"fieldName": "..."}`, **NOT** `{"id": "..."}` (that's `updateFields`). Mixing those forms returns *"Each field in removeFields must include a non-empty 'fieldName' string"*.
+Irreversible — drops the column and every record's value in it. Note the body shape: `removeFields` takes `{"name": "..."}`, **NOT** `{"id": "..."}` (that's `updateFields`). Mixing those forms returns *"Each field in removeFields must include a non-empty 'name' string"*.
 
 Before invoking, surface the impact to the user **and** run the cascade-ask (data-fabric.md Rule 11):
 
@@ -264,6 +277,7 @@ Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reaso
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
 | Toggle `isUnique` on an existing field (either direction) | Not supported — `isUnique` is fixed at creation. `updateFields` with `isUnique: true/false` returns `Result: Success` but the server silently ignores the change; the Data Fabric UI renders the toggle as **disabled** on existing fields. To enforce uniqueness on a field that doesn't have it: (1) confirm with the user that the field can be recreated, then (2) `removeFields` it (drops all existing values in that column — see Rule 11), then (3) `addFields` with `isUnique: true`. Do NOT report success on a no-op `updateFields` — verify via `entities get` (see Verify-after-update below). |
 | Field name rejected as a reserved keyword | C#/VB keywords return `RESERVED_LANGUAGE_KEYWORDS`; the CLI also rejects some SQL words such as `Order`, while names such as `Status` and `Key` are accepted. Surface the actual error and ask for a domain-specific rename. |
+| Rename an entity (change its `name`) | Not supported — the entity name is fixed at creation. `entities update` changes only `displayName` / `description`; a top-level `name` in the body is rejected. To use a different name, create a new entity. |
 
 Record-level writes against FILE fields (insert / update / import) are anti-patterns documented in data-fabric.md Rule 6 and [`records-query.md` → FILE fields](records-query.md#file-fields). This file covers schema only.
 
@@ -276,7 +290,7 @@ Use `entities update` to add fields, modify existing field metadata, or update e
 ```bash
 # Add new fields
 uip df entities update <entity-id> \
-  --body '{"addFields":[{"fieldName":"Priority","type":"DECIMAL","decimalPrecision":0},{"fieldName":"Tags","type":"STRING"}]}' \
+  --body '{"addFields":[{"name":"Priority","type":"DECIMAL","decimalPrecision":0},{"name":"Tags","type":"STRING"}]}' \
   --output json
 
 # Update entity display name and description (metadata only)
@@ -287,11 +301,13 @@ uip df entities update <entity-id> \
 # Add fields and update metadata in one call
 uip df entities update <entity-id> \
   --body '{
-    "addFields": [{"fieldName":"Region","type":"STRING"}],
+    "addFields": [{"name":"Region","type":"STRING"}],
     "displayName": "Regional Entity"
   }' \
   --output json
 ```
+
+> A metadata update (`description`, `isRbacEnabled`, `isAnalyticsEnabled`) must also include the current `displayName` — the backend requires it, so the CLI rejects a metadata body without it. Read it from `entities get` and pass it even when only the description changes (as the metadata-only example above does). Field-only updates (`addFields` / `updateFields` / `removeFields`) don't need it.
 
 ### Updating Existing Field Metadata (`updateFields`)
 
@@ -321,7 +337,7 @@ uip df entities update <entity-id> \
 |-----|-------------|
 | `addFields` | Array of field definition objects to add (same shape as create) |
 | `updateFields` | Array of field updates — each entry must include `id` (field UUID) |
-| `removeFields` | Array of field-delete entries — each takes `{"fieldName":"..."}`; see [Deleting a Field](#deleting-a-field) for full gating |
+| `removeFields` | Array of field-delete entries — each takes `{"name":"..."}`; see [Deleting a Field](#deleting-a-field) for full gating |
 | `displayName` | New display name for the entity |
 | `description` | New description |
 | `isRbacEnabled` | Toggle RBAC on the entity |

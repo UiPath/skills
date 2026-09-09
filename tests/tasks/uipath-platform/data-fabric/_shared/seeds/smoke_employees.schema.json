@@ -3,7 +3,7 @@
   "description": "Temporary employee directory for the complex-field smoke test.",
   "fields": [
     {
-      "fieldName": "Name",
+      "name": "Name",
       "displayName": "Name",
       "type": "STRING",
       "isRequired": true,

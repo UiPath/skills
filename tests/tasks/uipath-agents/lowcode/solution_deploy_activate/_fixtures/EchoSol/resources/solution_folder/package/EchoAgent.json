@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EchoAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "297f0dea-d826-40b6-bcda-3a71b5182b30",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EchoAgent"
+    },
+    "locks": [],
+    "key": "e4b02a65-fd06-4e24-ad87-71df3a75b6ba",
+    "files": []
+  }
+}

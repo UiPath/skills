@@ -1,0 +1,48 @@
+task_id: skill-admin-oms-list-tenant-services-smoke
+description: >
+  Smoke test (outcome-graded): agent resolves a tenant and lists the services
+  provisioned on it. Graded on the service records read back from the platform
+  (service type plus the region the platform reports for each), not the command
+  string — the tenant resolution step is implied by needing a real tenant id.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, oms]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  List the services currently provisioned on the tenant I am logged into, and
+  save the complete JSON result to ./tenant-services.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "tenant-services.json holds real tenant service records (ServiceType + Region) from the platform"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('tenant-services.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rows = [x for x in dicts(d) if x.get('ServiceType') or x.get('serviceType')]
+      assert rows, 'no tenant service records in the saved output'
+      assert any(x.get('Region') or x.get('region') or x.get('Status') or x.get('status') for x in rows), 'service records carry neither Region nor Status — not a real tenant service read'
+      types = sorted({str(x.get('ServiceType') or x.get('serviceType')) for x in rows})
+      print(f'OK: {len(rows)} tenant services retrieved, e.g. {types[:4]}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Listing tenant services must not provision or remove any service"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+services\s+(?:add|remove|enable|disable)\b'
+    weight: 2.0

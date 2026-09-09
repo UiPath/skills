@@ -1,0 +1,57 @@
+task_id: skill-admin-apms-list-ip-ranges-smoke
+description: >
+  Smoke test (outcome-graded): a marker allowlist entry is seeded in pre_run and
+  the agent retrieves the organization's IP allowlist. Graded on the entry read
+  back from the live organization (its name and CIDR), which only a real
+  retrieval can produce. Seeding also keeps the check meaningful on an
+  organization whose allowlist would otherwise be empty.
+
+  Enforcement is never enabled by this test, so a seeded allowlist entry has no
+  effect on access.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, apms]
+
+pre_run:
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-list-smoke" APMS_RANGE_COUNT="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-list-smoke" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  List every IP range entry on my UiPath organization's allowlist and save the
+  complete JSON result to ./ranges.json so it can be reviewed.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "ranges.json holds the seeded allowlist entry as the organization stores it (name + CIDR)"
+    command: |
+      python3 -c "
+      import json
+      seed = json.load(open('seed.json'))['range']
+      seeded_name, seeded_cidrs = seed['name'], seed['cidrs']
+      d = json.load(open('ranges.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rows = [x for x in dicts(d) if x.get('Name') and (x.get('IpNetwork') or x.get('ipNetwork'))]
+      assert rows, 'no allowlist entries with Name + IpNetwork in the saved output'
+      hit = next((r for r in rows if r.get('Name') == seeded_name), None)
+      assert hit, 'the seeded entry ' + seeded_name + ' is missing — listing did not come from the organization; entries seen: ' + str([r.get('Name') for r in rows])
+      assert (hit.get('IpNetwork') or hit.get('ipNetwork')) in seeded_cidrs, 'seeded entry network not read back: ' + str(hit)
+      print(f'OK: {len(rows)} allowlist entries retrieved, including the seeded marker')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

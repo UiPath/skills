@@ -1,8 +1,9 @@
 # Task Metadata, Comments & Labels Reference
 
 Operations that annotate or reorganize an existing task. All are folder-scoped:
-pass `--folder-id <id>`, or omit it on an interactive terminal to pick a folder
-(required when stdout is not a TTY). Task IDs are numeric.
+pass `--folder-id <id>` (or `--folder-path <path>` / `--folder-key <guid>`), or
+omit them on an interactive terminal to pick a folder (a folder option is
+required when stdout is not a TTY). Task IDs are numeric.
 
 ## Edit metadata
 
@@ -60,7 +61,7 @@ keep. Use `[]` to clear all labels.
 
 ```bash
 # Set labels
-uip tasks labels <task-id> --folder-id <folder-id> --labels '[{"name":"urgent"}]' --output json
+uip tasks labels <task-id> --folder-id <folder-id> --labels '[{"name":"region","displayName":"Region","displayValue":"EMEA"}]' --output json
 
 # Clear all labels
 uip tasks labels <task-id> --folder-id <folder-id> --labels '[]' --output json

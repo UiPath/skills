@@ -1,0 +1,89 @@
+task_id: skill-gov-access-policy-diagnose-invalid-context-smoke
+description: >
+  Smoke test (outcome-graded): an evaluation comes back Deny and the agent has to
+  explain why. The cause is the malformed resource identifier, not a blocking
+  policy — the service answers Deny with EvaluationDetails saying evaluation was
+  skipped because the resource identifier was missing or invalid, and returns an
+  empty EffectivePolicies. Graded on that service text being read back plus a
+  judge on whether the agent blamed the identifier rather than inventing a policy.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy, evaluate, troubleshoot]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  A team reports that this invocation is being denied and they want to know which
+  policy is blocking it:
+
+  - Resource type: `RPAWorkflow`
+  - Resource ID: `workflow-42`
+  - Actor process type: `Flow`
+  - Actor process ID: `9f1c77aa-1111-4222-8333-0000000000b2`
+
+  Work out why the request is denied. Save the raw JSON of the decision verbatim
+  to ./decision.json, and write your conclusion — what is causing the denial and
+  what has to change — to ./diagnosis.md.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "decision.json carries the service's own 'evaluation skipped' explanation and no contributing policies"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('decision.json', encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rec = next((x for x in dicts(d) if x.get('Enforcement')), None)
+      assert rec, 'saved JSON carries no Enforcement — this is not a decision document'
+      enf = rec.get('Enforcement')
+      assert enf == 'Deny', f'expected the service to answer Deny, got {enf!r}'
+      details = str(rec.get('EvaluationDetails') or '')
+      assert 'skipped' in details.lower(), f'EvaluationDetails does not report a skipped evaluation: {details!r}'
+      assert 'resource identifier' in details.lower(), f'EvaluationDetails does not name the resource identifier: {details!r}'
+      contributors = rec.get('EffectivePolicies') or []
+      assert not contributors, f'no policy should have contributed: {contributors}'
+      print('OK: the service reported evaluation skipped on an invalid resource identifier, with no contributing policies')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "the agent wrote a diagnosis"
+    path: "diagnosis.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "the diagnosis blames the malformed resource identifier, not a blocking policy"
+    files:
+      - diagnosis.md
+    max_file_chars: 20000
+    include_agent_output: false
+    prompt: |
+      The agent was asked which policy is blocking a denied invocation. The
+      service answered Deny with EvaluationDetails: "Policy evaluation skipped
+      because the property was missing or invalid: resource identifier." and an
+      empty EffectivePolicies list, because the resource ID `workflow-42` is not
+      a UUID.
+
+      Read ./diagnosis.md. Award a pass only if it identifies the malformed /
+      non-UUID resource identifier as the cause and says a valid resource UUID is
+      needed. Fail it if it names a specific policy as the blocker, claims a Deny
+      rule matched, or asserts the policies must be changed.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "a diagnosis must not change policy state"
+    tool_name: "Bash"
+    command_pattern: 'access-policy\s+(create|update|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

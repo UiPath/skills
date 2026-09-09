@@ -1,0 +1,9 @@
+{
+  "name": "uipath-preview",
+  "version": "0.1.0",
+  "description": "UiPath Maestro preview skills — the builder-SDK authoring path for uipath-maestro-{flow,case,bpmn}. Synced from UiPath/flow-builder-sdk by scripts/sync-maestro-sdk-preview.mjs; loads as a Claude Code plugin root (skills/<name>/SKILL.md).",
+  "author": { "name": "UiPath" },
+  "license": "MIT",
+  "homepage": "https://github.com/UiPath/skills",
+  "repository": "https://github.com/UiPath/skills"
+}

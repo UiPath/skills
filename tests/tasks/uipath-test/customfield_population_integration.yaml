@@ -72,12 +72,25 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # One criterion per field rather than min_count: 2 on a shared pattern.
+  # min_count counts TOOL CALLS, not occurrences, so an agent chaining both
+  # creates into a single `... && ...` Bash call satisfies the requirement
+  # once and is docked for the second despite having created both fields
+  # correctly.
   - type: command_executed
-    description: "Complete create commands defining fields scoped TestCase: `uip tm customfield create --project-key HEALTH --name <name> --data-type <Text|Label> --object-type TestCase` (x2)"
+    description: "Created the free-text field definition `Eval Reviewer` scoped TestCase"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--data-type\s+(Text|Label))uip\s+tm\s+customfield\s+create'
-    min_count: 2
-    weight: 2.0
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+TestCase)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--data-type\s+Text)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+(["\x27])Eval Reviewer\1)uip\s+tm\s+customfield\s+create'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created the tag/label field definition `Eval Risk` scoped TestCase"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+TestCase)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--data-type\s+Label)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+(["\x27])Eval Risk\1)uip\s+tm\s+customfield\s+create'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

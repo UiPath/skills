@@ -1,0 +1,39 @@
+task_id: skill-gov-access-policy-delete-e2e
+description: >
+  End-to-end (outcome-graded): the agent retires a policy it did not create. The
+  check reads the seeded id back — `access-policy delete` is a soft delete, so
+  the record must report status Deleted with a DeletedOn stamp and must no longer
+  appear in `list`. A do-nothing agent cannot make a seeded id reach that state.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, access-policy, delete]
+
+pre_run:
+  - command: 'GOV_SEED_KEY="retired" GOV_POLICY_BASE="ce-gov-retire" GOV_POLICY_DESCRIPTION="Obsolete - scheduled for removal" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''setup_access_policy.py''))"'
+    timeout: 90
+  # A second policy the agent is told to leave alone. Without it the check only
+  # reads the target back, so an agent that clears the tenant scores full marks.
+  - command: 'GOV_SEED_KEY="bystander" GOV_POLICY_BASE="ce-gov-keep" GOV_POLICY_DESCRIPTION="Active - must survive the retirement" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''setup_access_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''cleanup_access_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 18
+
+initial_prompt: |
+  The access policy named in `seed.json` (the `retired.name` field) is obsolete.
+  Retire it from the tenant. Leave every other policy on the tenant untouched.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the seeded policy is soft-deleted (status Deleted + DeletedOn), gone from the listing, and the bystander policy survived"
+    command: 'GOV_SEED_KEY="retired" GOV_CHECK="deleted" GOV_BYSTANDER_KEY="bystander" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''verify_access_policy.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

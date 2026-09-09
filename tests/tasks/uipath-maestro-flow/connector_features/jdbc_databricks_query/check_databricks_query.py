@@ -17,7 +17,6 @@ wiring described above.
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import sys
@@ -27,6 +26,7 @@ from typing import NoReturn
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.flow_check import (  # noqa: E402
     assert_flow_uses_connector_target,
+    find_flow_file,
 )
 
 FLOW_GLOB = "**/DatabricksQuery*.flow"
@@ -40,10 +40,7 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _flow_path() -> str:
-    flows = glob.glob(FLOW_GLOB, recursive=True)
-    if not flows:
-        _fail(f"no flow file matching {FLOW_GLOB}")
-    return flows[0]
+    return find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
 
 
 def _node_type(node: dict) -> str:

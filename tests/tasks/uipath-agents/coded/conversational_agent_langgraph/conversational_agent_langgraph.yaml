@@ -5,7 +5,7 @@ description: >
   `langgraph.json` entry-point config, and that the agent ran locally
   for two turns. Lazy-LLM-init invariant (Critical Rule C4) still
   applies.
-tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph]
+tags: [uipath-agents, smoke, mode:build, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph]
 
 run_limits:
   expected_turns: 20
@@ -19,7 +19,9 @@ initial_prompt: |
   chain `uip codedagent setup --force` before every uip codedagent
   command (new, init, run).
 
-  once it's running, chat with it twice locally so I can see it works.
+  once it's running, chat with it twice locally — two different
+  messages — and save each reply to a file in the project so I can see
+  both replies.
 
   no publishing, no deploys, no evals — and please don't burn time on
   TaskCreate/TaskUpdate planning. just bang it out end-to-end and stop
@@ -29,6 +31,19 @@ initial_prompt: |
   do not use a low-code conversational agent.
 
 success_criteria:
+  # Critical Rule CQ5 — refresh the CLI's cached Python path after venv changes.
+  # The prompt already instructs chaining this before every codedagent command,
+  # but nothing graded it, so the `codedagent setup --force` capability was only
+  # ever exercised incidentally. This task has no `pre_run`, so the agent is the
+  # only thing that can satisfy it.
+  - type: command_executed
+    description: "Agent refreshed the CLI Python path with codedagent setup --force (Critical Rule CQ5)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+setup\s+.*--force'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent scaffolded the project with uip codedagent new"
     tool_name: "Bash"
@@ -45,11 +60,23 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Supporting: the local run went through the CLI. Count is 1, not 2 —
+  # `command_executed` counts Bash tool calls, so an agent that chains
+  # both runs in one shell command still ran two turns. The turn count
+  # is graded by outcome below.
   - type: command_executed
-    description: "Agent ran the agent locally twice (two chat turns)"
+    description: "Agent ran the agent locally with uip codedagent run"
     tool_name: "Bash"
     command_pattern: 'uip\s+codedagent\s+run'
-    min_count: 2
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two distinct local chat turns produced echoed replies"
+    command: "python3 $TASK_DIR/check_two_local_turns.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

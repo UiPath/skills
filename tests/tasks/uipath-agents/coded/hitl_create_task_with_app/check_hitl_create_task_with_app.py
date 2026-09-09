@@ -5,13 +5,13 @@ Asserts:
   1. `main.py` imports `interrupt` from `langgraph.types`.
   2. `main.py` imports `CreateTask` from `uipath.platform.common`.
   3. At least one `interrupt(CreateTask(...))` call site exists.
-  4. The `CreateTask` call targets `app_name="RefundReview"`,
-     `app_folder_path="Shared/uipath-agents/RefundReview"` (where the app
+  4. The `CreateTask` call targets `app_name="RefundReviewApp"`,
+     `app_folder_path="Shared/uipath-agents/RefundReviewSol"` (where the app
      is deployed on the codereval tenant).
   5. `main.py` does NOT use `CreateEscalation` (that's a different pattern
      covered by hitl_create_task — keep them disjoint).
-  6. `bindings.json` declares the `app` resource for `RefundReview` /
-     `Shared/uipath-agents/RefundReview`.
+  6. `bindings.json` declares the `app` resource for `RefundReviewApp` /
+     `Shared/uipath-agents/RefundReviewSol`.
   7. A top-level `graph =` variable is exported.
   8. `langgraph.json` exists at the resolved project root and points at
      the exported graph.
@@ -39,8 +39,11 @@ from _shared.bindings_assertions import (  # noqa: E402
 
 ROOT = find_project_root("refund-gate")
 
-APP_NAME = "RefundReview"
-APP_FOLDER = "Shared/uipath-agents/RefundReview"
+APP_NAME = "RefundReviewApp"
+APP_FOLDER = "Shared/uipath-agents/RefundReviewSol"
+# SDK-generated (`uip codedagent init`, uipath >= 2.14) and hand-authored
+# (bindings-reference.md) key forms — both resolve at runtime.
+APP_KEYS = (f"app.{APP_NAME}.{APP_FOLDER}", f"{APP_NAME}.{APP_FOLDER}")
 
 
 def fail(msg: str) -> None:
@@ -68,7 +71,7 @@ def module_constants(tree: ast.Module) -> dict[str, object]:
             and isinstance(node.value, ast.Constant)
             and isinstance(node.target, ast.Name)
         ):
-            # Annotated constant, e.g. ``APP_NAME: str = "RefundReview"``.
+            # Annotated constant, e.g. ``APP_NAME: str = "RefundReviewApp"``.
             consts[node.target.id] = node.value.value
     return consts
 
@@ -107,11 +110,11 @@ def main() -> None:
     except SyntaxError as exc:
         fail(f"{module} has a syntax error: {exc}")
 
-    if not re.search(r"from\s+langgraph\.types\s+import\s+[^\n]*\binterrupt\b", text):
+    if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         fail("missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
 
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateTask\b", text):
+    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+(?:[^\n]*\bCreateTask\b|\([^)]*\bCreateTask\b)", text):
         fail(
             "missing `from uipath.platform.common import CreateTask`. "
             "The scenario opens a new Action Center task — use `CreateTask`."
@@ -152,12 +155,18 @@ def main() -> None:
     print("OK: no module-level UiPath* construction")
 
     doc = load_bindings(ROOT / "bindings.json")
-    entry = find_resource(doc, resource="app", key=f"{APP_NAME}.{APP_FOLDER}")
+    present = {
+        r.get("key")
+        for r in (doc.get("resources") or [])
+        if isinstance(r, dict) and r.get("resource") == "app"
+    }
+    key = next((k for k in APP_KEYS if k in present), APP_KEYS[0])
+    entry = find_resource(doc, resource="app", key=key)
     assert_value_field(entry, field="name", expected=APP_NAME)
     assert_value_field(entry, field="folderPath", expected=APP_FOLDER)
     assert_metadata_field(entry, field="ActivityName", expected="create_async")
     assert_metadata_field(entry, field="DisplayLabel", expected=APP_NAME)
-    print(f"OK: bindings.json declares the {APP_NAME}/{APP_FOLDER} `app` resource")
+    print(f'OK: bindings.json declares the {APP_NAME}/{APP_FOLDER} `app` resource (key="{key}")')
 
 
 if __name__ == "__main__":

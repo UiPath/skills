@@ -10,15 +10,25 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
+<!--skill-flavor:solution-commands-row:start-->
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
-| `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
-| `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
+<!--skill-flavor:solution-commands-row:end-->
+<!--skill-flavor:phase-seven-row:start-->
+| `maestro case pack`, `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — recompile `caseplan.json.bpmn`, pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
+<!--skill-flavor:phase-seven-row:end-->
+<!--skill-flavor:resources-row:start-->
+| `solution resources list [--source local]`, `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Inventory read (`list`) + atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
+<!--skill-flavor:resources-row:end-->
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
 
+<!--skill-flavor:auth-column-note:start-->
+<!--skill-flavor:auth-column-note:end-->
+
 ---
 
+<!--skill-flavor:solution-init-section:start-->
 ## uip solution init
 
 Create a new solution directory + `.uipx` file.
@@ -32,6 +42,7 @@ uip solution init <SolutionName>
 | `<SolutionName>` | **(required)** Solution name |
 
 Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's § Scaffold writes the project files separately.
+<!--skill-flavor:solution-init-section:end-->
 
 ---
 
@@ -39,20 +50,27 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
 
+<!--skill-flavor:case-init-command:start-->
 ```bash
 cd <SolutionDir> && uip maestro case init <ProjectName>
 ```
+<!--skill-flavor:case-init-command:end-->
 
 | Flag | Description |
 |------|-------------|
 | `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
 
+<!--skill-flavor:cd-mandatory-note:start-->
 > **The `cd <SolutionDir>` is mandatory; `&&`-chaining after `uip solution init` does NOT satisfy it.** `solution init` makes `<SolutionDir>` a *child* of cwd, so `uip solution init X && uip maestro case init X` still runs `case init` outside the new solution — with the auto-scaffold consequences described below.
+<!--skill-flavor:cd-mandatory-note:end-->
 
+<!--skill-flavor:case-init-semantics:start-->
 `case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution projects add` step — see `implementation.md` § Step 6.
+<!--skill-flavor:case-init-semantics:end-->
 
 ---
 
+<!--skill-flavor:projects-add-section:start-->
 ## uip solution projects add
 
 Register a project with an existing solution. Used in two scenarios in this skill:
@@ -70,6 +88,7 @@ uip solution projects add <ProjectName> <SolutionName>.uipx
 | `<SolutionName>.uipx` | **(required)** Path to the solution `.uipx` |
 
 Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
+<!--skill-flavor:projects-add-section:end-->
 
 ---
 
@@ -95,22 +114,22 @@ Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
-uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"
+uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"
 ```
 
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step. Uploads to Studio Web where the user can visualize, inspect, edit, and publish the case from the browser.
 
-> **`--output-filter` is mandatory on upload.** The raw upload response is large enough that the agent truncates it and loses `DesignerUrl`. The JMESPath projection `{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}` (applied to the response envelope's `Data` field) reduces the response to the three fields the skill actually reads, so `DesignerUrl` always survives.
+> **`--output-filter` is mandatory on upload.** The raw upload response is large enough that the agent truncates it and loses `DesignerUrl`. The JMESPath projection `{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}` (applied to the response envelope's `Data` field) reduces the response to the four fields the skill actually reads, so `DesignerUrl` always survives. `Action` is `Imported` or `Overwritten` — say which one when reporting the upload, since an overwrite replaced whatever was on Studio Web.
 
-> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and dump the unfiltered response to `tasks/upload-response.json` — the filter hides any error/diagnostic fields that explain why the URL is absent.
+> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and dump the unfiltered response to `tasks/upload-response.json` — the filter hides any error/diagnostic fields that explain why the URL is absent. The re-run is itself a second upload (another overwrite, another recorded version) — at most once, within the consent already given for this publish.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Share the resulting URL with the user.
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Share the resulting URL with the user.
 
 ---
 
 ## uip maestro case pack
 
-Pack a single Case project directory into a `.nupkg` file.
+Pack a single Case project directory into a `.nupkg` file — **and, as a side effect, compile `caseplan.json` into `caseplan.json.bpmn` inside the project directory.** That recompile is why Phase 7 runs it. Offline.
 
 ```bash
 uip maestro case pack <project-path> <output-path> --output json
@@ -119,17 +138,21 @@ uip maestro case pack <project-path> <output-path> --output json
 | Flag | Description |
 |------|-------------|
 | `<project-path>` | **(required)** Path to the Case project directory |
-| `<output-path>` | **(required)** Output directory for the `.nupkg` |
+| `<output-path>` | **(required)** Output directory for the `.nupkg` — use `<SolutionDir>/dist`, never a path inside the case project directory |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
 
-> **Not the deploy path.** `uip solution publish` accepts a solution `.zip`, not a project `.nupkg`, and `uip solution pack` already produces the project `.nupkg` internally. Phase 7 uses `uip solution pack` — see below.
+> **Required before every `uip solution pack`.** Run it on every Phase 7 pass, including runs that skipped Phase 5 / Phase 6, and including runs where a `.bpmn` already exists (it may be stale). See [phased-execution.md § Why `case pack` is mandatory](phased-execution.md#why-case-pack-is-mandatory).
+
+> **Requires `package-descriptor.json`** in the project directory (written at scaffold). Without it: `Missing package-descriptor.json in: <project-path>`. Restore the file — never skip the step.
+
+> **Not the deploy artifact.** `uip solution publish` accepts a solution `.zip`, not this `.nupkg` (`<Name>.case.Case.<version>.nupkg`), and `uip solution pack` produces its own project `.nupkg` internally. Run `case pack` for the BPMN recompile; publish the `solution pack` `.zip` — see below.
 
 ---
 
 ## uip solution pack
 
-Pack the solution directory into a deployable `.zip`. Phase 7 step 2 — consent-gated. Offline.
+Pack the solution directory into a deployable `.zip`. Phase 7 step 3 — consent-gated. Offline.
 
 ```bash
 uip solution pack <SolutionDir> <SolutionDir>/dist --output json
@@ -149,11 +172,13 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 
 > Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 14).
 
+> **Does NOT compile the case BPMN.** It bundles `caseplan.json.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
+
 ---
 
 ## uip solution publish
 
-Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 3 — consent-gated.
+Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 4 — consent-gated.
 
 ```bash
 uip solution publish <packagePath> --wait --output json
@@ -179,6 +204,8 @@ uip solution publish <packagePath> --wait --output json
 Validate a case management JSON file against case management rules.
 
 ```bash
+uip maestro case validate <file> --strict --sdd sdd.md --output json
+uip maestro case validate <file> --strict --output json
 uip maestro case validate <file> --output json
 uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
@@ -187,6 +214,8 @@ uip maestro case validate <file> --skeleton --output json
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
+| `--strict` | Authoritative Phase 3-exit and Phase 4 profile: the default checks plus case-wide completeness rules (empty stage, surviving `$xref(`, hoisted `conditionExpression`, incomplete connector context, empty task `data`, output-shape and input-reference form). Failures carry `STRICT_*` codes in `Data.Issues[]`. Mutually exclusive with `--skeleton` / `--skeleton-v2`. |
+| `--sdd <path>` | Audit completeness against the SDD that specifies the case: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present. Implies `--strict`; findings are `STRICT_SDD_*`. Use whenever an `sdd.md` exists. |
 | `--skeleton-v2` | Preferred Phase 2 preview profile: structure plus entry/exit rules, SLA, and escalation, while task values and connector schemas are still incomplete. Availability depends on the installed CLI. |
 | `--skeleton` | Legacy structural profile. Skips tasks, SLAs, escalations, and entry/exit rules. Used only as the Phase 2 fallback when `--skeleton-v2` is unavailable. |
 

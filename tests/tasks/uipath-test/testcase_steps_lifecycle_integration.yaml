@@ -37,9 +37,10 @@ initial_prompt: |
   CLAIM) and then tidying them up after a review — walk it through end to end.
   First create a new manual test case with a clear, unique name.
 
-  Add these one at a time as I give them to you:
-    - "Open the payments screen" — the tester should see the payments form.
+  Add these one at a time, in exactly the order I list them — I know the order
+  is wrong, we fix it in the review pass below:
     - "Enter valid card details" — the form should accept them.
+    - "Open the payments screen" — the tester should see the payments form.
 
   Now add these last two in one shot:
     - "Submit the payment" — expect a confirmation banner.
@@ -57,7 +58,13 @@ initial_prompt: |
 
   List the steps once more so I can confirm the final order. Drop the test case
   key into testcase-key.txt so we can find it, and delete the case when you're
-  done so we don't leave junk behind. Just run it through — no need to check in.
+  done so we don't leave junk behind — you have my confirmation to delete it, so
+  go ahead without asking again. Just run it through — no need to check in.
+
+  This isn't done until all three review tweaks are applied (expected result
+  fixed, step reordered, "Submit the payment" removed), testcase-key.txt
+  exists, and the test case itself is deleted. Work through every one of those
+  before you stop — don't wrap up after the edits.
 
 success_criteria:
   - type: command_executed
@@ -135,7 +142,12 @@ success_criteria:
   - type: command_executed
     description: "Agent deleted the seeded test case for cleanup (`testcases delete --test-case-key ... --yes --output json`)"
     tool_name: "Bash"
+    # Key-only, and the command must succeed. `testcases delete` declares
+    # `--test-case-key` as a requiredOption and has no `--test-case-id`, so
+    # accepting the UUID form would award cleanup credit for a command the CLI
+    # rejects, leaving the seeded case behind.
     command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-key\s+\S)(?=[\s\S]*(--yes|-y)\b)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+delete\b'
+    require_success: true
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

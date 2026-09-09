@@ -5,7 +5,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ## Table of contents
 
 - [Top-level structure](#top-level-structure)
-- [Project structure (from `uip maestro flow init`)](#project-structure-from-uip-maestro-flow-init)
+- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
 - [Node instance](#node-instance)
 - [Layout](#layout)
 - [Edge — both ports required](#edge--both-ports-required)
@@ -16,6 +16,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 - [Minimal working example — dice roller](#minimal-working-example--dice-roller)
 - [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
 - [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+- [Bindings — Data Fabric entity bindings](#bindings--data-fabric-entity-bindings)
 - [Bindings — connector connection binding](#bindings--connector-connection-binding)
 
 ## Top-level structure
@@ -23,7 +24,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```json
 {
   "id": "<uuid>",
-  "version": "<version from `uip maestro flow init`>",
+  "version": "<scaffolded file-format version>",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -36,19 +37,21 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-> **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array's own key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`) located in the text you just `Read` — never on "the key that follows X." See [greenfield.md — Anchoring parallel `.flow` Edits](../author/references/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+> **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array's own key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`) located in the text you just `Read` — never on "the key that follows X." See [greenfield.md — Anchoring parallel `.flow` Edits](../author/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
 
 Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are not guaranteed.
 
+<!--skill-flavor:flow-format-version-source:start-->
 **Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
+<!--skill-flavor:flow-format-version-source:end-->
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
 
-`solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
+`solutionId` and `projectId` may also appear at the top level — these are auto-populated by the project scaffold and packaging. Preserve the generated values.
 
-> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/references/plugins/connector/impl.md) for the connector-binding shape.
+> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/plugins/connector/impl.md) for the connector-binding shape.
 
-## Project structure (from `uip maestro flow init`)
+## Project structure (generated scaffold)
 
 ```
 <ProjectName>/
@@ -134,7 +137,7 @@ Example — manual start trigger:
 
 ### Node outputs
 
-`$vars.<sourceNodeId>.<outputId>` resolution at runtime is driven by **`variables.nodes[]`**, not by the node instance's `outputs` block. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs; the action-node instance `outputs` block is ignored at serialization (the manifest's `outputDefinition` supplies the activity-side mapping). End / terminate nodes are the exception — their instance `outputs` block IS consumed to map workflow-level `out` variables. See [end/impl.md](../author/references/plugins/end/impl.md).
+`$vars.<sourceNodeId>.<outputId>` resolution at runtime is driven by **`variables.nodes[]`**, not by the node instance's `outputs` block. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs; the action-node instance `outputs` block is ignored at serialization (the manifest's `outputDefinition` supplies the activity-side mapping). End / terminate nodes are the exception — their instance `outputs` block IS consumed to map workflow-level `out` variables. See [end/impl.md](../author/plugins/end/impl.md).
 
 The canonical recipe for a data-producing node is therefore:
 
@@ -142,7 +145,7 @@ The canonical recipe for a data-producing node is therefore:
 - `variables.nodes[]` entry per output: `{ "id": "<nodeId>.<outputId>", "type": "object", "binding": { "nodeId": "<nodeId>", "outputId": "<outputId>" } }`.
 - Optional instance `outputs` block matching the manifest — harmless and matches the canonical examples below for clarity, but **not** what controls runtime variable visibility.
 
-Skipping `variables.nodes[]` produces a flow that passes `flow validate` but resolves `$vars.<sourceNodeId>.output` to `undefined` at runtime (MST-9972). `uip maestro flow format` regenerates `variables.nodes[]` from `nodes[]` + `definitions[]`, so always run it after structural edits — the omission becomes self-healing.
+Skipping `variables.nodes[]` produces a flow that passes `flow validate` but resolves `$vars.<sourceNodeId>.output` to `undefined` at runtime. `uip maestro flow format` regenerates `variables.nodes[]` from `nodes[]` + `definitions[]`, so always run it after structural edits — the omission becomes self-healing.
 
 When you DO author the instance `outputs` block (for documentation / parity with manifest schema), use the shape below. Each output entry has:
 
@@ -185,7 +188,7 @@ Trigger nodes (manual, scheduled, connector triggers) have a single output — n
 }
 ```
 
-End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see the [Author end plugin reference](../author/references/plugins/end/impl.md)).
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see the [Author end plugin reference](../author/plugins/end/impl.md)).
 
 ## Layout
 
@@ -221,7 +224,7 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
@@ -269,7 +272,7 @@ Copy the returned node definition object into your `definitions` array. Dependin
 
 > The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maestro flow registry get`. Instances do not carry the BPMN type.
 
-For full details on each node (ports, inputs, outputs, when to use), see the [Author planning architecture guide](../author/references/planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see the [Author planning implementation guide](../author/references/planning-impl.md).
+For full details on each node (ports, inputs, outputs, when to use), see the [Author planning architecture guide](../author/planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see the [Author planning implementation guide](../author/planning-impl.md).
 
 Discover all available types:
 ```bash
@@ -287,12 +290,12 @@ uip maestro flow registry search <keyword>
 | `core.action.transform` | `output`, `error` | `input` |
 | `core.logic.decision` | `true`, `false` | `input` |
 | `core.logic.switch` | `case-{id}` (dynamic), `default` | `input` |
-| `core.logic.loop` | `success`, `output` | `input`, `loopBack` |
+| `core.logic.loop` | `success`, `error` (outer), `start` (inner) | `input` (outer), `continue`, `break` (inner) |
 | `core.logic.merge` | `output` | `input` |
 | `core.control.end` | — | `input` |
 | `core.logic.terminate` | — | `input` |
 
-Connector activities, agent nodes, and RPA nodes follow the same pattern as the generic action nodes above: a primary source port plus an implicit `error` port.
+Connector activities, agent nodes, and RPA nodes follow the same pattern as the generic action nodes above: a primary source port plus an implicit `error` port. The `core.datafabric.*` nodes are the exception — `input` and `output` only.
 
 Verify exact ports for any node type:
 ```bash
@@ -303,7 +306,7 @@ uip maestro flow registry get <node-type> --output json
 
 ## Implicit error port on action nodes
 
-Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — essentially every action node.
+Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — most action nodes, but not all: the `core.datafabric.*` family does not declare it and has no `error` port ([data-fabric/impl.md](../author/plugins/data-fabric/impl.md#no-error-port)). Check the registry rather than assuming.
 
 The port is **not** listed in the registry's `handleConfiguration`. Studio Web only exposes it when the source node has `inputs.errorHandlingEnabled: true`; when the flow contains an outgoing edge with `sourcePort: "error"` from that node, the serializer emits a BPMN boundary error event attached to the node. Because of this gate, `uip maestro flow validate` reports an error when a node has an outgoing `sourcePort: "error"` edge but `inputs.errorHandlingEnabled` is not `true` — so the inconsistency is caught before publish rather than surfacing as a hidden edge in Studio Web.
 
@@ -325,7 +328,7 @@ An `error` edge must not rejoin the happy path. When it does, every failure walk
 | ✗ | The next node on the happy path | Failure is invisible; downstream nodes run on missing data |
 | ✗ | The same End node the success path reaches | Success path's output mappings run against the failed node's empty output |
 | ✓ | A **distinct** End node mapping an error/status `out` variable | Caller can tell failure from success |
-| ✓ | `core.logic.terminate` | Aborts the flow when recovery is impossible — see [terminate/impl.md](../author/references/plugins/terminate/impl.md) |
+| ✓ | `core.logic.terminate` | Aborts the flow when recovery is impossible — see [terminate/impl.md](../author/plugins/terminate/impl.md) |
 | ✓ | A recovery branch that rejoins **only after obtaining valid data** — a retry that succeeded, or a fallback source that returned data | Downstream runs on real data, not on the failed node's empty output |
 
 ```text
@@ -384,12 +387,14 @@ Building a flow is a two-step process: write the nodes/edges structure, then pop
 
 ### Step 1 — Write nodes and edges
 
+<!--skill-flavor:minimal-example-version-source:start-->
 Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator) — this applies ONLY to the top-level flow `id` and `entryPointId` (the same UUID must appear in `entry-points.json` as `uniqueId`). **Node and edge ids are NOT UUIDs** — they must start with a letter (see the Edge gotcha above). Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
+<!--skill-flavor:minimal-example-version-source:end-->
 
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "<version from `uip maestro flow init`>",
+  "version": "<scaffolded file-format version>",
   "name": "DiceRoller",
   "nodes": [
     {
@@ -497,7 +502,7 @@ The `definitions` array must contain exactly one entry per unique `type:typeVers
 
 ## entry-points.json — auto-generated, do not edit
 
-`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). **Do not edit this file directly** — it is auto-generated by `uip maestro flow init` and regenerated by `uip maestro flow debug` before upload. Manual edits will be overwritten.
+`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). Preserve its lifecycle-generated contents; project scaffolding creates it, and the Flow lifecycle regenerates it before execution or publication.
 
 Flow input and output parameters are declared through **variables** in the `.flow` file:
 - **Flow inputs**: Add entries to `variables.nodes[]` whose `binding.nodeId` is the start node and whose `binding.outputId` names each input value — the start node "outputs" input values to downstream nodes
@@ -509,6 +514,8 @@ The packaging/debug step derives `entry-points.json` from these variable declara
 ## Bindings — Orchestrator resource bindings (top-level `bindings[]`)
 
 The top-level `bindings` array (a sibling of `nodes`, `edges`, `definitions`, `variables`, `layout`) holds resource-reference indirections for **Orchestrator resource nodes** — RPA workflows, agents, flows, agentic processes, API workflows, and HITL apps.
+
+Folder-scoped Data Fabric entities also write rows into this same array, but resolve them by a **different rule**. Everything in this section describes the Orchestrator-resource form; see [Bindings — Data Fabric entity bindings](#bindings--data-fabric-entity-bindings) below for how the `Entity` kind differs.
 
 Each resource node needs two binding entries (one for `name`, one for `folderPath`). The node instance itself has no binding or context data — just `inputs`. The definition (copied verbatim from the registry) carries `model.context[]` templates like `<bindings.name>` and `<bindings.folderPath>`. At BPMN emit time the runtime rewrites those placeholders to `=bindings.<id>` by matching the placeholder name against a workflow-level binding, scoped by the definition's `model.bindings.resourceKey`.
 
@@ -550,9 +557,27 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [author/CAPABILITY.md](../author/CAPABILITY.md).
 
-See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/references/plugins/rpa/impl.md), [agent](../author/references/plugins/agent/impl.md), [flow](../author/references/plugins/flow/impl.md), [agentic-process](../author/references/plugins/agentic-process/impl.md), [api-workflow](../author/references/plugins/api-workflow/impl.md), [hitl](../author/references/plugins/hitl/impl.md).
+See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/plugins/rpa/impl.md), [agent](../author/plugins/agent/impl.md), [flow](../author/plugins/flow/impl.md), [agentic-process](../author/plugins/agentic-process/impl.md), [api-workflow](../author/plugins/api-workflow/impl.md), [hitl](../author/plugins/hitl/impl.md).
 
 **Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
+
+## Bindings — Data Fabric entity bindings
+
+A **folder-scoped** Data Fabric entity (`core.datafabric.*` nodes) writes two rows into the same top-level `bindings[]` array, but they are not Orchestrator resource bindings and most of the rules in the section above do not carry over:
+
+| Aspect | Orchestrator resource nodes | Data Fabric `Entity` |
+| --- | --- | --- |
+| `resource` | `process`, `agent`, … | `Entity` — capitalized; a lowercase row is ignored by packaging, so deploy emits no override |
+| Matched by | `(resourceKey, name)` | `(resourceKey, propertyAttribute)`, falling back to `name` only when `propertyAttribute` is absent |
+| `name` holds | the placeholder name (`name` / `folderPath`) | a **display label** — the entity name, and `<entityName>Folder` for the folder row |
+| `propertyAttribute` | `name` / `folderPath` | `name` / **`folderKey`** — never `folderPath` |
+| `resourceSubType` | required, mirrors the definition | **absent** — Entity bindings have no definition-side `model.bindings` |
+
+The value is in `default` for both forms. There is also no `<bindings.{name}>` placeholder to rewrite: the entity has no definition-side `model.context[]`, and the serializer emits `bindings.<id>` tokens directly into the `=datafabric[...]` expression it builds.
+
+`folderKey` rather than `folderPath` is load-bearing. The platform's deploy-time override for an `Entity` resource carries `{ name, folderPath, folderKey }` and rewrites binding defaults by `propertyAttribute`; a `folderPath` row receives the Orchestrator FQN, which the Data Fabric query rejects even in the source org.
+
+Tenant-scoped entities need no bindings at all — they serialize as a dotted literal. See [data-fabric/impl.md — Folder-scoped entities and bindings](../author/plugins/data-fabric/impl.md#folder-scoped-entities-and-bindings) for the full JSON and when to hand-author it.
 
 ## Bindings — connector connection binding
 

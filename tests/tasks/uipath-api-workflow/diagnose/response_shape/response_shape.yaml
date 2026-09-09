@@ -1,0 +1,78 @@
+task_id: skill-api-workflow-diagnose-response-shape
+description: >
+  Diagnose (Response pitfall): the Response activity uses `set` instead of
+  `response` and omits `then: "end"`, so validate rejects it outright.
+
+  The one fixture in this group that fails STATICALLY. It exercises the
+  validate -> read errors -> fix loop against a Response-specific error, where
+  diagnose/validate_fix covers an If-structure error — different validator check,
+  different fix.
+
+  Covers rule 15 and the Response category of references/troubleshooting.md.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py response_shape"
+    timeout: 30
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  The API workflow in ./Workflow.json should set a `status` variable to "ready"
+  and return { "status": "ready" }. It currently fails validation.
+
+  Run `uip api-workflow validate` on it, read the error it reports, and fix the
+  activity the error names. Then re-validate, and confirm a run returns that
+  payload — a workflow that validates but returns "(no output)" is not fixed.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present — repaired in place, not replaced wholesale"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
+      reading the file is equally valid, and 3 of 4 agents did exactly that)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Repaired workflow validates"
+    command: >-
+      uip api-workflow validate ./Workflow.json --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: repaired workflow returns the correct result"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{}'
+      --output json | grep -qiE '"status":[ ]*"ready"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: repeated run still correct (this workflow takes no input to vary)"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{}'
+      --output json | grep -qiE '"status":[ ]*"ready"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

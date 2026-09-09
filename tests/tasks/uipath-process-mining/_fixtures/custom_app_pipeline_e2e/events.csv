@@ -1,0 +1,32 @@
+Case_ID,Activity,Timestamp
+PO-1001,Create Purchase Requisition,2026-01-05 09:12:00
+PO-1001,Approve Requisition,2026-01-05 11:40:00
+PO-1001,Create Purchase Order,2026-01-06 08:05:00
+PO-1001,Receive Goods,2026-01-12 14:22:00
+PO-1001,Receive Invoice,2026-01-14 10:03:00
+PO-1001,Clear Invoice,2026-01-20 16:45:00
+PO-1002,Create Purchase Requisition,2026-01-06 10:31:00
+PO-1002,Approve Requisition,2026-01-07 09:18:00
+PO-1002,Create Purchase Order,2026-01-07 15:02:00
+PO-1002,Receive Invoice,2026-01-15 11:27:00
+PO-1002,Receive Goods,2026-01-16 08:49:00
+PO-1002,Clear Invoice,2026-01-23 13:10:00
+PO-1003,Create Purchase Requisition,2026-01-08 08:00:00
+PO-1003,Approve Requisition,2026-01-08 12:55:00
+PO-1003,Create Purchase Order,2026-01-09 09:30:00
+PO-1003,Change Purchase Order,2026-01-10 14:12:00
+PO-1003,Receive Goods,2026-01-19 10:05:00
+PO-1003,Receive Invoice,2026-01-21 09:41:00
+PO-1003,Clear Invoice,2026-01-28 15:33:00
+PO-1004,Create Purchase Requisition,2026-01-09 13:44:00
+PO-1004,Approve Requisition,2026-01-12 08:21:00
+PO-1004,Create Purchase Order,2026-01-12 16:07:00
+PO-1004,Receive Goods,2026-01-22 11:16:00
+PO-1004,Receive Invoice,2026-01-23 09:02:00
+PO-1004,Clear Invoice,2026-02-02 10:58:00
+PO-1005,Create Purchase Requisition,2026-01-13 09:05:00
+PO-1005,Approve Requisition,2026-01-13 15:47:00
+PO-1005,Create Purchase Order,2026-01-14 10:12:00
+PO-1005,Receive Goods,2026-01-26 13:39:00
+PO-1005,Receive Invoice,2026-01-27 08:54:00
+PO-1005,Clear Invoice,2026-02-05 12:20:00

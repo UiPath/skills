@@ -1,0 +1,46 @@
+task_id: skill-admin-authz-list-permissions-smoke
+description: >
+  Smoke test (outcome-graded): agent retrieves the permission catalog and saves
+  the JSON. Graded on the permission definitions read back from the live tenant
+  (dotted action Name + ScopeType), not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  List the catalog of available permission definitions for my UiPath
+  organization. Save the complete JSON result to ./permissions.json so it can
+  be reviewed.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "permissions.json holds real permission definitions from the tenant (dotted action Name + ScopeType)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('permissions.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      rows = data if isinstance(data, list) else next((L for L in lists(data) if L and isinstance(L[0], dict)), None)
+      assert isinstance(rows, list) and len(rows) >= 1, f'expected a list of permissions; got {type(rows).__name__}'
+      r = rows[0]
+      assert 'Name' in r, f'permission record missing Name; keys={list(r)[:10]}'
+      dotted = [x for x in rows if (x.get('Name') or '').count('.') >= 2]
+      assert dotted, 'no NAMESPACE.RESOURCE.ACTION style permission names — not a real catalog'
+      assert any((x.get('ScopeType') or x.get('scopeType')) for x in rows), 'no ScopeType on any record'
+      print(f'OK: {len(rows)} permissions retrieved; sample=' + str(dotted[0].get('Name')))
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

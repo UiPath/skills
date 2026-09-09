@@ -1,0 +1,68 @@
+task_id: skill-gov-access-policy-get-smoke
+description: >
+  Smoke test (outcome-graded): a Simulated marker policy is seeded in pre_run and
+  the agent resolves it by name and fetches its full definition. Graded on the
+  document read back from the service — selectors, executable rule and the seeded
+  description can only come from a real retrieval. `list --filter` silently
+  ignores unsupported fields (a `name eq` filter returns every policy), so the
+  name has to be matched client-side.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy, get]
+
+pre_run:
+  - command: 'GOV_SEED_KEY="policy" GOV_POLICY_BASE="ce-gov-get" GOV_POLICY_DESCRIPTION="Seeded for the access-policy get scenario" GOV_RESOURCE_TYPE="Agent" GOV_ACTOR_PROCESS_TYPE="Flow" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''setup_access_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''cleanup_access_policy.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  The access policy named in `seed.json` (the `policy.name` field) is up for
+  review. Fetch its full definition and save the complete JSON to ./policy.json.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "policy.json is the seeded definition as the service stores it (selectors, executable rule, description)"
+    command: |
+      python3 -c "
+      import json, re
+      seed = json.load(open('seed.json', encoding='utf-8-sig'))['policy']
+      d = json.load(open('policy.json', encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      pol = next((x for x in dicts(d) if x.get('Name') == seed['name']), None)
+      wanted = seed['name']
+      assert pol, f'saved JSON does not contain the {wanted} record'
+      assert re.fullmatch(r'[0-9a-fA-F-]{36}', str(pol.get('Id') or '')), 'no service-assigned Id on the policy'
+      ptype = pol.get('PolicyType')
+      assert ptype == 'ToolUsePolicy', f'unexpected PolicyType {ptype!r}'
+      assert (pol.get('Description') or '').strip() == seed['description'], 'description was not read back from the service'
+      status = pol.get('Status')
+      assert status == 'Simulated', f'status came back as {status!r}'
+      sel = pol.get('Selectors') or []
+      assert any(s.get('ResourceType') == seed['resourceType'] for s in sel), f'selectors not retrieved: {sel}'
+      vals = (pol.get('ExecutableRule') or {}).get('Values') or []
+      assert any(v.get('Type') == seed['actorProcessType'] for v in vals), f'executable rule not retrieved: {vals}'
+      assert ((pol.get('ActorRule') or {}).get('Values') or []), 'actor rule not retrieved'
+      print('OK: seeded policy retrieved with its selectors, executable rule, actor rule and description')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "inspection is read-only — the policy was not modified"
+    tool_name: "Bash"
+    command_pattern: 'access-policy\s+(create|update|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

@@ -18,10 +18,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 2. **SKILL.md frontmatter is required:** must include `name` (matching folder name) and `description` (with TRIGGER/DO NOT TRIGGER conditions)
 3. **References use kebab-case filenames** with `-guide.md` and `-template.md` suffixes
 4. **Update CODEOWNERS** when adding or modifying skill ownership
-5. **No structural cross-skill dependencies** — a skill must work in isolation (never import or read another skill's files); runtime delegation to a same-plugin sibling skill is allowed when it degrades gracefully
-6. **No secrets or personal paths** in committed files
-7. **CLI commands must use `--output json`** when output is parsed programmatically
-8. **Review new skills for every custom flavor.** They are included automatically; add the smallest sparse override wherever canonical guidance is not safe for a target environment
+5. **Update the two skill registries in the SAME PR that adds, renames, or removes a skill folder.** Adding or renaming `skills/<name>/` requires the matching edit to `assets/skill-status.json` (lifecycle status) AND to `skills.sh.json` (display grouping); removing a skill requires deleting its entry from both. Neither file is discovered from disk, so nothing else in the build notices when they drift. Verify both before opening the PR:
+
+   ```bash
+   python3 scripts/check-skill-status.py --write-readme   # regenerates the README table
+   python3 scripts/check-skills-sh.py                     # add/rename/remove: must print OK
+   ```
+
+   Full change→edit table, the `--fix` limits, and how pre-existing drift is reported: [`.claude/rules/skill-structure.md` § skills.sh Grouping](.claude/rules/skill-structure.md).
+6. **No structural cross-skill dependencies** — a skill must work in isolation (never import or read another skill's files); runtime delegation to a same-plugin sibling skill is allowed when it degrades gracefully
+7. **No secrets or personal paths** in committed files
+8. **CLI commands must use `--output json`** when output is parsed programmatically
+9. **Review new skills for every custom flavor.** They are included automatically; add the smallest sparse override wherever canonical guidance is not safe for a target environment
+10. **Never rename a job that produces a required status check, and never narrow its trigger.** A required context is a literal string GitHub waits for. Rename the job and the context stops reporting; add `paths:`, `paths-ignore:`, `branches:`, `branches-ignore:` or a `types:` list without `synchronize` and the workflow won't run on excluded PRs. Either way the check never arrives and **every open PR blocks**, not just yours. Short-circuit *inside* the job instead — a skipped job counts as a pass. The set lives in [`docs/REQUIRED-CHECKS.md`](docs/REQUIRED-CHECKS.md) § Current target set and is not discovered from disk; edit it in the same PR as the workflow:
+
+    ```bash
+    python3 -m pytest tests/scripts/test_required_checks_contract.py -q   # must pass
+    ./scripts/apply-required-checks.sh --dry-run                          # preview the ruleset
+    ./scripts/apply-required-checks.sh --check                            # doc vs live ruleset (needs repo admin)
+    ```
 
 ## File Conventions
 
@@ -32,6 +47,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 | `skill-flavors/<flavor>/<skill>/**/*.md` | Optional sparse overrides at paths relative to `skills/`; contain only named replacement blocks. |
 | `<!--skill-flavor:<name>:start\|end-->` | Compact, whitespace-free column-one boundary around the smallest canonical passage that differs by flavor. Names are lowercase kebab-case and unique within a file; indent the enclosed Markdown, never the boundary. |
 | `assets/templates/*` | Templates end with `-template.md` or `-template.<ext>`. |
+| `skills.sh.json` | Display grouping for the repo's skills.sh page. Every `skills/<name>/` appears in exactly one grouping. Edit it in the same PR that adds, renames, or removes a skill folder — validate with `python3 scripts/check-skills-sh.py`. |
+| `assets/skill-status.json` | Lifecycle status (`stable` / `preview` / `in-development`) for every skill — the single source of truth. Edit in the same PR as the skill folder; regenerate the README table with `python3 scripts/check-skill-status.py --write-readme`. |
+| `docs/REQUIRED-CHECKS.md` | The required-status-check set, plus the rules that keep a context reportable. Machine-read: `scripts/parse-required-checks.py` is its only parser, shared by `scripts/apply-required-checks.sh` and the contract guard. Edit § Current target set in the same PR that renames a required job or changes its trigger. |
 | `hooks/*.sh` + `hooks/*.ps1` | Session hooks ship as twin implementations with the same basename — bash and PowerShell (5.1 and 7+ compatible). The twins MUST stay behaviorally identical: a change to one requires the same change to the other in the same PR. Dispatched by the polyglot commands in `hooks/hooks.json`. |
 
 ## When Reviewing or Editing Skills

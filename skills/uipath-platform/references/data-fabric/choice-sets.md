@@ -64,7 +64,7 @@ Two rules for any script that batch-creates values:
 1. List choice sets and let the user reuse one or approve a new set.
 2. For a new set, create it, then create each value separately in the approved order. `choice-set-values create` takes the set ID and value name as positional arguments; it does not accept a batch `--body`.
 3. Re-list values to obtain their assigned `NumberId`s.
-4. Bind the set with `{"fieldName":"<field>","type":"CHOICE_SET_SINGLE","choiceSetId":"<id>"}` (or `CHOICE_SET_MULTIPLE`) in `entities create` or `entities update`.
+4. Bind the set with `{"name":"<field>","type":"CHOICE_SET_SINGLE","choiceSetId":"<id>"}` (or `CHOICE_SET_MULTIPLE`) in `entities create` or `entities update`.
 
 ## Write / read / filter record values
 

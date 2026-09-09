@@ -605,6 +605,36 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Ensure object literals have unique keys
 <!--skill-flavor:runtime-executor-failures:end-->
 
+### `"Script execution failed timed out"`
+
+<!--skill-flavor:script-budget-symptom:start-->
+- **Symptom:** A JavaScript activity that works on small inputs fails on larger ones with `Execution error: Script execution failed timed out: Script execution failed timed out`. The workflow validates; only the run fails.
+<!--skill-flavor:script-budget-symptom:end-->
+<!--skill-flavor:script-budget-cause:start-->
+- **Cause:** The activity exceeded the runner's per-script budget. In the executor the CLI actually ships — `@uipath/api-workflow-executor` **12.10.2**, exact-pinned by `packages/api-workflow-tool/package.json` on `uipcli` main — the budget is a **flat 10 seconds**, passed as a bare literal:
+
+  ```js
+  // dist/handlers/script-task-handler.js
+  await this.expressionHandler.evaluateScript(code, taskName, 10000);
+  ```
+
+  Measured against that build: an 8-second script passes, a 12-second script fails.
+
+  **Check the pinned executor before trusting any number here** — it is a literal, not a documented contract, and it has already changed: executor 12.23.2 (newer, NOT pinned by the CLI as of 2026-08-20) replaces it with `SCRIPT_TIMEOUT_MS = 10000` plus a second budget of ~100s for scripts whose source contains `$helpers`, selected by a literal `code.includes('$helpers')` substring test. If your CLI pins 12.23.x or later, the 10s figure applies only to scripts with no `$helpers` call.
+
+  All of the above are **local** figures. The **cloud** cap is different and is documented: *"JavaScript code execution has a timeout of 30 seconds"* — [Script activity, Known limitations](https://docs.uipath.com/studio-web/automation-cloud/latest/user-guide/script).
+
+  So the local runner is **3x stricter than cloud**, and each side misleads on its own:
+  - A local `timed out` failure does **not** mean the workflow fails in cloud — anything under 30s runs there.
+  - Passing locally does **not** prove you clear the cloud cap. Local runs use small fixtures; a script that takes 3s over 10 test rows can exceed 30s over 10,000 production rows.
+
+<!--skill-flavor:script-budget-cause:end-->
+- **Fix:**
+  - Move bulk work out of one script: page the data and process a batch per loop iteration, so each script invocation is short.
+  - Split one long script into several JavaScript activities chained by `export`.
+  - Never busy-wait inside a script (`while (Date.now() < end) {}`) — use a `Wait` activity, which is not charged against the script budget.
+  - If the work genuinely cannot be split, it does not belong in an API workflow; a connector call or a Coded Function is the right home.
+
 <!--skill-flavor:cloud-run-diagnostics:start-->
 ### Failed cloud run after publish (job faulted in Orchestrator)
 
@@ -612,13 +642,41 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** Faults that only surface in cloud — real vendor responses, connection auth/token state, trigger payload shape, tenant/folder scoping — none of which the local runtime exercises.
 - **Fix:** Diagnose from the deployed job, not the local file:
   ```bash
-  uip or jobs get <jobId> --output json                  # status + fault summary
-  uip or jobs logs <jobId> --output json                 # execution logs for the run
-  uip traces spans get --job-key <jobKey> --output json  # span-level execution trace (also accepts a <trace-id> positional)
+  uip or jobs get <jobId> --output json   # THE diagnostic: Data.State + Data.Info
   ```
-  (Folder scoping differs: `uip or jobs list` accepts `--folder-path`/`--folder-key`/`--all-folders`; `uip or triggers list` accepts only `--folder-path`/`--folder-key`; `uip or jobs start <process-key>` infers the folder. `uip or jobs traces` is Agent-type-process-only; use `traces spans get` for API-workflow jobs.)
+  `Data.State` reads `Faulted` and `Data.Info` carries the runtime message — for an API workflow that is usually the whole answer.
+
+  **Two surfaces that look useful and are not, for API-workflow jobs:**
+
+  | Command | What it actually returns |
+  |---------|--------------------------|
+  | `uip or jobs logs <jobId>` | Lifecycle lines only — `"Workflow started"` / `"Workflow completed"`, both at level `Info`. It reports **`Workflow completed` even for a Faulted job** and never carries the error. Never read "completed" here as success. |
+  | `uip traces spans get --job-key <jobKey>` | Returned `"Error retrieving trace ID for job"` on every API-workflow job probed. The CLI emits that same message for any trace-ID lookup failure (a malformed GUID included), so read it as "no trace resolved for this job", not as proof the surface is absent. Either way it yields no fault detail — use `jobs get`. |
+
+  **Diagnose before you tear down:** after uninstalling the deployment, `uip or jobs get` on its jobs returns `Result: Failure` with an empty `State`. Jobs themselves are immutable audit records (`uip or jobs --help`: they "cannot be deleted -- they age out per the binding process's retention period"), so the likely cause is that the folder/process context needed to resolve the job is gone, not the records. Either way, read the fault before you uninstall.
+
+  (Folder scoping differs: `uip or jobs list` accepts `--folder-path`/`--folder-key`/`--all-folders`; `uip or triggers list` accepts only `--folder-path`/`--folder-key`; `uip or jobs start <process-key>` infers the folder.)
   Map the surfaced error back to a fix with the category order below (Structure > Expression > Activity Config > Logic). If the fault is a 401 / `ConnectionNotEnabled`, `uip is connections ping <uuid>` the bound connection first. Full operate + diagnose command map: [operating-published-workflows.md](operating-published-workflows.md). For deep, multi-signal root-cause (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
 <!--skill-flavor:cloud-run-diagnostics:end-->
+
+<!--skill-flavor:outbound-ip-heading:start-->
+### Outbound call to a third-party API works locally, times out or is refused in cloud
+<!--skill-flavor:outbound-ip-heading:end-->
+
+<!--skill-flavor:outbound-ip-symptom:start-->
+- **Symptom:** An `HTTP Request` or connector call to a customer/vendor endpoint succeeds when the workflow is executed on your own machine and fails only from the deployed copy — connection refused, or a hang ending in a timeout. Same URL, same payload.
+<!--skill-flavor:outbound-ip-symptom:end-->
+<!--skill-flavor:outbound-ip-cause-open:start-->
+- **Cause:** Local runs egress from your machine's IP; cloud runs egress from UiPath infrastructure. If the target sits behind an IP allowlist, the cloud source addresses have to be on it — and **which** addresses depends on how the call is made.
+<!--skill-flavor:outbound-ip-cause-open:end-->
+
+  Per [About API workflows](https://docs.uipath.com/studio-web/automation-cloud/latest/user-guide/about-api-workflows): *"Which outbound path applies depends on how the external call is made"* — an HTTP Request with manual authentication egresses via **serverless robots**, a connector-based call via **Integration Service** — and allowlisting is required *"only when API workflows communicate externally"*, covering both **Serverless static IPs** and **Integration Service IPs**.
+
+  The two are not interchangeable, and the reason is structural. Per [Configuring the firewall for Automation Cloud](https://docs.uipath.com/automation-cloud/automation-cloud/latest/admin-guide/configuring-the-firewall-for-cloud), most services now share one **unified** set of outbound ranges per region — *"a single set of IP ranges covers Automation Cloud Portal, Orchestrator, Integration Service, Apps, Automation Ops, Test Manager, AI Trust Layer, and Notification Service simultaneously"* — but four services are carved out: *"Document Understanding, Insights, IXP, and Automation Cloud Robots - Serverless"* keep their own service-specific ranges.
+
+  So **Integration Service sits in the unified regional set and serverless robots do not.** A customer who allowlisted the unified ranges has covered your connector activities and *not* your manual-auth HTTP calls. Always read the current ranges off those pages before asking anyone to change firewall rules — they are per-region and they change.
+- **Fix:** Establish which path the call takes (connector activity → Integration Service; `UiPath.Http` with *connector-based* authentication → also Integration Service; `UiPath.Http` with *manual* authentication → serverless robot), then have the endpoint owner allowlist that service's published outbound ranges. This is a network-configuration fix, not a workflow fix — no edit to `Workflow.json` will resolve it, so stop editing and escalate once the symptom matches.
+- **Distinguishing it from an auth fault:** a 401/403 with a response body is an auth or connection problem (`uip is connections ping <uuid>` first). A refused connection or a timeout with no HTTP response at all points at the network path.
 
 ---
 
@@ -682,6 +740,30 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Fix:** ALWAYS re-run after every edit. Two validators: `uip api-workflow validate <Workflow.json>` (offline static — schema + semantic checks, autonomous) then `uip api-workflow run --no-auth` (runtime — catches expression/connection errors static analysis can't). See SKILL.md rules 20–21.
 <!--skill-flavor:runtime-validation-pitfall:end-->
 
+### `Unknown activityType '<Name>'`
+
+- **Symptom:** `validate` rejects an activity — `Unknown activityType 'X'. Valid types: ...`
+<!--skill-flavor:allowlist-versioning:start-->
+- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned: `CustomLog` was added 2026-08-11, so older CLIs list 13 types and newer ones 14. **Take the list from the error message — never memorise one.**
+<!--skill-flavor:allowlist-versioning:end-->
+- **Fix:** Stay inside the list. Two task types the executor runs but `validate` refuses — do not author them:
+
+  | Instead of | Use |
+  |---|---|
+  | `raise` | `throw` inside a JavaScript activity, or `Response` with `markJobAsFailed: true` |
+  | `while` (pre-condition loop) | `DoWhile` + an `If` whose `#Else` exits via `Break` |
+
+<!--skill-flavor:allowlist-run-proof:start-->
+  Both execute under `run` (verified on executor 12.10.2), so **a passing local run is not proof a workflow can ship.** `validate` is the gate.
+<!--skill-flavor:allowlist-run-proof:end-->
+- **Error-count tell:** a small count naming the activityType — one error per offending task — → unknown **name**, caught by the allowlist. A large avalanche starting `Missing required property 'call'` → the schema could not match the task **shape**, which has two causes and you must check both:
+  1. **Unknown task key** — the schema models no such task (e.g. `raise`). Nothing about the fields will help.
+  2. **An unexpected field on a KNOWN task** — one stray key makes the whole task unmatchable, and the error text still says `Missing required property 'call'`. `set` on a `Break` is the documented instance: it produced **7797 errors** in this skill's own `nested-control-flow-example.json`, and deleting that one key made it Valid.
+
+  So read the avalanche as "the schema cannot match this task", not "the task key is wrong". Diff the task against the shape in [task-types.md](task-types.md) field by field before concluding the type is unsupported.
+- **Logging:** `console.log` / `console.warn` inside a JavaScript activity are captured and emitted as `[Script <TaskName>]: ...`. Whether they reach Orchestrator job logs in cloud is unverified — a probe showed the Orchestrator job-log surface carrying only lifecycle lines — so put anything you must read after a run in the `Response`. `CustomLog` is on the list but no executor ships a handler for it; do not author one yet.
+- **Do not** mislabel `metadata.activityType` to slip a type past the check — the validator cross-checks the label against the task's own keys (`has activityType 'DoWhile' but must contain 'for' with 'doWhile'`).
+
 ### Fixing in wrong order
 - **Symptom:** Fixing one error creates more errors; thrashing
 - **Cause:** Fixing logic errors before structure errors; lower-priority fixes destabilize higher-priority structure
@@ -693,6 +775,62 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:post-edit-validation:start-->
 - **Fix:** Always read the file before editing. After edit, re-run the workflow.
 <!--skill-flavor:post-edit-validation:end-->
+
+## File & Base64 Pitfalls
+
+<!--skill-flavor:file-base64-cli-pitfalls:start-->
+### Run refused: "This workflow uses the file helpers … cannot run with --no-auth"
+- **Symptom:** the local run in no-auth mode exits 1 before the engine starts, naming File to Base64 / Base64 to File
+- **Cause:** `$helpers.file.*` reads and writes Orchestrator blob storage; there is no local file store
+- **Fix:** run signed in (sign in first, drop `--no-auth`) — still only on the user's explicit "yes" (rule 21). Same for `--input-file` / `--output-dir`.
+<!--skill-flavor:file-base64-cli-pitfalls:end-->
+
+### `$helpers.fileToBase64 is not a function` / validate: "does not call $helpers.file.fileToBase64("
+- **Symptom:** `validate` reports one error at `…/run/script/code`; or a signed-in run fails inside the task
+- **Cause:** the helper was written without the `.file.` namespace (or with another name). The activity is recognised by that exact call
+- **Fix:** `return { output: await $helpers.file.fileToBase64(<ref>) }` / `$helpers.file.base64ToFile({ base64: … })`; keep `metadata.activityType` `FileToBase64` / `Base64ToFile`
+
+### File to Base64 / Base64 to File script lost code after a Studio Web save (validate warned "rebuilds the script … and drops the rest", or did not warn at all)
+- **Symptom:** after a designer roundtrip the task's `run.script.code` is back to the bare `return { output: await $helpers.file.*(…) }` — a preceding `const`, a trailing statement, a second argument (`fileToBase64(ref, { extra: 1 })`) or an extra option key is gone; downstream logic that relied on it now fails or the wrong reference is converted
+- **Cause:** Studio Web parses only the `$helpers.file.*` call and rebuilds the script from the property panel on save. `validate` warns about extra statements but passes an extra argument / option key as `Valid`
+- **Fix:** keep the script to the single `return` expression with exactly one argument (see [files-and-base64.md §2](files-and-base64.md#2-the-two-activities)); move pre-processing into a JavaScript activity before the conversion and pass its output as the argument
+
+### File to Base64 output used as a string (`.length`, `+`, `JSON.stringify` shows an object)
+- **Symptom:** downstream expression gets `[object Object]`, `undefined`, or an `{ ID, FullName, MimeType }` object where base64 text was expected
+- **Cause:** the activity returns a base64 **file reference**, not the base64 string — bytes never enter `$context`
+- **Fix:** inline the content where it is sent: `"${{ content: $context.outputs.FileToBase64_1.output.serializeData() }}"` in the HTTP body / Response
+
+### `{ "__uipathFileRead": { "ref": … } }` shows up in a variable or the output
+- **Symptom:** a marker object instead of file content
+- **Cause:** `serializeData()` was stored in a variable / returned from a script instead of being called inline in a body or Response field
+- **Fix:** call it only inside the HTTP body or `response` expression
+
+### Decoded file has no extension (`hello` instead of `hello.txt`)
+- **Symptom:** Base64 to File returns `FullName: "hello"`, `MimeType: application/octet-stream`
+- **Cause:** for a *reference* input the engine strips `.base64` and sniffs the MIME type from the bytes; plain text has no signature, and `fileName` / `mimeType` are ignored for references
+- **Fix:** acceptable for opaque payloads; when the name matters, decode a raw base64 **string** with `fileName` / `mimeType` (e.g. `{ base64: $context.variables.payload, fileName: 'notes.txt', mimeType: 'text/plain' }`)
+
+### `The provided value is not a valid base64 string: base64ToFile`
+- **Symptom:** Base64 to File fails on a string input. The suffix is always the literal helper name `base64ToFile` — it does not name the failing task, so with several Base64 to File tasks locate the culprit by the failing task in the run output, not by the message
+- **Cause:** URL-safe alphabet (`-` / `_`), non-base64 characters, bad padding, or an empty string. A `data:…;base64,` prefix and whitespace are NOT the problem — the engine strips both before decoding
+- **Fix:** convert URL-safe base64 to the standard alphabet (`-`→`+`, `_`→`/`) in a JavaScript activity; make sure the field really holds the payload and is not empty
+
+### `Raw bytes cannot be embedded in JSON` / `A bare file reference cannot be embedded in a nested field`
+- **Symptom:** an HTTP Request fails at send time with one of these messages
+- **Cause:** a JSON body field holds `serializeData()` of a *binary* reference (e.g. `$workflow.input.document.serializeData()`), or a bare reference object. Only a base64 reference's marker can be inlined in a nested field
+- **Fix:** run File to Base64 first and inline `$context.outputs.FileToBase64_1.output.serializeData()`; or, to send the raw bytes, make the bare reference the *whole* request body
+
+### File too large
+- **Symptom:** the helper fails with a size error
+- **Cause:** the in-memory conversion path is capped at 50 MB — it applies only to raw base64 strings and to references with a small declared `Metadata.Size`; references above 1 MB or with no declared size stream instead, with no size cap
+- **Fix:** pass the file as a reference (streamed) rather than as an inline string; keep inline strings under the cap
+
+<!--skill-flavor:file-base64-cli-folder:start-->
+### Upload / download 403 or "folder" errors with `--input-file` / `--output-dir`
+- **Symptom:** `Failed to upload input file … 403` or an Attachments API folder error
+- **Cause:** the tenant's Attachments API requires a folder context
+- **Fix:** pass `--folder-key <guid>` (the Orchestrator folder's key, visible in the folder's settings or via the platform CLI's folder listing)
+<!--skill-flavor:file-base64-cli-folder:end-->
 
 ---
 

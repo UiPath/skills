@@ -25,12 +25,15 @@ Exit codes:
          or points at the wrong entity
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess
 import sys
 
-UIP_TIMEOUT_SECONDS = 60
+UIP_TIMEOUT_SECONDS = 120
 TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 

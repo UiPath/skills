@@ -49,11 +49,11 @@ initial_prompt: |
      spans of one trace — the record-grain drill-down for inspecting a
      single agent execution's LLM/tool calls).
 
-  Also write `.env.example` with the standard `VITE_UIPATH_*` env vars.
-  Fill `VITE_UIPATH_SCOPE` with the ACTUAL scope value all three
-  Insights-RTM services require (look it up in the skill's Agents /
-  traces references — they share one scope). Do not leave it empty or as
-  a placeholder.
+  Also write `uipath.json` — the skill's single SDK config source
+  (`clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, `redirectUri`).
+  Fill `scope` with the ACTUAL scope value all three Insights-RTM
+  services require (look it up in the skill's Agents / traces references
+  — they share one scope). Do not leave it empty or as a placeholder.
 
   Use subpath imports for each service and constructor DI. Do NOT run
   `uip` or `npm` commands.
@@ -70,8 +70,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: ".env.example was created"
-    path: ".env.example"
+    description: "uipath.json was created"
+    path: "uipath.json"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -132,8 +132,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_SCOPE references Insights.RealTimeData (Rule #16 — the shared scope for all three Insights-RTM services)"
-    command: "grep -E '^VITE_UIPATH_SCOPE=.*Insights\\.RealTimeData' .env.example"
+    description: "uipath.json scope references Insights.RealTimeData (Rule #16 — the shared scope for all three Insights-RTM services)"
+    command: "python3 -c \"import json,sys; sys.exit(0 if 'Insights.RealTimeData' in str(json.load(open('uipath.json')).get('scope','')) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

@@ -1,0 +1,61 @@
+task_id: skill-gov-aops-policy-product-catalog-smoke
+description: >
+  Smoke test (outcome-graded): before authoring anything the agent snapshots the
+  governance catalog — every product, every license type, and one product's full
+  configuration. Graded on the catalog read back from the service: products carry
+  their display labels and cloud/restricted flags, license types carry the
+  products they apply to, and the single-product fetch matches the requested one.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, catalog]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  A tenant admin wants a catalog snapshot of AOps governance before creating any
+  policies. Retrieve and save, verbatim:
+
+  - every available product -> ./products.json
+  - every available license type -> ./license-types.json
+  - the full configuration of the `AITrustLayer` product -> ./product.json
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "the three catalog files hold real product and license-type records from the service"
+    command: |
+      python3 -c "
+      import json
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      products = [x for x in dicts(load('products.json')) if x.get('Name') and 'IsCloud' in x]
+      assert len(products) >= 5, f'products.json holds only {len(products)} product records'
+      names = {p['Name'] for p in products}
+      assert 'AITrustLayer' in names, f'AITrustLayer missing from the product catalog: {sorted(names)[:8]}'
+      assert all(p.get('Label') for p in products), 'some products came back without a display Label'
+      lts = [x for x in dicts(load('license-types.json')) if x.get('Name') and 'LicenseTypeProducts' in x]
+      assert lts, 'license-types.json holds no license-type records'
+      mapped = [x for lt in lts for x in dicts(lt.get('LicenseTypeProducts')) if x.get('Name')]
+      assert mapped, 'no license type reports the products it applies to'
+      one = next((x for x in dicts(load('product.json')) if x.get('Name') == 'AITrustLayer'), None)
+      assert one, 'product.json is not the AITrustLayer record'
+      assert one.get('Label'), 'the AITrustLayer record has no Label'
+      label = one.get('Label')
+      print(f'OK: {len(products)} products, {len(lts)} license types, AITrustLayer fetched as {label}')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

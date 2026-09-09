@@ -9,12 +9,12 @@ description: >
   raw `uip traces spans get` output: the span ID the agent reports must exist in
   that payload and carry fault evidence, so an invented ID cannot pass.
 
-  FIXTURE REQUIRED — not yet provisioned. Needs a pre-faulted Agent-type job on
-  the tenant, exported to the runner as E2E_FAULTED_JOB_KEY (plus
-  E2E_FAULTED_FOLDER_PATH when it is not in Shared/uipath-platform); pre_run
-  inherits the orchestrator environment, so no experiment passthrough entry is
-  needed. Without the variable, pre_run exits with FIXTURE NOT PROVISIONED rather
-  than scoring the agent.
+  Self-provisioning fixture: pre_run starts a fresh job against the dedicated
+  fault-fixture process `traces-diagnose-fault-fixture`
+  (328e7acc-1ab4-4bad-90a2-a6e74f21f681, in Shared/uipath-platform — a plain
+  resource identifier, not a secret) and waits for it to fault before the
+  agent's turn begins, so the "job is long finished" framing stays true without
+  anyone maintaining a static fixture by hand.
 tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces]
 
 agent:
@@ -25,7 +25,7 @@ run_limits:
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_faulted_incident.py"
-    timeout: 60
+    timeout: 120
 
 initial_prompt: |
   A scheduled agent run failed overnight and nobody knows why. The on-call

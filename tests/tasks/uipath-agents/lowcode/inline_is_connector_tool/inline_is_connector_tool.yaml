@@ -20,9 +20,9 @@ run_limits:
 
 initial_prompt: |
   Create a UiPath Flow project "ResearchFlow" that runs an inline low-code
-  agent which can look things up on the web. Give the agent a tool so it can
-  run web searches on demand, and wire it into the flow. The solution should be
-  named "ResearchFlowSol".
+  agent which can look things up. Give the agent an Integration Service GenAI
+  tool so it can research questions on demand, and wire it into the flow. The
+  solution should be named "ResearchFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

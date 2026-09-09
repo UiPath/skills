@@ -52,14 +52,14 @@ After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`.
   "resource": "Connection",
   "key": "<connectionId>",
   "value": {
-    "connectionId": { "defaultValue": "<connectionId>" },
+    "ConnectionId": { "defaultValue": "<connectionId>" },
     "folderKey": { "defaultValue": "<folderKey>" }
   },
   "metadata": { "connector": "<connectorKey>" }
 }
 ```
 
-> **Known CLI bug:** `syncConnectionResources` reads `value.connectionId` (lowercase c) but `flow-schema` writes `value.ConnectionId` (uppercase C). Use **lowercase `connectionId`** until fixed.
+> **Casing is `ConnectionId` (capital C).** The reader is `@uipath/solution-sdk` `sync-resources-from-bindings.ts`, which looks up `value.ConnectionId.defaultValue` and falls back to the entry's `key`; the api-workflow bindings writer emits the same capital form. The earlier note here about a lowercase reader named `syncConnectionResources` was wrong — no such function exists in the CLI.
 
 File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ ] }`
 
@@ -90,9 +90,9 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 | Field | Source | Plugin step |
 |---|---|---|
-| `id` | `connection-id` from `tasks.md` | Planning |
+| `id` | `connection-id` from `registry-resolved.json` | Planning |
 | `name` | `.Data.Connections[selected].name` from `get-connection` | Step 1 |
-| `connectorKey` | `connector-key` from `tasks.md` | Planning |
+| `connectorKey` | `connector-key` from `registry-resolved.json` | Planning |
 | `connectorName` | `.Data.Connections[selected].connector.name` from `get-connection` | Step 1 |
 | `folderKey` | `.Data.Connections[selected].folder.key` from `get-connection` | Step 1 |
 | `folderName` | `.Data.Connections[selected].folder.name` from `get-connection` | Step 1 |
@@ -120,11 +120,13 @@ With `bindings_v2.json` and IS cache in place, `uip solution resources refresh` 
 
 | Input | Output | Purpose |
 |---|---|---|
-| Non-connector bindings in `bindings_v2.json` | `resources/solution_folder/process/` files | Resource declarations imported from Orchestrator |
+| Non-connector bindings in `bindings_v2.json` | `resources/solution_folder/process/<subType>/<name>.json` **and** `package/<packageName>.json` | Resource declarations imported from Orchestrator — **two** files per binding (the process/app and its package). `resources remove` on the process/app deletes both. |
 | Connection binding in `bindings_v2.json` + IS cache | `resources/solution_folder/connection/<connectorKey>/<name>.json` | Connection resource declaration |
 | Both | `userProfile/<userId>/debug_overwrites.json` | Maps abstract resources to Orchestrator instances for debug |
 
 All three required for `uip solution upload` and `uip maestro case debug` to work without "Resource is not configured" warnings.
+
+> **`refresh` never removes.** See [§ Prune orphaned solution resources](#prune-orphaned-solution-resources).
 
 > **Inline-built siblings (agent / api-workflow) — `bindings_v2` identity and the caseplan runtime `folderPath` are DECOUPLED.** This is the one case where `bindings_v2.json` does NOT mirror the caseplan binding's `folderPath`. Keep the **resource identity** at the `solution_folder` sentinel everywhere it belongs — `bindings_v2.json` `key` (`"solution_folder.<name>"`) and `value.folderPath.defaultValue` (`"solution_folder"`), plus the caseplan `resourceKey` and the `resources/solution_folder/…` path. **BUT the caseplan task's `folderPath` binding `default` MUST be `""`** (co-located runtime folder), NOT the sentinel — `"solution_folder"` there fails at invocation with `folder not exist`. Prerequisite for deploy/debug: the sibling registered in the `.uipx`. Full rationale (deploy provisioning, runtime invocation): [create-inline-common.md § Step 3](plugins/tasks/create-inline-common.md#step-3--binding-invariants); per-type debug behavior in each type's § Step 3.
 
@@ -135,5 +137,25 @@ All three required for `uip solution upload` and `uip maestro case debug` to wor
 When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a condition rule / § Delete a task):
 
 1. After pruning root bindings, regenerate `bindings_v2.json` from the updated array.
+2. Prune the solution resource the removal orphaned — [§ Prune orphaned solution resources](#prune-orphaned-solution-resources).
+
+---
+
+## Prune orphaned solution resources
+
+A **repoint** (binding `resourceKey` swapped to another resource) or a **removal** (§ Cleanup above) leaves the old resource in the solution registry. `refresh` is additive-only — never prunes, still reports `Warnings: []`.
+
+Symptom: Studio Web `prepareForCustomDebug` fails with `Sequence contains no matching element` (`errorCode 2106`); FE shows *"Resource provisioning failed"*. **`uip maestro case validate` stays `Valid`** — it never reads the registry.
+
+After regenerating `bindings_v2.json` and running `resources refresh`:
+
+1. `uip solution resources list --solution-folder <SolutionDir> --source local --output json`
+2. Match each entry against `bindings_v2.json` `resources[]`:
+   - `connection` → by `Key` (connection UUID) against the Connection entry's `key`.
+   - `process` / `app` → by **`Name`** against `value.name.defaultValue`. **`Key` does NOT match** — registry keys on the Orchestrator entity UUID, `bindings_v2.json` on `<folderPath>.<name>`.
+   - **Skip `package` entries** — never target one directly. Removing the owning `process` / `app` cascades to *that resource's own* package declaration (the one its `dependencies[]` names); sibling resources and their packages are untouched.
+   - **Never prune the case project's own `process` + `package` pair** (`Name` == the case project) — created by `solution projects add`, never by a binding, so absent from `bindings_v2.json` by design.
+3. Remove each unmatched entry using **that entry's `Key` from step 1's output** — the registry GUID, never the `bindings_v2.json` `key`: `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json`. Offline, no auth, does not touch `bindings_v2.json`.
+4. Re-run `resources refresh`, then re-publish via Phase 5 (`uip solution upload` — [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish)) so Studio Web drops its copy; a local removal alone does not clear an orphan already uploaded. The re-upload overwrites the Studio Web solution in place, discarding anything edited there since the last upload (the replaced contents are recorded as a restorable version) — keep it behind the Phase 5 consent gate.
 
 <!-- END: bindings-v2-sync.md -->

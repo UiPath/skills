@@ -1,0 +1,61 @@
+task_id: skill-ixp-deploy-to-folder-smoke
+description: >
+  Smoke: agent deploys trained version 13 to an Orchestrator folder with
+  `deployments create` and the required --version/--folder-key plus the
+  requested --title. Traps: publishing is not deploying, and `upgrade` on a
+  project with no deployment is a 404, not a fallback deploy.
+  Harness is unauthenticated; grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  Project `my_invoices-f1afa9ef-ixp` has trained model version 13, which has
+  never been deployed anywhere. Make version 13 callable at runtime from
+  Orchestrator folder `3f0a91c7-1111-2222-3333-444455556666`, under the title
+  `invoices`.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: cli_called
+    description: "Deployed with `deployments create <Name> --version 13 --folder-key <key> --title invoices`"
+    verb: "ixp deployments create"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      version: "13"
+      folder-key: "3f0a91c7-1111-2222-3333-444455556666"
+      title: "invoices"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT use `deployments upgrade` for a first-time deploy (upgrade never falls back to a deploy)"
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT substitute `projects publish` for a folder deployment"
+    verb: "ixp projects publish"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0

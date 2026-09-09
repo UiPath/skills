@@ -26,6 +26,9 @@ Exit codes:
     1 — entity not found, field not found, or any assertion failed
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import re
@@ -33,7 +36,7 @@ import subprocess
 import sys
 import time
 
-UIP_TIMEOUT_SECONDS = 60
+UIP_TIMEOUT_SECONDS = 120
 ENTITY_LOOKUP_ATTEMPTS = 2
 TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 

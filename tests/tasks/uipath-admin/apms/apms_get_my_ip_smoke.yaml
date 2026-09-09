@@ -1,0 +1,40 @@
+task_id: skill-admin-apms-get-my-ip-smoke
+description: >
+  Smoke test (outcome-graded): agent looks up the caller's public IP as the
+  platform sees it. Graded on the address the service returned — a real IPv4/IPv6
+  literal in the CLI's own response envelope — not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, apms]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  Look up my public IP address as the UiPath IP-restriction service sees it, and
+  save the raw JSON output of that command verbatim to ./myip.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "myip.json holds the public IP the service reported (real address, service response code)"
+    command: |
+      python3 -c "
+      import ipaddress, json
+      d = json.load(open('myip.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'my-ip lookup not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      ip = next((x.get('IpAddress') or x.get('ipAddress') for x in dicts(d) if x.get('IpAddress') or x.get('ipAddress')), None)
+      assert ip, 'no IpAddress field in the saved output'
+      ipaddress.ip_address(ip)
+      print('OK: service reported public IP ' + str(ip))
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

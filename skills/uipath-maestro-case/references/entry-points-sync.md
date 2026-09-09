@@ -70,6 +70,7 @@ Keyed by `var.name`. Branch on `var.type`:
 |---|---|---|---|
 | `string` | `{ "type": "string" }` | yes | yes |
 | `integer` | `{ "type": "integer" }` | yes | yes |
+| `number` | `{ "type": "number" }` | yes | yes |
 | `boolean` | `{ "type": "boolean" }` | yes | yes |
 | `float` | `{ "type": "number", "format": "float" }` | yes | yes |
 | `double` | `{ "type": "number", "format": "double" }` | yes | yes |
@@ -89,7 +90,7 @@ Keyed by `var.name`. Branch on `var.type`:
   3. else `getTypeAndFormatForType(var.subType)` if `subType` is a primitive,
   4. else `{}`.
 
-> The current case-variable type enum ([`global-vars/planning.md` § Types](plugins/variables/global-vars/planning.md)) is `string | integer | float | double | boolean | datetime | date | jsonSchema | file` — no `array` or `time`. Those two rows are ported from the FE for fidelity/future-proofing; today array-shaped data arrives as `jsonSchema` with an array body (handled by the jsonSchema branch).
+> The current case-variable type enum ([`global-vars/planning.md` § Types](plugins/variables/global-vars/planning.md)) is `string | number | integer | float | double | boolean | datetime | date | jsonSchema | file` — no `array` or `time`. Those two rows are ported from the FE for fidelity/future-proofing; today array-shaped data arrives as `jsonSchema` with an array body (handled by the jsonSchema branch).
 
 ### `rewriteJobAttachmentRefs` (nested JobAttachment rewrite)
 

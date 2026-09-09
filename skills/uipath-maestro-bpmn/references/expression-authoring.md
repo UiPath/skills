@@ -27,8 +27,18 @@ them with expressions only after the variables and scopes exist.
 - The current 0-based loop index inside any multi-instance body is exposed as
   `iterator.loopCounter` for tasks and `iterator[N].loopCounter` for
   subprocesses at depth N.
-- Error mapping conditions may inspect the built-in error object through
-  `vars.error`, for example `=vars.error.code == "SERVICE_UNAVAILABLE"`.
+- The engine surfaces a failed element's error under the capital-`Error` key
+  with lowercase fields: `code`, `message`, `detail`, `category`, `status`,
+  `traceId`, `response`, `element`. Read it as `vars.Error.<field>` — for example
+  `=vars.Error.code == "SERVICE_UNAVAILABLE"`. Both evaluators are
+  case-sensitive, so `vars.error` does not resolve. `category` is `User`
+  (HTTP 4xx), `System`, or `Deployment`.
+- Whether a binding is needed depends on what catches the failure. An **error
+  event subprocess** is handed the error context as its payload, so its
+  conditions read `vars.Error` with nothing authored. An **error boundary event**
+  and an activity's own **error mapping** are evaluated against that element's
+  declared outputs, so those need a `uipath:output` with `source="=Error"` before
+  `vars.Error` resolves.
 
 ## Inline JavaScript with `=js:`
 

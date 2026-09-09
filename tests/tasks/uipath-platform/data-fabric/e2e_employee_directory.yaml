@@ -30,8 +30,9 @@ initial_prompt: |
   Make an entity called `CE_EmployeeDirectory`, shown to users as
   `E2E Employee Directory`, with these fields:
     - Full name — required, no longer than 200 characters
-    - Department — required, no longer than 50 characters (one of:
-      Engineering, Sales, Finance, HR)
+    - Department — required, no longer than 50 characters. Make this a
+      plain text field, not a choice set — Engineering, Sales, Finance, HR
+      are just the allowed values, so don't create or use a choice set for it.
     - Job title — no longer than 100 characters
     - Hire date — just the date, no time of day
     - Salary — required, in dollars, two decimal places, between

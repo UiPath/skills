@@ -8,6 +8,9 @@ tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, connect
 run_limits:
   expected_turns: 19
   max_turns: 80
+  # Same 900s-default kill as the other three: PR #2660 verification run
+  # (32160708457) died at 903s with 74 turns of work on the shared runner.
+  turn_timeout: 1800
 initial_prompt: |
   Create a local BPMN draft project named "SlackDigestBoundaryBpmn".
   The intended process is:
@@ -28,9 +31,11 @@ initial_prompt: |
   - Do not upload, publish, deploy, debug, or run the process.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was created"
-    path: "SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('SlackDigestBoundaryBpmn.bpmn')) else 'SlackDigestBoundaryBpmn.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

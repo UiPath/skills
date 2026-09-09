@@ -144,8 +144,46 @@ Host-intercepted publication starts Unified Build packaging in the background. A
 
 First distinguish bridge rejection from background failure:
 
-- `uip solution publish --help` confirms the supported bridge flags.
-- For an explicit approved publication, invoke `uip solution publish [--description <text>] [--release-notes <text>] [--version <version>] [--location <value>] [--location-name <value>] [--personal-workspace]` for the active solution.
+- An unknown-flag error names the rejected flag and lists the supported ones; the destination flag is `--location`. Nothing was published.
+- A multiple-destinations listing is not an error: nothing was published — ask the user which destination to use and rerun `uip solution publish --location "<key or name>"` (or `--personal-workspace`).
 - Immediate command failure is a request, flag, or authorization problem; report the exact host result.
 - Immediate success means request accepted. Check Studio Web's Publish history for the terminal packaging and publication status and diagnose from that entry.
 <!--skill-flavor:local-publish-errors:end-->
+
+<!--skill-flavor:outbound-ip-symptom:start-->
+- **Symptom:** An HTTP Request or connector call to a customer/vendor endpoint fails from the deployed workflow — connection refused, or a hang ending in a timeout — while the same URL and payload succeed from other clients.
+<!--skill-flavor:outbound-ip-symptom:end-->
+
+<!--skill-flavor:outbound-ip-heading:start-->
+### Outbound call to a third-party API is refused or times out from the deployed workflow
+<!--skill-flavor:outbound-ip-heading:end-->
+
+<!--skill-flavor:outbound-ip-cause-open:start-->
+- **Cause:** The deployed workflow egresses from UiPath infrastructure, not from any address the endpoint owner is likely to have allowlisted, and **which** addresses depends on how the call is made.
+<!--skill-flavor:outbound-ip-cause-open:end-->
+
+<!--skill-flavor:script-budget-symptom:start-->
+- **Symptom:** A Script activity that works on small inputs fails on larger ones with a script timeout reported by the `RunProject` host operation. The workflow validates; only execution fails.
+<!--skill-flavor:script-budget-symptom:end-->
+
+<!--skill-flavor:script-budget-cause:start-->
+- **Cause:** the Script activity exceeded the host's execution budget. UiPath documents the cap as *"JavaScript code execution has a timeout of 30 seconds"* — [Script activity, Known limitations](https://docs.uipath.com/studio-web/automation-cloud/latest/user-guide/script). Treat 30s as the ceiling for a single Script activity, and remember a script that finishes quickly on sample data can exceed it on production volumes.
+<!--skill-flavor:script-budget-cause:end-->
+
+<!--skill-flavor:allowlist-versioning:start-->
+- **Cause:** the authorable set is closed and mirrors the Studio Web palette. It also changes between releases, so **read the valid list out of the error message itself — that is the authoritative set for the host you are on.**
+<!--skill-flavor:allowlist-versioning:end-->
+
+<!--skill-flavor:allowlist-run-proof:start-->
+  Some task types the runtime can execute are still not authorable, so **an activity that appears to work is not proof it can be published.** The validator is the gate.
+<!--skill-flavor:allowlist-run-proof:end-->
+
+<!--skill-flavor:file-base64-cli-pitfalls:start-->
+### File to Base64 / Base64 to File fail in a run
+- **Symptom:** a `RunProject` run fails inside a File to Base64 or Base64 to File task with a storage or authentication error
+- **Cause:** `$helpers.file.*` reads and writes Orchestrator blob storage through the active Studio Web session
+- **Fix:** report the exact host result as an authentication or capability blocker and retry after the relevant host state changes; static validation with `uip api-workflow validate` stays available meanwhile
+<!--skill-flavor:file-base64-cli-pitfalls:end-->
+
+<!--skill-flavor:file-base64-cli-folder:start-->
+<!--skill-flavor:file-base64-cli-folder:end-->

@@ -114,7 +114,7 @@ Rarely, a directory may contain nested `.uipx` files:
 
 ## Validation Command Reference
 
-> **You MUST run these commands yourself via Bash.** Do not just list them — execute them, parse the output, and include every Error, Warning, and Info result in the review report.
+> **You MUST run these commands yourself via Bash.** Do not just list them — execute them, parse the output, and account for every result in the review report: Error / Warning / Info counts in the validation table, plus a detail line per Error and Warning.
 
 ### RPA Validation and Workflow Analyzer
 
@@ -306,42 +306,47 @@ Use when the issue is a **missed optimization** or **minor convention deviation*
 
 ## Report Format Specification
 
-The review report follows a fixed markdown structure. Produce it in chat — do NOT write it to a file.
+The review report follows a fixed markdown structure. Produce it in chat; **and when the task asks you to save it to a path (e.g. `./_review_report.md`), also write it to that exact path.** The read-only rule forbids creating or editing files **inside the project under review** — it does NOT forbid writing the requested report file.
 
 ```markdown
 ## Review Report: <Solution/Project Name>
 
 ### Summary
 - **Overall Quality:** Good / Needs Improvement / Critical Issues
-- **Agent Grade:** <A–F> — <verdict label> (<binding constraint>) — *agent projects only; see SKILL.md Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md). Omit if no agent projects.*
+- **Agent Grade:** <A–F> — <verdict label> (<binding constraint>) — *agent projects only; see [agent-review-guide.md](agents/agent-review-guide.md) Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md). Omit if no agent projects.*
 - **Business Value:** <1-2 sentence description of what this solution does>
 - **Project Types Found:** <list with counts>
 - **Validation Status:** <pass/fail per project>
 
 ### Automated Validation & Workflow Analyzer Results
 
-> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip maestro flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
+> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip maestro flow validate` (for flows), etc. Every result is reported as a count in the table below; Errors and Warnings additionally get a detail line.
 
 | Project | File | Command | Errors | Warnings | Info |
 |---|---|---|---|---|---|
 | ... | ... | ... | ... | ... | ... |
 
-**Validation Details:**
+**Validation Details:** *(Errors and Warnings only — omit the heading entirely when there are none)*
 - [V-E-001] Project/File: **ST-RULE-ID** — Description
 - [V-W-001] Project/File: **ST-RULE-ID** — Description
-- [V-I-001] Project/File: **ST-RULE-ID** — Description
 
 ### Critical Findings (blocks deployment)
-1. [C-001] <finding title> — `<project/file path>` — <recommendation>
-2. [C-002] ...
+
+| ID | Rule | Recommendation |
+|---|---|---|
+| C-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Warnings (should fix before production)
-1. [W-001] <finding title> — `<project/file path>` — <recommendation>
-2. [W-002] ...
+
+| ID | Rule | Recommendation |
+|---|---|---|
+| W-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Improvement Opportunities
-1. [I-001] <finding title> — `<project/file path>` — <recommendation>
-2. [I-002] ...
+
+| ID | Rule | Recommendation |
+|---|---|---|
+| I-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Per-Project Summary
 | Project | Type | Validation | Quality | Grade | Key Findings |
@@ -359,14 +364,18 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 - Queue usage: <observation and recommendation>
 - Bulk operations: <observation and recommendation>
 - Transaction handling: <observation and recommendation>
+
+**Final grade: <A–F>**
 ```
+
+> **`Final grade:` is the report's last line — nothing follows it.** No notes, caveats, or commentary, inside the report or after it. It restates the Summary's `Agent Grade` letter (the two must match) so the grade stays visible at the tail. Letter only — no label, no derivation. Agent projects only; omit when the review has no agent projects. See [agent-review-guide.md](agents/agent-review-guide.md) Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md).
 
 **Overall Quality determination** (all project types):
 - **Good** — 0 Critical findings, 0-3 Warnings
 - **Needs Improvement** — 0 Critical findings, 4+ Warnings OR 1 Critical with clear fix
 - **Critical Issues** — 2+ Critical findings OR 1 Critical with security implications
 
-**Agent Grade** (agent projects only): the A–F letter is `min(G_det, G_jud)` computed in SKILL.md Step 4.5 — full rubric, bands, edge cases, and worked examples in [agent-grading-rubric.md](agents/agent-grading-rubric.md). It maps to the same verdict labels (A/B = Good, C/D = Needs Improvement, F = Critical Issues). Non-agent projects carry the Quality verdict only (grading for RPA / flows / coded apps is a future phase).
+**Agent Grade** (agent projects only): the A–F letter is `min(G_det, G_jud)` computed in [agent-review-guide.md](agents/agent-review-guide.md) Step 4.5 — full rubric, bands, edge cases, and worked examples in [agent-grading-rubric.md](agents/agent-grading-rubric.md). It maps to the same verdict labels (A/B = Good, C/D = Needs Improvement, F = Critical Issues). Non-agent projects carry the Quality verdict only (grading for RPA / flows / coded apps is a future phase).
 
 ## Optimization Evaluation Framework
 

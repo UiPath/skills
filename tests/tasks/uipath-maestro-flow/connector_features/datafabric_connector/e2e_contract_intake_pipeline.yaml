@@ -1,0 +1,85 @@
+task_id: skill-flow-datafabric-e2e-contract-intake-pipeline
+description: >
+  E2E test for the UiPath Data Fabric connector — the full CRUD activity
+  surface exercised in one flow on a single ContractRegistry record.
+  Focus is on DF activity payloads and Create-output-Id chaining across
+  Get / Update / Delete; orchestration primitives (loops, decisions,
+  multi-branch fan-out) are covered by core-flow tests, not here.
+  Static-validate only; runtime `flow debug` skipped to avoid live tenant
+  side effects.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 100
+  turn_timeout: 1800
+  task_timeout: 2400
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a UiPath Flow against the `ContractRegistry` Data Fabric entity
+  (fields: contractTitle STRING, status STRING, priority INTEGER,
+  dueDate DATE, value DECIMAL, isUrgent BOOLEAN) that exercises the
+  connector's CRUD surface on ONE record. All downstream activities bind
+  recordId to the create output — do NOT hard-code any Id.
+
+  Chain the five activities in this order:
+
+  1. Create Entity Record on ContractRegistry. Populate the body with
+     contractTitle, status='Draft', priority (any integer 1-10),
+     dueDate (any valid date), value (any decimal), isUrgent (boolean).
+
+  2. Get Entity Record By Id — bind recordId to the create activity's
+     output Id.
+
+  3. Query Entity Records — filter contractTitle equals the literal
+     value used in step 1 (author it as a FilterBuilder tree, not a raw
+     CEQL string). Sort by priority descending.
+
+  4. Update Entity Record — bind recordId to the create activity's
+     output Id. The update body must contain ONLY the `status` key set
+     to "In Review"; no other fields.
+
+  5. Delete Entity Record — bind recordId to the create activity's
+     output Id.
+
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow chains Create → Get/Update/Delete on ContractRegistry with recordId bound to create.output, plus one Query with priority-desc sort and a partial Update body"
+    command: "python3 $TASK_DIR/check_e2e_contract_intake_pipeline.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches manifest"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

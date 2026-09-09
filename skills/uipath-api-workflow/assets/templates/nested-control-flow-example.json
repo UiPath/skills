@@ -182,7 +182,6 @@
                                                         "Break_1": {
                                                           "break": "true",
                                                           "then": "exit",
-                                                          "set": "${$input}",
                                                           "metadata": { "activityType": "Break", "displayName": "Out Of Retries", "fullName": "Break" }
                                                         }
                                                       }

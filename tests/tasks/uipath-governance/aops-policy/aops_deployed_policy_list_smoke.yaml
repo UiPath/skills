@@ -1,0 +1,82 @@
+task_id: skill-gov-aops-policy-deployed-list-smoke
+description: >
+  Smoke test (outcome-graded): `deployed-policy get` returns only the winning
+  policy, while `deployed-policy list` returns every rule that could apply. The
+  agent retrieves both for the same subject. The two commands answer in different
+  shapes — `get` returns PolicyId/PolicyName with a Deployment block, `list`
+  returns rows of Identifier/Name/Priority/DeploymentLevel — so the check reads
+  each on its own terms, grades the service-issued ids and the contributing
+  deployment level, and requires the effective policy to appear in a non-empty
+  listing, which catches an agent that read the two answers for different
+  subjects or scopes.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployed-policy]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  For license type `Attended` and product `AITrustLayer` on the tenant I am
+  logged into, save verbatim:
+
+  - every governance rule that could apply -> ./rules.json
+  - the single policy that actually wins -> ./effective.json
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "the rule listing and the effective resolution are both real and mutually consistent"
+    command: |
+      python3 -c "
+      import json, re
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      UUID = r'[0-9a-fA-F-]{36}'
+      rules_doc = load('rules.json')
+      res = rules_doc.get('Result') if isinstance(rules_doc, dict) else None
+      assert res in (None, 'Success'), f'the rule listing failed with Result={res}'
+      # deployed-policy list rows are {Identifier, Name, Availability, Priority,
+      # DeploymentLevel} — NOT the PolicyId/PolicyName that get returns.
+      rules = [x for x in dicts(rules_doc) if x.get('Identifier') and x.get('Name')]
+      for r in rules:
+          level = str(r.get('DeploymentLevel') or '')
+          rname = r.get('Name')
+          assert level.upper() in ('TENANT', 'USER', 'GROUP'), (
+              f'rule {rname!r} carries no usable DeploymentLevel: {level!r}')
+      eff_doc = load('effective.json')
+      winner = next((x for x in dicts(eff_doc) if x.get('PolicyId') or x.get('PolicyName')), None)
+      if winner:
+          pid = str(winner.get('PolicyId') or '')
+          assert re.fullmatch(UUID, pid), f'the winning policy has no service id: {pid!r}'
+          scope = (winner.get('Deployment') or {}).get('Type')
+          assert str(scope).upper() in ('TENANT', 'USER', 'GROUP'), f'unexpected deployment scope {scope!r}'
+          ids = {str(r.get('Identifier') or '') for r in rules}
+          names = {str(r.get('Name') or '') for r in rules}
+          assert rules, 'a policy is in effect but the rule listing is empty — the two reads describe different subjects'
+          assert pid in ids or str(winner.get('PolicyName') or '') in names, (
+              'the effective policy is absent from the rule listing — the two reads describe different subjects')
+          levels = ', '.join(sorted({str(r.get('DeploymentLevel')) for r in rules}))
+          wname = winner.get('PolicyName')
+          print(f'OK: {len(rules)} candidate rules (levels: {levels}); effective policy {wname} via {scope} consistent with them')
+      else:
+          text = json.dumps(eff_doc).lower()
+          assert 'no policy applies' in text, 'effective.json is neither a resolved policy nor the no-policy answer'
+          assert not rules, 'no policy resolved even though the listing returned candidate rules'
+          print('OK: no policy applies for this subject and the rule listing is correspondingly empty')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

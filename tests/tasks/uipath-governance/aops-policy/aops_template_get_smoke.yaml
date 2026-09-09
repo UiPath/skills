@@ -1,0 +1,58 @@
+task_id: skill-gov-aops-policy-template-get-smoke
+description: >
+  Smoke test (outcome-graded): authoring a governance policy starts from the
+  product's Form.io template. The agent emits both artifacts the CLI can produce —
+  the fillable form-data blueprint and the locale-resolved reference — and the
+  check parses both. A blueprint the agent invented would not carry the product's
+  own field names, which the reference file independently corroborates.
+tags: [uipath-governance, smoke, mode:build, lifecycle:generate, aops-policy, template]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  I am about to author a governance policy for the `E2E` product. Fetch that
+  product's current form template and write both artifacts:
+
+  - the fillable form-data blueprint -> ./form-data.json
+  - the locale-resolved template reference -> ./reference.json
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "both template artifacts parse and the blueprint's fields are corroborated by the reference"
+    command: |
+      python3 -c "
+      import json
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      form = load('form-data.json')
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      blueprint = form if isinstance(form, dict) and len(form) >= 3 else next((x for x in dicts(form) if len(x) >= 3), None)
+      assert blueprint, 'form-data.json is not a fillable blueprint object'
+      ref_text = open('reference.json', encoding='utf-8-sig').read()
+      ref = json.loads(ref_text)
+      assert ref, 'reference.json is empty'
+      keys = [k for k in blueprint if isinstance(k, str)]
+      assert len(keys) >= 3, f'blueprint has only {len(keys)} fields: {keys}'
+      lowered = ref_text.lower()
+      corroborated = [k for k in keys if k.lower() in lowered]
+      assert corroborated, f'none of the blueprint fields {keys[:5]} appear in the locale reference'
+      print(f'OK: blueprint has {len(keys)} fields, {len(corroborated)} corroborated by the template reference')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

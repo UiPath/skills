@@ -5,7 +5,8 @@ description: >
   decision. Verifies two `selected-tasks-completed` exits with different
   `IF` expressions on the same source stage, and that both downstream
   stages have correct entry conditions.
-tags: [uipath-maestro-case, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
+
 initial_prompt: |
   Create a UiPath Case Management project named "LeaveRequestCase" with this
   shape:
@@ -194,12 +195,11 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Both branch expressions present on Review's exits"
-    path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
-    includes:
-      - "vars.approved === true"
-      - "vars.approved === false"
+  - type: run_command
+    description: "Both semantic boolean branches are present on Review's exits"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/hitl/check_boolean_routing.py LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -224,10 +224,6 @@ success_criteria:
         expected: "approved"
     weight: 2.0
     pass_threshold: 0.75
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
 
 run_limits:
   expected_turns: 69

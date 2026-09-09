@@ -2,6 +2,8 @@
 
 Enter this plugin when the user explicitly scoped their request to a subset of the pack's recommended settings.
 
+`<packName>` below = the standard's display name, resolved via [`../catalog/impl.md` § Pack ID lookup](../catalog/impl.md#pack-id-lookup). Resolve the standard BEFORE matching clauses or products — clause ids and product names are pack-specific, and matching them against the wrong catalog silently targets the wrong settings.
+
 > **Critical:** Partial apply uses `synthesize-formdata.mjs` + `aops-policy create`. Do NOT call `uip gov compliance-packs state enable` — that applies the full standard and cannot be scoped.
 
 ## Strong signals → route silently to partial apply
@@ -66,7 +68,7 @@ After identifying target clauses and products, always show:
 ```
 You asked for: <user's phrase>
 I matched: <N> recommended settings across <M> product(s)
-Note: The full ISO 42001 pack covers <total> recommended settings across <total products>.
+Note: The full <packName> pack covers <total> recommended settings across <total products>.
 Configuring this selection will NOT apply settings for the other products.
 ```
 

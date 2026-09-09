@@ -1,0 +1,92 @@
+task_id: skill-pm-source-template-selection
+description: >
+  Critical Rule 2's untested half. custom_app_pipeline_e2e covers a flat log
+  choosing `uipath.custom`; nothing covers the other branch — a real
+  multi-table source-system extract must choose the matching
+  `<process>.<system>` template, and reaching for `uipath.custom` throws away
+  the template's entire extraction and event-log construction layer.
+
+  Also pins where a source template's expected INPUT tables come from: the
+  generated transformation layer (`models/schema/sources.yml`), not the `model`
+  object — so the agent must read the transformations to know what its mapping
+  has to provide. `app-types get` shows the semantic entities and metrics the
+  template ships, which is a different question.
+
+  Command-construction only — no live tenant. Commands fail with auth errors;
+  what matters is which template the agent picks and how it learns the
+  expected input.
+tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, app-types, source-template]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+  turn_timeout: 600
+
+initial_prompt: |
+  I have a full Purchase-to-Pay extract out of SAP — the usual multi-table dump
+  (EKKO, EKPO, RSEG, BKPF, LFA1 and friends), not a single flat log.
+
+  Set up a UiPath Process Mining app for it. I want to know three things before
+  I build the data mapping: which templates my org offers, what the one you
+  pick actually ships, and which input tables my extract has to provide.
+
+  Use the uipath-process-mining skill and follow its workflow.
+
+  Important:
+  - Do NOT build the data mapping or upload anything yet — stop once the app
+    exists and you can tell me the expected input tables.
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - If a command you needed an id from fails, substitute a placeholder id
+    of the same shape and still run the remaining commands, so we can
+    verify their shape.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the templates available on the org"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+app-types\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the chosen template's shipped entities and metrics"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+app-types\s+get\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the app from the P2P-on-SAP source template"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+create\b[\s\S]*--type\s+uipath\.p2p\.sap\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the generated transformations to learn the expected input tables"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+(list|get)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use uipath.custom for a full multi-table source extract"
+    tool_name: "Bash"
+    command_pattern: '--type\s+uipath\.custom\b'
+    weight: 3.0

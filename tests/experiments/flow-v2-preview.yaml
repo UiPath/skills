@@ -1,0 +1,66 @@
+experiment_id: flow-v2-preview
+description: >-
+  Flow v2: the three preview Maestro builder-SDK skills
+  (uipath-maestro-{flow,case,bpmn}) as the ONLY skill catalog, under the docker
+  driver. Shadows the shipped v1 skills of the same name by pointing the catalog
+  at preview/ alone, so a run measures the SDK authoring path rather than a mix
+  of both generations.
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-image:latest
+      network: bridge
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - UIPATH_CLI_DISABLE_VERSION_SYNC
+        # Parity with nightly.yaml. Inert unless a Delegate runtime sets them.
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - E2E_PROCESS_KEY
+        - E2E_LONG_PROCESS_KEY
+      extra_mounts:
+        # uip login state. Same destination nightly.yaml uses; do not "fix" it.
+        - ~/.uipath:/.uipath:rw
+        # Repo root. Narrowing plugins.path to preview/ drops the automatic
+        # repo-root mount, and criteria shell out to
+        # $SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py. Destination must be the
+        # host path, which the framework only expands from 0.11.2 on
+        # (UiPath/coder_eval#128); earlier versions reject it at load.
+        - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
+
+  agent:
+    permission_mode: acceptEdits
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    plugins:
+      # PREVIEW ONLY. Also the source of the automatic repo-path bind mount.
+      # Must stay the plugin ROOT (holds .claude-plugin/ + skills/), never preview/skills.
+      - type: "local"
+        path: "$SKILLS_REPO_PATH/preview"
+    ignore_patterns: []
+
+  pre_run:
+    # Link the image's @uipath/flow-sdk and connector registry into the workspace,
+    # the same setup nightly.yaml runs. Unconditional here: a preview run always
+    # authors through the SDK. Replaces the old in-sandbox `npm install`, which the
+    # shared image made unnecessary when it started baking the package.
+    - command: bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"
+      timeout: 30
+
+  post_run:
+    # Unpruned node_modules costs gigabytes across a full Maestro run.
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: default

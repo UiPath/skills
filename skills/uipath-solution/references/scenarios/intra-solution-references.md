@@ -29,7 +29,7 @@ The right `referenceKey` for the Worker tool is the **solution-resource key** of
   "name": "WorkerTool",
   "type": "agent",
   "location": "solution",                              // ← intra-solution, not "external"
-  "referenceKey": "<solution-resource-key-of-Worker>", // from `resource list --kind Process --source local`
+  "referenceKey": "<solution-resource-key-of-Worker>", // from `resources list --kind Process --source local`
   "properties": {
     "processName": "Worker",
     "folderPath": "solution_folder"
@@ -40,13 +40,13 @@ The right `referenceKey` for the Worker tool is the **solution-resource key** of
 ## What happens at refresh + pack
 
 - `solution projects add` writes `Worker.json` and `Coordinator.json` under `resources/solution_folder/process/agent/` with stable solution-resource keys (UUIDs minted by the SDK at add time).
-- `resource refresh` doesn't re-mint those keys — they're stable for the life of the solution.
+- `resources refresh` doesn't re-mint those keys — they're stable for the life of the solution.
 - At pack, the Coordinator's `runtimeDependencies` entry for the Worker tool carries the same solution-resource key as `referenceKey`. Orchestrator's deploy pipeline resolves intra-solution links by matching this key to a sibling resource in the deployment.
 
 ## Gotchas
 
 - **Don't put the cloud key of a different (already-published) Worker** if you intend to ship Worker as part of this solution. `referenceKey` to a cloud key skips the intra-solution link and points the runtime at the cloud copy — which may or may not exist in the target tenant at deploy time.
-- **The solution-resource key is stable across refreshes within an instance** but **regenerates if you delete and re-create the solution** (`solution init` → mint fresh UUIDs). Hard-coding the key in `resource.json` survives normal refresh cycles but breaks if anyone wipes-and-recreates. If that's a risk, rebuild the file from `resource list --kind Process --source local` output as part of CI.
+- **The solution-resource key is stable across refreshes within an instance** but **regenerates if you delete and re-create the solution** (`solution init` → mint fresh UUIDs). Hard-coding the key in `resource.json` survives normal refresh cycles but breaks if anyone wipes-and-recreates. If that's a risk, rebuild the file from `resources list --kind Process --source local` output as part of CI.
 - **`location` must be `"solution"`, not `"external"`** for intra-solution tools. SW UI shows external-tool dialogs differently and won't render the link state correctly.
 - **Worker → Coordinator cycles**: nothing prevents you from declaring a tool in Worker that points back at Coordinator. The runtime supports it; if the agent prompts loop, that's an authoring issue, not a deploy one.
 

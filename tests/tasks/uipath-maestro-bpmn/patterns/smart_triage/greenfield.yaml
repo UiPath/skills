@@ -1,0 +1,50 @@
+task_id: skill-bpmn-smart-triage
+description: >
+  Inbound support email is classified and dispatched per category. Grades the
+  confidence floor with a human fallback that rejoins the same routing point,
+  rather than a second dispatch path. The prompt never names the pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
+
+run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
+  expected_turns: 26
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `SupportTriage/SupportTriage.bpmn` for this process:
+
+  Support email arrives. Something classifies it into one of Billing, Technical,
+  or Spam, and reports how sure it is. Confident items go straight to the
+  handling for their category. Anything under the confidence bar goes to a
+  person who picks the category, and it is then handled exactly as if the
+  classifier had been confident. Each category ends the process with its own
+  recorded outcome.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "SupportTriage/SupportTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Load-bearing mechanisms of the pattern are present"
+    command: "python3 $TASK_DIR/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

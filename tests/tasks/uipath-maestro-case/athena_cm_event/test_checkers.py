@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 SDD_CHECK = ROOT / "check_athena_cm_event_sdd.py"
-PLAN_CHECK = ROOT / "check_athena_cm_event_plan.py"
+RULES_CHECK = ROOT / "check_athena_cm_event_rules.py"
 CASE_CHECK = ROOT / "check_athena_cm_event_case.py"
 
 
@@ -119,28 +119,54 @@ closes on required-stages-completed.
             encoding="utf-8",
         )
 
-    def write_caseplan(self, *, stage_c_task_3_once: bool = True) -> None:
-        a1 = task("a1", "StageATask1", required=True, run_once=False)
+    def write_caseplan(
+        self,
+        *,
+        stage_c_task_3_once: bool = True,
+        rewrite_a2_as_sequential: bool = False,
+        drop_b1_entry_rule: bool = False,
+        wrong_c3_predecessor: bool = False,
+    ) -> None:
+        def entry(rule: str, selected: list[str] | None = None) -> list[dict]:
+            body: dict = {"rule": rule}
+            if selected is not None:
+                body["selectedTasksIds"] = selected
+            return [{"rules": [[body]]}]
+
+        a1 = task(
+            "a1", "StageATask1", required=True, run_once=False,
+            entry_conditions=entry("current-stage-entered"),
+        )
         a2 = task(
-            "a2",
-            "StageATask2",
-            required=True,
-            run_once=True,
-            entry_conditions=[
-                {"rules": [[{"rule": "selected-tasks-completed", "selectedTasksIds": ["a1"]}]]}
-            ],
+            "a2", "StageATask2", required=True, run_once=True,
+            entry_conditions=(
+                entry("runs-sequentially")
+                if rewrite_a2_as_sequential
+                else entry("selected-tasks-completed", ["a1"])
+            ),
         )
-        b1 = task("b1", "StageBTask1", required=False, run_once=False)
-        b2 = task("b2", "StageBTask2", required=True, run_once=False)
+        b1 = task(
+            "b1", "StageBTask1", required=False, run_once=False,
+            entry_conditions=None if drop_b1_entry_rule else entry("current-stage-entered"),
+        )
+        b2 = task(
+            "b2", "StageBTask2", required=True, run_once=False,
+            entry_conditions=entry("current-stage-entered"),
+        )
         c1 = task(
-            "c1",
-            "StageCTask1",
-            required=False,
-            run_once=True,
-            entry_conditions=[{"rules": [[{"rule": "current-stage-entered"}]]}],
+            "c1", "StageCTask1", required=False, run_once=True,
+            entry_conditions=entry("current-stage-entered"),
         )
-        c2 = task("c2", "StageCTask2", required=False, run_once=True)
-        c3 = task("c3", "StageCTask3", required=True, run_once=stage_c_task_3_once)
+        c2 = task(
+            "c2", "StageCTask2", required=False, run_once=True,
+            entry_conditions=entry("current-stage-entered"),
+        )
+        c3 = task(
+            "c3", "StageCTask3", required=True, run_once=stage_c_task_3_once,
+            entry_conditions=entry(
+                "selected-tasks-completed", ["c1"] if wrong_c3_predecessor else ["c2"]
+            ),
+        )
         stage_a = stage("stage-a", "StageA", [a1, a2])
         stage_b = stage(
             "stage-b",
@@ -207,38 +233,6 @@ closes on required-stages-completed.
         caseplan.parent.mkdir(parents=True)
         caseplan.write_text(json.dumps(plan), encoding="utf-8")
 
-    def write_tasks_md(
-        self,
-        *,
-        rewrite_a2_as_sequential: bool = False,
-        bullet_prefix: bool = True,
-    ) -> None:
-        contracts = {
-            "StageATask1": ("parallel", "current-stage-entered", None),
-            "StageATask2": (
-                "sequential" if rewrite_a2_as_sequential else "conditional-gate",
-                "runs-sequentially" if rewrite_a2_as_sequential else "selected-tasks-completed",
-                None if rewrite_a2_as_sequential else "StageATask1",
-            ),
-            "StageBTask1": ("parallel", "current-stage-entered", None),
-            "StageBTask2": ("parallel", "current-stage-entered", None),
-            "StageCTask1": ("parallel", "current-stage-entered", None),
-            "StageCTask2": ("parallel", "current-stage-entered", None),
-            "StageCTask3": ("conditional-gate", "selected-tasks-completed", "StageCTask2"),
-        }
-        sections = []
-        prefix = "- " if bullet_prefix else ""
-        for index, (task_name, (mode, rule, selected)) in enumerate(contracts.items(), 1):
-            rendered_rule = f'{rule}("{selected}")' if selected else rule
-            sections.append(
-                f'## T{index}: Add process task "{task_name}" to "Stage"\n\n'
-                f"{prefix}activation-mode: {mode}\n"
-                f"{prefix}entry-rule: {rendered_rule}\n"
-            )
-        tasks = self.workdir / "tasks" / "tasks.md"
-        tasks.parent.mkdir()
-        tasks.write_text("\n".join(sections), encoding="utf-8")
-
     def test_sdd_checker_accepts_complete_fixture(self) -> None:
         self.write_sdd(self.workdir / "sdd.md")
         result = run(SDD_CHECK, self.workdir)
@@ -249,21 +243,29 @@ closes on required-stages-completed.
         result = run(SDD_CHECK, self.workdir)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_plan_checker_accepts_authored_task_entry_rules(self) -> None:
-        self.write_tasks_md()
-        result = run(PLAN_CHECK, self.workdir)
+    def test_rules_checker_accepts_authored_task_entry_rules(self) -> None:
+        self.write_caseplan()
+        result = run(RULES_CHECK, self.workdir)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_plan_checker_accepts_plain_task_entry_fields(self) -> None:
-        self.write_tasks_md(bullet_prefix=False)
-        result = run(PLAN_CHECK, self.workdir)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
-    def test_plan_checker_rejects_rewriting_selected_dependency_as_sequential(self) -> None:
-        self.write_tasks_md(rewrite_a2_as_sequential=True)
-        result = run(PLAN_CHECK, self.workdir)
+    def test_rules_checker_rejects_rewriting_selected_dependency_as_sequential(self) -> None:
+        self.write_caseplan(rewrite_a2_as_sequential=True)
+        result = run(RULES_CHECK, self.workdir)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("StageATask2", result.stdout + result.stderr)
+
+    def test_rules_checker_rejects_task_with_no_entry_rule(self) -> None:
+        """`validate` only warns here; a real miss hangs `case debug`."""
+        self.write_caseplan(drop_b1_entry_rule=True)
+        result = run(RULES_CHECK, self.workdir)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("StageBTask1", result.stdout + result.stderr)
+
+    def test_rules_checker_rejects_gate_naming_the_wrong_predecessor(self) -> None:
+        self.write_caseplan(wrong_c3_predecessor=True)
+        result = run(RULES_CHECK, self.workdir)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("StageCTask3", result.stdout + result.stderr)
 
     def test_case_checker_accepts_expected_structure(self) -> None:
         self.write_caseplan()

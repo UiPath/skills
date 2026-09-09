@@ -1,0 +1,95 @@
+task_id: skill-api-workflow-multiway-branch
+description: >
+  Build: three-way classification (pattern 2 of control-flow-patterns.md) with a
+  TryCatch inside one of the branches (pattern 9). Both patterns were untested;
+  every existing decision test is a single two-way If.
+
+  Three outcomes force either nested If wrappers or a multi-case switch, which is
+  where key-uniqueness and `then: "exit"` fall-through mistakes actually happen —
+  a two-way If never exercises the middle branch.
+
+  Local-only.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:decision]
+
+sandbox:
+  python: {}
+
+run_limits:
+  expected_turns: 12
+  max_turns: 35
+
+initial_prompt: |
+  Create an API workflow project `TriageScore` that takes a numeric `score` and
+  returns { "band": "high" | "medium" | "low" }:
+
+  - 80 and above -> "high"
+  - 50 to 79     -> "medium"
+  - below 50     -> "low"
+
+  Guard the "high" path with error handling: if computing that band raises, return
+  band "unknown" instead of failing the run.
+
+  Validate and run it locally against several scores.
+
+success_criteria:
+  - type: run_command
+    description: "Three distinct outcomes are reachable (2+ If wrappers, or a 3+ case switch)"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      W=$(grep -oE 'If_[A-Za-z0-9_]+#Wrapper' "$WF" | sort -u | wc -l);
+      C=$(grep -oE '"case[0-9A-Za-z_]*"' "$WF" | wc -l);
+      test "$W" -ge 2 -o "$C" -ge 3
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "TryCatch present inside a branch"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      grep -q '"activityType": "TryCatch"' "$WF"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: high band"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow run "$WF" --no-auth --input-arguments '{"score":91}' --output json | grep -qi '"high"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: MIDDLE band — the outcome a two-way If cannot produce"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow run "$WF" --no-auth --input-arguments '{"score":65}' --output json | grep -qi '"medium"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: low band"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow run "$WF" --no-auth --input-arguments '{"score":12}' --output json | grep -qi '"low"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow validates"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow validate "$WF" --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

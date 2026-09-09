@@ -22,6 +22,8 @@ All `uip platform` licensing commands share a set of cross-cutting options:
 
 **Response envelope.** All commands emit `{Result, Code, Data, ...}`. `Code` identifies the payload (`TenantLicenses`, `UserLicensesSet`, `GroupRules`, `LicensesConsumablesSummary`, etc.). Paginated commands add a `Pagination` block — increment `--offset` by `--limit` until `Returned < Limit`.
 
+**Saving a response to a file.** Redirect **stdout only**: `uip platform ... --output json > available.json`. Never send `2>&1` into the artifact — `groups rules details` writes its rule summary to stderr, and merging the streams puts that header above the JSON so the file no longer parses. If you need stderr for an auth or lookup error, capture it separately (`2> details.err`). Never hand-assemble the artifact from other commands' output either: the file must be one raw envelope, parseable on its own.
+
 ---
 
 ## Workflow References
@@ -31,6 +33,7 @@ All `uip platform` licensing commands share a set of cross-cutting options:
 | Tenant Allocations | [tenant-allocations.md](tenant-allocations.md) | `tenants licenses get/set` — allocate license units to tenant pools |
 | User & Group Licenses | [user-licenses-allocations.md](user-licenses-allocations.md) | `users licenses get/set/available`, `groups rules get/details/set` — assign bundles directly or via group rules |
 | Consumables Report | [consumables-report.md](consumables-report.md) | `licenses consumables get --mode {summary,daily,folders}` — consumption reporting. `get` is mandatory; summary/daily/folders are `--mode` values, not subcommands (there is no `licenses summary` verb) |
+| Diagnose | [diagnose/CAPABILITY.md](diagnose/CAPABILITY.md) | Symptom-first triage — entitlement gaps, allocations that did not take effect, reports that read wrong. Layer-first ladder + failure-mode lookup |
 
 ---
 

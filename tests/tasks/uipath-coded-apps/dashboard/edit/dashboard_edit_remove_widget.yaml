@@ -65,11 +65,16 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # The remove went through the incremental editor as a REMOVE op.
-  - type: run_command
-    description: "edit-intent.json present with a REMOVE op"
-    command: "sh -c 'grep -rq --include=edit-intent.json --exclude-dir=node_modules REMOVE .'"
-    timeout: 15
-    expected_exit_code: 0
+  # The removal must go through the incremental editor, not hand-edited files.
+  # Assert the INVOCATION, not a surviving edit-intent.json: that file is an
+  # INPUT to the build script, the skill never says to keep it, and the script
+  # does not delete it — so whether it survives is agent housekeeping. Agents
+  # that correctly tidy the spent intent (and the orphaned metric module
+  # alongside it) were failing a task they had actually completed.
+  - type: command_executed
+    description: "Removal applied through the incremental editor (build-dashboard.mjs edit-intent.json)"
+    tool_name: "Bash"
+    command_pattern: 'build-dashboard\.mjs\S*\s+\S*edit-intent\.json'
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0

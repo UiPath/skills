@@ -1,0 +1,55 @@
+task_id: skill-gov-aops-policy-update-e2e
+description: >
+  End-to-end (outcome-graded): the agent edits a policy it did not create, so
+  folding the change into a fresh create cannot satisfy the check. `aops-policy
+  update` is a full replace — omitting --availability or --input clears those
+  fields — so the check requires the new description AND the seeded availability
+  and form-data payload to survive.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, aops-policy, update]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="draft" AOPS_POLICY_BASE="ce-gov-aops-update" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Provisional - pending review" AOPS_AVAILABILITY="365" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 22
+
+initial_prompt: |
+  The AOps governance policy named in `seed.json` (the `draft.name` field) has
+  finished review. Change its description to exactly:
+
+    Approved - owner signed off
+
+  Everything else about the policy must survive the edit unchanged - same
+  product, same availability window, same form data. Do NOT deploy it.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the seeded policy carries the new description with its availability and form data intact"
+    command: 'AOPS_SEED_KEY="draft" AOPS_CHECK="updated" AOPS_EXPECT_DESCRIPTION="Approved - owner signed off" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "the policy was edited in place, not deleted and recreated"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+delete'
+    weight: 2.0
+    pass_threshold: 1.0

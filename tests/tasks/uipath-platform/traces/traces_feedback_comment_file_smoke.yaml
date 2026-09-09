@@ -55,11 +55,25 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # min_count: 1 (not 2) x2, scoped per trace-id. command_executed counts matching
+  # Bash events, not command occurrences within an event — an agent that chains both
+  # creates into ONE Bash call registers only 1 match, so a single min_count: 2
+  # criterion caps at 0.5 for correct behavior. Mirrors the min_count:1 convention
+  # in reconfigure_different_connection.yaml.
   - type: command_executed
-    description: "Both records were filed via --comment-file, never an inline --comment (mutual exclusion rule 2)"
+    description: "Trace 7d3a91e0f5c24b8ea0c6d219bb47f0a3 was filed via --comment-file, never inline --comment"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--comment-file)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?7d3a91e0f5c24b8ea0c6d219bb47f0a3)(?=[\s\S]*--comment-file)'
     exclude_pattern: '--comment[\s=]'
-    min_count: 2
-    weight: 2.0
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Trace a18b4c7d2e934f60b5c81d3a6f9e2077 was filed via --comment-file, never inline --comment"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?a18b4c7d2e934f60b5c81d3a6f9e2077)(?=[\s\S]*--comment-file)'
+    exclude_pattern: '--comment[\s=]'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0

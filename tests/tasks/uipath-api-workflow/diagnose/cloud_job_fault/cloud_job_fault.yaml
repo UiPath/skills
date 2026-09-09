@@ -1,0 +1,107 @@
+task_id: skill-api-workflow-diagnose-cloud-job-fault
+description: >
+  E2E (diagnose): root-cause a DEPLOYED API workflow job that faulted in cloud,
+  from the job surface alone. The agent gets a job id in incident.json and
+  nothing else; starting a fresh job is graded as a failure.
+
+  Fills the skill's largest diagnose gap. The two existing diagnose tasks are
+  local — validate_fix repairs a file that fails `validate`, runtime_fix repairs
+  one that fails `run --no-auth`. Neither touches a cloud fault, and the whole
+  post-publish half of references/operating-published-workflows.md had no
+  diagnostic coverage.
+
+  It also grades the trap that surface actually sets. Verified on alpha
+  2026-08-18 (uip 1.200.0) against a deliberately-faulting deployed workflow:
+  `uip or jobs logs` returns only "Workflow started" / "Workflow completed" — it
+  reports COMPLETED for a Faulted job and never carries the error — and
+  `uip traces spans get --job-key` fails outright with "Error retrieving trace ID
+  for job". Only `uip or jobs get` carries the fault, in Data.State + Data.Info.
+  An agent that diagnoses from logs concludes the run was fine; the check fails
+  any diagnosis claiming success.
+
+  Self-seeding: pre_run deploys fixtures/faulting-workflow.json (passes
+  `validate`, throws at runtime), starts a job, and polls until it is Faulted.
+  The sibling platform task waits on an externally-provisioned
+  E2E_FAULTED_JOB_KEY and has consequently never run — a fixture that needs a
+  human is a task that stays skipped.
+
+  The deployment is left standing for the agent: uninstalling destroys the job
+  records, after which `uip or jobs get` returns Result: Failure with an empty
+  State. post_run tears it down; see cleanup_fault_deploy.py for why that
+  sometimes leaves a cosmetic history row.
+
+  Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
+  `uip login`, not the tempdir smoke gate.
+tags: [uipath-api-workflow, e2e, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  # uuid8 + parent_folder_path, and ensures the parent folder exists on the tenant.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 60
+  # Split in two because coder-eval hard-caps a single pre_run step at 300s and
+  # pack + publish + deploy alone costs ~120s. Each phase gets its own budget.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/cloud_job_fault/seed_faulted_job.py deploy"
+    timeout: 300
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/cloud_job_fault/seed_faulted_job.py fault"
+    timeout: 300
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/cloud_job_fault/cleanup_fault_deploy.py"
+    timeout: 240
+
+run_limits:
+  expected_turns: 16
+  turn_timeout: 600
+
+initial_prompt: |
+  An API workflow we run on a schedule failed overnight and nobody knows why.
+  The handover left the job details in `incident.json` — that is everything we
+  have. The job is long finished, and I do not want it re-run: whatever broke
+  may have side effects.
+
+  Work out what actually went wrong, from the job itself.
+
+  Leave two things behind:
+  - `job_evidence.json` — the raw command output your diagnosis rests on
+  - `diagnosis.txt` — what failed and why, in your own words
+
+  Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent diagnosed the existing job instead of re-running the workflow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+or\s+jobs\s+start'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried the faulted job (the only surface carrying the fault)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+or\s+jobs\s+get\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Raw evidence the diagnosis rests on was captured"
+    path: "job_evidence.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A root cause was recorded"
+    path: "diagnosis.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Diagnosis names the real upstream failure and does not claim the run succeeded"
+    command: "python3 $TASK_DIR/check_cloud_fault_diagnosis.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

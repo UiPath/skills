@@ -69,7 +69,7 @@ To create a project, see [environment-setup.md](environment-setup.md); `--target
 `uip rpa` connects to one of two Studio flavors behind the same IPC contract:
 
 - **Headless Studio (Helm) — default.** Ships as a NuGet package and auto-launches on first use. **No Studio Desktop install needed.** First call on a cold NuGet cache may sit near-silent for 30–90 s while `dotnet restore` runs — the default shell timeout covers this; raise `timeoutSeconds` only behind a slow feed.
-- **Studio Desktop.** The interactive UI. Used automatically only by verbs with **UI side effects** — those that open a window or highlight something in the designer (discover them via `--help`; they don't work headless). For such a verb, ensure Desktop is up first (`uip rpa studio start --project-dir "<PROJECT_DIR>"`), then run it. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop).
+- **Studio Desktop.** The interactive UI. A running Studio Desktop instance that has the project open handles that project's `uip rpa` calls — `run` and `debug start` included — and `uip rpa instances list --output json` shows which instance holds which project. Verbs with **UI side effects** (open a window, highlight something in the designer; discover them via `--help`) work only here: ensure Desktop is up first (`uip rpa studio start --project-dir "<PROJECT_DIR>"`), then run them. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop). **The two backends return different `run` / `debug start` payloads** — see [Reading run / debug results](#reading-run--debug-results).
 
 `--studio-dir` is consulted **only when Studio Desktop is in use**; headless ignores it. When Desktop auto-detection fails, resolution falls back to `UIPATH_STUDIO_DIR`, then the default install path, then a dev build output. Errors like `"does not have interop support"` / `"Requires Studio 26.2+"` mean the detected Desktop is too old — tell the user to update it; this affects only the Desktop-only verbs.
 
@@ -85,7 +85,7 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 | **Read coded API doc** | `Read` `…/{PackageId}/coded/coded-api.md` — service API signatures for coded workflows |
 | **Read package overview** | `Read` `…/{PackageId}/overview.md` |
 | **List documented packages / activities** | `Bash`: `ls …/.local/docs/packages/` then `ls …/{PackageId}/activities/` |
-| **Search activity docs** | `Glob` `**/*.md` under `…/.local/docs/packages/`, then `Read` matches. **Not `Grep`** — `.local/` is gitignored and `Grep` skips it. |
+| **Search activity docs** | `ls` the exact package directory via Bash (`…/.local/docs/packages/<PackageId>/activities/`), then `Read` the matching file by path. **NOT `Glob` or `Grep`** — both skip gitignored `.local/`; a miss from either proves nothing. |
 
 ---
 
@@ -93,18 +93,56 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 `uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
-Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately:
+Both wrap the result in `{Result, Code, Data}`. **`Data`'s shape is set by the backend that ran the workflow** ([§ Headless Studio (Helm) vs Studio Desktop](#headless-studio-helm-vs-studio-desktop)) — identify it by the keys present:
 
-- `Output` — the workflow's own serialized output arguments JSON, populated when the run completes. **Carries the workflow's data, not a verdict.**
-- `HasErrors` — `true` iff execution finished unsuccessfully (compile/validation failure, unhandled exception that ended the run, cancellation, or timeout); `false` otherwise — including while a debug session is `Suspended` on an exception, since the outcome is not decided yet.
-- `ErrorMessage` — formatted error chain when `HasErrors: true`; on debug responses it may instead carry guidance with `HasErrors: false`; `null` otherwise.
-- `DebugState` / `DebugDetails` — debug sessions only (`null` on plain `run`). Every debug command returns at the next stable state — `Paused` (activity + locals in `DebugDetails`), `Suspended` (exception + locals), `Running` (wait timed out), or `Completed`. See [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless).
-- `Profiling.OutputDirectory` — present only when `--profiling` was passed on a start verb and collection succeeded; absolute path to the per-run `*.uistat` files and runtime screenshots. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance).
+| Backend | `Data` keys | Where the workflow's `Log Message` output is |
+|---|---|---|
+| **Headless Studio (Helm)** — no Studio Desktop instance has the project open | `output` (serialized output arguments, `"{}"` when none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails` | streamed to stdout as `[<Level>] …` lines (`[Information]`, `[Error]`, …) **above** the JSON envelope; nothing inside `Data` |
+| **Studio Desktop** — the project is open in a running Studio Desktop | `output` (status string: `"Session ended"` on completion), `errors` (array), `logEntries` (array of `{source, level, message}`, `source` = `Compile` or `Debug`), `debugState` (`"Completed"` on completion; absent when the file could not be opened) | inside `Data.logEntries`; nothing streams above the envelope |
 
-Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict, debug state, and output data.
+Field-by-field meaning for both: [debugging.md § Output Format](debugging.md#output-format).
 
-> **Single source of truth for success/failure of a completed run: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries. In a debug session, check `DebugState` before `HasErrors` — `Suspended` means an exception awaits your decision while `HasErrors` is still `false`.
+> **Verdict, Helm shape: passed only when `hasErrors` is `false` AND `errorMessage` is `null` AND `debugState` is `null` or `"Completed"`.** A `run` that faulted, failed validation, or named a missing entry point returns outer `Result: "Failure"` with the same field set JSON-encoded in `Message` (`hasErrors: true`, `errorMessage` = the failure text). A faulted `debug start` returns `Result: "Success"` with `hasErrors: false`, `debugState: "Suspended"`, the exception in `debugDetails` and command guidance in `errorMessage` — the session is still alive; cancel or continue it.
+>
+> **Verdict, Studio Desktop shape: passed only when `errors` is empty AND `output` is `"Session ended"`.** Both are required: a missing entry point returns outer `Result: "Success"` with `errors: []`, `logEntries: []` and `output: "Failed to open the file <absolute path>"`. An `--input-arguments` key the workflow does not declare is accepted silently (`"Session ended"`).
+>
+> **On either backend: never read the outer `Result: "Success"` as a passing run, and never infer failure from a `Warning` / `Error` log level** — `Log Message` activities emit at any level, and treating log levels as a verdict flips green runs to "failed" and burns retries.
 
+### Capturing the verdict
+
+**Run `run` / `debug start` with no `--output-filter` and read the envelope as printed.** The two backends return different key sets, so a filter written for one names keys the other does not have; the CLI then rejects the whole call with `Filter '…' failed to evaluate: Invalid type … received type null` *after* the workflow has already run (`length(errors)` on Helm, any function on `hasErrors` on Desktop), and the retry re-drives the application and costs a turn. On Helm the filter cannot reach the log lines at all — they are outside `Data`.
+
+```bash
+uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
+```
+
+Helm:
+
+```text
+[Information] Starting execution...
+[Information] <PROJECT_NAME> execution started
+[Information] Sum: 10
+[Information] <PROJECT_NAME> execution ended in: 00:00:00
+{ "Result": "Success", "Code": "ToolResult", "Data": {
+    "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
+```
+
+Studio Desktop (same command, project open in Studio):
+
+```json
+{ "Result": "Success", "Code": "ToolResult", "Data": {
+    "output": "Session ended", "errors": [],
+    "logEntries": [ { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution started" },
+                    { "source": "Debug", "level": "Information", "message": "Sum: 10" },
+                    { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution ended in: 00:00:06" } ],
+    "debugState": "Completed" } }
+```
+
+Adjudicate per the two rules above. The workflow's logged values are the `[Information]` lines above the envelope on Helm — read them there and do not strip them (`grep -v '^\['`) — and the `logEntries` entries on Desktop, where `Trace`-level entries (`Unregistered service requested …`, `Audit: …`) outnumber the workflow's own lines. On `debug start` through Helm, `debugState` / `debugDetails` carry the suspended-state exception that selector recovery needs.
+
+**Never `| tail -N` or `| head -N` the payload.** On Helm the log lines precede the envelope, so either cut drops one of the two things you need; on Desktop `output` and `errors` precede a long `logEntries`, so `tail` drops the verdict. Recovering either means re-running, which re-drives the application; a workflow that is not re-run-safe behaves differently the second time. On a Helm `Result: "Failure"` envelope there is no `Data`: read `Message` — the `Data` fields JSON-encoded (`hasErrors: true`) for a `run` that faulted, failed validation, or named a missing entry point; `{"success": false, "errorMessage": "…"}` for a project directory that cannot be opened or an executor that is still busy.
+
+When a failure needs more than the envelope shows (compile-phase error, a stack older than the visible lines), redirect the whole stdout — `> run.log` — and read it from the file: on Helm the `[Error]` lines plus the envelope's `errorMessage`, on Desktop the `errors` and `logEntries` arrays. `jq` is absent on a standard Windows agent host; the envelope is the last JSON object in the file.
 ---
 
 ## Passing structured inputs
@@ -132,13 +170,13 @@ Rules:
 
 `uip rpa validate` returns diagnostics for a file or the whole project, re-validating first by default (`--skip-validation` reads cached, possibly stale, results; `--min-severity` filters). Confirm flags via `uip rpa validate --help`.
 
-> **Known issue: an absolute `--file-path` with an absolute `--project-dir` falsely fails** with `The targeted project file <X> is not in the project folder <Y>`. The CLI normalizes `--file-path` to forward slashes but leaves `--project-dir` with backslashes, then string-compares — same path, different separators. Pass `--file-path` **relative** to the project directory (e.g. `--file-path "Main.xaml"`) to sidestep it. For a project-level compile gate without this quirk, use `build`.
+`--file-path` accepts a path relative to the project directory (`--file-path "Main.xaml"`) or an absolute one, with either separator style; forward-slash, backslash, and mixed forms all resolve. Prefer the relative form — it is shorter and keeps commands portable across machines.
 
 ---
 
 ## build
 
-`uip rpa build` compiles the project — catching runtime-compile failures `validate` misses (including attribute-form expression failures like `JIT compilation is disabled for non-Legacy projects` in C#-expression XAML projects). Required before returning a project to the user (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)). Takes the project directory as a **positional** argument and runs independently of Studio IPC. Discover flags (log level, skip-analyze, governance, NuGet sources) via `uip rpa build --help`.
+`uip rpa build` compiles the whole project — every workflow, not only the files a per-file `validate` was pointed at (§ What each phase covers). Required before returning a project to the user (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)). Takes the project directory as a **positional** argument and runs independently of Studio IPC. Discover flags (log level, skip-analyze, governance, NuGet sources) via `uip rpa build --help`.
 
 `run` and `debug start` compile internally, so a successful smoke test implies `build` would pass. When no smoke test runs (side effects, interactive workflow, no test input), `build` is the required compilability check.
 
@@ -168,13 +206,17 @@ Rules with scope `Coded Workflow` run as Roslyn analyzers over the project's `.c
 
 Read the project's UI **Object Repository** — the saved hierarchy of applications, screens, and elements (selectors/targets) that UI Automation activities bind to. Two read commands cover the project's own entries and those exposed by referenced libraries; both require an open project.
 
-- **Project Object Repository** — `uip rpa object-repository get` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
+> **Both verbs are top-level and hyphenated.** There is no `uip rpa object-repository` group — it returns `Unknown command: object-repository`, Studio running or not. Distinct from the UIA OR CLI, which writes entries and has no `get`.
+
+- **Project Object Repository** — `uip rpa get-object-repository` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements, each entry carrying `name`, `description`, `type`, and `reference`. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
 
   ```bash
-  uip rpa object-repository get --project-dir "<PROJECT_DIR>" --output json
+  uip rpa get-object-repository --project-dir "<PROJECT_DIR>" --output json
   ```
 
-- **Library Object Repository** — `uip rpa object-repository get-library` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
+  The `name` values are **Object Repository names, not C# members** — `Result Display` here is `Result_Display` in `Descriptors.*`. Convert per the coded authoring guide's § Descriptor Naming, routed from `ui-automation-guide.md` § Documentation.
+
+- **Library Object Repository** — `uip rpa get-library-object-repository` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
 
   | Parameter | Required | Description |
   |-----------|----------|-------------|
@@ -182,13 +224,13 @@ Read the project's UI **Object Repository** — the saved hierarchy of applicati
 
   ```bash
   # multiple libraries: one --library-paths flag, comma-separated
-  uip rpa object-repository get-library \
+  uip rpa get-library-object-repository \
     --project-dir "<PROJECT_DIR>" \
     --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg,C:\libs\Other.UiLib.2.0.0.nupkg" \
     --output json
   ```
 
-Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live verb names and flags with `uip rpa object-repository --help`.
+Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live flags with `uip rpa get-object-repository --help` / `uip rpa get-library-object-repository --help`.
 
 ---
 
@@ -274,7 +316,7 @@ PHASE 2 — build-clean (per-project, once per edit session):
     3. EXIT to Smoke Test
 ```
 
-**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the output member is `TextString` (or legacy `Text`)), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
+**Why both phases.** Per-file `validate` covers one file deeply — structural XAML, missing references, analyzer rules, schema violations, unknown members, invalid enums, and expression compilation. `build` covers the project broadly — every workflow including untouched ones, project-scope analyzer rules, and packaging. Validating each edited file does not establish that the project compiles, and building does not tell you which file to fix without re-running `validate` on the offender. Neither replaces the other, and neither detects an attribute-form expression that silently resolves to a literal (§ What each phase covers).
 
 **Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
 
@@ -299,22 +341,37 @@ Every project returned to the user must compile. Phase 2 of the iteration loop a
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-`validate` is static analysis and misses compile-time failures: unknown member names, invalid enum values, member resolution / CacheMetadata failures, and JIT failures like `JIT compilation is disabled for non-Legacy projects` — see [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls). If `build` fails, apply the Phase 2 fix loop (fix one root cause, re-run, cap at 5 attempts). A successful `run` smoke test substitutes for `build` — `run` compiles internally. Prefer the `run --skip-build` form when `build` has just passed (see Smoke Test below).
+If `build` fails, apply the Phase 2 fix loop (fix one root cause, re-run, cap at 5 attempts). A successful `run` smoke test substitutes for `build` — `run` compiles internally.
 
-### Errors `build` catches that `validate` misses
+### What each phase covers
 
-| Error class | Example | Why `validate` misses it |
-|-------------|---------|----------------------------|
-| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `TextString`) | `validate` does not resolve property names against activity assemblies |
-| Invalid enum value | `Operator="StartsWith"` on `VerifyExpressionWithOperator` (enum has no such member) | Enum membership is checked at CacheMetadata / compile time, not static parse |
-| CacheMetadata / member resolution | Required-extension misses, type-mismatch on `InArgument<T>` | Surfaces only when the runtime instantiates the activity |
-| Attribute-form C# expressions | `Value="x + y"` in `expressionLanguage: CSharp` projects | JIT compiler needs the expression in element form — see [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls) |
+Per-file `validate` loads the target file through the workflow designer **and** compiles its expressions, so it reports these on the file it was pointed at:
 
-When you see "no diagnostics found" from `validate`, you have not validated the file. Run `build` next.
+| Error class | Example | Reported as |
+|-------------|---------|-------------|
+| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `TextString`) | `Could not load <file>: 'Cannot set unknown member '<Class>.<Prop>''` |
+| Invalid enum value | `ClickType="BogusValue"` | `Could not load <file>: 'Failed to create a '<Prop>' from the text '<value>''` |
+| Broken expression | `undefinedSymbol + 1` inside a `CSharpValue` | `CS0103: The name '<symbol>' does not exist in the current context` |
+
+**`build` is still required, because its scope is the whole project, not the file you validated.** It compiles every workflow — including ones you never touched or never validated — and applies project-scope analyzer rules and packaging. A project whose every edited file validates clean still fails `build` when an unrelated file is broken, which is exactly the state a partial edit session leaves behind.
+
+**Neither phase catches an attribute-form expression on an `InArgument<Object>`.** `Message="calcResult"` deserializes as a literal string, so `validate` reports no diagnostics, `build` succeeds, the run succeeds — and the activity logs the text `calcResult` instead of the variable's value. There is no error anywhere; the only signal is wrong output. This is why the gate ends with a smoke test whose **output is inspected**, not merely a run that exits clean — see [§ Smoke Test](#smoke-test) and [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls).
+
+### Expected non-defect warnings
+
+`build` prints `[WARN]` lines for enabled analyzer rules. These are **not** build failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Recurring ones that are correct-by-design and must not be "fixed":
+
+| Warning | Rule | Why it is expected |
+|---|---|---|
+| `<activity> does not have the verification feature enabled` | — (matches no rule in the enabled `analyzer-rules list` output) | `VerifyOptions` is deliberately off by default; add only when the user asks. Observed once per `NClick` on a clean UIA build. Policy: the UIA package guide's § Execution Verification Policy. |
+| `Your organization requires your project to have an Automation Hub URL defined` | `ST-USG-034` | Org governance setting, not a workflow property. Resolved in Project Settings by the project owner. |
+| `<name> display name is defined many times. Current allowed threshold is 1` | `ST-NMG-004` | Real but cosmetic. Fix only while authoring the activity — repeated identical steps (two clicks on the same button) need disambiguating names anyway. |
+
+Warnings naming a rule ID you do not recognize: look it up with `analyzer-rules list --scope <scope>` (§ analyzer-rules list) rather than guessing, and only when a warning actually blocks an acceptance criterion.
 
 ## Smoke Test
 
-`validate` (static analysis) and `run` (runtime compilation) use different validation paths. Some errors -- such as invalid enum values on activity properties -- pass static validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.
+A clean `validate` + `build` gate is not runtime proof. Some defects produce no diagnostic in either phase — an attribute-form expression that silently became a literal (§ What each phase covers), activity CacheMetadata failures that surface only when the runtime instantiates the activity, and plain logic bugs. Always treat the smoke test as a critical validation step whose output is inspected, not just an optional extra.
 
 After reaching 0 validation errors AND a clean project-level build (Phase 2), run the workflow to catch runtime errors (wrong credentials, missing files, logic bugs) that static validation cannot detect. Use `--skip-build` because the project has just been built clean — default `run` re-validates and re-builds internally, repeating ~10s of compilation:
 
@@ -327,7 +384,7 @@ uip rpa run --file-path "<FILE>" --skip-build --input-arguments key=value --outp
 uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 ```
 
-Use bare `run` (without `--skip-build`) whenever the build artifact may be stale: **(a)** no recent project-level `build` has been performed, OR **(b)** any file has been edited between the last successful `build` and this `run`. `--skip-build` executes the existing compiled artifact, so any post-build edit is silently ignored until a fresh `build` runs.
+`--skip-build` executes the existing compiled artifact — any edit since the last successful `build` is silently ignored. Use bare `run` after edits.
 
 **When to run:**
 1. Workflow has no compilation errors but you want to verify runtime behavior
@@ -490,7 +547,7 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 |--------|-----|
 | **Explore project files** | `Glob` `**/*.xaml` |
 | **Search XAML content** | `Grep` regex across `.xaml` |
-| **Explore Object Repository** | `uip rpa object-repository get` for the project's apps/screens/elements as JSON, `uip rpa object-repository get-library` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
+| **Explore Object Repository** | `uip rpa get-object-repository` for the project's apps/screens/elements as JSON, `uip rpa get-library-object-repository` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
 | **Get JIT type definitions** | `Read` `{PROJECT_DIR}/.project/JitCustomTypesSchema.json` |
 | **Activity docs** | See [Installed package activity documentation](#installed-package-activity-documentation) above |
 | **Inspect a NuGet package's API** | `uip rpa packages inspect` — see [coded/codedworkflow-reference.md § Inspect NuGet Package Tool](coded/codedworkflow-reference.md) |

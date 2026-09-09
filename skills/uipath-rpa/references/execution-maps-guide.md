@@ -1,6 +1,6 @@
 # Execution Maps — Turn-Budgeted Build Journeys
 
-One dense file, read once per build. Fixes which tool calls go in which assistant turn. Budgets (happy path, incl. final report): **greenfield ≤5 turns, brownfield ≤4**. One repair cycle adds ≤2. Each T-row = ONE assistant message: N tool calls in one message cost 1 turn, one call per message costs N.
+One dense file, read once per build. Fixes which tool calls go in which assistant turn. Budgets (happy path, incl. final report): **greenfield ≤5 turns, brownfield ≤5**. One repair cycle adds ≤2. Each T-row = ONE assistant message: N tool calls in one message cost 1 turn, one call per message costs N.
 
 > **Tool vocabulary.** Tool names use Claude Code conventions: `Edit` = in-place string replacement, `Write` = full-file write, `Read`/`Glob`/`Grep` = file read/search, `Bash` = shell. On another harness, map each to its equivalent. Harness cannot emit parallel tool calls → keep the same per-turn grouping as consecutive calls; the CLI chains still collapse round-trips.
 
@@ -14,7 +14,7 @@ One dense file, read once per build. Fixes which tool calls go in which assistan
 
 ## Gate ≠ runtime proof
 
-A clean `validate` + `build` does NOT prove runtime behavior. Known silent failures pass BOTH: `InvokeCode` `Code` in child/CDATA form no-ops, `WriteTextFile` with explicit `Encoding` emits a BOM, a stripped UIA `N*` `Version` fails only at runtime ([xaml/common-pitfalls.md](xaml/common-pitfalls.md)). When the deliverable has observable outputs (files written, entry-point out-arguments) and runs without external systems or UI, the gate turn ends with ONE `uip rpa run` and the report turn checks the actual outputs — see the T3/T4 rows below.
+A clean `validate` + `build` does NOT prove runtime behavior. Known silent failures pass BOTH: `InvokeCode` `Code` in child/CDATA form no-ops, `WriteTextFile` with explicit `Encoding` emits a BOM, a stripped UIA `N*` `Version` fails only at runtime ([xaml/common-pitfalls.md](xaml/common-pitfalls.md)). When the deliverable has observable outputs (files written, entry-point out-arguments) and runs without external systems or UI, the gate chain ends with ONE `uip rpa run --skip-build` followed by a `cat` of every output file, and the report turn judges what that chain printed — see the T4/T5 rows below. Neither the run nor the output check is its own turn.
 
 ## Sequential gates — never batch across these
 
@@ -25,29 +25,32 @@ A clean `validate` + `build` does NOT prove runtime behavior. Known silent failu
 
 ## Journey: Greenfield XAML (no UIA)
 
-Skip the project-discovery subagent — no project exists (SKILL.md § Precondition). Write `project-context.md` + `AGENTS.md` yourself at T4.
+Skip the project-discovery subagent — nothing to discover yet ([environment-setup.md § Skip gate](environment-setup.md): no `project.json` before T1, only the untouched scaffold after it). The emptiness check itself (`ls` of the parent dir) is the first link of the T1 `Bash` chain, not its own turn. Write `project-context.md` + `AGENTS.md` yourself at T5.
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T1 — Scaffold + context** | ONE `Bash` chain: `uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --template-id BlankTemplate --expression-language <VisualBasic\|CSharp> --target-framework <Windows\|Portable> --output json` (Rule 2a — both flags explicit) `&&` `uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` `&&` one `uip rpa packages versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json` per request-known package ∥ parallel `Read` — ALL THREE, never a subset (skipping the pattern card re-opens per-activity discovery): [common-activity-card.md](common-activity-card.md), [common-pattern-card.md](common-pattern-card.md), [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) (Rule 22) ∥ memory recall (harness has memory) ∥ Rule 21 `activities find` fan-out for off-card activities |
-| **T2 — Author + install** | Design fork FIRST for row-processing tasks: complex bulk row processing (per-row parse + validate + branch + accumulate) escalates to code per [data-manipulation-guide.md § Code vs activity chains](data-manipulation-guide.md) — the pattern card's `ForEach` shapes cover only the simple one-`If`/`Switch` case. Then: one `Write` per workflow file — complete, all activities (Rule 18) ∥ `Read` `project.json` (anchors for the T2/T3 edits; skip re-reading scaffolded `Main.xaml` — the `Write` replaces it) ∥ `Edit` `project.json` (`fileInfoCollection` for test cases, Rule 10; `dependencies` stays CLI-owned via `packages install`) ∥ ONE `Bash`: `uip rpa packages install` for all needed packages at the T1-chosen versions — flag shape per [cli-reference.md § packages install](cli-reference.md#packages-install); it drifts across CLI builds, so on `Invalid packages input` re-check `uip rpa packages install --help` ∥ Rule 21 doc `Read`s + `get-default-xaml` for off-card activities |
-| **T3 — Gate** | ONE `Bash`: `uip rpa validate --file-path "<RELATIVE_FILE>" --project-dir "<PROJECT_DIR>" --output json` per file `&&` `uip rpa build "<PROJECT_DIR>" --output json` `&&` — when outputs are observable and no external system/UI is needed — `uip rpa run` on the entry point (§ Gate ≠ runtime proof). `--file-path` RELATIVE to project dir — absolute paths falsely fail (separator bug, [cli-reference.md § validate](cli-reference.md#validate)) |
-| **T4 — Report** | Check the T3 run's actual outputs against the request (files, out-arguments) BEFORE reporting — wrong/empty output with a clean gate is a silent-failure signature (§ Failure exits) + § Completion Output + write `project-context.md`/`AGENTS.md` + memory save ([§ Cross-session memory](#cross-session-memory)) |
+| **T1 — Scaffold + context** | ONE `Bash` chain: `uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --template-id BlankTemplate --expression-language <VisualBasic\|CSharp> --target-framework <Windows\|Portable> --output json` (Rule 2a — both flags explicit) `&&` `uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` `&&` one `uip rpa packages versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json` per request-known package ∥ parallel `Read` — ALL THREE, never a subset (skipping the pattern card re-opens per-activity discovery): [common-activity-card.md](common-activity-card.md), [common-pattern-card.md](common-pattern-card.md), [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) (Rule 22 — plain full Read, nothing to look up first) ∥ `Grep` `^## ` on [xaml/common-pitfalls.md](xaml/common-pitfalls.md) for its heading list (Rule 22 gate, step 1 — needs no prior output, so it rides here) ∥ memory recall (harness has memory) ∥ Rule 21 `activities find` fan-out for off-card activities |
+| **T2 — Vet** | `Read` every [xaml/common-pitfalls.md](xaml/common-pitfalls.md) section whose T1 heading matches an activity, property, or feature of the planned workflow — all in parallel; unsure → read it (Rule 22 gate, step 2) ∥ `Read` `project.json` (anchors for the T3/T4 edits; skip re-reading scaffolded `Main.xaml` — the `Write` replaces it) ∥ per-entry `Read`s from [xaml/xaml-editing-catalog.md](xaml/xaml-editing-catalog.md) when the workflow needs an editing operation beyond the cards (arguments, imports, resource types) ∥ Rule 21 doc `Read`s + `get-default-xaml` for off-card activities. This is the only turn the pitfalls gate costs: the heading list already arrived in T1, so no grep→Read pair is paid per file. |
+| **T3 — Author + install** | Design fork FIRST for row-processing tasks: complex bulk row processing (per-row parse + validate + branch + accumulate) escalates to code per [data-manipulation-guide.md § Code vs activity chains](data-manipulation-guide.md) — the pattern card's `ForEach` shapes cover only the simple one-`If`/`Switch` case. Then: one `Write` per workflow file — complete, all activities (Rule 18) ∥ `Edit` `project.json` (`fileInfoCollection` for test cases, Rule 10; `dependencies` stays CLI-owned via `packages install`) ∥ ONE `Bash`: `uip rpa packages install` for all needed packages at the T1-chosen versions — flag shape per [cli-reference.md § packages install](cli-reference.md#packages-install); it drifts across CLI builds, so on `Invalid packages input` re-check `uip rpa packages install --help` |
+| **T4 — Gate** | ONE `Bash`: `uip rpa validate --file-path "<RELATIVE_FILE>" --project-dir "<PROJECT_DIR>" --output json` per file `&&` `uip rpa build "<PROJECT_DIR>" --output json` `&&` — when outputs are observable and no external system/UI is needed — `uip rpa run --file-path "<RELATIVE_FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json` on the entry point (`--file-path` is required) `&&` `cat` of every file the workflow was asked to write (§ Gate ≠ runtime proof). The output check is a link of this chain, never its own turn. `--file-path` RELATIVE to project dir — absolute paths falsely fail (separator bug, [cli-reference.md § validate](cli-reference.md#validate)) |
+| **T5 — Report** | ONE message, no shell calls. Judge the T4 chain's verdict fields and its `cat` output against the request — wrong/empty output with a clean gate is a silent-failure signature (§ Failure exits) — then emit in this same message, as parallel tool calls: `Write` `.claude/rules/project-context.md` ∥ `Write` `AGENTS.md` (paths, metadata line and markers per [environment-setup.md § Project Context Discovery](environment-setup.md) step 3: first line `<!-- discovery-metadata: cs=N xaml=N deps=N -->`; `AGENTS.md` carries the same block between `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->`; no `Read`/`Grep` precedes these writes) ∥ every memory `Write` that [§ Cross-session memory](#cross-session-memory) qualifies (a first-try clean gate on card-covered activities qualifies none) ∥ the § Completion Output text. Nothing runs after the report |
 
+- **T1 is ONE message — `init` plus every read.** Both cards and [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) are plain full `Read`s with nothing to look up first, so they all ride in T1 alongside the [xaml/common-pitfalls.md](xaml/common-pitfalls.md) heading `Grep`; only that `Grep`'s section `Read`s wait for T2. `init` reads none of them, so it never waits on a read, and the pitfalls gate is paid before authoring — never after it. Open no other reference before T3, `environment-setup.md` included.
 - First chain call pays the cold Helm restore (30–90 s) — the chain hides it behind one turn; do not split to "check progress".
 - `init` can return `success: false` yet create files (partial success) — before retrying, check `project.json` exists ([environment-setup.md](environment-setup.md)).
 - Dependencies land via `packages install` only — never hand-edit `project.json` `dependencies`.
 
-**Repair cycle (validate/build failure):** one turn — `Edit` fixes by error category (Rule 19 — Package first: a skipped `packages install` fails the gate before any activity issue); a gate failure on a card-covered activity does NOT reopen discovery (`activities find`/`get-default-xaml`) — recheck the card entry; next turn — re-run the T3 chain. >2 errors with ambiguous origin → bisect: stub out half the new activities, re-validate. Caps: 5 attempts per loop (Rule 3).
+**Repair cycle (validate/build failure):** one turn — `Edit` fixes by error category (Rule 19 — Package first: a skipped `packages install` fails the gate before any activity issue); a gate failure on a card-covered activity does NOT reopen discovery (`activities find`/`get-default-xaml`) — recheck the card entry; next turn — re-run the T4 chain. >2 errors with ambiguous origin → bisect: stub out half the new activities, re-validate. Caps: 5 attempts per loop (Rule 3).
 
 ## Journey: Brownfield XAML edit
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T1 — Context** | § Precondition context check ∥ `Read` `project.json` + target `.xaml` + cards ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
-| **T2 — Edit** | Batched `Edit`s (anchor each on its own target block — same-file Edits serialize; overlapping anchors fail) ∥ `packages install` `Bash` if new dependencies |
-| **T3 — Gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` `&&` optional `run` per § Gate ≠ runtime proof |
-| **T4 — Report** | Output check (if T3 ran) + § Completion Output + memory save |
+| **T1 — Context** | SKILL.md § Precondition context check — the skip gate first, then the discovery subagent, which writes `project-context.md` + `AGENTS.md` itself ([environment-setup.md § Project Context Discovery](environment-setup.md)) ∥ `Read` `project.json` + target `.xaml` + cards + [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) (Rule 22, plain full Read) ∥ `Grep` `^## ` on [xaml/common-pitfalls.md](xaml/common-pitfalls.md) for its heading list ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
+| **T2 — Vet** | `Read` the [xaml/common-pitfalls.md](xaml/common-pitfalls.md) sections matching the planned edit (Rule 22 gate) ∥ per-entry [xaml/xaml-editing-catalog.md](xaml/xaml-editing-catalog.md) `Read`s for the editing operations involved ∥ off-card Rule 21 doc `Read`s |
+| **T3 — Edit** | Batched `Edit`s (anchor each on its own target block — same-file Edits serialize; overlapping anchors fail) ∥ `packages install` `Bash` if new dependencies |
+| **T4 — Gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` `&&` optional `run --file-path "<RELATIVE_FILE>" --skip-build` `&&` `cat` of every output file, per § Gate ≠ runtime proof |
+| **T5 — Report** | ONE message, no shell calls: judge the T4 verdict and `cat` output + § Completion Output + qualifying memory `Write`s as parallel calls. Context files were written by the discovery agent in T1 — do not read, edit, or rewrite them after the gate (the next session judges staleness by file and dependency counts, [environment-setup.md § Project Context Discovery](environment-setup.md)); if the skip gate tripped instead, write both here exactly as the greenfield T5 does |
 
 ## Journey: Greenfield coded
 
@@ -57,12 +60,12 @@ Skip the project-discovery subagent — no project exists (SKILL.md § Precondit
 |---|---|
 | **T1 — Scaffold + context** | ONE `Bash` chain: `init` (flags as XAML journey) `&&` `analyzer-rules list` `&&` `packages versions` per known package ∥ `Read` [assets/codedworkflow-template.md](../assets/codedworkflow-template.md) + [coded/operations-guide.md § Coding Guidelines](coded/operations-guide.md#coding-guidelines) ∥ memory recall |
 | **T2 — Author + install** | `Write` each `.cs` (Rules 13–19) ∥ `Read` `project.json` ∥ `Edit` `project.json` (`entryPoints` Rule 15, `fileInfoCollection` Rule 10) ∥ `packages install` `Bash` ∥ `Read` `.local/docs/packages/<PackageId>/coded/coded-api.md` for installed services |
-| **T3 — Gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` `&&` optional `run` per § Gate ≠ runtime proof |
-| **T4 — Report** | Output check (if T3 ran) + § Completion Output + memory save |
+| **T3 — Gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` `&&` optional `run --file-path "<RELATIVE_FILE>" --skip-build` `&&` `cat` of every output file, per § Gate ≠ runtime proof |
+| **T4 — Report** | ONE message, no shell calls — same shape as the greenfield XAML T5: judge the T3 verdict and `cat` output, then `Write` both context files ∥ qualifying memory `Write`s ∥ § Completion Output, all in this message |
 
 ## Journey: Brownfield coded edit
 
-Brownfield XAML journey with coded reads: T1 `Read` target `.cs` + `.local/docs/.../coded/coded-api.md` for touched services; T2 `Edit`s ∥ install; T3 gate; T4 report.
+Brownfield XAML journey with coded reads and no pitfalls vet turn: T1 `Read` target `.cs` + `.local/docs/.../coded/coded-api.md` for touched services; T2 `Edit`s ∥ install; T3 gate; T4 report.
 
 ## Journey: UIA capture + build (XAML)
 
@@ -70,16 +73,16 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check (SKILL.md § UIA Prerequisites, Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
+| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package's core guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check ([uia-starter-guide.md § UIA Prerequisites](uia-starter-guide.md), Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
 | **Per capture-screen** | (a) capture bundle — run the `uia-configure-target` flow for ALL of this screen's checklist elements in one pass, through OR registration; (b) ONE state advance via the interact CLI — only to reach the next screen, never to test behavior |
 | **T-author — after ALL screens captured** | Scaffold/authoring prerequisites (Capture-First Fast Path order) ∥ batch-author every screen's activities in one pass (Rule 18), embed path for OR target attachment |
 | **T-gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` |
-| **Debug cycle (consent-gated, [uia-starter-guide.md § Running UI Automation Workflows](uia-starter-guide.md))** | ONE `Bash` chain: window baseline `&&` `debug start` `&&` `execution cancel` `&&` re-list windows; next turn: diff, close stray windows via the interact CLI, report |
+| **Debug cycle (consent-gated, [uia-starter-guide.md § Running UI Automation Workflows](uia-starter-guide.md))** | ONE `Bash` chain: window baseline `&&` `debug start` `&&` `execution cancel` `&&` re-list windows; next turn: diff, close stray windows via the interact CLI (one `Bash`), and in that same message the report — context files, qualifying memory `Write`s and § Completion Output as parallel calls, as in the greenfield T5. The verdict is read from the chain's `debug start` envelope; never redirect it to a file and parse it in extra turns |
 
 - Default is author-once-after-capture — all OR refs are already in conversation. Fall back to per-screen authoring interleave only on long captures (5+ screens) where context pressure is real; the `validate`/`build` gate still runs ONCE at the end either way.
 - Screens after the first (same window): carry the OR screen reference from the previous capture into the next `uia-configure-target` invocation — it skips the OR screen lookup. Invocation shape and argument: the package's `uia-configure-target` invocation guide (routed from the package guide § Documentation).
 - Indication fallback (user physically clicks) and every interact advance are sequential gates — never batched, never parallel.
-- Selector failures at debug time → the `uia-improve-selector` flow (never hand-edit selectors).
+- Selector failures at debug time → the recover selector flow (never hand-edit selectors).
 
 ## Failure exits
 
@@ -91,7 +94,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 | Coded `CS*` errors | [coded/operations-guide.md § Common Issues and Fixes](coded/operations-guide.md#common-issues-and-fixes) |
 | CLI error (`timeout`, `EPIPE`, `401`, `not in the project folder`) | [cli-reference.md § CLI Error Recovery](cli-reference.md#cli-error-recovery) |
 | Card snippet rejected by validate/build | Fall back to Rule 21 triple for that activity; report stale entry via `/uipath-feedback` |
-| UIA selector fails at debug time | `uia-improve-selector` flow per [uia-starter-guide.md § Runtime Selector Failure Recovery](uia-starter-guide.md#runtime-selector-failure-recovery) — never hand-edit |
+| UIA selector fails at debug time | Recover selector flow per [uia-starter-guide.md § Runtime Selector Failure Recovery](uia-starter-guide.md#runtime-selector-failure-recovery) — never hand-edit |
 
 ## Cross-session memory
 
@@ -99,12 +102,12 @@ Harness-conditional: engage only when the harness provides persistent memory; ot
 
 **Recall — T1 of every journey.** Match saved entries by activity class + package `major.minor`. Hit ⇒ that activity skips the Rule 21 triple. `validate`/`build` still gate.
 
-**Save — after project `build` is clean (T4).** Save only:
+**Save — after project `build` is clean (the report turn).** Emit every qualifying save as a parallel `Write` inside the report message — never one memory file per turn, never a separate turn for the memory index. **A first-try clean gate on card-covered activities qualifies nothing — skip the save entirely.** Save only:
 
 1. Validated XAML snippet per off-card activity — key: activity class + package `major.minor` + date.
 2. Error→root-cause→fix triples that cost >1 validate attempt.
 3. Cross-version package gotchas.
 
-**Never save:** project-specific facts (paths, asset names, connections — belong in `project-context.md`), UIA selectors/targets/OR references (per-app), UIA CLI syntax (package-owned, co-versioned), secrets. Process-level UIA lessons (e.g., a failure mode and its fix direction) MAY be saved.
+**Never save:** project-specific facts (paths, asset names, connections — belong in `project-context.md`), UIA selectors/targets/OR references (per-app), UIA CLI syntax (package-owned, co-versioned), `uip rpa` flag shapes and run/debug payload fields ([cli-reference.md](cli-reference.md) owns them — a gap there is a `/uipath-feedback` report, not a memory), secrets. Process-level UIA lessons (e.g., a failure mode and its fix direction) MAY be saved.
 
 **Expiry:** recalled snippet fails validation → delete/overwrite that entry, fall back to Rule 21 triple.

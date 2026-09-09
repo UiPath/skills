@@ -1,0 +1,42 @@
+task_id: skill-admin-apms-list-bypass-rules-smoke
+description: >
+  Smoke test (outcome-graded): agent retrieves the organization's IP-restriction
+  bypass rules. Graded on the service's own response envelope — the
+  ApmsBypassRulesList response code plus a rule collection — rather than the
+  command string.
+
+  The collection is legitimately empty on an organization with no bypass rules,
+  so the check anchors on the service-issued response code (which an agent
+  cannot produce without calling the service) and the collection's shape.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, apms]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  Show me all IP-restriction bypass rules configured on my UiPath organization,
+  and save the raw JSON output of that command verbatim to ./bypass-rules.json
+  (do not summarize, wrap, or reformat it).
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "bypass-rules.json is the service's own bypass-rule listing response (ApmsBypassRulesList envelope)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('bypass-rules.json', encoding='utf-8-sig'))
+      assert isinstance(d, dict), 'saved output is not the raw command envelope'
+      assert d.get('Result') == 'Success', f'bypass-rule listing not successful: Result={d.get(\"Result\")}'
+      assert d.get('Code') == 'ApmsBypassRulesList', f'not a bypass-rules listing response: Code={d.get(\"Code\")!r}'
+      data = d.get('Data')
+      assert isinstance(data, list), f'Data is {type(data).__name__}, expected the rule collection'
+      for r in data:
+          assert isinstance(r, dict), 'rule collection holds non-object entries'
+      print(f'OK: bypass-rule listing retrieved from the service ({len(data)} rules)')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

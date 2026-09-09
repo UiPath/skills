@@ -1,0 +1,85 @@
+task_id: skill-gov-aops-policy-deployment-group-read-smoke
+description: >
+  Smoke test (outcome-graded): the agent audits governance deployment at group
+  scope — every group governance knows about, and the policy assignments recorded
+  for each of them. The criterion re-reads the same state live: the saved listing
+  must carry every group the service reports, the saved assignments must mention
+  each of those groups by its service-assigned id, and every assignment the
+  service reports must appear with its product and policy identifiers. Which
+  groups exist, and whether any carries an assignment, differs per organization,
+  so nothing is pinned to a group name or to a non-empty result — an organization
+  with no governance groups is reported as degenerate coverage rather than graded
+  as an agent failure. Read-only: no group assignment is configured or deleted.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployment]
+
+run_limits:
+  expected_turns: 16
+
+initial_prompt: |
+  I am auditing AOps governance at group scope on the tenant I am logged into.
+  Retrieve and save, verbatim:
+
+  - every group known to governance -> ./groups.json
+  - the policy assignments recorded for each of those groups -> ./group-assignments.json
+    (one entry per group, and keep each group's id with its assignments)
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "the saved listing and per-group assignments match what the service reports live"
+    command: |
+      python3 -c "
+      import json, subprocess
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      def cli(args):
+          out = subprocess.run(['uip'] + args + ['--output', 'json'], capture_output=True, text=True, timeout=120)
+          return json.loads(out.stdout)
+      live = (cli(['gov','aops-policy','deployment','group','list']).get('Data') or {}).get('Result') or []
+      groups_doc = json.load(open('groups.json', encoding='utf-8-sig'))
+      saved = [x for x in dicts(groups_doc) if x.get('Identifier') and x.get('Name')]
+      saved_ids = {x['Identifier'] for x in saved}
+      missing = [g.get('Name') for g in live if g.get('Identifier') not in saved_ids]
+      assert not missing, f'groups.json is missing groups the service reports: {missing}'
+      assign_raw = open('group-assignments.json', encoding='utf-8-sig').read()
+      assign_doc = json.loads(assign_raw)
+      text = assign_raw.lower()
+      # Copying the group listing across would satisfy every id-coverage
+      # assertion below without the agent reading a single assignment.
+      assert assign_doc != groups_doc, (
+          'group-assignments.json is a verbatim copy of groups.json — no assignments were read')
+      if not live:
+          # Whether any governance group exists is organization state, not agent
+          # behaviour, so it is not graded as a failure — but say plainly that
+          # this run reconciled nothing rather than implying real coverage.
+          print('OK (degenerate): the service reports no governance groups on this organization, so there were no assignments to reconcile')
+      else:
+          absent = [g.get('Name') for g in live if str(g.get('Identifier')).lower() not in text]
+          assert not absent, f'group-assignments.json does not cover these groups: {absent}'
+          total = 0
+          for g in live:
+              for entry in (cli(['gov','aops-policy','deployment','group','get', g['Identifier']]).get('Data') or []):
+                  total += 1
+                  product = str(entry.get('ProductIdentifier') or '')
+                  assert product.lower() in text, f'assignment for product {product} is missing from the saved output'
+                  policy = entry.get('PolicyIdentifier')
+                  if policy:
+                      assert str(policy).lower() in text, f'policy {policy} governing a group is missing from the saved output'
+          print(f'OK: {len(live)} governance groups listed and covered; {total} live assignment(s) reconciled')
+      "
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

@@ -95,10 +95,10 @@ def _find_invoke_process_call(tree: ast.Module) -> ast.Call | None:
 
 
 def check_invocation(text: str, tree: ast.Module) -> None:
-    if not re.search(r"from\s+langgraph\.types\s+import\s+[^\n]*\binterrupt\b", text):
+    if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         sys.exit("FAIL: missing `from langgraph.types import interrupt`")
     if not re.search(
-        r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bInvokeProcess\b",
+        r"from\s+uipath\.platform\.common\s+import\s+(?:[^\n]*\bInvokeProcess\b|\([^)]*\bInvokeProcess\b)",
         text,
     ):
         sys.exit("FAIL: missing `from uipath.platform.common import InvokeProcess`")

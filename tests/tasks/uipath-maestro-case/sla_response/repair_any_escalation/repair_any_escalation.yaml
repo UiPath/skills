@@ -1,12 +1,12 @@
 task_id: skill-case-sla-repair-any-escalation
 description: >
-  T4 of the SLA-response battery — diagnose mode. The staged caseplan is exactly one defect
-  away from valid: its SLA lane entry carries the Case Designer's `escalationId: "any"`
-  sentinel, which the frontend accepts but released `uip maestro case validate` rejects
-  ("The escalation referenced by rule ... no longer exists" — reproduced on
-  uip 1.198.0-preview.102). The correct repair is to drop the key, because a breach rule
-  references the SLA alone. The tempting wrong repair — inventing an escalation so the
-  reference resolves — also turns validate green, so the checker fails it explicitly.
+  T4 of the SLA-response battery — diagnose mode. The staged caseplan's SLA lane entry
+  still carries the Case Designer's `escalationId: "any"` sentinel — a frontend-only
+  placeholder that must not ship in an exported caseplan.json, whether or not
+  `uip maestro case validate` currently flags it. The correct repair is to drop the key,
+  because a breach rule references the SLA alone. The tempting wrong repair — inventing an
+  escalation so the reference resolves — also turns validate green, so the checker fails it
+  explicitly.
 tags: [uipath-maestro-case, smoke, mode:diagnose, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
@@ -21,8 +21,10 @@ sandbox:
       path: ./templates
 
 initial_prompt: |
-  `uip maestro case validate SlaResponse/SlaResponse/caseplan.json` is failing on this
-  solution. Diagnose it and fix it.
+  The SLA lane in `SlaResponse/SlaResponse/caseplan.json` has an `sla-status-change` entry
+  rule left over from the Case Designer with `escalationId: "any"`. Diagnose whether that's
+  safe to ship and fix it. `uip maestro case validate` may already report the file Valid —
+  that alone does not mean there is nothing to fix.
 
   The Escalation Review lane and the fact that it is entered on a case-SLA event are both
   intentional — do not restructure the case, and do not delete the lane or its entry rule.

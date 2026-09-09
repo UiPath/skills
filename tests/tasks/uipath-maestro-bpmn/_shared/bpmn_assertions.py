@@ -106,6 +106,24 @@ def assert_has_shape(root: ET.Element, bpmn_id: str) -> None:
         fail(f"missing BPMN DI shape for {bpmn_id}")
 
 
+def descriptor_file_names(descriptor: dict) -> set[str]:
+    # Two descriptor shapes are legal. `uip maestro bpmn init` and
+    # `uip maestro bpmn update-metadata` write a `files` name -> path map
+    # (`"bindings.json": "bindings_v2.json"`); hand-authored synthetic metadata
+    # uses a top-level `content` array of `content/<file>` paths. Compare
+    # basenames so either shape satisfies the same requirement.
+    names: set[str] = set()
+    content = descriptor.get("content")
+    if isinstance(content, list):
+        names.update(Path(str(item)).name for item in content)
+    files = descriptor.get("files")
+    if isinstance(files, dict):
+        for key, value in files.items():
+            names.add(Path(str(key)).name)
+            names.add(Path(str(value)).name)
+    return names
+
+
 def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -> None:
     project = load_json(project_dir / "project.uiproj")
     operate = load_json(project_dir / "operate.json")
@@ -113,19 +131,28 @@ def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -
     descriptor = load_json(project_dir / "package-descriptor.json")
     load_json(project_dir / "bindings_v2.json")
 
-    if project.get("main") != bpmn_name:
+    if project.get("ProjectType") != "ProcessOrchestration":
+        fail("project.uiproj must declare ProjectType ProcessOrchestration")
+    # The CLI never writes `main` into project.uiproj, but it preserves one
+    # authored by hand. Only check it when present, and then only for drift.
+    if project.get("main") not in (None, bpmn_name):
         fail("project.uiproj main does not reference the BPMN file")
-    if operate.get("main") != bpmn_name:
+
+    # `update-metadata` always rewrites operate.json `main` to the entry-point
+    # path `/content/<file>#<start-event-id>`; hand-authored metadata uses the
+    # bare filename. Accept both.
+    operate_main = str(operate.get("main") or "")
+    if Path(operate_main.split("#", 1)[0]).name != bpmn_name:
         fail("operate.json main does not reference the BPMN file")
     if operate.get("contentType") != "ProcessOrchestration":
         fail("operate.json contentType must be ProcessOrchestration")
 
-    content = set(descriptor.get("content") or [])
+    content = descriptor_file_names(descriptor)
     for required in (
-        f"content/{bpmn_name}",
-        "content/bindings_v2.json",
-        "content/entry-points.json",
-        "content/operate.json",
+        bpmn_name,
+        "bindings_v2.json",
+        "entry-points.json",
+        "operate.json",
     ):
         if required not in content:
             fail(f"package-descriptor.json missing {required}")

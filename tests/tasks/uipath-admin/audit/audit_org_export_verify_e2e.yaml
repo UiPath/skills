@@ -1,0 +1,64 @@
+task_id: skill-admin-audit-org-export-verify-e2e
+description: >
+  End-to-end test (artifact verification tier): agent drives the default
+  `uip admin audit org export` (json) to produce a real folder of day-wise JSON
+  files, then the harness verifies the artifact — a single CLI-generated
+  `audit_<from>_<to>_<generatedAt>` folder under the requested base directory,
+  every per-day file a JSON array, and every event carrying the LTS-schema keys.
+
+  Sibling to `audit_export_verify_e2e.yaml` — same verification logic, but
+  exercises the `org` scope (admin events: memberships, license, tenant
+  lifecycle, Identity Server logins) rather than `tenant` scope. Org-scope hits a
+  different basePath (`/orgaudit_` vs `/tenantaudit_`) and surfaces a different
+  event set, so this isn't redundant with the tenant artifact-verify task — it
+  catches regressions on the org code path specifically.
+
+  Fully outcome-graded: the leading `command_executed` regex is gone, and org
+  scope is now graded from the exported records rather than from the word `org`
+  in the command — org-level events are not attached to a tenant and export with
+  an empty `TenantId`. When the window exports nothing there is no evidence
+  either way, so that assertion is skipped and logged instead of guessed.
+
+  Whole-day granularity note: `uip admin audit ... export` issues one HTTP call
+  per UTC day inside [--from-date, --to-date] and writes one <YYYY-MM-DD>.json
+  file per day into the generated folder.
+
+  LTS lag note: the export reads from the long-term store, which lags the live
+  `events` endpoint. The prompt pins the window to a date at least 48h in the
+  past so LTS has caught up.
+
+  Org-scope volume note: organization-level audit events (memberships, license,
+  tenant lifecycle) are typically sparser than tenant events. An empty or
+  near-empty result on a quiet test org is a real outcome and does not fail the
+  test — the assertions are structural correctness of the per-day JSON files, not
+  a minimum event count.
+
+  Blocker: this task requires the base-directory + generated-name export
+  behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
+  publish, on top of #2534 (json folder) + #1372 (adds `uip admin audit`)).
+  Until then `--output-path` is treated as the exact output folder (no
+  generated subfolder) and the verifier reports no generated export found.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:discover, audit, export, scope-org, real-artifact]
+
+initial_prompt: |
+  Can you export the full organization-level audit trail from 2 days
+  ago — just that one day — as JSON files? I mean the whole day of org-scope
+  activity (memberships, license changes, tenant lifecycle, and everything
+  else at org level), a straight export rather than a category-filtered
+  slice. Save them in a folder called audit-org-window.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "./audit-org-window holds exactly one CLI-generated day-wise JSON export whose events carry the LTS schema and are ORG-scope (no TenantId)"
+    command: 'AUDIT_BASE_DIR=audit-org-window AUDIT_FORMAT=json AUDIT_DEEP=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_export.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 7
+  max_turns: 40
+  turn_timeout: 600

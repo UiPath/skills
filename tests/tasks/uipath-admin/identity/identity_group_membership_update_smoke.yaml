@@ -1,0 +1,32 @@
+task_id: skill-admin-group-membership-update-smoke
+description: >
+  Smoke test (outcome-graded): agent adds a user to a group (resolve user ->
+  resolve group -> members add). A marker group is seeded in pre_run; graded by
+  reading the group's membership back from the tenant (>=1 member), not the
+  command string.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, identity, groups, membership]
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''setup_group.py''))"'
+    timeout: 30
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_group_marker.py''))"'
+    timeout: 30
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Add the first user in my organization to the "ce-identity-smoke-group" group.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The marker group has at least one member after the agent added a user"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''verify_group_member.py''))"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

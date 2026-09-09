@@ -1,0 +1,44 @@
+task_id: skill-admin-apms-ip-range-delete-by-cidr-e2e
+description: >
+  End-to-end test (outcome-graded): single CLI scenario — remove an allowlist entry
+  when the request names a network rather than an entry id. The delete verb can
+  look the entry up by CIDR instead of id, and it requires an explicit
+  confirmation flag because removing an allowed network is lockout-sensitive.
+
+  The entry is seeded in pre_run with its id recorded, so the check reads that
+  exact id back: a do-nothing agent cannot make a seeded entry disappear, and a
+  missing seed is an error rather than a pass.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, apms, ip-ranges]
+
+pre_run:
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-decommissioned-office" APMS_RANGE_COUNT="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-decommissioned-office" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  We closed the office behind the network listed in `seed.json` (the
+  `range.cidrs` field) — that network should no longer be on our organization's IP
+  allowlist. Remove it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The seeded allowlist entry is gone from the organization"
+    command: 'APMS_CHECK="absent" APMS_SEED_KEY="range" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''verify_apms_ip_range.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Removing an allowlist entry must not touch the enforcement toggle"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+enforcement\s+(?:enable|disable)\b'
+    weight: 2.0

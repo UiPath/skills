@@ -31,20 +31,15 @@ post_run:
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
+  I want an external system to be able to kick off one of my processes with
+  an HTTP POST. The process ID and its folder are in `seed.json`, along with
+  a unique prefix (`uuid8`) — use the prefix in the names so nothing clashes.
 
-  `seed.json` provides: `uuid8`, `process_key`, `folder_path` (the folder
-  containing the process — triggers must live in the same folder).
+  Make it reachable at the path `e2e-trigger-api-<uuid8>-slug`, and name it
+  `e2e-trigger-api-<uuid8>-renamed`.
 
-  Goal: leave the tenant in this state — an **API trigger** exists in
-  `folder_path`, attached to `process_key`, with these fields:
-  - Name: `e2e-trigger-api-<uuid8>-renamed`
-  - Slug: `e2e-trigger-api-<uuid8>-slug`
-  - Method: `Post`
-
-  Exercise renaming the trigger at some point (you may create it with a
-  different name first, then rename). What matters at the end is the desired
-  state above.
+  I also want to confirm renaming works — set it up under a different name
+  first, then rename it, so the final state lands on the name above.
 
   Do NOT ask for approval. Do NOT pause.
 
@@ -55,4 +50,15 @@ success_criteria:
     timeout: 60
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+  # Secondary, low weight on purpose: the state check above is the real
+  # verdict. This one only separates "the skill never fired" from "it fired
+  # and got it wrong" — two different bugs that otherwise look identical in
+  # the report. The prompt deliberately does not name the skill, so this is a
+  # genuine measurement rather than a restatement of the prompt.
+  - type: skill_triggered
+    description: "Activation: the uipath-platform skill fired on its own"
+    skill_name: "uipath-platform"
+    expected_skill: "uipath-platform"
+    weight: 1.0
     pass_threshold: 1.0

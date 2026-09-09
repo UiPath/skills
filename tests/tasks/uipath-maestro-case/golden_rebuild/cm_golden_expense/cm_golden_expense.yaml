@@ -67,6 +67,8 @@ initial_prompt: |
   - Do NOT call AskUserQuestion - it is not available in this harness.
   - Do NOT publish the solution and do NOT run `uip maestro case debug`
     (the case suspends on timers, HITL actions, and a webhook event).
+  - Persist each connector's `case spec` response before writing it into
+    `caseplan.json` - never reconstruct it from memory.
   - Finish with `uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json --output json`
     passing on the resulting caseplan.json.
 
@@ -124,7 +126,3 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b'
     weight: 1.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

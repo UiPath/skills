@@ -32,6 +32,7 @@ import re
 from collections import Counter, defaultdict
 
 from advisory_flow_utils import (
+    LOOP_BACK_PORTS,
     carries_literal,
     end_bindings,
     fail,
@@ -119,7 +120,7 @@ def main():
     # ── 3. the two QUERIES are on mutually unreachable branches ───────────────
     adj = defaultdict(list)
     for e in edges:
-        if e.get("targetPort") != "loopBack":
+        if e.get("targetPort") not in LOOP_BACK_PORTS:
             adj[e.get("sourceNodeId")].append(e.get("targetNodeId"))
 
     def reaches(a, b, block):
