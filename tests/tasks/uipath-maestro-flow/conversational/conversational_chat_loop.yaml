@@ -16,8 +16,6 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational]
 
 run_limits:
-  # Observed, not estimated: the task passed 9/9 in this branch's smoke run on
-  # CLI 1.203.0-dev.8572 — 20 commands, one iteration, 417s.
   expected_turns: 20
   max_turns: 80
   # Same 900 both default.yaml and smoke.yaml set. This build is shorter than
