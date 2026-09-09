@@ -27,7 +27,17 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Make the `_shared` helper package importable. In the repo it sits at
+# tests/tasks/uipath-functions/_shared (parent-of-parent of this file). Under
+# the eval harness the checker is copied flat into $TASK_DIR without that
+# sibling, so also add $SKILLS_REPO_PATH/tests/tasks/uipath-functions. Both are
+# inserted; the directory that exists wins at import time.
+for _cand in (
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.join(os.environ.get("SKILLS_REPO_PATH", ""), "tests", "tasks", "uipath-functions"),
+):
+    if _cand and _cand not in sys.path:
+        sys.path.insert(0, _cand)
 from _shared.project_root import find_project_root  # noqa: E402
 
 ROOT = find_project_root("tenant-echo")
