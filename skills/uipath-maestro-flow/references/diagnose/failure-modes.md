@@ -326,7 +326,7 @@ Local `uip maestro flow validate` returns `Result: Success`. The same flow fails
 
 Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expression-reference linting, and a small set of structural rules.
 
-**Caught** (validate exits non-zero, with a precise field path and remediation hint):
+**Caught** (each with a precise field path and remediation hint). **Error** severity exits non-zero; **warning** severity still exits **0**, so read `Data.Warnings` rather than the exit code:
 
 - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` — emitted by cli-side `expression-prefix-validator`
 - Invented `nodes.<id>.output.<...>` syntax (same failure class) — same validator, suggests `=js:$vars.<id>.output.<...>` as the fix
