@@ -30,6 +30,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 7. **No secrets or personal paths** in committed files
 8. **CLI commands must use `--output json`** when output is parsed programmatically
 9. **Review new skills for every custom flavor.** They are included automatically; add the smallest sparse override wherever canonical guidance is not safe for a target environment
+10. **Never rename a job that produces a required status check, and never narrow its trigger.** A required context is a literal string GitHub waits for. Rename the job and the context stops reporting; add `paths:`, `paths-ignore:`, `branches:`, `branches-ignore:` or a `types:` list without `synchronize` and the workflow won't run on excluded PRs. Either way the check never arrives and **every open PR blocks**, not just yours. Short-circuit *inside* the job instead — a skipped job counts as a pass. The set lives in [`docs/REQUIRED-CHECKS.md`](docs/REQUIRED-CHECKS.md) § Current target set and is not discovered from disk; edit it in the same PR as the workflow:
+
+    ```bash
+    python3 -m pytest tests/scripts/test_required_checks_contract.py -q   # must pass
+    ./scripts/apply-required-checks.sh --dry-run                          # preview the ruleset
+    ./scripts/apply-required-checks.sh --check                            # doc vs live ruleset (needs repo admin)
+    ```
 
 ## File Conventions
 
@@ -42,6 +49,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 | `assets/templates/*` | Templates end with `-template.md` or `-template.<ext>`. |
 | `skills.sh.json` | Display grouping for the repo's skills.sh page. Every `skills/<name>/` appears in exactly one grouping. Edit it in the same PR that adds, renames, or removes a skill folder — validate with `python3 scripts/check-skills-sh.py`. |
 | `assets/skill-status.json` | Lifecycle status (`stable` / `preview` / `in-development`) for every skill — the single source of truth. Edit in the same PR as the skill folder; regenerate the README table with `python3 scripts/check-skill-status.py --write-readme`. |
+| `docs/REQUIRED-CHECKS.md` | The required-status-check set, plus the rules that keep a context reportable. Machine-read: `scripts/parse-required-checks.py` is its only parser, shared by `scripts/apply-required-checks.sh` and the contract guard. Edit § Current target set in the same PR that renames a required job or changes its trigger. |
 | `hooks/*.sh` + `hooks/*.ps1` | Session hooks ship as twin implementations with the same basename — bash and PowerShell (5.1 and 7+ compatible). The twins MUST stay behaviorally identical: a change to one requires the same change to the other in the same PR. Dispatched by the polyglot commands in `hooks/hooks.json`. |
 
 ## When Reviewing or Editing Skills

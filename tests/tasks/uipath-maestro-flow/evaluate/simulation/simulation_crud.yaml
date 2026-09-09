@@ -102,7 +102,7 @@ success_criteria:
   - type: command_executed
     description: "Static-simulation creation telemetry (report only; its requested removal leaves no durable witness)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+.*--strategy\s+Static\b.*--mock-value'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 0.0
