@@ -125,7 +125,7 @@ Editing the `.flow` directly carries the usual obligations — chiefly a `variab
 
 ### Conversation trigger
 
-Replace the default manual trigger — `flow init` scaffolds `core.trigger.manual`, and the conversation trigger is what makes the packaged flow conversational and exposed as a chat experience.
+Replace the default manual trigger — `flow init` scaffolds `core.trigger.manual`, and the conversation trigger is what makes the packaged flow conversational and exposed as a chat experience. Same two-step shape as [editing-operations-cli.md § Replace manual trigger with connector trigger](../../editing-operations-cli.md#replace-manual-trigger-with-connector-trigger), with the conversation trigger in place of a connector one.
 
 ```bash
 uip maestro flow node remove ChatFlow/ChatFlow.flow start
