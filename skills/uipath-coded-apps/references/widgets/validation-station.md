@@ -23,7 +23,7 @@ If the user just wants a generic form (no DU document), use the standard Action 
 5. **Reuse the app's own `UiPath` instance** — from `useAuth()` (web app) or `src/uipath.ts` (action app). Do not construct a second SDK for the widget; auth state will diverge.
 6. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
 7. **Widget does NOT surface failures.** `onSubmit` / `onSaveAsDraft` receive `(request, result?)` and render no toast on failure — the host owns all UI feedback. `result` is **optional**, and its absence means nothing was persisted; see [Getting the validated result](#getting-the-validated-result).
-8. **Report-as-exception makes no API call.** `onReportException(request)` only hands the host the data — it does NOT persist. Read the reason off `request.exceptionReport` (typed `unknown`, carrying the `IReportAsExceptionDTO` shape) and call `OrchestratorDuModule.submitExceptionReport(taskId, request.documentId, reason, { folderId })` yourself, or the user's click is a no-op. Needs `OR.Tasks`.
+8. **Report-as-exception makes no API call, and in an *action app* cannot work at all.** `onReportException(request)` hands the host the data and persists nothing. A **web app** finishes the flow by reading the reason off `request.exceptionReport` (typed `unknown`, carrying the `IReportAsExceptionDTO` shape) and calling `OrchestratorDuModule.submitExceptionReport(taskId, request.documentId, reason, { folderId })` (needs `OR.Tasks`). An **action app** cannot: that call takes a DU validation task id, and an action app has an app task. Ask the developer what the button should do before wiring it — see [Report as exception in an action app](#report-as-exception-in-an-action-app).
 
 ## Install
 
@@ -157,9 +157,9 @@ Full table in the package README. Inside a coded app you usually only touch:
 | `discardChanges` | No | Controlled trigger: `{ value: true }` to discard pending edits. Pass a fresh object each time — the widget watches for the new reference, so repeated `{ value: true }` calls all fire. |
 | `onSubmit` | No | Fires after **submit** (`save={{ validate: true }}`): ProcessExtractedData + bucket upload. `(request, result?)` — `result` only when the widget owned the write-back. Complete the task here. |
 | `onSaveAsDraft` | No | Fires after **save as draft** (`save={{ validate: false }}`): uploads in-progress data, no ProcessExtractedData. Same `(request, result?)` shape. |
-| `onReportException` | No | Fires when the user reports an exception. Receives `(request)` — the reason is on `request.exceptionReport`, the document id on `request.documentId`. Widget makes **no API call**; persist via `OrchestratorDuModule.submitExceptionReport(...)`. |
+| `onReportException` | No | Fires when the user reports an exception. Receives `(request)` — the reason is on `request.exceptionReport`, the document id on `request.documentId`. Widget makes **no API call**; persist via `OrchestratorDuModule.submitExceptionReport(...)`. Web apps only; see [Report as exception in an action app](#report-as-exception-in-an-action-app). |
 
-The widget surfaces three flows. **Submit** and **save as draft** are owned end-to-end by the widget and hand the host `(request, result?)`; `result` is a `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }` — and is present only when the widget did the write-back itself. **Report as exception** is forwarded as a request object with no API call. The widget renders no failure UI for any flow — handle it in the callback yourself (toast, retry, log).
+The widget surfaces three flows. **Submit** and **save as draft** are owned end-to-end by the widget and hand the host `(request, result?)`; `result` is a `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }` — and is present only when the widget did the write-back itself. **Report as exception** is forwarded as a request object with no API call, and in an action app cannot be persisted at all (see [Report as exception in an action app](#report-as-exception-in-an-action-app)). The widget renders no failure UI for any flow — handle it in the callback yourself (toast, retry, log).
 
 ## Getting the validated result
 
@@ -200,6 +200,17 @@ needs). Available on `ValidationStation`, `CompactFieldsForm`, `CompactTableEdit
 `CompactBusinessRules` — the components that share the extraction store; `DocumentViewer` and
 `CompactDocTypeField` do not expose it.
 
+## Report as exception in an action app
+
+`submitExceptionReport(taskId, ...)` takes a **DU validation task** id. An action app has an **app task**, so the call has nothing to act on and always fails — no scope or header fixes it. (Web apps are unaffected: their task really is a DU validation task.)
+
+The button can be removed: `hideReportAsExceptionButton: true`, honoured by `ValidationStation` and `CompactFieldsForm`.
+
+**Ask the developer what it should do — don't pick for them.** Two shapes:
+
+1. **Hide it** *(default)*. Set the flag, write no handler, drop the `OrchestratorDuModule` import.
+2. **Keep it.** The callback still fires and is an ordinary handler — anything the app can do, it can do here; only a real DU exception report is off the table. E.g. `showMessage(...)` and leave the action open; message then `completeTask(...)` (add a second outcome to `action-schema.json` if the workflow must tell it from a submit); or write the reason to a queue item, entity or ticket, call their own API, route the document elsewhere. Build whatever they describe — this list is a prompt for the conversation, not the allowed answers.
+
 ## Integration: Action App (most common)
 
 Validation Station as the form inside an Action Center DU validation task. Replaces `src/components/Form.tsx` from the standard action-app scaffold.
@@ -210,12 +221,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ValidationStation,
   ValidationStationLanguage,
-  type IVsSaveExceptionReportRequest,
   type IVsSaveValidatedDataRequest,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
 import type { DuFramework } from '@uipath/uipath-typescript/document-understanding';
-import { OrchestratorDuModule } from '@uipath/uipath-typescript/orchestrator-du-module';
 import { MessageSeverity, Theme } from '@uipath/coded-action-app';
 import { sdk, codedActionAppService } from '../uipath';
 
@@ -231,7 +240,6 @@ function Form({ onInitTheme }: FormProps) {
   const [taskData, setTaskData] = useState<{
     contentValidationData?: DuFramework.ContentValidationData | null;
   } | null>(null);
-  const [taskId, setTaskId] = useState<number | undefined>(undefined);
   const [folderId, setFolderId] = useState<number | undefined>(undefined);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isReadonly, setIsReadonly] = useState(false);
@@ -241,7 +249,6 @@ function Form({ onInitTheme }: FormProps) {
     codedActionAppService.getTask().then((task) => {
       // task.data is typed `unknown`; it is the inputs bag from action-schema.json.
       setTaskData(task.data as { contentValidationData?: DuFramework.ContentValidationData });
-      setTaskId(task.taskId);
       setFolderId(task.folderId);
       setIsReadonly(task.isReadOnly);
       const dark = isDarkTheme(task.theme);
@@ -277,30 +284,25 @@ function Form({ onInitTheme }: FormProps) {
     [taskData],
   );
 
-  // Report-as-exception is not persisted by the widget — the host calls the SDK itself.
-  const handleReportException = useCallback(
-    async (request: IVsSaveExceptionReportRequest) => {
-      if (taskId === undefined) return;
-      // `exceptionReport` is typed `unknown`; it carries the IReportAsExceptionDTO shape.
-      const { Reason } = (request.exceptionReport ?? {}) as { Reason?: string };
-      const response = await new OrchestratorDuModule(sdk).submitExceptionReport(
-        taskId,
-        request.documentId,
-        Reason || 'Reported via Validation Station',
-        { folderId },
-      );
-      if (!response.IsSuccessful) {
-        codedActionAppService.showMessage(
-          response.ErrorMessage ?? 'Failed to report exception',
-          MessageSeverity.Error,
-        );
-        return;
-      }
-      // Do NOT complete the task for submitExceptionReport.
-      codedActionAppService.showMessage('Exception reported.', MessageSeverity.Success);
-    },
-    [taskId, folderId],
-  );
+  // "Report as exception" is hidden below: submitExceptionReport takes a DU validation task
+  // id and this is an app task. Ask the developer — they may want to keep the button and do
+  // something else with it. This handler is one example (re-add the
+  // IVsSaveExceptionReportRequest import if you uncomment it).
+  //
+  // const handleReportException = useCallback(
+  //   async (request: IVsSaveExceptionReportRequest) => {
+  //     // `exceptionReport` carries the IReportAsExceptionDTO shape. Nothing records the reason
+  //     // for you — write it to a queue, entity or ticket first if the developer wants it kept.
+  //     const { Reason } = (request.exceptionReport ?? {}) as { Reason?: string };
+  //     codedActionAppService.showMessage(
+  //       'Exception noted. This action does not support exception reports, so it will be closed.',
+  //       MessageSeverity.Warning,
+  //     );
+  //     // Stop here to leave the action open, or close it:
+  //     await codedActionAppService.completeTask('Submit', taskData);
+  //   },
+  //   [taskData],
+  // );
 
   if (!data) return null; // wait for task payload
 
@@ -316,8 +318,8 @@ function Form({ onInitTheme }: FormProps) {
         language={ValidationStationLanguage.English}
         isReadonly={isReadonly}
         save={save}
+        options={{ hideReportAsExceptionButton: true }}
         onSubmit={handleSubmit}
-        onReportException={handleReportException}
       />
     </>
   );
@@ -564,9 +566,9 @@ function ReviewWorkspace({ task }: { task: TaskGetResponse }) {
         {...shared}
         sdk={sdk}
         data={data}
-        // Keeps the built-in Submit/Report buttons. Add hideSubmitButton +
-        // hideReportAsExceptionButton (and omit enableSaveAsDraft) if you render
-        // your own toolbar — see the anti-patterns below.
+        // Keeps the built-in Submit/Report buttons. Add hideSubmitButton (and omit
+        // enableSaveAsDraft) for your own toolbar — see anti-patterns. Report works here
+        // because this is a web app; an action app needs hideReportAsExceptionButton: true.
         options={{ hideBusinessRules: true, hideDocumentTypeField: true, emitDtoStateChanges: true }}
         onSubmit={handleSubmit}
       />
@@ -590,7 +592,8 @@ Runnable end-to-end example (task list + selection + all five subcomponents wire
 - **Do not call `completeTask` inside the `save` setter.** Always wait for `onSubmitComplete` with `success: true` — submit may fail validation, and completing early submits unvalidated data.
 - **Do not assume the widget shows an error on failure — it does not.** `onSubmit`/`onSaveAsDraft` render no UI on failure; surface the error yourself (`showMessage`, toast, etc.).
 - **Do not treat a missing `result` as success.** `onSubmit`/`onSaveAsDraft` pass `result` only when the widget owned the write-back. `if (!result?.success) return;` — completing on an absent result closes the task over unsaved edits.
-- **Do not treat `onReportException` like the save callbacks.** It receives one `request`, not `(request, result?)`, and persists nothing — read the reason off `request.exceptionReport` and call `OrchestratorDuModule.submitExceptionReport(...)` yourself.
+- **Do not treat `onReportException` like the save callbacks.** It receives one `request`, not `(request, result?)`, and persists nothing — in a web app read the reason off `request.exceptionReport` and call `OrchestratorDuModule.submitExceptionReport(...)` yourself.
+- **Do not call `submitExceptionReport` from an action app** — it takes a DU validation task id and an action app has an app task. Hide the button or handle it locally, and **ask the developer which**. See [Report as exception in an action app](#report-as-exception-in-an-action-app).
 - **Do not complete the task after reporting an exception.** The `SubmitExceptionReport` endpoint completes the task server-side, so calling `completeTask` as well closes an already-closed task.
 - **Always pass `contentValidationData` back to `completeTask` verbatim.** `completeTask(outcome, data)` **replaces** the task's data, so `{}` — or any payload missing that field — wipes it. Every other field is free to change: send whatever the action's own controls collected alongside it. (`Tasks.complete()` in a web app differs: `data` is optional for `TaskType.DocumentValidation`, and omitting it is not the same as passing `{}`.)
 

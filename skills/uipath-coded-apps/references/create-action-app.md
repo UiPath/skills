@@ -11,7 +11,7 @@ When an automation creates a human task (via `CreateAppTask` RPA activity/Maestr
 
 The data contract is defined in `action-schema.json`.
 
-> **Document Understanding validation app?** If the user wants a human-review form for DU extraction results (correct fields, edit tables, approve a document), embed the **Validation Station widget** instead of generating a custom form. Follow [widgets/validation-station.md](widgets/validation-station.md) — it replaces the `src/components/Form.tsx` produced by Q4 below.
+> **Document Understanding validation app?** If the user wants a human-review form for DU extraction results (correct fields, edit tables, approve a document), embed the **Validation Station widget** instead of generating a custom form. Follow [widgets/validation-station.md](widgets/validation-station.md) — it replaces the `src/components/Form.tsx` produced by Q4 below. It adds one pre-flight question: the widget's **Report as exception** button cannot work in an action app, so ask the user what to do with it before writing the component.
 
 > **Reviewer needs to see a PDF beside the form** (display-only — not DU validation)? Embed the **PDF Viewer widget** in the document pane instead of hand-rolling pdf.js — see [widgets/pdf-viewer.md](widgets/pdf-viewer.md).
 
