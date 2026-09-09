@@ -1,7 +1,10 @@
 name: Task Driver Gate
 
-# Fails the build if any coder-eval task YAML pins `sandbox.driver: tempdir`.
+# Two gates over the task/experiment corpus:
+#   1. no coder-eval task YAML pins `sandbox.driver: tempdir`
+#   2. every Windows-reachable `pre_run`/`post_run` command is a single line
 #
+# Gate 1:
 # The sandbox driver is chosen by the run environment, never by the task:
 #   - Linux nightly slice  -> `driver: docker` (skills-image bakes the uip CLI
 #     + every tool plugin), set in tests/experiments/nightly.yaml.
@@ -11,8 +14,14 @@ name: Task Driver Gate
 # tool-backed command (e.g. `uip maestro flow validate`). See
 # scripts/check-task-driver.py for the full rationale.
 #
+# Gate 2: cmd.exe on the Windows split parses only the first line of a hook, so
+# a `|-` block scalar ERRORs every task (skills #2756 -> #3116). Scope is every
+# experiment hook plus the hooks of `windows`-tagged tasks.
+#
 # No `paths:` filter so this can be wired as a required check — it is a
-# sub-second full scan that always reports a definitive pass/fail.
+# sub-second full scan that always reports a definitive pass/fail. The job
+# `name:` below is a required status check in the `main` ruleset; do not rename
+# it without updating the ruleset first.
 
 on:
   pull_request:
@@ -39,5 +48,6 @@ jobs:
         with: { python-version: '3.13' }
       - name: Install PyYAML
         run: pip install --quiet pyyaml
-      - name: Check task drivers
-        run: python3 scripts/check-task-driver.py tests/tasks
+      # One step, so the required-check job name above stays byte-identical.
+      - name: Check task drivers and experiment hook portability
+        run: python3 scripts/check-task-driver.py tests/tasks tests/experiments
