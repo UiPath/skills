@@ -69,7 +69,7 @@ What to look for:
 
 7. **Confirm branch 6 (concurrent COM access).** Look for:
    - The workflow uses `Parallel` activities containing Excel calls.
-   - Multiple Robot jobs against the same workflow on the same host (`uip or jobs list --process-name '<process>' --host '<MOCK-HOST>'`) overlap with the macro window.
+   - Multiple Robot jobs against the same workflow on the same host (`uip or jobs list --process-name '<PROCESS_NAME>' --host '<HOSTNAME>'`) overlap with the macro window.
    - A different automation on the same host using Excel (PowerShell, another RPA tool, scheduled VBA add-in).
    - Failures are intermittent — the symptom of an STA race.
 
