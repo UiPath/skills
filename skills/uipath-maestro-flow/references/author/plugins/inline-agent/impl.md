@@ -518,7 +518,7 @@ Current CLIs report the same fault as `[SCHEMA_ERROR] System prompt is required`
 
 ## What NOT to Do
 
-- **Do not use Flow CLI `node add`, `edge add`, or `variable` commands for inline-agent graph edits** — inline-agent node, edge, variable, layout, and tool-resource node changes are non-carve-out structural `.flow` mutations and must be authored directly with `Edit` / `Write`.
+- **Do not use Flow CLI `node add`, `edge add`, or `variable` commands for inline-agent graph edits** — inline-agent node, edge, variable, layout, and tool-resource node changes are non-carve-out structural `.flow` mutations and must be authored directly with `Edit` / `Write`. This rule scopes to `uipath.agent.autonomous`. It does **not** cover the inline conversational agent (`uipath.agent.conversational`), whose documented recipe authors the node and its edges with `node add` / `edge add` — see [conversational-agent/impl.md § Node JSON](../conversational-agent/impl.md#node-json).
 - **Do not write `inputs.systemPrompt` / `inputs.userPrompt` on the inline-agent node** — full rule in § Wiring Flow Variables into Agent Prompts § Anti-patterns. Prompts live in `agent.json`.
 - **Do not put a `model` block on the inline-agent node instance** — the node inherits serviceType/version/context from `definitions[]`; the inline-agent source lives at `inputs.source`.
 - **Do not use `model.agentProjectId`, `inputs.agentProjectId`, or `model.source` on any inline-agent-related node instance** — both `uipath.agent.autonomous` and every attached resource node (`uipath.agent.resource.tool.*`, `uipath.agent.resource.escalation`, `uipath.agent.resource.context.*`) carry source identity at `inputs.source` and have no instance `model` block.

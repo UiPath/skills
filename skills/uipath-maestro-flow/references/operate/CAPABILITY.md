@@ -51,6 +51,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Sync solution resource declarations** | [ship.md — Pre-flight](ship.md#pre-flight) (the `uip solution resources refresh` step) |
 <!--skill-flavor:ship-common-tasks-rows:end-->
 | **Debug a flow end-to-end** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) |
+| **Debug a chat flow** | `flow debug` cannot drive a conversation headlessly. On a flow starting with `core.trigger.conversation` it uploads, returns `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run. Chat from either Studio Web (open that URL; `--open-in-browser` does it for you) or the UiPath Maestro VS Code extension. `--timeout` does nothing here. See [author/plugins/conversational-agent/impl.md](../author/plugins/conversational-agent/impl.md#debug--the-cli-hands-off) |
 | **Pass input arguments to `flow debug`** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
 | **Bind local files to file-typed inputs** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) and [run.md — Process run](run.md#process-run--trigger-a-deployed-process) (same `--attachment <variableId>=<localPath>` flag on both, repeatable; `--attachment` overrides `--inputs` on key collisions) |
 | **Trigger a deployed process** | [run.md — Process run](run.md#process-run--trigger-a-deployed-process) |
