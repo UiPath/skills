@@ -14,6 +14,7 @@ dataset:
     - uipath-api-workflow.jsonl
     - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
+    - uipath-cve-findings.jsonl
     - uipath-functions.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
@@ -108,6 +109,13 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-human-in-the-loop activation"
     skill_name: uipath-human-in-the-loop
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-cve-findings activation"
+    skill_name: uipath-cve-findings
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
