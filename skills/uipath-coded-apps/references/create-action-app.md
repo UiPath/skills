@@ -167,7 +167,7 @@ Map the answer to the cloud host:
 | staging | `https://staging.uipath.com` |
 | alpha | `https://alpha.uipath.com` |
 
-Store the cloud host as `<cloud-host>`. It tells the External-App creation step (Q4b) which org/environment portal to target — **do not** skip it and default to `https://cloud.uipath.com`, or staging/alpha users will create the External App in the wrong environment. It is also passed as the redirect URI in Q4b: the create form requires one, but an action app never performs a browser OAuth redirect, so the value is inert at runtime — it only needs to satisfy the mandatory field, not match anything.
+Store the cloud host as `<cloud-host>`. It tells the External-App creation step (Q4b) which org/environment portal to target — **do not** skip it and default to `https://cloud.uipath.com`, or staging/alpha users will create the External App in the wrong environment. It is also passed as the redirect URI in Q4b to satisfy the create form's mandatory field. Note that this is **not** the URI the deployed app authenticates with — see Q4b below for the `.../actions_` form that has to be registered separately.
 
 #### Q4b — Client ID (only if SDK needed)
 
@@ -188,7 +188,7 @@ uip admin external-apps create "<app name>" \
   --output json
 ```
 
-`--redirect-uri` is required by the CLI, so pass `<cloud-host>` to satisfy it; the value is inert at runtime — an action app runs inside Action Center's iframe with a host-injected session and never performs a browser OAuth redirect (Critical Rule 17). The External App is needed only for its client ID and scopes (written to `uipath.json`). Parse `id` from the response as the client ID. On `403` / no auth, use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback).
+`--redirect-uri` is required by the CLI, so pass `<cloud-host>` to satisfy it — but it is not the URI the deployed app authenticates with. That one is `https://<host>/<orgId>/<tenantId>/actions_`, where `<orgId>`/`<tenantId>` are **GUIDs, not the org and tenant names in the address bar**; it must be registered on the External Application, and while it is usually added on first deploy, confirm it — a missing or name-based entry fails with `invalid_request` / `Invalid redirect_uri`. The External App is otherwise needed for its client ID and scopes (written to `uipath.json`). Parse `id` from the response as the client ID. On `403` / no auth, use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback).
 
 Store the resulting client ID as `<client-id>`.
 
@@ -276,7 +276,7 @@ Write the confirmed schema (the one that passed [scripts/validate-action-schema.
 
 Copy the without-/with-SDK setup verbatim from the template's [`src/uipath.ts` section](../assets/templates/action-app-template.md). For the "with SDK services" variant, uncomment only the service exports the app uses (e.g. `Entities`, `Attachments`).
 
-> **NEVER call `sdk.initialize()` in an action app** (Critical Rule 17). Construct `new UiPath()` (no args, no `.env`) and use it directly — Action Center's iframe injects the session at runtime. `sdk.initialize()` starts a PKCE OAuth redirect that only works in a standalone web app and breaks inside the iframe.
+> **NEVER call `sdk.initialize()` in an action app** (Critical Rule 17). Construct `new UiPath()` (no args, no `.env`) and use it directly — the SDK authenticates silently from the config Action Center injects into the page. `sdk.initialize()` starts an *interactive* PKCE redirect, which only works in a standalone web app and cannot complete inside the iframe.
 
 ---
 

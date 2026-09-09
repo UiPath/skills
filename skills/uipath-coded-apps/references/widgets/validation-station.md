@@ -16,122 +16,129 @@ If the user just wants a generic form (no DU document), use the standard Action 
 
 ## Critical Rules
 
-1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.1`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
-2. **The widget's web component loads its CSS, fonts, and assets at runtime, not at build time.** So `vite.config.ts` must *copy* those files next to the build output (for prod) and *serve them as raw CSS* in dev — use the config under "Static Assets" below. Skip it and most of prod degrades *quietly*: PDF rendering, translations, and styling 404 in the background, and fonts are silently absent even when `fonts.css` itself loads (the font files it references live in `media/`). **Business-rules validation is the exception — it errors outright** (its executor is dynamically `import()`ed from `du-assets/`), so a business-rules error in an app that otherwise renders fine usually means `du-assets/` is missing from the deployment. In dev the tell is icons rendering as their names (`warning`, `error`, `circle`). A green `npm run build` hides all of this — run the app to confirm.
-3. **Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
+1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.2`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
+2. **Call `configureValidationStationWc({ includeFonts: true })` once at startup**, before rendering anything from the package. The widget is a separately loaded bundle, not an import: without this call no custom element is registered and every component renders **nothing** — no error, no empty state. `includeFonts` pulls in `fonts.css`, the bundle's only source of `@font-face`; omit it and the icons render blank.
+3. **Stage that bundle at `<app base>/du-vs-wc`** — where the loader looks for it by default. See "Static Assets" below.
 4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
-5. **`sdk` must already be initialized.** Pass the same `UiPath` instance produced by `useAuth()` (web app) or constructed in `src/uipath.ts` (action app). Do not construct a second SDK just for the widget — auth state will diverge.
+5. **Reuse the app's own `UiPath` instance** — from `useAuth()` (web app) or `src/uipath.ts` (action app). Do not construct a second SDK for the widget; auth state will diverge.
 6. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
-7. **Widget does NOT surface failures.** `onSubmitComplete` / `onSaveAsDraftComplete` fire with `{ success: false, error }` on failure but render no toast — the host owns all UI feedback (toast, retry, log). Wire these callbacks or failures are silent.
-8. **Report-as-exception makes no API call.** `onReportExceptionComplete(documentId, reason)` only hands the host the data — it does NOT persist. The host must call `OrchestratorDuModule.submitExceptionReport(taskId, documentId, reason, { folderId })` itself, or the user's "Report as exception" click is a no-op. Needs `OR.Tasks`.
+7. **Widget does NOT surface failures.** `onSubmit` / `onSaveAsDraft` receive `(request, result?)` and render no toast on failure — the host owns all UI feedback. **`result` is optional**: it is only populated when the widget owned the write-back (i.e. it was given `sdk` + `data`). A missing `result` means nothing was persisted, so treat it as a failure — never complete a task on it, or you close the task over unsaved edits.
+8. **Report-as-exception makes no API call.** `onReportException(request)` only hands the host the data — it does NOT persist. Read the reason off `request.exceptionReport` (typed `unknown`, carrying the `IReportAsExceptionDTO` shape) and call `OrchestratorDuModule.submitExceptionReport(taskId, request.documentId, reason, { folderId })` yourself, or the user's click is a no-op. Needs `OR.Tasks`.
 
 ## Install
 
 From inside the scaffolded app directory:
 
 ```bash
-npm install @uipath/ui-widgets-validation-station --@uipath:registry=https://registry.npmjs.org
+npm install @uipath/ui-widgets-validation-station@1.1.0 --save-exact --@uipath:registry=https://registry.npmjs.org
 ```
 
 Registry flag forces the public npm registry (skill default — users may have `@uipath` scoped to GitHub Packages).
 
-## Static Assets — Vite Plugin
+Pinned exactly on purpose: this package has changed its API in a minor before (1.0.1 → 1.1.0), so a `^` range is not safe. This file documents the 1.1 API.
 
-The widget (both the all-in-one `ValidationStation` and the subcomponents) wraps a web component — `@uipath/du-validation-station-wc` — that fetches its own stylesheets and fonts at runtime, so `vite.config.ts` must do two things (plus `optimizeDeps.exclude` — the WC's `import.meta.url` breaks under pre-bundling):
+## Static Assets — staging the web component
 
-- **Build:** copy the WC's `du-assets/`, `media/`, and raw `styles.css`/`fonts.css` next to the emitted chunks.
-- **Dev:** serve those `.css` requests as raw CSS — Vite otherwise returns a JS module, which the WC can't read (icons then render as words).
+The widget is a thin React wrapper; the UI itself is a prebuilt Angular bundle shipped in
+`@uipath/du-validation-station-wc`, which `configureValidationStationWc()` loads **at runtime** from
+`<app base>/du-vs-wc`. Stage it into `public/`, not through an import: Vite passes `public/` through
+untouched in dev and copies it to `dist/` on build, which is what a prebuilt bundle needs.
 
-**Add these to your existing `vite.config.ts` — merge them in, don't overwrite the whole file, so you keep `uipathCodedApps()` and anything else the scaffold generated:**
+Add `scripts/stage-du-wc.mjs`:
+
+```javascript
+#!/usr/bin/env node
+import { access, cp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { dirname, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const require = createRequire(import.meta.url);
+const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+const manifest = require.resolve('@uipath/du-validation-station-wc/package.json');
+const wcRoot = dirname(manifest);
+const destination = resolve(appRoot, 'public/du-vs-wc');
+// Records the staged version so a repeat `npm run dev` doesn't re-copy tens of megabytes.
+const stamp = resolve(destination, '.version');
+
+// npm packaging metadata and the bundle's own index shell. None of it is served.
+const NOT_DEPLOYED = new Set([
+  'package.json', 'README.md', 'CHANGELOG.md', 'LICENSE', 'types.d.ts', 'index.html',
+]);
+
+// Entry points and the assets they pull in. A partial copy is invisible until the app 404s.
+const REQUIRED = ['main.js', 'polyfills.js', 'styles.css', 'fonts.css', 'du-assets'];
+
+const { version } = JSON.parse(await readFile(manifest, 'utf8'));
+
+if ((await readFile(stamp, 'utf8').catch(() => null)) === version) {
+  console.log(`du-vs-wc ${version} already staged in public/du-vs-wc.`);
+  process.exit(0);
+}
+
+// Full replace, not merge: a version bump renames the hashed chunks.
+await rm(destination, { recursive: true, force: true });
+await cp(wcRoot, destination, {
+  recursive: true,
+  filter: (src) => !NOT_DEPLOYED.has(relative(wcRoot, src)),
+});
+
+const missing = [];
+for (const entry of REQUIRED) {
+  await access(resolve(destination, entry)).catch(() => missing.push(entry));
+}
+if (missing.length > 0) {
+  throw new Error(`du-vs-wc staged incompletely - missing ${missing.join(', ')}.`);
+}
+
+// Written last, so an interrupted copy leaves no stamp and the next run retries.
+await writeFile(stamp, version);
+console.log(`Staged du-vs-wc ${version} -> public/du-vs-wc.`);
+```
+
+Wire it to run automatically, and gitignore the staged copy:
+
+```jsonc
+// package.json
+"scripts": {
+  "stage-du-wc": "node scripts/stage-du-wc.mjs",
+  "predev": "npm run stage-du-wc",
+  "dev": "vite",
+  "prebuild": "npm run stage-du-wc",
+  "build": "npm run typecheck && vite build"
+}
+```
+
+```gitignore
+public/du-vs-wc
+```
+
+- **Declare `@uipath/du-validation-station-wc` as a devDependency.** The script resolves it directly;
+  relying on it being hoisted out of the widget package breaks the day it isn't.
+- **Exclude `public/du-vs-wc` from eslint** (`globalIgnores`) — the bundle ships `.ts` sources under
+  `du-assets/` that are not yours to lint.
+
+`vite.config.ts` needs no widget-specific code:
 
 ```typescript
 import react from '@vitejs/plugin-react';
 import { uipathCodedApps } from '@uipath/coded-apps-dev/vite';
-import { cp, readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
-import { defineConfig, type Plugin } from 'vite';
-
-const require = createRequire(import.meta.url);
-
-const WC_ROOT = dirname(
-  require.resolve('@uipath/du-validation-station-wc/package.json')
-);
-
-const WC_RUNTIME_CSS = ['styles.css', 'fonts.css']; // the WC fetches these as raw CSS at runtime
-
-// BUILD: copy the WC's runtime files next to the emitted chunks (it resolves them via import.meta.url).
-function copyDuValidationStationAssets(): Plugin {
-  let assetsDir = '';
-  return {
-    name: 'copy-du-validation-station-assets',
-    apply: 'build',
-    configResolved(config) {
-      assetsDir = resolve(
-        config.root,
-        config.build.outDir,
-        config.build.assetsDir,
-      );
-    },
-    async closeBundle() {
-      await cp(resolve(WC_ROOT, 'du-assets'), resolve(assetsDir, 'du-assets'), {
-        recursive: true,
-      });
-      await cp(resolve(WC_ROOT, 'media'), resolve(assetsDir, 'media'), {
-        recursive: true,
-      });
-      for (const css of WC_RUNTIME_CSS) {
-        await cp(resolve(WC_ROOT, css), resolve(assetsDir, css));
-      }
-    },
-  };
-}
-
-// DEV: Vite serves .css as a JS module — return raw CSS for the WC's fetch (Sec-Fetch-Dest: empty).
-function serveDuValidationStationRawCss(): Plugin {
-  const pattern = new RegExp(
-    `/@uipath/du-validation-station-wc/(${WC_RUNTIME_CSS.join('|')})$`,
-  );
-  return {
-    name: 'serve-du-validation-station-raw-css',
-    apply: 'serve',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        if (req.headers['sec-fetch-dest'] !== 'empty') return next();
-        const match = pattern.exec((req.url ?? '').split('?')[0]);
-        if (!match) return next();
-        readFile(resolve(WC_ROOT, match[1]), 'utf8').then((css) => {
-          res.setHeader('Content-Type', 'text/css');
-          res.end(css);
-        }, next);
-      });
-    },
-  };
-}
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    uipathCodedApps(),
-    copyDuValidationStationAssets(),
-    serveDuValidationStationRawCss(),
-  ],
+  plugins: [react(), uipathCodedApps()],
   base: './',
-  define: {
-    global: 'globalThis',
-  },
-  optimizeDeps: {
-    include: ['@uipath/uipath-typescript'],
-    exclude: ['@uipath/du-validation-station-wc'],
-  },
+  optimizeDeps: { include: ['@uipath/uipath-typescript'] },
 });
 ```
 
-> Mirrors the widget's own `README.md` "Vite" section — re-check it if the widget version changes.
-
 **Verify (a green build isn't enough):**
-- **Build:** `dist/assets/` contains `du-assets/`, `media/`, `styles.css`, and `fonts.css`.
-- **Dev:** run the app — icons render as glyphs, not the words `warning`/`error`/`circle`.
+- **Build:** `dist/du-vs-wc/` contains `main.js`, `polyfills.js`, `styles.css`, `fonts.css`, `du-assets/`.
+- **Dev:** run the app — the widget renders, and icons are glyphs rather than the words `warning` / `error` / `circle`.
+
+> **Size.** The staged bundle is ~75 MB, most of it fonts under `media/`. Do not trim them — an app in
+> an iframe inherits no `@font-face` rules from the page around it, so the icons go blank.
 
 ## Key Props
 
@@ -139,20 +146,20 @@ Full table in the package README. Inside a coded app you usually only touch:
 
 | Prop | Required | Notes |
 |------|----------|-------|
-| `sdk` | Yes | `UiPath` instance — from `useAuth()` or `src/uipath.ts`. Must be initialized. |
-| `data` | Yes | `ContentValidationData` — for action apps, this comes from the task payload. For web apps, fetch and pass yourself. |
-| `folderId` | No* | Falls back to `data.FolderId`. One of the two must resolve to a value or the widget errors — pass explicitly when the payload omits it. |
+| `sdk` | Yes* | `UiPath` instance — from `useAuth()` or `src/uipath.ts`. *Required only in self-fetching mode (`sdk` + `data`); omit when passing pre-fetched `artifacts`. |
+| `data` | Yes* | `ContentValidationData` — for action apps, from the task payload. **It must name the folder** (`FolderId` or `FolderKey`): there is no `folderId` prop, so merge the task's folder in when the payload arrives without one. |
+| `artifacts` | No | Pre-fetched artifacts from `useDuDocumentArtifacts`. When supplied, no fetch happens and `sdk`/`data` are not needed. |
 | `theme` | No | `'light' \| 'dark' \| 'light-hc' \| 'dark-hc'`. Keep in sync with body class. |
 | `language` | No | `ValidationStationLanguage` enum exported from the package (e.g. `English`, `German`, `Japanese`, `ChineseSimplified`). |
 | `isReadonly` | No | `true` to render in read-only mode (e.g., audit view). |
 | `options` | No | `IValidationStationOptions` — fine-grained WC feature flags. Set `emitDtoStateChanges: true` to enable save-as-draft. |
 | `save` | No | Controlled trigger from a button. `{ validate: true }` = **submit** (validate, then save). `{ validate: false }` = **save as draft** (requires `options.emitDtoStateChanges: true`, else no-op). |
 | `discardChanges` | No | Controlled trigger: `{ value: true }` to discard pending edits. Pass a fresh object each time — the widget watches for the new reference, so repeated `{ value: true }` calls all fire. |
-| `onSubmitComplete` | No | Fires after **submit** (`save={{ validate: true }}`): ProcessExtractedData + bucket upload. Receives `SaveValidatedDataResult`. Use to complete the task with the approve action. |
-| `onSaveAsDraftComplete` | No | Fires after **save as draft** (`save={{ validate: false }}`): uploads in-progress data, no ProcessExtractedData. Receives `SaveValidatedDataResult`. |
-| `onReportExceptionComplete` | No | Fires when the user reports an exception. Signature `(documentId, reason)`, **not** `SaveValidatedDataResult`. Widget makes **no API call** — host must persist via `OrchestratorDuModule.submitExceptionReport(...)`. |
+| `onSubmit` | No | Fires after **submit** (`save={{ validate: true }}`): ProcessExtractedData + bucket upload. `(request, result?)` — `result` only when the widget owned the write-back. Complete the task here. |
+| `onSaveAsDraft` | No | Fires after **save as draft** (`save={{ validate: false }}`): uploads in-progress data, no ProcessExtractedData. Same `(request, result?)` shape. |
+| `onReportException` | No | Fires when the user reports an exception. Receives `(request)` — the reason is on `request.exceptionReport`, the document id on `request.documentId`. Widget makes **no API call**; persist via `OrchestratorDuModule.submitExceptionReport(...)`. |
 
-The widget surfaces three flows. **Submit** and **save as draft** are owned end-to-end by the widget and hand the host a `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }`. **Report as exception** is forwarded to the host as raw `(documentId, reason)` strings with no API call. The widget renders no failure UI for any flow — handle `success: false` in the callback yourself (toast, retry, log).
+The widget surfaces three flows. **Submit** and **save as draft** are owned end-to-end by the widget and hand the host `(request, result?)`; `result` is a `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }` — and is present only when the widget did the write-back itself. **Report as exception** is forwarded as a request object with no API call. The widget renders no failure UI for any flow — handle it in the callback yourself (toast, retry, log).
 
 ## Integration: Action App (most common)
 
@@ -160,10 +167,12 @@ Validation Station as the form inside an Action Center DU validation task. Repla
 
 ```typescript
 // src/components/Form.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ValidationStation,
   ValidationStationLanguage,
+  type IVsSaveExceptionReportRequest,
+  type IVsSaveValidatedDataRequest,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
 import type { DuFramework } from '@uipath/uipath-typescript/document-understanding';
@@ -183,7 +192,6 @@ function Form({ onInitTheme }: FormProps) {
   const [taskData, setTaskData] = useState<{
     contentValidationData?: DuFramework.ContentValidationData | null;
   } | null>(null);
-  const data = taskData?.contentValidationData ?? null;
   const [taskId, setTaskId] = useState<number | undefined>(undefined);
   const [folderId, setFolderId] = useState<number | undefined>(undefined);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -203,11 +211,24 @@ function Form({ onInitTheme }: FormProps) {
     });
   }, [onInitTheme]);
 
-  // Submit succeeded → complete the task. Widget shows no error toast — handle failure here.
-  const handleSubmitComplete = useCallback(
-    async (result: SaveValidatedDataResult) => {
-      if (!result.success) {
-        codedActionAppService.showMessage(result.error, MessageSeverity.Error);
+  // The widget scopes its bucket calls to the folder named on the payload, so fill the task's
+  // folder in when the payload arrived without one.
+  const data = useMemo(() => {
+    const payload = taskData?.contentValidationData;
+    if (!payload) return null;
+    if (payload.FolderId != null || payload.FolderKey != null) return payload;
+    return folderId == null ? payload : { ...payload, FolderId: folderId };
+  }, [taskData, folderId]);
+
+  // The widget shows no error toast, so handle failure here. `result` is absent unless the widget
+  // owned the write-back — treat that as a failure rather than completing over unsaved edits.
+  const handleSubmit = useCallback(
+    async (_request: IVsSaveValidatedDataRequest, result?: SaveValidatedDataResult) => {
+      if (!result?.success) {
+        codedActionAppService.showMessage(
+          result?.error ?? 'Failed to submit the document.',
+          MessageSeverity.Error,
+        );
         return;
       }
       // completeTask REPLACES the task's data. contentValidationData must go back exactly as
@@ -219,12 +240,14 @@ function Form({ onInitTheme }: FormProps) {
 
   // Report-as-exception is not persisted by the widget — the host calls the SDK itself.
   const handleReportException = useCallback(
-    async (documentId: string, reason: string) => {
+    async (request: IVsSaveExceptionReportRequest) => {
       if (taskId === undefined) return;
+      // `exceptionReport` is typed `unknown`; it carries the IReportAsExceptionDTO shape.
+      const { Reason } = (request.exceptionReport ?? {}) as { Reason?: string };
       const response = await new OrchestratorDuModule(sdk).submitExceptionReport(
         taskId,
-        documentId,
-        reason || 'Reported via Validation Station',
+        request.documentId,
+        Reason || 'Reported via Validation Station',
         { folderId },
       );
       if (!response.IsSuccessful) {
@@ -250,13 +273,12 @@ function Form({ onInitTheme }: FormProps) {
       <ValidationStation
         sdk={sdk}
         data={data}
-        folderId={folderId}
         theme={theme}
         language={ValidationStationLanguage.English}
         isReadonly={isReadonly}
         save={save}
-        onSubmitComplete={handleSubmitComplete}
-        onReportExceptionComplete={handleReportException}
+        onSubmit={handleSubmit}
+        onReportException={handleReportException}
       />
     </>
   );
@@ -275,8 +297,22 @@ export const sdk = new UiPath();
 export const codedActionAppService = new CodedActionAppService();
 ```
 
-> **No `sdk.initialize()`** (Critical Rule 17) — Action Center injects the session; `initialize()`
-> starts a PKCE redirect that cannot complete in an iframe. Only the web app below authenticates.
+And register the web component once, at the app's entry point (`src/main.tsx`), before anything
+renders:
+
+```typescript
+import { configureValidationStationWc } from '@uipath/ui-widgets-validation-station';
+
+// Loads the bundle from `<app base>/du-vs-wc` and registers its custom elements. Fire-and-forget:
+// the components wait on it themselves, and this promise is the only place a load failure surfaces.
+configureValidationStationWc({ includeFonts: true }).catch((err: unknown) => {
+  console.error('Failed to load the Validation Station web component.', err);
+});
+```
+
+> **No `sdk.initialize()`** (Critical Rule 17). The SDK authenticates silently against the External
+> Application's registered redirect URI, so that URI is **not** optional — see
+> [../create-action-app.md](../create-action-app.md) for the form it takes.
 
 
 **The widget's only schema requirement is one `ContentValidationData` input** — the dedicated type
@@ -319,7 +355,9 @@ host collapses the viewer to nothing.
 
 ```css
 .validation-host { position: relative; flex: 1; min-height: 0; display: flex; }
-.validation-host > ui-du-validation-station-standalone-wc-element {
+/* `persistent: true` swaps the tag for its `-persistent-element` sibling, so match both. */
+.validation-host > ui-du-validation-station-standalone-wc-element,
+.validation-host > ui-du-validation-station-standalone-wc-persistent-element {
   display: block; flex: 1; min-width: 0;
 }
 ```
@@ -339,6 +377,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ValidationStation,
   ValidationStationLanguage,
+  type IVsSaveValidatedDataRequest,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
 import type { DuFramework } from '@uipath/uipath-typescript/document-understanding';
@@ -356,8 +395,12 @@ function ValidatePage({ taskId, folderId }: { taskId: number; folderId: number }
     tasks.getById(taskId, { taskType: TaskType.DocumentValidation }, folderId).then(setSelectedTask);
   }, [tasks, taskId, folderId]);
 
-  const handleSubmitComplete = async (result: SaveValidatedDataResult) => {
-    if (!result.success || !selectedTask) return; // widget renders no error UI — surface it yourself
+  const handleSubmit = async (
+    _request: IVsSaveValidatedDataRequest,
+    result?: SaveValidatedDataResult,
+  ) => {
+    // No result means nothing was persisted — widget renders no error UI, surface it yourself.
+    if (!result?.success || !selectedTask) return;
     await selectedTask.complete({
       action: 'Completed',
       type: TaskType.DocumentValidation,
@@ -369,11 +412,11 @@ function ValidatePage({ taskId, folderId }: { taskId: number; folderId: number }
   return (
     <ValidationStation
       sdk={sdk}
-      data={selectedTask.data as DuFramework.ContentValidationData}
-      folderId={selectedTask.folderId}
+      // The payload must name the folder; for a task, its own folder is the one.
+      data={{ ...(selectedTask.data as DuFramework.ContentValidationData), FolderId: selectedTask.folderId }}
       theme="light"
       language={ValidationStationLanguage.English}
-      onSubmitComplete={handleSubmitComplete}
+      onSubmit={handleSubmit}
     />
   );
 }
@@ -403,9 +446,9 @@ Exports (from the same `@uipath/ui-widgets-validation-station` package):
 
 | Export | Kind | Role |
 |--------|------|------|
-| `useBucketArtifacts(sdk, data, folderId)` | hook | Fetches the document + extraction artifacts **once**; returns `{ artifacts, error }`. Feed `artifacts` to every subcomponent. |
+| `useDuDocumentArtifacts(sdk, data)` | hook | Fetches the document + extraction artifacts **once**; returns `{ artifacts, error }`. Feed `artifacts` to every subcomponent. Scopes itself to the folder named on `data`. |
 | `DocumentViewer` | component | PDF/text viewer with bounding boxes. Read-only. |
-| `CompactFieldsForm` | component | Extraction fields, editable. The **only** subcomponent that persists — give it `sdk` + `data` + `folderId` and it runs Submit / Save-draft / Report-exception (same callbacks as the monolithic widget). |
+| `CompactFieldsForm` | component | Extraction fields, editable. The **only** subcomponent that persists — give it `sdk` + `data` and it runs Submit / Save-draft / Report-exception (same callbacks as the monolithic widget). |
 | `CompactTableEditor` | component | Inline editor for table (line-item) fields. Edit-only. |
 | `CompactDocTypeField` | component | Document-type selector dropdown. |
 | `CompactBusinessRules` | component | Read-only evaluated business rules. |
@@ -414,13 +457,13 @@ Exports (from the same `@uipath/ui-widgets-validation-station` package):
 
 Must-knows (all easy to get wrong):
 
-0. **Requires a package version that exports the subcomponents** (`@uipath/ui-widgets-validation-station >= 1.0.1`). Earlier versions export only `ValidationStation`.
-1. **Fetch artifacts once, share them.** Call `useBucketArtifacts` in the parent and pass the same `artifacts` object to all subcomponents. Calling it per-subcomponent re-downloads the same unchanged document once per panel.
-2. **Only `CompactFieldsForm` gets `sdk`/`data`/`folderId`.** It owns persistence. The other four can take the pre-fetched `artifacts` only.
+0. **Requires `@uipath/ui-widgets-validation-station >= 1.1.0`** — earlier versions expose a different subcomponent API.
+1. **Fetch artifacts once, share them — and memoise the `data` you pass in.** Call `useDuDocumentArtifacts` in the parent and pass the same `artifacts` object to all subcomponents; calling it per-subcomponent re-downloads the document once per panel. The hook keys its fetch on `data`'s **identity**, so building that object inline in render (e.g. `{ ...raw, FolderId: task.folderId }`) refetches forever. Wrap it in `useMemo`.
+2. **Only `CompactFieldsForm` gets `sdk`/`data`.** It owns persistence. The other four take the pre-fetched `artifacts` only.
 3. **Set `persistent: false` for static layouts.** These panels sit in a fixed grid and are never re-parented. Leaving `persistent` on makes React StrictMode's throwaway unmount call `forceDestroy()`, tearing down the underlying element so it renders **blank**. Only set `persistent: true` if you actually move a subcomponent between DOM parents.
 4. **Drop duplicated panels via `options`.** When you render `CompactBusinessRules` / `CompactDocTypeField` standalone, tell the fields form to hide its built-in copies: `options={{ hideBusinessRules: true, hideDocumentTypeField: true, emitDtoStateChanges: true }}`. (`emitDtoStateChanges` is still required for save-as-draft, same as the monolithic widget.)
 
-Same static-asset copy and `optimizeDeps.exclude` setup as the monolithic widget applies (see [Static Assets](#static-assets--vite-plugin)) — the subcomponents load the same web component under the hood. Peer versions and SDK scopes are identical too.
+The same staging and `configureValidationStationWc()` setup as the monolithic widget applies (see [Static Assets](#static-assets--staging-the-web-component)) — the subcomponents come from the same bundle. Peer versions and SDK scopes are identical too.
 
 ```typescript
 import {
@@ -429,20 +472,28 @@ import {
   CompactFieldsForm,
   CompactTableEditor,
   CompactBusinessRules,
-  useBucketArtifacts,
+  useDuDocumentArtifacts,
   ValidationStationLanguage,
+  type IVsSaveValidatedDataRequest,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
 import type { DuFramework } from '@uipath/uipath-typescript/document-understanding';
 import { TaskType } from '@uipath/uipath-typescript/tasks';
 import type { TaskGetResponse } from '@uipath/uipath-typescript/tasks';
+import { useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 // `task` is already hydrated via tasks.getById(...) — see "Integration: Web App".
 function ReviewWorkspace({ task }: { task: TaskGetResponse }) {
   const { sdk } = useAuth();
-  const data = task.data as DuFramework.ContentValidationData;
-  const { artifacts, error } = useBucketArtifacts(sdk, data, task.folderId);
+  // Memoised: the fetch keys off this object's identity, so a fresh one each render refetches
+  // the document forever. The payload is also what names the folder.
+  const data = useMemo(() => {
+    const raw = task.data as DuFramework.ContentValidationData;
+    if (raw.FolderId != null || raw.FolderKey != null || task.folderId == null) return raw;
+    return { ...raw, FolderId: task.folderId };
+  }, [task]);
+  const { artifacts, error } = useDuDocumentArtifacts(sdk, data);
 
   if (error) return <div>Failed to load document: {error}</div>;
   if (!artifacts) return <div>Loading document…</div>;
@@ -458,8 +509,11 @@ function ReviewWorkspace({ task }: { task: TaskGetResponse }) {
     persistent: false, // static grid — see must-know #3
   };
 
-  const handleSubmit = async (result: SaveValidatedDataResult) => {
-    if (!result.success) return; // widget renders no error UI — surface it yourself
+  const handleSubmit = async (
+    _request: IVsSaveValidatedDataRequest,
+    result?: SaveValidatedDataResult,
+  ) => {
+    if (!result?.success) return; // widget renders no error UI — surface it yourself
     await task.complete({ action: 'Completed', type: TaskType.DocumentValidation });
   };
 
@@ -471,12 +525,11 @@ function ReviewWorkspace({ task }: { task: TaskGetResponse }) {
         {...shared}
         sdk={sdk}
         data={data}
-        folderId={task.folderId}
         // Keeps the built-in Submit/Report buttons. Add hideSubmitButton +
         // hideReportAsExceptionButton (and omit enableSaveAsDraft) if you render
         // your own toolbar — see the anti-patterns below.
         options={{ hideBusinessRules: true, hideDocumentTypeField: true, emitDtoStateChanges: true }}
-        onSubmitComplete={handleSubmit}
+        onSubmit={handleSubmit}
       />
       <CompactTableEditor {...shared} />
       <CompactBusinessRules {...shared} />
@@ -489,20 +542,23 @@ Runnable end-to-end example (task list + selection + all five subcomponents wire
 
 ## Anti-patterns
 
-- **Do the full static-asset setup and verify by running the app.** Both plugins (copy `du-assets/` + `media/` + raw CSS; serve raw CSS in dev) are required — a green `npm run build` hides a broken result because the WC loads its styles at runtime, not at build.
+- **Do not forget `configureValidationStationWc()`.** Without it no custom element is registered and every component renders nothing — no error boundary, no empty state. A green `npm run build` hides it; run the app.
+- **Do not skip staging the bundle, or trim its fonts.** `public/du-vs-wc` must hold the whole package. Dropping `fonts.css` / `media/` to save ~40 MB leaves every icon blank, because an iframed app inherits no `@font-face` rules from the page around it.
 - **Pick one source of action buttons — built-in or custom — never both.** The monolithic `ValidationStation` renders its own action bar (Submit, Save-draft, Discard, Report). Either rely on those built-ins (drop the controlled `save`/`discardChanges` props — the callbacks still fire), **or** drive the flows from your own toolbar via the controlled props. If you build a custom toolbar, hide the built-in buttons so they don't show twice — but note `IValidationStationOptions` only exposes `hideSubmitButton` and `hideReportAsExceptionButton`, with **no** flag for the built-in Discard or Save-draft, so a fully custom bar isn't achievable with the all-in-one widget.
 - **Do not construct a second `UiPath` SDK** for the widget. Reuse the app's authenticated instance.
 - **Do not call `setTaskData` and try to drive a custom form alongside the widget.** The widget owns the data contract end-to-end; mixing produces stale state and double saves.
 - **Do not pass a `tasks.getAll()` row straight into the widget.** `getAll()` rows omit `data` — the viewer renders empty. Hydrate with `tasks.getById(id, { taskType: TaskType.DocumentValidation }, folderId)` first.
 - **Do not call `completeTask` inside the `save` setter.** Always wait for `onSubmitComplete` with `success: true` — submit may fail validation, and completing early submits unvalidated data.
-- **Do not assume the widget shows an error on failure — it does not.** `onSubmitComplete`/`onSaveAsDraftComplete` with `success: false` render no UI; surface the error yourself (`showMessage`, toast, etc.).
-- **Do not treat `onReportExceptionComplete` like the save callbacks.** It receives `(documentId, reason)`, not `SaveValidatedDataResult`, and persists nothing — you must call `OrchestratorDuModule.submitExceptionReport(...)` yourself.
-- **Do not complete the task after reporting an exception.** 
+- **Do not assume the widget shows an error on failure — it does not.** `onSubmit`/`onSaveAsDraft` render no UI on failure; surface the error yourself (`showMessage`, toast, etc.).
+- **Do not treat a missing `result` as success.** `onSubmit`/`onSaveAsDraft` pass `result` only when the widget owned the write-back. `if (!result?.success) return;` — completing on an absent result closes the task over unsaved edits.
+- **Do not treat `onReportException` like the save callbacks.** It receives one `request`, not `(request, result?)`, and persists nothing — read the reason off `request.exceptionReport` and call `OrchestratorDuModule.submitExceptionReport(...)` yourself.
+- **Do not complete the task after reporting an exception.** The `SubmitExceptionReport` endpoint completes the task server-side, so calling `completeTask` as well closes an already-closed task.
 - **Always pass `contentValidationData` back to `completeTask` verbatim.** `completeTask(outcome, data)` **replaces** the task's data, so `{}` — or any payload missing that field — wipes it. Every other field is free to change: send whatever the action's own controls collected alongside it. (`Tasks.complete()` in a web app differs: `data` is optional for `TaskType.DocumentValidation`, and omitting it is not the same as passing `{}`.)
 
 Subcomponents (compose-your-own layout) only:
 
-- **Do not call `useBucketArtifacts` inside each subcomponent.** Fetch once in the parent and pass the same `artifacts` down, or you refetch the whole document per panel.
+- **Do not call `useDuDocumentArtifacts` inside each subcomponent.** Fetch once in the parent and pass the same `artifacts` down, or you refetch the whole document per panel.
+- **Do not build the `data` object inline in render.** The hook keys its fetch on identity; an unmemoised `{ ...raw, FolderId }` refetches the document on every render, without end.
 - **Do not give more than one subcomponent `sdk`/`data`.** Only `CompactFieldsForm` persists.
 - **Do not leave `persistent` on for a static grid.** StrictMode's throwaway unmount calls `forceDestroy()` and the panel renders blank. Use `persistent: false` unless you actually re-parent the subcomponent.
 - **Do not give subcomponents different `instanceId`s** and expect them to sync — the shared id is what links the store; mismatched ids leave the panels independent.

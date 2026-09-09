@@ -38,8 +38,10 @@ const fs = require('fs');
 // --- Extensibility tables (keep in sync with the CLI enums) -----------------
 
 // JsonDataType
-// prettier-ignore
-const SUPPORTED_TYPES = ['string', 'integer', 'number', 'boolean', 'array', 'object', 'file', 'ContentValidationData'];
+const SUPPORTED_TYPES = [
+  'string', 'integer', 'number', 'boolean', 'array', 'object', 'file',
+  'ContentValidationData',
+];
 
 // JsonFormatType
 const SUPPORTED_FORMATS = ['uuid', 'date'];
