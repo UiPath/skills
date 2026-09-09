@@ -4,6 +4,14 @@
 
 <!-- Template instruction: render the case body in the downstream uipath-maestro-case `sdd.md` shape. Do not emit the legacy planner-only case architecture table format. -->
 
+<!-- CELL RULES ARE COMPLETE WHERE THEY STAND. Every cell's whole rule is the angle-bracket hint
+at that cell plus the comment in its own section. Nothing outside this template adds, overrides or
+extends a cell value, so a cell named ONCE is fully specified by that one mention — a second source
+does not exist and searching the guides or the validator's source for one is the archaeology that
+burns a turn budget (§ Validation footer: RUN the validator, never read it). If a value still looks
+unstated after reading its own section, it IS unstated: take the default recorded there, or `—` where
+the cell is optional, note the provenance, and move on. -->
+
 ---
 
 ## Document History
@@ -21,7 +29,7 @@
 | Field | Value |
 |---|---|
 | **Status** | <draft \| ready — Lane A derives tasks only from ready> |
-| **Execution autonomy** | <autonomous \| interactive> |
+| **Execution autonomy** | <autonomous \| interactive — carry the draft's value when finalizing; absent, `autonomous`> |
 | **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Solution root SDD** | <PATH_TO_SOLUTION_ROOT_SDD — solution scope only; omit all four solution rows for single-product> |
@@ -107,7 +115,7 @@ Case App Disabled, Task-output passing Direct, SLA Type time-based, SLA Title `S
 | Case Name | <PascalCase name> |
 | Case Description | <2-3 sentence description of what the case manages> |
 | Case Identifier | Type: <constant \| external>. Constant → Prefix: <2-4 char UPPER prefix>. External → Source: <=vars.<In/InOut variable> \| =js:`expression`> |
-| Priority | Choiceset: <comma-separated values> — Default: <value> |
+| Priority | Choiceset: <comma-separated values> — Default: <value> · `—` when the source names no priority scheme (optional cell, no platform default; unrelated to a task's `**Priority:**`, which is the closed set Low\|Medium\|High\|Critical) |
 | Case-Level SLA | <count> <unit: min/h/d/w/m — minutes bounded 15-1000> |
 | SLA Title | <non-empty root-unique SLA rule title, no `:` — omit this row when Case-Level SLA is —> |
 | SLA Type | <time-based \| condition-based> |
@@ -313,7 +321,7 @@ the exact stage display name — never the case name. -->
 
 ###### Action Task Detail (type: `action`)
 
-**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>>
+**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>

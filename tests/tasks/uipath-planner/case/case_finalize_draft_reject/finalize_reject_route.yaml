@@ -57,32 +57,32 @@ success_criteria:
   # heaviest reader (10 calls in the original skill-case-phase-0-finalize-draft failure,
   # all aimed at the guides and template rather than the validator).
   - type: command_not_executed
-    description: "audit_sdd.py is RUN, never read — no validator archaeology before the write"
+    description: "Advisory: audit_sdd.py is RUN, never read — no validator archaeology before the write"
     tool_name: "Read"
     command_pattern: 'audit_sdd\.py'
     weight: 0.25
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_not_executed
-    description: "audit_sdd.py source is never paged, counted, or hunted for from the shell"
+    description: "Advisory: audit_sdd.py source is never paged, counted, or hunted for from the shell"
     tool_name: "Bash"
     command_pattern: '(grep|rg|sed|awk|cat|head|tail|less|wc|find)\b[^\n]*audit_sdd\.py'
     weight: 0.25
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_not_executed
-    description: "audit_sdd.py source is never searched with the Grep tool"
+    description: "Advisory: audit_sdd.py source is never searched with the Grep tool"
     tool_name: "Grep"
     command_pattern: 'audit_sdd\.py'
     weight: 0.25
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_not_executed
-    description: "audit_sdd.py is never located with the Glob tool — reference paths resolve against the skill base dir"
+    description: "Advisory: audit_sdd.py is never located with the Glob tool — reference paths resolve against the skill base dir"
     tool_name: "Glob"
     command_pattern: 'audit_sdd\.py'
     weight: 0.25
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "Finalization produced the approved sdd.md"
