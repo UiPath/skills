@@ -53,6 +53,7 @@ Format only layout: arrange nodes horizontally left-to-right while anchoring to 
 
 ## uip maestro flow pack
 
+<!--skill-flavor:pack-command-section:start-->
 Pack a Flow project into a `.nupkg` for Orchestrator deployment:
 
 ```bash
@@ -63,28 +64,28 @@ uip maestro flow pack <project-path> <OutputDir> --output json
 
 Require `content/package-descriptor.json` and `content/operate.json`. Output is `<Name>.flow.Flow.<version>.nupkg`.
 
-<!--skill-flavor:upload-pack-note:start-->
 > **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
-<!--skill-flavor:upload-pack-note:end-->
+<!--skill-flavor:pack-command-section:end-->
 
 ## uip solution resources refresh
 
-<!--skill-flavor:upload-refresh-prereq:start-->
+<!--skill-flavor:solution-resources-refresh-section:start-->
 Always run `uip solution resources refresh` before `uip solution upload` or `uip maestro flow debug`. It re-scans solution projects and syncs resource declarations (connections, processes, queues, etc.) from `bindings_v2.json`, creating bindings not yet in the solution and importing matching Orchestrator resources.
-<!--skill-flavor:upload-refresh-prereq:end-->
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
 
-<!--skill-flavor:upload-solution-dir-note:start-->
 `<SolutionDir>` is the solution directory containing the `.uipx` file. The command has no positional solution argument; omit `--solution-folder` only from the solution root.
-<!--skill-flavor:upload-solution-dir-note:end-->
+<!--skill-flavor:solution-resources-refresh-section:end-->
 
+<!--skill-flavor:solution-resources-mutations:start-->
 ## uip solution resources add / remove / edit
 
 Use atomic mutations when adding, deleting, or changing one resource without scanning every project's bindings:
+<!--skill-flavor:solution-resources-mutations:end-->
 
+<!--skill-flavor:solution-resources-mutations-2:start-->
 ```bash
 uip solution resources add --source local --kind <Kind> --name <Name> --output json
 uip solution resources add --source remote --kind <Kind> --name <Name> --folder-path <FolderPath> --output json
@@ -94,8 +95,9 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output
 ```
 
 `add` is idempotent on `(kind, name, folder)` for local resources and on resource key for remote resources; retries return `Status: "Unchanged"`. `edit` alone mutates an existing resource spec; `refresh` never overwrites and skips resources already in the solution. These commands do not modify `bindings_v2.json`; a later `refresh` re-imports a still-bound resource. See [uipath-solution Step 9–11](/uipath:uipath-solution).
-
+<!--skill-flavor:solution-resources-mutations-2:end-->
 <!--skill-flavor:upload-command-section:start-->
+
 ## uip solution upload
 
 Upload a solution directly to Studio Web; require `uip login`:
@@ -122,22 +124,23 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```
-<!--skill-flavor:flow-debug-command-usage:end-->
 
 Pass the project directory containing `project.uiproj` (`<ProjectName>/` from the solution root, or `.` inside it). Use `--inputs` for a JSON object of flow input arguments. Repeat `--attachment <variableId>=<localPath>` to upload files for file-typed inputs; a bare path is rejected.
 
+<!--skill-flavor:flow-debug-command-usage:end-->
 <a id="attachment-preflight"></a>
 
 #### Pre-flight: `--attachment` binding
 
+<!--skill-flavor:flow-debug-command-usage-2:start-->
 The CLI does not validate `<variableId>`; a mismatch can fault at runtime. Read `<flow>.flow`, inspect `variables.globals[]`, and use only entries with `direction:"in"` and `type:"file"`. If none exist, add `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`. In a Script node, read the uploaded name as `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
 
-<!--skill-flavor:flow-debug-help-pointer:start-->
 Run `uip maestro flow debug --help` for other options.
-<!--skill-flavor:flow-debug-help-pointer:end-->
+<!--skill-flavor:flow-debug-command-usage-2:end-->
 
 ### Reporting the run back to the user
 
+<!--skill-flavor:flow-debug-command-usage-3:start-->
 Parse the Studio Web URL and `instanceId` from JSON output, typically `Data.studioWebUrl` and `Data.instanceId`, and report them as the first two lines:
 
 ```text
@@ -148,6 +151,7 @@ Instance ID: <instanceId>
 ```
 
 If either is absent, output its label with `<not returned by CLI>`. Do not place these lines below the run summary.
+<!--skill-flavor:flow-debug-command-usage-3:end-->
 
 ## uip maestro flow process
 
@@ -225,12 +229,15 @@ See the [Author CLI editing strategy](../author/editing-operations-cli.md) for `
 
 ## uip maestro flow eval
 
+<!--skill-flavor:eval-login-note:start-->
 Evaluation surface: evaluator, eval-set, and data-point CRUD; Studio Web run start/status/results/list/compare. Local CRUD needs no login; `eval run *` requires `uip login` and a Flow solution already in Studio Web.
+<!--skill-flavor:eval-login-note:end-->
 <!--skill-flavor:upload-safety-eval-surface-note:start-->
 **Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/upload-safety.md](../evaluate/upload-safety.md).
 <!--skill-flavor:upload-safety-eval-surface-note:end-->
 
 ```bash
+<!--skill-flavor:eval-commands-synopsis:start-->
 uip maestro flow eval add <name> --set <set> [flags] --output json
 uip maestro flow eval list --set <set> --path <flow_project> --output json
 uip maestro flow eval remove <id> --set <set> --path <flow_project> --output json
@@ -245,6 +252,7 @@ uip maestro flow eval run status <run_id> --set <set> --path <flow_project> --ou
 uip maestro flow eval run results <run_id> --set <set> [--only-failed] [--verbose] [--export-format json|csv] --path <flow_project> --output json
 uip maestro flow eval run list --set <set> --path <flow_project> --output json
 uip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --path <flow_project> --output json
+<!--skill-flavor:eval-commands-synopsis:end-->
 ```
 
 Evaluators: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`. For full flag tables, evaluator details, eval-set JSON shape, and run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).
@@ -266,7 +274,9 @@ The cache expires after 30 minutes. `registry search` returns a flat `Data` arra
 { "Data": [{ "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records", "Category": "connector.196536", "DisplayName": "List Records", "Description": "(Salesforce) List records in Salesforce", "Version": "1.0.0", "Tags": "connector, activity", "AvailableOnTenant": true }] }
 ```
 
+<!--skill-flavor:registry-available-on-tenant-note:start-->
 Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the node is not enabled or available for the tenant. Do not use unsupported flags such as `--include-unavailable`; choose an enabled alternative, use `--local` for in-solution resources, or report unavailability.
+<!--skill-flavor:registry-available-on-tenant-note:end-->
 
 `registry get` returns `Data.Node` verbatim for the `.flow` `definitions` array. Preserve its manifest casing, predominantly camelCase (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`); filter with `--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`.
 

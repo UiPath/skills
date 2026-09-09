@@ -63,7 +63,9 @@ For structural changes followed by a carve-out, edit the `.flow` first, then run
 
 ### Validation
 
+<!--skill-flavor:editops-validation-once:start-->
 - Run `uip maestro flow validate <ProjectName>.flow --output json` **once** after all edits complete.
+<!--skill-flavor:editops-validation-once:end-->
 - Do not validate after each individual edit; intermediate states may be invalid.
 - Validation checks JSON schema, definitions coverage, edge references, and unique IDs, but does **not** check connector configuration, connection health, expression correctness, or required-field completeness.
 

@@ -11,7 +11,9 @@ Before starting, read [impl.md](impl.md) for the node type, registry validation,
 Run:
 
 ```bash
+<!--skill-flavor:http-manual-node-add:start-->
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+<!--skill-flavor:http-manual-node-add:end-->
   --label "<HTTP node label>" --output json
 ```
 
@@ -26,7 +28,9 @@ Resolve missing values before composing `url`, `query`, or `body`, including IDs
 Run:
 
 ```bash
+<!--skill-flavor:http-manual-configure:start-->
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
+<!--skill-flavor:http-manual-configure:end-->
   --detail '{
     "authentication": "manual",
     "method": "GET",
@@ -40,7 +44,9 @@ The CLI builds `inputs.detail` with manual auth, `ImplicitConnection`, `bodyPara
 Set `url` to a full URL (scheme + host + path). Pass controlled auth headers under `headers`; for example, run:
 
 ```bash
+<!--skill-flavor:http-manual-configure-headers:start-->
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
+<!--skill-flavor:http-manual-configure-headers:end-->
   --detail '{
     "authentication": "manual",
     "method": "GET",

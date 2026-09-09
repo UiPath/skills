@@ -14,19 +14,23 @@ uip maestro flow registry search "uipath.core.agentic-process" --output json
 ### In-solution (sibling projects)
 
 ```bash
+<!--skill-flavor:agentic-process-impl-discovery:start-->
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
+<!--skill-flavor:agentic-process-impl-discovery:end-->
 
 ## Registry Validation
 
 ```bash
+<!--skill-flavor:agentic-process-impl-registry-get:start-->
 # Published
 uip maestro flow registry get "uipath.core.agentic-process.{key}" --output json
 
 # In-solution
 uip maestro flow registry get "uipath.core.agentic-process.{key}" --local --output json
 ```
+<!--skill-flavor:agentic-process-impl-registry-get:end-->
 
 Confirm:
 
@@ -103,5 +107,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:agentic-process-impl-debug-table:start-->
 | Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution processes use `--local` |
+<!--skill-flavor:agentic-process-impl-debug-table:end-->
 | Process execution failed | Underlying orchestration errored | Check `$vars.{nodeId}.error` for details |

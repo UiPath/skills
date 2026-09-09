@@ -54,7 +54,9 @@ Use the exact **PascalCase** names `Text`, `Citations`, `Ordinal`, `PageNumber`,
 
 | Input | Required | Type | Description |
 | --- | --- | --- | --- |
+<!--skill-flavor:sum-key-inputs-table:start-->
 | `attachment` | Yes | full Flow Attachment | Supply the full case-sensitive Flow Attachment object `{ ID, FullName, MimeType, Metadata }`; `ID` is uppercase, not `Id`. Define it as a flow-level `in` variable with `type: "file"`, bound to the trigger using `triggerNodeId: "<triggerId>"`. Populate it with `uip maestro flow debug --attachment <fileVarId>=<path>`; the flag is repeatable and `<fileVarId>=` must match the variable's `id` (see [cli-commands.md — Pre-flight](../../../shared/cli-commands.md#pre-flight---attachment-binding)). Reference it on the node as `=js:$vars.<triggerId>.output.<fileVarId>`, which resolves to the whole Attachment object. Although the OOTB `inputDefinition.attachment` declares `type: "string"` because Studio Web serializes the object into that slot when saving, the engine deserializes it back. Never wire a bare GUID, URL, byte stream, file path, or `.ID`/`.FullName` subfield. |
+<!--skill-flavor:sum-key-inputs-table:end-->
 | `prompt` | Yes | string | Task instruction, such as an executive summary, a list of SLA penalty clauses, or an answer about a termination notice period. |
 | `returnCitations` | No | boolean | Set to `true` to populate `content.Citations` with per-claim page references; default is `false`. |
 

@@ -245,7 +245,9 @@ Then on the IxP node:
 }
 ```
 
+<!--skill-flavor:ixp-impl-fileref-runtime:start-->
 Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment disputedInvoice=./path/to/invoice.pdf`). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
+<!--skill-flavor:ixp-impl-fileref-runtime:end-->
 
 ### Optional `attachment` input (Orchestrator job attachments)
 
@@ -371,7 +373,9 @@ Mock procedure:
 3. Add a `layout.nodes` entry at `position: { x: 400, y: 144 }`, size `96x96`.
 4. Wire edges per the parent [editing-operations.md](../../editing-operations.md) guide. `core.logic.mock` is a no-op pass-through — no `inputs`, no `outputs` block, no `bindings_v2.json` changes.
 5. **Wire downstream consumers against the mock with `$vars` references, not static values.** Scripts, decisions, and end-node mappings that follow the mock MUST reference `$vars.{mockNodeId}.output` (the mock's only port) instead of hard-coded returns. Example: a script that summarises the (future) extraction writes `return { vendor: $vars.extractInvoiceFieldsMock.output.vendorName };`, not `return { ok: "OK" };`. This keeps the **node-graph** swap-ready — node IDs, edge shapes, and the `output` port name stay intact when the mock is replaced. **Field-access paths inside downstream scripts WILL need rewriting at swap time** — the real IxP `output` is shaped as `{ ExtractionResult: { ResultsDocument: { Fields: [...] } } }` (see [Accessing Output](#accessing-output)), so flat-field accessors against the mock become structured `Fields.find(f => f.FieldName === '<name>')?.Values?.[0]` lookups against the real node. Surface the post-swap rewrite as a follow-up under **Open Questions**.
+<!--skill-flavor:ixp-impl-mock-validate-step:start-->
 6. Run `uip maestro flow validate <ProjectName>.flow --output json` once after all edits complete.
+<!--skill-flavor:ixp-impl-mock-validate-step:end-->
 
 Surface the missing model in the **Open Questions** section of the architectural plan: the user must train the IxP extraction model and deploy it to an Orchestrator folder before the flow can run — the flow registry lists folder deployments only. After deploying, follow the [mock replacement procedure](../../editing-operations-json.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real IxP node.
 

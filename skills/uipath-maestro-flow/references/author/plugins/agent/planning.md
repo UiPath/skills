@@ -1,6 +1,8 @@
 # Agent Node — Planning
 
+<!--skill-flavor:agent-intro:start-->
 Agent nodes invoke UiPath AI agents from within a flow. Published agents appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) agents in sibling projects are discovered via `--local` — no login or publish required. Both **coded** (Python) and **low-code** (agent.json) agents appear here once deployed — the flow treats them identically.
+<!--skill-flavor:agent-intro:end-->
 
 > **Related plugin:** [inline-agent](../inline-agent/planning.md) covers low-code agents embedded as a UUID subdirectory **inside** the flow project (`uipath.agent.autonomous`). Coded agents always use this `agent` plugin, not `inline-agent`.
 
@@ -37,8 +39,10 @@ Use workflow nodes for the deterministic parts (fetch data, transform, route) an
 
 ### When NOT to Use
 
+<!--skill-flavor:agent-when-not-local:start-->
 - **Agent in the same solution but not yet published** — use `--local` discovery (see below)
 - **Agent does not exist yet** — tell the user to create it in the same solution with `uipath-agents`, then use `--local` discovery
+<!--skill-flavor:agent-when-not-local:end-->
 - **Task is deterministic** — use [Script](../script/planning.md) or [Decision](../decision/planning.md)
 - **Need to call an external service API** — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md)
 - **Agent should be a tool for another agent** — don't use this node; instead add the agent as a tool resource (`uipath.agent.resource.tool.agent`) wired to a parent agent node. See the `uipath-agents` skill for the resource file format
@@ -65,6 +69,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
+<!--skill-flavor:agent-discovery:start-->
 Requires `uip login`. Returns published tenant resources only — for in-solution sibling projects, use the `--local` discovery below.
 
 **In-solution (local, no login required):**
@@ -75,6 +80,7 @@ uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
+<!--skill-flavor:agent-discovery:end-->
 
 ## Planning Annotation
 

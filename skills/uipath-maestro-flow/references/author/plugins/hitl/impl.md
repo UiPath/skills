@@ -86,6 +86,7 @@ Filter returned Action Center app types (`vB Action`, `workflow Action`, `Coded 
 ```bash
 uip solution resources get <key> --output json
 ```
+<!--skill-flavor:hitl-impl-http-fallback:start-->
 
 If the CLI is unavailable, use:
 
@@ -94,6 +95,7 @@ GET {BASE_URL}/{ORG}/studio_/backend/api/resourcebuilder/solutions/{SOLUTION_ID}
   ?kind=app&pageSize=25&projectKey={PROJECT_KEY}&includeSolutionResources=true
   &types=VB%20Action&types=Workflow%20Action&types=Coded%20Action&types=CodedAction&types=JS%20Action
 ```
+<!--skill-flavor:hitl-impl-http-fallback:end-->
 
 For app search → retrieve-configuration → resource files → reference registration → debug overwrites, see **[hitl-node-apptask.md](../../../../../uipath-human-in-the-loop/references/hitl-node-apptask.md)**.
 
@@ -173,7 +175,9 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:hitl-impl-debug-table:start-->
 | Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip maestro flow registry list --local`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
+<!--skill-flavor:hitl-impl-debug-table:end-->
 | Task never completes | Human has not submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form does not match expected schema | Verify app form fields match what the flow expects |
 | `outcome-completed` port unwired (Option 1) | Missing edge on output handle | Wire the `outcome-completed` output handle; an unwired `outcome-completed` blocks the flow indefinitely |

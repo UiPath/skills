@@ -142,6 +142,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
+<!--skill-flavor:hitl-apptask-discovery:start-->
 **In-solution (local, no login required):**
 
 ```bash
@@ -150,6 +151,7 @@ uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
+<!--skill-flavor:hitl-apptask-discovery:end-->
 
 ### Planning Annotation
 

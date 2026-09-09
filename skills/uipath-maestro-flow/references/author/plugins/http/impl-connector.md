@@ -9,7 +9,9 @@ Before starting, read [impl.md](impl.md) for the node type, registry validation,
 ## Step 1 — Add the node
 
 ```bash
+<!--skill-flavor:http-connector-node-add:start-->
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+<!--skill-flavor:http-connector-node-add:end-->
   --label "<HTTP node label>" --output json
 ```
 
@@ -48,7 +50,9 @@ Record the chosen connection's `Id` and `FolderKey` — Step 3 needs both.
 > - **If the connector is NOT listed:** the registry-grounding step does not apply — resolve missing values via the `http-request` probe / vendor docs as usual.
 
 ```bash
+<!--skill-flavor:http-connector-configure:start-->
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
+<!--skill-flavor:http-connector-configure:end-->
   --detail '{
     "authentication": "connector",
     "targetConnector": "<target-connector-key>",
@@ -66,8 +70,10 @@ The CLI:
 
 - Builds the full `inputs.detail` (connector, connectionId, bodyParameters, essentialConfiguration)
 - Auto-fills both `bodyParameters.path` and `bodyParameters.url` from the single `url` value you pass
+<!--skill-flavor:http-connector-cli-effects:start-->
 - Generates `bindings_v2.json`
 - Creates a connection resource file under `resources/solution_folder/connection/`
+<!--skill-flavor:http-connector-cli-effects:end-->
 
 **Dynamic values:** connector input fields do not resolve `{$vars.x}` brace-templates — use `=js:` expressions for any dynamic `url` / `headers` / `body` / `query`. Pass the `=js:` string verbatim in `--detail`. Full rationale and examples: [impl.md — Dynamic values](impl.md#dynamic-values-in-url--headers--body--query).
 

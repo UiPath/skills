@@ -2,6 +2,7 @@
 
 Shared conventions for the `uip` CLI across Author, Operate, and Diagnose. Read this before invoking any `uip` command.
 
+<!--skill-flavor:resolve-uip-prefix:start-->
 ## 1. Resolve `uip` and detect the command prefix
 
 Resolve the npm-installed binary, which may be absent from PATH in nvm environments:
@@ -38,15 +39,18 @@ echo "Using: $FLOW_CMD (CLI version $CURRENT)"
 ```
 
 Run all commands below with `uip maestro flow ...`; if detection returns < 0.3.4, replace only that prefix with `uip flow`. Arguments and flags are identical. See UiPath/cli#841. <!-- uip-check-skip -->
+<!--skill-flavor:resolve-uip-prefix:end-->
 
 ## 2. Use JSON output
 
 Run programmatically parsed commands with `--output json`:
 
 ```bash
+<!--skill-flavor:json-output-examples:start-->
 uip maestro flow validate <ProjectName>.flow --output json
 uip maestro flow registry list --output json
 uip maestro flow instance incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
+<!--skill-flavor:json-output-examples:end-->
 ```
 
 Do not use `--format json`; it does not exist and produces `error: unknown option '--format'` with exit code 3 on every `uip` subcommand. Ignore the benign `--localstorage-file` warning when it appears.
@@ -78,11 +82,15 @@ uip … registry search slack --output json --output-filter "[?contains(NodeType
 uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
 ```
 
+<!--skill-flavor:output-filter-failure-exception:start-->
 > **Exception — any command that fails.** The CLI applies `--output-filter` only on the success path; a `Result: "Failure"` envelope prints whole. This bites hardest on a faulted `flow debug` (200 KB and more) — redirect stdout to a file and extract from the file, see [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
+<!--skill-flavor:output-filter-failure-exception:end-->
 
 Treat `Data: []` with exit 0 as a valid but mismatched expression, not proof of absence. Only invalid syntax or type errors fail with exit 3.
 
+<!--skill-flavor:python-jq-fallback:start-->
 Use `python3 -c` or `jq` only when JMESPath cannot perform a multi-step join across CLI calls, JSON-to-CSV or JSON-to-env-var conversion, or conditional output based on multiple fields. Verify the shape first:
+<!--skill-flavor:python-jq-fallback:end-->
 
 - Run `--output-filter "type(@)"`; it returns `"array"` or `"object"`.
 - For an object, run `--output-filter "keys(@)"`.
@@ -110,15 +118,15 @@ Every `uip` command returns one of these shapes:
 { "Result": "Failure", "Message": "...", "Instructions": "Found N error(s): ...", "Data": { ... } }
 ```
 
+<!--skill-flavor:response-shape-debug-note:start-->
 Always check `Result` first. On failure, use `Message` and `Instructions` for diagnostics. A failure envelope may still carry `Data` — `flow debug` returns the full run payload on a fault.
+<!--skill-flavor:response-shape-debug-note:end-->
 
 ## 5. Login state
 
 | Capability | Login required? |
 |---|---|
-<!--skill-flavor:flow-init-login-scope:start-->
 | **Author** | No — `flow init`, `validate`, `format`, registry (OOTB nodes), `Edit` / `Write` edits, planning all work offline |
-<!--skill-flavor:flow-init-login-scope:end-->
 | **Operate** | **Yes** — `solution upload`, `solution resources refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
 | **Diagnose** | **Yes** — `instance incidents`, `instance variables`, `instance asset`, `incident get`, `incident summary` all require `uip login` |
 
@@ -149,6 +157,7 @@ uip or folders list --output json
 
 Alternatively obtain it from job/process context, such as `Data.folderKey` in a job-status response or surrounding debug metadata.
 
+<!--skill-flavor:debug-log-level-section:start-->
 ## 7. Use `UIP_LOG_LEVEL=info` for debug runs
 
 Run debug with `UIP_LOG_LEVEL=info`:
@@ -160,6 +169,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 Capture stderr as well as stdout. At `info`, stderr reports the `jobKey`, `instanceId`, and Studio Web URL. If polling exceeds its budget, stdout may contain only `Debug polling timed out after <N>s`; stderr is then the only way to identify the instance and inspect it with `uip maestro flow debug-instance incidents <instanceId>`.
 
 Use `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL`; the latter is silently ignored. `--log-level <level>` is the equivalent global flag. The setting applies to every `uip` command.
+<!--skill-flavor:debug-log-level-section:end-->
 
 ## 8. Global options
 

@@ -14,19 +14,23 @@ uip maestro flow registry search "uipath.core.flow" --output json
 ### In-solution (sibling projects)
 
 ```bash
+<!--skill-flavor:flow-impl-discovery:start-->
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
+<!--skill-flavor:flow-impl-discovery:end-->
 
 ## Registry Validation
 
 ```bash
+<!--skill-flavor:flow-impl-registry-get:start-->
 # Published
 uip maestro flow registry get "uipath.core.flow.{key}" --output json
 
 # In-solution
 uip maestro flow registry get "uipath.core.flow.{key}" --local --output json
 ```
+<!--skill-flavor:flow-impl-registry-get:end-->
 
 Confirm:
 
@@ -103,5 +107,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:flow-impl-debug-table:start-->
 | Node type not found in registry | Flow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution flows use `--local` |
+<!--skill-flavor:flow-impl-debug-table:end-->
 | Flow execution failed | Underlying flow errored | Check `$vars.{nodeId}.error` for details |

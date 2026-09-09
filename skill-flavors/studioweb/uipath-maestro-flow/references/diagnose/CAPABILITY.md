@@ -2,6 +2,10 @@
 Capability index for postmortem on a failed `flow debug` or deployed process run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (missing `=js:`, misshapen nodes, HITL-stuck, reused reference IDs).
 <!--skill-flavor:single-nested-intro:end-->
 
+<!--skill-flavor:diagnose-inherited-rules:start-->
+> **Inherited rules:** use `--output json` and prefer `--output-filter` for extraction (bundle commands only — `uip flow debug` returns plain text); do not run `flow debug` without consent; never invoke other skills automatically; use the dropdown question pattern; provide plain-English narration and a granular progress list only when the user asks for verbosity, and remain silent by default. These rules apply in addition to the rules below.
+<!--skill-flavor:diagnose-inherited-rules:end-->
+
 <!--skill-flavor:single-nested-task-row:start-->
 <!--skill-flavor:single-nested-task-row:end-->
 

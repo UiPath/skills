@@ -33,14 +33,18 @@ The four classification and tool-call evaluators (`uipath-binary-classification`
 uip maestro flow eval evaluator add exact-greeting \
   --type exact-match \
   --target-key "greeting" \
+<!--skill-flavor:sw-eval-evaluator-add-examples:start-->
   --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-add-examples:end-->
 
 # LLM-judge — model is effectively required
 uip maestro flow eval evaluator add greeting-quality \
   --type llm-judge-output \
   --model gpt-4.1-2025-04-14 \
   --description "Score greeting tone and completeness" \
+<!--skill-flavor:sw-eval-evaluator-add-examples-2:start-->
   --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-add-examples-2:end-->
 ```
 
 Critical: pass `--model` on every `llm-judge-*` evaluator. Empty `model` triggers a 500 from the LLM gateway only after retries — unfriendly to debug.
@@ -55,7 +59,9 @@ Defaults to `*` (the entire output object). Set a specific key when only one fie
 
 ## Evaluator JSON Shape
 
+<!--skill-flavor:sw-eval-evaluator-json-intro:start-->
 The CLI writes evaluator JSON files into the project's evaluator directory. Filenames follow `<name>-<suffix>.json` for CLI-created files; hand-written files can use any descriptive name. Let `eval set add` write `evaluatorRefs` instead of hand-editing them.
+<!--skill-flavor:sw-eval-evaluator-json-intro:end-->
 
 ### Deterministic example (`exact-match`)
 
@@ -115,7 +121,9 @@ uip maestro flow eval evaluator add strict-match \
   --type llm-judge-output \
   --model gpt-4.1-2025-04-14 \
   --prompt 'Score 0-1 how closely {{ActualOutput}} matches {{ExpectedOutput}}. Return JSON {"score": N, "reason": "..."}.' \
+<!--skill-flavor:sw-eval-custom-prompt-example:start-->
   --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-custom-prompt-example:end-->
 ```
 
 Unknown placeholders are passed through to the LLM as literal text — they are not silent errors but they will not be substituted with run data.
@@ -124,13 +132,17 @@ Unknown placeholders are passed through to the LLM as literal text — they are 
 
 ```bash
 uip maestro flow eval evaluator remove greeting-quality \
+<!--skill-flavor:sw-eval-evaluator-remove-examples:start-->
   --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-remove-examples:end-->
 ```
 
 Removing an evaluator does NOT auto-clean `evaluatorRefs` arrays in eval sets that reference it. After removing, re-list eval sets and reconcile any stale refs:
 
 ```bash
+<!--skill-flavor:sw-eval-evaluator-remove-examples-2:start-->
 uip maestro flow eval set list --path ./MySolution/MyFlow --output json
+<!--skill-flavor:sw-eval-evaluator-remove-examples-2:end-->
 ```
 
 ## Anti-patterns

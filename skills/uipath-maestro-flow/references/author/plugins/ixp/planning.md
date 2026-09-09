@@ -81,7 +81,9 @@ Read-only listing — **do not** scaffold a solution, init a flow, or write a `.
    uip maestro flow registry pull --force
    uip maestro flow registry search "uipath.ixp" --output json
    ```
+<!--skill-flavor:ixp-listing-steps:start-->
 3. Format `Data[]` as a table — `DisplayName`, `NodeType`, `Version`. Each entry is one published model / runtime project. See [impl.md — Listing Published Models](impl.md#listing-published-models) for parsing details.
+<!--skill-flavor:ixp-listing-steps:end-->
 
 Search term must be `"uipath.ixp"` (lowercase). Do NOT use `"runtime"`, `"document extractor"`, `"extractor"`, or `"IXP"` — these miss extraction nodes.
 

@@ -9,6 +9,8 @@ Node type: `uipath.agent.voice`, bound to a local subdirectory via `inputs.sourc
 ```bash
 uip agent init "<FlowProjectDir>" --inline-in-flow --conversational --output json
 ```
+<!--skill-flavor:voice-impl-scaffold-command:start-->
+<!--skill-flavor:voice-impl-scaffold-command:end-->
 
 Same layout as any inline agent (`<FlowProjectDir>/<projectId-uuid>/` with `agent.json`, `flow-layout.json`, `evals/`, `features/`, `resources/`). **Record the returned `ProjectId`** — the voice node's `inputs.source` must match it exactly.
 
@@ -44,7 +46,9 @@ Field rules:
    - **Variable** — when the binding's source is a **trigger**, the field must be declared in `variables.globals[]` as `{ "id": "callerName", "direction": "in", "triggerNodeId": "start" }`. A binding sourced from any other node (a script or connector output) reads that node's own output and declares nothing
    - **Tokens** — rebuild `contentTokens` via `uip agent refresh --inline-in-flow`; never hand-author them
 
+<!--skill-flavor:voice-delivery-binding-note:start-->
    Omit the Delivery binding and `flow debug` still works (it back-fills from `inputSchema`) while `flow pack` ships empty `JobArguments` — the published call gets no inputs. Full contract: [inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
+<!--skill-flavor:voice-delivery-binding-note:end-->
 5. `settings.model`, `maxTokens`, `temperature`, `maxIterations` tune the engine LLM as for any conversational agent (`uip agent model list` for the tenant's models).
 
 ## Registry Validation
@@ -172,19 +176,24 @@ return { callEnded: session.callEnded, endedBy: session.endedBy };
 - `$vars.{endCallNodeId}.output.ended` — whether the call was ended
 - `$vars.{nodeId}.error` — error details if one of the three action nodes fails (`core.trigger.voice` emits `output` only)
 
+<!--skill-flavor:voice-validate-and-debug:start-->
 ## Validate and Pack
 
 ```bash
 uip maestro flow format <FlowName>.flow --output json
 uip maestro flow validate <FlowName>.flow --output json
 ```
+<!--skill-flavor:voice-validate-and-debug:end-->
 
 Voice flows get extra validation on top of the standard checks: the agent directory must exist with a conversational `agent.json` carrying `settings.voice`, both `callContext` bindings must be present, and no voice agent node may sit inside a subflow. Failure modes and fixes are in § Debug.
 
+<!--skill-flavor:voice-validate-and-debug-2:start-->
 Packing (`uip maestro flow pack`, or `uip solution pack` — see the operate capability) serializes the voice agent to an `Orchestrator.StartInlineAgentJob` serviceTask that **embeds the complete built agent definition** (`agentDefinition` in the BPMN context: agent.json + resources + features), and sets `runtimeOptions.isConversational: true` in the packed `operate.json`. That embedding is why pack and debug fail early when the agent directory is missing. Pack also re-checks the written BPMN and fails if the embedded definition is absent — a package without it deploys and then drops every call, so this never ships silently.
+<!--skill-flavor:voice-validate-and-debug-2:end-->
 
 ### Debug covers outbound only
 
+<!--skill-flavor:voice-validate-and-debug-3:start-->
 `uip maestro flow debug` **rejects an inbound flow**: only a real call can raise a `core.trigger.voice`, so the run would never advance.
 
 ```text
@@ -194,9 +203,11 @@ Inbound voice flows cannot be debugged from the CLI.
 The instructions on that error are the whole inbound test loop — publish, bind a number (§ Bind an Inbound Phone Number), then dial it. Swapping the trigger for a manual one lifts the rejection but leaves the inbound flow itself unexercised.
 
 An **outbound** flow does run under `flow debug`, and it dials for real. The run's `--timeout` window has to outlast the conversation (default: 300 polls × the 2s poll interval = 10 minutes). Get user consent first and confirm the `to` number — the flow **places a real phone call**.
+<!--skill-flavor:voice-validate-and-debug-3:end-->
 
 ## Bind an Inbound Phone Number
 
+<!--skill-flavor:voice-bind-inbound-number:start-->
 An inbound flow does nothing until a trunk points at its deployed process. Nothing in the `.flow` carries the number — the binding is made against the **release key** after deploy.
 
 > **Confirm with the user before running step 1.** `solution publish` and `solution deploy run` mutate the tenant, and this skill never defaults to an Orchestrator deploy — full flow and the Studio-Web alternative: [operate/ship.md § Path 2](../../../operate/ship.md#path-2--orchestrator-deploy-explicit-only).
@@ -216,8 +227,11 @@ uip or processes list --folder-path "Shared/<FOLDER_NAME>" --output json   # Key
 uip conversational trunks assign <E164-number> \
   --process-key <Key> --folder-key <FolderKey> --yes --output json
 ```
+<!--skill-flavor:voice-bind-inbound-number:end-->
 
+<!--skill-flavor:voice-bind-inbound-number-2:start-->
 - `<FOLDER_NAME>` must be identical in step 1's `--folder-name` and step 2's `--folder-path` — deploy creates that folder under `--parent-folder-path`, and step 2 reads the process back out of it. `<DEPLOYMENT_NAME>` is independent and names the deployment only.
+<!--skill-flavor:voice-bind-inbound-number-2:end-->
 - `--process-key` is the **release `Key`** from `or processes list` (a GUID), not the package name and not the process id.
 - `--entry-point` is optional and resolves automatically when the flow has exactly one incoming-call entry point — the normal case. Pass it explicitly only for a multi-entry-point package.
 - `--yes` is required when the trunk already has a non-null `processKey`; it re-points the number and the previous process stops receiving calls.
@@ -226,10 +240,12 @@ uip conversational trunks assign <E164-number> \
 
 ### Shipping an outbound flow
 
+<!--skill-flavor:voice-bind-inbound-number-3:start-->
 Outbound needs no binding step — `inputs.from` names the trunk directly, so the flow is complete once `flow debug` places its call. Two places it can go from there, both tenant-mutating (consent gate per SKILL.md rule #2):
 
 - **Orchestrator**, to run it on a schedule or trigger it as a process — same `solution pack` → `publish` → `deploy run` sequence as above, minus step 3.
 - **Studio Web**, to hand the flow to someone to open in the designer — `uip solution upload "<SolutionDir>"`. Note the `SolutionId` caveat in § Debug if `flow debug` already ran on this project.
+<!--skill-flavor:voice-bind-inbound-number-3:end-->
 
 ## Debug
 
@@ -241,6 +257,7 @@ Outbound needs no binding step — `inputs.from` names the trunk directly, so th
 | `flow validate`: `[CONVERSATIONAL_VOICE_CALL_CONTEXT_REQUIRED]` (rule `conversational-voice-call-context`) | Voice agent node lacks the `inputs.callContext` binding | Bind `$vars.<originNodeId>.output.callContext` as a `jsExpression` object with `fieldType: "object"` |
 | `flow validate` flags the end-call node's call context (rule `conversational-voice-end-call-context`) | End-call node lacks `inputs.callContext` | Same expression as the voice agent, `fieldType: "string"` |
 | `flow validate`: `requires a source UUID at inputs.source` | Voice agent node has no `inputs.source` | Set it to the agent directory's UUID |
+<!--skill-flavor:voice-impl-debug-table:start-->
 | `flow validate` / `flow pack`: `voice agent nodes are not supported inside subflows` | The voice agent node was placed in a `core.subflow`. Only top-level voice nodes get an embedded definition, so pack raises the same thing validate does | Move the node to the top-level flow. There is no flag for this and no partial support — a subflow voice agent would ship a serviceTask with no `agentDefinition` |
 | `flow debug`: `Inbound voice flows cannot be debugged from the CLI.` | The flow starts from `core.trigger.voice`, which only a real call raises | Not a bug and not fixable locally — publish, bind a number, dial it (§ Bind an Inbound Phone Number). Do not swap in a manual trigger to force a run |
 | `flow pack` / `flow debug`: `Missing agent definition for voice agent node …` | Agent directory deleted or moved after validate | Restore `<FlowProjectDir>/<projectId>/agent.json` or fix `inputs.source`; the BPMN is never written without the embedded definition |
@@ -253,6 +270,7 @@ Outbound needs no binding step — `inputs.from` names the trunk directly, so th
 | Inbound number rings but nothing runs | Trunk not bound, bound to a different process, or bound to an older build | `uip conversational trunks list --direction inbound --output json` — check `processName` and that `entryPoint` matches the trigger's `inputs.entryPointId`; re-run `trunks assign` (§ Bind an Inbound Phone Number) |
 | `solution deploy run`: `DraftDeploymentHasDifferentPackageVersion` | An earlier failed deploy left a draft under that deployment name, pinned to the version it first tried | Deploy under a new `--name`/`--folder-name`, or clear the stale draft |
 | `solution upload` reports `Action: Overwritten` and the `DesignerUrl` opens the `flow debug` staging solution instead of a separate publish | `flow debug` stamped its staging `SolutionId` into the local `.uipx`, and upload overwrites whatever cloud solution that id names — no flag, no prompt | Expected — the staging solution *is* this project on Studio Web. For a separate cloud solution, replace the `SolutionId` in the `.uipx` with a fresh GUID and re-run upload — removing the field fails `.uipx` validation |
+<!--skill-flavor:voice-impl-debug-table:end-->
 
 ## What NOT to Do
 

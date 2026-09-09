@@ -85,7 +85,9 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 >
 > - **What to set** — the `id` of the trigger that supplies the value; `"start"` in a single-trigger flow.
 > - **Why** — packaging reads the input contract from the trigger manifest's output schema when it declares one, and otherwise keeps only globals where `direction === "in"` and `triggerNodeId` matches the start node's `id`. Core triggers declare no output schema, so that second branch is the live one.
+<!--skill-flavor:trigger-node-id-note:start-->
 > - **Failure mode** — `flow pack` emits an empty `input.properties` while `flow validate` and `flow format` both stay green, so nothing warns you.
+<!--skill-flavor:trigger-node-id-note:end-->
 > - **Via CLI** — `uip maestro flow variable add --direction in` sets it for you.
 
 ### Examples
@@ -175,7 +177,9 @@ Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is 
   "id": "inputDoc",
   "direction": "in",
   "type": "file",
+<!--skill-flavor:file-input-guidance:start-->
   "description": "Document uploaded at trigger / bound via --attachment",
+<!--skill-flavor:file-input-guidance:end-->
   "triggerNodeId": "start"
 }
 ```
@@ -186,7 +190,9 @@ Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is 
 > { "ID": "<uuid>", "FullName": "report.pdf", "MimeType": "application/pdf", "Metadata": { "size": "1024" } }
 > ```
 >
+<!--skill-flavor:file-input-guidance-2:start-->
 > The uploaded file's name is **`.FullName`**. Property access is **case-sensitive** at runtime — these exact casings resolve, others return `undefined`/`null`: `.ID` (uppercase, not `.Id`), `.FullName`, `.MimeType`, and the **nested `.Metadata.size`** (lowercase `size`, NOT `.Size`). `.name` / `.fileName` do **not** exist. Two layers: the `.flow` *declaration* is camelCase (`type`, `direction`); the *runtime* object carries the casing above. Do NOT write `"FullName"` into the `.flow` source. Bind the file with `uip maestro flow debug --attachment <id>=<path>` — see [cli-commands.md — Pre-flight](cli-commands.md#attachment-preflight).
+<!--skill-flavor:file-input-guidance-2:end-->
 
 ### Type Reference
 
@@ -197,7 +203,9 @@ Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is 
 | `boolean` | `false` | |
 | `object` | `{}` | Use `schema` for structured objects |
 | `array` | `[]` | Use `subType` for typed arrays |
+<!--skill-flavor:type-reference-table:start-->
 | `file` | — | Bound at runtime via `--attachment`; hydrates as an object — read `.FullName` (see [File input](#file-input) above) |
+<!--skill-flavor:type-reference-table:end-->
 
 ---
 
@@ -301,7 +309,9 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 > **Symptom of the legacy string form:** `uip maestro flow validate` fails with
 > `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression`
+<!--skill-flavor:legacy-string-form-symptom:start-->
 > and `"Retry": "RetryWillNotFix"`. The string form was dropped in file-format version 1.3; `uip maestro flow init` scaffolds 1.9.
+<!--skill-flavor:legacy-string-form-symptom:end-->
 
 > **There is no CLI command for variable updates.** Write them with `Edit` against the `.flow` file.
 
@@ -620,11 +630,15 @@ Subflows have their own variable scope. Parent variables are **not** automatical
 
 See [evaluate/eval-sets-guide.md](../evaluate/eval-sets-guide.md).
 
+<!--skill-flavor:variable-add-trigger-binding-note:start-->
 > **`variable add --direction in` binds the variable to a trigger** by writing `triggerNodeId`. That binding is what puts the input in the packed entry point's contract — without it `flow pack` emits an empty `input.properties` while `validate` and `format` stay green. The CLI infers the flow's single trigger; if a flow has more than one, it fails and asks for `--trigger-node-id <nodeId>` to say which entry point the input belongs to. Hand-authored globals need the same field — see [Workflow Variables](#workflow-variables).
+<!--skill-flavor:variable-add-trigger-binding-note:end-->
 
 ### Adding a workflow input variable
 
+<!--skill-flavor:adding-input-variable-steps:start-->
 1. Open `<ProjectName>.flow`
+<!--skill-flavor:adding-input-variable-steps:end-->
 2. Add the variable object to `variables.globals`
 3. Run `uip maestro flow validate` to check for errors
 

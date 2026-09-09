@@ -95,7 +95,9 @@ Triggers operate in one of two modes (returned in `eventMode` from `registry get
 
 The agent does not need to configure the mode — it is determined by the connector. Note it in the plan for the user's awareness.
 
+<!--skill-flavor:ct-debug-impact:start-->
 > **Debug impact:** Only `polling` triggers can be debugged in Studio Web. `webhooks` triggers cannot be tested via `uip maestro flow debug` — they require deployment to Orchestrator. Flag this in the plan if the trigger uses webhook mode.
+<!--skill-flavor:ct-debug-impact:end-->
 
 ### Webhook Triggers — Extra Steps
 

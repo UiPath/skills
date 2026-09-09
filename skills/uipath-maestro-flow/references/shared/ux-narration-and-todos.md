@@ -34,7 +34,9 @@ A logical step is the smallest user-meaningful outcome, usually 1–5 actions gr
 | Step transition | Narrate the next step. |
 | Decision point | Give a brief line before asking the user; explain the decision's consequence. |
 | Failure/retry | Always narrate what failed and what will be tried next, even in silent mode. |
+<!--skill-flavor:narration-cadence-table:start-->
 | Trivial probe (`uip --version`, repeated `login status` in the same minute) | Skip. |
+<!--skill-flavor:narration-cadence-table:end-->
 | Non-`uip` shell plumbing (`ls`, `cat`, `mkdir`, `cd`) | Skip; the step line covers it. |
 | File reads/edits inside a step | Skip; the step line covers them. |
 
@@ -46,8 +48,8 @@ Use or adapt these patterns:
 
 | Step | Narration |
 |---|---|
-| Login probe | "Checking whether you're logged in to the UiPath tenant…" |
 <!--skill-flavor:flow-project-creation-narration:start-->
+| Login probe | "Checking whether you're logged in to the UiPath tenant…" |
 | Solution scaffold | "Scaffolding a new solution at `<path>` so the Flow project has a parent." |
 | Flow init | "Initializing the Flow project. This creates the `.flow` file you'll edit." |
 | Verify project layout | "Confirming the solution/project layout is correct before continuing." |
@@ -58,12 +60,14 @@ Use or adapt these patterns:
 | Edge wiring | "Wiring `<from>` → `<to>` so data flows in the right order." |
 | Variable mapping | "Mapping output variables on the End node — every reachable End needs them." |
 | Script body update | "Updating the script body in the `<nodeId>` node." |
+<!--skill-flavor:flow-project-creation-narration-2:start-->
 | Resource refresh | "Syncing connection and resource declarations into the solution before upload…" |
 | Validate | "Running validate. This catches missing edges, bad expressions, and wiring mistakes." |
 | Format | "Formatting the layout. Studio Web renders nodes correctly only after format normalizes their sizes." |
 | Studio Web upload | "Pushing to Studio Web. This is the safe path — no execution, just the visual editor." |
 | Pack for Orchestrator | "Packing the solution for Orchestrator deploy…" |
 | Orchestrator publish | "Publishing the package to Orchestrator…" |
+<!--skill-flavor:flow-project-creation-narration-2:end-->
 | Debug consent | "Running debug end-to-end. Real systems will be hit (emails sent, Slack posts, API calls)." |
 | Process run | "Triggering the deployed process now…" |
 | Job status | "Checking the job's current status…" |
@@ -85,14 +89,18 @@ This applies only when narration/todos are engaged. In silent mode, journey size
 |---|---|---|
 | Single edit: 1–2 actions, no decisions | One line | None |
 | Small edit: 3–5 actions or one decision | One line per step | Optional |
+<!--skill-flavor:progress-list-threshold-table:start-->
 | Standard: greenfield, multi-node brownfield, ship, or full diagnose | One line per step | Required and granular |
+<!--skill-flavor:progress-list-threshold-table:end-->
 | Complex: 10+ nodes, multiple resource bindings, or planning phase | Denser cadence | Required, granular, with sub-todos |
 
 ## Todo rules
 
 A todo represents a state-changing outcome the user cares about; roughly one logical step. Multiple tool actions may form one todo.
 
+<!--skill-flavor:valid-todos-list:start-->
 Valid todos include: solution scaffolded; Flow project created; node added and wired; edges connected; variables defined and mapped; validate green; format applied; resources refreshed; uploaded to Studio Web; incident fetched and read; root cause classified.
+<!--skill-flavor:valid-todos-list:end-->
 
 Do not create todos for registry lookup, `ls`/`cat`/`Glob` path checks, pre-edit reads, parsing JSON, or rerunning the same `validate` after a one-character fix. Keep such plumbing invisible.
 

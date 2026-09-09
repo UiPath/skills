@@ -6,7 +6,9 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 > **Navigation.** Diagnose follows Operate when a run faults and points to Author for the fix. Re-running and lifecycle are in [operate/CAPABILITY.md](../operate/CAPABILITY.md); building or editing `.flow` files is in [author/CAPABILITY.md](../author/CAPABILITY.md).
 >
+<!--skill-flavor:diagnose-inherited-rules:start-->
 > **Inherited rules:** use `--output json` and prefer `--output-filter` for extraction; do not run `flow debug` without consent; never invoke other skills automatically; use the dropdown question pattern; provide plain-English narration and a granular progress list only when the user asks for verbosity, and remain silent by default. These rules apply in addition to the rules below.
+<!--skill-flavor:diagnose-inherited-rules:end-->
 
 ## When to use this capability
 

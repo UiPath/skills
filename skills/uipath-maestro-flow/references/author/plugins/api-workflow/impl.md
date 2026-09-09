@@ -14,19 +14,23 @@ uip maestro flow registry search "uipath.core.api-workflow" --output json
 ### In-solution (sibling projects)
 
 ```bash
+<!--skill-flavor:api-workflow-impl-discovery:start-->
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
+<!--skill-flavor:api-workflow-impl-discovery:end-->
 
 ## Registry Validation
 
 ```bash
+<!--skill-flavor:api-workflow-impl-registry-get:start-->
 # Published
 uip maestro flow registry get "uipath.core.api-workflow.{key}" --output json
 
 # In-solution
 uip maestro flow registry get "uipath.core.api-workflow.{key}" --local --output json
 ```
+<!--skill-flavor:api-workflow-impl-registry-get:end-->
 
 Confirm:
 
@@ -103,6 +107,8 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:api-workflow-impl-debug-table:start-->
 | Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution API workflows use `--local` |
+<!--skill-flavor:api-workflow-impl-debug-table:end-->
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |
 | Node Completed but `$vars.{nodeId}.output` is null downstream (consumer agent faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` / incident `170002`) | Instance declares `outputs.output` with `source: "=result.response"`, suppressing the injected `=this` output | Delete the `output` entry — keep `error` only |

@@ -79,6 +79,7 @@ uip maestro flow registry get "<node-type>" --output json
 
 Record `inputDefinition` and `outputDefinition` in the node table.
 
+<!--skill-flavor:planning-impl-local-sibling:start-->
 If Phase 1 marked a resource not found, use in-solution discovery first. Run from the flow project directory:
 
 ```bash
@@ -91,6 +92,7 @@ For a sibling project in the same `.uipx` solution, run:
 ```bash
 uip maestro flow registry get "<node-type>" --local --output json
 ```
+<!--skill-flavor:planning-impl-local-sibling:end-->
 
 If it is not in the solution, run:
 
@@ -111,7 +113,9 @@ Use `inputs.*` as the runtime source of truth and validate it against `registry 
 
 For each `core.logic.mock` node:
 
+<!--skill-flavor:planning-impl-mock-discovery:start-->
 1. Run `uip maestro flow registry list --local --output json`, or run `uip maestro flow registry search "<name>" --local --output json` for a keyword match.
+<!--skill-flavor:planning-impl-mock-discovery:end-->
 2. If found locally, replace the mock with the in-solution resource type and update inputs and outputs.
 3. If not found locally, run `uip maestro flow registry search "<name>" --output json`.
 4. If published, replace the mock with the real resource type and update inputs and outputs.
@@ -129,7 +133,9 @@ Update the architectural-plan node table:
 
 ### Step 6 — Write the Implementation Plan
 
+<!--skill-flavor:planning-impl-plan-location:start-->
 Create `<SolutionName>.uipath.flow.impl.plan.md` beside `.uipath.flow.arch.plan.md` in the solution directory.
+<!--skill-flavor:planning-impl-plan-location:end-->
 
 #### Output Format
 

@@ -36,7 +36,9 @@ Confirm `Data.Node.handleConfiguration` has target port `input` and source ports
 Run:
 
 ```bash
+<!--skill-flavor:http-impl-node-add:start-->
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+<!--skill-flavor:http-impl-node-add:end-->
   --label "<HTTP node label>" --output json
 ```
 
@@ -57,7 +59,9 @@ The CLI initializes:
 Set `branches`, `timeout`, and `retryCount` during `node add` with `--input`; populate `inputs.detail` only with `node configure --detail`:
 
 ```bash
+<!--skill-flavor:http-impl-node-add-inputs:start-->
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+<!--skill-flavor:http-impl-node-add-inputs:end-->
   --label "<HTTP node label>" \
   --input '{
     "timeout": "PT30M",
@@ -94,7 +98,9 @@ Use `=js:` expressions for dynamic URL, header, body, and query values. `$vars` 
 Pass the expression string verbatim to `node configure`:
 
 ```bash
+<!--skill-flavor:http-impl-configure-dynamic:start-->
 uip maestro flow node configure <Project>.flow <nodeId> \
+<!--skill-flavor:http-impl-configure-dynamic:end-->
   --detail '{
     "authentication": "manual",
     "method": "GET",

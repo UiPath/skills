@@ -2,7 +2,9 @@
 
 Discover capabilities, then design flow topology: node types, edges, inputs, and outputs. Produce a **mermaid diagram** and structured tables for review before implementation.
 
+<!--skill-flavor:planning-arch-registry-rules:start-->
 > **Registry rules:** `registry search` and `registry list` are allowed for discovery. Run `registry get` once for every OOTB action node type used (`core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc.); this provides real schemas, ports, and required fields. Defer `registry get` for connector nodes requiring `--connection-id` and resource nodes requiring `--local` or published-resource resolution to [Planning Phase 2: Implementation](planning-impl.md).
+<!--skill-flavor:planning-arch-registry-rules:end-->
 
 ## Before You Build: Is Maestro the Right Home?
 
@@ -52,6 +54,7 @@ uip maestro flow registry get core.action.script --output json
 # [http/planning.md](plugins/http/planning.md).
 ```
 
+<!--skill-flavor:planning-arch-registry-auth:start-->
 Without `uip login`, the registry shows OOTB nodes only. If connectors or resources are required, run `uip login status --output json` first. For sibling projects in the same `.uipx` solution, run from the flow project directory:
 
 ```bash
@@ -60,6 +63,7 @@ uip maestro flow registry search "<keyword>" --local --output json
 ```
 
 Prefer in-solution resources over mocks. `--local` omits `AvailableOnTenant`; an empty `search --local` is not authoritative, so confirm with `list --local` before treating a resource as absent.
+<!--skill-flavor:planning-arch-registry-auth:end-->
 
 ### Check Connector Connections
 
@@ -76,10 +80,12 @@ Treat an empty result as suspicious. Treat it as a real absence only when: (a) t
 Record:
 
 - **Connectors:** existence, available operations from node type names, and healthy connection availability. Defer field details to Phase 2.
+<!--skill-flavor:planning-arch-discovery-record:start-->
 - **Resources:** check `list --local` or `search --local` first, then tenant registry; record whether each RPA process, agent, or flow exists. Defer schemas to Phase 2.
 - **Gaps:** use `core.action.http.v2` manual mode when no connector exists; use `--local` resources when unpublished but in solution; use `core.logic.mock` when a resource is neither in solution nor published; flag connectors lacking connections after verified empty results.
 
 Run `registry get` for OOTB actions during discovery. Defer connector `registry get --connection-id` and resource `registry get --local` or published resolution to Phase 2.
+<!--skill-flavor:planning-arch-discovery-record:end-->
 
 ## Plugin Index
 
@@ -251,7 +257,9 @@ A source with no API or connector cannot trigger Maestro directly. Use a schedul
 
 ## Output Format
 
+<!--skill-flavor:planning-arch-output-location:start-->
 Generate `<SolutionName>.uipath.flow.arch.plan.md` in the **solution directory**, the folder containing `.uipx`, not the project subfolder. The plan covers the entire solution.
+<!--skill-flavor:planning-arch-output-location:end-->
 
 ### 1. Summary
 

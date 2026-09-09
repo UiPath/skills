@@ -1,0 +1,17 @@
+<!--skill-flavor:api-workflow-intro:start-->
+API workflow nodes invoke API functions from within a flow. Published API workflows appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) API workflows in sibling projects of the open solution are listed with `uip solution resources list --kind Process --output json` — no login or publish required.
+<!--skill-flavor:api-workflow-intro:end-->
+
+<!--skill-flavor:api-workflow-selection-table:start-->
+| API workflow not yet published but in the same solution | Yes — find it with `uip solution resources list --kind Process` (no login or publish needed) |
+| API workflow does not exist yet | Create it in the open solution with `uip api-workflow init <Name>`, then find it with `uip solution resources list --kind Process --output json` |
+<!--skill-flavor:api-workflow-selection-table:end-->
+
+<!--skill-flavor:api-workflow-discovery:start-->
+```bash
+uip solution resources list --kind Process --output json
+uip solution resources get <key> --output json
+```
+
+`solutionResources` lists the open solution's projects with `key`, `name`, `kind`, `type` (`api` for API workflows); deployed processes are under `availableResources`. `registry list|get --local` needs a `.uipx` and fails in Studio Web. Create a missing sibling with `uip api-workflow init <Name>` — registration is automatic, no `.uipx`, no `uip solution projects add`.
+<!--skill-flavor:api-workflow-discovery:end-->

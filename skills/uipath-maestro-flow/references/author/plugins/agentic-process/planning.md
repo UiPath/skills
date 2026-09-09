@@ -1,6 +1,8 @@
 # Agentic Process Node — Planning
 
+<!--skill-flavor:agentic-process-intro:start-->
 Agentic process nodes invoke orchestration processes from within a flow. Published processes appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
+<!--skill-flavor:agentic-process-intro:end-->
 
 ## Node Type Pattern
 
@@ -18,8 +20,10 @@ Use an Agentic Process node when the flow needs to invoke a published orchestrat
 | Invoke a published AI agent | No — use [Agent](../agent/planning.md) |
 | Call another published flow | No — use [Flow](../flow/planning.md) |
 | Need desktop/browser automation | No — use [RPA Workflow](../rpa/planning.md) |
+<!--skill-flavor:agentic-process-selection-table:start-->
 | Process not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
 | Process does not exist yet | Create it in the same solution, then use `--local` discovery |
+<!--skill-flavor:agentic-process-selection-table:end-->
 
 ## Ports
 
@@ -46,12 +50,14 @@ Requires `uip login`. Only published agentic processes from your tenant appear.
 
 ### In-solution (sibling projects)
 
+<!--skill-flavor:agentic-process-discovery:start-->
 ```bash
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 No login or publish required. Discovers unpublished agentic processes in sibling projects within the same solution.
+<!--skill-flavor:agentic-process-discovery:end-->
 
 ## Planning Annotation
 

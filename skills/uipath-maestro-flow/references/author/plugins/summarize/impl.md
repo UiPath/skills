@@ -19,7 +19,9 @@ Confirm:
 - `outputDefinition.output.schema`: top-level `id` (string) and `content` (object|null), with `content.Text` (string) and `content.Citations` (array|null) containing `{ Ordinal: integer, PageNumber: integer, Source: string, Reference: string }`.
 - `outputDefinition.error.schema.required`: `code`, `message`, `detail`, `category`, `status`.
 
+<!--skill-flavor:sum-node-not-found:start-->
 If the command returns **"Node type not found: uipath.pattern.deep-rag"**, run `uip tools update` and `uip maestro flow registry pull --force`. If it still fails, confirm with a UiPath admin that the tenant's `canvas.nodes.summarize` server flag is enabled.
+<!--skill-flavor:sum-node-not-found:end-->
 
 ## Authoring and attachment wiring
 
@@ -45,7 +47,9 @@ Declare a flow `in` variable with `type: "file"`, bound to the trigger with `tri
 }
 ```
 
+<!--skill-flavor:sum-attachment-populate:start-->
 Populate it by running `uip maestro flow debug --attachment <variableId>=<localPath>`, for example, `--attachment documentFile=./path/to/doc.pdf`. The CLI uploads the file and binds `{ ID, FullName, MimeType, Metadata }`. The flag is repeatable, and `<variableId>` must match a `variables.globals[]` `id`; see [cli-commands.md — Pre-flight](../../../shared/cli-commands.md#pre-flight---attachment-binding).
+<!--skill-flavor:sum-attachment-populate:end-->
 
 Do not declare the variable as `type: "object"`; reference it without the trigger output path; or pass a bare GUID, URL, path, `.ID`, or `.FullName`.
 
@@ -132,7 +136,9 @@ Without `=js:`, the runtime stores the literal expression string. Use only `.Tex
 The `uip maestro flow node add` / `edge add` CLI is not canonical for OOTB pattern nodes; use it only when scripting where Edit/Write is unavailable. Run:
 
 ```bash
+<!--skill-flavor:sum-node-add-cli:start-->
 uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
+<!--skill-flavor:sum-node-add-cli:end-->
   --label "<LABEL>" \
   --input '{
     "attachment": "=js:$vars.<triggerId>.output.<fileVarId>",
@@ -161,7 +167,9 @@ Use PascalCase: `Text`, `Citations`, `Ordinal`, `PageNumber`, `Source`, and `Ref
 Run:
 
 ```bash
+<!--skill-flavor:sum-validate-command:start-->
 uip maestro flow validate <FlowName>.flow --output json
+<!--skill-flavor:sum-validate-command:end-->
 ```
 
 The validator checks that required inputs (`attachment`, `prompt`) are present and non-empty. A bare attachment id can pass validation but fail at runtime.
@@ -170,7 +178,9 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 
 | Error | Cause | Fix |
 | --- | --- | --- |
+<!--skill-flavor:sum-debug-table:start-->
 | `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | Run `uip tools update` and `uip maestro flow registry pull --force`; if still missing, check with an admin that `canvas.nodes.summarize` is enabled |
+<!--skill-flavor:sum-debug-table:end-->
 | Runtime: synthesis returns empty `content.Text` | Prompt is vague, or attachment is unreadable, such as an image-only PDF with no OCR or a corrupted file | Tighten the prompt; confirm the attachment type is supported and has selectable text |
 | `content.Citations` missing despite `returnCitations: true` | A downstream consumer read `inputDefaults` before runtime output existed | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
 | Downstream `result.content.text` / `result.content.citations` is `undefined` | Lowercase field names were used | Use `result.content.Text` / `result.content.Citations` |

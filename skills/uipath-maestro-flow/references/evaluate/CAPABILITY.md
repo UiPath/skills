@@ -1,8 +1,12 @@
 # Evaluate — Design and run Flow evaluations
 
+<!--skill-flavor:sw-eval-intro:start-->
 Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and Studio Web run start/status/results/list/compare. Local CRUD is offline; runs require `uip login` and a Flow solution that already exists in Studio Web.
+<!--skill-flavor:sw-eval-intro:end-->
 
+<!--skill-flavor:sw-eval-orientation:start-->
 > **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+<!--skill-flavor:sw-eval-orientation:end-->
 >
 > **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.
 
@@ -13,26 +17,37 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 - Create or remove eval sets, link them to evaluators, pin entry points
 - Add, list, or remove simulations on data points (`uip maestro flow eval simulation`)
 - Add, list, or remove child tool simulations on agent nodes (`--parent` flag)
+<!--skill-flavor:sw-eval-when-to-use:start-->
 - Start an eval run on Studio Web, poll its status, fetch detailed results
+<!--skill-flavor:sw-eval-when-to-use:end-->
 - Compare two eval runs to verify a change improved scores without regressions
 
 For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only.
 
 ## Critical rules
 
+<!--skill-flavor:sw-eval-cli-availability:start-->
 1. **Check Flow eval CLI availability once.** Run `uip maestro flow eval --help --output json` before using eval commands. If it returns `unknown command 'eval'`, the installed CLI does not expose Flow eval yet. Stop, report that the user needs a CLI/tool version with Flow eval support, and do not spend turns searching npm packages or source bundles.
+<!--skill-flavor:sw-eval-cli-availability:end-->
 <!--skill-flavor:upload-safety-critical-rule:start-->
 2. **Never run `uip solution upload` automatically as part of an eval workflow.** The eval run requires the Flow solution to already exist in Studio Web, but uploading from the local working tree clobbers whatever is on Studio Web. If the project was pulled from Studio Web (`uip solution download`), edited locally in VS Code, or scaffolded on disk and never uploaded, an unprompted upload will overwrite or push unintended state. Ask the user explicitly before any `uip solution upload` — see [upload-safety.md](upload-safety.md).
 <!--skill-flavor:upload-safety-critical-rule:end-->
+<!--skill-flavor:sw-eval-path-login-rules:start-->
 3. **`--path` accepts a Flow project directory OR a solution directory containing exactly one Flow project.** If the solution holds multiple Flow projects, point `--path` at the specific project directory.
 4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.
+<!--skill-flavor:sw-eval-path-login-rules:end-->
 5. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.
+<!--skill-flavor:sw-eval-variable-add-rule:start-->
 6. **Declare input variables before adding data points with `--inputs`.** `eval add` validates input keys against the Flow's declared input variables and fails fast on unknown keys. Add missing input variables first (for example, `uip maestro flow variable add My.flow name --direction in --type string --output json`) or change the data point input JSON to match the Flow schema.
+<!--skill-flavor:sw-eval-variable-add-rule:end-->
 7. **Let the CLI manage evaluator references.** Eval sets store `evaluatorRefs` as the evaluator file refs produced by `evaluator add` (for example, `greeting-match-1234abcd.json`). If the set should use every evaluator that already exists, omit `--evaluators` so the CLI writes those generated file refs. If you must pass `--evaluators`, pass the evaluator id or generated file base/ref from `evaluator add/list` — never the display name alone (`greeting-match`), because Studio Web does not resolve display-name refs.
+<!--skill-flavor:sw-eval-run-rule:start-->
 8. **Pre-empt timeouts on `run start --wait`.** The CLI blocks until the run reaches a terminal state or `--timeout` elapses. `--timeout` only stops local blocking — the run continues server-side; query progress with `eval run status <run_id>`.
+<!--skill-flavor:sw-eval-run-rule:end-->
 
 ## Quick Start
 
+<!--skill-flavor:sw-eval-quick-start:start-->
 Standard workflow: scaffold evaluators → create eval set → add data points → confirm project is in Studio Web → run.
 
 ```bash
@@ -56,10 +71,8 @@ uip maestro flow eval add hello-test \
   --expected '{"reply":"Hello! How can I help you?"}' \
   --path ./MySolution/MyFlow --output json
 
-<!--skill-flavor:upload-safety-workflow-comment:start-->
 # 4. Confirm the solution is in Studio Web
 #    DO NOT auto-run `uip solution upload`. Ask the user. See upload-safety.md.
-<!--skill-flavor:upload-safety-workflow-comment:end-->
 
 # 5. Start the run and wait
 uip maestro flow eval run start \
@@ -73,6 +86,7 @@ uip maestro flow eval run results <eval_set_run_id> \
   --only-failed --verbose \
   --path ./MySolution/MyFlow --output json
 ```
+<!--skill-flavor:sw-eval-quick-start:end-->
 
 ## Workflow
 
@@ -81,10 +95,10 @@ uip maestro flow eval run results <eval_set_run_id> \
 | Look up any `uip maestro flow eval` subcommand syntax, flags, defaults, output codes | [commands-reference.md](commands-reference.md) |
 | Choose among the 7 evaluator types, write custom prompts, hand-write evaluator JSON | [evaluators-guide.md](evaluators-guide.md) |
 | Create eval sets, add data points, map `--inputs`/`--expected`/`--criteria` to evaluator types, attach files | [eval-sets-guide.md](eval-sets-guide.md) |
+<!--skill-flavor:sw-eval-workflow-table:start-->
 | Start a Studio Web run, poll status, read results, export CSV/JSON, compare two runs | [running-guide.md](running-guide.md) |
-<!--skill-flavor:upload-safety-workflow-row:start-->
 | Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first) | [upload-safety.md](upload-safety.md) |
-<!--skill-flavor:upload-safety-workflow-row:end-->
+<!--skill-flavor:sw-eval-workflow-table:end-->
 
 ## Common tasks
 
@@ -97,15 +111,15 @@ uip maestro flow eval run results <eval_set_run_id> \
 | **Set per-data-point criteria for trajectory evaluators** | [eval-sets-guide.md — `--criteria`](eval-sets-guide.md#--criteria) |
 | **Add a simulation to a data point** | [eval-sets-guide.md — Simulations](eval-sets-guide.md#simulations-on-data-points) + [commands-reference.md — Simulations](commands-reference.md#simulations) |
 | **Add a child tool simulation to an agent node** | [eval-sets-guide.md — Child Simulations](eval-sets-guide.md#child-simulations-agent-tool-simulation) + [commands-reference.md — Simulations](commands-reference.md#simulations) |
+<!--skill-flavor:sw-eval-common-tasks-table:start-->
 | **Start a Studio Web eval run** | [running-guide.md — Start a Run](running-guide.md#start-a-run) |
 | **Poll run status without `--wait`** | [running-guide.md — Check Status](running-guide.md#check-status) |
 | **Inspect only failed data points** | [running-guide.md — Detailed Results](running-guide.md#detailed-results) (`--only-failed --verbose`) |
 | **Compare two runs side-by-side** | [running-guide.md — Compare Two Runs](running-guide.md#compare-two-runs) |
-<!--skill-flavor:upload-safety-task-row:start-->
 | **Decide whether to call `uip solution upload`** | [upload-safety.md](upload-safety.md) |
-<!--skill-flavor:upload-safety-task-row:end-->
 | **Look up the `eval` subcommand tree, flags, defaults, output codes** | [commands-reference.md](commands-reference.md) |
 | **My eval run failed** | [running-guide.md — Failure Detection](running-guide.md#failure-detection); for flow-level faults [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
+<!--skill-flavor:sw-eval-common-tasks-table:end-->
 
 ## Anti-patterns
 
@@ -114,14 +128,18 @@ uip maestro flow eval run results <eval_set_run_id> \
 <!--skill-flavor:upload-safety-antipattern:end-->
 - **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer the default all-evaluators behavior so the CLI writes generated file refs, or pass generated evaluator ids/file refs explicitly. Do not pass evaluator display names to `--evaluators`.
 - **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.
+<!--skill-flavor:sw-eval-antipatterns:start-->
 - **Don't depend on a specific `--wait` polling cadence.** Treat `--wait` as a black-box block; if you need precise progress, omit it and call `eval run status` yourself.
 - **Don't compare runs from different eval sets.** `eval run compare` aligns by data-point name within the set; cross-set deltas are meaningless.
 - **Don't omit `--model` on LLM-judge evaluators.** The cloud worker fail-fasts before calling the LLM gateway.
 - **Don't run evals during `flow debug`.** `debug` is a separate Studio Web session; evals run against the deployed/published solution. Mixing them produces confusing run IDs.
+<!--skill-flavor:sw-eval-antipatterns:end-->
 
 ## Completion Output
 
+<!--skill-flavor:sw-eval-completion-report:start-->
 After a run completes, report:
+<!--skill-flavor:sw-eval-completion-report:end-->
 
 1. **Eval set run ID** and aggregate score (from `run status`)
 2. **Failed data points** (from `run results --only-failed --verbose`)

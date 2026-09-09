@@ -78,7 +78,9 @@ Plugin-specific path fields are not value fields; follow the plugin reference. I
 
 When a flow outputs literal `vars.X.output.Y`, `nodes.X.output.Y`, or another unevaluated expression:
 
+<!--skill-flavor:validation-steps:start-->
 1. Open the `.flow` file.
 2. Search for the token: `grep '"vars\.' <project>.flow` or `grep '"\$vars\.' <project>.flow`.
 3. In `bodyParameters`, `queryParameters`, `pathParameters`, end-node `source`, and other value fields, prepend `=js:` to each variable reference.
 4. Run `uip maestro flow validate` and re-debug.
+<!--skill-flavor:validation-steps:end-->

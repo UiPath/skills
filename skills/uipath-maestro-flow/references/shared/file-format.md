@@ -1,6 +1,8 @@
 # UiPath Flow File Format
 
+<!--skill-flavor:flow-file-location-intro:start-->
 The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+<!--skill-flavor:flow-file-location-intro:end-->
 
 ## Table of contents
 
@@ -53,6 +55,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 
 ## Project structure (generated scaffold)
 
+<!--skill-flavor:project-structure-scaffold:start-->
 ```
 <ProjectName>/
 ├── project.uiproj          # { "Name": "...", "ProjectType": "Flow" }
@@ -62,6 +65,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 ├── operate.json            # runtime options
 └── package-descriptor.json # packaging manifest
 ```
+<!--skill-flavor:project-structure-scaffold:end-->
 
 ## Node instance
 
@@ -242,7 +246,9 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 >
 > **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
 >
+<!--skill-flavor:edge-id-ncname-gotcha:start-->
 > **Gotcha — edge `id` MUST start with a letter (XML NCName).** Never use a bare UUID or any id with a leading digit (`"12bd09dd-…"`, `"1edge-start"`). Edge ids become BPMN `<bpmn:incoming>/<bpmn:outgoing>` IDREFs; a leading digit makes the converter silently drop those references while still emitting the `sequenceFlow`, so `flow validate` passes and upload succeeds — but the engine cannot traverse: the run reports **Completed having executed only the start node**, every output null. Use descriptive ids (`e-<source>-<target>`, e.g. `e-start-agent`); prefixing a letter (`e12bd09dd-…`) also works. Same rule applies to node ids.
+<!--skill-flavor:edge-id-ncname-gotcha:end-->
 
 ## Definition entry
 
@@ -355,7 +361,9 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 uip maestro flow registry get <node-type> --output json --output-filter "Node.SupportsErrorHandling"
 
 # Add an outgoing edge with sourcePort: "error"
+<!--skill-flavor:error-edge-add-example:start-->
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
+<!--skill-flavor:error-edge-add-example:end-->
   --source-port error --target-port input --output json
 ```
 
@@ -502,7 +510,9 @@ The `definitions` array must contain exactly one entry per unique `type:typeVers
 
 ## entry-points.json — auto-generated, do not edit
 
+<!--skill-flavor:entry-points-lifecycle:start-->
 `entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). Preserve its lifecycle-generated contents; project scaffolding creates it, and the Flow lifecycle regenerates it before execution or publication.
+<!--skill-flavor:entry-points-lifecycle:end-->
 
 Flow input and output parameters are declared through **variables** in the `.flow` file:
 - **Flow inputs**: Add entries to `variables.nodes[]` whose `binding.nodeId` is the start node and whose `binding.outputId` names each input value — the start node "outputs" input values to downstream nodes
@@ -553,7 +563,9 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 - `resourceKey` must exactly match the definition's `model.bindings.resourceKey` (verbatim from the registry). The runtime uses this key to scope placeholder resolution so that binding names like `name` / `folderPath` (shared across resource kinds) don't cross-alias.
 - `resourceSubType` mirrors the definition's `model.bindings.resourceSubType`: `Process` (rpa), `Agent` (agent), `Flow` (flow), `ProcessOrchestration` (agentic-process), `Api` (api-workflow), or the app type for HITL.
 
+<!--skill-flavor:bindings-missing-debug-failure:start-->
 **Why this is required.** The definition's `model.context[].value` fields are placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions, so they can't be confused with one. Before the BPMN is emitted, the runtime rewrites each placeholder to `=bindings.<id>` by finding a workflow-level binding with `(resourceKey, name)` matching the node's manifest `model.bindings.resourceKey` + the placeholder name. Without matching entries in top-level `bindings[]`, `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip maestro flow validate` passes.
+<!--skill-flavor:bindings-missing-debug-failure:end-->
 
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [author/CAPABILITY.md](../author/CAPABILITY.md).
 
@@ -581,6 +593,8 @@ Tenant-scoped entities need no bindings at all — they serialize as a dotted li
 
 ## Bindings — connector connection binding
 
+<!--skill-flavor:connector-binding-file-location:start-->
 When a flow uses connector nodes, the runtime needs to know **which authenticated connection** to use for each connector. This is configured in `content/bindings_v2.json`.
+<!--skill-flavor:connector-binding-file-location:end-->
 
 See the relevant node guide in `nodes/` for the full `bindings_v2.json` schema, connection resource field reference, JSON examples, and the connection fetching workflow.
