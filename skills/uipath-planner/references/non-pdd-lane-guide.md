@@ -1,22 +1,26 @@
 # Non-PDD Lane Guide
 
-When the planner is invoked without an SDD (the entry guard found no `## Planner Handoff` marker, or the user picked "Other context" at the entry guard prompt), it runs Lane B — detect context, elicit preferences, write a plan, hand off to specialists. This guide covers Lane B end-to-end.
+When the entry guard finds no `## Planner Handoff` marker or the user chooses “Other context,” run Lane B: detect context, elicit preferences, write a plan, and hand off to specialists. This applies to non-trivial UiPath requests without a PDD: multi-project orchestration or requests still ambiguous after detection. Single-project requests exit at Step 2 and load the specialist directly.
 
-> Lane B is for non-trivial UiPath requests without a PDD: multi-project orchestration, or requests still ambiguous after detection. Single-project requests exit at Step 2 — the specialist is loaded directly, no plan is written.
-
-Steps run in this order — **detection before elicitation** — so every skip-rule input exists before the question batch is built.
+Run detection before elicitation so skip-rule inputs exist before questions are built.
 
 ## Step 1 — Detect before asking (no prompts)
 
-All sub-steps are non-interactive. Run them first; their outputs drive the Step 2 exit and the Step 3 skip rules.
+Run all sub-steps non-interactively.
 
-1. **Provided context document** — if the entry guard classified a document as "Other context", read it now. Any question its content answers counts as resolved; its content feeds the plan.
+1. **Provided context document.** If the entry guard classified a document as “Other context,” read it. Resolve questions answered by it and feed its content into the plan.
 
-2. **Filesystem detection** — use `Glob` / `Read` / `Grep` (cross-platform) in current directory, then in the parent, NEVER shell-specific pipelines (`ls` globs, `grep` over pipes, `/dev/null` fail on native PowerShell):
-   - `Glob`: `project.json`, `*.xaml`, `*.cs`, `*.flow`, `flow_files/*.flow`, `*.bpmn`, `caseplan.json`, `agent.json`, `pyproject.toml`, `uipath.json`, `package.json`, `.uipath/*`, `app.config.json`, `*.uipx`, `element.json`, `*.py`.
-   - `project.json` found → `Read` it and check `targetFramework` and dependencies structurally (no regex-over-cat).
-   - `pyproject.toml` found → `Read` it and disambiguate: an agent-framework dependency (`langgraph`, `llamaindex`, `openai-agents`) or a sibling `agent.json` → **Agents**; a sibling `uipath.json` with a `functions` map (or `entry-points.json` from `uip function init`) → **Functions**; a bare `uipath` dependency with neither → inspect further or ask (a `.venv/` directory is NOT required and proves nothing).
-   - Root-level `*.json` with none of the above → `Grep` for `"document.dsl"` (API Workflow project).
+2. **Filesystem detection.** Use `Glob`, `Read`, and `Grep` cross-platform, first in the current directory and then the parent. Never use shell-specific pipelines (`ls` globs, `grep` over pipes, `/dev/null` fail on native PowerShell).
+
+   Search for: `project.json`, `*.xaml`, `*.cs`, `*.flow`, `flow_files/*.flow`, `*.bpmn`, `caseplan.json`, `agent.json`, `pyproject.toml`, `uipath.json`, `package.json`, `.uipath/*`, `app.config.json`, `*.uipx`, `element.json`, `*.py`.
+
+   When `project.json` is found, read it and check `targetFramework` and dependencies structurally; do not use regex-over-cat. When `pyproject.toml` is found, read it and disambiguate:
+   - An agent-framework dependency (`langgraph`, `llamaindex`, `openai-agents`) or sibling `agent.json` → **Agents**.
+   - A sibling `uipath.json` with a `functions` map (or `entry-points.json` from `uip function init`) → **Functions**.
+   - A bare `uipath` dependency with neither → inspect further or ask.
+   - A `.venv/` directory is not required and proves nothing.
+
+   For root-level `*.json` with none of the above, run `Grep` for `"document.dsl"` (API Workflow project).
 
    | Filesystem signal | Plan skill |
    |---|---|
@@ -34,76 +38,69 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
    | `*.uipx` | `uipath-solution` (deploy/lifecycle ops) |
    | `project.json` only (no `.cs`/`.xaml`) | `uipath-rpa` |
 
-   Multiple signals → the request likely spans projects; classify with the multi-skill patterns below.
+   Multiple signals indicate the request likely spans projects; use the multi-skill patterns below. No signals means greenfield; infer project type in sub-step 4.
 
-   No signals → greenfield request (the normal planning-phase case); project type comes from sub-step 4 inference.
+3. **Multi-skill classification.** Check the request against the named patterns in [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md): “build”+“deploy,” “build”+“verify,” and one product depending on another. Record matched patterns.
 
-3. **Multi-skill classification** — check the request against the named patterns in [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md) ("build"+"deploy", "build"+"verify", one product depending on another). Record the matched pattern, if any.
+4. **Product/project-type inference — need-driven, not keyword.** If signals or explicit naming do not decide the type, use [Product Selection Guide → Level 1](product-selection-guide.md#level-1--primary-scope-selection):
+   - Explicit naming wins (`xaml workflow`, `coded workflow`, `.cs file`, `low-code`); record `Project type: XAML` or `Project type: C# coded`.
+   - “AI”/“agent” does not force an Agent. Apply the **determinism gate**: rule-expressible decisions → RPA/API; genuine judgment → Agent.
+   - Resolve “flow”/“process”/“orchestrate” with [Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case) (Flow vs BPMN vs Case); never assume Flow from the word alone.
+   - Headless system-to-system → API Workflow; document extraction → IXP; user-facing screen → Coded Apps; reusable component → RPA Library; regression pack → Test Automation; tenant/resource operations only → `uipath-platform`.
+   - Unless contradicted, default to **RPA workflow (XAML)** for UI / Excel / email / file work.
 
-4. **Product/project-type inference — need-driven, not keyword.** When no filesystem signal or explicit naming decides it, type the request with the [Product Selection Guide → Level 1](product-selection-guide.md#level-1--primary-scope-selection) need bullets, not surface keywords:
-   - Explicit naming still wins ("xaml workflow", "coded workflow", ".cs file", "low-code") → record `Project type: XAML` or `Project type: C# coded`.
-   - "AI"/"agent" wording does NOT force an Agent — apply the **determinism gate**: rule-expressible decisions → RPA/API; genuine judgment → Agent.
-   - "flow"/"process"/"orchestrate" resolves via the [Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case) (Flow vs BPMN vs Case) — never assume Flow from the word alone.
-   - Headless system-to-system → API Workflow; document extraction → IXP; user-facing screen → Coded Apps; reusable component → RPA Library; regression pack → Test Automation; tenant/resource ops only → `uipath-platform`.
-   - Default when nothing contradicts it → **RPA workflow (XAML)** — the most common case for UI / Excel / email / file work.
-
-5. **Delivery-model resolution** — explicit signals ("Automation Suite", "on-prem", "self-hosted", "air-gapped") → record `Delivery model: <value>`. Otherwise run the best-effort `uip login status` preflight and map the host per [sdd-generation-guide.md → Step 0](sdd-generation-guide.md#step-0-determine-execution-mode--delivery-model). Still unresolved AND any candidate product is delivery-gated (anything beyond core RPA + Orchestrator: Maestro, Agents, Coded Apps, API Workflows, Solutions `.uipx`) → add the delivery-model question to the Step 3 batch. If the user answers "not sure" (or cannot be asked), record `Delivery model: unspecified — assumed cloud [ASSUMPTION]` in the plan header plus which products the assumption gates — never omit the field when a gated product is in play. Apply the [Constraint Gate](product-selection-guide.md#constraint-gate) against [platform-availability-guide.md](platform-availability-guide.md) before recommending any product.
+5. **Delivery-model resolution.** Explicit signals (`Automation Suite`, `on-prem`, `self-hosted`, `air-gapped`) set `Delivery model: <value>`. Otherwise run the best-effort `uip login status` preflight and map the host using [sdd-generation-guide.md → Step 0](sdd-generation-guide.md#step-0-determine-execution-mode--delivery-model). If unresolved and any candidate is delivery-gated (anything beyond core RPA + Orchestrator: Maestro, Agents, Coded Apps, API Workflows, Solutions `.uipx`), add the delivery-model question to Step 3. If the user says “not sure” or cannot be asked, record `Delivery model: unspecified — assumed cloud [ASSUMPTION]` in the plan header and list products gated by that assumption. Never omit this field when a gated product is involved. Apply the [Constraint Gate](product-selection-guide.md#constraint-gate) against [platform-availability-guide.md](platform-availability-guide.md) before recommending products.
 
 ## Step 2 — Single-skill exit (stop Lane B)
 
-If Step 1 resolves the request to **one project owned end-to-end by one specialist** — even when it bundles inline HITL / script / connector nodes or its own solution wrapper (author sub-steps, per the Skip paragraph in SKILL.md) — **stop Lane B**:
+If Step 1 resolves one project owned end-to-end by one specialist—even with inline HITL / script / connector nodes or its own solution wrapper, authored per the Skip paragraph in SKILL.md—stop Lane B:
 
-1. Do NOT write a plan file. Do NOT emit `TaskCreate` calls. Do NOT ask the Step 3 batch.
-2. Say which specialist owns it and why ("Single-project `.flow` build — loading `uipath-maestro-flow` directly").
-3. Hand off the Step 1 context (detected paths, delivery model, any resolved answers) so the specialist does not re-discover it.
+1. Do not write a plan file, emit `TaskCreate` calls, or ask the Step 3 batch.
+2. State which specialist owns it and why, e.g. “Single-project `.flow` build — loading `uipath-maestro-flow` directly.”
+3. Hand off detected paths, delivery model, and resolved answers.
 
-Lane B continues past this step ONLY for multi-project requests (a matched multi-skill pattern, multiple filesystem signals, or separate buildable projects) or requests still genuinely ambiguous after Step 1 inference and the Q3 fallback.
+Continue Lane B only for multi-project requests (matched multi-skill pattern, multiple filesystem signals, or separate buildable projects) or requests genuinely ambiguous after Step 1 inference and the Q3 fallback.
 
 ## Step 3 — Upfront elicitation (batched)
 
-Bundle every unresolved question from the table below into **one** `AskUserQuestion` call. Do not ask one at a time; do not split across turns. If a question is already resolved (user's request, context doc, Step 1 detection), omit it from the batch. If **all** are resolved, do not call `AskUserQuestion` at all and record the inferred values in the plan header with a one-line note in Decisions & Trade-offs.
+Put every unresolved question below into **one** `AskUserQuestion` call. Do not ask one at a time or split across turns. Omit questions resolved by the request, context document, or Step 1. If all are resolved, do not call `AskUserQuestion`; record inferred values in the plan header with a one-line note in Decisions & Trade-offs. Use the phrasing rules in [pdd-driven-lane-guide.md → Step 5](pdd-driven-lane-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications): no internal jargon, domain names, or app names in question text.
 
-Question phrasing follows the rules in [pdd-driven-lane-guide.md → Step 5](pdd-driven-lane-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications): no internal jargon, no domain or app names in question text.
-
-### Skip-rules table (apply before building the batch)
-
-All inputs below are known by the end of Step 1/2 — no skip rule depends on a later step.
+### Skip-rules table
 
 | Question | Skip when | Default if skipped |
 |---|---|---|
-| Q1 Generation approach | Request is simple and well-defined; the user is modifying an existing automation. | `simultaneous` |
-| Q2 Execution autonomy | The user already stated it ("autonomous", "check with me"). Never inferred from Q1 — planning approach and execution autonomy are separate decisions. | `autonomous` |
+| Q1 Generation approach | Request is simple and well-defined; user is modifying an existing automation. | `simultaneous` |
+| Q2 Execution autonomy | User already stated it (“autonomous”, “check with me”). Never infer it from Q1; planning approach and execution autonomy are separate. | `autonomous` |
 | Q3 Project type fallback | Step 1 resolved the type (explicit naming, need-driven inference, or filesystem). | `RPA workflow (XAML)` |
-| Delivery model | Resolved at Step 1.5 (explicit, preflight); or no delivery-gated product is a candidate. | `unspecified — assumed cloud [ASSUMPTION]` + affected products note |
+| Delivery model | Resolved at Step 1.5 (explicit, preflight); or no delivery-gated product is a candidate. | `unspecified — assumed cloud [ASSUMPTION]` + affected-products note |
 
 ### Question 1 — Generation approach
+
+Ask:
 
 > How would you like me to work?
 >
 > 1. **Explore first, then plan** — analyze the project and requirements, run non-mutating discovery, then present a plan for approval before any project changes *(recommended for non-trivial requests)*
 > 2. **Explore, plan, and execute simultaneously** — emit the plan as text and the main agent starts executing right away
 
-**If "explore first, then plan":**
-- You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
-- Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution.
-- After Steps 4–5, call `EnterPlanMode` with the plan. User approves → `ExitPlanMode`.
+For **explore first, then plan**, you may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, and reading `project.json`. Do not run commands that mutate the project (create files, register targets, install packages); execution owns them. After Steps 4–5, call `EnterPlanMode` with the plan; after approval, call `ExitPlanMode`.
 
-**If "explore, plan, and execute simultaneously":**
-- Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
-- Do NOT call `EnterPlanMode`.
+For **explore, plan, and execute simultaneously**, emit the plan as text in Step 5, immediately load the first specialist skill, and do not call `EnterPlanMode`.
 
 ### Question 2 — Execution autonomy
 
-Asked in the same batch as Q1 — choosing explore-first does NOT imply autonomous execution afterwards; they are independent decisions.
+Ask in the same batch as Q1. Explore-first does not imply autonomous execution.
 
 > Once execution starts, how should I handle ambiguity or scope concerns?
 >
 > 1. **Autonomous to completion** *(recommended)* — follow the plan end-to-end without stopping for confirmation. Specialist skills handle their own pause points (auth failure, UI capture limits, etc.).
 > 2. **Interactive** — pause and confirm on structural decisions, scope concerns, or side-effect actions during execution.
 
-Record the answer in the plan header as `Execution autonomy: autonomous | interactive`. Task prompts carry the plan path (Step 5), so specialists can recover this and other decisions at runtime — in autonomous mode they do NOT re-ask decisions the plan already makes.
+Record `Execution autonomy: autonomous | interactive` in the plan header. Task prompts carry the plan path (Step 5); specialists must recover decisions from it and, in autonomous mode, must not re-ask decisions already made there.
 
-### Question 3 — Project type fallback (only when Step 1 could not infer)
+### Question 3 — Project type fallback
+
+Ask only when Step 1 could not infer the type:
 
 > Q3 — What kind of project should I scaffold?
 >
@@ -112,44 +109,42 @@ Record the answer in the plan header as `Execution autonomy: autonomous | intera
 > 3. **Orchestration** — coordinate multiple automations (Maestro Flow / BPMN / Case — disambiguated by the need)
 > 4. **Headless / other** — API Workflow, custom web app, document extraction (IXP), reusable Library, Test Automation — say which
 
-(The question UI always offers free-text "Other" — a specific answer there overrides the options.) If the user picks **RPA workflow**, record `Project type: XAML` and move on. **Never follow up with "XAML or C#?"** — that authoring-mode decision belongs to `uipath-rpa`, not the planner. Coded mode is set only when the user independently says "coded workflow" or ".cs file"; never as a follow-up, and never surface C# coded as a top-level recommendation for routine UI automation.
+The question UI always offers free-text “Other”; a specific answer overrides the options. If the user chooses **RPA workflow**, record `Project type: XAML`. Never follow up with “XAML or C#?”; authoring mode belongs to `uipath-rpa`. Set coded mode only when the user independently says “coded workflow” or “.cs file”; never ask it as a follow-up or recommend C# coded as a top-level option for routine UI automation.
 
-### Authoring surface — never a planner concern
+### Authoring surface
 
-Studio, Studio Web, VS Code — presentation layers over the same artifacts. The planner never asks about, derives, records, or conditions on them; each specialist owns its own surface. User words mentioning a surface travel as ordinary requirement prose in the task prompt, like any other stated preference. Invariant: in explore-first mode, nothing syncs to the tenant before plan approval. The only environment input the planner models is the **delivery model** (Automation Cloud / cloud variant / Automation Suite / standalone).
+Studio, Studio Web, and VS Code are presentation layers over the same artifacts. Never ask about, derive, record, or condition on them; treat surface terms as ordinary requirement prose. In explore-first mode, nothing syncs to the tenant before plan approval. Model only **delivery model** (Automation Cloud / cloud variant / Automation Suite / standalone) as environment input.
 
-### Packaging (derived — no standing question)
+### Packaging
 
-For every plan with a generation skill, record `Packaging: standalone | solution` in the plan header per [Product Selection Guide → layer 4](product-selection-guide.md#how-selection-works--four-layers): single project → `standalone` (default); multi-project / cross-product / team standardization → `solution` (`.uipx` via `uipath-solution`). This is the deploy-skill decision — `uipath-solution` for `solution`, `uipath-platform` for `standalone` non-solution publishes. Ask only if the user's own words conflict with the derivation.
+For every plan with a generation skill, record `Packaging: standalone | solution` per [Product Selection Guide → layer 4](product-selection-guide.md#how-selection-works--four-layers): single project → `standalone` (default); multi-project / cross-product / team standardization → `solution` (`.uipx` via `uipath-solution`). This selects deployment: `uipath-solution` for `solution`; `uipath-platform` for `standalone` non-solution publishes. Ask only if the user's words conflict with the derivation.
 
-### Default — Expression language
+### Expression language
 
-Always use **VB.NET** for XAML workflows. Note this in the plan. Do not ask.
+Always use **VB.NET** for XAML workflows and note it in the plan. Do not ask.
 
 ## Step 4 — UI element targeting (only when the plan includes UI automation)
 
-If the plan loads `uipath-rpa` for a workflow that clicks, types into, or reads elements in a desktop or browser app, ask the three UI questions in **one batched** `AskUserQuestion` call (see [pdd-driven-lane-guide.md → Step 5](pdd-driven-lane-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications) for the exact wording — same questions, same skip rules apply). Skip any question already resolved from the user's request.
+If the plan loads `uipath-rpa` for a workflow that clicks, types into, or reads desktop or browser elements, ask the three UI questions in **one batched** `AskUserQuestion` call. Use the exact wording and skip rules in [pdd-driven-lane-guide.md → Step 5](pdd-driven-lane-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications); skip questions already resolved by the request. Skip the entire batch for pure data processing, API calls, agent-only, or flow-only plans.
 
-Skip the entire batch for non-UI plans (pure data processing, API calls, agent-only, flow-only).
-
-Record the answers in the plan header AND summarize them in the relevant task's Skill prompt. The task prompt also carries the plan path (Step 5), so a resumed or separately-executed task can recover the full decision set from the file.
+Record answers in the plan header and summarize them in the relevant task's Skill prompt. Include the plan path so resumed or separately executed tasks can recover all decisions.
 
 ## Step 5 — Write the plan
 
-Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → Non-PDD lane](plan-and-tasks-format.md#non-pdd-lane-featuremd). Plan body holds the task list with the same task row schema as Lane A.
+Compose `<feature>.md` using [plan-and-tasks-format.md → Non-PDD lane](plan-and-tasks-format.md#non-pdd-lane-featuremd). The body contains the task list with the same task-row schema as Lane A.
 
-**Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of the file written below (mirroring Lane A's embedded SDD path). `TaskCreate` copies prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
+Every task's Skill prompt must embed the exact relative or absolute path of the written plan, mirroring Lane A's embedded SDD path. `TaskCreate` copies prompts verbatim; never use a bare “this plan.”
 
 ### Self-review before saving
 
 1. **Coverage** — every requirement appears in at least one task.
-2. **Placeholder scan** — no "TBD", "TODO", "as needed", "if appropriate", "similar to".
-3. **Skill order** — correct specialist per task; skills load in the right order (e.g., RPA before platform deploy; testing before deploy).
+2. **Placeholder scan** — no `TBD`, `TODO`, `as needed`, `if appropriate`, or `similar to`.
+3. **Skill order** — assign and order specialist skills correctly (for example, RPA before platform deploy; testing before deploy).
 4. **Validation gaps** — every generation task ends with a `Validate:` compile / build / lint check.
-5. **Testing task present** — a dedicated `Testing (MANDATORY)` task exists for every generation skill in the plan. Routes to the specialist's testing references — does not describe the procedure.
-6. **Plan path present** — every Skill prompt names the plan file path (not "this plan").
-7. **No internal-flow leakage** — the plan does not duplicate steps from any specialist's own references.
-8. **Anti-hallucination rule** appended to every Skill prompt.
+5. **Testing task present** — include a dedicated `Testing (MANDATORY)` task for every generation skill. Route to specialist testing references; do not describe the procedure.
+6. **Plan path present** — every Skill prompt names the plan path, not “this plan.”
+7. **No internal-flow leakage** — do not duplicate specialist reference steps.
+8. **Anti-hallucination rule** — append it to every Skill prompt.
 
 Fix issues before saving.
 
@@ -157,39 +152,38 @@ Fix issues before saving.
 
 Save as `YYYY-MM-DD-<feature-name>.md`:
 
-- **Project directory exists** (`project.json`, `flow_files/`, `.uipath/`, or `pyproject.toml`) → save to `docs/plans/` within the project. Create the directory if needed.
-- **No project directory** → save to `./plans/` (relative to the current working directory). Create the directory if needed.
+- If a project directory exists (`project.json`, `flow_files/`, `.uipath/`, or `pyproject.toml`), save under `docs/plans/` within the project; create the directory if needed.
+- Otherwise save under `./plans/`; create the directory if needed.
 
 ### Resume handling
 
-If a plan file already exists at the target path, ask the user via `AskUserQuestion`:
+If a plan already exists at the target path, ask via `AskUserQuestion`:
 
 > A plan file already exists at `<path>`. How should I proceed?
 >
 > 1. **Continue with the current plan** *(recommended)* — pick up where you left off; checkbox state preserved
 > 2. **Regenerate from the current request** — discard the current plan and rebuild
 
-Option 1: read existing plan → recreate live `TaskCreate` calls with status preserved → done.
-Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, emit live tasks. Same regenerate algorithm as Lane A — see [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
+For option 1, read the existing plan, recreate live `TaskCreate` calls with status preserved, and finish. For option 2, parse the request fresh, run identity-matching against the old file to preserve completed work, write the new plan, and emit live tasks. Use [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
 
 ## Step 6 — Present the plan
 
-- **Explore first, then plan:** call `EnterPlanMode` with the plan content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
-- **Explore, plan, and execute simultaneously:** emit the plan as text. Then immediately emit live `TaskCreate` calls. Main agent starts executing.
+- **Explore first, then plan:** call `EnterPlanMode` with the plan content. After approval, call `ExitPlanMode`, then emit live `TaskCreate` calls.
+- **Explore, plan, and execute simultaneously:** emit the plan as text, then immediately emit live `TaskCreate` calls; the main agent starts executing.
 
 ## Lane B budget
 
-Step 3 is **always one batched call** (Q1 + Q2 + optional Q3/delivery in a single `AskUserQuestion` — at most 4 question objects per call, comfortably within the cap); Step 4 is one batched call when the plan has UI automation; resume adds one. The realistic floor is 0 calls and the realistic ceiling is 3.
+Step 3 is always one batched call (Q1 + Q2 + optional Q3/delivery in one `AskUserQuestion`; at most 4 question objects). Step 4 is one batched call when UI automation exists; resume adds one. Realistic floor: 0. Realistic ceiling: 3.
 
 | Scenario | `AskUserQuestion` calls |
-|---|---|
-| Single-skill exit at Step 2 | **0** (no plan, no batch — specialist loaded directly) |
-| Simple multi-skill, simultaneous, all signals clear, no UI | **0** (Step 3 fully resolved from context, no UI batch) |
-| Non-trivial, no UI automation | **1** (Step 3 batched) |
-| Non-trivial, with UI automation | **2** (Step 3 batched + Step 4 UI batch) |
-| Vague request, with UI automation | **2** (Step 3 batched — Q3 is part of the same batch — + Step 4 UI batch) |
-| Resume scenario | **+1** (continue/regenerate) |
+|---|---:|
+| Single-skill exit at Step 2 | **0** (no plan, batch, or prompt) |
+| Simple multi-skill, simultaneous, all signals clear, no UI | **0** |
+| Non-trivial, no UI automation | **1** (Step 3 batch) |
+| Non-trivial, with UI automation | **2** (Step 3 + Step 4 batches) |
+| Vague request, with UI automation | **2** (Step 3 batch including Q3 + Step 4 batch) |
+| Resume scenario | **+1** |
 | Realistic maximum | **3** |
 | Hard cap (per-phase prompt budget, Critical Rules) | **5** |
 
-The 5-call hard cap is defined in the planner's Critical Rules. If batching collapses the elicitation correctly, you should never approach it.
+The 5-call hard cap is defined in the planner's Critical Rules. Correct batching should keep usage below it.

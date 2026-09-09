@@ -1,221 +1,170 @@
 ---
 name: uipath-planner
-description: "UiPath solution planner & designer. Always invoke for PDD / SDD files (`pdd.md`, `*-sdd.md`). Authors a Solution Design Document (SDD) from a Process Design Document (PDD) — or from another process-knowledge source (Confluence page, SOP, BPMN model, meeting transcript) — then derives the multi-skill, multi-project task list from an SDD, emitting live TaskCreate calls. Known-product single-project build, no PDD/SDD→that skill; ambiguous/'what should I build'→here. For `uip solution` lifecycle & `.uipx`→uipath-solution. For non-solution Orchestrator/IS/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For building/editing .bpmn→uipath-maestro-bpmn (a .bpmn as design input routes here). For agent.json/.py→uipath-agents. Sole case-SDD author. For caseplan.json build→uipath-maestro-case."
+description: "UiPath solution planner & designer. Always invoke for PDD / SDD files (`pdd.md`, `*-sdd.md`). Authors an SDD from a PDD — or another process-knowledge source (Confluence page, SOP, BPMN model, meeting transcript) — then derives the multi-skill, multi-project task list from an SDD, emitting live TaskCreate calls. Sole case-SDD author. Known-product single-project build (no PDD/SDD)→that skill; ambiguous / 'what should I build'→here. Route elsewhere: `uip solution` lifecycle & `.uipx`→uipath-solution; non-solution Orchestrator/IS/auth/traces→uipath-platform; .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn build/edit→uipath-maestro-bpmn (a .bpmn as design input routes here); agent.json/.py→uipath-agents; caseplan.json build→uipath-maestro-case."
 when_to_use: "User provides a PDD/SDD (or another process-knowledge source or a prompt — the planner asks clarifying questions), says 'generate SDD'/'analyze this PDD'/design/architect a UiPath solution, OR makes a non-trivial request spanning SEPARATE buildable projects (a Flow orchestrating RPA processes that must be built, 'build a solution from scratch'). A PDD or SDD ALWAYS routes here (Phase D) — author its SDD even for ONE RPA process; never hand a raw PDD to a specialist. Load BEFORE authoring an SDD or deriving tasks. Skip ONLY when no PDD/SDD and the request targets one project — even with inline HITL/script/connector nodes — invoke that specialist directly. Flow calling only existing/deployed processes→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Glob, Grep, WebFetch, AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskUpdate, TaskList
 ---
 
 # UiPath Planner — Design & Task Derivation
 
-Two jobs, one entry point:
+Two jobs share one entry point:
 
-1. **Design** — turn a Process Design Document (PDD) into an implementation-ready Solution Design Document (SDD). Select scope (single product or multi-project Solution), write the SDD.
-2. **Plan** — derive the per-skill task list from an SDD (or a non-PDD request), route to specialists, emit live `TaskCreate` calls.
+1. **Design:** convert a PDD or equivalent process source into an implementation-ready SDD, selecting one product or a multi-project Solution.
+2. **Plan:** derive per-skill tasks from an SDD or non-PDD request, route to specialists, and emit live `TaskCreate` calls.
 
-Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live tasks — implementation always routes to a specialist.
+Never implement. Author only SDD or plan/tasks markdown and use live `TaskCreate` for routing; implementation always goes to a specialist.
 
-The skill has three paths, decided by the **Entry Guard**:
+The Entry Guard selects:
 
-- **Phase D — Design.** Input is a PDD, or an explicit "design / architect this" request. Author the SDD; the SDD write ends the turn, and Lane A continues on the next turn. See [sdd-generation-guide.md](references/sdd-generation-guide.md). **Case Management designs run through Phase D's Case Design Lane** ([case-design-lane-guide.md](references/case/case-design-lane-guide.md)) — a conversational design ending in ONE Case Review confirmation.
-- **Lane A — PDD-driven.** Input is an SDD with the `## Planner Handoff` marker (written by Phase D, or hand-written). Read it, derive tasks, emit live tasks. Zero to two user prompts. See [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
-- **Lane B — Non-PDD.** No SDD; a non-PDD multi-project request. Elicit preferences, detect project type, write a plan, emit live tasks. 0–3 prompts (5-call cap). See [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
+- **Phase D — Design:** PDD/process source or explicit design/architecture request. The SDD write ends the turn; Lane A continues next turn. See [sdd-generation-guide.md](references/sdd-generation-guide.md). Case Management uses [case-design-lane-guide.md](references/case/case-design-lane-guide.md), including its single Case Review confirmation.
+- **Lane A — PDD-driven:** SDD containing `## Planner Handoff` or `<!-- planner-handoff:v1 -->`; derive tasks and emit live tasks. Zero to two prompts. See [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
+- **Lane B — Non-PDD:** no SDD and a non-PDD multi-project request; elicit preferences, detect project type, write the plan, and emit live tasks. At most five calls and 0–3 prompts. See [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
-## When to Use This Skill
+## When to Use
 
-- User provides a **PDD or any process-knowledge source** — a PDD, Confluence page, BPMN model, meeting/Zoom transcript, SOP, or requirements doc (as PDF / Word / Markdown / `.txt` / `.bpmn` / pasted) — and asks to design or build from it → Phase D
-- User asks to **design / architect / generate an SDD** for a UiPath automation → Phase D
-- User provides an **SDD path** → Lane A
-- The request is **non-trivial** — spans **separate buildable projects** that each need their own specialist (a Flow orchestrating standalone RPA processes or agents that must themselves be built) → Lane B
-- The request is **ambiguous** — no single specialist clearly matches, or "what can I build?"
+Use for PDD/process sources from Confluence, BPMN, transcripts, SOPs, requirements, PDF, Word, Markdown, `.txt`, `.bpmn`, or pasted content; explicit design/architect/SDD requests; an SDD path; or non-trivial work spanning distinct buildable projects that each need a specialist. Use for ambiguous multi-project requests such as “what can I build?”.
 
-**Skip this skill for single-project tasks** — load the specialist directly. A request is **single-project** (one specialist owns it end-to-end) even when it bundles several things *inside one project*: a Flow with script nodes plus an inline HITL approval step plus its own solution wrapper is **one** `uipath-maestro-flow` task. Inline nodes (HITL QuickForm, script, connector, inline agent) and solution scaffolding are author sub-steps the specialist performs itself — not separate skills to orchestrate. Counting them as distinct skills and emitting a plan is the most common mis-trigger. This skill is only for work spanning **separate buildable projects** (distinct `.uipx` projects), or for turning a PDD into an architecture.
+Skip single-project work: one specialist owns it end-to-end even if it contains a Flow, scripts, inline HITL, connectors, agents, or solution scaffolding. This skill covers architecture from a process source or distinct `.uipx` projects only.
 
 ## Critical Rules
 
-1. **Plan & design only — never author automation code.** Outputs: SDD markdown (Phase D), plan/tasks markdown (Lanes A/B), and live `TaskCreate` calls. NEVER write XAML, C#, Python, JSON, or project/scaffold files. Implementation always routes to a specialist. (SDD/plan authoring is the *only* file authoring this skill does.)
-2. **Run the Entry Guard first.** Inspect the input and route to Phase D / Lane A / Lane B before anything else.
-3. **Select scope before designing architecture (Phase D) — and gate every product by platform constraints.** Single product (RPA Process/Library/Test Auto, Maestro Flow, Maestro BPMN, Case, Agents, Coded Apps, API Workflows) vs multi-project Solution determines the template(s) and project structure. Use the [Product Selection Guide](references/product-selection-guide.md): Constraint Gate → Level 1 → 1.5 (RPA sub-type) → 1.75 (Solution composition) → 2.5 (project decomposition). The delivery model (Cloud / Automation Suite / standalone — asked at Phase D entry) blocks unavailable products via [platform-availability-guide.md](references/platform-availability-guide.md); user-excluded products are never re-offered.
-4. **The SDD is architecture only — no task lists.** Phase D produces the SDD (Project Structure, Data Definitions, Testing Strategy, …). Task derivation is Lane A's job. Never put Task 1 / Task N templates or *implementation* `TaskCreate` calls in the SDD. End the SDD with a `## Next Steps` section. (Progress-tracking `TaskCreate` calls are a separate, allowed use.)
-5. **Write the `## Planner Handoff` header AND the `<!-- planner-handoff:v1 -->` marker into every SDD.** Load-bearing detection contract — the Entry Guard detects either signal (redundant on purpose). `Generated by: uipath-planner`. Fields: Status (draft → ready), Execution autonomy, Delivery model, SDD scope, the solution-root block (solution scope only: Solution root SDD, Solution ID, Project SDD role root|child, Independently executable: no on children — the root's Project Inventory + SDD Index are the sole executable entry; children and root share ONE canonical tasks file), Project list section, Tasks file, Generated by, Generation date, Template validation. The first incremental write stamps `Status: draft`; only after SME resolution AND the template-superset check does Phase D flip it to `ready` (+ `Template validation: passed`) — the marker identifies a planner SDD, the Status field says whether it is consumable. Lane A derives tasks from `ready` only (missing field = legacy → treat as ready). Every template places the header after `## Document History`.
-6. **Honour the template section structure as a hard superset contract.** Write single-product scope to `<PROCESS_NAME_KEBAB>-sdd.md`; write Solution scope to a `<SOLUTION_NAME_KEBAB>-solution-sdd.md` overview plus one `<PROJECT_NAME_KEBAB>-sdd.md` per project. If the user specifies an output path for the SDD, use it instead of these defaults. After writing, diff the generated H2/H3 headings against the template TOC — the generated set MUST be a superset. A missing template-required H2/H3 is an SDD defect, not an `[SME REVIEW]` item — regenerate it.
-7. **Testing is mandatory and thorough — never offer "happy path only".** Phase D writes a full Testing Strategy section (happy path, edge cases, error scenarios, e2e for Master Projects). The plan adds a mandatory Testing task **per generation skill**, routing to that specialist's testing references — never describing the procedure inline. Implementation specialists may scope down at execution time; the SDD and plan do not.
-8. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe specialist-internal flows (target configuration, OR registration, XAML pipelines, HITL field/outcome schema, auth, testing procedures). For a HITL step, pass business intent only ("manager approves or rejects an expense; can add a reason if rejected") — never a field-level spec; the HITL specialist chooses the schema shape.
-9. **Per-phase prompt budget.** Phase D runs under its own checkpoint model (see [sdd-generation-guide.md](references/sdd-generation-guide.md)) — no hard numeric cap. Lanes A and B each cap at **5 `AskUserQuestion` calls**. Ask **execution autonomy exactly once** (Phase D entry) and write it into the handoff header; Lane A reads it and never re-asks. Scope/UI answers resolved in Phase D flow forward via the SDD.
-10. **Fill gaps with `[DEFAULT]` or `[SME REVIEW]` — never silently invent business rules.** `[DEFAULT]` for industry-standard patterns (retry counts, timeouts); `[SME REVIEW]` for business-knowledge gaps. Resolve `[SME REVIEW]` items with the user before finalizing (they gate the `Status: ready` flip, not the Phase 3 Step 0 skeleton write). For Agent/Coded App gaps, use `AskUserQuestion` (proceed-with-gap-filling vs different product) — never auto-fallback.
-    - **These two tokens are the entire gap vocabulary, and their exact string is load-bearing.** Every downstream consumer — the `Action Required — SME Review Items` block, the gap counts, the `Status: ready` flip, Lane A's assumption carry-over, and any reviewer grepping the file — finds these items by exact match on `[SME REVIEW]` / `[DEFAULT]`.
-    - **Write the marker verbatim, with nothing else inside the brackets.** The explanatory note goes *after* the closing bracket: `| UiPath version | [SME REVIEW] not recorded in the PDD |`. Never fold the note inside (`[SME REVIEW — not recorded]`) and never substitute another word (`[PLACEHOLDER]`, `[TBD]`, `[TODO]`, `<fill in>`, `N/A`, prose like "to be confirmed"). A decorated or renamed marker is invisible to every consumer above — the gap silently disappears.
-    - **When you map or copy content out of another document** (a source SDD into a client template, a PDD into an SDD, one SDD section into another), **carry its markers through byte-for-byte.** Re-wording a marker you did not author destroys a gap someone else recorded. Add new markers for the gaps *you* find; never edit the ones already there.
+1. **Design and plan only.** Never author XAML, C#, Python, JSON, implementation files, automation code, or project/scaffold files.
+2. **Run the Entry Guard first.** Select Phase D, Lane A, or Lane B before other work.
+3. **Gate scope before Phase D architecture.** Select one product—RPA Process/Library/Test Automation, Maestro Flow, Maestro BPMN, Case, Agents, Coded Apps, or API Workflows—or a multi-project Solution. Follow [product-selection-guide.md](references/product-selection-guide.md): Constraint Gate → Level 1 → 1.5 RPA subtype → 1.75 Solution composition → 2.5 project decomposition. Resolve delivery model (Cloud, Automation Suite, or standalone) at Phase D entry and block unavailable products using [platform-availability-guide.md](references/platform-availability-guide.md); never re-offer excluded products.
+4. **SDD is architecture only.** Include Project Structure, Data Definitions, Testing Strategy, and template sections, but no task list or implementation `TaskCreate` calls. End with `## Next Steps`; progress-tracking `TaskCreate` calls are permitted.
+5. **Every SDD needs the handoff contract.** After `## Document History`, write both `## Planner Handoff` and `<!-- planner-handoff:v1 -->`; either signal detects the document. Include `Generated by: uipath-planner`, Status, Execution autonomy, Delivery model, SDD scope, applicable Solution root fields (`Solution root SDD`, `Solution ID`, `Project SDD role root|child`, and `Independently executable: no` on children), Project list, Tasks file, Generated by, Generation date, and Template validation. The first incremental write uses `Status: draft`; after SME resolution and template-superset validation use `Status: ready` and `Template validation: passed`. Lane A consumes ready only; missing Status is legacy/ready. A Solution root's Project Inventory and SDD Index are the sole executable entry; root and children share one canonical tasks file.
+6. **Templates are a hard superset.** Single-product output is `<PROCESS_NAME_KEBAB>-sdd.md`; Solution output is `<SOLUTION_NAME_KEBAB>-solution-sdd.md` plus `<PROJECT_NAME_KEBAB>-sdd.md` for each project. Honor a user-specified path. Compare generated H2/H3 headings with the template TOC; generated headings must be a superset. Regenerate missing required headings; never label them `[SME REVIEW]`.
+7. **Testing is mandatory and thorough.** Phase D includes happy path, edge cases, errors, and e2e for Master Projects. The plan adds one mandatory Testing task per generation skill, routed to that specialist's testing references; do not inline testing procedures. Specialists may scope down during execution, but the SDD and plan never offer happy-path-only testing.
+8. **Route, do not redescribe.** State which skill to load and order. Do not duplicate target configuration, Orchestrator registration, XAML pipelines, HITL schema, authentication, or testing procedures. For HITL, pass business intent only; the specialist selects fields, outcomes, and schema.
+9. **Prompt budgets.** Follow [sdd-generation-guide.md](references/sdd-generation-guide.md) for Phase D; it has no fixed numeric cap. Lanes A and B allow at most five `AskUserQuestion` calls. Ask execution autonomy exactly once at Phase D entry and write it to the handoff; Lane A reads it and never re-asks. Phase D scope/UI answers flow through the SDD.
+10. **Handle gaps explicitly.** Use `[DEFAULT]` only for industry-standard patterns such as retries/timeouts; use `[SME REVIEW]` for business gaps; never silently invent rules. Resolve SME items before ready. They do not block the Phase 3 Step 0 skeleton write; architecture-blocking unresolved items keep the SDD draft. For Agent/Coded App gaps, ask the user to choose gap filling or another product; never auto-fallback.
+    - Complete gap tokens are `[SME REVIEW]` and `[DEFAULT]`.
+    - Put nothing inside brackets: `| UiPath version | [SME REVIEW] not recorded in the PDD |`. Never use decorated markers or `[PLACEHOLDER]`, `[TBD]`, `[TODO]`, `<fill in>`, `N/A`, or prose replacements.
+    - Copy inherited markers byte-for-byte; add markers for new gaps but never rename or edit inherited ones.
 <!--skill-flavor:solution-terminal-artifact:start-->
-11. **The terminal artefact of a Solution build is a packed `.uipx`.** The SDD's `## Next Steps` section points the user at the `uipath-solution` skill (`uip solution init` → `project add` per project → `resources refresh` → `pack`). A bare project folder is not the deliverable. Exception: when the Constraint Gate blocks Solutions for the delivery model — standalone, Automation Suite older than 2.2510, or a user exclusion — rewrite Next Steps to per-package Orchestrator publish routed via `uipath-platform`.
+11. **The terminal artefact of a Solution build is a packed `.uipx`.** `## Next Steps` points to `uipath-solution`: `uip solution init` → `project add` per project → `resources refresh` → `pack`. A bare project folder is not the deliverable. If standalone, Automation Suite older than 2.2510, or user exclusion blocks Solutions, rewrite Next Steps to per-package Orchestrator publish routed via `uipath-platform`.
 <!--skill-flavor:solution-terminal-artifact:end-->
-12. **Never copy SDD architecture into the plan, and never invent selectors or UI targets.** The plan references SDD section paths in skill prompts; it does not duplicate architecture content. Selectors require application inspection at development time — leave them for the specialist.
-13. **Sole author of Case Management SDDs.** Every case design path — conversational, build handoff from `uipath-maestro-case`, draft finalization, PDD-driven — runs the Case Design Lane ([case-design-lane-guide.md](references/case/case-design-lane-guide.md)), which owns the conversation, the one confirmation, and the write; the case model and its defaults live in [case-design-layers-guide.md](references/case/case-design-layers-guide.md) and the render contract in the case SDD template. Design time resolves identities only — never schema discovery, project scaffolding, or create-on-missing; those are build concerns, recorded as gate decisions.
+12. Do not copy architecture into plans or invent selectors/UI targets. Reference SDD section paths in prompts; application inspection determines selectors.
+13. **Case ownership is exclusive.** All Case paths—conversation, `uipath-maestro-case` build handoff, draft finalization, and PDD-driven—use [case-design-lane-guide.md](references/case/case-design-lane-guide.md), which owns conversation, single confirmation, and write. Use [case-design-layers-guide.md](references/case/case-design-layers-guide.md) for model/defaults and the Case SDD template for rendering. Design resolves identities only; schema discovery, scaffolding, and create-on-missing are build concerns recorded as gate decisions.
 
 ## Entry Guard
 
-Run this guard before anything else.
+Run before anything else:
 
 ```text
-0. Product design-lane signals — checked first. Some products register a
-   dedicated Phase D design lane (today: Case Management —
-   references/case/case-design-lane-guide.md). Route to Phase D — Design through
-   the product's lane when any of these fire (the path taxonomy stays the three
-   paths above; a lane is Phase D's product-specific entrance):
-   - a build request handed off by that product's build skill because its
-     design input is missing (same conversation) → the lane's Build
-     handoff mode,
-   - a design request for that product with no PDD → the lane, direct,
-   - the product's design draft exists (or is named) and the user asks to
-     finalize it → the lane, draft finalization.
+0. Check dedicated product design lanes first. Products with one (currently
+   Case Management; see references/case/case-design-lane-guide.md) use it when
+   a build skill hands off for missing design input, the user requests design
+   without a PDD, or a named/existing design draft must be finalized. These are
+   Phase D paths using that lane's build-handoff, direct, or finalization mode.
 
 1. No document path?
-   - Explicit design/architect language ("design this", "architect this",
-     "generate an SDD"), OR an inline-described process with enough detail to
-     substitute for a PDD (process steps + applications + exceptions) → Phase D — Design.
-     A design/SDD request that is thin on process detail still routes to Phase D —
-     elicit the missing steps/applications/exceptions via `AskUserQuestion`
-     (Phase 1) rather than degrading to a Lane B plan.
-   - Otherwise → Lane B — Non-PDD. Lane B is the default for document-less
-     multi-project requests.
+   - Explicit design/architect language, or an inline process with enough
+     steps, applications, and exceptions -> Phase D.
+   - Thin design requests also go to Phase D; elicit detail in Phase 1.
+   - Otherwise -> Lane B, the default for document-less multi-project work.
 
-2. Document path → read its first ~50 lines.
-   - Contains `## Planner Handoff` OR `<!-- planner-handoff:v1 -->` → Lane A — PDD-driven.
-     (Either signal alone is sufficient — redundant on purpose.)
-   - Reads as a PDD **or any process-knowledge source** — a process
-     description (steps + applications + exceptions) in a PDD, Confluence
-     page, BPMN model, meeting/Zoom transcript, SOP, or requirements doc;
-     or a binary .pdf/.docx the user calls a PDD → Phase D — Design. Less-structured
-     sources (transcripts, thin wikis) still route to Phase D but trigger
-     heavier Phase 1 elicitation.
+2. Document path: read its first ~50 lines.
+   - `## Planner Handoff` or `<!-- planner-handoff:v1 -->` -> Lane A.
+   - A PDD/process source (including PDD-called .pdf/.docx) -> Phase D.
 
-3. Otherwise (no marker, ambiguous, or unparseable) — ask via AskUserQuestion:
+3. Otherwise/ambiguous/unparseable, ask:
+   What is the document at <path>?
+   1. PDD -> author the SDD (Phase D), then derive tasks
+   2. SDD -> generate tasks (Lane A)
+   3. Other context -> read it for Lane B questions and plan input
 
-   > What is the document at <path>?
-   > 1. Process Design Document (PDD) — author the SDD (Phase D — Design), then derive tasks
-   > 2. Solution Design Document (SDD) — proceed with task generation (Lane A — PDD-driven)
-   > 3. Other context — read it; use its content to resolve Lane B elicitation
-   >    questions (skip any question it answers) and as plan input (Lane B — Non-PDD)
-
-4. Route per the choice. For an SDD with no handoff header, proceed with safe
-   defaults — see pdd-driven-lane-guide.md Step 1 for the default set and how
-   defaults are surfaced to the user.
+4. Route by the answer. An SDD without a handoff uses safe defaults; see
+   pdd-driven-lane-guide.md Step 1 and surface those defaults.
 ```
 
-Do not pattern-match on filename or extension alone; those are unreliable. The `## Planner Handoff` heading and the `<!-- planner-handoff:v1 -->` marker are the load-bearing detection contract — Phase D writes both deterministically; the guard detects either.
+Do not route by filename or extension alone. The two handoff signals are the load-bearing detection contract; Phase D writes both deterministically and the guard detects either.
 
-## Phase D — Design (summary)
+## Phase D — Design
 
-When triggered: input is a PDD, or an explicit design/architect request. Three phases; full detail in [sdd-generation-guide.md](references/sdd-generation-guide.md). All user questions use numbered-choice format.
+Full procedure: [sdd-generation-guide.md](references/sdd-generation-guide.md). Ask numbered-choice questions.
 
-1. **Phase 1 — PDD Analysis & Scope Selection.** Ask execution mode (Autonomous or Interactive) and delivery model (Cloud / Automation Suite / standalone) in one batched call — skip the delivery question when the PDD or request states it, or when the `uip login status` preflight resolves it from the session `BaseUrl`. Read the full PDD, extract structured information (including environment & constraint signals, as-is/to-be), synthesize the need profile (Step 3.5 — product picks reason from the need, not keywords), then run Constraint Gate → Level 1 (primary scope) → Level 1.5 (RPA sub-type) → Level 1.75 (Solution composition) → Level 2.5 (project decomposition). Step 2.5 runs an authenticated `uip` library search (CLI auth required). In Interactive mode, present a summary with the recommended scope at the top and alternatives below; in Autonomous mode, proceed.
-2. **Phase 2 — Architecture Review.** Load the product-specific template. Generate the architectural core sections. Present for review in Interactive mode.
-3. **Phase 3 — Full SDD Generation.** **Step 0 is a hard gate — write the SDD skeleton to disk (header + `## Planner Handoff` header/marker with `Status: draft` + `## Decisions Made` / `## Recommended Scope` + the Phase 1/2 sections) BEFORE generating any Phase 3 section**, then append each remaining section as you generate it, so a watchdog kill still leaves a gradeable file. The disk write is progress task 4, never the last task. Generate all remaining sections including the thorough Testing Strategy. Resolve `[SME REVIEW]` items before finalizing (unresolved items carry recorded defaults and do not block `ready`; only architecture-blocking items keep `draft`). The LAST write flips `Status` to `ready` after the superset check passes. The SDD write is a **turn boundary**: in autonomous mode, end the turn after the SDD summary and continue into Lane A on the next turn (do not stack both phases in one turn).
+1. **Phase 1 — PDD Analysis & Scope Selection.** Batch execution mode (Autonomous/Interactive) and delivery model (Cloud/Automation Suite/standalone), omitting delivery when already stated or resolved by authenticated `uip login status` and `BaseUrl`. Read the full source; extract environment, constraints, as-is/to-be, and other structure; synthesize the need profile; run Constraint Gate → Level 1 → Level 1.5 → Level 1.75 → Level 2.5. Step 2.5 performs authenticated `uip` library search. Interactive mode presents the recommendation before alternatives; Autonomous proceeds.
+2. **Phase 2 — Architecture Review.** Load the product template, generate architectural core sections, and present them for Interactive review.
+3. **Phase 3 — Full SDD.** Step 0 is a hard gate: write the skeleton to disk—handoff/marker with `Status: draft`, `## Decisions Made`, `## Recommended Scope`, and Phase 1/2 sections—before later sections. Append remaining sections, including thorough Testing Strategy, incrementally. The disk write is progress task 4, not the final task. Resolve SME items; unresolved default-carried items may remain on a ready SDD, while architecture blockers keep it draft. Flip to ready only after the template-superset check. End after the SDD summary; Autonomous continues to Lane A next turn, never both phases in one turn.
 
-## Lane A — PDD-driven (summary)
-
-When triggered: an SDD with the `Planner Handoff` marker is detected (or Phase D just wrote one).
-
-1. Read the SDD's `## Planner Handoff` header. **`Status: draft` → refuse task derivation** (unfinished Phase D or a blocking SME item — offer resume or regenerate; missing field = legacy → ready; open default-carried SME items on a `ready` SDD travel into tasks as assumptions). Reuse the execution autonomy chosen in Phase D — do not re-ask. If `SDD scope: solution`, run the root algorithm: resolve the Solution root, verify every indexed child (exists, same Solution ID, ready), read every child's architecture, merge shared resources, emit ONE canonical tasks file (see pdd-driven-lane-guide Step 3).
-2. If `<process>-tasks.md` already exists, ask `continue / regenerate` (1 prompt). See [plan-and-tasks-format.md → Regenerate logic](references/plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
-3. Parse the SDD project list section. Pick the multi-skill pattern.
-4. Ask the UI batch (3 questions, 1 call) only if the SDD's Application Inventory lists UI applications and the answers aren't already resolved.
-5. Derive tasks. Write `<process>-tasks.md`.
-6. If `Execution autonomy: interactive` → `EnterPlanMode` for review. If `autonomous` → emit live tasks directly.
-7. Emit `TaskCreate` calls + `addBlockedBy` edges. Hand off.
+## Lane A — PDD-driven
 
 Full procedure: [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
 
-## Lane B — Non-PDD (summary)
+1. Read the handoff. Refuse `Status: draft`; offer resume/regenerate. Missing Status is legacy/ready. Carry open default-carried SME items into tasks as assumptions. Reuse Phase D autonomy. For `SDD scope: solution`, resolve the root; verify every indexed child exists, has the same Solution ID, and is ready; read all child architecture, merge shared resources, and emit one canonical tasks file as specified in Step 3.
+2. If `<process>-tasks.md` exists, ask `continue / regenerate` in one prompt and apply [plan-and-tasks-format.md](references/plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
+3. Parse the SDD project-list section and select the multi-skill pattern.
+4. Ask the three-question UI batch in one call only when the Application Inventory lists UI applications and answers are unresolved.
+5. Derive and write `<process>-tasks.md`.
+6. For interactive autonomy, use `EnterPlanMode`; for autonomous autonomy, emit live tasks directly.
+7. Emit `TaskCreate` calls and `addBlockedBy` edges, then hand off.
 
-When triggered: no SDD; a document-less multi-project request (the default route when no explicit design/architect language or inline-described process points to Phase D).
-
-1. Step 1 — detect before asking (no prompts): read any provided context doc, filesystem detection (`Glob`/`Read`/`Grep` — cross-platform), multi-skill pattern classification, need-driven project-type inference, delivery-model resolution.
-2. Step 2 — single-skill exit: one project owned end-to-end by one specialist → **stop Lane B**, load that specialist directly with the detected context (no plan file, no tasks).
-3. Step 3 — batched elicitation: generation approach + execution autonomy + project-type fallback (when still vague) + delivery model (when a gated product is a candidate) in **one** `AskUserQuestion` call. Drop any question already resolved.
-4. Step 4 UI batch — only when the plan includes UI automation in `uipath-rpa`.
-5. Write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `./plans/` (no project). Every task prompt embeds the plan path.
-6. If explore-first → `EnterPlanMode`. If simultaneous → emit plan as text + live tasks.
+## Lane B — Non-PDD
 
 Full procedure: [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
-## Skill capability map
+1. Detect without prompting: read context; use cross-platform `Glob`/`Read`/`Grep`; classify the multi-skill pattern; infer project type; resolve delivery model.
+2. **Single-skill exit:** if one specialist owns the work end-to-end, stop Lane B and load that specialist directly with detected context—no plan or tasks.
+3. In one `AskUserQuestion`, batch generation approach, autonomy, vague project-type fallback, and delivery model when a gated product is a candidate; omit resolved questions.
+4. Use the UI batch only when the plan includes UI automation in `uipath-rpa`.
+5. Write `YYYY-MM-DD-<feature>.md` under `docs/plans/` for a project, otherwise under `./plans/`; put the plan path in every task prompt.
+6. For explore-first, use `EnterPlanMode`; for simultaneous execution, emit plan text plus live tasks.
 
-High-level view of what each specialist owns. **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
+## Skill Capability Map
 
-| Skill | What it owns | Handles auth? | Handles deploy? |
-|---|---|---|---|
-| `uipath-rpa` | RPA workflows (XAML and C# coded): create, edit, build, run, debug. Owns **all** UI automation authoring end-to-end, including live-app exploration and probing. | No (relies on Studio) | **No** — defer to `uipath-solution` for `.uipx` multi-project, `uipath-platform` for single non-solution packages |
-| `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
-| `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
-| `uipath-functions` | Coded Functions — Python (`uip function new -l py`; Pydantic typed I/O) or TypeScript/JavaScript (`-l ts / js`, TypeScript default; `defineFunction` + schema-first typed I/O) — atomic deterministic logic: transforms, custom-auth API calls, ERP/IS-connection queries. Runs serverless or on an RPA robot; a JS/TS function is delivered as a run-as-job function or an HTTP endpoint (Coded App backends) — one calling mode per function. Invoked from Maestro (Flow/BPMN), agents-as-tools, Orchestrator API, or its HTTP trigger. No LLM/agent loop (that → `uipath-agents`) | Yes (`uip login`) | **Yes** — `uip function pack/publish` |
-| `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Orchestrator deploy of `.uipx`-wrapped solutions → `uipath-solution`; non-solution single package → `uipath-platform` |
-| `uipath-maestro-bpmn` | `.bpmn` files — standards-based BPMN 2.0 process orchestration (gateways, events, boundary timeouts, subprocesses, multi-instance) over RPA, agents, APIs, HITL. Authors its own inline userTask/HITL nodes. | Yes (`uip login`) | **Yes** — packages, uploads, publishes/deploys, and runs via `uip maestro bpmn`; Orchestrator deploy of `.uipx`-wrapped solutions → `uipath-solution` |
-| `uipath-maestro-case` | Case Management authoring — `caseplan.json` from an SDD (`case pack` compiles it to `caseplan.json.bpmn`; authoring `.bpmn` directly is `uipath-maestro-bpmn`) | Yes (`uip login`) | **Partial** — publishes to Studio Web and Orchestrator itself; `.uipx` solution deploy → `uipath-solution` |
-| `uipath-api-workflow` | API Workflows (JSON `document.dsl`): author, run locally (`uip api-workflow run`), connector activities | Yes (`uip login`) | **No** — `uip solution pack/publish` via `uipath-solution` |
-| `uipath-human-in-the-loop` | HITL node authoring — approval gates, escalations, write-back validation inside **Flow** projects. Coded-agent HITL → `uipath-agents`; BPMN / Case / RPA own theirs inline (userTask / task type / Action Center) | No (authoring only) | **No** — ships inside the host project |
-| `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), Data Fabric entities/records/files/choice-sets (`uip df`), traces, licensing | Yes (auth hub) | **Yes** — for non-solution single packages and Orchestrator-side post-deploy ops |
-| `uipath-ixp` | Document Understanding / IXP — extraction from semi-structured documents (invoices, forms): taxonomy, model, classify / extract / validate. Standalone project, or the extraction step a primary consumes | Yes (`uip login`) | **Partial** — model publish/tag via `uip ixp`; consumed by the host project |
-| `uipath-connector-builder` | Integration Service **custom connector** authoring (REST+JSON) on disk via `uip is connectors builder` — build a connector when the catalog has none for a required integration (needed by API Workflows / Maestro / Agents; RPA can call the API directly instead) | Yes (`uip login`) | **Yes** — import/publish is deployment (`uip is connectors`) |
-| `uipath-mcp-servers` | UiPath AgentHub MCP server registration (6 types: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`) and resource-tool authoring on `uipath`-type servers (`automation`, `agent`, `agentic-process`, `api-workflow`). Wraps Orchestrator resources, external HTTP MCP endpoints, OpenAPI specs, published coded agents, local subprocess commands, or first-party UiPath services as MCP tools. NOT for FastMCP / Python `mcp` SDK work. | Yes (`uip login`) | **Yes** — registration is deployment (posts directly to AgentHub) |
-| `uipath-solution` | `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` solutions. Runs as the final skill in PDD-driven flows (deploy of `.uipx` solutions). | Yes (`uip login`) | **Yes** — for multi-project Solution (`.uipx`) deploys |
+Load [skill-capability-map.md](references/skill-capability-map.md) when deriving a multi-skill plan. It defines ownership, authentication, and deployment across the 15 specialists. Never describe specialist internals; each skill owns its documentation.
 
 ## Reference Navigation
 
-### Phase D — Design
+### Phase D
 
-| File | Purpose |
-|------|---------|
-| [SDD Generation Guide](references/sdd-generation-guide.md) | Phase orchestrator — Phase 1, 2, 3 step-by-step instructions |
-| [Case Design Lane Guide](references/case/case-design-lane-guide.md) | The case design conversation — entry, tenant grounding, authoring policy, the one Case Review, and the write |
-| [Case Design Layers Guide](references/case/case-design-layers-guide.md) | The case model and every design **Default** — skeleton (triggers, stages, the nine task types), gates (lifecycle rules, exits, sequencing, secondary lanes), data (variables, outputs, expressions), time (SLAs, escalations, responses), naming rules, and the closure checklist |
-| [PDD Analysis Guide](references/pdd-analysis-guide.md) | How to extract structured data from PDDs in any format |
-| [Product Selection Guide](references/product-selection-guide.md) | **Constraint Gate** (delivery model + exclusions filter), **Level 1** (primary scope), **Level 1.75** (Solution composition), **Level 2.5 Part B** (cross-product project list merge), **Level 3** (capability add-ons), template mapping |
-| [Platform Availability Guide](references/platform-availability-guide.md) | Product × delivery-model availability matrix (Cloud / Automation Suite / standalone), alternatives for blocked products, verification rule for uncertain cells. Load whenever the Constraint Gate runs — every delivery model: "Cloud is not uniform", variants (GovCloud / Dedicated / Test Cloud) and per-tenant entitlements can block products inside the Cloud column. |
-| [RPA Product Guide](references/rpa-product-guide.md) | RPA **Level 1.5** (sub-type), **Level 2** (authoring mode), **Level 2.5 Part A** (RPA decomposition), R-07 naming, REFramework. Load when Level 1 = RPA or a Solution includes RPA. |
-| [Package Selection Guide](references/package-selection-guide.md) | NuGet package selection; Integration Service vs NuGet rules; per-product dependency manager. Load when filling §14 Packages or equivalent. |
-| [Tenant Library Search Guide](references/tenant-library-search-guide.md) | Step 2.5 procedure for discovering deployed libraries via `uip or libraries list` + JMESPath filtering — auth preflight, ranking, zero-results branch, manual fallback. |
-| [Attended Re-auth Pattern Guide](references/attended-reauth-pattern-guide.md) | Design contract for portal automations with a human-only login (hardware 2FA token, smart card, biometric): handoff point, state-verified resume, attended robot, routing to `uipath-rpa`. Load when the PDD signals a non-scriptable interactive sign-in. |
-| [ASDD Crosswalk Guide](references/asdd-crosswalk-guide.md) | Generate the client-facing Word SDD/ASDD: warn the user for the template path, match the markdown SDD into its sections, compute missing pieces. Includes the crosswalk for the standard UiPath SDD template. Load at Step 2.5 when the user wants the official document. |
+- [SDD Generation Guide](references/sdd-generation-guide.md): Phase 1–3 orchestration
+- [Case Design Lane Guide](references/case/case-design-lane-guide.md): Case conversation, grounding, policy, review, and write
+- [Case Design Layers Guide](references/case/case-design-layers-guide.md): Case model/defaults, gates, data, time, naming, closure
+- [PDD Analysis Guide](references/pdd-analysis-guide.md): structured extraction
+- [Product Selection Guide](references/product-selection-guide.md): Constraint Gate and product levels/template mapping
+- [Platform Availability Guide](references/platform-availability-guide.md): product/delivery availability and entitlements
+- [RPA Product Guide](references/rpa-product-guide.md): RPA levels, R-07 naming, REFramework
+- [Package Selection Guide](references/package-selection-guide.md): NuGet, Integration Service, and dependencies
+- [Tenant Library Search Guide](references/tenant-library-search-guide.md): authenticated `uip or libraries list`, filtering, ranking, fallback
+- [Attended Re-auth Pattern Guide](references/attended-reauth-pattern-guide.md): human-only sign-in handoff/resume; route to `uipath-rpa`
+- [ASDD Crosswalk Guide](references/asdd-crosswalk-guide.md): client-facing Word SDD/ASDD
 
-### SDD templates
+### SDD Templates
 
-| File | Purpose |
-|------|---------|
-| [RPA Template](assets/templates/rpa-sdd-template.md) | SDD template for RPA Process / Library / Test Automation |
-| [Flow Template](assets/templates/flow-sdd-template.md) | SDD template for Maestro Flow |
-| [BPMN Template](assets/templates/bpmn-sdd-template.md) | SDD template for Maestro BPMN |
-| [Case Management Template](assets/templates/case/case-sdd-template.md) | SDD template for Case Management (downstream Case Definition Blueprint shape) |
-| [Agent Template](assets/templates/agent-sdd-template.md) | SDD template for UiPath Agents |
-| [Coded App Template](assets/templates/coded-app-sdd-template.md) | SDD template for Coded Apps (web) |
-| [API Workflow Template](assets/templates/api-workflow-sdd-template.md) | SDD template for API Workflows |
+- [RPA Template](assets/templates/rpa-sdd-template.md)
+- [Flow Template](assets/templates/flow-sdd-template.md)
+- [BPMN Template](assets/templates/bpmn-sdd-template.md)
+- [Case Management Template](assets/templates/case/case-sdd-template.md)
+- [Agent Template](assets/templates/agent-sdd-template.md)
+- [Coded App Template](assets/templates/coded-app-sdd-template.md)
+- [API Workflow Template](assets/templates/api-workflow-sdd-template.md)
 
-### Scripts (Phase D)
+### Scripts
 
-| Script | Purpose |
-|------|---------|
-| `scripts/docx-extract.{sh,ps1}` | .docx PDD → UTF-8 markdown + extracted screenshots (pandoc). Run at Phase D Step 1 when a Word PDD renders garbled — never drive Word via COM. **Cross-platform twins:** `bash …/docx-extract.sh` on macOS/Linux/Git-Bash; `pwsh -File …/docx-extract.ps1` (or `powershell -File …` for Windows PowerShell 5.1) on Windows. Keep the two files behaviorally identical. |
-| `scripts/sdd-to-docx.{sh,ps1}` | Generated SDD markdown → styled .docx, optional corporate `--reference-doc`. Run at Phase D Step 2.5 only when the user asks for Word output. Same cross-platform twin invocation (`bash` `.sh` / `pwsh -File` `.ps1`). |
+- `scripts/docx-extract.{sh,ps1}`: convert Word PDD to UTF-8 Markdown/screenshots with pandoc when needed; never Word COM. Use `.sh` with `bash` on macOS/Linux/Git-Bash and `.ps1` with `pwsh -File` or `powershell -File` on Windows; twins remain behaviorally identical.
+- `scripts/sdd-to-docx.{sh,ps1}`: convert SDD Markdown to styled `.docx`, optionally with `--reference-doc`, only when Word output is requested; use the same cross-platform invocation.
 
-### Lanes A & B — Planning
+### Planning
 
-| File | Purpose |
-|------|---------|
-| [PDD-driven Lane Guide](references/pdd-driven-lane-guide.md) | Lane A end-to-end — read SDD header, parse project list, derive tasks, write tasks.md, emit live tasks |
-| [Non-PDD Lane Guide](references/non-pdd-lane-guide.md) | Lane B end-to-end — elicitation, project-type inference, filesystem detection, UI batch, write plan.md |
-| [Multi-skill Patterns Guide](references/multi-skill-patterns-guide.md) | The named multi-skill patterns (RPA build+deploy, Flow with local/deployed resources, Agent with RPA tools, etc.). Used by both lanes. |
-| [Plan and Tasks Format](references/plan-and-tasks-format.md) | Header schema, task row schema, identity tuple, status states, regenerate-with-preservation algorithm, TaskCreate mapping, anti-hallucination rule, quality rules |
+- [PDD-driven Lane Guide](references/pdd-driven-lane-guide.md): handoff, parsing, task derivation, plans, live tasks
+- [Non-PDD Lane Guide](references/non-pdd-lane-guide.md): elicitation, inference, detection, UI batch, plans
+- [Multi-skill Patterns Guide](references/multi-skill-patterns-guide.md): named patterns
+- [Plan and Tasks Format](references/plan-and-tasks-format.md): header/row schema, identity, statuses, regeneration, `TaskCreate`, anti-hallucination, quality
+- [Skill Capability Map](references/skill-capability-map.md): ownership, authentication, deployment
 
 ## Anti-patterns
 
-1. **Skipping the entry guard.** Always inspect the input first. A PDD silently treated as a generic doc produces a degraded deliverable.
-2. **Writing automation code or modifying the project.** SDD and plan/tasks markdown only. In explore-first Lane B mode, non-mutating `uip` discovery is the upper limit.
-3. **Treating a single-project request as a plan** — the most common mis-trigger. The inline-nodes rule lives in the Skip paragraph under When to Use This Skill.
-4. **Copying the PDD structure into the SDD.** The SDD reorganizes content for implementation — it does not mirror the PDD's document flow.
-5. **Defaulting to RPA Process when the need profile points elsewhere.** Use the Product Selection Guide decision tree on the synthesized need, not keywords: genuine judgment/reasoning → Agents; stages/SLA/approval lifecycle → Case Management ("AI" over a rule-expressible decision is still RPA). Forcing single-product scope when the PDD describes multiple coordinated projects is the same mistake — offer Solution.
-6. **Generating an Implementation Plan / task list inside the SDD.** Architecture only; the SDD ends with `## Next Steps`. Task derivation is Lane A's job.
-7. **Describing specialist-internal flows in the plan or SDD.** Target configuration, OR registration, scaffolding, auth, pack/publish, testing procedures, HITL field schema — all owned by the specialist's own docs. Inlining creates drift.
-8. **Asking about test coverage depth.** Testing is always thorough. The implementation specialist scopes down at execution time if the user wants a quick MVP; the planner does not offer the option.
-9. **Recommending a skill that contradicts filesystem signals.** `.flow` → `uipath-maestro-flow`, not `uipath-rpa`.
-10. **Inventing selectors from screenshots,** or asking the user what the planner / library / filesystem can already answer. Default first; spend a prompt only on decisions only the user can make.
-11. **Renaming the `## Planner Handoff` heading or stripping the `<!-- planner-handoff:v1 -->` marker.** Either signal alone is sufficient for detection, but both should remain — removing both breaks Lane A detection silently.
-12. **Recommending a product the customer's platform cannot run, or re-offering an excluded one.** Defaulting to cloud-modern picks (Maestro, Coded Apps, Document Understanding) on an Automation Suite engagement is the most expensive design error — every blocked product survives review only to fail at delivery. Run the Constraint Gate; once a user says "we don't want X", X stays blocked for the whole session.
+1. Skip the Entry Guard.
+2. Write code or modify projects; in explore-first Lane B, non-mutating `uip` discovery is the limit.
+3. Turn single-project work into a plan.
+4. Copy process flow into the SDD instead of reorganizing it for implementation.
+5. Default to RPA when the need profile indicates Agents, Case Management, or another product. Use the Product Selection Guide: reasoning may indicate Agents; stages/SLA/approval lifecycle may indicate Case Management; AI over a rule-expressible decision remains RPA; offer Solution for multiple coordinated projects.
+6. Put implementation plans/task lists in the SDD.
+7. Describe specialist internals in the SDD/plan, including target configuration, Orchestrator registration, scaffolding, authentication, pack/publish, testing procedures, or HITL field schema.
+8. Ask whether testing should be happy-path only.
+9. Contradict filesystem signals, such as routing `.flow` to `uipath-rpa` instead of `uipath-maestro-flow`.
+10. Invent selectors from screenshots or ask for information the planner, library, or filesystem can determine. Default first; ask only user-owned decisions.
+11. Rename `## Planner Handoff` or remove `<!-- planner-handoff:v1 -->`; preserve both.
+12. Recommend unavailable or previously excluded products. Always run the Constraint Gate; Cloud is not uniform, and variants/entitlements can block products.
