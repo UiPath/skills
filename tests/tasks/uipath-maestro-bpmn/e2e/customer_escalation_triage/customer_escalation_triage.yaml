@@ -80,12 +80,10 @@ initial_prompt: |
      connector activity to slackChannelId; the text MUST include the
      correlationId and the computed severity. Use the Slack connection named
      "is-sandboxes" in the same folder.
-  4. End the process, exposing three PUBLIC OUTPUTS: severity (string),
-     caseKey (string, = the incoming correlationId), and jiraIssueKey
-     (string, the created issue's key). Declare each as a
-     `<uipath:output name= id= type= elementId=/>` inside the root process
-     `<uipath:variables>`, elementId bound to the end event. A process that
-     computes the right values but never declares them exposes nothing.
+  4. End the process, exposing three PUBLIC OUTPUTS a caller receives:
+     severity (string), caseKey (string, = the incoming correlationId), and
+     jiraIssueKey (string, the created issue's key). A process that computes
+     the right values but never exposes them returns nothing.
 
   Bind both connector activities to the real connections — the packed
   bindings_v2.json must carry real connection ids, not all-zero stubs.
