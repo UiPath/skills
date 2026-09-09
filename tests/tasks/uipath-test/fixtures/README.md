@@ -28,6 +28,7 @@ and therefore exact for this scheme.
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `link_automation_and_run` | CLAIM + an owned Orchestrator folder `EVFX-LINKRUN-FOLDER` | `EVFX-LINKRUN-TC1`, the folder | No execution; `pre_run` verifies the `Testcases.with.parameters` package has entry points published into the folder and fails fast (provisioning error, not a scored regression) if not — see *Automation-linked fixtures* below |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
