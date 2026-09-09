@@ -78,16 +78,22 @@ STEP_TIMEOUTS = (
     SLACK_DELETE_TIMEOUT,
 )
 
-# Worst case for the post_run journal sweep, which is the ONLY cleanup that
-# survives coder_eval SIGKILLing the graded command: one connection lookup,
-# then per Jira issue a delete + one retry + a confirming reread, and per Slack
-# message a delete + one retry. Its post_run `timeout:` must cover this or the
-# sweep is killed mid-flight and leaks live records in the shared CE project.
+# The post_run journal sweep is the ONLY cleanup that survives coder_eval
+# SIGKILLing the graded command, so its worst case must fit inside its
+# post_run `timeout:` -- which coder_eval caps at 300 (tasks.py: le=300).
+# It therefore runs on its own tighter per-call budgets: one connection
+# lookup, then per Jira issue a delete + one retry + a confirming reread, and
+# per Slack message a delete + one retry.
+TEARDOWN_CONNECTIONS_TIMEOUT = 60
+TEARDOWN_DELETE_TIMEOUT = 45
+TEARDOWN_READ_TIMEOUT = 45
+POST_RUN_TIMEOUT_CAP = 300  # coder_eval models/tasks.py: Field(ge=1, le=300)
+
 TEARDOWN_TIMEOUT = (
-    CONNECTIONS_LIST_TIMEOUT
-    + 2 * JIRA_DELETE_TIMEOUT
-    + JIRA_READ_TIMEOUT
-    + 2 * SLACK_DELETE_TIMEOUT
+    TEARDOWN_CONNECTIONS_TIMEOUT
+    + 2 * TEARDOWN_DELETE_TIMEOUT
+    + TEARDOWN_READ_TIMEOUT
+    + 2 * TEARDOWN_DELETE_TIMEOUT
 )
 
 
@@ -114,12 +120,12 @@ def assert_live_target() -> dict[str, str]:
     return expected
 
 
-def connection_ids() -> dict[str, str]:
+def connection_ids(*, timeout: int = CONNECTIONS_LIST_TIMEOUT) -> dict[str, str]:
     """Resolve the enabled Jira and Slack connection ids, scoped by folder."""
 
     listed = run_cli(
         ["uip", "is", "connections", "list", "--all-folders", "--refresh"],
-        timeout=CONNECTIONS_LIST_TIMEOUT,
+        timeout=timeout,
     )
     _payload, rows = payload_data(listed, "discover connector connections")
     if not isinstance(rows, list):
@@ -185,7 +191,9 @@ def get_issue_fields(connection_id: str, issue_key: str) -> dict:
     return fields
 
 
-def delete_jira_issue(connection_id: str, issue_id: str) -> bool:
+def delete_jira_issue(
+    connection_id: str, issue_id: str, *, timeout: int = JIRA_DELETE_TIMEOUT
+) -> bool:
     """Delete an issue by key/id. True only when deletion is CONFIRMED —
     a success envelope or an issue-specific not-found (already gone)."""
 
@@ -204,7 +212,7 @@ def delete_jira_issue(connection_id: str, issue_id: str) -> bool:
             json.dumps({"issueId": issue_id}, separators=(",", ":")),
             "--yes",
         ],
-        timeout=JIRA_DELETE_TIMEOUT,
+        timeout=timeout,
     )
     try:
         payload_data(completed, f"delete Jira issue {issue_id}")
@@ -213,7 +221,9 @@ def delete_jira_issue(connection_id: str, issue_id: str) -> bool:
         return delete_target_is_absent(completed, "jira issue", issue_id)
 
 
-def jira_issue_absent(connection_id: str, issue_key: str) -> bool:
+def jira_issue_absent(
+    connection_id: str, issue_key: str, *, timeout: int = JIRA_READ_TIMEOUT
+) -> bool:
     """True ONLY when a tenant read CONFIRMS the issue is gone.
 
     False when it still exists OR when the read itself failed (transient 5xx /
@@ -236,7 +246,7 @@ def jira_issue_absent(connection_id: str, issue_key: str) -> bool:
             "--query",
             json.dumps({"issueId": issue_key}, separators=(",", ":")),
         ],
-        timeout=JIRA_READ_TIMEOUT,
+        timeout=timeout,
     )
     try:
         payload_data(completed, f"read Jira issue {issue_key}")
@@ -246,7 +256,11 @@ def jira_issue_absent(connection_id: str, issue_key: str) -> bool:
 
 
 def delete_slack_message(
-    connection_id: str, channel_id: str, timestamp: str
+    connection_id: str,
+    channel_id: str,
+    timestamp: str,
+    *,
+    timeout: int = SLACK_DELETE_TIMEOUT,
 ) -> bool:
     """Delete one bot message. Same confirmed-deletion contract as Jira."""
 
@@ -268,7 +282,7 @@ def delete_slack_message(
             ),
             "--yes",
         ],
-        timeout=SLACK_DELETE_TIMEOUT,
+        timeout=timeout,
     )
     try:
         payload_data(completed, f"delete Slack message {timestamp}")

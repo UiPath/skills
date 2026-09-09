@@ -48,7 +48,7 @@ post_run:
     # leaks live Jira issues and Slack messages, so it is budgeted for its
     # worst case rather than its typical one. post_run runs outside the
     # task_timeout watchdog, so this does not compete with grading.
-    timeout: 780
+    timeout: 300
 
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project named

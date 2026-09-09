@@ -22,7 +22,9 @@ try:
     if not records:
         print("OK: nothing journalled to delete")
         sys.exit(0)
-    connections = escalation_is.connection_ids()
+    connections = escalation_is.connection_ids(
+        timeout=escalation_is.TEARDOWN_CONNECTIONS_TIMEOUT
+    )
     leaked = 0
     jira_connection = connections[escalation_is.JIRA_CONNECTOR]
     for issue in dict.fromkeys(records.get("jira_issue", [])):
@@ -30,10 +32,16 @@ try:
         # tenant reread before giving up -- only a confirmed deletion or a
         # confirmed not-found counts. Mirrors the flow suite's teardown, and
         # keeps a 5xx from leaking a real ticket in the shared CE project.
-        ok = escalation_is.delete_jira_issue(jira_connection, issue)
+        ok = escalation_is.delete_jira_issue(
+            jira_connection, issue, timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT
+        )
         if not ok:
-            ok = escalation_is.delete_jira_issue(jira_connection, issue)
-        if not ok and escalation_is.jira_issue_absent(jira_connection, issue):
+            ok = escalation_is.delete_jira_issue(
+            jira_connection, issue, timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT
+        )
+        if not ok and escalation_is.jira_issue_absent(
+            jira_connection, issue, timeout=escalation_is.TEARDOWN_READ_TIMEOUT
+        ):
             ok = True
         print(f"OK: deleted Jira {issue}" if ok
               else f"WARN: could NOT confirm deletion of Jira {issue} "
@@ -43,11 +51,13 @@ try:
     for record in records.get("slack_message", []):
         channel_id, timestamp = record
         ok = escalation_is.delete_slack_message(
-            slack_connection, channel_id, timestamp
+            slack_connection, channel_id, timestamp,
+            timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT,
         )
         if not ok:
             ok = escalation_is.delete_slack_message(
-                slack_connection, channel_id, timestamp
+                slack_connection, channel_id, timestamp,
+                timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT,
             )
         print(f"OK: deleted Slack {timestamp}" if ok
               else f"WARN: could NOT confirm deletion of Slack {timestamp}")

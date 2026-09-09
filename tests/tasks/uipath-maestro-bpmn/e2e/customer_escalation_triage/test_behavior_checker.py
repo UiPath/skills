@@ -36,6 +36,7 @@ def _load(name: str, filename: str):
 checker = _load("escalation_behavior", "check_customer_escalation_behavior.py")
 packager = _load("escalation_package", "check_customer_escalation_package.py")
 escalation_is = sys.modules["escalation_is"]
+import _shared.bpmn_live as live  # noqa: E402
 
 SAMPLE_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -392,6 +393,13 @@ class SeedTests(unittest.TestCase):
             f"the sweep can spend {escalation_is.TEARDOWN_TIMEOUT}s but post_run "
             f"allows {sweeps[0]['timeout']}s -- it would be killed mid-cleanup",
         )
+        # coder_eval rejects the task outright above this; a budget that does
+        # not fit the cap has to come out of the per-call timeouts.
+        self.assertLessEqual(
+            sweeps[0]["timeout"],
+            escalation_is.POST_RUN_TIMEOUT_CAP,
+            "post_run timeout exceeds coder_eval's cap; the task will not load",
+        )
 
 
 class PackageBindingTests(unittest.TestCase):
@@ -488,7 +496,7 @@ class TeardownRetryTests(unittest.TestCase):
         records = {"jira_issue": ["CE-1"], "slack_message": []}
         defaults = {
             "read_journal": lambda: records,
-            "connection_ids": lambda: {
+            "connection_ids": lambda **_kwargs: {
                 escalation_is.JIRA_CONNECTOR: "jira-conn",
                 escalation_is.SLACK_CONNECTOR: "slack-conn",
             },
@@ -509,7 +517,7 @@ class TeardownRetryTests(unittest.TestCase):
     def test_transient_first_failure_is_retried(self):
         attempts = []
 
-        def flaky(_conn, issue):
+        def flaky(_conn, issue, **_kwargs):
             attempts.append(issue)
             return len(attempts) > 1  # first call fails, second succeeds
 
@@ -519,10 +527,10 @@ class TeardownRetryTests(unittest.TestCase):
     def test_reread_confirming_absence_counts_as_deleted(self):
         reread = []
 
-        def always_unconfirmed(_conn, _issue):
+        def always_unconfirmed(_conn, _issue, **_kwargs):
             return False
 
-        def absent(_conn, issue):
+        def absent(_conn, issue, **_kwargs):
             reread.append(issue)
             return True
 
@@ -531,3 +539,37 @@ class TeardownRetryTests(unittest.TestCase):
             jira_issue_absent=absent,
         )
         self.assertEqual(reread, ["CE-1"], "teardown never confirmed by reread")
+
+
+class DeleteConfirmationTests(unittest.TestCase):
+    """A provider's own absence phrase is proof, whatever status it rides on.
+
+    Slack answers a delete of an already-gone message with 400 and
+    `message_not_found` -- no 404, and "not found" underscored -- so a generic
+    status gate reports a leak for a message that is in fact gone.
+    """
+
+    @staticmethod
+    def _completed(stdout):
+        return subprocess.CompletedProcess(args=[], returncode=1, stdout=stdout, stderr="")
+
+    def test_slack_message_not_found_is_confirmed_absent(self):
+        observed = json.dumps({
+            "Result": "Failure",
+            "Message": "400 Bad Request",
+            "Instructions": '{"message":"message_not_found",'
+                            '"providerMessage":"{\\"ok\\":false,\\"error\\":\\"message_not_found\\"}"}',
+        })
+        self.assertTrue(
+            live.delete_target_is_absent(
+                self._completed(observed), "slack message", "1788913576.470749"
+            )
+        )
+
+    def test_unrelated_failure_is_not_confirmed_absent(self):
+        observed = json.dumps({"Result": "Failure", "Message": "500 Internal Server Error"})
+        self.assertFalse(
+            live.delete_target_is_absent(
+                self._completed(observed), "slack message", "1788913576.470749"
+            )
+        )

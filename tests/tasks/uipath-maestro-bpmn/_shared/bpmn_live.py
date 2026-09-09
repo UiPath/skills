@@ -334,9 +334,6 @@ def delete_target_is_absent(
     target_id: str,
 ) -> bool:
     detail = f"{completed.stdout}\n{completed.stderr}".casefold()
-    absence_markers = ("404", "not found", "does not exist")
-    if not any(marker in detail for marker in absence_markers):
-        return False
     resource_markers = {
         "solution": ("solution not found", "solution does not exist"),
         "slack message": (
@@ -352,6 +349,10 @@ def delete_target_is_absent(
         for marker in resource_markers.get(resource_kind, ())
     ):
         return True
+
+    absence_markers = ("404", "not found", "does not exist")
+    if not any(marker in detail for marker in absence_markers):
+        return False
 
     labels = {
         "solution": "solution",
