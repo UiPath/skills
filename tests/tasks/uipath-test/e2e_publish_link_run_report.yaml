@@ -1,0 +1,117 @@
+task_id: skill-test-e2e-publish-link-run-report
+description: >
+  End-to-end test: agent uses the uipath-test skill to run the full
+  link-execute-report loop for an automated test case in the CLAIM project.
+  Exercises the complete operate lifecycle the skill's publish-and-link guide
+  teaches: discover the Orchestrator folder key (`uip or folders list`), probe
+  the available test entry points (`testcases list-automations`), set the
+  project default folder (Critical Rule #10), link the automation
+  (`testcases link-automation`), trigger an automated run (`testcases run`
+  with `--test-case-id`), block until terminal status (`tm wait`), then pull
+  the aggregated stats (`executions get-stats`), download JUnit results
+  (`result download`), and fetch the summary report (`report get`). This is the
+  suite's first `e2e`-tier task and is the only one that drives a real
+  execution end to end. Depends on the shared CLAIM fixture: the Orchestrator
+  package "Testcases.with.parameters" published to folder
+  "uipath-test-folder-feed" and the Test Manager test case
+  "Claim Approval - Manager Escalation".
+tags: [uipath-test, e2e, mode:operate, lifecycle:manage, feature:link-automation, feature:test-case]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 80
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  In the CLAIM project, take the automation "TestCase1" from the Orchestrator
+  package "Testcases.with.parameters" (published to the Orchestrator folder
+  "uipath-test-folder-feed") and link it to the Test Manager test case
+  "Claim Approval - Manager Escalation". Then run that test case as an
+  automated execution and wait for it to finish. Once it's done, pull the
+  pass/fail statistics, download the JUnit results, and get me the summary
+  report for the execution.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the folder key: `uip or folders list -n <folder> --all --output json`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list\s+-n\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent probed test entry points before linking (Critical Rule #8): `uip tm testcases list-automations ... --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--output\s+json)uip\s+tm\s+testcases?\s+list-automations\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent set the project default folder before running (Critical Rule #10): `uip tm project set-default-folder --project-key CLAIM --folder-key <key> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+CLAIM)(?=.*--folder-key\s+\S+)(?=.*--output\s+json)uip\s+tm\s+project\s+set-default-folder\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked the automation: `uip tm testcases link-automation --project-key CLAIM --test-case-key <key> --folder-key <key> --package-name <pkg> --test-name <name> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+CLAIM)(?=.*--folder-key\s+\S+)(?=.*--package-name\s+\S+)(?=.*--test-name)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+link-automation\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent triggered an automated run with --test-case-id (UUID, not --test-case-key): `uip tm testcases run --test-case-id <uuid> --execution-type automated --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--test-case-id\s+\S+)(?=.*--execution-type\s+automated)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+run\b|(?=.*--test-case-id\s+\S+)(?=.*--execution-type\s+automated)(?=.*--output\s+json)uip\s+tm\s+testcase\s+execute\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent waited for terminal status: `uip tm wait --execution-id <id> --project-key CLAIM ... --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+wait\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pulled aggregated stats: `uip tm executions get-stats --execution-id <id> --project-key CLAIM --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S+)(?=.*--project-key\s+CLAIM)(?=.*--output\s+json)uip\s+tm\s+executions?\s+get-stats\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded JUnit results: `uip tm result download --execution-id <id> ... --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+result\s+download\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the summary report: `uip tm report get --execution-id <id> ... --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+report\s+get\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
