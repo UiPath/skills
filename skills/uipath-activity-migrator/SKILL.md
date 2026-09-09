@@ -1,12 +1,12 @@
 ---
 name: uipath-activity-migrator
-description: "UiPath Activity Migrator — migrate Windows-Legacy RPA projects (`project.json` with `targetFramework: Legacy`, classic `ui:` activities) to the Windows framework and modern activities with the standalone `UiPath.Upgrade.exe` (`analyze` / `upgrade` / `bulk`). Windows only. Acquires the tool when missing, resolves the target UIAutomation package line, runs analyze then upgrade into a sibling folder, verifies with `uip rpa build`, triages the SARIF report. Classic UI Automation→modern UIA, Outlook classic→Microsoft 365, GSuite classic→modern, Microsoft.Activities.Extensions→Invoke Code. Also the post-migration fix: repairs migrated projects whose expression-selector targets fail or silently report not-found. Authoring or editing Legacy `.xaml`→uipath-rpa. Migration-readiness review without running the tool→uipath-review. Other runtime failures after migration→uipath-troubleshoot. Maestro `instance migrate`→the Maestro skills."
-when_to_use: "User says 'migrate activities', 'migrate this project', 'upgrade from Windows-Legacy', 'convert classic to modern activities', 'modernize this workflow', 'run the Activity Migrator', 'UiPath.Upgrade.exe', 'legacy to Windows', 'activity migration report', 'post migration fix', 'check always returns false after migration', 'could not find the UI element after migration'. NOT for writing new Legacy workflows (→uipath-rpa), `uip solution deploy upgrade`, or Maestro instance migration."
+description: "UiPath Activity Migrator — migrate Windows-Legacy RPA projects (`targetFramework: Legacy`, classic `ui:` activities) to the Windows framework and rewrite UiPath's own classic activities into their modern UiPath counterparts with the standalone `UiPath.Upgrade.exe`. Windows only. Third-party or custom packages are not rewritten, only version-moved. Acquires the tool, resolves the target UIAutomation line, runs analyze then upgrade into a sibling folder, verifies with `uip rpa build`, triages the SARIF. Classic UI Automation→modern UIA, Outlook classic→Microsoft 365, GSuite classic→modern, Microsoft.Activities.Extensions→Invoke Code. Also the post-migration fix for migrated projects whose expression-selector targets fail or silently report not-found. Authoring or editing Legacy `.xaml`→uipath-rpa. Migration-readiness review without running the tool→uipath-review. Other runtime failures after migration→uipath-troubleshoot. Maestro `instance migrate`→the Maestro skills."
+when_to_use: "User says 'migrate activities', 'migrate UiPath activities', 'classic UiPath activities to modern', 'migrate this project', 'upgrade from Windows-Legacy', 'convert classic to modern activities', 'modernize this workflow', 'run the Activity Migrator', 'UiPath.Upgrade.exe', 'legacy to Windows', 'activity migration report', 'post migration fix', 'check always returns false after migration', 'could not find the UI element after migration'. NOT for writing new Legacy workflows (→uipath-rpa), rewriting third-party or custom activity packages, `uip solution deploy upgrade`, or Maestro instance migration."
 ---
 
 # UiPath Activity Migrator
 
-Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquire, analyze, upgrade, verify, report. The tool converts a Windows-Legacy project to the Windows framework and rewrites classic activities into their modern equivalents. It runs without Studio. It requires Windows and the .NET Desktop Runtime 8.
+Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquire, analyze, upgrade, verify, report. The tool converts a Windows-Legacy project to the Windows framework and rewrites UiPath's classic activities into their modern UiPath equivalents; third-party and custom packages are only moved to a Windows-compatible version by restore, never rewritten. It runs without Studio. It requires Windows and the .NET Desktop Runtime 8.
 
 <!--skill-flavor:host-availability-extra:start-->
 
@@ -18,8 +18,8 @@ Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquir
 
 ## When to Use This Skill
 
-- User wants to **migrate**, **upgrade**, **convert**, or **modernize** a Windows-Legacy project or its classic activities
-- User wants classic **UI Automation** activities rewritten as modern activities
+- User wants to **migrate**, **upgrade**, **convert**, or **modernize** a Windows-Legacy project or its classic UiPath activities
+- User wants classic UiPath **UI Automation** activities rewritten as their modern counterparts
 - User wants to **run the Activity Migrator** or mentions `UiPath.Upgrade.exe`
 - User wants a **migration dry run** or **migration report** produced by the tool (`analyze`)
 - User wants classic **Outlook** mail, classic **GSuite**, or **Microsoft.Activities.Extensions** activities migrated
@@ -207,6 +207,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Passing an extension option space-separated (`--uia-package-version 25.10.39`); only `--uia-package-version=25.10.39` binds
 - Raising the UIAutomation package on the migrated output with `uip rpa packages install` to reach the requested line instead of fixing the flag or asking the user
 - Resolving package versions with `uip rpa packages versions` against a Legacy project; the headless Studio host cannot open it
+- Pre-scanning the XAML for classic activities (`grep` on `<ui:` prefixes) before or after `analyze`; the SARIF is the only complete inventory, and the `ui:` prefix also covers System and Excel activities
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
