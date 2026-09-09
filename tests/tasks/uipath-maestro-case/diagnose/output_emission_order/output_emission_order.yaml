@@ -1,0 +1,68 @@
+task_id: skill-case-output-emission-order
+description: >
+  An SDD row computing a case variable from the task's own Action slot, where the SDD
+  never names that slot. The dispatch walks the SDD's rows and auto-mints the schema
+  entries the SDD does not reference, so following it literally emits the computed row
+  first and the slot it reads second. The engine evaluates data.outputs in array order
+  and writes each result before evaluating the next, so that order leaves the variable
+  at its default on every run while validate reports Valid. Run 33813506820 shipped it
+  on two tasks. Edits a staged solution, so no scaffolding, registry, or tenant is
+  needed, and grading is caseplan.json plus local validate only.
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:single-node, node:hitl]
+
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ./templates
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under LinearThreeStages/.
+  Its case definition is LinearThreeStages/LinearThreeStages/caseplan.json: three stages
+  (Intake -> Review -> Decision), each holding a placeholder timer task.
+
+  Stage 2 (Review) is missing its reviewer decision task. The approved SDD gives it as:
+
+    ##### Task 2.1: Record review decision
+
+    **Type:** action
+    **Recipient:** Role: Reviewers
+    **Task Title:** Record review decision
+
+    **Outputs:**
+
+    | Field | Binding / Value |
+    |-------|------------------|
+    | Comment | -> reviewerComments |
+    | - | reviewerDecision = =js:vars.$xref('Review','Record review decision','Action') |
+
+  Both case variables already exist in the plan's Case Variables. Add the task to Stage 2
+  with the outputs that SDD row set asks for.
+
+  Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
+  approval, confirmation, or feedback - make the change end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The reviewerDecision row is wired and every output reads only outputs that precede it in data.outputs"
+    command: "python3 $TASK_DIR/check_output_emission_order.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
