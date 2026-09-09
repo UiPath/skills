@@ -66,6 +66,26 @@ TASK_DETAIL_MARKERS = {
     "api-workflow": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
 
+# Activation Mode -> the entry rule(s) that mode MUST produce
+# (case-design-layers-guide.md § Sequencing & activation).
+# Presence, not exclusivity: a fan-in convergence task legally ORs one
+# `selected-tasks-completed` row per branch WITH a `current-stage-entered` +
+# inverse-guard row for the no-branch path.
+MODE_ENTRY_RULES = {
+    "sequential": ("runs-sequentially",),
+    "parallel-after-predecessor": ("runs-sequentially",),
+    "parallel": ("current-stage-entered",),
+    "event-triggered": ("wait-for-connector", "sla-status-change"),
+    "adhoc": ("adhoc",),
+    "fan-in": ("selected-tasks-completed",),
+    "conditional-gate": ("selected-tasks-completed",),
+}
+
+# Modes that express order through task-set placement, never through a gate on the
+# immediate predecessor ("Never duplicate selected-tasks-completed("<previous>")
+# to express simple order" — same guide section).
+MODES_WITHOUT_TASK_GATES = ("sequential", "parallel-after-predecessor")
+
 CASE_VARIABLES_HEADER = "| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |"
 
 STAGE_HEADING = re.compile(r"^###\s+(Stage\s+\d+|Secondary Stage):\s*(.+?)\s*$", re.M)
@@ -583,6 +603,29 @@ def contract_findings(text: str, facts: dict) -> list[str]:
                     rule = rule_name(cells[0])
                     if rule and rule not in task_entry_legal and (rule in facts["yes_when"] | facts["no_when"] | stage_entry_legal):
                         findings.append(f"task {task_name!r}: entry WHEN {rule!r} is not a legal task-entry rule (case-design-layers-guide.md § Lifecycle gates)")
+
+            # Activation Mode must produce its own entry rule. The label alone is inert:
+            # a task can read `parallel-after-predecessor` while its WHEN translates the
+            # requirement phrase ("after Collect Fees") into a predecessor gate, which
+            # emits separate event-driven tasks instead of one shared task set.
+            mode_marker = re.search(r"^\*\*Activation Mode:\*\*\s*(.+?)\s*$", task_block, re.M)
+            mode = mode_marker.group(1).strip().strip("`").strip() if mode_marker else ""
+            expected = MODE_ENTRY_RULES.get(mode)
+            if expected and entry_tbl:
+                rules = {rule_name(cells[0]) for _, cells in table_rows(entry_tbl.group(1))}
+                rules.discard(None)
+                if not rules & set(expected):
+                    findings.append(
+                        f"task {task_name!r}: Activation Mode {mode!r} has no {' or '.join(expected)} entry row "
+                        f"(found: {', '.join(sorted(rules)) or 'none'}) — the mode label does not sequence the task, "
+                        "its entry rule does (case-design-layers-guide.md § Sequencing & activation)"
+                    )
+                if mode in MODES_WITHOUT_TASK_GATES and "selected-tasks-completed" in rules:
+                    findings.append(
+                        f"task {task_name!r}: Activation Mode {mode!r} gates on selected-tasks-completed — order comes "
+                        "from task-set placement, not a gate on the immediate predecessor; duplicating that gate across "
+                        "siblings emits them as separate task sets instead of one parallel set"
+                    )
             recipient = re.search(r"^\*\*Recipient:\*\*\s*([^\n]+)", task_block, re.M)
             if recipient:
                 value = recipient.group(1).strip().strip("`")
