@@ -64,6 +64,10 @@ simulation:
   check_criteria: end_of_dialog
   n_trials: 1
 
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-salesforce-slack=uipath-maestro-flow'
+    timeout: 120
+
 success_criteria:
   # Name-agnostic: any unambiguous generated .flow must validate. The exact
   # project name is scored separately below.

@@ -7,7 +7,7 @@ description: >
   (`core.trigger.scheduled`) that REPLACES the default manual trigger and
   carries a valid recurring schedule. Exercises the previously-untested
   scheduled-trigger plugin: the manual->scheduled replacement procedure, the
-  `timeCycle`/`timerPreset` input shape, and the `bpmn:TimerEventDefinition`
+  cycle-expression input shape, and the `bpmn:TimerEventDefinition`
   that the node definition must carry. Validate-only and pure-OOTB — no tenant,
   no `flow debug` (a scheduled BPMN timer fires only inside a live engine the
   test sandbox cannot provision).
@@ -26,8 +26,8 @@ initial_prompt: |
     - The start node `type` must be `core.trigger.scheduled`.
     - Keep the existing `entryPointId` from the manual trigger's `inputs`.
     - `inputs.timerType` must be `"timeCycle"`.
-    - `inputs.timerPreset` must be `"R/PT1H"` (every hour — an ISO 8601
-      repeating interval). Do NOT use `"custom"` for this smoke test.
+    - The schedule is every hour, expressed as `R/PT1H`. Take the input field
+      that carries it from the node's own definition — do not guess.
     - Set the node `typeVersion` from its authoritative node definition.
     - Remove the `core.trigger.manual` node AND its `definitions[]` entry, and
     include the authoritative `core.trigger.scheduled` definition

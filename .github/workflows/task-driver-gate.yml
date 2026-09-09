@@ -29,7 +29,10 @@ on:
 
 concurrency:
   group: task-driver-gate-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; `opened` and `reopened` can fire on a
+  # commit a run is already in flight for, and a cancelled run reports the
+  # required context as `cancelled`. See docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 permissions:
   contents: read

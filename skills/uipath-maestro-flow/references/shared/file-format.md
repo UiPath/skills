@@ -259,7 +259,7 @@ Copy the returned node definition object into your `definitions` array. Dependin
 | Type | Purpose | Key inputs |
 |------|---------|------------|
 | `core.trigger.manual` | Entry point | `entryPointId` |
-| `core.trigger.scheduled` | Recurring schedule trigger | `entryPointId`, `timerType`, `timerPreset` |
+| `core.trigger.scheduled` | Recurring schedule trigger | `entryPointId`, `timerType`, `timerValue` |
 | `core.action.script` | Run JavaScript | `script` |
 | `core.action.http.v2` | HTTP request | `method`, `url`, `headers`, `body` |
 | `core.action.transform` | Map/filter/group data | `collection`, `operations` |
