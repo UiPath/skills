@@ -237,8 +237,8 @@ connection binding's `default` is the connection id, the folder binding's
 
 ```xml
 <uipath:bindings version="v1">
-  <uipath:binding id="Binding_JiraConn"   resource="Connection" propertyAttribute="ConnectionId" resourceKey="<connection-id>" default="<connection-id>" />
-  <uipath:binding id="Binding_JiraFolder" resource="Connection" propertyAttribute="folderKey"    resourceKey="<connection-id>" default="<folder-key>" />
+  <uipath:binding id="Binding_JiraConn"   resource="Connection" propertyAttribute="ConnectionId" resourceKey="&lt;connection-id&gt;" default="&lt;connection-id&gt;" />
+  <uipath:binding id="Binding_JiraFolder" resource="Connection" propertyAttribute="folderKey"    resourceKey="&lt;connection-id&gt;" default="&lt;folder-key&gt;" />
 </uipath:bindings>
 ```
 
