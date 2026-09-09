@@ -14,6 +14,8 @@ run_limits:
   turn_timeout: 1200
 
 pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
   - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
     timeout: 60
 
