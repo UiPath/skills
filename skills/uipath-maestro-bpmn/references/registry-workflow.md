@@ -71,14 +71,17 @@ Treat each template output and its process variable as one contract. Replace
 the template output's exact `type` and `elementId="<node-id>"`. This includes
 opaque types such as `custom` and product-specific types such as
 `Actions.HITL`; do not search examples for a guessed schema or coerce the type
-to `string`, `object`, or `jsonSchema`. Live enrichment can replace an opaque
-dynamic output with concrete typed output rows later.
+to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; live
+enrichment replaces it with concrete typed rows later, so do not pre-empt it.
 
-For an unresolved portable dynamic node, fill resource identity slots with
-escaped public placeholders, keep the retrieved context/output shape, and use
-only user-supplied values in the body or configurable context fields. Label the
-node non-runnable. Do not inspect sibling skills, test fixtures, or generated
-packages to invent the missing live schema.
+For an unresolved portable dynamic node, fill resource identity slots with the
+escaped public placeholders SKILL.md defines (`&lt;TENANT_URL&gt;`,
+`&lt;FOLDER_KEY&gt;`, `&lt;CONNECTION_NAME&gt;`), keep the retrieved
+context/output shape, and use only user-supplied values in the body or
+configurable context fields. Report the node as **draft** and name the
+CLI-owned blocker literally, including the exact phrase `connection binding` where
+that is what is missing. Do not inspect sibling skills, test fixtures, or
+generated packages to invent the missing live schema.
 
 ## 3. Connector (`Intsvc.*`) enrichment
 

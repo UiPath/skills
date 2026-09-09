@@ -14,7 +14,6 @@ from __future__ import annotations
 import os
 import re
 import sys
-import uuid
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -66,14 +65,10 @@ def main() -> None:
     if non_timer:
         fail(f"a non-timer (manual) start event remains: {[attr(s, 'id') for s in non_timer]}")
 
-    entry_points = start.findall(f".//{{{UIPATH_NS}}}entryPointId")
-    if len(entry_points) != 1:
-        fail(f"timer start must carry exactly one uipath:entryPointId; found {len(entry_points)}")
-    entry_point_id = attr(entry_points[0], "value")
-    try:
-        uuid.UUID(entry_point_id)
-    except (AttributeError, ValueError):
-        fail(f"timer start entryPointId must be a valid GUID; found {entry_point_id!r}")
+    # No entryPointId assertion: derivation selects manual root starts only, so
+    # an id here is accepted but inert (structural-bpmn.md). The prompt does not
+    # ask for one and Intsvc.TimerTrigger's template has no slot for it, so
+    # grading it failed every agent that followed the task.
 
     timer_def = child(start, "timerEventDefinition")
     cycle = child(timer_def, "timeCycle")

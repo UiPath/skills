@@ -1,13 +1,13 @@
 task_id: skill-bpmn-timer-start
 description: >
-  Timer start-event eval: agent uses the uipath-maestro-bpmn skill to author a
-  scheduled (timer) start event that fires on a recurring hourly cycle, using the
-  registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a
-  bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to a
-  BPMN timer start event. Source-only by construction: a timer start derives no
-  entry point, so the project is deliberately not package-ready. Authoring only
-  — a timer only fires in a live engine,
-  so this validates the structure locally.
+  Timer start-event eval: agent uses the uipath-maestro-bpmn skill to author
+  a scheduled (timer) start event that fires on a recurring hourly cycle,
+  using the registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a
+  bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to
+  a BPMN timer start event. Source-only by construction: a timer start
+  derives no entry point, so the project is deliberately not package-ready.
+  Authoring only — a timer only fires in a live engine, so this validates
+  the structure locally.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:trigger"]
 
 run_limits:
@@ -28,8 +28,8 @@ initial_prompt: |
   scheduled timer start -> a script task that assembles a report -> end.
 
   Requirements:
-  - Retrieve the exact Intsvc.TimerTrigger template directly from the registry
-    before authoring; do not list or search for a type that is already named.
+  - Retrieve the Intsvc.TimerTrigger template from the registry before
+    authoring, and author the node from that template rather than from prose.
     Author the node from that template, not from prose.
   - The process start MUST be a bpmn:startEvent carrying the Intsvc.TimerTrigger
     wrapper and a bpmn:timerEventDefinition. There must be NO manual start event.
