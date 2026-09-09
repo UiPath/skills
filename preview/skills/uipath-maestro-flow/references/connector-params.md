@@ -471,7 +471,7 @@ one expensive call is spent last.
 
 **When the task names nobody for a person-shaped required field** (`reporter`,
 `requester`, `owner`), the value is the connection's own user: take the account
-from `uip auth status` and resolve by **display name**. Search only by the
+from `uip login status` and resolve by **display name**. Search only by the
 names the field's "matches on" list declares — do not improvise queries against
 raw collections. Jira in particular hides e-mail addresses from user search, so
 an `emailAddress=` query returns nothing for a user that plainly exists, while
