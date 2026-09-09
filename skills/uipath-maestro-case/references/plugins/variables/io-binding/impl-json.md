@@ -57,7 +57,6 @@ A `$xref('Stage','Task','output')` marker is not one of those two reference form
 | bare auto-mint | `"=<id>"` | the `id` | absent |
 
 Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the rule above — those carry real values, and emptying them is a different defect. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it. Canonicalize `=metadata.X` to `=js:metadata.X` in both `value` and `source`; retain the SDD-natural form in the projected item. For a quoted string literal, treat the quotes as SDD delimiters: `status = "InReview"` emits JSON `"value": "InReview", "source": "InReview"` — never embed the delimiters as payload (`"value": "\"InReview\""`).
-
 - **Schema fields with no SDD reference** → fall back to auto-mint shape (`var` = camelCased schema name). Connector plugins additionally apply the [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) dedup-suffix on collision (e.g., `response` → `response2`).
 
 **Position is load-bearing: a row whose expression reads `vars.X` goes AFTER the row that writes `X`.** The engine evaluates `data.outputs` in array order and writes each result into the variable scope before evaluating the next, so a row placed before its producer reads the case variable's default on every run of the case while `validate` reports `Valid`. A `=` Scenario E row computes from another row's `var`, so it is emitted last. `--strict` reports the violation as `STRICT_OUTPUT_FORWARD_READ`.
