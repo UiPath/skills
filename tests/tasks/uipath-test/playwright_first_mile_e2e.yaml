@@ -1,0 +1,94 @@
+# Prerequisites (see PR description):
+#   - a CLI carrying the external-package commands (npm `latest` on 1.200+)
+#   - the eval tenant's Test Manager has Playwright support enabled
+#   - a folder the runner is a member of, with a Cloud Robots - Serverless
+#     machine, and working serverless Playwright execution
+task_id: skill-test-playwright-first-mile-e2e
+description: >
+  Full Playwright first mile: package a suite, upload it, let ingestion
+  auto-create the test cases, fill a test set by label, run only one Playwright
+  project, and collect the results. Graded on the saved report rather than
+  tenant state, and the agent cleans the project up afterwards.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  turn_timeout: 1200
+
+initial_prompt: |
+  I have a Playwright suite I want to run through Test Manager. Create a
+  minimal one in ./pw-suite with two passing tests and a config defining the
+  projects "chromium" and "firefox", then get it running from the Test Manager
+  project PWE2E (create it if needed) on chromium only — not firefox.
+  Save the final test report to ./report.json, then delete the project so my
+  tenant stays clean.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Packaged and uploaded the suite"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+packages\s+upload'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filled the test set by label rather than hand-collected keys"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add\s+.*--labels'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Ran the test set scoped to the chromium project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets?\s+run\s+.*--playwright-projects\s+chromium'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not widen the run to a second Playwright project"
+    tool_name: "Bash"
+    command_pattern: '--playwright-projects\s+\S+\s+\S'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Saved the final report"
+    path: "report.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both tests passed — the run reached real results"
+    command: "grep -qE '\"Passed\":[[:space:]]*2' report.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Nothing failed or was left without a result"
+    command: "grep -qE '\"Failed\":[[:space:]]*0' report.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Cleaned up the project it created"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+delete\s+.*PWE2E'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not use the Studio/RPA link-automation pipeline"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation'
+    weight: 1.0
+    pass_threshold: 1.0
