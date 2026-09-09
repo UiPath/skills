@@ -1,0 +1,62 @@
+task_id: skill-test-export-job-status-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to check the status of an
+  asynchronous Test Manager export job by id. The job id given does not
+  exist, so the correct outcome is an honest "not found" report backed by
+  the CLI's HTTP 404 Failure — not a fabricated status, not a retry loop,
+  and not a raw REST call around the CLI (Critical Rules 3 and 10). Asserts
+  auth-first ordering (`uip login status`), then the complete
+  `uip tm export-job get` command with the HEALTH project key, the exact
+  job id and `--output json`.
+tags: [uipath-test, smoke, mode:operate, lifecycle:report, feature:export-job]
+
+# Skipped until `uip tm export-job get` is in a published @uipath/cli.
+# The task drives the real CLI, so until then every run fails on
+# "unknown command" rather than on agent behaviour, which would make a
+# required check red for a reason that has nothing to do with the skill.
+# The command is merged in UiPath/cli#4089; remove this line once a release
+# carrying it is out. Tracked by TMHUB-33408.
+skip: true
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20
+
+initial_prompt: |
+  In the HEALTH project in Test Manager I kicked off an Excel export of
+  some test cases earlier and got job id
+  11111111-1111-1111-1111-111111111111 back. Can you check where that
+  export job is at, and if it is finished tell me the attachment id of the
+  file it produced?
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete status command: `uip tm export-job get --project-key HEALTH --job-id 11111111-1111-1111-1111-111111111111 --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--job-id\s+11111111-1111-1111-1111-111111111111)(?=.*--output\s+json)uip\s+tm\s+export-job\s+get'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI with a raw REST call to the Test Manager API (Critical Rule 3)"
+    tool_name: "Bash"
+    command_pattern: 'curl[\s\S]*(testmanager_|fileexportjobs)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not loop on the failing command beyond the three-retry cap (Critical Rule 3)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+export-job\s+get'
+    max_count: 4
+    weight: 1.0
+    pass_threshold: 0   # advisory: records over-retrying without gating the score
