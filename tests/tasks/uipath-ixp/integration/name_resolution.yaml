@@ -2,8 +2,8 @@ task_id: skill-ixp-integration-name-resolution
 description: >
   Integration: name/title resolution on a live tenant. The agent must resolve
   user-facing references to the ids the CLI needs — a document by FILENAME →
-  DocumentId via `documents list`, and a project by its TITLE → Name via
-  `projects list` — rather than passing the human label straight through. The
+  DocumentId via `documents list`, and a project by the Name returned by
+  `projects create` — rather than passing the human label straight through. The
   resolution step is the integration part; smokes pass the id in the prompt.
 tags: [uipath-ixp, integration, mode:operate, lifecycle:setup]
 
@@ -39,6 +39,9 @@ initial_prompt: |
 
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
+  Work only on the project you create. The tenant is shared — never write to any
+  other project. If a command fails, report the error; do not probe other projects.
+
 success_criteria:
   - type: file_matches_regex
     description: "Listed documents to resolve the filename → DocumentId, then re-read to save the remaining list"
@@ -57,14 +60,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Listed projects to resolve Title → Name"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+list)[^\r\n]*$
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
     description: "Renamed the project via update-title"
     path: "mocks/calls.log"
     pattern: >-
@@ -79,6 +74,18 @@ success_criteria:
       (?m)^(?:uip\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png)[^\r\n]*$
     must_match: false
     weight: 1.5
+    pass_threshold: 1.0
+
+  # The tenant is shared and every concurrent run titles its project
+  # `codereval-integ-resolve-*`, so the prefix cannot identify ownership — the
+  # random suffix can. check_own_project.py derives this run's suffix from its
+  # own `projects create` and requires every project-scoped write to carry it.
+  - type: run_command
+    description: "Every project-scoped write stayed inside this run's own project"
+    command: "python3 $TASK_DIR/check_own_project.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists
