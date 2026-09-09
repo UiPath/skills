@@ -12,8 +12,8 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, feature:eval, feature:child-simulation]
 
 run_limits:
-  expected_turns: 20
-  max_turns: 60
+  expected_turns: 25
+  max_turns: 90
 
 initial_prompt: |
   Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a Flow
@@ -36,20 +36,26 @@ initial_prompt: |
      `{"query":"weather in NYC"}` and expected
      `{"answer":"Sunny, 72°F in New York City."}`.
 
-  5. Add a `Static` child simulation on the `search-test` data point targeting
+  5. Put the simulation targets in the flow: an autonomous agent node with id
+     `agent-1`, plus two child tool nodes with ids `Web_Search` and
+     `Send_Email`, each wired to `agent-1` by an edge on its `tool` port.
+     Mock tool nodes are fine. The flow does not have to pass
+     `uip maestro flow validate`.
+
+  6. Add a `Static` child simulation on the `search-test` data point targeting
      child tool `Web_Search` on parent agent node `agent-1`. Use
      `--mock-value '{"results":[{"title":"NYC Weather","snippet":"Sunny, 72°F"}]}'`.
      Do NOT add a separate parent simulation first.
 
-  6. Add an `Llm` child simulation on the `search-test` data point targeting
+  7. Add an `Llm` child simulation on the `search-test` data point targeting
      child tool `Send_Email` on the same parent `agent-1`. Supply
-     `--simulation-instructions "Return a success status with a message ID."`,
-     and pass `--output-schema '{"type":"object","properties":{"status":{"type":"string"},"messageId":{"type":"string"}}}'`
-     explicitly.
+     `--simulation-instructions "Return a success status with a message ID."`.
+     The output schema is auto-resolved from the parent agent node — do not
+     pass an output-schema flag.
 
-  7. List the child simulations on `agent-1` to confirm both are present.
+  8. List the child simulations on `agent-1` to confirm both are present.
 
-  8. Remove the `Send_Email` child simulation from `agent-1`.
+  9. Remove the `Send_Email` child simulation from `agent-1`.
 
   Important:
   - Use `--output json` on every `uip maestro flow eval ...` command.
@@ -112,15 +118,15 @@ success_criteria:
   - type: command_executed
     description: "Agent added a Static child simulation with --parent and --mock-value"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+.*--parent\s+.*--strategy\s+Static\b.*--mock-value|--parent\s+.*--mock-value.*--strategy\s+Static|--strategy\s+Static.*--parent\s+.*--mock-value|--mock-value.*--parent\s+.*--strategy\s+Static'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--parent\b)(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added an Llm child simulation with --parent, --strategy Llm, and --output-schema"
+    description: "Agent added an Llm child simulation with --parent and --strategy Llm"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+.*--parent\s+.*--strategy\s+Llm|--strategy\s+Llm.*--parent'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--parent\b)(?=.*--strategy\s+Llm\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -136,7 +142,7 @@ success_criteria:
   - type: command_executed
     description: "Agent removed a child simulation with --parent"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+remove\s+.*--parent|--parent.*simulation\s+remove'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+remove\s+(?=.*--parent\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

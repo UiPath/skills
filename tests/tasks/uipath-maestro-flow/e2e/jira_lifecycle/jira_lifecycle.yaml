@@ -80,6 +80,14 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Advisory: live-v1 agent ran flow debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+
   - type: run_command
     description: "JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/check_jira_lifecycle.py"

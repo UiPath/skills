@@ -12,6 +12,7 @@ tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:subflow]
 run_limits:
   expected_turns: 13
   turn_timeout: 1200
+  task_timeout: 2400  # 780s grading + a full turn; inherited 1200 left grading nothing
 
 sandbox:
   template_sources:

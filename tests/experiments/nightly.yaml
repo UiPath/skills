@@ -53,11 +53,15 @@ defaults:
         api_base: CODEX_BASE_URL
         api_key: CODEX_API_KEY
 
+  # Leading `:;` and single line are load-bearing. coder-eval runs this through
+  # create_subprocess_shell, which is cmd.exe on the Windows split: cmd rejects
+  # `if [ ... ]` (`"${MAESTRO_FLOW_SDK_SETUP:-0}" was unexpected at this time.`,
+  # exit 1) and every task in the split ERRORs at setup. A line starting with `:`
+  # is a label to cmd — ignored, exit 0 — and a no-op to sh, which then runs the
+  # rest. Newlines would put the sh code back on cmd's first line, so keep it
+  # one line and never reformat this into a block scalar.
   pre_run:
-    - command: |-
-        if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then
-          bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"
-        fi
+    - command: ':; if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"; fi'
       timeout: 30
 
   # Sandbox cleanup between tasks. Tasks that upload Studio Web solutions

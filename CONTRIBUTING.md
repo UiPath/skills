@@ -512,6 +512,27 @@ Before submitting your PR, verify:
 - You may be asked to make changes — this is normal and collaborative
 - Once approved, a maintainer will merge your PR
 
+### Required Status Checks
+
+Some PR checks gate the merge. Two edits break them in a way that blocks **every**
+open PR, not just yours:
+
+- **Renaming a job** whose name is a required context — the context never
+  reports again.
+- **Narrowing a producing workflow's PR trigger** — `paths:`, `paths-ignore:`,
+  `branches:`, `branches-ignore:`, or a `types:` list without `synchronize`.
+  When the trigger excludes a PR the workflow doesn't run, so no check is
+  reported and the PR stays pending forever. Always trigger, and short-circuit
+  inside the job instead: a *skipped* job counts as a pass.
+
+A third breaks them loudly: **cancelling a run on a SHA that also has a passing
+one**. A cancelled run still reports its jobs, and `cancelled` is not a pass, so
+required workflows only cancel on `synchronize` — the one event that moves the
+head SHA. Keep that expression when editing a `concurrency:` block.
+
+`required-check contract guard` (in `test-helpers.yml`) fails on the first two. The
+current set, the rationale, and how to change it: [docs/REQUIRED-CHECKS.md](docs/REQUIRED-CHECKS.md).
+
 ## Style Guide
 
 ### Markdown

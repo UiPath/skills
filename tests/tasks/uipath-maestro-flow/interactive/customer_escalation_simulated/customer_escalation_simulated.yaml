@@ -15,7 +15,10 @@ run_limits:
   # by simulation.max_turns below.
   max_turns: 90
   task_timeout: 2400
-  turn_timeout: 1200
+  # The persona answers every question in one message, so the whole six-node
+  # build lands in a single turn — turn_timeout, not task_timeout, is what
+  # bounds it, and 1200s cut the 2026-09-08 run off at `flow validate`.
+  turn_timeout: 1800
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 

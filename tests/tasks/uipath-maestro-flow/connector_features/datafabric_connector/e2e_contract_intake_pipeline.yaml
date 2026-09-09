@@ -1,12 +1,12 @@
 task_id: skill-flow-datafabric-e2e-contract-intake-pipeline
 description: >
-  E2E test for the UiPath Data Fabric connector in Maestro Flow — the
-  loop-driven bulk-CRUD lifecycle that other DF tests don't cover. Single-node
-  CRUD is exercised by smoke_update; FilterBuilder queries by integration_query;
-  query→update wiring by contractregistry_crud_filters. Here we verify a Flow
-  can bulk-create N records with a ForEach loop, query them, update one via
-  the query output, and bulk-delete via a second ForEach. Static-validate
-  only; runtime `flow debug` skipped to avoid live tenant side effects.
+  E2E test for the UiPath Data Fabric connector — the full CRUD activity
+  surface exercised in one flow on a single ContractRegistry record.
+  Focus is on DF activity payloads and Create-output-Id chaining across
+  Get / Update / Delete; orchestration primitives (loops, decisions,
+  multi-branch fan-out) are covered by core-flow tests, not here.
+  Static-validate only; runtime `flow debug` skipped to avoid live tenant
+  side effects.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice]
 
 run_limits:
@@ -23,23 +23,28 @@ initial_prompt: |
   Build a UiPath Flow against the `ContractRegistry` Data Fabric entity
   (fields: contractTitle STRING, status STRING, priority INTEGER,
   dueDate DATE, value DECIMAL, isUrgent BOOLEAN) that exercises the
-  bulk-CRUD lifecycle with ForEach loops:
+  connector's CRUD surface on ONE record. All downstream activities bind
+  recordId to the create output — do NOT hard-code any Id.
 
-  1. A ForEach loop that reads a list of contracts from the start input
-     and calls Create Entity Record ONCE inside the loop, binding
-     contractTitle / status / priority from the loop item. Do NOT unroll
-     into multiple Create nodes.
+  Chain the five activities in this order:
 
-  2. A single Query Entity Records on ContractRegistry, sorted by
-     priority descending.
+  1. Create Entity Record on ContractRegistry. Populate the body with
+     contractTitle, status='Draft', priority (any integer 1-10),
+     dueDate (any valid date), value (any decimal), isUrgent (boolean).
 
-  3. An Update Entity Record on the top result from the query — bind
-     recordId to the first element of the query output and set status
-     to "In Review". Do NOT hard-code the Id.
+  2. Get Entity Record By Id — bind recordId to the create activity's
+     output Id.
 
-  4. A second ForEach loop over the query output that calls Delete
-     Entity Record ONCE inside the loop, binding recordId to the loop
-     item's Id.
+  3. Query Entity Records — filter contractTitle equals the literal
+     value used in step 1 (author it as a FilterBuilder tree, not a raw
+     CEQL string). Sort by priority descending.
+
+  4. Update Entity Record — bind recordId to the create activity's
+     output Id. The update body must contain ONLY the `status` key set
+     to "In Review"; no other fields.
+
+  5. Delete Entity Record — bind recordId to the create activity's
+     output Id.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 
@@ -64,7 +69,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow uses ForEach loops for bulk create + bulk delete on ContractRegistry, with a sort-query and a targeted update wired to the query output"
+    description: "Flow chains Create → Get/Update/Delete on ContractRegistry with recordId bound to create.output, plus one Query with priority-desc sort and a partial Update body"
     command: "python3 $TASK_DIR/check_e2e_contract_intake_pipeline.py"
     timeout: 30
     expected_exit_code: 0

@@ -5,7 +5,7 @@
 <!--skill-flavor:run-preflight-steps:end-->
 
 <!--skill-flavor:debug-run-body:start-->
-> **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate. The mandate does not cover side effects that reach a third party (a real call, a message to someone who is not the user) — those need the run asked for explicitly. The target is always a project of the open solution; nothing is packed or uploaded. See rule #2 in [SKILL.md](../../SKILL.md).
+> **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate, and with nobody to ask report the flow as unverified rather than letting a passing validate stand as the result. The target is always a project of the open solution; nothing is packed or uploaded. See rule #2 in [SKILL.md](../../SKILL.md).
 
 ```bash
 uip flow debug                     # the active project
