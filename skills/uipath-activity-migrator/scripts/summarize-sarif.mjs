@@ -146,8 +146,14 @@ for (const r of results) {
   const bareOutcome = id.match(/-MIGRATION-(ERROR|WARNING|PARTIAL)$/);
   let reason = '';
   if (reasonMatch) reason = reasonMatch[1];
-  else if (bareOutcome) reason = { ERROR: 'not migrated', WARNING: 'warning', PARTIAL: 'partial' }[bareOutcome[1]];
-  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', reason, message: msgOf(r) };
+  else if (bareOutcome && bareOutcome[1] === 'WARNING') {
+    // Message shape: "<display name> - Type: <type> migrated with warnings in N ms. Warnings: Property: <path> - <text>. <more>"
+    // The grouping label is the first sentence of <text>, which is templated and therefore identical across activities.
+    const body = (msgOf(r).match(/(?:Warnings|Errors):\s*(?:Property:\s*\S+\s*-\s*)?([\s\S]+)/) || [])[1] || msgOf(r);
+    reason = (body.split(/(?<=[.!?])\s/)[0] || 'warning').replace(/[.!?]$/, '').trim().slice(0, 110);
+  }
+  else if (bareOutcome) reason = { ERROR: 'not migrated', PARTIAL: 'partial' }[bareOutcome[1]];
+  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), guid: propsOf(r).activityGuid || '', destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', reason, bare: Boolean(bareOutcome), outcome: (bareOutcome || reasonMatch ? (id.match(/-(ERROR|WARNING|PARTIAL|INFO)(?:-|$)/) || [])[1] : '') || '', message: msgOf(r) };
 
   const critical = isCritical(id, lvl);
   if (critical) hasCriticalError = true;
@@ -191,7 +197,7 @@ for (const r of results) {
 
 // Status keys off rule IDs as well as levels: the UIA extension reports unmigrated
 // activities at note or warning level, so a level-only reading would call them success.
-const leftovers = uia.notMigrated.length + uia.partial.length + productivity.notMigrated.length + actionRequired.length + typeIssues.length;
+const leftovers = uia.notMigrated.length + uia.partial.length + uia.warnings.length + productivity.notMigrated.length + productivity.warnings.length + actionRequired.length + typeIssues.length;
 let status;
 if (hasCriticalError || blockers.length > 0) status = 'failed';
 else if (results.length === 0) status = 'unknown';
@@ -200,13 +206,44 @@ else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'pa
 else status = 'success';
 
 // Everything that needs a human decision or hand, grouped for the short summary.
-const attention = [...uia.notMigrated, ...uia.partial, ...productivity.notMigrated, ...actionRequired, ...typeIssues];
+// Everything that needs a human decision or hand: activities left classic or partially migrated,
+// activity/property warnings (they become [PostMigration Action Required] annotations in the XAML),
+// productivity warnings, and per-file type issues. One SARIF result may sit in several lists; dedupe.
+const attentionResults = [...new Set([
+  ...uia.notMigrated, ...uia.partial, ...uia.warnings, ...productivity.notMigrated, ...productivity.warnings,
+  ...actionRequired, ...typeIssues,
+])];
 const countBy = (items, keyFn) => {
   const m = new Map();
   for (const it of items) { const k = keyFn(it); m.set(k, (m.get(k) || 0) + 1); }
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 };
-const attentionByReason = countBy(attention, (e) => e.reason || e.rule);
+// Headline count is per activity: an activity with an activity-level and a property-level result is one item.
+// The tool emits two results per finding: an activity-level one with a bare rule id carrying the prose,
+// and a property-level one carrying the reason suffix. Group per activity; a bare result is the prose
+// companion of a suffixed result with the same outcome and adds no reason of its own. It keeps its label
+// only when it is the sole result for that activity.
+const activityMap = new Map();
+for (const e of attentionResults) {
+  // The tool stamps every result about one activity with the same activityGuid; the display name is the fallback.
+  const key = `${e.file}::${e.guid || e.activity || e.rule}`;
+  const slot = activityMap.get(key) || { file: e.file, activity: e.activity, reasons: [], bareByOutcome: {}, suffixedOutcomes: new Set(), messages: [] };
+  if (e.bare) slot.bareByOutcome[e.outcome] = e.reason || e.rule;
+  else {
+    slot.suffixedOutcomes.add(e.outcome);
+    if (!slot.reasons.includes(e.reason || e.rule)) slot.reasons.push(e.reason || e.rule);
+  }
+  if (e.message && !slot.messages.includes(e.message)) slot.messages.push(e.message);
+  activityMap.set(key, slot);
+}
+for (const slot of activityMap.values()) {
+  for (const [outcome, label] of Object.entries(slot.bareByOutcome)) if (!slot.suffixedOutcomes.has(outcome) && !slot.reasons.includes(label)) slot.reasons.push(label);
+  delete slot.bareByOutcome;
+  delete slot.suffixedOutcomes;
+}
+const attention = [...activityMap.values()];
+// Per activity, one count per distinct reason: sums to the activity count unless an activity has several reasons.
+const attentionByReason = countBy(attention.flatMap((a) => a.reasons), (x) => x);
 const attentionByFile = countBy(attention, (e) => e.file || '(project)');
 const migratedTotal = uia.migrated + productivity.migrated;
 const unknownRules = Object.entries(byRule).filter(([id]) => familyOf(id) === 'other');
@@ -215,12 +252,12 @@ const summary = {
   file,
   status,
   outputPath: (run.properties && run.properties.outputPath) || null,
-  totals: { results: results.length, ...byLevel, migrated: migratedTotal, attention: attention.length },
+  totals: { results: results.length, ...byLevel, migrated: migratedTotal, attention: attention.length, attentionResults: attentionResults.length },
   frameworkChanged,
   packages,
   effectiveVersions,
   blockers,
-  attention: { total: attention.length, byReason: Object.fromEntries(attentionByReason), byFile: Object.fromEntries(attentionByFile) },
+  attention: { total: attention.length, results: attentionResults.length, byReason: Object.fromEntries(attentionByReason), byFile: Object.fromEntries(attentionByFile), items: attention },
   byFamily,
   uia,
   productivity,
@@ -255,7 +292,7 @@ if (attention.length) {
   out.push('', `## Needs attention (${attention.length})`);
   out.push(`- By reason: ${attentionByReason.map(([k, n]) => `${k} ×${n}`).join(', ')}`);
   out.push(`- By file: ${attentionByFile.slice(0, 5).map(([k, n]) => `${k} (${n})`).join(', ')}${attentionByFile.length > 5 ? `, … ${attentionByFile.length - 5} more files` : ''}`);
-  if (attention.length <= INLINE_LIMIT) { for (const e of attention) out.push(itemLine(e)); }
+  if (attention.length <= INLINE_LIMIT) { for (const a of attention) out.push(`- ${a.file || '(project)'}${a.activity ? ': ' + a.activity : ''} — ${a.reasons.join('; ')}${a.messages[0] ? ': ' + a.messages[0] : ''}`); }
   else out.push(outFile ? `- Full list: ${outFile}` : '- Full list: rerun with --out <file.md>');
 }
 if (unknownRules.length) {

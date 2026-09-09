@@ -70,7 +70,7 @@ Then read the flag list of this build once. It is the only authority on which fl
 "<MIGRATOR_EXE>" analyze --help
 ```
 
-Keep the output for Steps 3 and 4: an extension flag a package guide names is passed only when it appears here. A missing flag is skipped and noted in the report. The build may also list extension flags no guide names; use one only when its help text directly addresses a problem this run has shown (a specific SARIF result or build error), pass it as `--name=value`, and say so in the report. Behavior the help does not state (option binding, exit code, output streams, folders) is in [tool-behavior-guide.md](references/tool-behavior-guide.md).
+Keep the output for Steps 3 and 4. For this run, the flags in that output are the only flags that exist: a guide-named flag is passed only when it appears there, and its absence is not a finding, not a note, and not a report item. A flag the help lists but no guide names may be used only when its help text directly addresses a problem this run has shown (a specific SARIF result or build error); pass it as `--name=value` and say so in the report. Behavior the help does not state (option binding, exit code, output streams, folders) is in [tool-behavior-guide.md](references/tool-behavior-guide.md).
 
 Summarize to the user in one line: tool version and location.
 
@@ -145,7 +145,7 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 ### Step 6 — Post-migration and report
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
-2. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. Shape:
+2. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. For an activity left classic, the manual step is "still runs as classic; rebuild with modern activities if wanted"; name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. Shape:
 
 ```markdown
 ## Migration result: <status>
@@ -159,6 +159,7 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 
 ### Fixes applied (<F>)              <- only when the post-migration fix edited the output
 - <file>: <activity> — <what was changed>
+- <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Next steps
 - Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.

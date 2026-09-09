@@ -93,7 +93,7 @@ Full values are healthy in generated cards: the runtime reduces a marker-bearing
 
 ## Report and confirm
 
-Present a findings table: shape, file, activity, variable, value class, planned action. Then ask once, a single `AskUserQuestion` with three options: apply all planned edits, apply a chosen subset, or apply none. This question is the only gate: nothing is edited before it, and "none" ends the procedure with the findings table as the result. When the user asked only to scan or report, they pick "none" here; there is no separate mode to track.
+Open with one line stating how many marker constructions were scanned, how many edits are planned, and how many annotations will be rewritten to record a healthy verdict (see Annotation rewrite), for example "7 marker constructions scanned, 2 planned edits, 3 annotations to mark verified healthy". Then a findings table, shape, file, activity, variable, value class, planned action, listing only constructions with a planned edit (Fix 1, Fix 2) or a non-healthy result (`manual-review`, `pre-existing`, `loose-no-scope`, `unresolved`). Healthy constructions and non-findings (literal loose probes, migrated Attach Windows, redundant full-value cards) are counted in the opening line and not listed. Then ask once, a single `AskUserQuestion` with three options: apply all planned edits and annotation rewrites, apply a chosen subset, or apply none. Annotation rewrites on healthy constructions are edits to the user's XAML and sit behind the same gate. This question is the only gate: nothing is edited before it, and "none" ends the procedure with the findings table as the result. When the user asked only to scan or report, they pick "none" here; there is no separate mode to track.
 
 ## Fix
 
@@ -118,11 +118,13 @@ Precondition: the activity has an enclosing scope, a real `NApplicationCard` or 
 
 The designer-side alternative, setting the target's Window selector to the surrounding card's literal selector, is the same remediation via another path; `IsLoose` has no designer editor, which is why the fix edits the XAML flag.
 
-### Annotation rewrite (all fixes)
+### Annotation rewrite (fixes and verified-healthy constructions)
 
 Migrator annotations are **one line per message**: each line is `[PostMigration Action Required]: <TYPE>: <message>`, lines joined by newline, with an optional `[Existing annotation]: <user text>` tail. An annotation can carry several unrelated migration messages; never replace it wholesale.
 
 Where a fixed activity (the wrapped child or the card for Fix 1; the check for Fix 2) carries `sap2010:Annotation.AnnotationText`, replace **only the line whose message is the fixed defect** with `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <one line — what was done>`. Every other line, including the `[Existing annotation]: ` tail, stays verbatim. No line matches the fixed defect → leave the annotation untouched.
+
+A **healthy** construction whose annotation carries a migrator line about its expression selector (a redundant full-value generated card, its wrapped child, a migrated Attach Window) gets the same treatment: replace only that line with `Verified healthy by uipath-activity-migrator on <YYYY-MM-DD>: <value class and why it works>`, for example "full-value selector; the card attaches to its window part". This removes the action request from Studio and from the analyzer warnings, so the report need not mention the construction. Rewrite only when the value class came from an authoritative source (XAML default, `Assign`, config read locally); leave the annotation untouched for `unresolved` values or values supplied from memory.
 
 ## Validate
 
@@ -153,4 +155,4 @@ Build <passed|failed>. <N> findings: fixed ×<a>, manual-review ×<b>, pre-exist
 - Open <MIGRATED_DIR> with Studio 2024.10 or later and run the affected workflows once in Debug.
 ```
 
-Omit result kinds with a zero count. When this procedure runs inside the migration workflow, its `fixed` lines go into the report's "Fixes applied" block and everything else that is not `healthy` goes under "Needs attention"; do not produce this shape a second time there. The two transforms above double as manual recipes for the user when a finding is left to them.
+Omit result kinds with a zero count. Healthy constructions get no line: their annotations were rewritten under Fix so Studio shows the verdict, and nothing "left alone" is narrated. When annotations were rewritten, add one line under Findings: "<k> annotations rewritten to Verified healthy (no structural change)". When this procedure runs inside the migration workflow, its `fixed` lines go into the report's "Fixes applied" block and everything else that is not `healthy` goes under "Needs attention"; do not produce this shape a second time there. The two transforms above double as manual recipes for the user when a finding is left to them.
