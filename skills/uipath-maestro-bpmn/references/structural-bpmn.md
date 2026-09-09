@@ -40,7 +40,6 @@ namespace, at least one `<bpmn:process>`, and (to render) a
     xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:uipath="http://uipath.org/schema/bpmn"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="UiPath Maestro (https://uipath.com)">
   <bpmn:process id="Process_1">
@@ -526,9 +525,10 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
 - **Add an entry point**: use a root-level start event and generate a stable,
   unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
   example UUID; this scaffold field is not a registry-owned node payload. Also
-  declare the public input/output variables whose `elementId` matches that
-  start event — without the match, `refresh` derives an empty `input` schema
-  for the entry point.
+  declare the public variables it needs: each `uipath:input`'s `elementId` must
+  match that start event, and each `uipath:output`'s must match the end event
+  that returns it. Without the match, `refresh` derives an empty schema for
+  that side of the entry point.
 
 Do not patch generated JSON to fix source behavior — change the `.bpmn` and
 regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.

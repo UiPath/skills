@@ -159,7 +159,7 @@ jobs:
         run: pip install pytest
 
       - name: Run BPMN contract guards
-        run: pytest tests/scripts/test_bpmn_project_scaffold_contract.py -v
+        run: pytest tests/scripts/test_bpmn_doc_examples_parse.py tests/scripts/test_bpmn_project_scaffold_contract.py -v
 
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest
