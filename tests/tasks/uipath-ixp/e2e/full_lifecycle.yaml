@@ -31,12 +31,12 @@ sandbox:
 
 initial_prompt: |
   Run a complete UiPath IXP project lifecycle ending with a published
-  model, using the three vendor invoices in `./fixtures/` 
+  model, using the three vendor invoices in the working directory
   (`hp_tax_invoice.png`, `york_solutions_invoice.png`, `csi_tower_invoice.png`).
 
   Scenario setup:
   - Create the project WITHOUT a taxonomy, then import the bundled
-    `./fixtures/taxonomy.json` (a taxonomy already exists for this
+    `taxonomy.json` (a taxonomy already exists for this
     scenario).
   - Use a unique title `codereval-e2e-<random-suffix>` so concurrent
     runs do not collide.
