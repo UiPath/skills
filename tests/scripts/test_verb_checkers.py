@@ -266,6 +266,110 @@ def test_backticked_rename_cells_strip_to_bare_verbs(tmp_path, monkeypatch):
     )
 
 
+# --- Issue 15 (High): `\b` after a complete token discarded the leaf verb -----
+
+def test_word_boundary_after_complete_token_keeps_leaf():
+    r"""`uip\s+pm\s+apps\s+data-model\s+add-table\b.*--file\b` must yield the
+    FULL verb path, not just the group `pm apps data-model`.
+
+    `\b` following a literal word character confirms the token ended — the
+    opposite of a partial match. Trimming it dropped the leaf verb from every
+    `uip <group> <leaf>\b` pattern, which is the repo's standard shape, so the
+    checker only ever verified the command group.
+    """
+    paths = cli.extract_verb_paths(
+        r"uip\s+pm\s+apps\s+data-model\s+add-table\b.*--file\b")
+    assert paths == ["pm apps data-model add-table"], (
+        f"Expected the leaf verb to survive `\\b`, got {paths!r}."
+    )
+
+
+def test_bogus_leaf_under_real_group_is_unknown():
+    """`pm apps model add-table` must NOT pass via the parent group.
+
+    `pm apps model` is a real group (`fields`/`get`/`update`), but it has no
+    `add-table` child — that verb is `pm apps data-model add-table`. Longest-
+    prefix matching silently reported the bogus leaf as reachable, so the
+    criterion could never fire and the task lost its weight on a correct run.
+    """
+    catalog = {"pm apps model", "pm apps model fields", "pm apps model get",
+               "pm apps data-model", "pm apps data-model add-table"}
+    verdict, _ = cli.classify(["pm apps model add-table"], catalog, {})
+    assert verdict == "unknown", (
+        f"Expected 'unknown' for a leaf absent under a known group, got {verdict!r}."
+    )
+    verdict, _ = cli.classify(["pm apps data-model add-table"], catalog, {})
+    assert verdict == "reachable"
+
+
+def test_positional_args_after_leaf_verb_stay_reachable():
+    """Trailing positional arguments must not be mistaken for subcommands.
+
+    `is resources run list` is a leaf (no children), so `uipath-testmanager`
+    and `GetAssertions` are arguments — flagging them would be a false positive.
+    """
+    catalog = {"is resources run", "is resources run list"}
+    verdict, _ = cli.classify(
+        ["is resources run list uipath-testmanager GetAssertions"], catalog, {})
+    assert verdict == "reachable"
+
+
+def test_partial_kebab_token_is_not_reported_missing():
+    """A path ending mid-kebab (`create-`) came from a prefix match over real
+    verbs (`create-raw`, `create-resource`) — we cannot claim it is missing."""
+    catalog = {"agenthub mcp-tools", "agenthub mcp-tools create-raw",
+               "agenthub mcp-tools create-resource"}
+    verdict, _ = cli.classify(["agenthub mcp-tools create-"], catalog, {})
+    assert verdict == "reachable"
+
+
+def test_unwalkable_group_never_reports_missing_leaf():
+    """Children of an unwalkable group are unknown, so absence proves nothing."""
+    catalog = {"codedagent", "codedagent init"}
+    verdict, _ = cli.classify(["codedagent teleport"], catalog, {},
+                              unwalkable={"codedagent"})
+    assert verdict == "reachable"
+
+
+# --- Issue 16 (Medium): negative criteria were never verb-checked -------------
+
+def test_negative_criteria_are_scanned_and_reported_medium(tmp_path, monkeypatch):
+    """A `command_not_executed` whose verb does not exist can never fire, so it
+    awards its weight unconditionally. Previously such criteria were skipped
+    entirely. They are reported at Medium (sometimes the guard is deliberate),
+    never High — they do not break the run.
+    """
+    monkeypatch.setattr(cli, "load_catalog", lambda: ({"pm apps", "pm apps get"}, "test"))
+    monkeypatch.setattr(cli, "load_renames", lambda: {})
+    monkeypatch.setattr(cli, "load_unwalkable", lambda: set())
+
+    task = tmp_path / "task.yaml"
+    task.write_text(
+        "success_criteria:\n"
+        "  - type: command_not_executed\n"
+        "    command_pattern: 'uip\\s+pm\\s+apps\\s+teleport\\b'\n"
+    )
+    findings = cli.lint_file(task, {"pm apps", "pm apps get"}, {}, set())
+    assert len(findings) == 1, f"Expected the negative to be scanned, got {findings!r}"
+    assert findings[0]["severity"] == "Medium", findings[0]
+
+
+def test_zero_bounded_command_executed_counts_as_negative(tmp_path):
+    """`command_executed` with `max_count: 0` is the other negative idiom in
+    this repo; it must get the same Medium treatment, not High."""
+    task = tmp_path / "task.yaml"
+    task.write_text(
+        "success_criteria:\n"
+        "  - type: command_executed\n"
+        "    command_pattern: 'uip\\s+pm\\s+apps\\s+teleport\\b'\n"
+        "    min_count: 0\n"
+        "    max_count: 0\n"
+    )
+    findings = cli.lint_file(task, {"pm apps", "pm apps get"}, {}, set())
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "Medium", findings[0]
+
+
 # --- Issue 12: dot-separated argument values are not verb tokens --------------
 
 def test_dot_separated_argument_value_not_treated_as_verb(tmp_path):
