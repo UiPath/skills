@@ -10,8 +10,14 @@ tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "sh
 run_limits:
   task_timeout: 2400
   turn_timeout: 1800
-  expected_turns: 55
-  max_turns: 90
+  # Two local claude-sonnet-5 runs on this PR's tree both passed 3/3 but took
+  # 60 and 80 turns -- 80 is 89% of the old cap of 90, so a third run landing
+  # slightly higher would fail on budget rather than behavior. The task grew a
+  # CLI `init` plus a `refresh` round-trip in this PR, which is where the turns
+  # went. Sized like patterns/no_pattern: expected tracks observed, cap gives
+  # ~1.5x margin over the worst run.
+  expected_turns: 70
+  max_turns: 120
 initial_prompt: |
   Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
   - Manual start with input variable `expenseId` and `amount`, and output
