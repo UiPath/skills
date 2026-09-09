@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-08T04:07:47Z",
-  "cli_version": "1.203.0-dev.8563",
+  "generated_at": "2026-09-09T04:09:10Z",
+  "cli_version": "1.203.0-dev.8572",
   "verbs": [
     "admin",
     "admin audit",
@@ -659,6 +659,9 @@
     "llm-gateway",
     "llm-gateway models",
     "login",
+    "login profiles",
+    "login profiles delete",
+    "login profiles list",
     "login refresh",
     "login status",
     "login tenant",
@@ -1514,7 +1517,6 @@
     "tm testcases list",
     "tm testcases list-automations",
     "tm testcases list-result-history",
-    "tm testcases list-steps",
     "tm testcases list-testsets",
     "tm testcases remove",
     "tm testcases run",

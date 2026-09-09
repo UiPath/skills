@@ -45,7 +45,7 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-microsoft-outlook365'
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-microsoft-outlook365=uipath-maestro-flow'
     timeout: 120
 
 success_criteria:

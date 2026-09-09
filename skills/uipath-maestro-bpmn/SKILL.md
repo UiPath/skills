@@ -213,6 +213,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
+   For an Integration Service draft or boundary handoff (author locally, hand
+   enrichment to the CLI, no pack/upload/operate asked for), emit **only** the
+   `.bpmn` plus the notes file — do NOT create the four generated package files
+   (Rule 16); authoring them fails the boundary the task tests.
    For Integration Service draft notes, name every CLI-owned blocker literally,
    including the exact phrase `connection binding`, plus dynamic schemas,
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
@@ -355,6 +359,12 @@ and honestly surfaced to the user as gaps when asked.
    business rule task. Never do that work at authoring time or hardcode its
    result. Bare "agent" in any process description means a UiPath agent, never
    you.
+16. **Generated package files are CLI-owned.** Never hand-author
+   `bindings_v2.json`, `entry-points.json`, `operate.json`, or
+   `package-descriptor.json`. Run `uip maestro bpmn update-metadata` to
+   generate them, and only once the user asked to package or operate. An
+   Integration Service draft or boundary handoff asks for none of those — emit
+   only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
 
 ## References
 

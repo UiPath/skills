@@ -114,7 +114,7 @@ uip solution resources list --kind App --solution-folder ./InvoiceAutomation --o
 | Option | Values | Default |
 |--------|--------|---------|
 | `--solution-folder <path>` | Path to solution root | Current working directory |
-| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger` (any RCS kind) | All kinds |
+| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger`, `Entity`, `ChoiceSet` (any RCS kind) | All kinds |
 | `--search <term>` | Name substring match | No filter |
 | `--source <source>` | `all`, `local`, `remote` | `all` |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
@@ -137,6 +137,8 @@ uip solution resources refresh --solution-folder ./InvoiceAutomation --output js
 | `Imported` | Cloud resources imported into the solution (artefact files written + linked) |
 | `Skipped` | Resources already tracked in the solution |
 | `Warnings` | Bindings that couldn't be resolved (logged for follow-up) |
+
+Refresh pulls in any choice set a Data Fabric `Entity` references automatically as a dependency of the entity — don't add it separately.
 
 ### What `refresh` actually does
 
@@ -259,6 +261,12 @@ uip solution resources add --source local --kind Asset --name ApiKey --type Text
 # Import an existing remote queue (folder disambiguates same-name resources)
 uip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
 
+# Import a Data Fabric entity created in Orchestrator's Shared folder via `uip df entities create`
+uip solution resources add --source remote --kind Entity --name Customer --folder-path Shared --output json
+
+# Import the choice set referenced by that entity's CHOICE_SET_SINGLE field
+uip solution resources add --source remote --kind ChoiceSet --name CustomerStatus --folder-path Shared --output json
+
 # Skip RCS lookup if you already know the cloud key
 uip solution resources add --source remote --kind Queue --name InvoiceQueue \
     --cloud-key 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
@@ -267,7 +275,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 | Option | Values | Default |
 |--------|--------|---------|
 | `--source <source>` | `local`, `remote` | **required** |
-| `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
+| `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger, Entity, ChoiceSet). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
 | `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
@@ -295,6 +303,14 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 ```
 
 `Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied when SDK detects drift on `--source remote`), or `"Unchanged"` (idempotency hit). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
+
+### Data Fabric kinds
+
+**Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. Idempotent — re-run on drift; returns `Updated`.
+
+**Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity and pack the workflow project — the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg). RPA (XAML) workflows use strongly-typed DataService activities that need a compiled `content/.entities/DataService.*.Entities.dll` bundle Studio Web builds at pack time — **Studio Web is required for RPA tenant-DF today**. In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
+
+> **Do not hand-write `configurations/default/configuration.json`.** `uip df entities get` returns `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Only `uip solution resources add --source remote` writes the shape the deploy validator accepts.
 
 ### Ambiguous remote match
 
