@@ -120,7 +120,7 @@ the complete request object as JSON element content, nested the way the
 provider's API nests it:
 
 ```xml
-<uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_ProjectKey"},"issuetype":{"id":"=vars.Var_IssueTypeId"},"summary":"=js:'[' + vars.Var_Severity + '] ' + vars.Var_CorrelationId}}]]></uipath:input>
+<uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_TargetProject"},"issuetype":{"id":"3"},"summary":"=js:'Created from Maestro at ' + vars.Var_RunLabel}}]]></uipath:input>
 ```
 
 Take every body field name from the operation's `RequestFields` in
