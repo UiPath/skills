@@ -3,9 +3,15 @@
 
 Grades that the authored BPMN carries a uipath:errorMapping block whose
 condition branches on the runtime error object via `vars.Error.code` (matched
-as an expression, not a baked literal), per references/expression-authoring.md.
-The engine seeds the error under the capital-`Error` key; `vars.error` does not
-resolve, so the casing is graded exactly.
+as an expression, not a baked literal), per references/expression-authoring.md
+— the engine seeds the error under the capital-`Error` key, so the casing is
+graded exactly.
+
+Scope: this check grades the condition string and its casing only. It does NOT
+verify the `<uipath:output source="=Error">` binding that the same reference
+says `vars.Error` needs to resolve at runtime — the skill's own canonical
+example currently omits that binding, so grading it here would be premature.
+Tracked in issue #3171.
 Reuses the shared uipath-maestro-bpmn check helpers (stdlib ElementTree).
 """
 
