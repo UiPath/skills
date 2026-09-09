@@ -74,8 +74,10 @@ The resource argument follows the same rule: `4.0.0` activities are addressed by
 
 ```bash
 uip is resources describe <connector-key> <object-name> --output json
-uip is resources describe <connector-key> <object-name> --activity-version 4.0.0 --output json
+uip is resources describe <connector-key> <object-name> --activity-version 4.0.0 --operation <METHOD> --output json
 ```
+
+Pass `--operation` with the HTTP verb for `4.0.0` describes — without it the response is an operation summary with no `requestFields`. `4.0.0` reference fields carry `reference.scriptRef` instead of `objectName`; resolve them with `uip is resources run script --script-ref`, not `run list` — see [reference-resolution.md — 4.0.0 Activities — Script References](reference-resolution.md#400-activities--script-references-scriptref).
 
 ---
 
@@ -136,6 +138,17 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 | `replace` | Full replacement (PUT) | Yes | Yes (`id=<RECORD_ID>`) |
 
 > **Update** (PATCH) = change specific fields. **Replace** (PUT) = overwrite entire record. Default to **Update** unless the user says "replace" or "overwrite".
+
+### `run script` — run a published connector script
+
+`uip is resources run script` runs a connector's published action script through the IPE Runtime Proxy, which injects the connection's credential. Use it to resolve `4.0.0` reference fields (`reference.scriptRef`):
+
+```bash
+uip is resources run script --connection-id "<CONNECTION_ID>" \
+  --connector-key "<CONNECTOR_KEY>" --script-ref "<SCRIPT_REF>" --output json
+```
+
+Exactly one of `--script-ref` or `--inline-script` is accepted; `--connector-key` is required with `--script-ref`. `Data.Body` is a JSON **string** relaying the vendor response, and a vendor `4xx`/`5xx` still returns `Result: "Success"` — check `Data.Status`. Parsing rules and the full lookup workflow: [reference-resolution.md — 4.0.0 Activities — Script References](reference-resolution.md#400-activities--script-references-scriptref).
 
 ### Filtering Results with `--output-filter`
 
