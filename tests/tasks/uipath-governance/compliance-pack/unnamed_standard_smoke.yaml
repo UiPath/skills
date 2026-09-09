@@ -5,12 +5,9 @@ description: >
   runs, and the reply must name the standard it reports on. The agent must never
   default to a pack it did not read out of `catalog list`.
 
-  This task is deliberately agnostic to how many packs are live on the test
-  tenant. Availability is tenant state we do not control: today only ISO 42001 is
-  `Available: true`, and a test that demanded a "which standard?" question would
-  be demanding a question with one answer. Graded instead: the catalog was read
-  first, nothing was mutated, and the reply names its standard and justifies the
-  pick (asks when several are available, says "only one available" when one is).
+  Graded: the catalog was read first, nothing was mutated, and the reply names
+  its standard and justifies the pick - asks when several are usable, says "only
+  one usable" when one is. Agnostic to how many packs are live on the tenant.
 
   Guards SKILL.md Critical Rule 9 + compliance-pack/catalog/impl.md Pack ID lookup.
   Sibling check_routing_smoke.yaml covers the same posture flow WITH the standard named.
@@ -42,8 +39,19 @@ success_criteria:
     description: "Agent read the catalog instead of assuming a standard"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+list'
     min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Split from the criterion above: require_success filters on the Bash CALL's
+  # exit status, and agents batch several commands into one call. Bundled here,
+  # an unrelated non-zero sibling command would zero the whole 3.0. Separated,
+  # a batching agent loses 1.0 instead.
+  - type: command_executed
+    description: "The catalog read actually succeeded, not just ran"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+list'
+    min_count: 1
     require_success: true
-    weight: 3.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: llm_judge
@@ -53,16 +61,17 @@ success_criteria:
       The user asked: "Check my compliance posture and tell me where I stand."
 
       The request names no compliance standard. Posture is always measured
-      against ONE specific standard, and the platform catalog marks each
-      standard `Available: true` or `Available: false` (announced but not yet
-      shipped). Only `Available: true` standards can be reported on.
+      against ONE specific standard. A catalog pack is usable when it is
+      present and not explicitly `Available: false` (announced but not yet
+      shipped) - an absent `Available` field means usable, not unusable.
+      Only usable standards can be reported on.
 
-      Correct behavior depends on how many standards are actually available,
+      Correct behavior depends on how many standards are actually usable,
       which the agent learns from the catalog:
-      - Two or more available -> present them and ask the user which one.
-      - Exactly one available -> report that one, naming it explicitly AND
-        saying it was the only available standard, so the user can correct it.
-      - None available -> say so and stop.
+      - Two or more usable -> present them and ask the user which one.
+      - Exactly one usable -> report that one, naming it explicitly AND
+        saying it was the only usable standard, so the user can correct it.
+      - None usable -> say so and stop.
 
       IMPORTANT - grading scope:
       - Whether the agent executed any CLI command is verified by SEPARATE
@@ -70,7 +79,7 @@ success_criteria:
         agent ran or applied anything.
       - Do NOT penalize the agent for reporting a single standard's posture
         without asking, PROVIDED the reply says that standard was the only one
-        available. That is the correct behavior, not a shortcut.
+        usable. That is the correct behavior, not a shortcut.
       - This sandbox has a live tenant session and the catalog loads. A reply
         claiming it could not connect, could not read the catalog, or could not
         assess posture contradicts the recorded command output - score it 0.0.
@@ -78,10 +87,12 @@ success_criteria:
 
       Score 1.0 if the reply names the standard its posture applies to AND
         justifies the pick - either by asking the user to choose among the
-        available standards, or by stating the named one was the only available
-        standard (or that none were available).
-      Score 0.5 if it names the standard but gives no reason why that one, so
-        the user cannot tell whether the choice was theirs to make.
+        usable standards, or by stating the named one was the only usable
+        standard (or that none were usable).
+      Score 0.25 if it names the standard but gives no reason why that one, so
+        the user cannot tell whether the choice was theirs to make. This band
+        sits BELOW pass_threshold on purpose: naming without justifying is the
+        exact half-measure this task exists to catch.
       Score 0.0 if it reports posture without making clear which standard the
         result belongs to, or picks one silently with no acknowledgement that
         the request specified none.
@@ -92,8 +103,13 @@ success_criteria:
     description: >
       Agent did NOT run a pack-scoped command against a standard the catalog
       marks unavailable - those have no bundle behind them and always fail.
-      Guard, not a discriminator: it cannot fire while one pack is available.
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+(?:state\s+\S+|catalog\s+get)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*(?:iso-27001|gdpr-|hipaa|soc-2|eu-ai-act))'
+      Positional match on the packId argument, NOT a lookahead: the grader also
+      tests a haystack with newlines collapsed to spaces, where a segment-scoped
+      lookahead leaks past the line end and bans correct runs.
+      REMOVAL TRIGGER: the alternation is a snapshot of today's unavailable set.
+      Delete the offending id here the moment a listed pack ships - until then
+      this is an inert guard, and once one ships it starts banning valid work.
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+(?:state\s+\S+\s+(?:tenant|organization)\s+\S+|catalog\s+get)\s+(?:iso-27001|gdpr|hipaa|soc-2|eu-ai-act)'
     weight: 1.0
     pass_threshold: 1.0
 
