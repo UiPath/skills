@@ -30,8 +30,7 @@ initial_prompt: |
     user names.
   - Declare root `uipath:variables version="v1"` entries for `expenseId`,
     `amount`, and `decision` with documented types.
-  - Include an integer `uipath:migrationVersion` element on the process, set
-    to the serializer's current top migration number.
+  - Include an integer `uipath:migrationVersion` element on the process.
   - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`, include
     `uipath:scriptVersion`, prefer `v3`, and keep the script compatible with
     the Jint runtime (no Node.js, browser, filesystem, or network APIs).
@@ -49,8 +48,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Editable project source or metadata was created beside the BPMN"
-    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('ExpenseApprovalBpmn.bpmn'), None); sys.exit(0 if b and ((b.parent / 'project.uiproj').is_file() or b.with_suffix('.bpmn.ts').is_file()) else 'project.uiproj or ExpenseApprovalBpmn.bpmn.ts missing beside BPMN')\""
+    description: "Project metadata was created beside the BPMN"
+    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('ExpenseApprovalBpmn.bpmn'), None); sys.exit(0 if b and ((b.parent / 'project.uiproj').is_file()) else 'project.uiproj missing beside BPMN')\""
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

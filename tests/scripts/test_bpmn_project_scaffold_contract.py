@@ -73,7 +73,16 @@ def test_minimal_example_has_complete_di_coverage() -> None:
         for element in process
         if element.get("id")
         and element.tag.rsplit("}", 1)[-1]
-        not in ("sequenceFlow", "extensionElements")
+        not in (
+            # An association needs a BPMNEdge, a dataObject needs neither, and
+            # neither is a flow node -- demanding a shape for them would
+            # false-fail the first time the example grows one.
+            "sequenceFlow",
+            "association",
+            "dataObject",
+            "dataObjectReference",
+            "extensionElements",
+        )
     }
     flow_ids = {
         flow.attrib["id"] for flow in process.findall("bpmn:sequenceFlow", NS)

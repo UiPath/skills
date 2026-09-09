@@ -40,6 +40,7 @@ namespace, at least one `<bpmn:process>`, and (to render) a
     xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:uipath="http://uipath.org/schema/bpmn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="UiPath Maestro (https://uipath.com)">
   <bpmn:process id="Process_1">
@@ -69,15 +70,11 @@ file will fail to parse. Never paste CLI commands or flags
 ## A complete minimal file (author from this, not from examples)
 
 This is a minimal CLI-compatible authoring scaffold with a stable manual entry
-point, one structural task, and complete diagram interchange. The CLI
-initializer omits `isExecutable`; preserve that shape. `init` and `format`
-write `exporterVersion`; leave it to them rather than pinning a release into
-hand-authored source. If existing source
-includes the equivalent default `isExecutable="false"`, preserve it. Do not
-force `isExecutable="true"`. Author from this skeleton plus the registry
-templates for the nodes your process needs. **Do not
-reverse-engineer the pattern from full example BPMN files** — it is the main
-reason authoring runs out of time.
+point, one structural task, and complete diagram interchange. Preserve the
+initializer's `isExecutable` shape — omitted, or `"false"` if already present.
+Never force `"true"`. Author from this skeleton plus the registry templates for
+the nodes your process needs. **Do not reverse-engineer the pattern from full
+example BPMN files** — it is the main reason authoring runs out of time.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -87,6 +84,7 @@ reason authoring runs out of time.
     xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
     xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
     xmlns:uipath="http://uipath.org/schema/bpmn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="UiPath Maestro (https://uipath.com)">
   <bpmn:process id="Process_1">
@@ -141,14 +139,18 @@ schema bodies are JSON text or CDATA.
 <uipath:variables version="v1">
   <uipath:input id="input_ExpenseId" name="expenseId" type="string" elementId="Start_1" />
   <uipath:inputOutput id="Var_Decision" name="decision" type="string" />
+  <uipath:output id="output_Decision" name="decision" type="string" elementId="End_1" />
 </uipath:variables>
 ```
 
 If a migration marker is present, its supported shape is
 `<uipath:migrationVersion version="15" />`; the attribute is `version`, not
-`value`, and its value is an **integer** serializer migration number — the
-reader does `Number.parseInt`, so a decimal such as `11.5` is silently
-truncated. The CLI initializer may omit that optional marker.
+`value`, and its value is an **integer** serializer migration number. The
+reader does `Number.parseInt`
+(PO.Frontend `src/services/serialization/bpmn-from-xml-headless.ts`), so a
+decimal such as `11.5` truncates to `11`. Author integers; when editing
+existing source, preserve whatever value is already there byte-for-byte rather
+than normalising it. The CLI initializer may omit that optional marker.
 
 See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
