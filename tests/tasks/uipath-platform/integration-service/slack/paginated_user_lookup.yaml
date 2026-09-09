@@ -1,0 +1,90 @@
+task_id: skill-ipe-slack-paginated-user-lookup
+description: >
+  Pagination + reference lookup test on the Slack connector — forces the
+  agent to resolve a user via the paginated "List All Users" operation
+  (≥2 paged calls) and then send a direct message to the resolved user id.
+tags: [uipath-platform, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Use the `uipath-maestro-flow` skill to build this flow.
+
+  Create a new Flow project called "SlackPaginatedUserLookupTest" with a
+  manual trigger. The flow must:
+
+  1. Use the Slack "List All Users" activity to enumerate workspace users.
+     Use a small page size (e.g. limit=2) so pagination is forced — invoke
+     `uip is resources run list` (or the equivalent activities run) MORE
+     THAN ONCE with the next-page cursor so you walk past the first page
+     of results.
+  2. Resolve the user id whose email is "baishali.ghosh@uipath.com" from
+     the paginated output. If that user is not on a later page, pick any
+     user returned on a page after the first page.
+  3. Add a Slack "Send Message to User" connector node that posts the text
+     "Paginated lookup test" to the resolved user id. Wire the resolved id
+     from the list-users node output into the send-message node input.
+     Use connection name 'is-sandboxes' for all Slack nodes.
+  4. Add a Decision node to check whether the send-message operation succeeded.
+  5. Route failure to a Terminate node with error message
+     "SlackPaginatedUserLookupTest test failed".
+  6. Route success to a final action that logs
+     "SlackPaginatedUserLookupTest test passed".
+  7. Validate the final flow with `uip maestro flow validate`.
+
+  Auth failures and connection errors are expected in sandbox — build the
+  structure and wiring correctly; do not attempt a live debug run.
+
+  Confirm the connector key is registered before adding nodes:
+    uip maestro flow registry search "slack"
+
+  Test connections for this task live in Orchestrator folder "uipath-maestro-flow".
+  Resolve its key with `uip or folders list --all -o json` (look for Name
+  "uipath-maestro-flow") and pass `--folder-key <key>` on every
+  `uip is connections list` call.
+
+  If a required Slack connector operation is not present in the registry,
+  use a managed HTTP fallback for the equivalent REST call (it must still
+  paginate via cursor) and finish after validation. Do not keep searching
+  for a connector node that the registry does not expose.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant has at least one Slack connection"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
+    timeout: 35
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow structure: List Users + Send Message to User wired, Decision + Terminate"
+    command: "python3 $TASK_DIR/check_paginated_user_lookup.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 10.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent paginated through Slack users (≥2 list invocations)"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+is\\s+(resources|activities)\\s+run\\s+\\S+\\s+(ListAllUsers|list|users)"
+    min_count: 2
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
