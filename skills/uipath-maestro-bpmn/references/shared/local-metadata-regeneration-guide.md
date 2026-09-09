@@ -2,7 +2,7 @@
 
 Use this guide when BPMN source changed and local package metadata must be refreshed or verified before packaging, upload, debug, publish, or deploy.
 
-**Do NOT apply it to an Integration Service draft or boundary handoff.** When the task is to author a local BPMN draft and hand connector enrichment to the CLI (no upload/pack yet), `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` stay CLI-owned — do not hand-author or pre-generate them. Author only the `.bpmn` source shape plus a `.md` notes file **inside the project directory** naming the CLI-owned blockers; regeneration below applies only once you are actually packaging an enriched project.
+**Do NOT apply it to an Integration Service draft or boundary handoff.** When the task is to author a local BPMN draft and hand connector enrichment to the CLI (no upload/pack yet), `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` stay CLI-owned — do not hand-author or pre-generate them. Author only the `.bpmn` source shape plus a `.md` notes file **inside the project directory** naming the CLI-owned blockers. The regeneration workflow below reaches such a project only once its connectors are enriched.
 
 ## Ownership
 

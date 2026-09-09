@@ -361,8 +361,8 @@ and honestly surfaced to the user as gaps when asked.
    you.
 16. **Generated package files are CLI-owned.** Never hand-author
    `bindings_v2.json`, `entry-points.json`, `operate.json`, or
-   `package-descriptor.json`. Run `uip maestro bpmn update-metadata` to
-   generate them, and only once the user asked to package or operate. An
+   `package-descriptor.json`. Run `uip maestro bpmn refresh <project-path>` to
+   generate them — never the deprecated `update-metadata`. An
    Integration Service draft or boundary handoff asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
 
