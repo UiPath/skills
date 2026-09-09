@@ -205,6 +205,15 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
+   When the task is an Integration Service **draft or boundary handoff** —
+   author the process locally and hand connector enrichment to the CLI, with no
+   pack/upload/operate step asked for — do NOT create `bindings_v2.json`,
+   `entry-points.json`, `operate.json`, or `package-descriptor.json`. Those four
+   are CLI-owned generated package files; authoring them yourself crosses the
+   boundary the task is testing. Produce only the `.bpmn` source shape plus a
+   notes/README file listing the CLI-owned blockers. (This overrides the general
+   "create the package metadata files" instruction below, which applies only
+   once you are actually packaging.)
    For Integration Service draft notes, name every CLI-owned blocker literally,
    including the exact phrase `connection binding`, plus dynamic schemas,
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
