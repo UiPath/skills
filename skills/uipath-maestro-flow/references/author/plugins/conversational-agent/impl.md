@@ -28,7 +28,7 @@ uip maestro flow registry list --local --output json
 uip maestro flow registry search "<agent name>" --output json
 ```
 
-Both of the latter give a `uipath.core.agent.<id>` node type. `registry get` on it returns `inputDefaults` holding `isConversational: true` and `conversationalAgentSettings`, which is how you confirm the agent really is a chat agent rather than an autonomous one. Discovery details live in [agent/impl.md](../agent/impl.md#discovery-and-registry-validation).
+Both of the latter give a `uipath.core.agent.{key}` node type. `registry get` on it returns `inputDefaults` holding `isConversational: true` and `conversationalAgentSettings`, which is how you confirm the agent really is a chat agent rather than an autonomous one. Discovery details live in [agent/impl.md](../agent/impl.md#discovery-and-registry-validation).
 
 **If an in-solution agent comes back autonomous**, the registry could not read its `agent.json` — it builds that node from the sibling project's file, and falls back to autonomous when the file is missing or malformed. Re-run with `--log-level debug` and it names the reason:
 
@@ -91,9 +91,9 @@ This is the one that goes wrong silently. The agent reads the conversation throu
 }
 ```
 
-**`mode` selects the contract.** `simple` (the default) is authored from a single `context` binding — Studio Web's panel and the SDK both expand it into the other four at author time. Nothing expands it at run time, so a hand-authored `.flow` writes all five whichever mode it declares. `custom` is for a turn assembled from more than one source, and makes `conversationId` mandatory. The field is optional and ungraded; the examples here all declare `simple`.
+**`mode` selects the contract.** `simple` (the default) is authored from a single `context` binding, which Studio Web's panel and the SDK expand into the other four at author time. `custom` is for a turn assembled from more than one source, and makes `conversationId` mandatory. The field is optional and ungraded; the examples here all declare `simple`.
 
-**Write all five.** In Studio Web the author fills `context` and the panel derives the other four, but that derivation only runs in the editor — nothing derives them when the file is authored from the CLI.
+**Write all five**, whichever mode is declared. In Studio Web the author fills `context` and the panel derives the other four, but that derivation only runs in the editor — nothing derives them when the file is authored from the CLI.
 
 Validation only requires `conversationId`, so it half-helps: leave that out and validate fails, but bind `context` and `conversationId` while dropping `exchangeId`, `messages` and `userSettings` and validate passes. The runtime reads all four, so that flow ships an agent with no chat history and no user settings.
 
@@ -151,7 +151,7 @@ uip maestro flow node add ChatFlow/ChatFlow.flow core.trigger.conversation --pos
 
 ```bash
 uip maestro flow node add ChatFlow/ChatFlow.flow uipath.agent.conversational \
-  --position 768,144 --source <ProjectId> -i '<the settings JSON>'
+  --position 768,144 --source <ProjectId> --input '<the settings JSON>'
 ```
 
 ### The agent — in-solution or published
@@ -190,7 +190,7 @@ An in-solution agent needs its `definitions[]` entry fetched with `--local`; a p
 }
 ```
 
-### Get conversation context (usually not needed)
+### Get conversation context
 
 Reads recent exchanges without waiting. Rarely needed, and constrained — see [planning.md § Get Conversation Context](planning.md#get-conversation-context).
 ```json

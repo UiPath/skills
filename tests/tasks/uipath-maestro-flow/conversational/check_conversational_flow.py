@@ -427,12 +427,8 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
             f"{label}: metadata.isConversational is "
             f"{metadata.get('isConversational')!r}, expected true"
         )
-    # `settings.maxIterations` is written by `uip agent init --conversational`,
-    # not by the agent under test, and CLI builds disagree on whether the
-    # conversational scaffold carries it at all. Asserting its presence grades
-    # the CLI build; the same reasoning keeps it ungraded in
-    # tests/tasks/uipath-agents/lowcode/conversational/scaffold/. So check the
-    # range only when the field is there — a bad value is still the agent's doing.
+    # Presence is not graded: `uip agent init` writes the field, not the agent
+    # under test. A bad value still is, so the range is checked when it is there.
     if "maxIterations" in settings:
         iterations = settings["maxIterations"]
         if (
@@ -467,8 +463,8 @@ def check_agent_json(flow_path: str, flow: dict) -> int:
 
     An inline agent is addressed by `inputs.source`, so it is resolved exactly.
     An in-solution agent's node type carries a solution *resource key*, which is
-    not recorded in its agent.json — so the sibling agent projects are graded as
-    a set instead, which is unambiguous for a flow that builds one agent.
+    not recorded in its agent.json — so every sibling agent project is graded
+    instead, which is unambiguous for a flow that builds one agent.
     """
     agents = _conversational_agents(flow)
     if not agents:
@@ -477,6 +473,7 @@ def check_agent_json(flow_path: str, flow: dict) -> int:
     root = _solution_root(find_project_dir())
     problems: list[str] = []
     graded: set[str] = set()
+    attempted: set[str] = set()
 
     for node in agents:
         if not _is_inline(node):
@@ -497,46 +494,26 @@ def check_agent_json(flow_path: str, flow: dict) -> int:
             problems.append(f"no agent.json directory named {source} under {root}")
             continue
         for path in matches:
+            attempted.add(path)
             if _grade_agent_json(path, problems):
                 graded.add(path)
 
     if any(not _is_inline(n) for n in agents):
-        # Project-backed agents: grade every conversational agent.json present.
-        candidates = _agent_json_files(root)
-        conversational = []
-        for path in candidates:
-            try:
-                with open(path, encoding="utf-8") as handle:
-                    if (json.load(handle).get("settings") or {}).get(
-                        "engine"
-                    ) == "conversational-v1":
-                        conversational.append(path)
-            except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        # No `engine` filter here: that is the field `_grade_agent_json` asserts,
+        # so filtering on it would drop a misconfigured sibling instead of
+        # failing it. A published agent has no project in the solution, so it
+        # contributes no file and is correctly absent.
+        for path in _agent_json_files(root):
+            if path in attempted:
                 continue
-        if not conversational:
-            return _fail(
-                f"no conversational agent.json found under {root} — this task "
-                "builds the agent, so one must exist on disk (a published agent "
-                "would have none, but the sandbox has no tenant)"
-            )
-        for path in conversational:
-            # The inline pass above may already have graded this file; re-grading
-            # would append the same problems twice.
-            if path in graded:
-                continue
+            attempted.add(path)
             if _grade_agent_json(path, problems):
                 graded.add(path)
-
-    # The project-backed candidate list is filtered on `engine ==
-    # "conversational-v1"`, which is a field `_grade_agent_json` also asserts —
-    # so a misconfigured sibling is dropped from the set rather than failed.
-    # Compare the graded count against the agent nodes to surface the shortfall.
-    if len(graded) < len(agents):
-        problems.append(
-            f"graded {len(graded)} agent.json file(s) for {len(agents)} agent node(s) — "
-            "an agent's project is missing, unreadable, or not conversational "
-            '(settings.engine must be "conversational-v1")'
-        )
+        if not graded:
+            return _fail(
+                f"no conversational agent.json found under {root} — this task "
+                "builds the agent, so one must exist on disk"
+            )
 
     if problems:
         return _fail("; ".join(problems))
