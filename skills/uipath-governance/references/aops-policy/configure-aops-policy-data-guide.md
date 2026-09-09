@@ -96,7 +96,7 @@ Read `$SESSION_DIR/products/$PRODUCT_NAME/form-template.json` for the form.io sc
 **Choose the working `$POLICY_DATA` blueprint based on the flow:**
 
 - **Create flow:** read `$SESSION_DIR/products/$PRODUCT_NAME/form-data.json` as `$POLICY_DATA`. Every field not explicitly changed keeps its product default.
-- **Update flow:** read `$SESSION_DIR/existing-policy-data.json` (extracted by the caller via `jq '.Data.data'` on `policy get`) as `$POLICY_DATA`. Every field not explicitly changed keeps the value from the existing policy — NOT the product default. Using `form-data.json` as the update blueprint would silently wipe every non-default setting the user previously configured. If a key appears in `form-data.json` but not in the existing policy data (schema drift — new field added to the template after the policy was created), fill the gap from `form-data.json` and flag the new field to the user in the final review.
+- **Update flow:** read `$SESSION_DIR/existing-policy-data.json` (extracted by the caller via `jq '.Data.Data // .Data.data'` on `policy get`) as `$POLICY_DATA`. Every field not explicitly changed keeps the value from the existing policy — NOT the product default. Using `form-data.json` as the update blueprint would silently wipe every non-default setting the user previously configured. If a key appears in `form-data.json` but not in the existing policy data (schema drift — new field added to the template after the policy was created), fill the gap from `form-data.json` and flag the new field to the user in the final review.
 
 Read `$SESSION_DIR/products/$PRODUCT_NAME/form-template-locale-resource.json` as your field metadata map. Each entry looks like:
 
@@ -143,6 +143,8 @@ The form.io schema has a root `components[]` array. Components nest recursively.
 ### Unsupported / discouraged types — warn and ABORT
 
 `file`, `signature`, `address`, and `datamap` are NOT supported. If the form template contains a component of any of these types, STOP immediately: do not author, serialize, or save policy data, and do not create or update the policy. Surface the message `data type "<type>" not supported` to the user, naming the offending field's `key`. These types carry security risk — file upload and MIME confusion, `data:` URI payloads, and free-form key maps that reach a renderer or store un-sanitized — and MUST NOT be round-tripped through a policy. Abort the whole flow. Do NOT skip the field and continue building the rest of the policy.
+
+**On current CLI versions this is pre-empted at fetch time.** `template get` fails first with exit `1`, `ErrorCode: configuration_error`, and a `Message` naming each offender (`… cannot build form-data for: <type> (key: <key>).`); no form-data file is written. Treat that error as this same abort — surface the CLI `Message` and stop; do NOT retry it as a transient fetch failure. In the create-flow bootstrap (`template list`), only the offending product is marked `Failure` and the others still load — skip that one product, keep the rest. The tree walk above remains the fallback for older CLIs that emit a placeholder instead of aborting.
 
 ---
 
@@ -407,8 +409,9 @@ The caller ([aops-policy-manage-guide.md — Create Step 4](./aops-policy-manage
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `template list` bootstrap fails or writes no product folders | Every per-product fetch failed | Stop. Show the CLI error. Verify `uip login status` and network; rerun the bootstrap |
+| `template list` bootstrap fails or writes no product folders | Every per-product fetch failed | Stop. Show the CLI error. Verify `uip login status` and network; rerun the bootstrap. A *single* product returning `ErrorCode: configuration_error` is not a bootstrap failure — its template has an unsupported type; skip that product and continue with the rest (see [Step 3](#step-3--traverse-the-component-tree)) |
 | `template get` returns no `template` field (update flow) | Product fetch failed for this product | Stop. Show the CLI error. Verify the product name matches a catalog entry |
+| `template get` returns `ErrorCode: configuration_error` | Template has an unsupported type (`file`/`signature`/`address`/`datamap`) — CLI won't build form-data | Surface the CLI `Message` (it names each type + key) and abort this policy per [Step 3](#step-3--traverse-the-component-tree); do NOT retry as transient |
 | `template.components` is empty or absent | Product has no configurable fields | Inform the user. Use `defaultData` as-is and skip to Step 8 |
 | User provides invalid type for a field (e.g. text for `number`) | Type mismatch in Mode B answer | Re-prompt: `Invalid input. Expected <TYPE>. Please try again:` |
 | User enters blank for a required field | `validate.required: true` and empty value | Re-prompt: `This field is required. Please enter a value:` |
