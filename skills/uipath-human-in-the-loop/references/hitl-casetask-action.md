@@ -1,191 +1,120 @@
 # HITL Case Action Task — Implementation Reference
 
-The agent writes an `action` task into a stage of `caseplan.json`. **Direct JSON write is the primary method on the Case surface.** Unlike the Flow surface (`uip maestro flow hitl add`), the `uipath-maestro-case` skill ships no single `hitl add` CLI subcommand for the HITL-specific parts (`context[]` entries, `.hitl.json` linkage) — edit `caseplan.json` directly per the path-specific JSON shapes below.
+Write an `action` task into a stage of `caseplan.json`. **Direct JSON write is the primary Case-surface method.** Unlike the Flow surface (`uip maestro flow hitl add`), `uipath-maestro-case` has no HITL-specific `hitl add` command for `context[]` or `.hitl.json` linkage; edit `caseplan.json` directly using the shapes below.
 
-> If the stage or case predates required entry/exit/completion rules (see the checklist below), `uip maestro case` does have CLI mutation commands for those (`stage-entry-conditions`, `stage-exit-conditions`, `case-exit-conditions`, `task-entry-conditions` — each with an `add` subcommand). Prefer them over hand-writing that JSON when the case project already exists as a file you can pass to the CLI. If you're editing a caseplan.json given to you directly (not one you scaffolded yourself with these commands), it's simplest to just include the correct rule shapes directly per the examples below.
+If the case predates required entry, exit, or completion rules, run the applicable CLI mutation command (`stage-entry-conditions`, `stage-exit-conditions`, `case-exit-conditions`, or `task-entry-conditions`, each with an `add` subcommand) when an existing case project can be passed to the CLI. For a directly supplied `caseplan.json`, write the rule shapes directly.
 
-Two paths exist. **Never block on choosing — infer the path from the business description using the table below (§ Common business descriptions → path selection) and proceed. Do not wait for the user to pick.**
+Infer the path and proceed; never wait for the user to choose:
 
-| Path | When to use | Requires |
+| Path | Use when | Requires |
 |---|---|---|
-| **QuickForm** | Structured form fields, no deployed app needed | A separate `.hitl.json` schema file written alongside `caseplan.json` |
-| **App-based action task** | Existing deployed Action Center app with a custom form | `task-type-id` from registry + `tasks describe` |
+| **QuickForm** | Structured fields; no deployed app | A separate `.hitl.json` beside `caseplan.json` |
+| **App-based action task** | Existing deployed Action Center app with custom form | `task-type-id` from the registry and `tasks describe` |
 
-> **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a deployed Action Center app later."
+When unsure, default to QuickForm and say: “I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a deployed Action Center app later.”
 
-> **Build time vs design time.** A case action task lives in two surfaces:
-> - **Design time** — the JSON written into `caseplan.json` (what this skill produces). Studio Web's case designer round-trips this JSON; the QuickForm schema must be valid here.
-> - **Build / runtime time** — `uip maestro case validate` accepts it, `uip solution upload` packs it, and Action Center renders the form to the assignee at runtime.
->
-> Every shape documented below is required to round-trip in both. After writing, always run `uip maestro case validate <caseplan.json> --output json`.
-
----
+Write case JSON and the QuickForm schema so they round-trip in Studio Web; run validation, upload, and runtime rendering checks as applicable. After writing, **run** `uip maestro case validate <caseplan.json> --output json`.
 
 ## Step 1 — Extract the Task Configuration Through Conversation
 
-**Never block on this.** Infer each answer below from the business description; only ask if the user is actually present and it would help. Defaults when nothing in the description settles it: recipient → a group named after the relevant team (e.g. "finance-team", "data-enrichment-team" — infer the team name from context); priority → Low, per Step 4.
+Never block on configuration. Infer from the business description and ask only when the user is present and clarification helps. Defaults: recipient → a group named after the relevant team (for example, `finance-team` or `data-enrichment-team`); priority → `Low`.
 
-| What you need to know | Where to infer it from |
+| Need | Infer from |
 |---|---|
-| What the reviewer sees | Data the automation already extracted or produced upstream |
-| What they decide or fill in | Whether the description says "approve/reject" (decision only) or "fill in", "correct", "enrich" (data entry) |
-| Who receives the task | A named person/email or team/group mentioned in the description; otherwise infer a sensible team name from the business context |
-| Priority | Any urgency language in the description ("urgent", "high priority") → High/Medium; otherwise Low |
+| Reviewer sees | Data extracted or produced upstream |
+| Reviewer decides/fills | “approve/reject” means decision; “fill in”, “correct”, or “enrich” means data entry |
+| Recipient | Named person/email or team; otherwise infer a sensible team name |
+| Priority | “urgent”/“high priority” → `High`/`Medium`; otherwise `Low` |
 
-**Common business descriptions → path selection:**
-
-| Description | Path |
-|---|---|
-| "Reviewer approves invoice; sees ID + amount, clicks Approve/Reject" | QuickForm — `inputs[]` (read-only) + `outcomes[]` |
-| "Human fills in missing vendor name and cost center, then submits" | QuickForm — `outputs[]` (writable) |
-| "Reviewer edits an AI-drafted email, then sends or discards" | QuickForm — `inOuts[]` for the body |
-| "Finance team approves expense claims before payment" | QuickForm — group assignee, outcomes are Approve/Reject |
-| "Manager approves a leave request" | QuickForm — user email assignee, outcomes are Approve/Reject |
-| "Legal reviews and signs off on a contract with custom fields" | App-based — deployed app with custom form layout |
-| "Agent fills in form that a human corrects before submitting" | App-based — outputs populate downstream task inputs |
-
----
+Select QuickForm for approvals, reviews, missing-field entry, and editable AI drafts. Select App-based for a deployed custom form, such as legal sign-off with custom fields or an agent-populated form that a human corrects.
 
 ## Path 1 — QuickForm (file-based schema, no deployed app)
 
-The form schema lives in a separate `.hitl.json` file that sits alongside `caseplan.json` in the case project directory. Action Center renders the fields at runtime from the schema — no deployed app required.
-
-> **What makes Path 1 (QuickForm) unique — checklist before you finish:**
-> - ✅ A `<TaskLabel>.hitl.json` file is **created** alongside `caseplan.json`
-> - ✅ `data.context[hitlType].value` is `"quick"` (not `"custom"`)
-> - ✅ `data.context[_schemaFileId].value` is a **plain UUID v4 string** — e.g. `"f1e2d3c4-b5a6-7890-abcd-ef1234567890"`. Never an `=bindings.xxx` expression.
-> - ✅ `data.context[hitlSchemaId].value` is a **plain UUID v4 string** matching `schemaId` in the `.hitl.json` file. Never an `=bindings.xxx` expression.
-> - ✅ `data.inputs[]` and `data.outputs[]` are **empty arrays** (`[]`)
-> - ❌ `data.name` and `data.folderPath` do NOT exist — those are App-based (Path 2) only
-> - ❌ No `=bindings.xxx` expressions anywhere in the task JSON — those are App-based only
-> - ❌ No top-level `bindings[]` entries added
+Create `<TaskLabel>.hitl.json` alongside `caseplan.json`; Action Center renders it without a deployed app.
 
 ### Step 1 — Design the Schema
 
-Use these roles to plan the fields before writing:
+Use these roles:
 
-| Role | `field.direction` | Human can… | Use for |
-|---|---|---|---|
-| Input field | `"input"` | Read only | Context the human needs to make a decision |
-| Output field | `"output"` | Write | Data the automation needs back |
-| InOut field | `"inOut"` | Read + modify | Data the human can see and optionally correct |
+| `field.direction` | Human can | Use for |
+|---|---|---|
+| `input` | Read only | Context needed for a decision |
+| `output` | Write | Data automation needs back |
+| `inOut` | Read and modify | Data the human may correct |
 
-**Supported field types:** `string`, `number`, `boolean`, `date`, `datetime` (canonical — see [hitl-node-quickform.md](hitl-node-quickform.md) for the same vocabulary on the Flow surface; legacy aliases like `text`/`dateTime` are silently normalized by the runtime, but write the canonical form directly)
-
-**Design rules:**
-- Input fields: bind to upstream case variables via `=vars.<varId>` — never hardcode literals from runtime data
-- Output fields: only what downstream tasks actually consume; set `required: true` for mandatory outputs
-- `outcomes[]`: use domain-specific names (Approve/Reject, not just Submit)
-- Keep it focused — don't add fields the case won't use
-
-**Never block on this — write the schema, per Critical Rule 1 in SKILL.md, and record it in the final report so the user can adjust it afterward.**
+Use canonical types `string`, `number`, `boolean`, `date`, and `datetime`; legacy `text`/`dateTime` may normalize, but write canonical types. Bind `input` and `inOut` fields to upstream variables with `=vars.<varId>` and prefer variable bindings over literals. Write only downstream-consumed outputs and set `required: true` for mandatory outputs. Use domain-specific outcome names such as `Approve` and `Reject`. Never block: write the schema and mention it in the final report so the user can adjust it.
 
 ### Step 2 — Write the `.hitl.json` File
 
-Generate two UUID v4 values:
-- `schemaId` — identity of the schema, stored inside the file and referenced from the action task
-- `fileId` — placeholder file system ID (Studio Web assigns the real one when it processes the project; use a fresh UUID v4 as a stable placeholder)
-
-Create a file named `<TaskLabel>.hitl.json` in the case project directory (alongside `caseplan.json`).
-
-The file uses a **unified `fields[]` array** — every field has a `direction` property that determines its role. This is the format the sync runtime reads (`parsed?.fields`).
+Generate fresh UUID v4 values for `schemaId` and the initial `fileId` placeholder. Use one unified `fields[]` array:
 
 ```json
 {
-  "title": "Invoice Approval",
+  "title": "<form title>",
   "fields": [
     {
-      "id": "invoiceid",
-      "label": "Invoice ID",
+      "id": "<lowercase label without separators>",
+      "label": "<display label>",
       "type": "string",
       "direction": "input",
       "colSpan": 6,
-      "binding": "=vars.invoiceIdVar"
+      "binding": "=vars.<varId>"
     },
     {
-      "id": "amount",
-      "label": "Amount",
-      "type": "number",
-      "direction": "input",
-      "colSpan": 6,
-      "binding": "=vars.amountVar"
-    },
-    {
-      "id": "notes",
-      "label": "Notes",
+      "id": "<output id>",
+      "label": "<display label>",
       "type": "string",
       "direction": "output",
-      "colSpan": 6,
-      "variable": "vars.notes"
-    },
-    {
-      "id": "decision",
-      "label": "Decision",
-      "type": "string",
-      "direction": "output",
-      "colSpan": 6,
-      "variable": "vars.decision"
+      "variable": "vars.<name>",
+      "required": true
     }
   ],
   "outcomes": [
     { "id": "outcome-0", "name": "Approve", "type": "string", "isPrimary": true },
-    { "id": "outcome-1", "name": "Reject",  "type": "string", "isPrimary": false }
+    { "id": "outcome-1", "name": "Reject", "type": "string", "isPrimary": false }
   ],
-  "schemaId": "a3f7c2d1-8b4e-4f9a-b2c5-6d8e1f3a7b9c"
+  "schemaId": "<UUID v4>"
 }
 ```
 
-**Field shape reference:**
-
-| Property | Required | Notes |
-|---|---|---|
-| `id` | Yes | lowercase label, strip spaces and non-alphanumeric characters (no separator). `"Invoice ID"` → `"invoiceid"`, `"Due Date"` → `"duedate"` |
-| `label` | Yes | Display label in the form. Validator rejects empty. |
-| `type` | Yes | `string`, `number`, `boolean`, `date`, `datetime` |
-| `direction` | Yes | `"input"`, `"output"`, or `"inOut"` |
-| `colSpan` | No | Grid width hint for the form layout (e.g. `6` of 12). Safe to omit — confirmed optional against a real Studio Web export. |
-| `binding` | For `direction: "input"` / `"inOut"` | `"=vars.<varId>"` — reads from a case variable. A literal is also valid as an `=`-expression (e.g. `="Acme Corp"`), confirmed against a real export, but prefer a variable binding when the value comes from upstream data. |
-| `variable` | For `direction: "output"` / `"inOut"` | The **full** `"vars.<name>"` reference (no leading `=`) the output writes to — not a bare name. Downstream tasks read it as `=vars.<name>`. |
-| `required` | No | `true` for mandatory outputs — omit if false |
-
-**`outcomes[]` shape:** `{ "id": "<slug>", "name": "<OutcomeName>", "type": "string", "isPrimary": <bool> }` — first entry is the primary action. **No `action` key** — confirmed against a real Studio Web export; an earlier draft of this doc invented one, do not reintroduce it.
-
-> **`title` is required, top-level in the `.hitl.json` file** — the form's display title in Action Center, separate from both the task's `displayName` (canvas label) and `data.taskTitle` (the assignee-facing message). All three are independent strings and do not need to match.
+`title` is required and top-level, independent of task `displayName` and `data.taskTitle`. Required field keys are `id`, `label`, `type`, and `direction`. Make `id` the lowercase label with spaces and non-alphanumeric characters removed (`Invoice ID` → `invoiceid`). `colSpan` is optional. Require `binding` for `input`/`inOut`, normally `=vars.<varId>`; an `=` literal such as `="Acme Corp"` is valid. Require `variable` for `output`/`inOut`, using full `vars.<name>` without a leading `=`. `required` is optional. Make `outcomes[]` entries `{ "id": "<slug>", "name": "<OutcomeName>", "type": "string", "isPrimary": <bool> }`; the first is primary and there is no `action` key.
 
 ### Step 3 — Write the Action Task in `caseplan.json`
 
+Write an action node with `id`, `elementId`, `type: "action"`, `displayName`, `isRequired`, `shouldRunOnlyOnce`, `entryConditions[]`, and `data`:
+
 ```json
 {
-  "id": "ta1b2c3d4",
-  "elementId": "Stage_aB3kL9-ta1b2c3d4",
+  "id": "<task id>",
+  "elementId": "<stage id>-<task id>",
   "type": "action",
-  "displayName": "Invoice Approval",
+  "displayName": "<canvas label>",
   "isRequired": true,
   "shouldRunOnlyOnce": false,
   "entryConditions": [
     {
-      "id": "Condition_EnTk1",
+      "id": "<condition id>",
       "displayName": "Entry Rule 1",
-      "rules": [ [ { "id": "Rule_EnTk1", "rule": "current-stage-entered" } ] ]
+      "rules": [[{ "id": "<rule id>", "rule": "current-stage-entered" }]]
     }
   ],
   "data": {
-    "taskTitle": "Please review this invoice and approve or reject",
+    "taskTitle": "<assignee message>",
     "context": [
-      { "name": "hitlType",                    "type": "string",  "value": "quick" },
-      { "name": "taskTitle",                   "type": "string",  "value": "Please review this invoice and approve or reject" },
-      { "name": "labels",                      "type": "string" },
-      { "name": "priority",                    "type": "string",  "value": "Medium" },
-      { "name": "actionCatalogName",           "type": "string" },
-      { "name": "enableActionableNotifications","type": "boolean", "value": "false" },
-      { "name": "assignmentCriteria",          "type": "string",  "value": "user" },
-      { "name": "recipient",                   "type": "json",    "body": { "Type": 2, "Value": "approver@company.com" } },
-      { "name": "_schemaFileId",               "type": "string",  "value": "f1e2d3c4-b5a6-7890-abcd-ef1234567890" },
-      { "name": "hitlSchemaId",                "type": "string",  "value": "a3f7c2d1-8b4e-4f9a-b2c5-6d8e1f3a7b9c" }
+      { "name": "hitlType", "type": "string", "value": "quick" },
+      { "name": "taskTitle", "type": "string", "value": "<same assignee message>" },
+      { "name": "labels", "type": "string" },
+      { "name": "priority", "type": "string", "value": "Low" },
+      { "name": "actionCatalogName", "type": "string" },
+      { "name": "enableActionableNotifications", "type": "boolean", "value": "false" },
+      { "name": "assignmentCriteria", "type": "string", "value": "user" },
+      { "name": "recipient", "type": "json", "body": { "Type": 2, "Value": "<email>" } },
+      { "name": "_schemaFileId", "type": "string", "value": "<placeholder UUID v4>" },
+      { "name": "hitlSchemaId", "type": "string", "value": "<schemaId>" }
     ],
     "inputs": [
       { "name": "invoiceid", "type": "string", "displayName": "Invoice ID", "target": "bodyField", "value": "=vars.invoiceIdVar" },
-      { "name": "amount",    "type": "number", "displayName": "Amount",    "target": "bodyField", "value": "=vars.amountVar" }
+      { "name": "amount", "type": "number", "displayName": "Amount", "target": "bodyField", "value": "=vars.amountVar" }
     ],
     "outputs": [
       { "name": "Action", "type": "string", "displayName": "Action", "source": "=Action", "var": "invoiceDecision",
@@ -204,212 +133,112 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 }
 ```
 
-> **`displayName`, `inputs[]`/`outputs[]`, and `inputSchema` are all required — this is the part an earlier draft of this doc got wrong.** It previously claimed `data.inputs[]`/`data.outputs[]` "are always empty arrays for QuickForm — the schema is in the `.hitl.json` file." That is false. Confirmed against a real Studio Web export and by direct reproduction: without `inputSchema` (a JSON-Schema mirror of the input fields) and populated `inputs[]`/`outputs[]` on the task node itself, Studio Web's "Edit Schema" canvas does not open at all — clicking it does nothing, silently. The `.hitl.json` file and the task's own `data.*` fields are **two parallel representations of the same schema** that must both be written; neither one alone is sufficient.
-> - `inputs[]`: one entry per input field, `name` = field `id`, `value` = the same `=`-expression as that field's `binding` in `.hitl.json`.
-> - `outputs[]`: one entry per **output field with a `variable`**, plus one always-present `Action` entry whose `options[]` mirrors `outcomes[]` from `.hitl.json` (`{value, label}` pairs) — this is the decision/outcome the reviewer picks, not a separate field.
-> - `inputSchema`: a `draft-07` JSON Schema, `properties` keyed by the same field ids as `inputs[]`, each `{"type": "<field type>", "title": "<field label>"}`.
+Populate `inputs[]` with one entry per input field: `name` = field `id`, `type`, `displayName`, `target: "bodyField"`, and `value` = the `.hitl.json` `binding`. Populate `outputs[]` with one entry per output field having a `variable`, plus one always-present `Action` entry whose `options[]` mirrors `outcomes[]` as `{ "value": "<name>", "label": "<name>" }` pairs. `Action` represents the selected outcome.
 
-**Context entry notes:**
+Set `inputSchema` to draft-07 JSON Schema with `properties` keyed by input field IDs and values `{ "type": "<field type>", "title": "<field label>" }`. Both task-level representations and `.hitl.json` are required; omitting either prevents Studio Web’s “Edit Schema” canvas from opening.
 
-| `name` | Notes |
-|---|---|
-| `hitlType` | Always `"quick"` for QuickForm |
-| `_schemaFileId` | **Not a value you can invent — see the callout below.** It must be the real, backend-assigned file ID of the uploaded `.hitl.json`, not a fresh UUID. |
-| `hitlSchemaId` | Must match the `schemaId` value inside the `.hitl.json` file exactly. |
-| `taskTitle` | Appears both as `data.taskTitle` (top-level) and in `context[]` — **both are required**. |
-| `labels` | No `value` — leave the entry present but empty. |
-| `priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
-| `actionCatalogName` | No `value` for QuickForm — leave the entry present but empty. |
-| `enableActionableNotifications` | Leave as `"false"` unless the user explicitly wants email notifications. |
-| `assignmentCriteria` | `"user"` when assigning to a specific email. Omit the `value` (or omit the entry) for group rules. |
-| `recipient` | `{ "Type": 2, "Value": "<email>" }` for email; `{ "Type": 1, "Value": "<group>" }` for group; `{ "Type": 3, "Value": "=vars.<varId>" }` for runtime-resolved assignee. |
+Context rules: `hitlType` is `"quick"`; `hitlSchemaId` exactly matches the file’s `schemaId`; `taskTitle` appears in both locations; `labels` and `actionCatalogName` have no `value`; priority is `"Low" | "Medium" | "High" | "Critical"`; leave `enableActionableNotifications` as string `"false"` unless notifications are requested; `assignmentCriteria` is `"user"` for an email and may omit `value` or the entry for a group. Recipient forms are `{ "Type": 2, "Value": "<email>" }`, `{ "Type": 1, "Value": "<group>" }`, or `{ "Type": 3, "Value": "=vars.<varId>" }` for runtime assignment.
 
-> **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** Confirmed by direct reproduction against Studio Web: a placeholder UUID here makes "Edit Schema" fail with a `404` on `FileOperations/File/Rename` (the fileId in that failed request is whatever placeholder was written) — Studio Web does **not** silently reconcile it on upload, contrary to what an earlier draft of this doc claimed. There is currently no `uip` CLI command that resolves this.
->
-> **Never block on this.** Write a fresh placeholder UUID v4, finish the task, validate, and move on — do not attempt the reconciliation below yourself, and do not stop to ask about it. State plainly in the final report that this task's schema won't be editable in Studio Web until the real file ID is reconciled, and offer to do it if asked:
-> 1. Upload the project once with any placeholder value in `_schemaFileId` (`uip solution upload`).
-> 2. Look up the real ID Studio Web assigned to the `.hitl.json` file via `GET /api/Project/{projectId}/FileOperations/Structure` (find the entry whose `name` matches the `.hitl.json` filename — an internal Studio Web REST endpoint, not a `uip` CLI verb).
-> 3. Patch `_schemaFileId` in `caseplan.json` to that real ID.
-> 4. Push the corrected `caseplan.json` back with a **targeted single-file update** — `PUT /api/Project/{projectId}/FileOperations/File/{fileId}` (same file's own real ID) — **not** another whole-project `uip solution upload`. A second whole-project upload re-pushes every file and mints a **new** random file ID for each one, including `.hitl.json`, immediately invalidating whatever you just patched.
->
-> This is a real gap, not just a documentation gap: today there is no supported CLI path to make a freshly-authored QuickForm task's schema editable in Studio Web without dropping to this undocumented internal API. It's a follow-up the user can request, never a mid-task blocker.
+`_schemaFileId` is a backend-assigned foreign key, not an authored UUID, and no `uip` CLI command resolves it. Never block: use a fresh UUID v4 placeholder, validate, and report that Studio Web editing requires reconciliation. If requested:
+
+1. Run `uip solution upload` once with the placeholder.
+2. Look up the real ID with `GET /api/Project/{projectId}/FileOperations/Structure`, matching the `.hitl.json` filename.
+3. Patch `_schemaFileId` with the real ID.
+4. Push only the corrected file with `PUT /api/Project/{projectId}/FileOperations/File/{fileId}`; do not run another whole-project `uip solution upload`, because it remints file IDs.
 
 ### Step 4 — Discover Upstream Variables
 
-Read available case variables from the top-level `variables` field in `caseplan.json` (current schema is flat — no `root` wrapper; see [case-schema.md](../../uipath-maestro-case/references/case-schema.md#top-level-shape) in the case skill):
+Read the flat top-level `variables` field; it has no `root` wrapper:
 
 ```json
 {
-  "inputs":      [ { "id": "<varId>", "name": "invoiceId", "type": "string" } ],
-  "outputs":     [],
-  "inputOutputs":[]
+  "inputs": [ { "id": "<varId>", "name": "<name>", "type": "string" } ],
+  "outputs": [],
+  "inputOutputs": []
 }
 ```
 
-For cross-task references, source values come from upstream task `outputs[].var` — see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md) in the case skill for the full discovery procedure.
-
-> **No root-level bindings needed for QuickForm.** Unlike App-based (Path 2), QuickForm does **not** add entries to the top-level `bindings[]` array.
-
-### Post-Write Verification (QuickForm)
-
-Run `uip maestro case validate <caseplan.json> --output json`. Confirm:
-
-- `.hitl.json` file exists in the project directory with `schemaId`, `fields[]` (unified array with `direction`), `outcomes[]`
-- Action task `type === "action"`
-- `data.taskTitle` non-empty and matches `data.context[taskTitle].value`
-- `data.context[]` has entries for: `hitlType` (`"quick"`), `_schemaFileId`, `hitlSchemaId`, `taskTitle`, `labels`, `priority`, `actionCatalogName`, `enableActionableNotifications`
-- `data.context[hitlSchemaId].value` matches `schemaId` in the `.hitl.json` file
-- `data.inputs[]`/`data.outputs[]` are populated (mirroring `.hitl.json`'s fields) and `data.inputSchema` is present — see the callout in Step 3
-- top-level `bindings[]` is **not** modified by this path
-
-### Downstream Output Access (QuickForm)
-
-Each field in `outputs[]` and `inOuts[]` exposes its value downstream via the field's `variable` property — the **full** `"vars.<name>"` string, not a bare name:
-
-```json
-{ "id": "decision", "variable": "vars.decision", "type": "string", "label": "Decision" }
-```
-
-Downstream task input value: `"=vars.decision"`. The selected outcome is available via the task's `Action` output (see Step 3).
-
-For the full cross-task wiring procedure, see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md).
-
----
+For cross-task references, source values from upstream task `outputs[].var`. Follow [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md). Do not modify top-level `bindings[]` for QuickForm.
 
 ## Path 2 — App-Based Action Task (deployed Action Center app)
 
-The task form is defined by a deployed Action Center app. Inputs are shown to the human; outputs are collected from the form and usable downstream via `=vars.<var>` expressions.
+The deployed app defines the form; inputs are shown to the human and outputs are available downstream.
 
 ### Step 1 — Discover the App
 
+Run:
+
 ```bash
-# Pull the registry first (requires uip login)
 uip maestro case registry pull
-
-# Search for action apps
 uip maestro case registry search --type action-apps --output json
-
-# Get a specific app by name (check action-apps-index.json if CLI search fails)
 uip maestro case registry get "<app-name>" --type action-apps --output json
 ```
 
-> CLI search is known to fail for action-apps — always fall back to direct inspection of `~/.uipcli/case-resources/action-apps-index.json`. Use `id` (not `entityKey`), `deploymentTitle` (not `name`), and `deploymentFolder.fullyQualifiedName` for the folder path.
+If CLI search fails for action apps, inspect `~/.uipcli/case-resources/action-apps-index.json` directly. Use `id` rather than `entityKey`, `deploymentTitle` rather than `name`, and `deploymentFolder.fullyQualifiedName` for the folder path.
 
 ### Step 2 — Get the Input/Output Schema
 
-```bash
-uip maestro case tasks describe --type action --id "<action-app-id>" --output json
-```
-
-Returns `inputs[]` and `outputs[]`. Capture both — they define what the human fills in and what the automation reads back.
+Run `uip maestro case tasks describe --type action --id "<action-app-id>" --output json` and capture both `inputs[]` and `outputs[]`.
 
 ### Step 3 — Write Root-Level Bindings
 
-Add 2 entries to the top-level `bindings[]` array — one for `name` and one for `folderPath`. Deduplicate by `(default + resource + resourceKey)`.
+Add and deduplicate two top-level `bindings[]` entries by `(default + resource + resourceKey)`: one for `name` and one for `folderPath`.
 
 ```json
 {
-  "id": "bG0SraLpg",
+  "id": "b<8 chars>",
   "name": "name",
   "type": "string",
   "resource": "app",
-  "resourceKey": "Shared.Contract Review App",
+  "resourceKey": "<folderPath>.<deploymentTitle>",
   "propertyAttribute": "name",
-  "default": "Contract Review App"
-},
-{
-  "id": "bH1iJK2lm",
-  "name": "folderPath",
-  "type": "string",
-  "resource": "app",
-  "resourceKey": "Shared.Contract Review App",
-  "propertyAttribute": "folderPath",
-  "default": "Shared"
+  "default": "<deploymentTitle>"
 }
 ```
 
-`resourceKey` = `<folderPath>.<deploymentTitle>`. Binding IDs: `b` + 8 chars.
-
-For the full binding procedure, see [bindings/impl-json.md](../../uipath-maestro-case/references/plugins/variables/bindings/impl-json.md) in the case skill.
+The `folderPath` entry has the same shape with `name: "folderPath"`, `propertyAttribute: "folderPath"`, and the folder as `default`. Binding IDs are `b` + 8 chars. Follow [bindings/impl-json.md](../../uipath-maestro-case/references/plugins/variables/bindings/impl-json.md).
 
 ### Step 4 — Write the Task
 
+Write `type: "action"`, `isRequired`, `shouldRunOnlyOnce`, `entryConditions[]`, and:
+
 ```json
 {
-  "id": "ta1b2c3d4",
-  "elementId": "Stage_aB3kL9-ta1b2c3d4",
-  "type": "action",
-  "isRequired": true,
-  "shouldRunOnlyOnce": false,
-  "entryConditions": [
-    {
-      "id": "Condition_EnTk1",
-      "displayName": "Entry Rule 1",
-      "rules": [ [ { "id": "Rule_EnTk1", "rule": "current-stage-entered" } ] ]
-    }
-  ],
   "data": {
-    "taskTitle": "Please review this contract and fill in the required fields",
-    "name": "=bindings.bG0SraLpg",
-    "folderPath": "=bindings.bH1iJK2lm",
-    "actionCatalogName": "Contract Review App",
+    "taskTitle": "<assignee message>",
+    "name": "=bindings.<name-binding-id>",
+    "folderPath": "=bindings.<folder-binding-id>",
+    "actionCatalogName": "<deploymentTitle>",
     "assignmentCriteria": "user",
-    "recipient": { "Type": 2, "Value": "reviewer@company.com" },
-    "context": [
-      { "name": "hitlType", "type": "string", "value": "custom" }
-    ],
+    "recipient": { "Type": 2, "Value": "<email>" },
+    "context": [{ "name": "hitlType", "type": "string", "value": "custom" }],
     "inputs": [],
     "outputs": []
   }
 }
 ```
 
-`data.name` and `data.folderPath` MUST be `=bindings.<id>` references — never string literals.
-`data.inputs[]` and `data.outputs[]` are populated from the `tasks describe` response in Step 2.
+Populate `data.inputs[]` and `data.outputs[]` from `tasks describe`. `data.name` and `data.folderPath` must be `=bindings.<id>` references, never literals. App-based tasks have no schema file: write `hitlType: "custom"` and never write `_schemaFileId` or `hitlSchemaId`. For full `inputs[]`/`outputs[]` variable shapes, see [action/impl-json.md](../../uipath-maestro-case/references/plugins/tasks/action/impl-json.md).
 
-> **`hitlType` is `"custom"` for app-based tasks.** App-based tasks have no schema file at all — the form is defined by the deployed app itself, not by a schema document. **Never write `_schemaFileId` or `hitlSchemaId` for an app-based task** — those two context entries exist only on the QuickForm path (Path 1), where they identify the `.hitl.json` schema file. An app-based task is fully described by `data.name`/`data.folderPath` (the bindings to the deployed app) plus `data.inputs[]`/`data.outputs[]` (from `tasks describe`) — nothing else identifies its "schema."
+## Post-Write Verification
 
-For the full `inputs[]`/`outputs[]` variable shapes, see [action/impl-json.md](../../uipath-maestro-case/references/plugins/tasks/action/impl-json.md).
-
----
-
-## Post-Write Verification (all paths)
+Run:
 
 ```bash
 uip maestro case validate <caseplan.json> --output json
 ```
 
-| Path | Verify |
-|---|---|
-| QuickForm | `.hitl.json` file present with `title`, `fields[]`, `outcomes[]` (no `action` key), `schemaId`; task has `displayName`; `data.context[]` has `hitlType: "quick"`, `_schemaFileId`, `hitlSchemaId` (matches `.hitl.json` `schemaId`), `taskTitle`; `data.inputs[]`/`data.outputs[]` populated (not empty) and `data.inputSchema` present, mirroring `.hitl.json`'s fields; no `actionCatalogName` value; no top-level `bindings[]` entries added |
-| App-based | `type: "action"`, `data.taskTitle` non-empty, `data.name` and `data.folderPath` start with `=bindings.`, `data.context[]` has `hitlType: "custom"` and **no** `_schemaFileId`/`hitlSchemaId` entries (app-based tasks have no schema file), top-level `bindings[]` has 2 entries with `resource: "app"` and `propertyAttribute` = `name` / `folderPath`, `data.actionCatalogName` matches the deployed `deploymentTitle` |
-| Both | The task node has `entryConditions[]` set — e.g. `current-stage-entered` (see the Step 3/4 examples above). Without it, validate fails with `Task has no entry rules`. This is a case-structural requirement, not HITL-specific — it applies to every action task written via direct JSON. |
+For QuickForm, confirm the adjacent `.hitl.json` has `title`, unified `fields[]`, `outcomes[]`, no `action` key, and `schemaId`; the task has `type: "action"`, `displayName`, non-empty matching `data.taskTitle` and context `taskTitle`, `hitlType: "quick"`, `_schemaFileId`, matching `hitlSchemaId`, required context entries, populated task `inputs[]`/`outputs[]`, `inputSchema`, no `actionCatalogName` value, and no new top-level bindings. Confirm schema fields and task representations mirror each other.
 
-If validate reports errors, **never report success**. Diagnose from the JSON output and fix before reporting back. A validate error unrelated to the HITL task itself (e.g. `Case has no completion rules` on a stage/case that predates your edit) is a pre-existing gap in the case plan, not something this skill introduces — surface it to the user rather than reverse-engineering the CLI to silence it.
+For App-based, confirm `type: "action"`, non-empty `data.taskTitle`, `data.name` and `data.folderPath` beginning `=bindings.`, `hitlType: "custom"`, no `_schemaFileId`/`hitlSchemaId`, two app bindings with `propertyAttribute` values `name` and `folderPath`, and matching `actionCatalogName`/`deploymentTitle`.
 
----
+Both paths require task `entryConditions[]`, such as `current-stage-entered`; otherwise validation fails with `Task has no entry rules`. This is a case-structural requirement. If validation reports errors, diagnose and fix them before reporting success. Surface unrelated errors, such as `Case has no completion rules` in a pre-existing case, rather than suppressing them. Report the created files/task, validation result, any placeholder `_schemaFileId` reconciliation requirement, and schema-adjustment guidance.
 
 ## Downstream Output Access
 
-| Path | Outputs available downstream? | How |
-|---|---|---|
-| QuickForm | Yes — every `outputs[]` and `inOuts[]` field in the `.hitl.json` | `field.variable` is already the full `=vars.<name>` reference (minus the leading `=`) |
-| App-based | Yes — every `data.outputs[]` entry | `=vars.<output.var>` |
+| Path | Access |
+|---|---|
+| QuickForm | Every `.hitl.json` `outputs[]`/`inOuts[]` field uses its full `variable` (`vars.<name>`); the selected outcome is the task’s `Action` output. |
+| App-based | Every `data.outputs[]` entry is read with `=vars.<output.var>`. |
 
-**QuickForm example:**
-
-```json
-{ "id": "decision", "variable": "vars.decision", "type": "string", "label": "Decision" }
-```
-
-Downstream task input: `"value": "=vars.decision"`.
-
-**App-based example:**
-
-```json
-{ "name": "decision", "type": "string", "id": "out_decision", "var": "decisionVar" }
-```
-
-Downstream task input: `"value": "=vars.decisionVar"`.
-
-For the full cross-task wiring procedure, see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md).
+For QuickForm, downstream input values use `=vars.<name>`; for App-based, use `=vars.<output.var>`. Follow [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md).
