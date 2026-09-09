@@ -188,7 +188,11 @@ generated `entry-points.json` must include:
 - `uniqueId` equal to the `uipath:entryPointId` value.
 - `type` equal to `ProcessOrchestration`.
 - `input` from root input variables whose `elementId` matches the start event.
-- `output` from root output variables.
+  An input that matches nothing is dropped silently.
+- `output` from root output variables. Each `uipath:output` must carry an
+  `elementId` naming a root end event; a missing or non-end-event `elementId`
+  fails the project with `Process output "<name>" must target a root end
+  event.`
 
 A start event without that element has no entry point, and `refresh` refuses
 the whole project rather than inventing an id. The message depends on what is
