@@ -190,9 +190,12 @@ generated `entry-points.json` must include:
 - `input` from root input variables whose `elementId` matches the start event.
 - `output` from root output variables.
 
-A start event without that element has no entry point — `refresh` refuses the
-whole project with `Expected one uipath:entryPointId on root manual start event
-"<id>", found 0.` rather than inventing an id.
+A start event without that element has no entry point, and `refresh` refuses
+the whole project rather than inventing an id. The message depends on what is
+left: with a bare manual start event, `Expected one uipath:entryPointId on root
+manual start event "<id>", found 0.`; with none at all — every root start event
+carrying an event definition — `BPMN file must contain a root manual start
+event with a uipath:entryPointId.`
 
 JSON schema variables use their CDATA body as the property schema. Strip `$schema` from generated package schemas. Other primitive variables map by type, such as `string`, `integer`, `number`, `boolean`, `array`, `object`, or `json`.
 

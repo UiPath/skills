@@ -233,8 +233,9 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
    synthetic local project. Every root start event needs a
-   `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements` or
-   the project generates zero entry points.
+   `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
+   without one `refresh` fails the whole project `RetryWillNotFix` instead of
+   writing an empty entry-point list.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
