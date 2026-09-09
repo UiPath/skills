@@ -306,9 +306,11 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 
 ### Data Fabric kinds
 
-`--source remote` is the working path for `Entity` and `ChoiceSet` — create on the tenant first with `uip df entities create` / `uip df choice-sets create --folder-key <…>`, then import. Unlike other kinds, `--source local` produces an unusable schema-less stub (no CLI fills it in later), and once added, DF stubs report as "hidden resources" that `uip solution resources remove` won't drop — delete the JSON under `resources/<folder>/Entity/` or `resources/<folder>/ChoiceSet/` directly.
+**Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. Idempotent — re-run on drift; returns `Updated`.
 
-> **Do not hand-write `configurations/default/configuration.json` for a DF resource.** Only `uip solution resources add --source remote` writes the shape the deploy validator accepts. Building the file from `uip df entities get` produces `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Re-run `resources add` on drift.
+**Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity and pack the workflow project — the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg). RPA (XAML) workflows use strongly-typed DataService activities that need a compiled `content/.entities/DataService.*.Entities.dll` bundle Studio Web builds at pack time — **Studio Web is required for RPA tenant-DF today**. In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
+
+> **Do not hand-write `configurations/default/configuration.json`.** `uip df entities get` returns `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Only `uip solution resources add --source remote` writes the shape the deploy validator accepts.
 
 ### Ambiguous remote match
 
