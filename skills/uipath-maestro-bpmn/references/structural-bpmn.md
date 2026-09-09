@@ -142,14 +142,15 @@ schema bodies are JSON text or CDATA.
 </uipath:variables>
 ```
 
-If a migration marker is present, its supported shape is
-`<uipath:migrationVersion version="15" />`; the attribute is `version`, not
-`value`, and its value is an **integer** serializer migration number. The
-reader does `Number.parseInt`
-(PO.Frontend `src/services/serialization/bpmn-from-xml-headless.ts`), so a
-decimal such as `11.5` truncates to `11`. Author integers; when editing
-existing source, preserve whatever value is already there byte-for-byte rather
-than normalising it. The CLI initializer may omit that optional marker.
+`uip maestro bpmn init` omits the optional migration marker — omit it in new
+source too, so nothing has to track the serializer's migration count. When it
+is present, the attribute is `version`, not `value`, and its value is an
+**integer** migration number: `<uipath:migrationVersion version="20" />`. The
+reader does `Number.parseInt` (PO.Frontend
+`src/services/serialization/bpmn-from-xml.ts`), so a decimal such as `11.5`
+truncates to `11`. Preserve an existing value byte-for-byte when editing rather
+than normalising or bumping it — the serializer runs whatever migrations sit
+above it.
 
 See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
