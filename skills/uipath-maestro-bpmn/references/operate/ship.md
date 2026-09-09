@@ -19,9 +19,15 @@ Before upload, publish, deploy, or debug:
 4. Regenerate or refresh package metadata:
 
    ```bash
-   uip maestro bpmn update-metadata <file.bpmn> --dry-run   # check drift
-   uip maestro bpmn update-metadata <file.bpmn>             # regenerate
+   uip maestro bpmn refresh <project-path> --output json
    ```
+
+   `refresh` needs the project's `project.uiproj`; it exits `BpmnRefreshFailed` /
+   `RetryWillNotFix` without one. `Data.WrittenFiles` names the files that were
+   stale, `Data.UnchangedFiles` the ones already current — that is the drift
+   report. Do not use the deprecated `update-metadata`: it never materializes
+   `Intsvc.*` connection bindings, so a package regenerated with it passes
+   `validate` and faults at runtime with error 102010.
 
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
    CLI contract says otherwise. See

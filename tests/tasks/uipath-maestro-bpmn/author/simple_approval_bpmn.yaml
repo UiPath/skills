@@ -2,7 +2,7 @@ task_id: skill-bpmn-simple-approval-bpmn
 description: >
   Authoring eval: agent composes a model-authored simple approval BPMN that
   combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task,
-  declared root variables, the supported local project scaffold, numeric
+  declared root variables, the supported local project scaffold, integer
   migration metadata, and BPMN DI. Mirrors the manual smoke "simple approval"
   scenario.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", resource]

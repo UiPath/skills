@@ -10,17 +10,16 @@ Use this guide when BPMN source changed and local package metadata must be refre
 
 ## Current Local Project Contract
 
-> **Use `uip maestro bpmn refresh <project-path>` for any project with an
-> Integration Service connector node.** `refresh` regenerates all four package
-> files *and* materializes `Intsvc.*` connection bindings (activities, and
-> `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` triggers) into `bindings_v2.json`
-> `Connection` resources — the trigger connection field is `connectionId`
-> (activities use `connection`). `update-metadata` is **deprecated** and never
-> materializes connection bindings, so a trigger regenerated with it passes
-> `validate` but faults at runtime with a null connection (error 102010). The
-> file-shape contract below is identical for both commands.
+> **`uip maestro bpmn refresh <project-path>` is the only supported regeneration
+> command.** It rewrites all four derived package files *and* materializes
+> `Intsvc.*` connection bindings (activities, and `Intsvc.EventTrigger` /
+> `Intsvc.WaitForEvent` triggers) into `bindings_v2.json` `Connection` resources
+> — the trigger connection field is `connectionId` (activities use
+> `connection`). `update-metadata` is **deprecated** and never materializes
+> connection bindings, so a trigger regenerated with it passes `validate` but
+> faults at runtime with a null connection (error 102010).
 
-`uip maestro bpmn update-metadata <file.bpmn>` writes the
+`uip maestro bpmn refresh <project-path>` writes the
 same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
 consumes it as written:
 
@@ -31,7 +30,7 @@ consumes it as written:
   hand-authored one, so do not add one expecting it to be required.
 - `operate.json` uses `"main"` with the entry-point path
   `/content/<file>.bpmn#<start-event-id>` plus `"contentType":
-  "ProcessOrchestration"`. `update-metadata` rewrites this field every run — a
+  "ProcessOrchestration"`. `refresh` rewrites this field every run — a
   bare filename does not survive.
 - `package-descriptor.json` uses a top-level `"files"` map of name to path,
   including the BPMN file, `operate.json`, `entry-points.json`, and
@@ -75,14 +74,16 @@ Do not derive metadata from stale package files first. Use existing generated fi
 3. Regenerate package metadata from the BPMN source:
 
    ```bash
-   uip maestro bpmn refresh <project-path>                  # regenerate + materialize IS connection bindings
+   uip maestro bpmn refresh <project-path> --output json    # regenerate + materialize IS connection bindings
    ```
 
-   Use `refresh` — it materializes `Intsvc.*` connection bindings (including
-   triggers) and validates before writing. The deprecated
-   `uip maestro bpmn update-metadata <file.bpmn>` (with `--dry-run` for a
-   drift check) only rewrites the BPMN-derived fields and does **not** materialize
-   connection bindings.
+   `refresh` materializes `Intsvc.*` connection bindings (including triggers)
+   and validates before writing. It needs `project.uiproj` — without one it
+   exits `BpmnRefreshFailed` / `RetryWillNotFix`; for a bare `.bpmn`, write the
+   two-key `project.uiproj` first. `Data.WrittenFiles` names the files that were
+   stale and `Data.UnchangedFiles` the ones already current, so a drift answer
+   needs no separate command. Never fall back to the deprecated
+   `update-metadata`.
 
    If CLI unavailable for a local-only synthetic project, write the minimal
    placeholder-safe shape (see below) before continuing.
@@ -111,7 +112,7 @@ Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run a
 ## Source-only fallback
 
 When a local-only synthetic project needs package files and the CLI cannot
-regenerate them in place, mirror what `update-metadata` would have written.
+regenerate them in place, mirror what `refresh` would have written.
 Replace only the BPMN file name and start event id.
 
 `project.uiproj`:
@@ -189,9 +190,9 @@ generated `entry-points.json` must include:
 - `input` from root input variables whose `elementId` matches the start event.
 - `output` from root output variables.
 
-A start event without that element yields no entry point at all —
-`update-metadata` reports `EntryPointCount: 0` and writes an empty
-`entryPoints` array rather than inventing an id.
+A start event without that element has no entry point — `refresh` refuses the
+whole project with `Expected one uipath:entryPointId on root manual start event
+"<id>", found 0.` rather than inventing an id.
 
 JSON schema variables use their CDATA body as the property schema. Strip `$schema` from generated package schemas. Other primitive variables map by type, such as `string`, `integer`, `number`, `boolean`, `array`, `object`, or `json`.
 
