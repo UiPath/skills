@@ -28,8 +28,9 @@ initial_prompt: |
   scheduled timer start -> a script task that assembles a report -> end.
 
   Requirements:
-  - Retrieve the Intsvc.TimerTrigger template from the registry before
-    authoring, and author the node from that template rather than from prose.
+  - Retrieve the Intsvc.TimerTrigger template with `uip maestro bpmn registry
+    get` before authoring, and author the node from that template rather than
+    from prose.
     Author the node from that template, not from prose.
   - The process start MUST be a bpmn:startEvent carrying the Intsvc.TimerTrigger
     wrapper and a bpmn:timerEventDefinition. There must be NO manual start event.
