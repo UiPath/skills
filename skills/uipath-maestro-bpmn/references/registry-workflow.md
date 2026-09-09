@@ -123,6 +123,17 @@ provider's API nests it:
 <uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_ProjectKey"},"issuetype":{"id":"=vars.Var_IssueTypeId"},"summary":"=js:'[' + vars.Var_Severity + '] ' + vars.Var_CorrelationId}}]]></uipath:input>
 ```
 
+Take every body field name from the operation's `RequestFields` in
+`uip is resources describe`, never from the provider's public API docs. A
+curated operation frequently renames the provider's fields, so a name copied
+from the vendor's REST reference is accepted by `validate` and by `pack` and
+then silently omitted from the request. What comes back names neither the
+field nor the cause: the provider validates the body it actually received and
+complains about whatever is now missing or empty downstream of your field.
+This is the same trap as taking `operation` from the catalogue's per-activity
+`Name` — the described contract wins over the provider's own vocabulary, and
+`describe` is the only place that contract is written down.
+
 `=vars.<id>` and `=js:` resolve inside that CDATA, so build the body from
 variables rather than literals. In an XML *attribute* a `=js:` expression must
 escape the XML metacharacters — `&amp;&amp;` for `&&`, and `&lt;` for `<` — or
