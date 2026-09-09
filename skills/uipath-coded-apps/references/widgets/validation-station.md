@@ -22,7 +22,7 @@ If the user just wants a generic form (no DU document), use the standard Action 
 4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
 5. **Reuse the app's own `UiPath` instance** — from `useAuth()` (web app) or `src/uipath.ts` (action app). Do not construct a second SDK for the widget; auth state will diverge.
 6. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
-7. **Widget does NOT surface failures.** `onSubmit` / `onSaveAsDraft` receive `(request, result?)` and render no toast on failure — the host owns all UI feedback. **`result` is optional**: it is only populated when the widget owned the write-back (i.e. it was given `sdk` + `data`). A missing `result` means nothing was persisted, so treat it as a failure — never complete a task on it, or you close the task over unsaved edits.
+7. **Widget does NOT surface failures.** `onSubmit` / `onSaveAsDraft` receive `(request, result?)` and render no toast on failure — the host owns all UI feedback. `result` is **optional**, and its absence means nothing was persisted; see [Getting the validated result](#getting-the-validated-result).
 8. **Report-as-exception makes no API call.** `onReportException(request)` only hands the host the data — it does NOT persist. Read the reason off `request.exceptionReport` (typed `unknown`, carrying the `IReportAsExceptionDTO` shape) and call `OrchestratorDuModule.submitExceptionReport(taskId, request.documentId, reason, { folderId })` yourself, or the user's click is a no-op. Needs `OR.Tasks`.
 
 ## Install
@@ -160,6 +160,45 @@ Full table in the package README. Inside a coded app you usually only touch:
 | `onReportException` | No | Fires when the user reports an exception. Receives `(request)` — the reason is on `request.exceptionReport`, the document id on `request.documentId`. Widget makes **no API call**; persist via `OrchestratorDuModule.submitExceptionReport(...)`. |
 
 The widget surfaces three flows. **Submit** and **save as draft** are owned end-to-end by the widget and hand the host `(request, result?)`; `result` is a `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }` — and is present only when the widget did the write-back itself. **Report as exception** is forwarded as a request object with no API call. The widget renders no failure UI for any flow — handle it in the callback yourself (toast, retry, log).
+
+## Getting the validated result
+
+Where the reviewer's corrections end up depends on one condition inside the widget:
+
+```javascript
+const canPersist = !!sdk && !!data && !!(data.FolderKey || data.FolderId);
+```
+
+| | `sdk` + `data` **naming a folder** | anything else (e.g. pre-fetched `artifacts`) |
+|---|---|---|
+| Bucket write-back | Widget uploads to `data.ValidatedExtractionResultsPath` | **None** — the host owns it |
+| `onSubmit` receives | `(request, result)` | `(request)` — no second argument |
+
+**`request.validatedData` carries the corrected `ExtractionResult` either way**, alongside
+`automaticExtractionResult` and `taxonomy`. `result` only reports whether the widget's own upload
+succeeded (`{ success, error? }`); it never carries data. So:
+
+- **Bucket-backed flow** — read `result.success`, then complete the task. Downstream automation
+  picks the result up from `ValidatedExtractionResultsPath`, not from the task payload.
+- **Host-owned flow** — take `request.validatedData` and persist it yourself. The package exports
+  `submitValidatedData(sdk, data, request)` and `saveValidatedDataAsDraft(...)`, which do exactly
+  what the widget would have done for a bucket-backed document.
+
+Two traps in that condition:
+
+- **Passing `ContentValidationData` is not enough — it must name a folder.** A payload without
+  `FolderId`/`FolderKey` fails `canPersist` silently, so nothing uploads and `result` is `undefined`.
+  That is why the samples merge the task's folder into the payload.
+- **`canPersist` is weaker than what the upload needs.** It checks only the folder, so a payload
+  missing `BucketId` or `ValidatedExtractionResultsPath` still takes the persist path and comes back
+  as `result.success === false` with the reason in `result.error` — it does not throw.
+
+To watch edits as they happen rather than at submit, set `options={{ emitDtoStateChanges: true }}`
+and handle `onExtractionResultChanged`, which then fires on every change. **The element defaults
+that flag to `false`, so without it the callback never fires** (it is the same flag save-as-draft
+needs). Available on `ValidationStation`, `CompactFieldsForm`, `CompactTableEditor` and
+`CompactBusinessRules` — the components that share the extraction store; `DocumentViewer` and
+`CompactDocTypeField` do not expose it.
 
 ## Integration: Action App (most common)
 
