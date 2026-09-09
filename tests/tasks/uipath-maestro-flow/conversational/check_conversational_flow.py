@@ -405,6 +405,28 @@ def _agent_json_files(root: str) -> list[str]:
     ]
 
 
+def _resource_key_projects(root: str) -> dict[str, str]:
+    """Map each solution resource key to its agent project name.
+
+    An in-solution node's type suffix is the `key` in
+    `resources/**/process/agent/<Project>.json`, so the agent a flow references
+    resolves exactly instead of by sweeping every sibling project.
+    """
+    projects: dict[str, str] = {}
+    pattern = os.path.join(root, "resources", "**", "process", "agent", "*.json")
+    for path in glob.glob(pattern, recursive=True):
+        try:
+            with open(path, encoding="utf-8") as handle:
+                resource = (json.load(handle) or {}).get("resource") or {}
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        key = resource.get("key")
+        if isinstance(key, str) and key:
+            name = resource.get("name") or os.path.splitext(os.path.basename(path))[0]
+            projects[key] = str(name)
+    return projects
+
+
 def _grade_agent_json(path: str, problems: list[str]) -> bool:
     """Append any problems with one agent.json. Returns False if unreadable."""
     try:
@@ -461,62 +483,64 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
 def check_agent_json(flow_path: str, flow: dict) -> int:
     """The agent behind the chat is a conversational one with a real prompt.
 
-    An inline agent is addressed by `inputs.source`, so it is resolved exactly.
-    An in-solution agent's node type carries a solution *resource key*, which is
-    not recorded in its agent.json — so every sibling agent project is graded
-    instead, which is unambiguous for a flow that builds one agent.
+    Each agent node is resolved to the project it names: an inline agent by
+    `inputs.source`, an in-solution one by looking its type suffix up as a
+    solution resource key. A published agent's suffix resolves to nothing in
+    the solution, so it is skipped rather than blamed on a missing project.
     """
     agents = _conversational_agents(flow)
     if not agents:
         return _fail("no conversational agent node in the flow")
 
     root = _solution_root(find_project_dir())
+    resource_projects = _resource_key_projects(root)
     problems: list[str] = []
     graded: set[str] = set()
     attempted: set[str] = set()
 
     for node in agents:
-        if not _is_inline(node):
-            continue
-        source = (node.get("inputs") or {}).get("source")
-        if not isinstance(source, str) or not source:
-            problems.append(
-                f"inline node {node.get('id')!r} carries no inputs.source — it "
-                "must hold the UUID agent init returned"
-            )
-            continue
+        node_id = node.get("id")
+        if _is_inline(node):
+            project = (node.get("inputs") or {}).get("source")
+            if not isinstance(project, str) or not project:
+                problems.append(
+                    f"inline node {node_id!r} carries no inputs.source — it "
+                    "must hold the UUID agent init returned"
+                )
+                continue
+        else:
+            suffix = str(node.get("type") or "")[len(CORE_AGENT_PREFIX) :]
+            project = resource_projects.get(suffix)
+            if project is None:
+                # Published: the suffix is an Orchestrator UUID, so there is no
+                # project in this solution to grade.
+                continue
+
         matches = [
             path
             for path in _agent_json_files(root)
-            if os.path.basename(os.path.dirname(path)) == source
+            if os.path.basename(os.path.dirname(path)) == project
         ]
         if not matches:
-            problems.append(f"no agent.json directory named {source} under {root}")
+            problems.append(f"no agent.json directory named {project} under {root}")
             continue
         for path in matches:
-            attempted.add(path)
-            if _grade_agent_json(path, problems):
-                graded.add(path)
-
-    if any(not _is_inline(n) for n in agents):
-        # No `engine` filter here: that is the field `_grade_agent_json` asserts,
-        # so filtering on it would drop a misconfigured sibling instead of
-        # failing it. A published agent has no project in the solution, so it
-        # contributes no file and is correctly absent.
-        for path in _agent_json_files(root):
             if path in attempted:
                 continue
             attempted.add(path)
             if _grade_agent_json(path, problems):
                 graded.add(path)
-        if not graded:
-            return _fail(
-                f"no conversational agent.json found under {root} — this task "
-                "builds the agent, so one must exist on disk"
-            )
+
+    if not graded and not problems:
+        return _fail(
+            f"no conversational agent.json found under {root} — this task "
+            "builds the agent, so one must exist on disk (a published agent "
+            "would have none, but the sandbox has no tenant)"
+        )
 
     if problems:
         return _fail("; ".join(problems))
+
     print(f"OK: {len(graded)} conversational agent.json file(s) configured")
     return 0
 

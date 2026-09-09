@@ -22,9 +22,9 @@ The trigger and message nodes are identical whichever you pick. Only the agent n
 | --- | --- | --- | --- |
 | **Inline** | `uipath.agent.conversational` | A UUID subdirectory inside this flow project | The agent exists only as part of this conversational flow, or you need [structured outputs](impl.md#structured-outputs) to route on — only inline has them. You scaffold it with `agent init --inline-in-flow --conversational`. |
 | **In-solution** | `uipath.core.agent.{key}` | A sibling project in the same solution | The agent is its own project, versioned separately, maybe reused by other flows in the solution. Discover it with `registry list --local`. |
-| **Published** | `uipath.core.agent.{key}` | The tenant, already published | The user names an existing agent, or one is already deployed. Discover it with `registry search`. Nothing to scaffold. |
+| **Published** | `uipath.core.agent.<agentUuid>` | The tenant, already published | The user names an existing agent, or one is already deployed. Discover it with `registry search`. Nothing to scaffold. |
 
-`{key}` is a solution resource key — the `key` in `resources/solution_folder/process/agent/<Project>.json` for an in-solution agent, the Orchestrator-assigned one for a published agent. It is **not** `agent.json`'s `projectId`. See [agent/impl.md](../agent/impl.md).
+`{key}` is the in-solution agent's solution resource key, the `key` in `resources/solution_folder/process/agent/<Project>.json`, and **not** `agent.json`'s `projectId`. A published agent's suffix is the Orchestrator-assigned UUID instead. Read either off `registry get`.
 
 **If the user names an existing agent, it is not inline.** Run `uip maestro flow registry search "<name>" --output json` (and `registry list --local` for solution siblings) before scaffolding anything — the same rule the [agent](../agent/planning.md) plugin states for autonomous agents.
 
@@ -86,7 +86,7 @@ That is a starting point, not the only supported shape. Add whatever the convers
 | `uipath.conversational.wait-for-message` | `input` | `output` |
 | `uipath.agent.conversational` (inline) | `input` | `success`, `escalation`, `context`, `tool` |
 | `uipath.core.agent.{key}` (in-solution) | `input` | `output` |
-| `uipath.core.agent.{key}` (published) | `input` | `output`, `error` |
+| `uipath.core.agent.<agentUuid>` (published) | `input` | `output`, `error` |
 | `uipath.conversational.send-message` | `input` | `output` |
 | `uipath.conversational.get-conversation-context` | `input` | `output` |
 

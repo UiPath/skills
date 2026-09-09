@@ -91,7 +91,7 @@ This is the one that goes wrong silently. The agent reads the conversation throu
 }
 ```
 
-**`mode` selects the contract.** `simple` (the default) is authored from a single `context` binding, which Studio Web's panel and the SDK expand into the other four at author time. `custom` is for a turn assembled from more than one source, and makes `conversationId` mandatory. The field is optional and ungraded; the examples here all declare `simple`.
+**`mode` and `context` exist only to restore the editor UI.** The four individual fields are what the runtime reads, in either mode, and validation requires `conversationId` regardless. `custom` is for a turn assembled from more than one source. `mode` is optional; the examples here all declare `simple`.
 
 **Write all five**, whichever mode is declared. In Studio Web the author fills `context` and the panel derives the other four, but that derivation only runs in the editor — nothing derives them when the file is authored from the CLI.
 
@@ -156,12 +156,12 @@ uip maestro flow node add ChatFlow/ChatFlow.flow uipath.agent.conversational \
 
 ### The agent — in-solution or published
 
-Same settings block, different node type, and `isConversational` alongside it instead of `source`:
+Same settings block, different node type, and `isConversational` alongside it instead of `source`. The suffix is the solution resource key in-solution and the Orchestrator-assigned UUID when published, so read the exact `nodeType` off `registry get` either way:
 
 ```json
 {
   "id": "supportAgent1",
-  "type": "uipath.core.agent.{key}",
+  "type": "uipath.core.agent.<suffix from registry get>",
   "typeVersion": "<version from registry get>",
   "inputs": {
     "isConversational": true,
