@@ -134,12 +134,30 @@ def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
         for field in fields
     ):
         fail("need a text reason output field")
-    if not any(
-        edge.get("sourceNodeId") == hitl_id
-        and edge.get("sourcePort") in {"completed", "outcome-completed"}
+    # outcome-completed is the zero-outcome placeholder only (confirmed against
+    # flow-workbench source, 2026-09-10) — it disappears the instant the schema
+    # has any real outcome. This node has real outcomes, so every one of them
+    # needs its own wired outcome-<id> handle; outcome-completed must not
+    # appear.
+    outcome_ids = [str(o.get("id")) for o in outcomes if o.get("id")]
+    if not outcome_ids:
+        fail("HITL schema needs at least one outcome with an id")
+    wired_ports = {
+        edge.get("sourcePort")
         for edge in edges
-    ):
-        fail("HITL completed handle must be wired")
+        if edge.get("sourceNodeId") == hitl_id
+    }
+    missing = [oid for oid in outcome_ids if f"outcome-{oid}" not in wired_ports]
+    if missing:
+        fail(
+            "every outcome needs its own wired handle; missing: "
+            + ", ".join(f"outcome-{oid}" for oid in missing)
+        )
+    if wired_ports & {"completed", "outcome-completed"}:
+        fail(
+            "outcome-completed is the zero-outcome placeholder; this node has "
+            "real outcomes and must not wire it"
+        )
     scripts = [
         str((node.get("inputs") or {}).get("script", ""))
         for node in nodes

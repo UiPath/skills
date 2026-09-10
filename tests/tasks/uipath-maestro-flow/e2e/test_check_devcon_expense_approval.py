@@ -19,7 +19,15 @@ def _flow_doc(
     fields: list[dict[str, Any]],
     outcomes: list[dict[str, Any]],
     script_body: str = "return $vars.reviewExpense.output.rejectionreason;",
+    outcome_ports: list[str] | None = None,
 ) -> dict[str, Any]:
+    # By default wire one edge per outcome id (outcome-<id>) — the only shape
+    # the checker now accepts, since outcome-completed is exclusively the
+    # zero-outcome placeholder and disappears once real outcomes exist. Pass
+    # outcome_ports to build a deliberately wrong/incomplete edge set for
+    # negative tests.
+    if outcome_ports is None:
+        outcome_ports = [f"outcome-{o['id']}" for o in outcomes]
     return {
         "nodes": [
             {
@@ -49,10 +57,11 @@ def _flow_doc(
         "edges": [
             {
                 "sourceNodeId": "reviewExpense",
-                "sourcePort": "completed",
+                "sourcePort": port,
                 "targetNodeId": "logOutcome",
                 "targetPort": "input",
             }
+            for port in outcome_ports
         ],
     }
 
@@ -245,6 +254,42 @@ def test_rejects_empty_outcomes(tmp_path: Path) -> None:
 
     assert result.returncode != 0
     assert "HITL schema must define outcomes" in result.stderr
+
+
+def test_rejects_dangling_outcome_port(tmp_path: Path) -> None:
+    """Approve/Reject outcomes but only Approve's handle is wired — Reject
+    dangles. This is the exact bug class the checker exists to catch."""
+    _write_flow(
+        tmp_path,
+        _flow_doc(
+            fields=_approve_reject_fields("vars.fetchExpense.output.amount"),
+            outcomes=_APPROVE_REJECT_OUTCOMES,
+            outcome_ports=["outcome-approve"],
+        ),
+    )
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode != 0
+    assert "outcome-reject" in result.stderr
+
+
+def test_rejects_outcome_completed_with_real_outcomes(tmp_path: Path) -> None:
+    """outcome-completed is the zero-outcome placeholder only — a node with
+    real Approve/Reject outcomes must never wire it."""
+    _write_flow(
+        tmp_path,
+        _flow_doc(
+            fields=_approve_reject_fields("vars.fetchExpense.output.amount"),
+            outcomes=_APPROVE_REJECT_OUTCOMES,
+            outcome_ports=["outcome-completed"],
+        ),
+    )
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode != 0
+    assert "must not wire it" in result.stderr
 
 
 def test_rejects_single_submit_outcome_without_decision_capture(tmp_path: Path) -> None:

@@ -117,12 +117,25 @@ def main() -> None:
             "or =js:$vars.<node>.output.<field>"
         )
 
-    if not any(
-        e.get("sourceNodeId") == hitl_id
-        and e.get("sourcePort") in ("completed", "outcome-completed")
-        for e in edges
-    ):
-        fail("HITL completed handle must be wired")
+    # outcome-completed is the zero-outcome placeholder only (confirmed against
+    # flow-workbench source, 2026-09-10) — it disappears the instant the schema
+    # has any real outcome, and `outcomes` is already guaranteed non-empty
+    # above. Every outcome needs its own wired outcome-<id> handle instead.
+    outcome_ids = [str(o.get("id")) for o in outcomes if o.get("id")]
+    if not outcome_ids:
+        fail("HITL schema needs at least one outcome with an id")
+    wired_ports = {e.get("sourcePort") for e in edges if e.get("sourceNodeId") == hitl_id}
+    missing = [oid for oid in outcome_ids if f"outcome-{oid}" not in wired_ports]
+    if missing:
+        fail(
+            "every outcome needs its own wired handle; missing: "
+            + ", ".join(f"outcome-{oid}" for oid in missing)
+        )
+    if wired_ports & {"completed", "outcome-completed"}:
+        fail(
+            "outcome-completed is the zero-outcome placeholder; this node has "
+            "real outcomes and must not wire it"
+        )
 
     scripts = [
         str(n.get("inputs", {}).get("script", ""))
