@@ -31,7 +31,10 @@ from _shared.bpmn_check import (  # noqa: E402
     require_sequence_integrity,
 )
 
-PROJECT = Path.cwd() / "CustomerEscalation"
+# PROJECT is resolved in main() from the located BPMN's parent, so the check
+# grades the process wherever the agent placed the project dir (top level or
+# nested under a Solution wrapper) — it grades the modeling, not the layout.
+PROJECT: Path = Path.cwd() / "CustomerEscalation"
 BPMN_NAME = "CustomerEscalation.bpmn"
 REQUIRED_FILES = [
     "project.uiproj",
@@ -53,11 +56,14 @@ def load_json(name: str):
 
 
 def main() -> None:
+    global PROJECT
+    path, root = parse_bpmn("CustomerEscalation")
+    PROJECT = Path(path).parent
+
     for name in REQUIRED_FILES:
         if not (PROJECT / name).is_file():
             fail(f"{name} is missing")
 
-    path, root = parse_bpmn("CustomerEscalation")
 
     process = one_or_more(root, "process")[0]
 

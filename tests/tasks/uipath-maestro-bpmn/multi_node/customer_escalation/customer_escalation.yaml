@@ -46,21 +46,27 @@ initial_prompt: |
   Build the complete local project end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source file was created"
-    path: "CustomerEscalation/CustomerEscalation.bpmn"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('CustomerEscalation.bpmn')) else 'CustomerEscalation.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Project metadata file was created"
-    path: "CustomerEscalation/project.uiproj"
+    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('CustomerEscalation.bpmn'), None); sys.exit(0 if b and (b.parent / 'project.uiproj').is_file() else 'project.uiproj missing beside CustomerEscalation.bpmn')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Package operate metadata was created"
-    path: "CustomerEscalation/operate.json"
+    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('CustomerEscalation.bpmn'), None); sys.exit(0 if b and (b.parent / 'operate.json').is_file() else 'operate.json missing beside CustomerEscalation.bpmn')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
