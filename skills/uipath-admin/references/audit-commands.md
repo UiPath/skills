@@ -51,7 +51,7 @@ List visible audit event sources. Pass inner `id` GUIDs from `eventTargets[]` an
 Run queries with filters and cursor pagination:
 
 ```bash
-uip admin audit tenant events --from-date <FROM_DATE>T00:00:00Z --to-date <TO_DATE>T00:00:00Z --limit 50 --output json
+uip admin audit tenant events --from-date <FROM_TIMESTAMP> --to-date <TO_TIMESTAMP> --limit 50 --output json
 ```
 
 | Flag | Required | Description |

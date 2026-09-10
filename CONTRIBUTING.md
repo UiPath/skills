@@ -568,10 +568,15 @@ artifact. Literal dates are also the most common source of examples that go stal
 | `SetBookmarkContent("Phone", "+1 (555) 123-4567")` | `SetBookmarkContent("Phone", "<PHONE_NUMBER>")` |
 | `123-45-6789` | `NNN-NN-NNNN` — mask each digit position with `N` |
 | `"ffffffff-1111-2222-3333-444444444444"` | `"ffffffff-aaaa-bbbb-cccc-dddddddddddd"` — no long digit run |
+| `--from-date <FROM_DATE>T00:00:00Z` | `--from-date <FROM_TIMESTAMP>` — one placeholder per value |
 
 > The left column above deliberately spells out the literals it forbids: this file is not part of the
 > published npm package (see `files` in `package.json`), so the anti-examples never reach a customer scan.
 > Exclude `CONTRIBUTING.md` if you ever add a repository-wide content scanner.
+
+Give each value **one** placeholder covering the whole value. Gluing a placeholder to a literal fragment
+(`<FROM_DATE>T00:00:00Z`) keeps the literal in the file and reads worse than either form alone — use
+`<FROM_TIMESTAMP>` and state the expected precision in prose.
 
 State a required format in prose or in the flags table rather than demonstrating it with a literal. Write
 ``--expiration <date>``, ISO 8601 `YYYY-MM-DD` — not a made-up date that shows the format by example.
