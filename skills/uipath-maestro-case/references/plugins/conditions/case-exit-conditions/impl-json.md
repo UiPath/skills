@@ -51,7 +51,7 @@ Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isR
   {
     "id": "Rule_xxxxxx",
     "rule": "selected-stage-completed",
-    "selectedStageId": "Stage_aB3kL9"
+    "selectedStageIds": ["Stage_aB3kL9"]
   }
 ]]
 ```
@@ -70,8 +70,8 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 |---|---|---|
 | `true` | `required-stages-completed` | — |
 | `true` | `wait-for-connector` | `uipath` connector configuration |
-| `false` | `selected-stage-completed` | `selectedStageId` |
-| `false` | `selected-stage-exited` | `selectedStageId` |
+| `false` | `selected-stage-completed` | `selectedStageIds` (array, even for one stage) |
+| `false` | `selected-stage-exited` | `selectedStageIds` (array, even for one stage) |
 | `false` | `wait-for-connector` | `uipath` connector configuration |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim). Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
