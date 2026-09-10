@@ -10,6 +10,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import is_non_required  # noqa: E402
 from _shared.sla_response_check import (  # noqa: E402
     assert_breach_shape,
     assert_interrupting,
@@ -19,7 +20,6 @@ from _shared.sla_response_check import (  # noqa: E402
     fail,
     is_secondary,
     iter_sla_status_change,
-    is_non_required,
     label_of,
     read_plan,
 )
