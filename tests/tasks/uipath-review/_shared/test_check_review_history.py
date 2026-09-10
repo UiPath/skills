@@ -74,11 +74,28 @@ def test_passes_when_recorded_grade_matches_final_grade(tmp_path):
     assert "records grade C" in r.stdout
 
 
-def test_last_entry_wins_when_history_has_multiple_entries(tmp_path):
-    older = {**ENTRY, "grade": "F", "runAt": "2026-09-01T00:00:00.000Z"}
-    _write_history(tmp_path, [older, ENTRY])
+def test_newest_entry_wins_when_history_has_multiple_entries(tmp_path):
+    """`uip agent review-history add` writes "most recent first", so the entry to
+    grade is `history[0]`. A reviewer who records a provisional grade and then
+    corrects it leaves the superseded one behind at the END of the array; reading
+    that one failed a correct artifact (run 2026-09-10_04-18-49).
+    """
+    superseded = {**ENTRY, "grade": "F", "runAt": "2026-09-01T00:00:00.000Z"}
+    _write_history(tmp_path, [ENTRY, superseded])
     r = run(tmp_path)
     assert r.returncode == 0, r.stderr
+    assert "records grade C" in r.stdout
+
+
+def test_fails_when_the_newest_entry_is_the_one_that_disagrees(tmp_path):
+    """The reverse ordering must still fail -- reading `history[0]` is not a way
+    of finding *some* entry that matches the report.
+    """
+    stale_but_matching = {**ENTRY, "runAt": "2026-09-01T00:00:00.000Z"}
+    _write_history(tmp_path, [{**ENTRY, "grade": "F"}, stale_but_matching])
+    r = run(tmp_path)
+    assert r.returncode != 0
+    assert "recorded grade F does not match" in r.stderr
 
 
 def test_fails_when_recorded_grade_differs_from_final_grade(tmp_path):
