@@ -19,7 +19,7 @@ PATs provide scoped API authentication for users when user-context authenticatio
    ```bash
    uip admin pat create \
      --description "CI/CD pipeline token" \
-     --expiration "2027-01-15" \
+     --expiration "<EXPIRATION_DATE>" \
      --scope "OR.Folders.Read,OR.Jobs.Read" \
      --output json
    ```
@@ -44,7 +44,7 @@ uip admin pat revoke <TOKEN_ID> --output json
 Run the following with a new expiration. The new token value is returned only once:
 
 ```bash
-uip admin pat regenerate <TOKEN_ID> --expiration "2028-01-15" --output json
+uip admin pat regenerate <TOKEN_ID> --expiration "<EXPIRATION_DATE>" --output json
 ```
 
 ## Error Handling
