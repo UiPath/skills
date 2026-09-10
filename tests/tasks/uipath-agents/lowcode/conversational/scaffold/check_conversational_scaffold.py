@@ -15,9 +15,8 @@ Checks:
      contentTokens contain no `variable` entries (§ Messages)
   5. entry-points.json schemas mirror agent.json (Rule 4 sync)
 
-`settings.maxIterations` is reported but not graded: released and dev CLI
-builds disagree on whether the conversational scaffold carries it, and the
-value comes from `uip agent init`, not from the agent under test.
+`settings.maxIterations` is reported but not graded: the value comes from
+`uip agent init`, not from the agent under test.
 """
 
 import json
@@ -55,11 +54,9 @@ def assert_conversational_essentials(agent: dict) -> None:
         )
     print('OK: settings.engine == "conversational-v1"')
 
-    # `settings.maxIterations` is NOT graded. The released CLI (1.202.0) omits
-    # it for conversational scaffolds; the `dev` line (1.202.0-dev.8521, which
-    # the smoke runner installs) emits `maxIterations: 8`. The field is written
-    # by `uip agent init --conversational` itself, not by the agent under test,
-    # so asserting either way grades the CLI build, not the skill.
+    # `settings.maxIterations` is NOT graded. `uip agent init --conversational`
+    # writes it (8 as of CLI 1.203.0), not the agent under test, so asserting it
+    # grades the CLI build rather than the skill.
     if "maxIterations" in settings:
         print(f"INFO: settings.maxIterations present ({settings['maxIterations']!r}) — CLI-emitted, not graded")
     else:
