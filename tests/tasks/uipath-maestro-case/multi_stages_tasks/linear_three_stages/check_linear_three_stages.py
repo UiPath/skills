@@ -65,12 +65,6 @@ def main():
         sys.exit(f"FAIL: no wait-for-timer task in caseplan. Types seen: {types_seen}")
 
     review_lanes = (review.get("data") or {}).get("tasks") or []
-    timer_lane_indices = {
-        lane_idx
-        for lane_idx, lane in enumerate(review_lanes)
-        for t in (lane or [])
-        if t.get("type") == "wait-for-timer"
-    }
     review_task_ids = {t.get("id") for lane in review_lanes for t in (lane or [])}
     review_timers = [t for t in timer_tasks if t.get("id") in review_task_ids]
     if len(review_timers) < 2:
@@ -79,11 +73,36 @@ def main():
             f"FAIL: Review should have ≥2 parallel wait-for-timer tasks "
             f"('Hold For 1 Hour' + 'Notify Reviewer'); got {len(review_timers)} ({labels})"
         )
-    if len(timer_lane_indices) != 1:
-        sys.exit(
-            f"FAIL: Review's explicit parallel timer tasks must share one "
-            f"data.tasks inner task set; got set indices {sorted(timer_lane_indices)}"
-        )
+    # "Parallel" is a property of the ENTRY CONDITIONS, not of the array shape.
+    #
+    # This used to require both timers in one `data.tasks` set. That is not what
+    # makes case tasks concurrent, and the platform does not write it: in
+    # `@uipath/case-schema`, a stage's tasks are partitioned by
+    # `taskOnlyRunsSequentiallyInStage` — true only when EVERY rule of EVERY
+    # entry condition is `runs-sequentially`. Those keep their set grouping and
+    # run set-by-set; every other task goes into a flat bucket whose position is
+    # never read. Two `current-stage-entered` timers convert to byte-identical
+    # scheduler rules in one set or two.
+    #
+    # And LinearThreeStages.v27 — the platform document this task is modelled on
+    # — puts its two "parallel" timers in SEPARATE sets, so the old assertion
+    # failed the designer's own output. It cost a v2 run a task.
+    for timer in review_timers:
+        label = timer.get("displayName") or timer.get("label")
+        conditions = timer.get("entryConditions") or []
+        rules = [r.get("rule") for c in conditions for g in (c.get("rules") or []) for r in g]
+        if not rules:
+            sys.exit(f"FAIL: Review timer {label!r} has no task-entry condition")
+        if "current-stage-entered" not in rules:
+            sys.exit(
+                f"FAIL: Review timer {label!r} should carry a current-stage-entered "
+                f"task-entry condition so it runs concurrently with its sibling; got {rules}"
+            )
+        if all(r == "runs-sequentially" for r in rules):
+            sys.exit(
+                f"FAIL: Review timer {label!r} runs sequentially, so it waits for the "
+                f"previous task set instead of running alongside its sibling"
+            )
 
     def _by_label(label: str) -> dict | None:
         for t in review_timers:
