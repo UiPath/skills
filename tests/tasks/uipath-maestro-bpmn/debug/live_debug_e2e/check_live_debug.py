@@ -156,33 +156,29 @@ def _has_expected_product(parsed) -> bool:
     ``Globals.Product`` — or a ``{name: product, value: 42}`` pair), then a
     fallback restricted to value-bearing sub-trees so shape drift still passes
     without letting GUIDs/timestamps false-match.
+
+    This is the only pass path, so it matches by name and nothing else, and each
+    branch announces which one fired.
+
+    A third branch used to accept 42 at any leaf under a value-bearing subtree
+    as insurance against shape drift. It was removed: `VALUE_BEARING_KEYS`
+    includes "response", so it accepted
+    ``{"globals": {"product": {"response": 42}}}`` — precisely the double-wrap
+    this task guards against structurally — and gating it on the payload naming
+    `product` did not help, because in that shape the name is present and the
+    *value* is what is wrong. If the payload shape drifts, this should fail
+    loudly and be updated, not pass on a value nobody checked.
     """
     # (a) key named "product" with the expected value (Globals.Product = 42)
     for val in _find_ci_key(parsed, PRODUCT_VAR):
         if _is_expected(val):
+            print(f"  matched product == {EXPECTED_PRODUCT} by name")
             return True
     # (b) {"name": "product", "value": 42} pairs (mock/CLI list shape)
     for name, value in _iter_name_value_pairs(parsed):
         if isinstance(name, str) and name.strip().lower() == PRODUCT_VAR and _is_expected(value):
+            print(f"  matched product == {EXPECTED_PRODUCT} by name/value pair")
             return True
-    # (c) fallback: 42 anywhere under a variables/globals/outputs subtree
-    for leaf in _leaves_under_value_bearing(parsed):
-        if _is_expected(leaf):
-            return True
-    return False
-
-
-def _has_product_definition(parsed) -> bool:
-    for val in _find_ci_key(parsed, "globaldefinitions"):
-        if isinstance(val, dict):
-            for key, definition in val.items():
-                if not isinstance(definition, dict):
-                    continue
-                name = definition.get("Name", definition.get("name"))
-                if key.lower() == PRODUCT_VAR or (
-                    isinstance(name, str) and name.lower() == PRODUCT_VAR
-                ):
-                    return True
     return False
 
 
@@ -259,7 +255,7 @@ def _fresh_debug_then_variables():
         if not inst:
             continue
         variables = _read_variables_all(inst)
-        if variables is not None and _has_product_definition(variables):
+        if variables is not None and _has_expected_product(variables):
             return (True, variables)
     return (completed, None)
 
@@ -316,6 +312,16 @@ def main() -> None:
                         "source=\"=result.response\" so the live runtime exposes the value."
                     )
                 found_product_mapping = True
+            for mapping in task.findall(f".//{{{UIPATH_NS}}}mapping"):
+                for type_el in mapping.findall(f"{{{UIPATH_NS}}}type"):
+                    if type_el.get("value") != "BPMN.Variables":
+                        _fail(
+                            f"{path}: script task mapping declares "
+                            f"<uipath:type value=\"{type_el.get('value')}\">. Any value "
+                            "other than BPMN.Variables overwrites the parser's "
+                            "Scp.Script extension type, so the script never runs and "
+                            "product reads back null."
+                        )
         for body in _script_bodies(root):
             found_script = True
             if re.search(r"\bGlobals\.", body) or re.search(r"\bvars\.", body):
@@ -323,11 +329,12 @@ def main() -> None:
                     f"{path}: script task reads/mutates Globals.*/vars.* directly — "
                     "unsupported in Jint. Return a value and map it via uipath:output."
                 )
-            if re.search(r"\breturn\s+(?!\{)", body):
+            if re.search(r"\breturn\s*\{\s*response\b", body):
                 _fail(
-                    f"{path}: script task returns a bare scalar. For live BPMN debug, "
-                    "return an object such as `return { response: 6 * 7 };` and map "
-                    "`source=\"=result.response\"`."
+                    f"{path}: script task wraps its return in a `response` property. "
+                    "At scriptVersion v2+ the runtime wraps the return itself, so this "
+                    "double-wraps to result.response.response. Return the value "
+                    "directly: `return 6 * 7;`."
                 )
             if not re.search(r"\b6\s*\*\s*7\b", body):
                 _fail(f"{path}: script task must compute the product with `6 * 7`")
@@ -347,7 +354,6 @@ def main() -> None:
     saved = glob.glob("debug-evidence/**/*.json", recursive=True) + glob.glob("*.json")
     completed = False
     product_from_evidence = False
-    product_definition_from_evidence = False
     instance_id = None
     for path in saved:
         try:
@@ -362,8 +368,6 @@ def main() -> None:
             instance_id = instance_id or _instance_id(parsed)
         if _has_expected_product(parsed):
             product_from_evidence = True
-        if _has_product_definition(parsed):
-            product_definition_from_evidence = True
 
     if not completed:
         _fail(
@@ -376,11 +380,6 @@ def main() -> None:
         print(f"OK: runtime product variable is {EXPECTED_PRODUCT} (from saved variables-all evidence)")
         print("PASS: all live-debug checks passed")
         return
-    if product_definition_from_evidence:
-        print("OK: variables-all exposed the product output definition")
-        print("PASS: live debug completed and product script/output mapping is structurally correct")
-        return
-
     # 3. The agent did not save a variables-all payload carrying the product
     #    definition. Recover the payload live: re-read the agent's instance
     #    (usually gone — debug instances are ephemeral), then re-run a fresh
@@ -393,20 +392,21 @@ def main() -> None:
     variables_payload = None
     if instance_id:
         live = _read_variables_all(instance_id)
-        if live is not None and _has_product_definition(live):
+        if live is not None and _has_expected_product(live):
             variables_payload = live
     if variables_payload is None:
         _, fresh_vars = _fresh_debug_then_variables()
-        if fresh_vars is not None and _has_product_definition(fresh_vars):
+        if fresh_vars is not None and _has_expected_product(fresh_vars):
             variables_payload = fresh_vars
 
     if variables_payload is None:
         _fail(
-            "no variables-all evidence exposed the `product` output definition "
-            "(save the variables-all output to debug-evidence/ — the debug command "
-            "output does NOT contain variable definitions)"
+            f"no variables-all evidence shows the runtime `product` == {EXPECTED_PRODUCT}. "
+            "A null value means the script never ran or its output never mapped — "
+            "check the mapping's <uipath:type> is BPMN.Variables and that the script "
+            "returns the value directly."
         )
-    print("OK: variables-all exposed the product output definition (recovered live)")
+    print(f"OK: runtime product variable is {EXPECTED_PRODUCT} (recovered live)")
     print("PASS: all live-debug checks passed")
 
 
