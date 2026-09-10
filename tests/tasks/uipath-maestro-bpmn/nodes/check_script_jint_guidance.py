@@ -453,7 +453,7 @@ def main() -> None:
             and output.attrib.get("var") == attr(public_risk, "id")
             and output.attrib.get("type") == "double"
             and re.fullmatch(
-                r"=vars\.[A-Za-z_][A-Za-z0-9_]*",
+                r"=vars\.[\w.-]+",
                 output.attrib.get("source", ""),
             )
         ],

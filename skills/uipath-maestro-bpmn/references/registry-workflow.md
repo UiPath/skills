@@ -52,7 +52,7 @@ uip maestro bpmn registry get <extensionType> --output json
 | Field | Use |
 | --- | --- |
 | `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
-| `bpmnElement` | The host element's PascalCase model type (`bpmn:ServiceTask`). The serialized source tag is the lower-camel form of it (`<bpmn:serviceTask>`) — take the tag from `xmlTemplate`, not from this field. |
+| `bpmnElement` | The host element's PascalCase model type (`bpmn:ServiceTask`). Normalize both this field and the `xmlTemplate` host tag to lower-camel when serializing (`<bpmn:serviceTask>`) — 27 of the 29 bundled templates carry the PascalCase tag. |
 | `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
 | `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
 | `bindingInfo` | How the node binds to a resource (see §4). |

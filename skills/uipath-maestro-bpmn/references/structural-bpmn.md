@@ -94,9 +94,9 @@ reason authoring runs out of time.
     <bpmn:extensionElements>
       <uipath:variables version="v1">
         <uipath:input id="input_Var_Amount" name="Amount" type="number" elementId="Start_1" />
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="double" />
         <uipath:output id="output_Var_Echo" name="Echo" type="number" elementId="End_1" />
-        <uipath:inputOutput id="Var_Echo" name="Echo" type="number" />
+        <uipath:inputOutput id="Var_Echo" name="Echo" type="double" />
       </uipath:variables>
       <uipath:bindings version="v1" />
     </bpmn:extensionElements>
@@ -105,7 +105,7 @@ reason authoring runs out of time.
         <uipath:entryPointId value="00000000-0000-4000-8000-000000000001" />
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="Amount" type="number" var="Var_Amount" source="=vars.input_Var_Amount" />
+          <uipath:output name="Amount" type="double" var="Var_Amount" source="=vars.input_Var_Amount" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
@@ -114,7 +114,7 @@ reason authoring runs out of time.
       <bpmn:extensionElements>
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="Echo" type="number" var="Var_Echo" source="=vars.Var_Amount" />
+          <uipath:output name="Echo" type="double" var="Var_Echo" source="=vars.Var_Amount" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1</bpmn:incoming>
@@ -124,7 +124,7 @@ reason authoring runs out of time.
       <bpmn:extensionElements>
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="Echo" type="number" var="output_Var_Echo" source="=vars.Var_Echo" />
+          <uipath:output name="Echo" type="double" var="output_Var_Echo" source="=vars.Var_Echo" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_2</bpmn:incoming>
@@ -293,8 +293,15 @@ template, in the first rule below:
   input at `target="bodyField"`; sibling `uipath:input` elements are not
   supported. `var` holds the declared variable id — never put the target id in
   `name`.
+- Keep the script deterministic: no `Math.random`, `Date.now`, `new Date`, or
+  `crypto.*`. Jint provides them, so nothing fails locally — but the same
+  inputs must produce the same outputs for a run to be reproducible or
+  replayable. Take any timestamp or identifier the process needs from a
+  process variable supplied by the caller.
 
 ```xml
+<!-- in bpmn:process/bpmn:extensionElements -->
+<uipath:variables version="v1">
 <uipath:inputOutput id="Var_ScriptResponse" name="scriptResponse"
   type="double" elementId="Task_RiskScore" />
 <uipath:inputOutput id="Var_ScriptError" name="Error"
@@ -303,6 +310,7 @@ template, in the first rule below:
 ]]></uipath:inputOutput>
 <uipath:inputOutput id="Var_RiskScore" name="riskScore"
   type="double" elementId="Task_RiskScore" />
+</uipath:variables>
 
 <bpmn:scriptTask id="Task_RiskScore" name="Risk Score" scriptFormat="JavaScript">
   <bpmn:extensionElements>

@@ -16,8 +16,9 @@ initial_prompt: |
   Requirements:
   - Use the supported ScriptTask and public input/output contracts, including
     standard response and typed error handling.
-  - Keep the JavaScript deterministic and Jint-compatible; do not use Node.js,
-    filesystem, network, browser, package, timer, or async APIs.
+  - Keep the JavaScript deterministic and Jint-compatible: no Math.random,
+    Date.now, new Date or crypto, and no Node.js, filesystem, network,
+    browser, package, timer, or async APIs.
   - Include BPMN DI for every visible node and sequence flow.
   - Validate the finished BPMN locally.
   - Do not upload, publish, deploy, debug, or run the process.
