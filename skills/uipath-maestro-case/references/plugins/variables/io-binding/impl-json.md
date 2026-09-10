@@ -62,12 +62,29 @@ Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the 
 **Emission order is not the SDD's row order. A row whose expression reads another output's `var` on the same task goes AFTER that output.** The engine evaluates `data.outputs` in array order and writes each result into the variable scope before evaluating the next, so a row placed before the one it reads gets the case variable's default on every run of the case while `validate` reports `Valid`. The common shape is exactly the one the dispatch above produces backwards: the SDD declares the `=` row and says nothing about the schema entry it reads through `$xref`, so that entry is auto-minted and lands after it. Emit the auto-mint first and the `=` row last, whatever order the SDD's table used. `--strict` reports the violation as `STRICT_OUTPUT_FORWARD_READ`.
 
 ```json
-[{ "name": "Action", "type": "string",
-   "id": "action4", "var": "action4", "value": "action4",
-   "source": "=Action", "target": "=action4", "elementId": "Stage_review-tBuyer01" },
- { "name": "buyerDecision", "type": "string", "custom": true,
-   "var": "buyerDecision", "value": "=js:vars.action4", "source": "=js:vars.action4",
-   "target": "", "body": "", "elementId": "root" }]
+[
+  {
+    "name": "Action",
+    "type": "string",
+    "id": "action4",
+    "var": "action4",
+    "value": "action4",
+    "source": "=Action",
+    "target": "=action4",
+    "elementId": "Stage_review-tBuyer01"
+  },
+  {
+    "name": "buyerDecision",
+    "type": "string",
+    "custom": true,
+    "var": "buyerDecision",
+    "value": "=js:vars.action4",
+    "source": "=js:vars.action4",
+    "target": "",
+    "body": "",
+    "elementId": "root"
+  }
+]
 ```
 
 **Equal-name extract dispatch.** Dispatch by the explicit operator before comparing names; equal operands select the reassign shape, never the bare auto-mint branch. Apply the global [controlled-alias rule](../global-vars/impl-json.md#uniqueness-rule). With no unrelated collision, `greeting -> greeting` emits `id`, `var`, `originalVar`, and `value` as `"greeting"`, with `source: "=greeting"` and `target: "=greeting"`. `originalVar` distinguishes reassignment from a bare output and keeps the predeclared root companion intact during frontend synchronization; the linked allocator owns any required suffixing.
