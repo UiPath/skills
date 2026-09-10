@@ -4,10 +4,11 @@
 
   Generation contract (Phase 0 / Approve mode):
     1. Read this file.
-    2. Replace the sentinel token in the <script id="sdd-data"> block
+    2. Replace the sentinel token inside the element with id="sdd-data"
        with a JSON object matching the schema documented in the JS section below.
-       The token appears exactly once — inside that script tag only — so any
-       string-replace or Edit-tool swap is unambiguous.
+       The token appears TWICE in this file: once as that element's content (the
+       one to replace) and once inside the error message further down. Swap only
+       the first — a replace-all corrupts the error text.
     3. Write the populated file to ./sdd-viewer.html in the working directory.
     4. Tell the user: "Generated ./sdd-viewer.html — open it in a browser to review."
 
