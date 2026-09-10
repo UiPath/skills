@@ -266,7 +266,7 @@ The cache expires after 30 minutes. `registry search` returns a flat `Data` arra
 { "Data": [{ "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records", "Category": "connector.196536", "DisplayName": "List Records", "Description": "(Salesforce) List records in Salesforce", "Version": "1.0.0", "Tags": "connector, activity", "AvailableOnTenant": true }] }
 ```
 
-Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the node is not enabled or available for the tenant. Do not use unsupported flags such as `--include-unavailable`; choose an enabled alternative, use `--local` for in-solution resources, or report unavailability.
+Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the type is missing from the manifest this CLI pulled. Despite the name it is not a tenant entitlement — the CLI asks for a fixed set of node manifests decided by its own build, so `false` usually means this CLI does not carry the node rather than that an administrator withheld it. Do not use unsupported flags such as `--include-unavailable`; try `uip tools update`, choose an available alternative, use `--local` for in-solution resources, or report it as unavailable.
 
 `registry get` returns `Data.Node` verbatim for the `.flow` `definitions` array. Preserve its manifest casing, predominantly camelCase (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`); filter with `--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`.
 

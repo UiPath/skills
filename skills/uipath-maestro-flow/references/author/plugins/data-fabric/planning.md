@@ -13,16 +13,15 @@ Use them whenever the flow's own data lives in Data Fabric: a case record, a loo
 | `core.datafabric.update` | Update entity record | Patch named columns on one record |
 | `core.datafabric.delete` | Delete entity record | Delete one record (no output) |
 
-These are fixed OOTB node types — no registry suffix, no connector key. Each is gated by its own tenant feature flag, so a tenant can have Read without Create:
+These are fixed OOTB node types — no registry suffix, no connector key.
 
-| Node Type | Tenant flag |
-| --- | --- |
-| `core.datafabric.read` | `canvas.nodes.read-entity` |
-| `core.datafabric.create` | `canvas.nodes.create-entity` |
-| `core.datafabric.update` | `canvas.nodes.update-entity` |
-| `core.datafabric.delete` | `canvas.nodes.delete-entity` |
+Whether your CLI can serve them is a property of the CLI build, not of the tenant, and `registry get <type>` is the only way to find out. Probe it once before planning around a node:
 
-A node whose flag is off is filtered out of the manifest entirely: `registry search` may still list it with `AvailableOnTenant: false`, but `registry get` answers **"Node not found"** and you cannot source its `definitions[]` entry. Confirm availability before planning around one — see [impl.md — Registry validation](impl.md#registry-validation).
+```
+uip maestro flow registry get core.datafabric.read --output json
+```
+
+`Code: NodeGetSuccess` means you can author the node and source its `definitions[]` entry. **"Node not found"** means this CLI does not carry it — upgrade with `uip tools update`, or use the [connector](../connector/planning.md). Do not ask an administrator to change a tenant setting: no tenant setting governs this.
 
 ## Writes require a native entity
 
@@ -55,9 +54,9 @@ Use these nodes when the record lives in **Data Fabric** and the flow itself is 
 
 The `uipath-uipath-dataservice` Integration Service connector also exposes entity operations (`query-entity-records`, `create-entity-record`, `update-entity-record`, `get-entity-record-by-id`, `delete-entity-record`, …), and `registry search` surfaces both families.
 
-**Check availability before you choose — do not default to the native node.** All four tenant flags default to off, so the connector is the working path until `registry get core.datafabric.<op>` proves otherwise. On "Node not found" or `AvailableOnTenant: false`, build with the [connector](../connector/planning.md) and stop pursuing the native path — as you should when the entity is federated, since the native writes require a native entity.
+**Prefer the native node, and confirm it with one probe.** `registry get core.datafabric.<op>` decides: on `NodeGetSuccess` build native, on "Node not found" build with the [connector](../connector/planning.md) and stop pursuing the native path. Go to the connector regardless when the entity is federated, since the native writes require a native entity.
 
-Where the tenant *does* have them, the native node is the better build, because it:
+Where the probe succeeds, the native node is the better build, because it:
 
 - needs **no Integration Service connection** — nothing to create, bind, or keep healthy, and no `bindings[]` connection row;
 - is **user-owned** — author it with `Edit`/`Write` instead of the CLI's `node add` + `node configure` envelope (see [Author capability — Node ownership](../../CAPABILITY.md#node-ownership--who-authors-the-node));

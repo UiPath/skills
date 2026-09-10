@@ -21,7 +21,7 @@ Confirm:
 - `outputDefinition.output.source`: `"=response"` (the BPMN engine wraps the result under that key, as for every ServiceTask).
 - `outputDefinition.error.schema.required`: `code`, `message`, `detail`, `category`, `status`.
 
-If the command reports **"Node type not found: uipath.pattern.batch-transform"**, run `uip tools update` and `uip maestro flow registry pull --force`. If it still fails, confirm with the UiPath admin that the tenant's `canvas.nodes.batch-transform` server flag is enabled.
+If the command reports **"Node type not found: uipath.pattern.batch-transform"**, run `uip tools update` and `uip maestro flow registry pull --force`. If it still fails, this CLI build does not carry the node — there is no tenant setting behind it and no admin to escalate to.
 
 ## Add or edit the node
 
@@ -153,7 +153,7 @@ The validator checks that `attachment`, `prompt`, and `outputColumns` are presen
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `Node type not found: uipath.pattern.batch-transform` | CLI predates Batch Transform support, or tenant flag `canvas.nodes.batch-transform` is off | Run `uip tools update`, then `uip maestro flow registry pull --force`; if still missing, check with the admin that `canvas.nodes.batch-transform` is enabled |
+| `Node type not found: uipath.pattern.batch-transform` | This CLI build predates Batch Transform support | Run `uip tools update`, then `uip maestro flow registry pull --force`; no tenant setting governs this, so there is no admin to escalate to |
 | Validate rejects `outputColumns` | Wrong shape, such as a map `{ name: description }` or string array | Use `[{ "name": "...", "description": "..." }, ...]` |
 | Runtime error `exceeded maxColumns` | More than 10 output columns | Reduce to ≤10 or split across two Batch Transform nodes chained on the output file |
 | All rows produce blank values for a column | `description` is vague or references fields absent from the source CSV | Name the source column(s) in the description and test with a small sample |

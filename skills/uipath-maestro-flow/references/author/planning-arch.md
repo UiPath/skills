@@ -105,15 +105,15 @@ Every flow has exactly one trigger, first in topology. IS connector triggers rep
 | `core.action.http.v2` | [http](plugins/http/planning.md) | REST API; connector or manual mode; replaces deprecated `core.action.http` |
 | `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by |
 | Wait for events | [connector-trigger](plugins/connector-trigger/planning.md) | Mid-flow external event; type `uipath.connector.event.<key>.<event>` with `input` |
-| `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns to CSV rows; gated by `canvas.nodes.batch-transform` |
-| `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Synthesis/Q&A over one document with optional citations; gated by `canvas.nodes.summarize` |
+| `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns to CSV rows |
+| `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Synthesis/Q&A over one document with optional citations |
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Duration or date wait |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Fire-and-forget robot work |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Robot work with result wait |
-| `core.datafabric.read` | [data-fabric](plugins/data-fabric/planning.md) | Read one record or a filtered list from a Data Fabric entity; gated by `canvas.nodes.read-entity` |
-| `core.datafabric.create` | [data-fabric](plugins/data-fabric/planning.md) | Insert a record and return the stored row; gated by `canvas.nodes.create-entity` |
-| `core.datafabric.update` | [data-fabric](plugins/data-fabric/planning.md) | Patch named columns on one record; gated by `canvas.nodes.update-entity` |
-| `core.datafabric.delete` | [data-fabric](plugins/data-fabric/planning.md) | Delete one record; gated by `canvas.nodes.delete-entity` |
+| `core.datafabric.read` | [data-fabric](plugins/data-fabric/planning.md) | Read one record or a filtered list from a Data Fabric entity |
+| `core.datafabric.create` | [data-fabric](plugins/data-fabric/planning.md) | Insert a record and return the stored row |
+| `core.datafabric.update` | [data-fabric](plugins/data-fabric/planning.md) | Patch named columns on one record |
+| `core.datafabric.delete` | [data-fabric](plugins/data-fabric/planning.md) | Delete one record |
 | `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Inline human review, approval, or data entry |
 | `uipath.conversational.wait-for-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Pause until the user sends a chat message (initiates an exchange); returns the conversation context |
 | `uipath.conversational.send-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Write a message the flow composes itself into the chat |
@@ -174,7 +174,7 @@ Prefer, in order:
 2. `core.action.http.v2` connector mode when the connector lacks the activity, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
 3. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
 
-**Data Fabric is not on this ladder.** Entity records have two paths — the `uipath-uipath-dataservice` connector activities and the native `core.datafabric.*` nodes — and availability decides, not preference. The native flags default to off, so **when `registry get core.datafabric.<op>` answers "Node not found", or search reports `AvailableOnTenant: false`, build with the connector activities**: do not retry, do not `uip tools update`, and never hand-write a `definitions[]` entry for a node the registry will not return. Rationale and the federated-entity case in [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--availability-decides).
+**Data Fabric is not on this ladder.** Entity records have two paths — the native `core.datafabric.*` nodes and the `uipath-uipath-dataservice` connector activities. Prefer the native nodes: they need no Integration Service connection. One probe decides — **`registry get core.datafabric.<op>` returning `NodeGetSuccess` means build native; "Node not found" means this CLI does not carry the node, so build with the connector activities** and never hand-write a `definitions[]` entry for a node the registry will not return. Rationale and the federated-entity case in [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--availability-decides).
 
 ## Standard Port Reference
 

@@ -114,12 +114,12 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node), then the `impl.md` of the plugin for the node that *replaces* the mock (`core.logic.mock` has no plugin of its own) |
 | **Add data transform nodes** | [plugins/transform/impl.md](plugins/transform/impl.md) |
-| **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform`, gated by tenant flag `canvas.nodes.batch-transform` |
-| **Summarize / synthesize one document with optional citations** | [plugins/summarize/impl.md](plugins/summarize/impl.md) — `uipath.pattern.deep-rag`, gated by tenant flag `canvas.nodes.summarize` |
+| **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform` |
+| **Summarize / synthesize one document with optional citations** | [plugins/summarize/impl.md](plugins/summarize/impl.md) — `uipath.pattern.deep-rag` |
 | **Create a subflow** | [plugins/subflow/impl.md](plugins/subflow/impl.md) + [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [plugins/delay/](plugins/delay/) or [plugins/scheduled-trigger/](plugins/scheduled-trigger/) |
 | **Use queue nodes** | [plugins/queue/impl.md](plugins/queue/impl.md) |
-| **Read or write Data Fabric entity records** | [plugins/data-fabric/impl.md](plugins/data-fabric/impl.md) — `core.datafabric.read` / `create` / `update` / `delete`, each gated by its own `canvas.nodes.*-entity` tenant flag |
+| **Read or write Data Fabric entity records** | [plugins/data-fabric/impl.md](plugins/data-fabric/impl.md) — `core.datafabric.read` / `create` / `update` / `delete` |
 
 ## Anti-patterns
 
@@ -189,7 +189,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [inline-voice-agent](plugins/inline-voice-agent/) — voice agent on a live phone call (inbound/outbound) + the trigger, create-call, and end-call nodes
   - [ixp](plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](plugins/queue/) — Orchestrator queue item creation
-  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`); tenant flags default to off
+  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`)
 
 ### Cross-capability (shared)
 
