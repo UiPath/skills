@@ -1,9 +1,10 @@
 task_id: skill-agent-guardrail-coded-byog-middleware
 description: >
   Middleware-style bring-your-own guardrail (BYOG) for a coded agent. A simple
-  LangGraph customer support agent is seeded with no guardrails. The tenant already
-  has a BYOG configuration registered (admin-side); the user asks to route the
-  agent's PII checks through it. Verifies the agent wires
+  LangGraph customer support agent is seeded with no guardrails. A mocked `uip`
+  serves the BYOG configuration the prompt names, so discovery answers the same
+  way on every run; the user asks to route the agent's PII checks through it.
+  Verifies the agent wires
   UiPathByoGuardrailMiddleware — pinned to the configuration by validator_name,
   spread into create_agent(), with a block action — rather than reaching for the
   built-in PII validator.
@@ -21,7 +22,13 @@ agent:
   disallowed_tools: ["Task"]
 
 sandbox:
+  # Discovery is mocked, so the task no longer depends on a fixture living on the
+  # shared smoke tenant. See _fixtures/ByogMockCli/mocks/uip for why that
+  # dependency was untenable and what the shim serves.
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_fixtures/ByogMockCli
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 

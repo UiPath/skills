@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""Selective `uip` shim for the CODED BYOG guardrail tasks.
+
+Shared by `byog_middleware` and `byog_decorator`. Serves the two read-only
+discovery paths a coded agent walks before it can pin a bring-your-own
+guardrail, both answering with the configuration the prompts name
+(`byog-smoke-agent-pin`, pii_detection):
+
+  * `uip agent guardrails list [--byo]`      -> GuardrailDefinitionsList
+  * `uip guardrails byo-configurations list` -> ByoGuardrailConfigurationsList
+
+Without `--byo`, `agent guardrails list` also returns the BUILT-IN
+`pii_detection` entry sharing the same `Validator` name, so the agent must
+disambiguate via `IsByo`/`ByoValidatorName` exactly as the skill teaches
+rather than grabbing the first PII row. The two views agree on ids and
+connector metadata, so cross-checking one against the other is consistent.
+
+Every other invocation exec's the REAL `uip` found later on PATH, and
+`--help` is handed to the real CLI so flag questions get real answers
+(a canned payload there reads as "that flag does not exist").
+
+Why mock: the graded behavior is code wiring in `graph.py`, and both
+checkers are pure AST analysis that never touch a tenant -- only the
+agent's DISCOVERY step needed one. It could not keep depending on the
+shared smoke tenant. `byo-configurations create` probes the connection
+server-side with no skip flag, so a configuration cannot be seeded
+per-run, and the tenant has no guardrail-capable connection to bind
+(same reasoning as the byog_pinning mock, which fixed the low-code half
+of this family). Left live, these tasks were graded on whether an
+external tenant happened to hold a fixture: on 2026-08-24 the tenant
+held three configurations, none of them `byog-smoke-agent-pin`; by
+2026-09-10 it held none at all, and both discovery calls returned
+`Data: []`. The agent then correctly refused to fabricate a validator
+name and changed nothing, scoring 0.00 -- a fixture outage rendered as a
+skill regression.
+
+`mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
+sandbox. Linux smoke only (no `windows` tag on either task), hence no
+`uip.cmd` twin -- same as the ixp, byog_pinning and platform guardrails mocks.
+"""
+
+import json
+import os
+import shutil
+import sys
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+
+VALIDATOR_NAME = "byog-smoke-agent-pin"
+CONNECTION_ID = "18fb337c-29b7-4162-a9e8-0c05b01cf4df"
+CONFIGURATION_ID = "e5723bb8-fbc2-4317-c7d7-08de803bc010"
+CONNECTOR_NAME = "Azure AI Content Safety"
+CONNECTOR_KEY = "uipath-azure-contentsafety"
+
+PII_PARAMETERS = [
+    {
+        "Type": "enum-list",
+        "Id": "entities",
+        "Required": True,
+        "DefaultValue": ["Email", "PhoneNumber"],
+        "Options": [
+            "Email",
+            "PhoneNumber",
+            "Person",
+            "Address",
+            "USSocialSecurityNumber",
+        ],
+        "DisplayName": "Entities",
+        "Description": "PII entity types to detect.",
+    },
+    {
+        "Type": "map-enum",
+        "Id": "entityThresholds",
+        "Required": True,
+        "DefaultValue": {"Email": 0.5, "PhoneNumber": 0.5},
+        "KeySource": "entities",
+        "Min": 0,
+        "Max": 1,
+        "DisplayName": "Per-entity threshold",
+        "Description": "Confidence threshold (0-1) per selected entity.",
+    },
+]
+
+BYO_ENTRY = {
+    "Validator": "pii_detection",
+    "IsByo": True,
+    "Status": "Available",
+    "AllowedScopes": ["Agent", "Llm", "Tool"],
+    "GuardrailStages": {
+        "Agent": ["PreExecution", "PostExecution"],
+        "Llm": ["PreExecution", "PostExecution"],
+        "Tool": ["PreExecution", "PostExecution"],
+    },
+    "DisplayName": "PII Detection",
+    "Description": (
+        "Detects personally identifiable information. Served by the "
+        "tenant's external bring-your-own guardrail provider."
+    ),
+    "ByoValidatorName": VALIDATOR_NAME,
+    "ByoConnectionId": CONNECTION_ID,
+    "ByoConfigurationId": CONFIGURATION_ID,
+    "ByoConnectorName": CONNECTOR_NAME,
+    "ByoConnectorKey": CONNECTOR_KEY,
+    "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19",
+    "Parameters": PII_PARAMETERS,
+}
+
+BUILTIN_ENTRY = {
+    "Validator": "pii_detection",
+    "IsByo": False,
+    "Status": "Available",
+    "AllowedScopes": ["Agent", "Llm", "Tool"],
+    "GuardrailStages": {
+        "Agent": ["PreExecution", "PostExecution"],
+        "Llm": ["PreExecution", "PostExecution"],
+        "Tool": ["PreExecution", "PostExecution"],
+    },
+    "DisplayName": "PII Detection",
+    "Description": (
+        "Detects personally identifiable information using Azure "
+        "Cognitive Services (UiPath built-in)."
+    ),
+    "Parameters": PII_PARAMETERS,
+}
+
+# The admin-side view of the same record. Field names mirror the CLI's own
+# documented examples for `guardrails byo-configurations`, so the fields the
+# skill teaches are the fields that come back.
+CONFIGURATION = {
+    "Id": CONFIGURATION_ID,
+    "ConnectionId": CONNECTION_ID,
+    "ValidatorName": VALIDATOR_NAME,
+    "ValidatorType": "pii_detection",
+    "FallbackOnUiPath": False,
+    "Enabled": True,
+    "CreatedAt": "2026-07-02T11:40:00Z",
+    "UpdatedAt": None,
+    "ConnectorKey": CONNECTOR_KEY,
+    "ConnectorName": CONNECTOR_NAME,
+    "ConnectionName": f"{CONNECTOR_NAME} - Prod",
+    "ValidConnection": True,
+}
+
+
+def real_uip():
+    path = os.environ.get("PATH", "")
+    parts = [p for p in path.split(os.pathsep) if p and os.path.abspath(p) != MOCK_DIR]
+    return shutil.which("uip", path=os.pathsep.join(parts))
+
+
+def emit(code, data):
+    print(json.dumps({"Result": "Success", "Code": code, "Data": data}, indent=2))
+    return 0
+
+
+def main():
+    args = sys.argv[1:]
+    literal = [a for a in args if not a.startswith("-")]
+
+    # A help request is a question about flags, not about tenant data.
+    if "--help" not in args and "-h" not in args:
+        if literal[:3] == ["agent", "guardrails", "list"]:
+            data = [BYO_ENTRY] if "--byo" in args else [BUILTIN_ENTRY, BYO_ENTRY]
+            return emit("GuardrailDefinitionsList", data)
+        if literal[:3] == ["guardrails", "byo-configurations", "list"]:
+            return emit("ByoGuardrailConfigurationsList", [CONFIGURATION])
+
+    real = real_uip()
+    if not real:
+        sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
+        return 127
+    os.execv(real, [real] + args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
