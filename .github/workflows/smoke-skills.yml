@@ -2,7 +2,10 @@ name: Smoke Skill Tests
 
 concurrency:
   group: smoke-skills-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; `opened` and `reopened` can fire on a
+  # commit a run is already in flight for, and a cancelled run reports the
+  # required context as `cancelled`. See docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No `paths:` filter on purpose. This workflow is a required status
@@ -360,7 +363,7 @@ jobs:
       # agent itself runs inside the container: the docker driver imports the selected
       # agent class on the HOST before dispatching work.
       - name: Install coder-eval
-        run: uv pip install --system --prerelease=allow "coder-eval[codex]==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system --prerelease=allow "coder-eval[codex,litellm]==${{ steps.ceref.outputs.version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
       # skills smoke image extends it below. Needs read:packages only —
@@ -387,6 +390,7 @@ jobs:
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }} \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
+            --build-arg FLOW_SDK_VERSION="${{ vars.FLOW_SDK_VERSION || 'latest' }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
@@ -723,7 +727,7 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). `coder-eval plan` validates schemas on the runner -- no image.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system "coder-eval[litellm]==${{ steps.ceref.outputs.version }}"
 
       - name: Validate every task YAML against the pinned coder_eval schema
         # `coder-eval plan` exits non-zero if any file fails to load under the

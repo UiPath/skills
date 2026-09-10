@@ -1,0 +1,9 @@
+{
+  "name": "quote-fns",
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@uipath/coded-functions-js-sdk": "^0.6.3",
+    "typescript": "^5.7.0"
+  }
+}

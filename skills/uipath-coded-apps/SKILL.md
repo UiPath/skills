@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution."
+description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution, JS/TS function backends (`defineFunction`, `uip function serve`)→uipath-functions."
 when_to_use: "User wants to scaffold, build, push/pull, pack, publish, or deploy a Coded Web App or Coded Action App, or use the `@uipath/uipath-typescript` SDK inside one. Also dashboard requests: 'build me a dashboard', 'show agent health / error rate / KPIs / governance violations', 'generate an analytics or observability dashboard', edit an existing one (add/remove/change a widget, change time range, deploy), or fix/diagnose a dashboard that won't build (a metric that fails to compile, a bad SDK call, a broken widget). For RPA→uipath-rpa; Python agents→uipath-agents; Maestro flows→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Task
 ---
@@ -20,6 +20,8 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
 - User wants to **generate an agent-monitoring / analytics dashboard** from a natural-language description — e.g. "show agent health, error rates, invocation volume, latency, active agents, KPIs, governance metrics, or consumption trends"
 - User says "build/create/generate a dashboard", describes metrics to visualize, or asks for an agent observability, operations, or cost view
+
+For the app's **JS/TS function backend** — authoring the `defineFunction` endpoint the app calls, tokens, CORS, the local two-server dev loop → `uipath-functions`.
 
 ## App Types
 
@@ -178,7 +180,7 @@ To change any of these values, edit `uipath.json`.
 2. **Build** — `npm run build`. Verify `ls dist/`.
 3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
-5. **Deploy** — `uip codedapp deploy -n <name> --folder-key <GUID>`. Resolve the GUID from the chosen folder: a personal workspace (`Type == "Personal"`), a named existing folder, or a freshly `uip or folders create`d one — via `uip or folders list --output json`. Dashboards additionally choose a **deploy mode** (standalone / governance-pinned / governance) that sets `--tags`; see [dashboards deploy impl](references/dashboards/plugins/deploy/impl.md). Never let the command go interactive. Share the app URL with the user.
+5. **Deploy** — `uip codedapp deploy -n <name> --folder-key <GUID>`. Resolve the GUID from the chosen folder: a personal workspace (`Type == "Personal"`), a named existing folder, or a freshly `uip or folders create`d one — via `uip or folders list --output json`. Dashboards additionally choose a **deploy mode** (standalone / governance-pinned / governance) that sets `--tags`; see [dashboards deploy impl](references/dashboards/plugins/deploy/impl.md). Never let the command go interactive. Share the app URL with the user. **Deploy is done when the CLI reports success — do not poll or `curl` the app URL to confirm it.** Activation lags the deploy by minutes, so a fresh URL returning 404/503 is expected and proves nothing; waiting on it only burns time.
 
 ## SDK Module Imports
 

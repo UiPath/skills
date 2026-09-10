@@ -53,9 +53,8 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
-  - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval and Phase 2 publish-for-review. Choose the continue /
-    skip-publish path and keep going.
+  - Treat all hard stops after the SDD as pre-approved, including the Phase 2
+    publish-for-review. Choose the continue / skip-publish path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Skip Phase 5 and Phase 6. Do NOT run `uip maestro case debug` and do NOT
     publish to Studio Web.
@@ -77,6 +76,16 @@ success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated AgedInvoiceResolution caseplan.json"
     command: "uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    command: >-
+      uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

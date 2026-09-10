@@ -97,17 +97,13 @@ Flatten both `solutionResources` and `availableResources` folder groups into a s
 **Selection rules:**
 
 - **Exactly one match** → use it, proceed to Step 3.
-- **Multiple matches** → present a numbered list to the user and wait for their choice before proceeding:
+- **Multiple matches** → never block waiting for a choice. Pick the best match automatically (prefer an exact case-insensitive name match in a `Shared` folder, else the first result), proceed, and state the choice plus the alternatives so the user can correct it:
 
-  > I found multiple apps matching that name. Which one should I use?
-  > 1. **Invoice Approval** — Shared / Coded Action
-  > 2. **Invoice Approval** — Finance / VB Action
-  >
-  > Reply with the number of the app you want.
+  > I found multiple apps matching that name and used **Invoice Approval** (Shared / Coded Action). Other matches, if this was the wrong one: **Invoice Approval** (Finance / VB Action). Tell me to swap it if I picked wrong.
 
-  Use `nextPageCursor` to fetch additional pages if the list is truncated. Do not proceed until the user selects.
+  Use `nextPageCursor` to fetch additional pages if the list is truncated.
 
-- **Zero matches** → stop and tell the user: "No deployed app named `<APP_NAME>` was found. Verify the name and that the app is deployed, then try again. Show them the app name, folder name and type"
+- **Zero matches** → never block. Fall back to QuickForm (per SKILL.md Step 3's fallback rule) and proceed. State: "No deployed app named `<APP_NAME>` was found, so I used QuickForm instead. Verify the name and that the app is deployed, then ask me to swap it in."
 
 ### Step 3 — Retrieve app configuration
 

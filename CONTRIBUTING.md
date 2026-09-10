@@ -228,6 +228,23 @@ python3 scripts/check-skills-sh.py
 
 CI (`validate-skills-sh.yml`) fails if a skill is in no grouping, is listed in two, or is grouped but no longer exists on disk. `--fix` removes entries for deleted skills but will not place new ones — that is an editorial call.
 
+#### Renaming or removing a skill
+
+`skills.sh.json` is not derived from disk, so a rename or a deletion leaves it stale with no other symptom. Update it in the **same PR** as the folder change:
+
+| Change to `skills/` | Required edit |
+|---|---|
+| Add `skills/<new>/` | Add `<new>` to the matching grouping |
+| Rename `skills/<old>/` → `skills/<new>/` | Replace `<old>` with `<new>` — both halves (old name gone, new name ungrouped) are reported |
+| Delete `skills/<name>/` | Remove `<name>`, and drop the grouping if nothing survives in it |
+
+```bash
+python3 scripts/check-skills-sh.py --fix   # drops stale entries; will not place new ones
+python3 scripts/check-skills-sh.py         # confirm: "OK — N skills grouped across M section(s)."
+```
+
+The check reads the whole tree, so it also reports drift that was already on `main`. Those findings are labelled **pre-existing** and do not fail your PR — `--baseline-ref` scopes the exit code to drift your change introduces. Fixing pre-existing drift is welcome; being blocked by it is not the intent.
+
 ### 6. Add Reference Documents (Optional)
 
 Reference files go in `references/` and follow these conventions:
@@ -433,7 +450,7 @@ Before submitting your PR, verify:
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
-- [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`)
+- [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`) — and on a rename or removal, the old name is gone from it too
 
 ### References
 - [ ] File names use kebab-case
@@ -494,6 +511,27 @@ Before submitting your PR, verify:
 - CODEOWNERS for the affected paths will be automatically requested for review
 - You may be asked to make changes — this is normal and collaborative
 - Once approved, a maintainer will merge your PR
+
+### Required Status Checks
+
+Some PR checks gate the merge. Two edits break them in a way that blocks **every**
+open PR, not just yours:
+
+- **Renaming a job** whose name is a required context — the context never
+  reports again.
+- **Narrowing a producing workflow's PR trigger** — `paths:`, `paths-ignore:`,
+  `branches:`, `branches-ignore:`, or a `types:` list without `synchronize`.
+  When the trigger excludes a PR the workflow doesn't run, so no check is
+  reported and the PR stays pending forever. Always trigger, and short-circuit
+  inside the job instead: a *skipped* job counts as a pass.
+
+A third breaks them loudly: **cancelling a run on a SHA that also has a passing
+one**. A cancelled run still reports its jobs, and `cancelled` is not a pass, so
+required workflows only cancel on `synchronize` — the one event that moves the
+head SHA. Keep that expression when editing a `concurrency:` block.
+
+`required-check contract guard` (in `test-helpers.yml`) fails on the first two. The
+current set, the rationale, and how to change it: [docs/REQUIRED-CHECKS.md](docs/REQUIRED-CHECKS.md).
 
 ## Style Guide
 

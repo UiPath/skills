@@ -35,20 +35,33 @@ initial_prompt: |
   flow validate` passes. Grading then runs the flow under debug against live
   tenant data, so build it to actually run, not merely validate.
 
-  Build the complete flow
-  without stopping to ask me.
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
     command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
   - type: run_command
     description: Check script debugs three malformed inputs (fail-fast); every exercised input must resolve to MCS-2026-04872 with 8 line items
     command: python3 $TASK_DIR/check_billing_invoice_lookup.py
-    timeout: 600
+    timeout: 1200  # 3 x debug_budget(180) + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

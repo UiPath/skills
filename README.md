@@ -104,6 +104,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 |-------|--------|
 | `uipath-admin` | In-development |
 | `uipath-agents` | In-development |
+| `uipath-aops` | Preview |
 | `uipath-api-workflow` | In-development |
 | `uipath-automation-discovery` | Preview |
 | `uipath-automationhub` | In-development |
@@ -180,17 +181,25 @@ codex plugin marketplace add UiPath/skills --ref main
 codex plugin add uipath@uipath-marketplace
 ```
 
-The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
+> **Codex prerequisite:** Use Codex CLI 0.142.0 or later. This repository uses the repository root as the plugin root, supported since [openai/codex#17066](https://github.com/openai/codex/issues/17066) was resolved.
 
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash
 > git clone -c core.symlinks=true https://github.com/UiPath/skills
 > ```
+>
 > If you've already cloned without symlink support, re-enable and re-checkout:
 > ```bash
 > git config core.symlinks true
 > git checkout -- .
 > ```
+>
+> If you encounter a `Filename too long` or `MAX_PATH` error during
+> checkout, enable Git long-path support:
+> ```bash
+> git config --global core.longpaths true
+> ```
+> Then retry the clone or checkout.
 
 ### Cursor IDE
 

@@ -65,24 +65,29 @@ uip solution deploy list --output json
 
 ## Upgrade a Deployment In Place
 
-> **Preview command.** Available only on prerelease (preview/alpha) CLI builds.
-
 `deploy run` fails with HTTP 400 when a deployment for the solution **already exists** — you can't redeploy over it, you have to upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
 
 ```bash
-# Upgrade to the newest published version (default)
+# Upgrade to the newest published version (default), waiting for it to finish
 uip solution deploy upgrade <deployment-key> --output json
 
 # A deployment in your Personal Workspace feed
 uip solution deploy upgrade <deployment-key> --personal-workspace --output json
+
+# Start it and return immediately
+uip solution deploy upgrade <deployment-key> --no-wait --output json
 ```
 
-Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status: "UpgradeInitiated", DeploymentName, FromVersion, ToVersion }`.
+Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, DeploymentName, FromVersion, ToVersion, VersionChangeKey }`. `Status` is the deployment operation status — `Successful` once the upgrade landed, or `Draft` with `--no-wait`.
 
 **Behavior and limits:**
-- It **initiates** the upgrade — the deployment's version moves to the target, but the operation lands in a `Draft`/in-progress state. Track completion with `uip solution deploy list` (the deployment shows the new version and its operation state).
+- The deployment's **existing configuration is preserved** — values already set on the deployment carry over instead of being reset to the package defaults, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
+- **The upgrade takes two server steps, and the command does both.** The upgrade call only *queues* the move: it creates a second deployment record (operation `VersionChange`, status `Draft`) and leaves the live version alone. Nothing advances that draft on its own — it sits in `Draft` indefinitely — so the command then installs it. `VersionChangeKey` in the output is that new record's key; it is **not** the key you passed in.
+- By default the command **waits** for the install to reach a terminal state (`--timeout <seconds>`, default 300; `--poll-interval <ms>`, default 5000). Pass `--no-wait` to return as soon as the install is accepted.
+- A failed install reports the server's reason (for example `Solution folder not found` when the deployment's solution folder was deleted), not a bare `Failed`.
+- After a successful upgrade the deployment can land in `ReadyToActivate` rather than `Active`. Check with `uip solution deploy list` and run `uip solution deploy activate <deployment-name>` if activation is pending.
 - Only the **latest** published version is a valid target today. Omit `--version` to take the newest; passing an older `--version` is rejected.
-- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server.
+- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server. Re-running an upgrade that is already queued fails with `Another upgrade has already started for this deployment`.
 
 ## Step 3: Uninstall a Deployment
 

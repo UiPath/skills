@@ -8,6 +8,13 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 
 run_limits:
+  # Nightly 2026-09-08_04-17-10 (claude-sonnet-5) killed this at 900s on a
+  # single streamed turn (turn_timeout hit, 0 completed turns) — it was riding
+  # the inherited 900/1200 default. Raise past it. Re-verified SUCCESS at 449s
+  # on run 34374073086 (variance run finished inside the old cap, but the
+  # nightly kill above is the binding evidence).
+  task_timeout: 2400
+  turn_timeout: 1800
   expected_turns: 18
   max_turns: 80
 

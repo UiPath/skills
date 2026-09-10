@@ -156,7 +156,7 @@ Build coverage is almost always the strong mode; `operate` and `diagnose` are wh
 | D5 | **Audit query filtered for triage** | `audit … events --status Failure` / by user / by time window to answer "who did X / what changed" |
 | D6 | **Effective-access / authorization check** | folder-scoped `authorization check-access <user>`, `deployed-policy get --user-id` — "why can't user X do Y" |
 | D7 | **Connectivity / health check** | BYO-LLM `--force-refresh` / reprobe, `is connections list --all-folders`, dead-connection audit |
-| D8 | **Failure-mode / error-code classification** | match an error code / exception (e.g. `MST-9107`, `CS0103`, exit codes) to a known catalog and recommend the fix branch |
+| D8 | **Failure-mode / error-code classification** | match an error code / exception (e.g. `CS0103`, `DAP-DT-_2003`, exit codes) to a known catalog and recommend the fix branch |
 | D9 | **Model / metric quality inspection** | `get-metrics` + `list-models`, per-field F1 / precision / recall to explain bad extraction |
 | D10 | **Schema / contract-drift detection** | out-of-sync `bindings_v2.json`, `entry-points` drift, camelCase/naming mismatch surfaced by validate |
 | D11 | **Read-only discovery for triage** | `login status`, `list --state Faulted`, `get` before mutating — inspecting state to scope a fault |

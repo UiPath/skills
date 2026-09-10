@@ -48,20 +48,20 @@ These actions may contact UiPath services or external systems.
 
 | Journey | Read |
 | --- | --- |
-| Package and upload or publish | [references/ship.md](references/ship.md) |
-| Debug/run and inspect execution | [references/run.md](references/run.md) |
-| Manage a running instance | [references/manage.md](references/manage.md) |
+| Package and upload or publish | [references/ship.md](ship.md) |
+| Debug/run and inspect execution | [references/run.md](run.md) |
+| Manage a running instance | [references/manage.md](manage.md) |
 
 ## Common tasks
 
 | I need to... | Read these |
 | --- | --- |
-| Prepare for Studio Web upload | [references/ship.md](references/ship.md), [shared/project-layout.md](../shared/project-layout.md) |
-| Deploy to Orchestrator | [references/ship.md](references/ship.md) |
-| Run/debug a BPMN process | [references/run.md](references/run.md) |
-| Inspect job or instance status | [references/run.md](references/run.md) |
-| Pause/resume/cancel/retry | [references/manage.md](references/manage.md) |
-| Migrate or move an instance cursor | [references/manage.md](references/manage.md) |
+| Prepare for Studio Web upload | [references/ship.md](ship.md), [shared/project-layout.md](../shared/project-layout.md) |
+| Deploy to Orchestrator | [references/ship.md](ship.md) |
+| Run/debug a BPMN process | [references/run.md](run.md) |
+| Inspect job or instance status | [references/run.md](run.md) |
+| Pause/resume/cancel/retry | [references/manage.md](manage.md) |
+| Migrate or move an instance cursor | [references/manage.md](manage.md) |
 | Correlate a running instance to deployed BPMN | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 | Diagnose a failed run | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
@@ -79,9 +79,9 @@ These actions may contact UiPath services or external systems.
 
 ### Operate-scoped
 
-- [ship.md](references/ship.md) - package, upload, publish, deploy
-- [run.md](references/run.md) - debug, run, status, traces
-- [manage.md](references/manage.md) - pause, resume, cancel, retry, migrate, cursor movement
+- [ship.md](ship.md) - package, upload, publish, deploy
+- [run.md](run.md) - debug, run, status, traces
+- [manage.md](manage.md) - pause, resume, cancel, retry, migrate, cursor movement
 
 ### Cross-capability
 

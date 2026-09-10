@@ -1,0 +1,73 @@
+task_id: skill-api-workflow-evals-stale-expectations
+description: >
+  Build (edit): lower a grading threshold from 60 to 50 in a project that already
+  has an `evals/` dataset, and keep the dataset in sync. The I/O schema does not
+  change, but the `score 55` row's expectation (FAIL) becomes stale while the
+  85/40/60 rows stay valid.
+
+  Grades the logic-change guidance of references/testing-and-evals.md §4 that
+  the earlier "schema change" guidance missed: after a behaviour change,
+  re-derive the expectations the change invalidated — and only those. An agent
+  that leaves the 55 row alone fails the behavioral rerun; one that rewrites or
+  drops the still-valid rows fails the dataset check; one that keeps the old
+  threshold to satisfy the stale row fails the behaviour check. Local-only.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:eval]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/stale_expectations/seed.py"
+    timeout: 120
+
+initial_prompt: |
+  The API workflow project in ./GradeCheck grades a numeric `score` and has an
+  evaluation dataset under evals/.
+
+  Lower the passing threshold from 60 to 50. Keep the dataset in sync with the
+  new behavior — change only what the new threshold actually invalidates — and
+  run the evaluations to confirm they all pass.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "Behavioral: the workflow now grades with threshold 50 (55 and 50 -> PASS, 49 -> FAIL), read from the raw output"
+    command: python3 $TASK_DIR/check_stale_row.py behavior
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Dataset: the stale `score 55` row now expects PASS; the 85/40/60 rows and the evaluator are unchanged; no row dropped"
+    command: python3 $TASK_DIR/check_stale_row.py dataset
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: every row of the updated dataset passes when scored as the panel scores it"
+    # $SKILLS_REPO_PATH, not $TASK_DIR/..: the sandbox only mounts the task's own
+    # leaf directory, so ../_shared does not exist there and the check exits 2.
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_rows_pass.py GradeCheck --min-rows 4
+    timeout: 300
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # Advisory: the matcher only sees Bash command text. An agent that drives
+    # `uip api-workflow run` from inside its own Python scorer (subprocess) is
+    # invisible to it and equally valid; check_rows_pass.py carries the real signal.
+    description: "Advisory: agent re-ran the evaluations with the local runner visibly in Bash (not gated — a wrapper script that shells out to the runner is equally valid)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40

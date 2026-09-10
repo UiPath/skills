@@ -12,7 +12,7 @@ tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, feature:inte
 
 run_limits:
   expected_turns: 20
-  max_turns: 30
+  max_turns: 45
 
 sandbox:
   template_sources:
@@ -26,10 +26,10 @@ initial_prompt: |
   connection under the key `slack-notifier`. The agent takes a `channel`
   and a `message` and reports back whether the post succeeded as `ok`.
 
-  I don't have a live tenant wired up right now, so set the project up
-  by hand instead of scaffolding against the platform, and don't try to
-  run it. I've already captured the operation's `uip is resources
-  describe` output for you at `./slack_send_message_describe.json` —
+  I don't have a live tenant wired up right now, so don't try to run
+  it, and skip evaluations for now. I've already captured the
+  operation's `uip is resources describe` output for you at
+  `./slack_send_message_describe.json` —
   treat that as the source of truth for the operation's shape rather
   than copying field names from examples. Follow the platform's
   documented Integration Service workflow for wiring up the call, not

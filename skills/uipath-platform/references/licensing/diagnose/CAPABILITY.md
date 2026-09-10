@@ -26,7 +26,7 @@ Capability index for diagnosing licensing symptoms via `uip platform`: entitleme
 
 ## Critical rules
 
-1. **Diagnose reads; Operate mutates.** Never run a `set` command while diagnosing — a `set` is an overlay that destroys the evidence of the prior state. Read first, present findings, let the user authorize the fix.
+1. **Diagnose reads; Operate mutates.** Never run a `set` command while diagnosing — a `set` is an overlay that destroys the evidence of the prior state. Read first, present findings, let the user authorize the fix. Re-running the user's own `set` to "reproduce" the symptom is still a mutation. A CLI that appears disconnected is not permission to try it: an unauthenticated command is not guaranteed to fail, and if the credentials do resolve you have mutated production while diagnosing. To explain what a `set` did, read `get` and cite the documented semantics or `set --help` — never execute it.
 2. **Identify the layer before running anything.** Licensing is four independent layers (see [troubleshooting-guide.md](references/troubleshooting-guide.md#step-1-identify-the-layer)). A symptom answered at the wrong layer produces a confident wrong answer.
 3. **Read `get` before reasoning about `set`.** `quantity` is absolute, not a delta, and absent codes keep their current value. Without the starting state you cannot tell an ineffective `set` from a correctly-applied no-op.
 4. **Treat an absent row as a window question first.** `tenants licenses get` returns only products whose active interval contains the current time. Absent ≠ never allocated.
@@ -56,6 +56,7 @@ Capability index for diagnosing licensing symptoms via `uip platform`: entitleme
 
 ## Anti-patterns
 
+- **Never re-run the user's failed `set` to reproduce the symptom.** The command they described is the one command you must not run. Quote it in your write-up; do not execute it, and do not treat an offline or unauthenticated environment as a safe place to try it.
 - **Never run `set` to "test" a hypothesis.** `users licenses set` replaces the user's direct bundles and `groups rules set` replaces the whole rule — a diagnostic `set` silently revokes entitlements.
 - **Never conclude "no license" from the user-bundle layer alone.** Unattended runtime comes from the tenant allocation, not a user bundle; the two are separate license types.
 - **Never read a fresh `consumed: 0` as proof no work ran.** Check the window and the aggregation lag first.

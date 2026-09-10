@@ -13,7 +13,7 @@ description: >
 tags: [uipath-agents, e2e, mode:build, low-code, feature:escalation]
 
 run_limits:
-  expected_turns: 24
+  expected_turns: 40
   turn_timeout: 1200
 
 pre_run:
@@ -21,10 +21,11 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  Add an escalation resource named "ApprovalEscalation" to the existing
-  "Agent" agent inside the existing "AgentWithLocalEscalation" solution
-  (in the current directory). The escalation should use the Action Center
-  app that is already part of this solution.
+  Update the existing UiPath low-code agent "Agent" inside the existing
+  "AgentWithLocalEscalation" solution (in the current directory). Agent should
+  escalate cases it cannot decide on its own to a human approver through an
+  escalation named "ApprovalEscalation", using the existing "SimpleApprovalApp"
+  Action Center app that's already in the solution.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

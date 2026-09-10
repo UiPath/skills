@@ -1,0 +1,102 @@
+task_id: skill-aops-no-sc-uuid-smoke
+description: >
+  Negative guard — the agent is handed a raw `uip aops connection repos`
+  payload and must pull the provider-native `RemoteId` out of it for
+  PipelineDto.repositoryId, not the SourceControl `Identifier` UUID that sits
+  next to it. Unlike dto_shape_smoke, nothing here labels which id is
+  correct; the skill has to supply that knowledge. Catches regressions where
+  the field mapping silently reverts to the internal UUID — which makes
+  `pipeline create` return Success while the resulting pipeline fails runtime
+  resolution and the StudioAdmin UI reports "connection no longer valid".
+
+  Platform note: the payload is supplied inline so no discovery calls are
+  needed. What matters is which id lands on `repositoryId`.
+tags: [uipath-aops, smoke, mode:build, lifecycle:generate]
+
+
+initial_prompt: |
+  Here is the response I got from listing the repositories on my
+  SourceControl connection `24efc94e-ffd6-43a7-56ae-08de956e94fd`:
+
+  ```json
+  {
+    "Result": "Success",
+    "Code": "ConnectionRepos",
+    "Data": [
+      {
+        "Identifier": "ffcefc70-dcfe-4bbb-89f5-08de956e99e9",
+        "Name": "Dummy-Studio-Project",
+        "CloneUrl": "https://github.com/sc-test-org/Dummy-Studio-Project.git",
+        "RemoteId": "1063142941",
+        "CommitSha": "9f2c1ab",
+        "DefaultBranch": "main",
+        "AzureProject": null
+      },
+      {
+        "Identifier": "1afdd97c-1c57-4288-89f6-08de956e99e9",
+        "Name": "laughing-octo-memory",
+        "CloneUrl": "https://github.com/sc-test-org/laughing-octo-memory.git",
+        "RemoteId": "1063999812",
+        "CommitSha": "3ba77de",
+        "DefaultBranch": "main",
+        "AzureProject": null
+      }
+    ]
+  }
+  ```
+
+  Write a PipelineDto JSON at `./pipeline.json` for a new pipeline named
+  `my-pipeline` that builds the `Dummy-Studio-Project` repository. The
+  project file is at `project.json` and the published process to bind is
+  `5421a94a-ab67-4ac0-b181-03e9983cdb06`.
+
+  Important:
+  - You do NOT need to call `uip aops pipeline create` — just write the
+    JSON file.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_exists
+    description: "Pipeline DTO JSON was written"
+    path: "pipeline.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "DTO pulled the provider-native RemoteId out of the payload for repositoryId"
+    path: "pipeline.json"
+    includes:
+      - '"repositoryId": "1063142941"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "DTO does NOT use the SourceControl internal UUID for repositoryId"
+    path: "pipeline.json"
+    includes:
+      - '"repositoryId"'
+    excludes:
+      - '"repositoryId": "ffcefc70-dcfe-4bbb-89f5-08de956e99e9"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "DTO bound the repository the user named, not the other row in the payload"
+    path: "pipeline.json"
+    includes:
+      - '"repositoryName": "Dummy-Studio-Project"'
+      - '"repositoryUrl": "https://github.com/sc-test-org/Dummy-Studio-Project.git"'
+      - '"branch": "main"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "DTO did not borrow ids from the second repository row"
+    path: "pipeline.json"
+    includes:
+      - '"connectionIdentifier": "24efc94e-ffd6-43a7-56ae-08de956e94fd"'
+    excludes:
+      - '1063999812'
+      - '1afdd97c-1c57-4288-89f6-08de956e99e9'
+    weight: 1.5
+    pass_threshold: 1.0

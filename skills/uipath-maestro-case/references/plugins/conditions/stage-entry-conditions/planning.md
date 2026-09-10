@@ -8,16 +8,16 @@ Pick this plugin when the sdd.md declares a stage entry condition or a global ev
 
 For when a stage **exits**, use [stage-exit-conditions](../stage-exit-conditions/planning.md). For when a specific **task** starts, use [task-entry-conditions](../task-entry-conditions/planning.md).
 
-## No omission — one T-task per sdd.md Entry Condition row
+## No omission — one caseplan element per sdd.md Entry Condition row
 
-Every stage with an **Entry Condition** declared in sdd.md gets its own stage-entry-condition T-task — **including rule-type `case-entered`** and stages with `is-interrupting: false`. Never skip a condition because the rule-type or field values look like defaults. If sdd.md wrote the row, `tasks.md` emits the T-task.
+Every stage with an **Entry Condition** declared in sdd.md gets its own stage-entry condition — **including rule-type `case-entered`** and stages with `is-interrupting: false`. Never skip a condition because the rule-type or field values look like defaults. If sdd.md wrote the row, the build emits the element.
 
 ## Required Fields from sdd.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. e.g., "Pre-check", "Interrupt on Fraud" |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Pre-check", "Interrupt on Fraud". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage. Required for every secondary-stage entry row, except an `sla-status-change` parallel-oversight row; otherwise `false` is for regular-stage entry only. Carry the sdd.md value — never override it from the rule type or the SLA's scope. |
 | `rationale` | sdd.md Design Rationale | Required reviewer context for why this rule/interrupt is used. Not emitted into caseplan JSON. |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
@@ -27,7 +27,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response. A breach rule references the SLA alone; supplying an escalation converts it into an at-risk rule ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — resolved via [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
 
 ## Rule-Type Catalog (stage-entry scope)
 
@@ -52,10 +52,12 @@ Allowed `ruleType` values and when to pick each:
 
 Stage entry conditions are created **after** all stages exist (Step 7 in implementation.md). Source/target stage IDs must both be captured by then.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T<n>: Add stage-entry condition for "<stage>" — <summary>
+A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector` (see the note below the block). These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
+```text
+stage-entry condition on "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - rationale: "<why this entry rule belongs on this stage>"
 - display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
@@ -63,23 +65,21 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"
 - condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload
-- order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 `sla-status-change` example:
 
-```markdown
-## T<n>: Add stage-entry condition for "SLA Escalation" — case SLA breached
+```text
+stage-entry condition on "SLA Escalation" — case SLA breached
 - target-stage: "SLA Escalation"
 - rationale: "The case SLA can breach during any active stage, so one interrupting entry replaces per-stage exits."
 - is-interrupting: true
 - rule-type: sla-status-change
 - sla-target: "root"
 - sla-display-name: "Supplier Application SLA"
-- order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 

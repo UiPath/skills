@@ -2,12 +2,14 @@ task_id: skill-bpmn-expr-error-mapping
 description: >
   Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author
   a uipath:errorMapping block whose condition branches on the runtime error
-  object via `=vars.error.code == "..."` after a failed activity. Grades the
+  object via `=vars.Error.code == "..."` after a failed activity. Grades the
   error-mapping expression shape from references/expression-authoring.md.
   Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 
 run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
   expected_turns: 18
   max_turns: 75
 
@@ -26,15 +28,15 @@ initial_prompt: |
     activity fails with a service-unavailable error, the process branches on the
     runtime error object. Model the error code on a `bpmn:error errorCode` and
     reference it from a `uipath:errorMapping` whose condition reads the runtime
-    error via `vars.error.code` (for example
-    `=vars.error.code == "SERVICE_UNAVAILABLE"`).
+    error via `vars.Error.code` (for example
+    `=vars.Error.code == "SERVICE_UNAVAILABLE"`).
 
   Requirements:
   - Discover any `uipath:*` activity payload via the registry
     (`uip maestro bpmn registry`) and author it from the served template. Do not
     hand-author registry-owned `uipath:*` XML from prose.
   - The errorMapping condition must be a read-only expression that reads
-    `vars.error.code` — not a baked literal and no assignment operators.
+    `vars.Error.code` — not a baked literal and no assignment operators.
   - Use synthetic placeholder resource names only. Do not include tenant URLs,
     folder keys, connection IDs, release keys, real process names, or real user
     names.
@@ -61,7 +63,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "errorMapping condition branches on vars.error.code and the graph is sound"
+    description: "errorMapping condition branches on vars.Error.code and the graph is sound"
     command: "python3 $TASK_DIR/check_error_mapping.py"
     timeout: 30
     expected_exit_code: 0

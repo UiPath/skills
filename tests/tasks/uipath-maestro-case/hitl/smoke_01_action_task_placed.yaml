@@ -88,10 +88,10 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step (Phase 0, post-tasks.md, or Phase 2a→2b).
-  - If the action-app cannot be resolved from the registry, write a skeleton
-    action task per the skill's skeleton-tasks reference (type "action",
+  - Treat the Phase 1 and Phase 2→3 build gates as pre-approved — do not
+    block on their HARD STOP / AskUserQuestion approval steps.
+  - If the action-app cannot be resolved from the registry, write a placeholder
+    action task per the skill's placeholder-tasks reference (type "action",
     empty data) — do NOT fabricate a taskTypeId.
   - Do NOT run `uip maestro case debug`.
 

@@ -15,7 +15,7 @@ Ownership: the underlying fault is Orchestrator folder capacity/configuration; t
 
 What can cause it:
 - Folder has no machine templates with Unattended or NonProduction runtime slots assigned
-- Folder only has Test Runtimes but Maestro defaults to NonProduction runtime type (tracked historically as `MST-6775`)
+- Folder only has Test Runtimes but Maestro defaults to NonProduction runtime type
 - Tenant has no available runtime licenses
 - Machines exist but are all currently busy or disconnected
 

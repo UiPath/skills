@@ -1,0 +1,153 @@
+task_id: skill-flow-ixp-e2e-project-creation-handoff
+description: >
+  E2E (Flow → IXP design-time handoff, RE-12982 / RE-13543): the user is in a
+  Flow context, has documents in hand, and asks for a flow that extracts fields
+  from them — without knowing that a separate IXP design-time project must be
+  built first. The prompt never says "IXP", "project" or "publish": recognising
+  the prerequisite, and handing the work to the `uipath-ixp` skill rather than
+  improvising it, is the behaviour under test.
+
+  The run is CUT at the handoff: `stop_early` on the uipath-ixp criterion ends
+  it the moment the sibling skill is invoked, before `projects create`. On a
+  passing run the agent therefore creates no extractor, and the only tenant
+  writes are the grader's own: its run folder, and the residue it sweeps. (A
+  run that never hands off is not cut — see the command_not_executed gate.)
+  handoff.py has the why (RE-13543).
+
+  What happens after the handoff — project created, deployed, node wired — is
+  e2e_04_build_mechanics.yaml's job. Because the cut lands before any project
+  exists, there is no snapshot-diff criterion and no `.flow` to validate here.
+
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, node:ixp]
+
+# driver: docker (NOT tempdir) is required. `uip ixp` ships as the separate
+# @uipath/ixp-tool plugin, pre-baked only into skills-image:latest (see
+# tests/docker/Dockerfile). Under tempdir every `uip ixp` is "unknown command",
+# so seed's `ixp deployments create --help` probe fails the run at pre_run.
+#
+# `uip ixp deployments create` landed in the CLI on 2026-08-19 (UiPath/cli#3575)
+# and rides the `dev` tool dist-tag, which is what the image installs by default.
+sandbox:
+  driver: docker
+  template_sources:
+    # Shared with e2e_04, and deliberately not the uipath-ixp set: that would
+    # add a cross-skill dependency on another team's _shared. Nothing mounted
+    # here may say what is graded — the prompt tells the agent to read it.
+    - type: template_dir
+      path: ../_fixtures/falconry
+      mount_point: documents
+
+# Cut at the handoff, so the expensive tail (`projects create`, training,
+# registry propagation) never runs here — that budget lives in e2e_04. Still
+# generous: a run that never hands off is never cut, and must fail on the
+# criterion rather than the clock, or a routing regression reads as a timeout.
+run_limits:
+  max_turns: 60
+  turn_timeout: 900
+  # Caps end-to-end wall clock, so it must exceed turn_timeout plus both hook
+  # timeouts (900 + 300 + 300) or a slow-but-passing run is killed by the cap.
+  task_timeout: 1800
+
+# Hook timeouts must exceed handoff.UIP_TIMEOUT_SECONDS (45), or the harness
+# kills the wrapper mid-`uip` call and the failure reads as a skill defect. 300
+# is the harness's hard cap; seed fits well under it now that the registry
+# pull/search/get cycle is gone, leaving a help probe, one list, one create and
+# a delete per swept project. Arithmetic at handoff.py's UIP_TIMEOUT_SECONDS.
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py seed"
+    timeout: 300
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py teardown"
+    timeout: 300
+
+# The prompt is deliberately UNCHANGED from the pre-RE-13543 version but for
+# the run folder, which is now named in seed.json rather than inline — a fixed
+# literal is what two concurrent runs collided on. It must never say "IXP",
+# "project" or "publish": noticing the prerequisite unprompted is the whole
+# measurement, and e2e_04 is the task that asks for the extractor outright.
+initial_prompt: |
+  I've got a batch of scanned falconry licences in ./documents/ — have a look
+  at them. Build me a UiPath Maestro Flow that reads licences like these and
+  pulls out the licence number, ring number, species, falconer and the date the
+  licence expires, then logs the ring number and expiry.
+
+  Trigger it manually. Anything this needs set up in Orchestrator goes in the
+  Orchestrator folder named in `./seed.json` (it already exists) — don't touch
+  any other folder.
+
+  - The `uip` CLI is already available and the runner is logged in.
+  - Use `--output json` on all uip commands.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The redirect itself — the one behaviour RE-12982 is about, and the only part
+  # of the chain that leaves no trace in the artifact or on the tenant. An agent
+  # can improvise `uip ixp` from its own knowledge without ever loading the
+  # skill, so this is asserted separately. stop_early cuts the run here, before
+  # `projects create`, which is what keeps the task read-only.
+  - type: skill_triggered
+    description: "Agent handed off to the uipath-ixp Skill to build the missing project"
+    skill_name: "uipath-ixp"
+    expected_skill: "uipath-ixp"
+    weight: 8.0
+    pass_threshold: 1.0
+    stop_early:
+      on_pass: stop
+
+  # The delegation boundary, per the ixp plugin's impl.md: "Invoke the
+  # uipath-ixp Skill and hand it the documents ... do not drive `uip ixp`
+  # commands from this skill's context" — improvising them skips the guardrails
+  # that live in the sibling skill's guides.
+  #
+  # A gate, not an advisory, and it costs nothing when the skill fires: the
+  # criterion above cuts the run before `projects create` can be reached. So
+  # this can only trip on a run that reached project creation WITHOUT handing
+  # off — exactly the improvisation the rule forbids. Whatever such a run
+  # created is collected by the next run's seed sweep.
+  - type: command_not_executed
+    description: "Flow skill did not improvise `uip ixp projects create` instead of handing off"
+    tool_name: "Bash"
+    command_pattern: '(?i)(uip|\$UIP)\s+ixp\s+projects\s+create'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory: the documented discovery path, and evidence the redirect was
+  # reached from tenant state rather than guessed.
+  - type: command_executed
+    description: "Advisory: agent searched the flow registry for published IxP models"
+    tool_name: "Bash"
+    command_pattern: '(?i)(uip|\$UIP)\s+maestro\s+flow\s+registry\s+search'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  # Advisory until a real run proves it latches. impl.md requires the
+  # invocation to carry the documents, the goal AND the folder, and a malformed
+  # payload is the failure this task would otherwise miss — but matching it
+  # means scanning the Skill call's arguments, which is unverified here.
+  # Promote to a gate once a green run shows a non-zero count.
+  - type: command_executed
+    description: "Advisory: handoff payload names the documents folder"
+    command_pattern: 'uipath-ixp[\s\S]{0,600}documents'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

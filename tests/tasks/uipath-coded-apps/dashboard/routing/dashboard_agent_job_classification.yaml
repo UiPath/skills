@@ -1,12 +1,16 @@
 task_id: uipath-coded-apps-dashboard-agent-job-classification
 description: >
-  Regression guard for the agent-job classification trap. When a dashboard
-  derives agent metrics from job runs, the metric module must filter the
-  OData query with the RAW field name (ProcessType eq 'Agent') and match the
-  agent discriminator client-side on the SDK-mapped field (packageType ===
-  'Agent'). Using sourceType (the trigger origin, not the agent discriminator)
-  or filtering on a mapped field name like processName is wrong and returns
-  the wrong rows. The skill teaches this in sdk/orchestrator.md.
+  Regression guard for the agent-job classification trap. An agent job is
+  identified by the packageType/processType discriminator — NOT by sourceType,
+  which is the trigger origin (an agent job can be triggered manually, and a
+  manual job can have sourceType 'Agent'). Filtering on sourceType is wrong in
+  both directions, and referencing a mapped field name like processName inside
+  an OData filter throws. The skill teaches this in sdk/orchestrator.md.
+
+  Field SPELLING is deliberately not graded: the SDK rewrites SDK names to raw
+  API names inside filter/orderby/select/expand (packageType -> processType),
+  so the skill states that either spelling works. Requiring one literal
+  capitalisation failed agents that had followed the skill exactly.
 tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
 
 sandbox:
@@ -37,12 +41,12 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Correct agent-job classification: raw OData filter + no sourceType discriminator.
+  # Correct agent-job classification: any spelling of the discriminator, never sourceType.
   - type: run_command
-    description: "Metric module filters jobs with ProcessType eq 'Agent' and does not use sourceType as the discriminator"
+    description: "Metric module discriminates agent jobs on the packageType/processType field and never on sourceType"
     command: >
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
-      --min-metrics 1 --require-substr "ProcessType eq 'Agent'" --forbid-substr "sourceType"
+      --min-metrics 1 --require-substr "eq 'Agent'" --forbid-substr "sourceType"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

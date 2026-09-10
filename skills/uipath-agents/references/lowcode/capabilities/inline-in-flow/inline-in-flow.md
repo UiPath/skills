@@ -142,7 +142,7 @@ This skill authors the **`agent.json` side** (flatten rule: `$vars.<trigger>.out
   "content": "Write a billing resolution email for this dispute:\n{{input.start__output__disputeSummary}}" }]
 ```
 
-The **flow side** — the trigger global and the node `agentInputVariables[]` binding (the only thing the converter turns into `JobArguments`) — is authored through the `uipath-maestro-flow` skill (Critical Rule 15). The full four-piece contract, the converter behavior, and the `content`↔`contentTokens` invariant + validator errors all live there: [inline-agent prompt-wiring guide § Wiring Flow Variables into Agent Prompts](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
+The **flow side** — the trigger global and the node `agentInputVariables[]` binding (the only thing the converter turns into `JobArguments`) — is authored through the `uipath-maestro-flow` skill (Critical Rule 15). The full four-piece contract, the converter behavior, and the `content`↔`contentTokens` invariant + validator errors all live there: [inline-agent prompt-wiring guide § Wiring Flow Variables into Agent Prompts](../../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
 
 ## Refresh and Validate Inline Agent
 
@@ -153,7 +153,7 @@ uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
 `--inline-in-flow` skips the `entry-points.json` / `project.uiproj` checks. In inline mode `refresh` regenerates `messages[].contentTokens` (from `content`) and `bindings_v2.json` — **not** `entry-points.json` (standalone only). `validate` is read-only (it flags `contentTokens` drift but doesn't repair it — fix by re-running `refresh`).
 
-**Verify at `flow debug`, not after refresh:** `refresh` never fills `inputSchema` — it is non-empty only because you authored it (`DerivedFiles: 0` is normal and does **not** mean input is missing). The end-to-end check (run `uip maestro flow debug` and confirm the agent resolves the input rather than echoing the literal `input.<key>` token) is owned by the `uipath-maestro-flow` skill — see its [inline-agent guide § Debug](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#debug).
+**Verify at `flow debug`, not after refresh:** `refresh` never fills `inputSchema` — it is non-empty only because you authored it (`DerivedFiles: 0` is normal and does **not** mean input is missing). The end-to-end check (run `uip maestro flow debug` and confirm the agent resolves the input rather than echoing the literal `input.<key>` token) is owned by the `uipath-maestro-flow` skill — see its [inline-agent guide § Debug](../../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#debug).
 
 For inline agents with external capabilities (tools, contexts, memory spaces, or escalations), pass `--bindings-target` to **`refresh`** after all flow graph edits:
 
@@ -238,7 +238,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 
 **Critical fields:**
 - `inputs.source` — The inline agent's `projectId` UUID. Must match the subdirectory name and `agent.json.projectId` inside the flow project. The definition still declares `model.source: true`, but flow-core hoists that identity field onto `inputs.source` for the `uipath.agent.autonomous` node instance.
-- `inputs.systemPrompt` / `inputs.userPrompt` — **do not write these keys.** A prompt string on the node makes the flow converter drop every `agentInputVariables[]` entry the prompt text does not reference. Empty strings fail `uip maestro flow validate`. The canonical prompts live in `agent.json.messages[]`. Validator behavior and the older-CLI fallback: [inline-agent guide § Refresh and Validate](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#refresh-and-validate).
+- `inputs.systemPrompt` / `inputs.userPrompt` — **do not write these keys.** A prompt string on the node makes the flow converter drop every `agentInputVariables[]` entry the prompt text does not reference. Empty strings fail `uip maestro flow validate`. The canonical prompts live in `agent.json.messages[]`. Validator behavior and the older-CLI fallback: [inline-agent guide § Refresh and Validate](../../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#refresh-and-validate).
 - `definitions[]` — The `uipath.agent.autonomous` definition copied from the flow registry supplies `model.serviceType: "Orchestrator.StartInlineAgentJob"`, BPMN type, version, and context. Do not copy those fields into the node instance.
 - No node instance `model` block — the inline-agent source lives at `inputs.source`.
 

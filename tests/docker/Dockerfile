@@ -165,6 +165,29 @@ ENV DOTNET_ROOT=/usr/share/dotnet \
 # setup is best-effort so an SDK/feed outage does not block every non-Flow eval;
 # Flow tasks still fail at runtime when their required surface is unavailable.
 # The status file records exactly which rolling dependencies resolved.
+#
+# Where the pull lands is the CLI's business, and it moved: up to
+# maestro-tool 1.202.0-dev.8425 `uip maestro registry pull` unpacked a snapshot
+# under $UIP_MAESTRO_REGISTRY_HOME and wrote `current.json` there; from
+# dev.8461 (cli#3823) it delegates to the Flow SDK, which caches the library
+# under ~/.uipath/cache/flow-sdk/library/<sha256>/ and writes no current.json.
+# This step reads BOTH: the old pointer when the CLI still writes it, otherwise
+# `uip maestro registry path` (the CLI's own answer to "where is it") — and then
+# records the image's provenance pointer itself, so the per-task
+# stage-preview-sdk-workspace.sh and the run scripts keep one contract
+# ($UIP_MAESTRO_REGISTRY_HOME/current.json: libraryHash + snapshotPath) no matter
+# which layout the installed CLI produced. Hard-coding either layout broke the
+# 2026-09-01 image build the moment the @dev tool moved, and under best-effort it
+# would be worse than a break: the image would go GREEN with no connector
+# library, and every connector-backed task would fail at runtime behind a
+# warning nobody reads.
+#
+# `connectors/` is symlinked when present and never gates the library. The
+# current layout does not produce it — `registry pull` emits descriptors only
+# for connectors a project references, and says so ("no connector referenced by
+# this project yet ... 0 TypeScript modules"). Requiring it would have pinned
+# registry_status at `failed` forever, taking the library-json/md symlinks down
+# with it since they share the chain.
 COPY tests/fixtures/maestro-flow-sdk-smoke/ /opt/maestro-flow-sdk-smoke/
 RUN set -euo pipefail && \
     sdk_status="$(tr -d '[:space:]' < "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status")" && \
@@ -177,15 +200,32 @@ RUN set -euo pipefail && \
       if registry_output="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
         uip maestro registry pull --force --output json 2>&1)"; then \
         printf '%s\n' "$registry_output"; \
-        if registry_snapshot="$(jq -er '.snapshotPath' "$UIP_MAESTRO_REGISTRY_HOME/current.json")" \
-          && library_hash="$(jq -er '.libraryHash' "$UIP_MAESTRO_REGISTRY_HOME/current.json")" \
+        registry_snapshot=''; \
+        if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
+          registry_snapshot="$(jq -er '.snapshotPath' "$UIP_MAESTRO_REGISTRY_HOME/current.json" || true)"; \
+          library_hash="$(jq -er '.libraryHash' "$UIP_MAESTRO_REGISTRY_HOME/current.json" || true)"; \
+        else \
+          library_json="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
+            readlink -f "$(uip maestro registry path --library-json --output plain | tail -1)" || true)"; \
+          library_hash="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
+            uip maestro registry path --sha --output plain | tail -1 || true)"; \
+          if [ -n "$library_json" ] && [ -d "$library_json" ] && [ -n "$library_hash" ]; then \
+            registry_snapshot="$(dirname "$library_json")"; \
+            mkdir -p "$UIP_MAESTRO_REGISTRY_HOME"; \
+            jq -n --arg libraryHash "$library_hash" --arg snapshotPath "$registry_snapshot" \
+              '{libraryHash: $libraryHash, snapshotPath: $snapshotPath}' \
+              > "$UIP_MAESTRO_REGISTRY_HOME/current.json"; \
+          fi; \
+        fi; \
+        if [ -n "$registry_snapshot" ] && [ -n "$library_hash" ] \
           && test -f "$registry_snapshot/library-json/index.json" \
           && test -f "$registry_snapshot/library-md/index.json" \
-          && test -d "$registry_snapshot/connectors" \
           && ln -s "$registry_snapshot/library-json" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-json" \
-          && ln -s "$registry_snapshot/library-md" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-md" \
-          && ln -s "$registry_snapshot/connectors" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/connectors"; then \
+          && ln -s "$registry_snapshot/library-md" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-md"; then \
           registry_status=available; \
+          if [ -d "$registry_snapshot/connectors" ]; then \
+            ln -s "$registry_snapshot/connectors" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/connectors"; \
+          fi; \
         else \
           echo "WARN: Maestro registry snapshot was incomplete; connector-backed Flow tasks will fail at runtime"; \
         fi; \
@@ -223,3 +263,7 @@ ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
 # loops in the turn timeline). uipath-langchain is declared in the
 # SimpleCodedAgent fixture's pyproject.toml but has no pre-built venv.
 RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"
+
+# a2a-sdk, pulled in above, caps protobuf below 7, which leaves google-antigravity
+# unable to load its gencode-7.35 stubs. a2a's own stubs are 5.29.3, so 7.x serves both.
+RUN pip install --no-cache-dir "protobuf>=7.35,<8"
