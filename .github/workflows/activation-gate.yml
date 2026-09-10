@@ -97,8 +97,12 @@ jobs:
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Activation runs under the tempdir driver -- no agent image.
+      # httpx is pinned explicitly: coder-eval 0.10.x's llm_judge imports it
+      # without declaring it, and it stopped arriving transitively when the
+      # anthropic SDK moved to the httpx2 fork (coder-eval >=0.11.5 fixed the
+      # import on main).
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}" httpx
 
       - name: Run activation gate
         env:
