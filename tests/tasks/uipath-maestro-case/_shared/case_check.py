@@ -196,7 +196,19 @@ def task_is_skeleton(task: dict) -> bool:
         from ``case spec``; always has ≥1 entry when the connector resolved)
     - ``action``: ``data.inputs`` present (bare ``taskTitle`` / ``priority`` is still skeleton-equivalent)
     - everything else (``process`` / ``agent`` / ``rpa`` / ``api-workflow`` / ``case-management``):
-      ``data.name`` AND ``data.folderPath`` (both as ``=bindings.<id>`` refs)
+      ``data.name`` AND ``data.folderPath``, both non-empty.
+
+    Only presence is checked, not spelling. ``uip maestro case tasks add``
+    writes these as ``=bindings.<id>`` references and registers the matching
+    entries in ``plan.bindings[]``; a literal name/path also passes here. If
+    the runtime turns out to require the binding indirection, this predicate is
+    too weak — but tightening it is a behavioural claim to verify against the
+    product first, not a spelling preference to assert here.
+
+    Note this says nothing about ``taskTypeId``. That is an argument to
+    ``tasks add --task-type-id``, used to look the resource up and enrich the
+    task; the id itself is never persisted to the document, so no caseplan
+    assertion should reference it.
     """
     data = task.get("data") or {}
     if not data:
