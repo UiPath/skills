@@ -1,7 +1,7 @@
 ---
 name: uipath-automationhub
-description: "Publish and read business processes in UiPath Automation Hub via the Open API, using the user's cloud login — no admin OpenAPI token needed. PUBLISH an approved process and its PDD/SDD documents (schema-driven payload, base64 file upload or link) to AH as the system of record — e.g. a process captured/approved by Process Scribe. GET a process back by id or search, list its attached documents, and DOWNLOAD their file bytes (e.g. for dedup / related-idea lookups or retrieving a published PDD). Authenticates with the user's cloud bearer token and NEVER sends the admin `x-ah-openapi-auth` header. CLI-first: when the installed `uip` has the `ah` commands, flows run through them (`references/*-cli-guide.md`); otherwise the raw Open API flows apply. Routes by intent to publish (create/upload) or get (read/fetch/download) references over the shared catalogs. Structured to extend to more Automation Hub operations."
-allowed-tools: Bash, Read, AskUserQuestion
+description: "Publish and read business processes in UiPath Automation Hub via the Open API, using the user's cloud login — no admin OpenAPI token needed. PUBLISH an approved process and its PDD/SDD documents (schema-driven payload, base64 file upload or link) to AH as the system of record — e.g. a process captured/approved by Process Scribe. GET a process back by id or search, list its attached documents, and DOWNLOAD their file bytes (e.g. for dedup / related-idea lookups or retrieving a published PDD). Authenticates with the user's cloud bearer token and NEVER sends the admin `x-ah-openapi-auth` header. CLI-first: when `uip` has the `ah` commands, flows run through them (`references/*-cli-guide.md`); otherwise the raw Open API flows apply over `SendUiPathRequest` (or curl outside a UiPath host). Routes by intent to publish (create/upload) or get (read/fetch/download) references over the shared catalogs. Structured to extend to more Automation Hub operations."
+allowed-tools: Bash, Read, AskUserQuestion, SendUiPathRequest
 user-invocable: true
 ---
 
@@ -15,13 +15,13 @@ Run `uip ah --help` once per session.
 
 - **Succeeds** → use the **CLI flows**. Read [`references/cli-commands.md`](references/cli-commands.md) (command catalog + auth), then the matching `*-cli-guide.md` flow. Auth is handled by `uip` itself — never touch a token.
 - **Fails with `unknown command 'ah'`** → the `ah` tool isn't installed. `uip` is a dispatcher: each verb is its own package, and the AH package ships separately from the CLI, so a host can bundle `uip` without it. Run `uip tools install ah` **once**, then re-run `uip ah --help`. If it now succeeds, take the CLI flows.
-- **Still failing** (install refused, no registry access, any other error) → use the **raw Open API flows**. Read [`references/api-endpoints.md`](references/api-endpoints.md) (auth model, gateway URL, exact headers — and the header to never send), then the matching flow. Do not retry the install.
+- **Still failing** (install refused, no registry access, any other error) → use the **raw Open API flows**. Read [`references/api-endpoints.md`](references/api-endpoints.md) → **Transport** to pick how to issue requests, then the matching flow. Do not retry the install.
 
-Never mix the two transports in one run. The domain contract — required fields, wrapping rules, document types — is identical either way and lives in `api-endpoints.md`.
+Never mix transports in one run. The domain contract — required fields, wrapping rules, document types — is identical either way and lives in `api-endpoints.md`.
 
-## Authentication (raw-API flows only — skip when using the CLI flows)
+## Authentication (raw-API **curl** transport only)
 
-> On the CLI path, `uip` handles auth itself (Delegate env-auth or `uip login`) — never touch a token there; see [`references/cli-commands.md`](references/cli-commands.md). The resolution order below applies **only** to the raw-API flows.
+> Nothing to resolve on the other two paths: `uip` handles auth itself on the CLI path (see [`references/cli-commands.md`](references/cli-commands.md)), and the host injects it on `SendUiPathRequest`. The order below applies **only** when you are issuing raw requests with curl.
 
 Resolve the cloud token + base URL + org + tenant in this **priority order**:
 
@@ -48,7 +48,7 @@ The platform injects tenant-routing headers from the `{org}/{tenant}` segments �
 
 ## Routing — pick the flow by intent
 
-Classify what the user wants, then follow the matching reference. The **raw-API flows** share the Authentication section above and the endpoint catalog in `references/api-endpoints.md`; the **CLI flows** never touch either — `uip` handles auth itself (see [`references/cli-commands.md`](references/cli-commands.md)).
+Classify what the user wants, then follow the matching reference. The **raw-API flows** share the endpoint catalog and transport rules in `references/api-endpoints.md`; the **CLI flows** never touch either — `uip` handles auth itself (see [`references/cli-commands.md`](references/cli-commands.md)).
 
 | The user wants to... | CLI available (preferred) | CLI unavailable |
 |---|---|---|
@@ -71,4 +71,4 @@ Every addition keeps the skill's three invariants: collect inputs before the fir
 - **Cloud token only** — authorization is the user's real AH permissions; you see and can do exactly what their AH role allows.
 - **If Automation Hub isn't available on the tenant, say so plainly and stop** — never let it surface as a generic failure. Two cases with **different remedies**: *not enabled* (only an admin can fix it) and *reachable but never onboarded* (self-service). Signals, and the exact wording to quote verbatim rather than paraphrase, live in one home per transport: [`references/api-endpoints.md`](references/api-endpoints.md) → **Automation Hub not available on this tenant** for the raw-API flows, [`references/cli-commands.md`](references/cli-commands.md) → same heading for the CLI flows.
 - The publish flow fetches the idea-flow schema live, so it adapts automatically if fields change on the tenant.
-- **Open dependency:** in a hosted runtime (e.g. Process Scribe/Delegate) the cloud token is expected via the environment (Authentication, option 1). Confirm the runtime provides `UIPATH_CLI_AUTH_TOKEN` (or an equivalent) before relying on it in production.
+- **In a UiPath host (Delegate), raw shell HTTP is blocked** — only `uip` and `SendUiPathRequest` reach the network. A curl-based fallback there fails at DNS and reads like a network-policy error rather than the missing `ah` tool it actually is; that is why Step 0 installs the tool and why the raw-API transport is `SendUiPathRequest`.

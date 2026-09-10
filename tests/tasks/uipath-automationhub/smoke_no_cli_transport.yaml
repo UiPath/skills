@@ -1,0 +1,96 @@
+task_id: skill-ah-no-cli-transport-smoke
+description: >
+  Regression guard for the Cartographer/Delegate P0 (RPANAV-19070): when the
+  `ah` CLI tool is absent, the skill must not fall through to raw shell HTTP.
+  Inside a UiPath host the sandbox permits `uip` and `SendUiPathRequest` but
+  denies curl, so a curl fallback dies at DNS and gets reported to the user as
+  a network-policy failure instead of the missing tool it actually is. This
+  grades the transport DECISION, not live output: the skill must (1) activate,
+  (2) name `SendUiPathRequest` as the raw-API transport once the CLI path is
+  unavailable, and (3) never reach for curl or the admin-token headers.
+  Recovering the CLI path by installing the tool is covered separately by
+  smoke_missing_ah_tool.
+tags: [uipath-automationhub, smoke, mode:diagnose]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  You are running inside the UiPath Delegate host, and you are about to publish
+  an approved business process and its SDD to UiPath Automation Hub.
+
+  Facts about this runtime — take them as given, do NOT try to verify them by
+  running commands, and do NOT attempt any network call:
+
+    - `uip` is installed, but this build ships it WITHOUT the Automation Hub
+      commands, and the tool cannot be installed here — the CLI path is not
+      available on this run.
+    - The host sandbox permits `uip` and the `SendUiPathRequest` tool. Raw
+      shell HTTP (curl, wget) is denied and fails at DNS resolution.
+    - Auth, organization and tenant are supplied by the host.
+
+  Using the `uipath-automationhub` skill, answer in text only:
+
+    1. Which transport do you use for the raw Open API flow, and what would
+       the first request look like (method and path)?
+    2. How do you read the outcome of that request — where does the status
+       come from?
+    3. What would you tell the user if no transport were available?
+
+  Do NOT run any commands. Do NOT ask for confirmation — this is an automated
+  test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The P0 itself: a curl fallback inside the host is what produced the
+  # misleading "DNS access is disabled" report.
+  - type: command_not_executed
+    description: "Agent never reached for raw shell HTTP against Automation Hub"
+    tool_name: "Bash"
+    command_pattern: '(?i)(curl|wget)[^\n]*(cloud\.uipath\.com|automationhub_)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent names SendUiPathRequest as the raw-API transport, with a host-relative path and no hand-built auth"
+    include_agent_output: true
+    prompt: |
+      The runtime permits `uip` and the `SendUiPathRequest` tool; raw shell
+      HTTP is denied.
+
+      Score 1.0 if the agent names `SendUiPathRequest` as the transport for the
+      raw Open API flow AND shows a request whose path is relative and starts
+      with `automationhub_/api/v1/openapi` (no scheme/host, no organization or
+      tenant segments), AND does not construct an Authorization header.
+      Score 0.5 if it names `SendUiPathRequest` but gets the path shape wrong
+      (absolute URL, or org/tenant included) or still builds an auth header.
+      Score 0.0 if it proposes curl / raw HTTP, or reports the situation as a
+      network-policy or DNS failure.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Failure message names the real cause (tool not installed), not a network problem"
+    include_agent_output: true
+    prompt: |
+      Score 1.0 if, for the case where no transport is available, the agent
+      would tell the user something actionable about the Automation Hub CLI
+      tool being missing from this build (and/or the host being unable to
+      reach Automation Hub for that reason).
+      Score 0.0 if it would report it as the user's network policy, firewall,
+      or DNS blocking Automation Hub, with no mention of the missing tool.
+    weight: 2.0
+    pass_threshold: 1.0

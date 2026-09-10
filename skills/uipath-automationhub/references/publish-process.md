@@ -2,19 +2,15 @@
 
 Creates one process in Automation Hub from a schema-driven payload and attaches its documents (PDD/SDD). Authenticates with the **user's cloud token** — the user does **not** need an admin-generated OpenAPI token.
 
-> Auth, base/gateway URL, headers (and the header to **never** send), and every endpoint below are defined in [`api-endpoints.md`](api-endpoints.md). Resolve `$ACCESS_TOKEN` / `$BASE_URL` / `$ORG` / `$TENANT` via the shared **Authentication** section in [`../SKILL.md`](../SKILL.md) before starting.
+> Requests are written as `METHOD /endpoint`. Pick the transport **once** — `SendUiPathRequest` inside a UiPath host, `curl` in a plain shell — per [`api-endpoints.md`](api-endpoints.md) → **Transport**, which also holds every endpoint, the header to **never** send, and (curl only) how to resolve auth.
 
 ## Step 1: Verify connectivity (and fetch the idea flows)
 
-Verify the resolved token with a cheap call — this also fetches the idea flows you need next:
+Verify the transport works with a cheap call — this also fetches the idea flows you need next:
 
-```bash
-curl -s -w "\n%{http_code} %{redirect_url}" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/idea-flows"
-```
+**`GET /idea-flows`**
 
-The last line is `<status> <redirect target>` — the target is empty unless the response was a 3xx. Read both: a 3xx alone is ambiguous, a 3xx **to `portal_/unregistered`** is the tenant-not-enabled signal below. Never add `-L`.
+Read the status **and**, if the transport exposes it, the redirect target: a 3xx alone is ambiguous, a 3xx **to `portal_/unregistered`** is the tenant-not-enabled signal below. On curl that means `-w "\n%{http_code} %{redirect_url}"` and never `-L`.
 
 - **200** → save the `data` array (reused in Step 2) and tell the user "Connected to Automation Hub."
 - **401** → token missing/expired: if it came from `~/.uipath/.auth`, ask the user to run `uip login` again; re-resolve and retry. **Never** add `x-ah-openapi-auth` to "fix" a 401 — that routes to the admin-token path and guarantees failure.
@@ -33,10 +29,7 @@ Store `idea_flow_id`.
 
 ## Step 3: Fetch the schema
 
-```bash
-curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/idea-schema?idea_flow_id=$IDEA_FLOW_ID"
-```
+**`GET /idea-schema?idea_flow_id={idea_flow_id}`**
 
 Parse `data.properties.schema.properties` for the field catalog (Assessment Type > Section > Question; note types, required flags, enum `answer_option` codes/labels) and keep `data.user_inputs` as the payload template. The process-name question (key contains `OVERVIEW_NAME`) is **required**.
 
@@ -81,14 +74,7 @@ Include only sections that have at least one populated field. Show the user a co
 
 ## Step 5: Create the process
 
-```bash
-curl -s -w "\n%{http_code}" -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "$PAYLOAD" \
-  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/idea-from-schema"
-```
-where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
+**`POST /idea-from-schema`** with body `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 - **201** → the envelope is `{ "message": "Resource Created", "statusCode": 201, "data": { … } }` — read **`data.process_id`** (it is nested, NOT top-level). Keep it for Step 6. A 201 means the process WAS created: if a field read comes back undefined, re-read the response — **never re-POST** (that creates a duplicate and 409s).
 - **400** → fix and retry. The message shapes seen live:
@@ -102,15 +88,7 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 Attach each document the caller supplies — **default to all of them**; never silently skip a supplied file. The one exception: if two supplied files appear to be the *same document in different formats*, ask which to attach — as part of the single up-front clarifying round (Step 4), not a separate round. **Upload the bytes** — the endpoint takes a base64 `file` object directly, so nothing needs hosting first. Fall back to `embed_link` only when the caller has a URL instead of bytes.
 
-```bash
-curl -s -w "\n%{http_code}" -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "$DOC_PAYLOAD" \
-  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
-```
-
-Build `$DOC_PAYLOAD` per `ProcessDocumentValidator`:
+**`POST /automations/{process_id}/documents`**, body per `ProcessDocumentValidator`:
 
 ```json
 {
@@ -145,13 +123,7 @@ Record each returned id — it is nested: read **`data.document_id`** from the r
 
 When the caller wants the process linked to a Studio Web solution (or supplies one), set the `OVR-OVERVIEW_STUDIO_WEB_LINK` question — at create time inside `user_inputs` (Step 4), or afterwards:
 
-```bash
-curl -s -w "\n%{http_code}" -X PATCH \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"user_inputs": { ...only this question, in its Step-4 shape... }}' \
-  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID"
-```
+**`PATCH /automations/{process_id}`** with body `{"user_inputs": { …only this question, in its Step-4 shape… }}`.
 
 The answer's exact value format (JSON-string `value` with a required `url`, `hasProcessMap` semantics, empty string to unlink) is a domain fact — read it in [`api-endpoints.md`](api-endpoints.md) (**Studio Web link**). Resolve the solution from the caller — ask for the designer URL (no discovery API exists on this path either); **never invent, guess, or search for a solution id or URL**, and omit `hasProcessMap` if the caller doesn't know whether the solution has a `.bpmn`.
 
@@ -159,10 +131,7 @@ The answer's exact value format (JSON-string `value` with a required `url`, `has
 
 **Verify before claiming success** — read the process back and confirm the documents landed:
 
-```bash
-curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
-```
+**`GET /automations/{process_id}/documents`**
 
 Check every attached `document_id` appears (file-backed entries also carry a `file_id`). If one is missing, report it as failed — never report a document as attached without seeing it in this list.
 

@@ -2,9 +2,35 @@
 
 > This skill authenticates with the **user's UiPath cloud access token** — **not** an admin-generated OpenAPI token. This is the AH Open API's `automation-cloud` mode: send the bearer token and **do not** send `x-ah-openapi-auth`.
 
-This is the shared auth + endpoint catalog for both flows — [`publish-process.md`](publish-process.md) (write) and [`get-process.md`](get-process.md) (read).
+This is the shared transport + endpoint catalog for both flows — [`publish-process.md`](publish-process.md) (write) and [`get-process.md`](get-process.md) (read).
 
-## Authentication
+## Transport
+
+Both flows write each call as **`METHOD /endpoint`**, where `/endpoint` is relative to the Open API root. Render it one of two ways — decide once per run, never mix.
+
+### Preferred: the `SendUiPathRequest` tool
+
+Available inside a UiPath host (Delegate). **Required there:** the host sandbox permits `uip` and `SendUiPathRequest` but denies raw shell HTTP, so `curl` fails at DNS with a message that reads like a network-policy problem.
+
+| Tool arg | Value |
+|---|---|
+| `method` | the METHOD |
+| `path` | `automationhub_/api/v1/openapi{endpoint}` — **relative**; the host prepends base URL, org and tenant |
+| `body` | the JSON object (POST/PATCH) |
+| `bodyFromFile` | absolute path to a file holding the body — use for document uploads, so base64 bytes never enter the conversation |
+| `headers` | omit. Auth is injected by the host and `authorization` is stripped from caller headers. The **never send** rule under **Headers** still binds here — `x-ah-openapi-auth` / `x-ah-openapi-app-key` would pass straight through |
+
+Nothing to resolve: no token, no base URL, no org/tenant, no `Content-Type`. The **Authentication** and **Base URL** sections below do not apply on this transport.
+
+**Reading the outcome.** The tool returns the response **body**, not the HTTP status line, so read the status from AH's own envelope — `statusCode` on the standard wrapper, `status` on the schema call. A non-2xx comes back as a tool error whose text carries the API's error body; parse that for `message` / `errorDetails` and treat it as the status the flows describe. Two consequences: a **redirect target** may not be visible, and a bare gateway status (404 / 422 with no AH envelope) can arrive with no code to match on — in both cases classify by the other signals in **Automation Hub not available on this tenant** rather than by number.
+
+**Large responses.** Bodies over `maxInlineBytes` (default 2KB) are written to a file and only previewed. `GET /idea-schema` always exceeds it: pass a larger `maxInlineBytes`, or read the dumped file — never work from the preview alone, which truncates the field catalog.
+
+### Fallback: `curl`
+
+Plain shells only. Resolve auth per **Authentication** below, build the full URL from **Base URL**, and send the **Headers**. Append `-w "\n%{http_code}"` to read the status (a flow may ask for ` %{redirect_url}` too). Never add `-L`.
+
+## Authentication *(curl transport only)*
 
 ### Getting the cloud token + org/tenant (in priority order)
 
@@ -22,7 +48,7 @@ Never fall back to an admin OpenAPI token. If none of the above yields a token, 
 
 e.g. `https://cloud.uipath.com/acme/prod/automationhub_/api/v1/openapi`. Always use this **gateway** URL — the platform injects the tenant-routing headers from the `{org}/{tenant}` segments. (Local dev: base `http://localhost:3002`, path `/api/v1/openapi`, and you must confirm how org/tenant are supplied locally.)
 
-### Headers (every request)
+### Headers (every curl request)
 
 | Header | Value | When |
 |--------|-------|------|
