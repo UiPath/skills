@@ -94,8 +94,11 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
   variable scoped to a node is bound to that node and is not surfaced as a
   process-level runtime variable.
 - Keep a mutable root `uipath:inputOutput` for each value used by decisions,
-  tasks, or diagnostics. Process expressions reference that mutable variable
-  as `vars.<id>`, not the caller-facing declaration.
+  tasks, or diagnostics, and leave it root-scoped — no `elementId`. A variable
+  scoped to an element is bound to that element and is not surfaced as a root
+  runtime variable, so `debug-instance variables-all` cannot show it. Process
+  expressions reference that mutable variable as `vars.<id>`, not the
+  caller-facing declaration.
 - Public caller inputs and outputs use the event bridge contract documented in
   [Structural BPMN: Variables](structural-bpmn.md#variables-bpmnvariables).
   Do not route on a public input before its StartEvent bridge or treat a mutable
