@@ -67,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "LocalOnly Flow artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name LocalOnly"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

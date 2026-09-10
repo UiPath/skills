@@ -55,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the original script node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"extractMeta\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"extractMeta\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -71,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL completed handle is wired"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview 'completed'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'completed'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -79,7 +79,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL has a boolean output field for the approval decision"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"boolean\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"boolean\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
