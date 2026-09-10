@@ -1,0 +1,35 @@
+task_id: skill-test-defect-history
+description: >
+  P&E GA-validation scenario 7.5 (defects).
+  Read the defect labels on a HEALTH case to see its bug history (objectlabel list). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:objectlabel-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  Walk me through the bug history on the PDF generation case in the HEALTH project in Test Manager. What's it been flagged with?
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read the HEALTH case's defect labels (objectlabel list)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--object-type\s+TestCase)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

@@ -1,0 +1,148 @@
+task_id: skill-test-automated-run-e2e
+description: >
+  Short end-to-end test: a fresh project taken through the deploy→run loop in
+  one go. The agent self-seeds a uniquely-named project with a couple of test
+  cases, links the pre-published "TestManagerSmoke" automation (entry points
+  PassCase + FailCase) to them, points the project at the run folder, makes
+  sure the serverless robot is assigned, runs the suite automatically on the
+  robot, waits for it, and reads the pass/fail stats — expecting one pass and
+  one fail. Deletes the project at the end (post_run safety net). This is the
+  small, runnable e2e (the full lifecycle task is skip:true and 200 turns);
+  it stays under 100 turns and only exercises the automated deploy→run→verify
+  path. Needs the published automation + assignable serverless robot in the
+  folder (keys via env).
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, resource, feature:test-case]
+
+max_turns: 100
+turn_timeout: 1200
+task_timeout: 2000
+
+sandbox:
+  driver: tempdir
+  env:
+    E2E_TM_FOLDER: fcf79fe1-147b-4000-82b3-9eb81b165452
+    E2E_TM_MACHINE_KEY: ce01aa90-5e52-4ec3-afb2-ed67850e6e87
+
+initial_prompt: |
+  I want to confirm our automated test wiring works in Test Manager, start to
+  finish. Please set it up and run it — work straight through, no need to
+  check in.
+
+  Spin up a fresh project (clear, unique name + short description) and, as soon
+  as it exists, write its project key into ./project-key.txt on its own line so
+  we can always clean it up. Add two test cases to it.
+
+  We've already published a small test automation called "TestManagerSmoke" to
+  our Orchestrator folder — you don't build or publish anything. The folder and
+  a serverless robot are set up for you; their keys are in the E2E_TM_FOLDER and
+  E2E_TM_MACHINE_KEY environment variables. It has two entry points: "PassCase"
+  passes and "FailCase" is meant to fail. Find those entry points and link one
+  to each of your test cases.
+
+  Then run them automatically: point the project at that folder so it knows
+  where to execute, make sure the serverless robot is assigned to the folder,
+  and kick the run off on the robot. Wait for it to finish — you'll get one
+  pass and one fail, which is exactly what we expect, so just read the stats
+  back and report the pass/fail breakdown. Don't try to "fix" the failing one.
+
+  When you're done, delete the project so the tenant's clean. Use JSON output
+  on the read commands so you can pull ids reliably.
+
+post_run:
+  - command: |
+      if [ -f project-key.txt ]; then
+        KEY=$(tr -d '[:space:]' < project-key.txt)
+        if [ -n "$KEY" ]; then
+          uip tm project delete --project-key "$KEY" --yes --output json || true
+        fi
+      fi
+    timeout: 60
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created the project with a name AND description (`uip tm project create --name <…> --description <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--name\s+\S)(?=.*--description\s+\S)uip\s+tm\s+project\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created at least two test cases (`uip tm testcases create --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+testcases?\s+create\b'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovered automation entry points (`uip tm testcases list-automations --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list-automations\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Linked both entry points to test cases (`uip tm testcases link-automation --project-key <…>`, ≥2)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+testcases?\s+link-automation\b'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Pointed the project at the run folder (`uip tm project set-default-folder …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+set-default-folder\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Assigned the serverless machine to the folder (`uip or machines assign … --folder-path <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--folder-path\s+\S)uip\s+or\s+machines\s+assign\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Ran the suite AUTOMATED on the robot (`uip tm testsets run --execution-type automated`, or `testcases run/execute --execution-type automated`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-type\s+automated)uip\s+tm\s+(testsets?\s+run|testcases?\s+(run|execute))\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Waited for the execution to finish (`uip tm wait …` or `--wait`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+wait\b|uip\s+tm\s+testsets?\s+run\b.*--wait'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read the pass/fail stats (`uip tm executions get-stats …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+get-stats\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the self-seeded project (`uip tm project delete --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

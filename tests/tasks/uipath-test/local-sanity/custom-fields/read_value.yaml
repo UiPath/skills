@@ -1,0 +1,35 @@
+task_id: skill-test-read-value
+description: >
+  P&E GA-validation scenario 10.2 (custom fields).
+  Read a custom-field value on a HEALTH case. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:customfield-value-get]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, pick a test case from the HEALTH project and tell me what its Sprint field says.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read a custom-field value on a HEALTH case"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:testcases?\s+(?:get|list)|customfield\s+(?:value|label)\s+(?:get|list))\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

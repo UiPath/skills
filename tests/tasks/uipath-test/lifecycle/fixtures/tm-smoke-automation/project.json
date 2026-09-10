@@ -1,0 +1,72 @@
+{
+    "name": "TestManagerSmoke",
+    "description": "Minimal Test Manager smoke automation: two very simple test cases. PassCase logs + takes a screenshot and passes; FailCase logs + screenshots then throws (expected failure). One-time fixture the full-lifecycle e2e links to and runs.",
+    "main": "PassCase.xaml",
+    "dependencies": {
+        "UiPath.System.Activities": "[24.10.4]",
+        "UiPath.UIAutomation.Activities": "[24.10.4]"
+    },
+    "webServices": [],
+    "entitiesStores": [],
+    "schemaVersion": "4.0",
+    "studioVersion": "24.10.4.0",
+    "projectVersion": "1.0.0",
+    "runtimeOptions": {
+        "autoDispose": false,
+        "netFrameworkLazyLoading": false,
+        "isPausable": true,
+        "isAttended": false,
+        "requiresUserInteraction": false,
+        "supportsPersistence": false,
+        "excludedLoggedData": [
+            "Private:*",
+            "*password*"
+        ],
+        "executionType": "Workflow"
+    },
+    "designOptions": {
+        "projectProfile": "Developement",
+        "outputType": "TestAutomation",
+        "libraryOptions": {
+            "includeOriginalXaml": false,
+            "privateWorkflows": []
+        },
+        "processOptions": {
+            "ignoredFiles": []
+        },
+        "fileInfoCollection": [
+            {
+                "editingStatus": "NotChanged",
+                "testCaseId": "",
+                "executionTemplateType": "Test",
+                "fileName": "PassCase.xaml",
+                "type": "TestCase"
+            },
+            {
+                "editingStatus": "NotChanged",
+                "testCaseId": "",
+                "executionTemplateType": "Test",
+                "fileName": "FailCase.xaml",
+                "type": "TestCase"
+            }
+        ]
+    },
+    "expressionLanguage": "VisualBasic",
+    "entryPoints": [
+        {
+            "filePath": "PassCase.xaml",
+            "uniqueId": "0d8f6c2a-1111-4a00-9c00-000000000001",
+            "input": [],
+            "output": []
+        },
+        {
+            "filePath": "FailCase.xaml",
+            "uniqueId": "0d8f6c2a-1111-4a00-9c00-000000000002",
+            "input": [],
+            "output": []
+        }
+    ],
+    "isTemplate": false,
+    "projectType": "Test",
+    "targetFramework": "Windows"
+}

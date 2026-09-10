@@ -1,0 +1,38 @@
+task_id: skill-test-network-timeout
+description: >
+  P&E GA-validation scenario 15.4 (cli skill invocation and error handling).
+  Timeout handled; no duplicate/ghost job. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testsets-run]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, go ahead and fire off an automated run of a HEALTH project
+  test set on the serverless robot. My wifi keeps cutting out, so after you
+  start it, tell me whether the run actually got going.
+
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Timeout handled; no duplicate/ghost job"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:executions\s+run|testsets?\s+run|testcases?\s+run)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

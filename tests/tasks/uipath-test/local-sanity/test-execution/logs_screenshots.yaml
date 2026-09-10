@@ -1,0 +1,35 @@
+task_id: skill-test-logs-screenshots
+description: >
+  P&E GA-validation scenario 6.4 (test execution).
+  Fetched execution logs/attachments (executions testcaselogs list). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:executions-testcaselogs]
+
+skip: true
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+
+initial_prompt: |
+  In Test Manager, pull up the test case logs for the most recent finished execution in the HEALTH project. Tell me which cases passed or failed, and if any case has a log or attachment, show me what's there.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Fetched execution logs / downloaded the screenshot (executions testcaselogs or result download)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(?:executions\s+testcaselogs|result\s+download)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

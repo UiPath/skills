@@ -1,0 +1,38 @@
+task_id: skill-test-orch-auth-failure
+description: >
+  P&E GA-validation scenario 12.4 (orchestrator integration).
+  Surfaced Orchestrator auth failure (401; no execution). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testsets-run]
+
+skip: true
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+
+initial_prompt: |
+  In Test Manager, run one of the HEALTH project's test sets on the serverless
+  robot. I haven't logged in for a while so my access might have lapsed — if
+  auth fails, just tell me plainly rather than hanging.
+
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Surfaced Orchestrator auth failure (401; no execution)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:executions\s+run|testsets?\s+run|testcases?\s+run)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

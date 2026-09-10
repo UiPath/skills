@@ -1,0 +1,35 @@
+task_id: skill-test-create-defect
+description: >
+  P&E GA-validation scenario 7.1 (defects).
+  Flagged the failing HEALTH case as a high-priority bug (objectlabel add). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:objectlabel-add]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, the PDF generation case in the HEALTH project is throwing a 500. Flag it as a high-priority bug for me.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Flagged the failing HEALTH case with a defect label (objectlabel add)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--labels)(?=.*(?i:defect|bug))(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

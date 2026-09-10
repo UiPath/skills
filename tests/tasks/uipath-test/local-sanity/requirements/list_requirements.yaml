@@ -1,0 +1,35 @@
+task_id: skill-test-list-requirements
+description: >
+  P&E GA-validation scenario 4.1 (requirements).
+  Listed HEALTH requirements (requirements list). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:requirements-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  What requirements do we have in the HEALTH project in Test Manager right now? Just give me the full list.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed HEALTH requirements (requirements list)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir
