@@ -47,7 +47,8 @@ If `node configure` cannot run:
 1. Run `uip maestro flow registry search <keyword>` and `registry get <node-type>` to confirm the operation; see [cli-commands.md — registry](../../../shared/cli-commands.md#uip-maestro-flow-registry).
 2. Run `uip maestro flow node add <file> <node-type> --output json`; inside a loop body, add `--parent <LOOP_NODE_ID>` as described in [loop/impl.md](../loop/impl.md).
 3. Write the planned `--detail` payload, including placeholder connection and folder UUIDs, to a separate file such as `<nodeId>.detail.json`. Do not put partial `inputs.detail` on the node.
-4. Report under **Missing connections** or **Open questions** that the node will not pass `flow validate` until real `node configure` runs.
+4. Author any filter as a tree under that payload's `filter` key, shaped per [Step 6a](#step-6a--filterbuilder-parameters) step 3. The step-1 `registry get` names the FilterBuilder parameter; if the activity has none, pass no `filter` and filter downstream. Never write compiled query text under the parameter name, such as `"queryParameters": { "where": "displayName='active'" }`; offline, the tree is the filter's only reviewable form.
+5. Report under **Missing connections** or **Open questions** that the node will not pass `flow validate` until real `node configure` runs.
 
 Do not replace a registered connector node with `core.logic.mock`. Use mocks only for genuinely unknown, unpublished, or not-yet-built non-connector resources. Preserve the registered connector key.
 
