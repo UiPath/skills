@@ -9,7 +9,7 @@ project instead of carrying a near-identical overlay of its own.
 | `my_invoices-f1afa9ef-ixp` | diagnosis payload, one version | `metrics_full_signal_diagnosis` |
 | `receipts_qa-7c2e11a4-ixp` | two versions (40 → 41) | `metrics_regression_noise_floor`, `metrics_group_rollback` |
 | `receipts_lite-4a9f30d2-ixp` | `Documents` variance, one version | `metrics_annotations_shortfall` |
-| `invoices_dup-3e8b52c7-ixp` | two versions (20 → 21), a duplicated `Name` and a null one | `metrics_duplicate_field_names` |
+| `invoices_dup-3e8b52c7-ixp` | two versions (20 → 21), a duplicated `Name` and a renamed field | `metrics_duplicate_field_names` |
 
 List it SECOND in `template_sources` so its `mocks/uip` wins over the base
 `mock_template`, whose mock fails every invocation. `fields update-prompts`
@@ -191,7 +191,7 @@ cannot separate anything.
 reports `Total` 5, so the document count is reachable two ways. Graded
 artifacts are keyed by field id, which needs no join.
 
-## Fixture: `invoices_dup-3e8b52c7-ixp` (duplicate and null `Name`)
+## Fixture: `invoices_dup-3e8b52c7-ixp` (duplicate and renamed `Name`)
 
 Two versions, 20 (baseline) → 21 (after an instructions edit), four fields
 across two groups:
@@ -200,7 +200,7 @@ across two groups:
 |---|---|---|---|---|---|
 | `dddd000000000001` | Description | Invoice | 0.700 | 0.700 | unchanged |
 | `dddd000000000002` | Description | Invoice > Line Items | 0.900 | 0.500 | **regressed** |
-| `dddd000000000003` | *(null)* | Invoice | 0.800 | 0.800 | unchanged |
+| `dddd000000000003` | Notes → Remarks | Invoice | 0.800 | 0.800 | unchanged |
 | `dddd000000000004` | Tax Amount | Invoice | 0.900 | 0.900 | unchanged |
 
 Derived rows — `errors = max(FP, FN)`, so a wrong value counts once:
@@ -241,11 +241,12 @@ different artifacts:
 The two baselines differ (0.700 vs 0.900) precisely so the third strategy
 fails too: it survives a count check but calls an unchanged field regressed.
 
-**`…0003` has `"Name": null`** — it was deleted from the taxonomy after
-version 20 was scored. The served `get-taxonomy` omits it as well, so the
-fixture is internally consistent: the taxonomy join the guide used to
-prescribe could not have named it either. The rule is to fall back to
-`FieldId`, never to drop the field.
+**`…0003` is renamed between the versions** — v20 reports it as `Notes`, v21
+as `Remarks`. `Name` resolves against the taxonomy each version was trained on,
+so both are correct and neither is a defect. The report must carry ONE row for
+it, under the current name. An agent that keys the diff on `Name` splits it into
+two half-filled rows: `Notes` with no current score, `Remarks` with no baseline.
+The served `get-taxonomy` carries only `Remarks`, the current name.
 
 `get-taxonomy` stays served so the superseded path remains *available* — the
 task grades the agent's choice, not the mock's capability.
