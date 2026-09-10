@@ -289,7 +289,7 @@ def test_rejects_outcome_completed_with_real_outcomes(tmp_path: Path) -> None:
     result = _run_checker(tmp_path)
 
     assert result.returncode != 0
-    assert "must not wire it" in result.stderr
+    assert "must wire outcome-<id> per outcome instead" in result.stderr
 
 
 def test_rejects_single_submit_outcome_without_decision_capture(tmp_path: Path) -> None:

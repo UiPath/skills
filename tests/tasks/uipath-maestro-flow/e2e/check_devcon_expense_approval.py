@@ -120,21 +120,27 @@ def main() -> None:
     # outcome-completed is the zero-outcome placeholder only (confirmed against
     # flow-workbench source, 2026-09-10) — it disappears the instant the schema
     # has any real outcome, and `outcomes` is already guaranteed non-empty
-    # above. Every outcome needs its own wired outcome-<id> handle instead.
-    outcome_ids = [str(o.get("id")) for o in outcomes if o.get("id")]
+    # above. Every outcome needs its own wired outcome-<id> handle instead. An
+    # outcome's id defaults to its lowercased name when not given explicitly
+    # (same convention as hitl-node-quickform.md's own examples).
+    outcome_ids = [
+        str(o.get("id") or o.get("name") or "").lower()
+        for o in outcomes
+        if o.get("id") or o.get("name")
+    ]
     if not outcome_ids:
-        fail("HITL schema needs at least one outcome with an id")
+        fail("HITL schema needs at least one outcome with an id or name")
     wired_ports = {e.get("sourcePort") for e in edges if e.get("sourceNodeId") == hitl_id}
+    if wired_ports & {"completed", "outcome-completed"}:
+        fail(
+            "outcome-completed is the zero-outcome placeholder; this node has "
+            "real outcomes and must wire outcome-<id> per outcome instead"
+        )
     missing = [oid for oid in outcome_ids if f"outcome-{oid}" not in wired_ports]
     if missing:
         fail(
             "every outcome needs its own wired handle; missing: "
             + ", ".join(f"outcome-{oid}" for oid in missing)
-        )
-    if wired_ports & {"completed", "outcome-completed"}:
-        fail(
-            "outcome-completed is the zero-outcome placeholder; this node has "
-            "real outcomes and must not wire it"
         )
 
     scripts = [
