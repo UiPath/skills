@@ -52,7 +52,7 @@ After `uip codedagent new`, check the directory before running anything else:
 
 1. `<framework>.json` present (`langgraph.json` / `llama_index.json` / `openai_agents.json`) → agent scaffold. Continue.
 2. `uipath.json` with a `functions` map and no `<framework>.json` → function scaffold: `<FRAMEWORK_PACKAGE>` was not installed in the active venv when `new` ran (`--type auto` found no framework). Fix: `uv pip install <FRAMEWORK_PACKAGE>`, confirm `uip codedagent setup --force` reports the same venv, delete `main.py`, `pyproject.toml`, `uipath.json`, then re-run `uip codedagent new <PROJECT_NAME>`. Do not hand-write `<framework>.json` on top of the function scaffold, and do not hand off to `uipath-functions` — the project was never meant to be a function.
-3. `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent` → same cause as 2, reported by a CLI that forwards `--type agent` instead of falling back to a function scaffold. Nothing was generated. Fix: `uv pip install <FRAMEWORK_PACKAGE>`, then re-run `uip codedagent new <PROJECT_NAME>`.
+3. `No agent framework integration is installed` (or `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent`) → same cause as 2, reported by a CLI that forwards `--type agent` instead of falling back to a function scaffold. Nothing was generated. Fix: `uv pip install <FRAMEWORK_PACKAGE>`, then re-run `uip codedagent new <PROJECT_NAME>`.
 4. `Multiple agent frameworks are installed` → keep exactly one framework package in the venv (`uv pip uninstall` the others), then re-run `new`.
 
 ## Coded Function Agents
@@ -135,6 +135,6 @@ When the agent project is registered in a solution and uploaded via `uip solutio
 | `NameError` during `init` | Framework not installed when `init` imports `main.py` | Run `uv sync` before `uip codedagent init` |
 | `No entrypoints found in uipath.json` | Framework config or package missing | Verify `uv pip install` succeeded, then re-run `uip codedagent init` |
 | `new` produced `uipath.json` with a `functions` map and no `<framework>.json` | Framework package not installed in the active venv when `new` ran | See § Verify the Scaffold — install the package, delete the three generated files, re-run `new` |
-| `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent` from `new` | Same cause; the CLI forwarded `--type agent`, so nothing was generated | `uv pip install <FRAMEWORK_PACKAGE>`, re-run `new` |
+| `No agent framework integration is installed` or `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent` from `new` | Same cause; the CLI forwarded `--type agent`, so nothing was generated | `uv pip install <FRAMEWORK_PACKAGE>`, re-run `new` |
 | `Multiple agent frameworks are installed` from `new` | More than one framework package in the venv | Keep one framework package, re-run `new` |
 | `ModuleNotFoundError` for a package you just installed, even after activating `.venv` | A shell `python` alias points at a different interpreter (uv-managed, system, etc.) | Use `.venv/bin/python` directly for sanity checks, or `unalias python` for the session |
