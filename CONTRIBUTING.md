@@ -481,6 +481,7 @@ Before submitting your PR, verify:
 ### General
 - [ ] CODEOWNERS updated with your GitHub handle
 - [ ] No secrets, tokens, or personal paths in any file
+- [ ] Command examples and sample output use `<UPPER_SNAKE_CASE>` placeholders — no literal dates, street addresses, phone numbers, or identifier-shaped digit runs ([Style Guide](#cli-commands))
 - [ ] No auto-generated or binary files committed (check `.gitignore`)
 - [ ] Markdown is well-formed (no broken links, proper heading hierarchy)
 
@@ -528,6 +529,43 @@ Before submitting your PR, verify:
 - Use `--output json` when the output needs to be parsed
 - Use placeholders in angle brackets for user-provided values: `<PROJECT_DIR>`, `<FILE_PATH>`
 - Show expected output format when it helps understanding
+
+#### Use placeholders for example values, not literals
+
+Command examples, sample payloads, and sample output MUST use `<UPPER_SNAKE_CASE>` placeholders wherever
+a literal would carry the shape of a date, an identifier, or personal data. Two reasons, and the first is
+the one that blocks releases: customers run content-inspection gates over the published package, and those
+gates match on shape alone — an example does not have to contain real data to fail one and block the whole
+artifact. Literal dates are also the most common source of examples that go stale.
+
+| Do not write | Write instead |
+|---|---|
+| `--expiration "2027-01-15"` | `--expiration "<EXPIRATION_DATE>"` |
+| `--from-date 2026-01-01 --to-date 2026-01-31` | `--from-date <FROM_DATE> --to-date <TO_DATE>` |
+| `audit_2026-01-01_2026-01-31_<generatedAt>` | `audit_<from>_<to>_<generatedAt>` |
+| `SetBookmarkContent("Address", "123 Main Street")` | `SetBookmarkContent("Address", "<STREET_ADDRESS>")` |
+| `SetBookmarkContent("Phone", "+1 (555) 123-4567")` | `SetBookmarkContent("Phone", "<PHONE_NUMBER>")` |
+| `123-45-6789` | `NNN-NN-NNNN` — mask each digit position with `N` |
+| `"ffffffff-1111-2222-3333-444444444444"` | `"ffffffff-aaaa-bbbb-cccc-dddddddddddd"` — no long digit run |
+| `--from-date <FROM_DATE>T00:00:00Z` | `--from-date <FROM_TIMESTAMP>` — one placeholder per value |
+
+> The left column above deliberately spells out the literals it forbids: this file is not part of the
+> published npm package (see `files` in `package.json`), so the anti-examples never reach a customer scan.
+> Exclude `CONTRIBUTING.md` if you ever add a repository-wide content scanner.
+
+Give each value **one** placeholder covering the whole value. Gluing a placeholder to a literal fragment
+(`<FROM_DATE>T00:00:00Z`) keeps the literal in the file and reads worse than either form alone — use
+`<FROM_TIMESTAMP>` and state the expected precision in prose.
+
+State a required format in prose or in the flags table rather than demonstrating it with a literal. Write
+``--expiration <date>``, ISO 8601 `YYYY-MM-DD` — not a made-up date that shows the format by example.
+
+Two narrow exceptions:
+
+- **Product identifiers the reader needs verbatim** — error codes, support-forum thread IDs inside URLs,
+  vendor documentation URLs. These are the content itself, not an example of it. Keep them.
+- **Regex reference tables**, where the example column has to match the pattern it documents. Mask the
+  digits (`NNN-NN-NNNN`) instead of deleting the row, and note the masking convention under the table.
 
 ### Naming Conventions Summary
 
