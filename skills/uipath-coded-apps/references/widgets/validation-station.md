@@ -589,7 +589,7 @@ Runnable end-to-end example (task list + selection + all five subcomponents wire
 - **Do not construct a second `UiPath` SDK** for the widget. Reuse the app's authenticated instance.
 - **Do not call `setTaskData` and try to drive a custom form alongside the widget.** The widget owns the data contract end-to-end; mixing produces stale state and double saves.
 - **Do not pass a `tasks.getAll()` row straight into the widget.** `getAll()` rows omit `data` — the viewer renders empty. Hydrate with `tasks.getById(id, { taskType: TaskType.DocumentValidation }, folderId)` first.
-- **Do not call `completeTask` inside the `save` setter.** Always wait for `onSubmitComplete` with `success: true` — submit may fail validation, and completing early submits unvalidated data.
+- **Do not call `completeTask` inside the `save` setter.** Always wait for `onSubmit` with `result?.success === true` — submit may fail validation, and completing early submits unvalidated data.
 - **Do not assume the widget shows an error on failure — it does not.** `onSubmit`/`onSaveAsDraft` render no UI on failure; surface the error yourself (`showMessage`, toast, etc.).
 - **Do not treat a missing `result` as success.** `onSubmit`/`onSaveAsDraft` pass `result` only when the widget owned the write-back. `if (!result?.success) return;` — completing on an absent result closes the task over unsaved edits.
 - **Do not treat `onReportException` like the save callbacks.** It receives one `request`, not `(request, result?)`, and persists nothing — in a web app read the reason off `request.exceptionReport` and call `OrchestratorDuModule.submitExceptionReport(...)` yourself.
