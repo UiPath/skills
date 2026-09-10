@@ -9,11 +9,7 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1800
   expected_turns: 40
-  # Nightly 2026-09-08 hit max_turns at 71 (cap 70). The queue-distribution-guide
-  # now steers the agent away from the registry/`uip or` hunt that ate ~half the
-  # turns (see run 34411222183 transcript), but the pattern still warrants margin
-  # for genuine exploration of a queue-themed shape. Raise to 90.
-  max_turns: 90
+  max_turns: 70
 
 sandbox:
   template_sources:
