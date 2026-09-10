@@ -6,7 +6,10 @@ description: >
   combined signal through an exclusive gateway, and escalates via a human user
   task on the high-touch path while a standard path generates a ticket in a
   script task. Includes full package metadata. Authoring only, public-safe, no
-  cloud effects and no live connector.
+  cloud effects and no live connector. Project layout is deliberately ungraded:
+  the checks locate the project by the `CustomerEscalation.bpmn` + `project.uiproj`
+  pair wherever it lands, so the default `uip maestro bpmn init`
+  `<Name>Solution/<Name>/` scaffold and a bare `<Name>/` both grade the modeling.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:hitl", "feature:escalation"]
 
 run_limits:
