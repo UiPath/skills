@@ -149,7 +149,11 @@ jobs:
           SKIP_INFRA_TRIGGER=false
           echo "$PR_LABELS" | grep -qw 'ci:skip-infra-trigger' && SKIP_INFRA_TRIGGER=true
 
-          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$|^\.github/workflows/smoke-skills\.yml$'; then
+          INFRA_PATTERN='^tests/docker/|^tests/fixtures/maestro-flow-sdk-smoke/'
+          INFRA_PATTERN+='|^tests/experiments/smoke\.yaml$|^tests/_shared/'
+          INFRA_PATTERN+='|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$'
+          INFRA_PATTERN+='|^\.github/workflows/smoke-skills\.yml$'
+          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE "$INFRA_PATTERN"; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
