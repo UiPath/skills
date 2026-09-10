@@ -25,6 +25,19 @@ found via `registry search`, is a **false negative** — never conclude "no
 connection exists" or ask the user to create one until you have searched the
 registry for the real connector key and listed across all folders.
 
+**Greenfield / synthetic authoring is the exception — do not discover live
+instances that do not exist.** When the task is to author a local project with
+no tenant, no deployed resources, and no login (a synthetic or greenfield pass,
+which every offline eval and most first-draft authoring is), do NOT run `uip or
+processes list`, `uip is connections list`, or `uip login` looking for a live
+process, agent, or connection to bind: there are none, and their absence is
+expected, not a false negative. Instead: pick the extension type by intent,
+`registry get` its `xmlTemplate`, and author the node as a **draft** — paste the
+template and leave its binding placeholders (release keys, folder ids,
+connection ids, `<uipath:bindings>` `default`s) unresolved. The exhaustive-
+discovery rules above, and the `processType` selection below, apply only once a
+real tenant with deployed resources is in play.
+
 `registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
 `uip login`). Each extension-type row carries `ExtensionType`, `Label`,
@@ -127,6 +140,13 @@ Gotcha: `A2A.AgentExecution` renders as an external A2A node and **disables the
 Action dropdown** in Studio Web. Do not use it for a folder-deployed agent — the
 canvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for
 folder-deployed resources.
+
+`processType` selection requires a deployed process to read, so it applies only
+when a tenant exists. With no tenant (a synthetic or greenfield pass), do not
+page `uip or processes list` for a resource that is not deployed: default to
+`Orchestrator.StartAgentJob`, `registry get` its template, and author the node
+as a draft with the process binding unresolved (per the greenfield exception in
+§1).
 
 ## API workflow — wait vs fire-and-forget
 
