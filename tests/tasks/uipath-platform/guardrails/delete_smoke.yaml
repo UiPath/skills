@@ -78,16 +78,22 @@ success_criteria:
       (`byoValidatorName`) or coded (`ByoValidator("byog-legacy-harmful")`) —
       that still references the deleted configuration by that validator name
       will fail at runtime, because the platform can no longer resolve the name
-      to a connection. The fix is to remove or repoint those guardrails (or
-      re-create a configuration under the same ValidatorName).
+      to a connection.
 
       Score 1.0 if the response conveys that agents/guardrails still
       referencing the configuration will now break or fail (at runtime, on
       their next run, when the guardrail is evaluated — any equivalent
-      wording), and that they need updating or repointing.
+      wording).
 
       Score 0.0 if it claims nothing breaks, that the guardrails silently fall
       back to the UiPath built-in check, that they keep working, or if it says
       nothing at all about the effect on referencing agents.
+
+      Grade ONLY the breakage claim above. The user asked what happens, not what
+      to do about it, so naming a remediation (remove, repoint, re-create under
+      the same ValidatorName) is a bonus and its absence is NOT a deduction.
+
+      Return exactly 1.0 or 0.0. This rubric has no partial credit, and the
+      criterion's pass_threshold is 1.0 — an intermediate score fails the task.
     weight: 1.5
     pass_threshold: 1.0
