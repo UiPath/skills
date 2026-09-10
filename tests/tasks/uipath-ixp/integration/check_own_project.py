@@ -1,7 +1,9 @@
 """Verify every project-scoped write targeted the seeded project.
 
 The tenant is shared, so a write aimed anywhere else is a violation. seed.json's
-run id identifies this run's project — the backend slugs it into the ProjectName.
+run id identifies this run's project: the backend slugs the seeded title into the
+ProjectName (`Codereval Name Resolution d4f0a999` -> `codereval-name-resolution-
+d4f0a999-9ae36e86-ixp`), and the hex run id passes through untouched.
 """
 import json
 import sys

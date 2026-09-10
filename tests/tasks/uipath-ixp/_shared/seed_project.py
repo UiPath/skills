@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """pre_run: create one IXP project from the fixture invoices, record only its TITLE.
 
-  seed.json = {"uuid8": "a1b2c3d4", "project": {"title": "codereval-ixp-seed-a1b2c3d4"}}
+  seed.json = {"uuid8": "a1b2c3d4", "project": {"title": "Codereval IXP Seed a1b2c3d4"}}
 
 The ProjectName slug is deliberately withheld — a task grading Title ->
 ProjectName resolution is meaningless once the slug is in the sandbox. Whoever
@@ -10,7 +10,7 @@ needs it later looks it up from `projects list` by the run id.
 The uuid8 makes the title unique per run, so concurrent runs never collide and a
 leftover from a failed cleanup is never mistaken for this run's project.
 
-  IXP_SEED_TITLE_BASE  title stem (default `codereval-ixp-seed`)
+  IXP_SEED_TITLE_BASE  title stem (default `Codereval IXP Seed`)
 
 Exits non-zero if the tenant rejects the seed: pre_run's fail_on_error then ends
 the run as an environment error instead of scoring the skill against a project
@@ -51,8 +51,8 @@ def uploaded_filenames(project_name):
 
 def main():
     run_id = uuid.uuid4().hex[:8]
-    base = (os.environ.get("IXP_SEED_TITLE_BASE") or "codereval-ixp-seed").strip()
-    title = "%s-%s" % (base, run_id)
+    base = (os.environ.get("IXP_SEED_TITLE_BASE") or "Codereval IXP Seed").strip()
+    title = "%s %s" % (base, run_id)
 
     created = uip("ixp", "projects", "create", title, FIXTURES, "--skip-taxonomy").get("Data") or {}
     name = created.get("ProjectName") or created.get("Name")

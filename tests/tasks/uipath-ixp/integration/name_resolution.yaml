@@ -25,7 +25,7 @@ sandbox:
 # Creates the project the agent must find; writes seed.json with its title only.
 # fail_on_error defaults on: a rejected seed ends the run as an environment error.
 pre_run:
-  - command: 'IXP_SEED_TITLE_BASE="codereval-name-resolution" python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/seed_project.py"'
+  - command: 'IXP_SEED_TITLE_BASE="Codereval Name Resolution" python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/seed_project.py"'
     timeout: 300
 
 initial_prompt: |
