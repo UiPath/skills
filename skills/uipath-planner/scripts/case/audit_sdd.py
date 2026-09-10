@@ -469,44 +469,6 @@ def ambiguous_personas(text: str) -> list[str]:
                     found.append(cells[i])
     return sorted(dict.fromkeys(found))
 
-
-RESPONSE_MAP_SECTION = re.compile(r"^#{2,4}\s+.*SLA Response Map\s*$(.*?)(?=^#{1,5} |\Z)", re.M | re.S)
-
-
-def response_map_cell(cell: str) -> str:
-    """Map cell text without backticks/bold and without a trailing `(slug)` qualifier."""
-    return re.sub(r"\s*\([^)]*\)\s*$", "", cell.strip().strip("`*")).strip().strip("`")
-
-
-def sla_map_status_gaps(text: str) -> list[str]:
-    """One row per (Scope, SLA) x {At-Risk, Breached} in the § SLA Response Map.
-
-    A status the source says nothing about is still authored — `notify-only` with Target
-    and Interrupting `—` (case-sdd-template.md § SLA Response Map, case-design-layers-guide.md
-    § Defaults when the source is silent). An omitted row is an unauthored response, not a
-    way to say "nothing happens", and the map is the single source of SLA behavior.
-    """
-    section = RESPONSE_MAP_SECTION.search(text)
-    if not section:
-        return []  # no SLA anywhere -> the section is legitimately absent
-    seen: dict[tuple[str, str], set[str]] = {}
-    for _, cells in table_rows(section.group(1)):
-        if len(cells) < 3 or "<" in cells[0] or "{" in cells[0]:
-            continue  # template placeholder row
-        key = (response_map_cell(cells[0]), response_map_cell(cells[1]))
-        seen.setdefault(key, set()).add(response_map_cell(cells[2]).casefold())
-    gaps = []
-    for (scope, sla), statuses in sorted(seen.items()):
-        missing = [s for s in ("At-Risk", "Breached") if s.casefold() not in statuses]
-        if missing:
-            gaps.append(
-                f"SLA Response Map: {scope} / {sla} authors no {' and no '.join(missing)} row — "
-                "every (Scope, SLA) carries both statuses; a status the source states no response for "
-                "is notify-only with Target and Interrupting '—', never an omitted row"
-            )
-    return gaps
-
-
 def contract_findings(text: str, facts: dict) -> list[str]:
     """Deterministic contract checks beyond template shape: gate-slot WHEN legality,
     exit-type pairing, SLA title closure, uniqueness, recipients, buttons, Out producers,
@@ -704,8 +666,6 @@ def contract_findings(text: str, facts: dict) -> list[str]:
                     "the case would breach before the stage"
                 )
             break
-
-    findings.extend(sla_map_status_gaps(text))
 
     # vacuous required-* (FE + validate: 'no required stage(s)/task(s) selected')
     required_stage = re.search(r"^\*\*Required for Case Completion:\*\*\s*Yes\b", text, re.M)
