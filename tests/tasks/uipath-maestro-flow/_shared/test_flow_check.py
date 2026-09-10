@@ -218,6 +218,21 @@ def test_entity_query_hints_reject_a_script_only_flow(tmp_path, monkeypatch):
     assert "core.datafabric.read" in msg
 
 
+def test_billing_gates_use_the_shared_entity_hints():
+    """The tests above exercise the constant, not the call sites. Without this,
+    reverting either gate to the connector-only hint keeps the suite green and
+    silently restores the 2026-09-10 failure."""
+    suite = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    gates = (
+        "multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py",
+        "multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py",
+    )
+    for relative in gates:
+        with open(os.path.join(suite, relative), encoding="utf-8") as handle:
+            source = handle.read()
+        assert "assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)" in source, relative
+
+
 # ── assert_flow_has_api_node_targeting (slack-weather gate, PR #1301) ───────
 
 

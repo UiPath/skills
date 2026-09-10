@@ -35,7 +35,8 @@ INPUTS = {
 
 
 def main():
-    # Must query the entities (ERP + CRM) — blocks hardcoding 1610 / Enterprise.
+    # Must query an entity: blocks hardcoding 1610 / Enterprise. The ERP+CRM
+    # pair is graded by the structural advisory, not here.
     # The two lookups are independent, so the flow must fan them out as parallel
     # branches joined by a merge (not chained serially) — require the merge node.
     assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)

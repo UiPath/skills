@@ -564,10 +564,10 @@ def run_debug(
     return payload
 
 
-# Reading entity records has two supported node shapes and the tenant decides
-# which: the `uipath-uipath-dataservice` connector activity, or the native
-# `core.datafabric.read` node the skill prefers wherever `canvas.nodes.read-entity`
-# is on (#3041). Keep both — either alone fails a build the skill steers toward.
+# Two node shapes read entity records and tenant availability decides which:
+# the `uipath-uipath-dataservice` connector activity, or the native
+# `core.datafabric.read` node, the better build where `canvas.nodes.read-entity`
+# is on (#3041). Pass to `assert_flow_has_any_node_type`; keep both entries.
 ENTITY_QUERY_HINTS = ("uipath-dataservice.query", "core.datafabric.read")
 
 
