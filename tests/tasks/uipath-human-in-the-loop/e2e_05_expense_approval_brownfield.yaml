@@ -4,8 +4,8 @@ task_id: skill-hitl-e2e-expense-approval-brownfield
 # .flow file JSON and the skill's ability to insert a HITL node into a minimal flow.
 description: >
   Authoring E2E test (brown field): agent adds a HITL node between two existing
-  nodes in a minimal flow, wires the completed handle, and validates the authored
-  .flow file. Tests C2 (brown field insert), C5 (completed handle), F1 and F2
+  nodes in a minimal flow, wires its outcome port(s), and validates the authored
+  .flow file. Tests C2 (brown field insert), C5 (outcome wiring), F1 and F2
   (validate). Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, brown-field]
 
@@ -49,7 +49,7 @@ initial_prompt: |
 
   Now add a Human-in-the-Loop node between the trigger and the posting step.
   A manager should review and approve the expense before it is posted.
-  Wire the completed handle to the posting step and validate the flow.
+  Wire its outcome port(s) to the posting step and validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Complete the task end-to-end in a single pass.
 
 success_criteria:
@@ -61,11 +61,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Completed handle is wired in the flow file"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - 'completed'
+  - type: run_command
+    description: "HITL node's outcome port is wired, not the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval --regex '\"sourcePort\":\\s*\"outcome-(?!completed\")[a-z0-9_-]+\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

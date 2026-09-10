@@ -125,10 +125,6 @@ For app search → retrieve-configuration → resource files → reference regis
       "<inputParamName>": "=vars.<nodeId>.output.<field>",
       "<inputParamName2>": "=metadata.InstanceId"
     },
-    "schema": {
-      "fields": [],
-      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
-    },
     "priority": "Medium"
   },
   "outputs": {
@@ -156,6 +152,8 @@ Rules:
 - `inputs.app.inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), not arrays.
 - `inputs.appInputBindings` maps names from `inputSchema.properties` to `"=vars.<path>"` expressions (with `=` and no `js:`). Without these bindings, input fields are blank.
 - `priority` follows Option 1's rule above — derived from the request, not the `"Medium"` literal in the example.
+- Do not add `inputs.schema` to this node — its outcomes come from the deployed app (`inputs.app`), not a schema block. Adding one flips the port from the static `completed` handle this node type actually uses to a schema-derived `outcome-<id>` handle, which does not match what the app produces.
+- Ports: `input` (target) → `completed` (source). Unlike QuickForm, this port stays static regardless of the app's own outcomes.
 
 ### If the app does not exist
 

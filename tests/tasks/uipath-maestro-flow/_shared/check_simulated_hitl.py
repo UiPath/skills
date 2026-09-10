@@ -135,18 +135,15 @@ def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
     ):
         fail("need a text reason output field")
     # outcome-completed is the zero-outcome placeholder only (confirmed against
-    # flow-workbench source, 2026-09-10) — it disappears the instant the schema
-    # has any real outcome. This node has real outcomes, so every one of them
-    # needs its own wired outcome-<id> handle; outcome-completed must not
-    # appear. An outcome's id defaults to its lowercased name when not given
-    # explicitly (same convention as hitl-node-quickform.md's own examples).
-    outcome_ids = [
-        str(o.get("id") or o.get("name") or "").lower()
-        for o in outcomes
-        if o.get("id") or o.get("name")
-    ]
+    # flow-workbench@develop source, build-handle-customization.ts): an outcome
+    # without an id is dropped before handles are built, and there is no
+    # name-derived fallback. A real user-authored schema always has ids — the
+    # editor assigns one at creation (useSchemaFields.ts, handleAddOutcome).
+    # This node has real outcomes, so every one of them needs its own wired
+    # outcome-<id> handle; outcome-completed must not appear.
+    outcome_ids = [str(o["id"]) for o in outcomes if o.get("id")]
     if not outcome_ids:
-        fail("HITL schema needs at least one outcome with an id or name")
+        fail("HITL schema needs at least one outcome with an id")
     wired_ports = {
         edge.get("sourcePort")
         for edge in edges

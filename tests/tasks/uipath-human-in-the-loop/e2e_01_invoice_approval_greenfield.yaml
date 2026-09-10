@@ -31,7 +31,9 @@ initial_prompt: |
   write to SAP without human sign-off.
 
   Show the finance manager the relevant invoice fields, give them Approve and
-  Reject outcomes, and wire the review step to the downstream SAP posting step.
+  Reject outcomes, and wire both outcomes onward — Approve to the downstream
+  SAP posting step, Reject to wherever the flow should end. Every outcome
+  needs its own wired port.
 
   Validate the flow when you're done.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
@@ -62,8 +64,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow wires the completed handle"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval 'completed'"
+    description: "Flow wires both Approve and Reject outcome ports, not the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval --regex '\"sourcePort\":\\s*\"outcome-approve\"' --regex '\"sourcePort\":\\s*\"outcome-reject\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

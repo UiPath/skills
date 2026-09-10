@@ -46,7 +46,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | Pull verbose execution timeline | [troubleshooting-guide.md — Step 5 Traces](troubleshooting-guide.md#step-5--traces-last-resort) |
 | Identify a `vars.X.output.Y` literal-string failure | [failure-modes.md — `=js:` prefix missing](failure-modes.md#js-prefix-missing) |
 | Identify misshapen Studio Web nodes | [failure-modes.md — misshapen nodes](failure-modes.md#misshapen-rectangle-nodes-in-studio-web) |
-| Diagnose a hung HITL node | [failure-modes.md — HITL `completed` port unwired](failure-modes.md#hitl-completed-port-unwired) |
+| Diagnose a hung HITL node | [failure-modes.md — HITL outcome port unwired](failure-modes.md#hitl-outcome-port-unwired) |
 | Diagnose a connector silent fault | [failure-modes.md — Reused reference ID](failure-modes.md#reused-reference-id--cross-connection-id-leakage) |
 <!--skill-flavor:single-nested-task-row:start-->
 | Diagnose a publish/upload structural error | [failure-modes.md — Single-nested layout](failure-modes.md#single-nested-layout) |

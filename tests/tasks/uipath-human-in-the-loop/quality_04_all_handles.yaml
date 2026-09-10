@@ -1,7 +1,7 @@
 task_id: skill-hitl-quality-completed-handle-and-result
 description: >
-  Quality test: agent must wire the completed handle to a downstream node
-  and demonstrate how to read the human's decision using $vars.<nodeId>.output
+  Quality test: agent must wire the HITL node's outcome port to a downstream
+  node and demonstrate how to read the human's decision using $vars.<nodeId>.output
   in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
@@ -33,8 +33,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "completed handle is wired in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name PurchaseOrderApproval 'completed'"
+    description: "the HITL node's outcome port is wired, not the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name PurchaseOrderApproval --regex '\"sourcePort\":\\s*\"outcome-(?!completed\")[a-z0-9_-]+\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

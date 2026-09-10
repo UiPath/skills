@@ -243,13 +243,14 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
 
 ## Edge Wiring
 
-Wire the `completed` output handle to the downstream node. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
+Wire one output handle per outcome to its downstream node — port `outcome-<outcome.id>` for each entry in `inputs.schema.outcomes[]`, using the outcome's own `id` verbatim (never a lowercased or otherwise derived value). Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
 
 ```json
-{ "id": "invoiceReview1-completed-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "processApproval1", "targetPort": "input" }
+{ "id": "invoiceReview1-outcome-approve-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-approve", "targetNodeId": "processApproval1", "targetPort": "input" }
+{ "id": "invoiceReview1-outcome-reject-end1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-reject", "targetNodeId": "end1", "targetPort": "input" }
 ```
 
-**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever.
+**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is a placeholder that exists only on a schema with zero outcomes — it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit` (id `submit`, port `outcome-submit`). Never wire it once outcomes exist.
 
 ---
 

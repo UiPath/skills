@@ -40,7 +40,7 @@ initial_prompt: |
   1. Before document validation — an HR officer must review submitted documents
   2. Before IT provisioning — a manager must approve IT access
 
-  Wire the completed handles for both HITL nodes to their respective downstream
+  Wire every outcome port on both HITL nodes to their respective downstream
   steps. Validate the full flow after both nodes are added.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Complete the task end-to-end in a single pass.
 
@@ -53,11 +53,11 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Completed handles wired in the flow file"
-    path: "HROnboarding/HROnboarding/HROnboarding.flow"
-    includes:
-      - 'completed'
+  - type: run_command
+    description: "Both HITL nodes' outcome ports are wired, not the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name HROnboarding --regex '\"sourcePort\":\\s*\"outcome-(?!completed\")[a-z0-9_-]+\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

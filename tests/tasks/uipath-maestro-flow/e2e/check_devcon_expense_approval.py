@@ -118,18 +118,15 @@ def main() -> None:
         )
 
     # outcome-completed is the zero-outcome placeholder only (confirmed against
-    # flow-workbench source, 2026-09-10) — it disappears the instant the schema
-    # has any real outcome, and `outcomes` is already guaranteed non-empty
-    # above. Every outcome needs its own wired outcome-<id> handle instead. An
-    # outcome's id defaults to its lowercased name when not given explicitly
-    # (same convention as hitl-node-quickform.md's own examples).
-    outcome_ids = [
-        str(o.get("id") or o.get("name") or "").lower()
-        for o in outcomes
-        if o.get("id") or o.get("name")
-    ]
+    # flow-workbench@develop source, build-handle-customization.ts): an outcome
+    # without an id is dropped before handles are built, and there is no
+    # name-derived fallback. A real user-authored schema always has ids — the
+    # editor assigns one at creation (useSchemaFields.ts, handleAddOutcome).
+    # `outcomes` is already guaranteed non-empty above; every outcome needs
+    # its own wired outcome-<id> handle instead.
+    outcome_ids = [str(o["id"]) for o in outcomes if o.get("id")]
     if not outcome_ids:
-        fail("HITL schema needs at least one outcome with an id or name")
+        fail("HITL schema needs at least one outcome with an id")
     wired_ports = {e.get("sourcePort") for e in edges if e.get("sourceNodeId") == hitl_id}
     if wired_ports & {"completed", "outcome-completed"}:
         fail(

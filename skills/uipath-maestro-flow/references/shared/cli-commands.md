@@ -213,7 +213,7 @@ Success output:
 { "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop.quick-form", "Label": "Invoice Review", "DefinitionAdded": true } }
 ```
 
-After adding, wire the `completed` port; an unwired `completed` blocks the flow. See the [Author HITL plugin reference](../author/plugins/hitl/impl.md).
+After adding, wire one `outcome-<outcome.id>` port per outcome; any outcome left unwired blocks the flow on that branch. See the [Author HITL plugin reference](../author/plugins/hitl/impl.md).
 
 ## uip maestro flow instance / uip maestro flow incident
 

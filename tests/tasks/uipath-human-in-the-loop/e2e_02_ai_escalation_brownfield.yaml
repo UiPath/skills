@@ -48,11 +48,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Completed handle is wired in the flow file"
-    path: "ComplaintTriage/ComplaintTriage/ComplaintTriage.flow"
-    includes:
-      - 'completed'
+  - type: run_command
+    description: "HITL node's outcome port is wired, not the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ComplaintTriage --regex '\"sourcePort\":\\s*\"outcome-(?!completed\")[a-z0-9_-]+\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

@@ -26,10 +26,11 @@ initial_prompt: |
     - Outcomes: Approve (primary), Reject
 
   After insertion the wiring must be:
-    Trigger → extractMeta →|output| HITL →|completed| End
+    Trigger → extractMeta →|output| HITL → End, with both outcomes
+    (Approve and Reject) wired to End — every outcome needs its own port.
 
   The original extractMeta → End edge must be removed.
-  The extractMeta → HITL edge and HITL → End edge must be added.
+  The extractMeta → HITL edge and both HITL outcome → End edges must be added.
 
   Validate the flow after building.
 
@@ -70,8 +71,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "HITL completed handle is wired"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview 'completed'"
+    description: "Both HITL outcome ports (Approve and Reject) are wired, not the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview --regex '\"sourcePort\":\\s*\"outcome-approve\"' --regex '\"sourcePort\":\\s*\"outcome-reject\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
