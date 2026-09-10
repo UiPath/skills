@@ -280,7 +280,8 @@ registry serves a template for vs. what you author by hand:
 
 | Structure | Source |
 | --- | --- |
-| Node `uipath:*` payloads (RPA, agent, HITL, queue, business rule, API workflow, IS connector, internal message, timer, script, variables) | **Registry** `xmlTemplate` |
+| Node `uipath:*` payloads (RPA, agent, HITL, queue, business rule, API workflow, IS connector, internal message, timer, script) | **Registry** `xmlTemplate` |
+| `<uipath:variables>` declarations (each with an `elementId`) | Authored (registry gap) |
 | `<bpmn:definitions>`/`<bpmn:process>` scaffold + namespaces | Authored (registry gap) |
 | Sequence flows, `conditionExpression`, gateway `default` | Authored (registry gap) |
 | Gateways: exclusive, parallel, inclusive, event-based (complex is preserve-only) | Authored (registry gap) |

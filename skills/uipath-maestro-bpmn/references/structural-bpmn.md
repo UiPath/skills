@@ -124,20 +124,25 @@ example BPMN files** — it is the main reason authoring runs out of time.
 </bpmn:definitions>
 ```
 
-## Variables (`BPMN.Variables`)
+## Variables
 
-Declare root variables with the `BPMN.Variables` registry template attached to
-the process via `extensionElements`, or use the canvas `<uipath:variables>`
-block directly. Every declaration needs a stable, unique `id`, a non-empty
-user-facing `name`, and its documented `type`; do not use the name as a
-substitute for the id. Expressions reference the id as `vars.<id>`. Public or
-node-scoped declarations also carry the owning node's `elementId`. Variable
-schema bodies are JSON text or CDATA.
+Declare variables in the process's own `<uipath:variables>` block. Every
+declaration needs a stable, unique `id`, a non-empty user-facing `name`, and its
+documented `type`; do not use the name as a substitute for the id. Expressions
+reference the id as `vars.<id>`. Variable schema bodies are JSON text or CDATA.
+
+Every declaration also carries an `elementId` naming the element that owns it:
+the `<bpmn:process>` id for a process-level variable, the start event id for a
+caller-supplied input, the end event id for a published output, the owning node's
+id for a node-scoped variable. A subprocess-level variable is keyed inside its
+own subprocess: the subprocess id, or the node in it that writes the value —
+both import cleanly. Without an `elementId` the declaration does not exist to
+the canvas, and every `vars.<id>` reference to it fails on import.
 
 ```xml
 <uipath:variables version="v1">
   <uipath:input id="input_ExpenseId" name="expenseId" type="string" elementId="Start_1" />
-  <uipath:inputOutput id="Var_Decision" name="decision" type="string" />
+  <uipath:inputOutput id="Var_Decision" name="decision" type="string" elementId="Process_1" />
   <uipath:output id="output_Decision" name="decision" type="string" elementId="End_1" />
 </uipath:variables>
 ```
@@ -159,7 +164,8 @@ Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
 
 `bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
 a browser. The mapping payload comes from the `BPMN.ScriptTask` registry
-template, but the runtime contract is fixed:
+template, but the runtime contract is fixed — including one correction to that
+template, in the first rule below:
 
 - Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,
   `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,
@@ -177,23 +183,30 @@ template, but the runtime contract is fixed:
   never retrofit these attributes onto an untouched node's mapping — a
   pre-existing `<uipath:input name="args">` outside the edit's target stays
   byte-identical.
-- Map the returned object's property back through `source="=result.response"`
-  (the conventional scalar property) or `source="=result.response.<field>"`
-  (another object field); `var` points at a declared variable id (do not put the
-  target id in `name`).
-- When the output mapping uses `source="=result.response"`, return an object
-  with a `response` property, such as `return { response: 6 * 7 };`. Do not
-  return the bare primitive `42` for that mapping shape; there is no
-  `response` property to bind, so the runtime variable stays empty.
-- Do not use `source="=result"` with a bare scalar return in live debug/runtime
-  BPMN. Studio Web can report `FinalStatus: Completed` while the target root
-  variable still reads back as `{}` or `null` from
-  `debug-instance variables-all`.
-- For live debug/runtime runs, never use `source="=this.result"` or
-  `<uipath:type value="BPMN.Variables" ...>` on a script task output mapping.
-  That older structural-test shape can pass local validation but leaves root
-  variables `null` or faults in Studio Web. Use the `BPMN.ScriptTask` mapping
-  with `source="=result.response"`.
+- **The mapping's type child is `<uipath:type value="BPMN.Variables"
+  version="v1" />`, not `BPMN.ScriptTask`.** The registry's `BPMN.ScriptTask`
+  `xmlTemplate` emits the latter, and this is the first of two corrections that
+  template needs: any `uipath:type` other than `BPMN.Variables` overwrites the parser's
+  `Scp.Script` extension type, so the runtime never dispatches the script. The
+  element still completes, the output mapping resolves against an empty result,
+  and the target variable reads back `null`. Verified live: two files differing
+  only in this attribute returned `product: 42` (`BPMN.Variables`) and
+  `product: null` (`BPMN.ScriptTask`).
+- Map the return through `source="=result.response"` for a scalar, or
+  `source="=result.response.<field>"` for a field of a returned object; `var`
+  points at a declared variable id (do not put the target id in `name`).
+- **The template ships no `<uipath:scriptVersion>`, and that is the second
+  correction.** A missing element parses as `v1`
+  (`UiPath.PO.BpmnParser/Extensions/Xml/ScriptReader.cs`), and at v1 the runtime
+  demands an object return and throws `ScriptTaskInvocationResultError`
+  otherwise. So a template pasted with only the type child corrected, plus the
+  bare return below, faults at run time. Add
+  `<uipath:scriptVersion value="v3" />` as a sibling of `uipath:mapping`.
+- Return the value directly — `return 6 * 7;`. At `scriptVersion` v2 or later the
+  runtime wraps the return under `response` itself, so returning
+  `{ response: value }` yields `result.response.response`. Do not use
+  `source="=result"` or `source="=this.result"`, which read the wrapper object
+  rather than the value.
 - Do not mutate `Globals.*`, `vars.*`, or process variables inside the script
   body. The supported path is: return a value from the script, then use a
   `uipath:output` mapping to write it to the declared variable. Direct mutation
@@ -204,14 +217,14 @@ template, but the runtime contract is fixed:
   <bpmn:extensionElements>
     <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
-      <uipath:type value="BPMN.ScriptTask" version="v1" />
+      <uipath:type value="BPMN.Variables" version="v1" />
       <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
       <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
     </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:script><![CDATA[
 var score = amount * 0.01 + daysOverdue * 2;
-return { response: score };
+return score;
 ]]></bpmn:script>
 </bpmn:scriptTask>
 ```
