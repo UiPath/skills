@@ -207,8 +207,18 @@ ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
 # Prove that the installed SDK resolves without registry credentials and that
 # the product CLI can check real source against it.
 COPY tests/fixtures/maestro-flow-sdk-smoke/ /opt/maestro-flow-sdk-smoke/
+# The fixture's import is rewritten to whatever THIS image installed. A build
+# arg cannot reach an import statement, so a hard-coded specifier breaks one of
+# the two builds: the new name fails an old-name baseline
+# (`--build-arg FLOW_SDK_PKG_NAME=@uipath/flow-sdk`), and the old name fails the
+# default build on `Cannot find package`. Either way it is a hard `&&` below, so
+# it takes the image build down rather than warning. The `grep` makes a
+# no-op `sed` — a specifier shape this pattern does not cover — fail here
+# instead of at `flow check`, where the error would read as an SDK problem.
 RUN cd /opt/maestro-flow-sdk-smoke && \
     ln -s ${PREVIEW_FLOW_SDK_ROOT}/node_modules node_modules && \
+    sed -i "s#from '@uipath/[a-z0-9-]*'#from '${FLOW_SDK_PKG_NAME}'#" Smoke.flow.ts && \
+    grep -q "from '${FLOW_SDK_PKG_NAME}'" Smoke.flow.ts && \
     uip maestro flow check Smoke.flow.ts --source
 
 # Pre-install Python packages needed by coded-agent sandbox fixtures so agents
