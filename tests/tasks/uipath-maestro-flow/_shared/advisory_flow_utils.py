@@ -65,8 +65,17 @@ def is_real_uuid(value: Any) -> bool:
     return bool(UUID.fullmatch(rendered)) and not STUB_UUID.match(rendered)
 
 
+def _generated_flows(pattern: str) -> list[Path]:
+    cwd = Path.cwd()
+    return sorted(
+        path
+        for path in cwd.rglob(pattern)
+        if not EXCLUDED_GENERATED_PARTS.intersection(path.relative_to(cwd).parts)
+    )
+
+
 def load_flow(expected_name: str) -> tuple[Path, dict[str, Any], list[dict[str, Any]]]:
-    """Load an explicit Flow path or find exactly one generated Flow by name."""
+    """Load an explicit Flow path or find exactly one generated Flow, by name first."""
     if len(sys.argv) > 2:
         fail(f"usage: {Path(sys.argv[0]).name} [{expected_name}]")
 
@@ -75,16 +84,14 @@ def load_flow(expected_name: str) -> tuple[Path, dict[str, Any], list[dict[str, 
         if not path.is_file():
             fail(f"Flow path does not name a file: {path}")
     else:
-        cwd = Path.cwd()
-        candidates = sorted(
-            path
-            for path in cwd.rglob(expected_name)
-            if not EXCLUDED_GENERATED_PARTS.intersection(path.relative_to(cwd).parts)
-        )
+        # The expected basename is a preference: a Studio Web build keeps the
+        # scaffolded ``new.flow`` name, so an empty match falls back to any
+        # generated ``.flow`` — still exactly one, or the check refuses.
+        candidates = _generated_flows(expected_name) or _generated_flows("*.flow")
         if len(candidates) != 1:
             fail(
-                f"expected exactly one generated {expected_name}, found {len(candidates)}: "
-                f"{[str(path) for path in candidates]}"
+                f"expected exactly one generated {expected_name} (or a lone .flow), "
+                f"found {len(candidates)}: {[str(path) for path in candidates]}"
             )
         path = candidates[0]
 

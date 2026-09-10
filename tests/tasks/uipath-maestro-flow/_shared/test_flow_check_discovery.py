@@ -286,3 +286,109 @@ def test_validate_flow_uses_root_fallback(tmp_path, monkeypatch):
     assert kwargs["capture_output"] is True
     assert kwargs["text"] is True
     assert 0 < kwargs["timeout"] <= 80
+
+
+# ── flow_glob is a preference, not a gate (Studio Web keeps ``new.flow``) ────
+
+
+def _make_studioweb_project(root, name, node_count=3):
+    """Studio Web export shape: ``<Name>/<Name>/new.flow`` — the scaffolded
+    file name is kept, so nothing in the project is called ``<Name>.flow``."""
+    proj = _make_flow_project(root, name, name, node_count)
+    (proj / f"{name}.flow").rename(proj / "new.flow")
+    return proj
+
+
+def test_named_glob_falls_back_to_the_projects_own_flow(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    _make_studioweb_project(tmp_path, "TransformMapDemo")
+
+    path = find_flow_file(flow_glob="TransformMapDemo*.flow")
+
+    assert os.path.normpath(path) == os.path.join(
+        "TransformMapDemo", "TransformMapDemo", "new.flow"
+    )
+    assert "no .flow matching 'TransformMapDemo*.flow'" in capsys.readouterr().out
+
+
+def test_named_glob_still_selects_by_name_when_present(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    proj = _make_flow_project(tmp_path, "Sol", "Main", 3)
+    (proj / "Helper.flow").write_text(json.dumps({"nodes": []}))
+
+    path = find_flow_file(flow_glob="Main*.flow")
+
+    assert os.path.normpath(path) == os.path.join("Sol", "Main", "Main.flow")
+    assert capsys.readouterr().out == ""
+
+
+def test_named_glob_fallback_refuses_an_ambiguous_project(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    proj = _make_studioweb_project(tmp_path, "Demo")
+    (proj / "Subflow.flow").write_text(json.dumps({"nodes": []}))
+
+    with pytest.raises(SystemExit) as excinfo:
+        find_flow_file(flow_glob="Demo*.flow")
+    assert "Multiple .flow files match" in str(excinfo.value)
+
+
+def test_named_glob_fails_on_a_project_with_no_flow(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    proj = _make_flow_project(tmp_path, "Sol", "Empty", 1)
+    (proj / "Empty.flow").unlink()
+
+    with pytest.raises(SystemExit) as excinfo:
+        find_flow_files(flow_glob="Empty*.flow")
+    assert "No .flow file under selected Flow project" in str(excinfo.value)
+
+
+def test_root_fallback_accepts_a_differently_named_lone_emit(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "new.flow").write_text(json.dumps({"nodes": []}))
+
+    assert find_flow_files(flow_glob="Demo*.flow") == ["new.flow"]
+
+
+def test_advisory_load_flow_falls_back_to_a_lone_generated_flow(tmp_path, monkeypatch):
+    import advisory_flow_utils
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["advisory_x.py"])
+    _make_studioweb_project(tmp_path, "BillingDisputeAnalyst")
+
+    path, _flow, nodes = advisory_flow_utils.load_flow("BillingDisputeAnalyst.flow")
+
+    assert path.name == "new.flow"
+    assert len(nodes) == 3
+
+
+def test_advisory_load_flow_refuses_two_unnamed_candidates(tmp_path, monkeypatch):
+    import advisory_flow_utils
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["advisory_x.py"])
+    _make_studioweb_project(tmp_path, "A")
+    _make_studioweb_project(tmp_path, "B")
+
+    with pytest.raises(SystemExit) as excinfo:
+        advisory_flow_utils.load_flow("A.flow")
+    assert "found 2" in str(excinfo.value)
+
+
+# ── hidden scratch dirs are not deliverables ─────────────────────────────────
+
+
+def test_hidden_scratch_projects_do_not_compete(tmp_path, monkeypatch, capsys):
+    """eval-local-crud, run 2026-09-10_11-06-05: the agent kept two failed
+    ``flow init`` attempts under dot-dirs beside the real build. All three were
+    1-node flows, so the husk heuristic could not separate them."""
+    monkeypatch.chdir(tmp_path)
+    _make_flow_project(tmp_path, "SmokeEval", "SmokeEval", 1)
+    _make_flow_project(tmp_path / ".flow-auto", "SmokeEvalSolution", "SmokeEval", 1)
+    _make_flow_project(tmp_path, ".smokeeval-scaffold", "SmokeEval", 1)
+
+    assert os.path.normpath(find_project_dir(PATTERN)) == os.path.join("SmokeEval", "SmokeEval")
+    assert [os.path.normpath(p) for p in find_flow_files()] == [
+        os.path.join("SmokeEval", "SmokeEval", "SmokeEval.flow")
+    ]
+    assert capsys.readouterr().out == ""

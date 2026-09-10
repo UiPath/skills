@@ -136,10 +136,23 @@ _DEBUG_RETRY_MARKERS = (
 )
 
 
+def _is_pruned_dir(name: str) -> bool:
+    """Directories discovery never descends into.
+
+    ``node_modules``: the preview workspace symlinks the baked SDK tree there,
+    and ``glob`` follows directory symlinks under ``**``. Dot-directories: the
+    agent's own scratch space (``.venv``, ``.flow-auto/``, ``.smokeeval-scaffold/``
+    — run 2026-09-10_11-06-05 eval-local-crud kept two ``flow init`` attempts in
+    hidden dirs beside the real ``SmokeEval/`` and the checker refused all three
+    as equal 1-node candidates). Studio Web's own search tools hide dot-dirs for
+    the same reason; a deliverable is never hidden.
+    """
+    return name == "node_modules" or name.startswith(".")
+
+
 def _rglob_pruned(pattern: str) -> list[str]:
-    """``glob.glob(pattern, recursive=True)`` from the CWD, but never descending
-    into ``node_modules`` (the preview workspace symlinks the baked SDK tree
-    there, and ``glob`` follows directory symlinks under ``**``)."""
+    """``glob.glob(pattern, recursive=True)`` from the CWD, skipping the
+    directories :func:`_is_pruned_dir` names."""
     if "**" not in pattern:
         return sorted(glob.glob(pattern, recursive=True))
     prefix, _, suffix = pattern.partition("**")
@@ -147,7 +160,7 @@ def _rglob_pruned(pattern: str) -> list[str]:
     suffix = suffix.lstrip("/")
     matches: list[str] = []
     for dirpath, dirnames, _ in os.walk(root, followlinks=True):
-        dirnames[:] = [d for d in dirnames if d != "node_modules"]
+        dirnames[:] = [d for d in dirnames if not _is_pruned_dir(d)]
         matches.extend(glob.glob(os.path.join(glob.escape(dirpath), suffix)))
     if root == ".":
         matches = [m[2:] if m.startswith("./") else m for m in matches]
@@ -1737,14 +1750,24 @@ def find_flow_files(
     SDK emit. Multiple genuinely distinct root emits are ambiguous and fail
     with their paths rather than selecting one by glob order.
 
+    ``flow_glob`` is a *preference*, not a gate. Its job is to pick the right
+    file when a project holds several flows (a main flow beside a subflow, or
+    the ``after_a.flow`` / ``after_b.flow`` snapshots a bindings task asks
+    for). A correct build does not have to name its flow after the project:
+    Studio Web scaffolds and keeps the file as ``new.flow`` (the studioweb
+    harness exports it verbatim — run 2026-09-10_11-06-05, 20 tasks zeroed on
+    ``No .flow file matching '<Name>*.flow'`` over flows that validated).
+    So when the name matches nothing in the selected project, the project's
+    own ``.flow`` files are returned instead; the caller's single-file
+    contract (:func:`find_flow_file`) still refuses a genuinely ambiguous set.
+    Only an empty project fails here.
+
     Debug callers intentionally do not use this helper: ``uip maestro flow
     debug`` is project-scoped and must continue through :func:`find_project_dir`.
     """
     project_candidates = _rglob_pruned(project_pattern)
     flow_projects = [path for path in project_candidates if _is_flow_project(path)]
-    root_matches = _dedupe_flow_candidates(
-        sorted(glob.glob(os.path.basename(flow_glob)))
-    )
+    root_matches = _dedupe_flow_candidates(_root_flow_matches(flow_glob))
 
     # A preview author may compile a complete root-level SDK source before a
     # later CLI command leaves an untouched trigger-only project scaffold. For
@@ -1771,18 +1794,7 @@ def find_flow_files(
 
     if flow_projects:
         project_dir = _find_project(project_pattern)
-        matches = sorted(
-            glob.glob(
-                os.path.join(project_dir, "**", os.path.basename(flow_glob)),
-                recursive=True,
-            )
-        )
-        if not matches:
-            _fail(
-                f"No .flow file matching {flow_glob!r} under selected Flow "
-                f"project {project_dir}"
-            )
-        return matches
+        return _project_flow_matches(project_dir, flow_glob)
 
     if not root_matches:
         _fail(
@@ -1796,6 +1808,42 @@ def find_flow_files(
             f"guess:\n  - {joined}"
         )
     return root_matches
+
+
+def _project_flow_matches(project_dir: str, flow_glob: str) -> list[str]:
+    """``.flow`` files under ``project_dir``, preferring ``flow_glob``'s basename.
+
+    Falls back to every ``.flow`` in the project when the preferred name is
+    absent (see :func:`find_flow_files`); fails only when the project has no
+    ``.flow`` at all.
+    """
+    name = os.path.basename(flow_glob)
+    matches = sorted(
+        glob.glob(os.path.join(glob.escape(project_dir), "**", name), recursive=True)
+    )
+    if not matches and name != "*.flow":
+        matches = sorted(
+            glob.glob(
+                os.path.join(glob.escape(project_dir), "**", "*.flow"), recursive=True
+            )
+        )
+        if matches:
+            print(
+                f"note: no .flow matching {name!r} under {project_dir}; using the "
+                f"project's own flow file(s): {', '.join(matches)}"
+            )
+    if not matches:
+        _fail(f"No .flow file under selected Flow project {project_dir}")
+    return matches
+
+
+def _root_flow_matches(flow_glob: str) -> list[str]:
+    """Root-level (no project) candidates: the preferred name, else any ``.flow``."""
+    name = os.path.basename(flow_glob)
+    matches = sorted(glob.glob(name))
+    if matches or name == "*.flow":
+        return matches
+    return sorted(glob.glob("*.flow"))
 
 
 def find_flow_file(
