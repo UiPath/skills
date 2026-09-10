@@ -48,6 +48,8 @@ initial_prompt: |
   5. Delete Entity Record — bind recordId to the create activity's
      output Id.
 
+  Use the Data Fabric Integration Service connector activities (`uipath.connector.uipath-uipath-dataservice.*`) for these operations — not the native `core.datafabric.*` nodes.
+
   The Flow is not complete until `uip maestro flow validate` passes.
 
   This run is headless. No user is present and nobody will answer a question or

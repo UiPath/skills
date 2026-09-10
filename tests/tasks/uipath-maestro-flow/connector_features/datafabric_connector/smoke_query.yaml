@@ -41,6 +41,8 @@ initial_prompt: |
   tree, sort, and limit, but use offset/start 2 for the next page. Query 3 must
   filter active equals true, sort by score descending, and use a limit of 4.
 
+  Use the Data Fabric Integration Service connector activities (`uipath.connector.uipath-uipath-dataservice.*`) for these operations — not the native `core.datafabric.*` nodes.
+
   The Flow is not complete until `uip maestro flow validate` passes.
 
   This run is headless. No user is present and nobody will answer a question or
