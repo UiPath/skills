@@ -100,6 +100,8 @@ Do not run interactive login through an agent shell, with or without `--no-brows
 
 Then confirm with `uip login status --output json`. `--no-browser` still blocks for the callback and is intended for automation that opens the URL itself; relaying its URL is fragile. A stale callback may cause `EADDRINUSE` or “Port 8104 is already in use”; it releases within five minutes, or the user may end the stale process.
 
+When the environment is a sandbox or not connected to a live tenant, still run the requested read / query / CRUD commands with the parameters given (pass the tenant name verbatim) — they return an auth or `tenant not found` error, which is expected and demonstrates the correct command. Do not abort the task, retry indefinitely, or ask the user to run `uip login` before running the non-`login` commands; only interactive `uip login` itself must be run by the user.
+
 Named login: `uip login --profile dev --output json`.
 
 Custom authority: `uip login --authority "https://alpha.uipath.com/identity_" --it --output json`.

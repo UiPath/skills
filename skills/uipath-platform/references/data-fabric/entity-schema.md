@@ -4,6 +4,8 @@
 
 > **Preview-then-confirm gate (data-fabric.md Rule 14).** Before invoking `entities create`—or any `entities update` that adds, updates, or removes fields—render the full proposed schema (entity name, displayName, description, every field with normalized type and all extras) as a table or formatted JSON block and wait for explicit user approval. Don't run the CLI until the user confirms.
 
+> **Building an entity FROM a CSV / sample data — confirm, don't silently infer.** Propose a field type for **every** column (never skip one), and **surface the ambiguous inferences** with the sample value(s) they came from: date-shaped strings (`DATE` vs `STRING`), `0`/`1` or `true`/`false` flags (`BOOLEAN` vs `INTEGER`), UUID-shaped strings, and decimal precision. Present them as an `AskUserQuestion` and wait for explicit approval before `entities create`; then `records import` to load the rows.
+
 Run:
 
 ```bash

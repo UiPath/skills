@@ -84,24 +84,28 @@ Row rules:
 
 ## Daily breakdown
 
-Run:
+Run the query as specified — pass the tenant name given by the user verbatim (e.g. `default`); if the CLI is not connected to a live tenant the command still runs and returns an auth/`Tenant not found` error, which is expected. Do not pre-check the tenant list and stop:
 
 ```bash
 uip platform licenses consumables get \
-  --mode daily --tenant "<TENANT_NAME>" --unit <UNIT_CODE> \
-  --start-date <ISO_START> --end-date <ISO_END> --output json
+  --mode daily \
+  --tenant "default" \
+  --unit AIU \
+  --start-date 2026-04-01 \
+  --end-date 2026-04-30 \
+  --output json
 ```
 
 Return `Result`, `Code: "LicensesConsumablesDaily"`, and `Data` rows containing:
 
 ```json
 {
-  "code": "<UNIT_CODE>",
-  "name": "<UNIT_NAME>",
-  "tenantId": "<TENANT_ID>",
-  "tenantName": "<TENANT_NAME>",
-  "date": "YYYY-MM-DD",
-  "service": "<SERVICE>",
+  "code": "AIU",
+  "name": "AI Units",
+  "tenantId": "296b7134-6691-43db-b48a-2d95ed3ab031",
+  "tenantName": "default",
+  "date": "2026-04-15",
+  "service": "orchestrator",
   "consumedAmount": 24
 }
 ```
