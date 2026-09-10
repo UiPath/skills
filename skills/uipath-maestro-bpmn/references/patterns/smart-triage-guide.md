@@ -89,6 +89,15 @@ reaches manual triage.
 
 ## What to bind
 
+Bind at authoring time only what the CLI can supply offline. **Do not run `uip or
+processes`, `uip or`, or `uip login` to find a live deployed agent or process to
+bind into `classify` or a handler** — a greenfield authoring pass has none, and
+rule 2 forbids inventing a key. Author `classify`, `extract`, and `handle_a..c`
+as `bpmn:serviceTask`s; their runtime work (agent classification, extraction,
+dispatch) is bound during enrichment, not now. Only `manual_triage`
+(`Actions.HITL`) and `apply_rules` (`Orchestrator.BusinessRules`) have a registry
+template to `registry get` — do not `registry search` for the plain serviceTasks.
+
 - **`classify`** — the node that classifies at runtime, typically a UiPath agent
   job. Place and bind it; never decide the categories or write classification
   logic while authoring.
