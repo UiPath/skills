@@ -206,7 +206,6 @@ Validate a case management JSON file against case management rules.
 ```bash
 uip maestro case validate <file> --strict --sdd sdd.md --output json
 uip maestro case validate <file> --strict --output json
-uip maestro case validate <file> --output json
 uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
 ```
@@ -228,6 +227,34 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 3. Any genuine v2 validation result, including case validation errors, proves the profile ran. Report those findings; do not mask them with the legacy fallback.
 
 Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` fallback checks structure only, so conditions/SLA remain covered by authoritative full validation in Phase 4.
+
+---
+
+## uip maestro case format
+
+Rewrite `caseplan.json` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 13).
+
+```bash
+uip maestro case format <file> --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `<file>` | **(required)** Path to the case management JSON file |
+
+Output: `Data.Changed` — `true` when the file was rewritten, `false` when already formatted (idempotent). An unparseable file is refused and left untouched. Key order is preserved; a number re-renders in shortest form and a duplicate key collapses to its last occurrence, which is JSON round-trip behaviour and not corruption. Same verb family as `maestro flow format` and `maestro bpmn format`.
+
+---
+
+## uip maestro case bindings sync
+
+Derive `bindings_v2.json` from the plan's root `bindings[]` and write it next to the plan. Never author or edit the sidecar by hand.
+
+```bash
+uip maestro case bindings sync <caseplan.json> --output json
+```
+
+Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`, `Data.ConnectionCount`. `ResourceCount: 0` is still `Result: Success` — an empty sidecar is a faithful derivation of a plan that binds nothing, so the gate is `validate --strict` (`STRICT_BINDINGS_ABSENT`), not the sync result. See [bindings-v2-sync.md](bindings-v2-sync.md).
 
 ---
 
