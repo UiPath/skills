@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions, run performance scenarios (load groups, dry runs); generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, requirements, test cases, test steps, test sets, and test executions: create, run/execute, wait for executions, fetch results, logs, and attachments; set a project's default Orchestrator folder; link automation packages to test cases; generate test reports and go/no-go summaries; run performance scenarios (load groups, dry runs); package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
