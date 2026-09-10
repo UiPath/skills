@@ -28,8 +28,8 @@ initial_prompt: |
 
   Requirements:
   - Discover extension types via the registry first if you add any UiPath
-    extension node; declare any variables with the registry's BPMN.Variables
-    template. Do not hand-author uipath:* XML from prose.
+    extension node; declare any variables in `<uipath:variables>`, each with an
+    `elementId`. Do not hand-author uipath:* XML from prose.
   - Author the structural BPMN (definitions/process scaffold, sequence flows,
     gateway conditions + default) per the skill's structural reference.
   - The file MUST include a bpmndi:BPMNDiagram with a BPMNShape for every node

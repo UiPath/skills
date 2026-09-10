@@ -4,9 +4,9 @@
     <bpmn:extensionElements>
       <uipath:migrationVersion version="11.5" />
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_OrderId" name="orderId" type="string" />
-        <uipath:inputOutput id="Var_Category" name="category" type="string" />
-        <uipath:inputOutput id="Var_OrderTotal" name="orderTotal" type="number" />
+        <uipath:inputOutput id="Var_OrderId" name="orderId" type="string" elementId="Process_OrderFulfillment" />
+        <uipath:inputOutput id="Var_Category" name="category" type="string" elementId="Process_OrderFulfillment" />
+        <uipath:inputOutput id="Var_OrderTotal" name="orderTotal" type="number" elementId="Process_OrderFulfillment" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Start">
@@ -16,27 +16,27 @@
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
           <uipath:output name="category" type="string" var="Var_Category" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Start_Validate</bpmn:incoming>
       <bpmn:outgoing>Flow_Validate_Compute</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: orderId ? "validateOrder-standard" : "validateOrder-unknown" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return orderId ? "validateOrder-standard" : "validateOrder-unknown";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_ComputeTotal" name="Compute total" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"category":"=vars.Var_Category"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"category":"=vars.Var_Category"}]]></uipath:input>
           <uipath:output name="orderTotal" type="number" var="Var_OrderTotal" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Validate_Compute</bpmn:incoming>
       <bpmn:outgoing>Flow_Compute_End</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: category === "computeTotal" ? 0 : 100 };]]></bpmn:script>
+      <bpmn:script><![CDATA[return category === "computeTotal" ? 0 : 100;]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_1" name="Done">
       <bpmn:incoming>Flow_Compute_End</bpmn:incoming>

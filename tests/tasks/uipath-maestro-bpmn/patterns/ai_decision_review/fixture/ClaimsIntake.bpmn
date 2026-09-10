@@ -12,9 +12,9 @@
       <uipath:migrationVersion version="11.5" />
       <uipath:caseManagement version="v1"><![CDATA[{"owner":"claims","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_ClaimId" name="ClaimId" type="string" />
-        <uipath:inputOutput id="Var_ConfidenceScore" name="ConfidenceScore" type="number" />
-        <uipath:inputOutput id="Var_SettlementResult" name="SettlementResult" type="string" />
+        <uipath:inputOutput id="Var_ClaimId" name="ClaimId" type="string" elementId="Process_ClaimsIntake" />
+        <uipath:inputOutput id="Var_ConfidenceScore" name="ConfidenceScore" type="number" elementId="Process_ClaimsIntake" />
+        <uipath:inputOutput id="Var_SettlementResult" name="SettlementResult" type="string" elementId="Process_ClaimsIntake" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Claim Received"><bpmn:outgoing>Flow_SS</bpmn:outgoing></bpmn:startEvent>
@@ -22,25 +22,25 @@
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"claimId":"=vars.Var_ClaimId"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"claimId":"=vars.Var_ClaimId"}]]></uipath:input>
           <uipath:output name="score" type="number" var="Var_ConfidenceScore" source="=result.response.score" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_SS</bpmn:incoming><bpmn:outgoing>Flow_ST</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: { score: 0.91 } };]]></bpmn:script>
+      <bpmn:script><![CDATA[return { score: 0.91 };]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Settle" name="Settle Claim" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"claimId":"=vars.Var_ClaimId"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"claimId":"=vars.Var_ClaimId"}]]></uipath:input>
           <uipath:output name="result" type="string" var="Var_SettlementResult" source="=result.response.result" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ST</bpmn:incoming><bpmn:outgoing>Flow_TE</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: { result: "settled" } };]]></bpmn:script>
+      <bpmn:script><![CDATA[return { result: "settled" };]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_1" name="Outcome: Settled"><bpmn:incoming>Flow_TE</bpmn:incoming></bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_SS" sourceRef="Start_1" targetRef="Task_Score" />
