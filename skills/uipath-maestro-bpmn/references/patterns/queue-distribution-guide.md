@@ -50,13 +50,23 @@ The performer's start event **is** the queue trigger, so this shape always begin
 the process. It cannot be inserted into an existing path or nested in a
 subprocess, and it has no Entry row in the droppable sense.
 
-**Author the start as structural BPMN — do not search the registry for it.** The
-queue trigger is not a registry extension type, a connector, or a login-gated
-payload: it is a plain `bpmn:startEvent` (a `bpmn:messageEventDefinition` child
-is optional and semantic only). There is no `uipath:*` payload and no
-`registry get` for it — the check grades exactly one start event with nothing
-flowing back in. Model it directly and move on; do not spend turns hunting the
-registry or `uip login` for a "queue trigger" type.
+**The entire performer shape is placeholder structural BPMN — do not search the
+registry, `uip or`, or `uip login` for any of it.** This is a queue-themed
+process, but nothing in it maps to a queue-specific registry payload:
+
+- The start is a plain `bpmn:startEvent` (an optional `bpmn:messageEventDefinition`
+  child is semantic only) — not a registry "queue trigger" type.
+- `per_item_action` and the three outcome nodes (`set_successful`, `set_failed`,
+  `postpone`) are placeholder `bpmn:serviceTask`s. Marking the queue item's
+  transaction status happens at runtime; you do NOT bind
+  `Orchestrator.SetTransactionStatus`, `SetQueueItemStatus`, or any queue
+  activity, and there is no such template to fetch.
+
+The check grades one start event with nothing flowing back, an exclusive gateway
+with three outcome branches each starting with an activity, and three ends — no
+`uipath:*` payload anywhere. Author the nodes directly and move on. Do not spend
+turns on `registry search`, `registry get`, `uip or queues`, or `uip login`
+chasing a queue type — none exists and none is needed.
 
 | Node | Element | Role |
 | --- | --- | --- |

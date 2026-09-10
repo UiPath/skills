@@ -79,6 +79,12 @@ system or items must be ordered.
   `bpmn:completionCondition` on the multi-instance marker. A completion
   condition stops the block early, which is a different thing from judging the
   run afterwards, and it cannot see the per-item results the policy needs.
+  Author it as a **placeholder `bpmn:serviceTask` on the path after the block** —
+  the reading and summing of per-item results happen at runtime, not while
+  authoring. Do NOT wire multi-instance output collection (`loopDataOutputRef`,
+  `outputCollection`, `dataOutputAssociation`) or hunt the registry for a
+  `uipath.aggregate` type: none is required and none exists. Placing the node is
+  the whole authoring job.
 - **`send_report`** — email, chat, dashboard, audit store.
 
 Fetch payloads through [registry-workflow.md](../registry-workflow.md).
