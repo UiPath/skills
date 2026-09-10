@@ -5,7 +5,7 @@ computed overcharge, discrepancy count, matched invoice, and account tier.
 
 Inputs map to ERP line 5 (Custom Integration Build): contracted amount 2590,
 disputed at 300*14 = 4200 -> overcharge 1610. CRM account ACCT-98201-NE is the
-Enterprise tier. A Data Service query node is required (anti-hardcode): 1610 and
+Enterprise tier. An entity query node is required (anti-hardcode): 1610 and
 "Enterprise" cannot be produced without querying ERP and CRM for real.
 """
 import os
@@ -18,6 +18,8 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 from _shared.flow_check import (  # noqa: E402
+    ENTITY_QUERY_HINTS,
+    assert_flow_has_any_node_type,
     assert_flow_has_node_type,
     assert_output_value,
     run_debug,
@@ -33,10 +35,11 @@ INPUTS = {
 
 
 def main():
-    # Must query Data Service (ERP + CRM) — blocks hardcoding 1610 / Enterprise.
+    # Must query the entities (ERP + CRM) — blocks hardcoding 1610 / Enterprise.
     # The two lookups are independent, so the flow must fan them out as parallel
     # branches joined by a merge (not chained serially) — require the merge node.
-    assert_flow_has_node_type(["uipath-dataservice.query", "core.logic.merge"])
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+    assert_flow_has_node_type(["core.logic.merge"])
 
     print(f"debug inputs: {INPUTS}")
     payload = run_debug(inputs=INPUTS, timeout=240)
