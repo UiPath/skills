@@ -14,7 +14,7 @@
 import {
   flow, conversationTrigger, waitForMessage, conversationalAgent, sendMessage,
   out, types,
-} from '@uipath/flow-sdk';
+} from '@uipath/maestro-builder-sdk';
 
 export default flow('library-desk-chat')
   .name('LibraryDeskChat')

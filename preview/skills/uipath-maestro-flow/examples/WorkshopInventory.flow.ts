@@ -6,7 +6,7 @@
  *
  * Generic scenario: ask a robot to count missing tools in a shared workshop.
  */
-import { flow, rpaWorkflow, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, rpaWorkflow, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('workshop-inventory')
   .name('WorkshopInventory')

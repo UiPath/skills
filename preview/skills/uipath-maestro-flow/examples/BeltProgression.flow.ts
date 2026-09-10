@@ -9,7 +9,7 @@
  * Generic scenario (a dojo belt rank → what its next grading needs) so it reads
  * as "here is the switch shape", not as any task's expected output.
  */
-import { flow, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('belt-progression')
   .name('BeltProgression')

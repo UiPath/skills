@@ -12,7 +12,7 @@
  *
  * Generic scenario: answer the harbour's information line.
  */
-import { flow, voiceTrigger, voiceAgent, endCall, out, types } from '@uipath/flow-sdk';
+import { flow, voiceTrigger, voiceAgent, endCall, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('harbour-radio-line')
   .name('HarbourRadioLine')

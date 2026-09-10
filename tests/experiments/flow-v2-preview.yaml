@@ -50,7 +50,7 @@ defaults:
     ignore_patterns: []
 
   pre_run:
-    # Link the image's @uipath/flow-sdk and connector registry into the workspace,
+    # Link the image's @uipath/maestro-builder-sdk and connector registry into the workspace,
     # the same setup nightly.yaml runs. Unconditional here: a preview run always
     # authors through the SDK. Replaces the old in-sandbox `npm install`, which the
     # shared image made unnecessary when it started baking the package.

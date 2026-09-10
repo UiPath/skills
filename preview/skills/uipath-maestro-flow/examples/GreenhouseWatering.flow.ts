@@ -11,7 +11,7 @@
  * sub-builder exactly like the top-level flow. An arm that ends in `.return()`
  * is that path's End node — the two arms are independent endings, not a join.
  */
-import { flow, script, input, out, js, types } from '@uipath/flow-sdk';
+import { flow, script, input, out, js, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('greenhouse-watering')
   .name('GreenhouseWatering')

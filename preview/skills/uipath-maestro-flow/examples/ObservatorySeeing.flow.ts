@@ -17,7 +17,7 @@
  * Generic scenario: an observatory asks a public sun API when tonight's viewing
  * can start, and states a fallback for when the service is unreachable.
  */
-import { flow, http, script, err, out, input, lit, tmpl, types } from '@uipath/flow-sdk';
+import { flow, http, script, err, out, input, lit, tmpl, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('observatory-seeing')
   .name('ObservatorySeeing')

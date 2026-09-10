@@ -13,7 +13,7 @@
  *
  * Generic scenario: page through a meteor-shower sightings feed until it ends.
  */
-import { flow, http, script, js, tmpl, v, out, types } from '@uipath/flow-sdk';
+import { flow, http, script, js, tmpl, v, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('meteor-shower-pages')
   .name('MeteorShowerPages')

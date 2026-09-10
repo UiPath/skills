@@ -7,9 +7,15 @@ Choose one loop before running any build command:
 - otherwise use the packaged-SDK local gates.
 
 In eval/product mode, create the solution/project scaffold immediately after
-choosing the loop, before tenant discovery or source authoring. Once the source
-first compiles, emit it into that nested project artifact—not `/tmp`—and keep
-the artifact current after every source edit.
+choosing the loop, before authoring the source. Once the source first
+compiles, emit it into that nested project artifact—not `/tmp`—and keep the
+artifact current after every source edit.
+
+Tenant discovery is not a phase of either loop. Author the source first, from
+the task's own words; the source `check` names every tenant call you owe —
+each unresolved lookup, unmaterialized object, and out-of-snapshot field, with
+the exact `registry prepare` command — so the one expensive call is spent
+once, after the cheap pass has found everything else that is wrong.
 
 Do not mix the two loops in one workspace or use one mode as a probe for the
 other. Their output layouts and evidence contracts are different.
@@ -36,8 +42,14 @@ source it reports every connector-input and binding refusal `compile` would
 raise), compile to emit, then run the product's static check on the artifact.
 There is no compiled-artifact `check`; `validate` is that rung.
 
+The full sequence, in order — `registry prepare` appears only where `check`
+names it, never before the source exists:
+
 ```bash
 uip maestro flow check <Name>.flow.ts --source
+# run each prepare the check names, with the exact command it prints:
+npx flow-sdk registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
+uip maestro flow check <Name>.flow.ts --source    # re-check until clean
 uip maestro flow compile <Name> -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json
 ```

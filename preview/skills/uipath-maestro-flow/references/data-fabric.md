@@ -1,34 +1,49 @@
 # Data Fabric
 
-*Exact signatures, fields, and defaults: [`dataFabricRead()`](api.md#datafabricread-function), [`dataFabricUpdate()`](api.md#datafabricupdate-function), and — for every other entity operation — [`connector()`](api.md#connector-function).*
+*Exact signatures, fields, and defaults: [`connector()`](api.md#connector-function) for every entity operation, and — for the transitional native family — [`dataFabricRead()`](api.md#datafabricread-function) and [`dataFabricUpdate()`](api.md#datafabricupdate-function).*
 
-## Two surfaces, one product — choose by the verb
+## One product, one surface
 
 "Data Fabric" and "Data Service" are **the same product under two names**: the
 tenant lists connector key `uipath-uipath-dataservice` with the display name
 **UiPath Data Fabric**, and `uip df entities` manages the entities that
-connector reads. What differs is the authoring surface, and the surfaces are not
-interchangeable, because the native one has exactly two verbs:
+connector reads.
+
+**Reach every entity operation through the connector.** One surface covers all
+of them, and the connector is the surface that does:
 
 | Operation | Surface |
 | --- | --- |
-| Read ONE record (optionally filtered) | `dataFabricRead()` → `core.datafabric.read` |
-| Update ONE record | `dataFabricUpdate()` → `core.datafabric.update` |
 | Create a record | `connector('uipath-uipath-dataservice', 'create-entity-record', …)` |
 | Get a record by id | `connector(…, 'get-entity-record-by-id', …)` |
-| Query MANY records / a row limit | `connector(…, 'query-entity-records', …)` |
+| Query records / filters / a row limit | `connector(…, 'query-entity-records', …)` |
+| Update a record | `connector(…, 'update-entity-record', …)` |
 | Delete a record | `connector(…, 'delete-entity-record', …)` |
 | Upload / download / delete a file record field | `connector(…, '…-file-…-record-field', …)` |
 | Record Created / Record Updated events | `onEvent(…)` on the same connector |
 
-**So a task can say "Data Fabric" and still be a connector task.** Route on the
-operation you need, never on which of the two names the scenario used. Reaching
-for a `dataFabricCreate()` is the predictable dead end — there is no such node in
-`core.datafabric.*` and none is coming; the create verb has always lived on the
-connector.
+**So a task can say "Data Fabric" and still be a connector task** — they all are.
+Reaching for a `dataFabricCreate()` is the predictable dead end: there is no such
+node in `core.datafabric.*`, and the create verb has always lived on the connector.
 
-`core.datafabric.*` also declares **no output schema**, so a step that must map
-declared outputs downstream is a connector step for that reason alone.
+### Why not the native nodes
+
+`core.datafabric.*` exists, and `dataFabricRead()` / `dataFabricUpdate()` compile.
+But the native family is **mid-transition and covers only 2 of the 7 operations
+above** — read one record, update one record. That asymmetry is the problem, not
+the two node types:
+
+- **A flow ends up straddling both surfaces.** Create, get and delete have no
+  native node, so an author who takes the native node for the one verb that has
+  one ships a flow that is a connector flow everywhere else — two connection
+  bindings, two payload shapes, two things to debug, for one entity.
+- **`core.datafabric.*` declares no output schema**, so a step that must map
+  declared outputs downstream cannot be a native step anyway.
+
+So during the transition: **do not reach for the native nodes unless the scenario
+names them.** Native nodes for all seven verbs are the direction of travel; until
+they land, one flow, one surface, and that surface is the connector. `check` does
+not reject a native node — this is a routing default, not a rule.
 
 ### The connector path, end to end
 
@@ -65,10 +80,12 @@ That page names the connector *UiPath Data Fabric*, gives the HTTP route
 `prepare-connector … -f entityName=<value>` line to run — before any of it has to
 be inferred.
 
-## The native two-verb family
+## The native two-verb family (transitional)
 
-Read one entity record with filters (`core.datafabric.read`) and write fields
-back to one record (`core.datafabric.update`).
+For a scenario that names these nodes. Read one entity record with filters
+(`core.datafabric.read`) and write fields back to one record
+(`core.datafabric.update`). Everything else on the entity is a connector step —
+see the routing table above.
 
 Data Fabric **events** (Record Created / Record Updated on an entity) are
 Integration Service connector events on `uipath-uipath-dataservice`, not this

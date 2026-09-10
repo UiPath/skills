@@ -32,6 +32,13 @@ The loop runs sequentially (`parallel: false`). Inside the body, read
 `$vars.<loop>.currentItem` and `$vars.<loop>.currentIndex` — or `v('eachOrder.currentItem')`
 from the builder.
 
+The item is named after the LOOP, not after the collection and not by a
+convention: **there is no `$vars.item`, `$vars.currentItem` or `$vars.<collection>`.**
+A branch or step that decides on the item has to name the loop, so a loop called
+`eachIssue` reads `$vars.eachIssue.currentItem.priority` — never
+`$vars.item.priority`, which resolves to nothing and takes the false arm on every
+iteration without erroring.
+
 ## Rich loop options (loop 2.4)
 
 Any of these — or a `body.break()` in the body — selects the loop's 2.4

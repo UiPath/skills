@@ -10,7 +10,7 @@
  *
  * No local rung renders a form; supply the values with `--input` when running.
  */
-import { flow, formTrigger, script, out, types } from '@uipath/flow-sdk';
+import { flow, formTrigger, script, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('bake-off-entry-form')
   .name('BakeOffEntryForm')

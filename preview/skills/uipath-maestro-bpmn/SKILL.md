@@ -1,11 +1,11 @@
 ---
 name: uipath-maestro-bpmn
-description: "TRIGGER for authoring structural-core UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/flow-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, and semantic `.bpmn` output. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case. DO NOT TRIGGER for registry-backed typed BPMN nodes beyond the structural core."
+description: "TRIGGER for authoring structural-core UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, and semantic `.bpmn` output. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case. DO NOT TRIGGER for registry-backed typed BPMN nodes beyond the structural core."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ 4aa3d67. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ a82b640. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -26,7 +26,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    product tooling require. Run it inside a solution to join that solution; run it
    outside one and a parent `<Name>Solution` is scaffolded around it.
 2. Keep `<Name>.bpmn.ts` at the workspace root, beside `package.json`.
-3. Import from `@uipath/flow-sdk/bpmn` and default-export a chain ending in `.build()`.
+3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
 4. Start from the closest staged `examples/*.bpmn.ts`.
 5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` after structural changes.
 6. Compile **into the scaffolded project**, format only when layout is needed, and run
@@ -55,7 +55,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 ## Minimal shape
 
 ```ts
-import { bpmn } from '@uipath/flow-sdk/bpmn';
+import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
 export default bpmn('notify')
   .name('Notify')

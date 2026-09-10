@@ -18,38 +18,51 @@ Signatures:
 }))
 ```
 
-## Tenant discovery
+## Tenant discovery — `check` names it, `prepare` does it
 
-Event parameters and their ids can be connection-specific. Resolve them from
-the bound live connection rather than inferring them from a display label or
-copying an id from an example, cached descriptor, or earlier session.
+Event parameters and their ids are connection-specific. Author the
+subscription first — an id-valued parameter as a `lookup()` token, never a
+pasted id — and one `prepare` discharges everything `check` names:
 
-```bash
-# When a folder path is specified, scope connection discovery to that exact
-# folder. Do not choose a same-connector row from an all-folders listing.
-uip or folders get <folder-path> --output json
-uip is connections list <connector> --folder-key <folder-key> --output json
-
-# Enumerate the event's object types on the exact connection the Flow will bind.
-# Use the Integration Service operation (for example EMAIL_RECEIVED), not the
-# builder event slug (for example email-received).
-uip is triggers objects <connector> <operation> \
-  --connection-id <connection-id> --output json
-
-# Describe the selected object to confirm its event-parameter contract.
-uip is triggers describe <connector> <operation> <object> \
-  --connection-id <connection-id> --output json
-
-# If the contract names a reference object, list its values on that connection.
-uip is resources run list <connector> <reference-object> \
-  --connection-id <connection-id> --output json
+```ts
+.trigger(onEvent({
+  connector: 'uipath-microsoft-outlook365', event: 'email-received',
+  where: {
+    parentFolderId: lookup({ connector: 'uipath-microsoft-outlook365', event: 'email-received' },
+      'parentFolderId').by('displayName', 'Inbox'),
+  },
+  filters: [{ field: 'subject', contains: 'Approval' }],
+  connection: 'outlook365', folder: 'shared',
+}))
 ```
 
-Use the selected reference row's live `Id` for an id-valued event parameter.
-For Outlook `email-received`, for example, select the `Message` object, confirm
-that `parentFolderId` references `MailFolder`, list `MailFolder`, and pass the
-Inbox row's `Id` as `where.parentFolderId`; the display name `Inbox` and an id
-from another connection are not substitutes.
+```bash
+npx flow-sdk registry prepare uipath-microsoft-outlook365 email-received \
+  --resolve parentFolderId:displayName=Inbox
+```
+
+That one command replaces the old manual sequence end to end: it discovers the
+connection and writes both `bindings.json` entries (connection id AND folder
+key — the same stage a connector-action prepare runs), fetches the event's
+connection-scoped definition, records the object decision for a generic event
+(`--object <name>`, the same matching ladder actions use), stores the
+where/filter vocabulary in `connectors-local/` so `check` works offline, and
+records each `--resolve` in `resolutions.json` for `compile` to substitute.
+`check` then validates every `where` key and every `filters[].field` against
+the prepared vocabulary — an unknown filter leaf is an ERROR
+(`EVENT_FILTER_UNKNOWN_FIELD`), because the platform silently drops it and the
+deployed trigger fires on events the filter should exclude.
+
+Two facts prepare surfaces before they can hurt: an event object that requires
+a BYOA (bring-your-own-app) connection is refused with the connections that
+would work, instead of faulting at runtime with an unrelated webhook error;
+and a `webhooks`-mode event prints the URL-registration step — it cannot be
+debugged locally, so deploy to test it.
+
+Do not run `uip is triggers objects` / `triggers describe` /
+`resources run list` by hand and paste ids into `where`: prepare runs the same
+calls deterministically, and a pasted id is meaningless in review and wrong
+after a connection move.
 Before finishing, inspect the emitted node's `inputs.detail.eventParameters`
 and confirm it contains the selected id and the connection/folder bindings refer
 to the same connection used for discovery.

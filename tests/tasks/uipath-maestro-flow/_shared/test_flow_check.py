@@ -604,7 +604,7 @@ def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypa
     solution = tmp_path / "Real"
     solution.mkdir()
     _make_proj(solution, "Real", "Flow")
-    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "flow-sdk" / "fixtures"
+    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "maestro-builder-sdk" / "fixtures"
     sdk.mkdir(parents=True)
     (sdk / "project.uiproj").write_text('{"ProjectType": "Flow"}')
     (sdk / "Fixture.flow").write_text("{}")

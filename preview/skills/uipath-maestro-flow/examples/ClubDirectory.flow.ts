@@ -17,7 +17,7 @@
  *
  * Generic scenario: build a community board of the org's interest groups.
  */
-import { flow, connector, out, script, js, types } from '@uipath/flow-sdk';
+import { flow, connector, out, script, js, types } from '@uipath/maestro-builder-sdk';
 
 const DIRECTORY = { connection: 'entra', folder: 'shared' } as const;
 

@@ -11,7 +11,7 @@
  *
  * Generic scenario: find a hive by its tag and record today's inspection.
  */
-import { flow, dataFabricRead, dataFabricUpdate, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, dataFabricRead, dataFabricUpdate, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('bee-hive-ledger')
   .name('BeeHiveLedger')

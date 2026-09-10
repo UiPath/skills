@@ -12,7 +12,7 @@
  * Generic scenario (an art-gallery submission going to a curator) so it teaches
  * the human-task shape rather than a task answer.
  */
-import { flow, hitl, script, input, out, js, types } from '@uipath/flow-sdk';
+import { flow, hitl, script, input, out, js, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('gallery-submission')
   .name('GallerySubmission')

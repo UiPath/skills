@@ -6,7 +6,7 @@
  *
  * Generic scenario: let a studio coordinator approve a pottery kiln firing.
  */
-import { flow, hitl, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, hitl, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('kiln-review')
   .name('KilnReview')

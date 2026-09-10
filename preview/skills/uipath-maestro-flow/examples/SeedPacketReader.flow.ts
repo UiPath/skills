@@ -12,7 +12,7 @@
  *
  * Generic scenario: read the sowing details off a scanned seed packet.
  */
-import { flow, documentClassify, dynamicExtract, script, out, types } from '@uipath/flow-sdk';
+import { flow, documentClassify, dynamicExtract, script, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('seed-packet-reader')
   .name('SeedPacketReader')

@@ -16,7 +16,7 @@
  *
  * Generic scenario: a smart doorbell posts to a webhook; the flow logs who rang.
  */
-import { flow, script, onEvent, out, types } from '@uipath/flow-sdk';
+import { flow, script, onEvent, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('doorbell-log')
   .name('DoorbellLog')

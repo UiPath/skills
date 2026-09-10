@@ -16,7 +16,7 @@
  */
 import {
   flow, createOutgoingCall, voiceAgent, endCall, input, out, types,
-} from '@uipath/flow-sdk';
+} from '@uipath/maestro-builder-sdk';
 
 export default flow('pottery-studio-callback')
   .name('PotteryStudioCallback')

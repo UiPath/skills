@@ -12,7 +12,7 @@
  *
  * Generic scenario: convert a tide height between measurement systems.
  */
-import { flow, publishedFunction, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, publishedFunction, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('tide-table-converter')
   .name('TideTableConverter')

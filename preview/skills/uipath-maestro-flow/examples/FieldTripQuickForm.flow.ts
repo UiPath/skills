@@ -7,7 +7,7 @@
  *
  * Generic scenario: a coordinator reviews a proposed field-trip destination.
  */
-import { flow, hitl, input, out, types } from '@uipath/flow-sdk';
+import { flow, hitl, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('field-trip-quick-form')
   .name('FieldTripQuickForm')

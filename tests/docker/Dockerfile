@@ -22,6 +22,15 @@ ARG CLI_VERSION=dev
 # override this with an exact version for a reproducible comparison.
 ARG FLOW_SDK_VERSION=latest
 
+# The package NAME is a build arg for the same reason the version is: the rename
+# split the published history. `@uipath/maestro-builder-sdk` starts at 5.0.0;
+# everything at or below 4.0.0 exists only under `@uipath/flow-sdk`. So a
+# baseline comparison against a pre-rename build passes both:
+#   --build-arg FLOW_SDK_PKG_NAME=@uipath/flow-sdk --build-arg FLOW_SDK_VERSION=4.0.0
+# The CLI resolves either name (UiPath/cli#4009), and stage-preview-sdk-workspace.sh
+# reads the same variable so the workspace agrees with what the image installed.
+ARG FLOW_SDK_PKG_NAME=@uipath/maestro-builder-sdk
+
 # Floor on the number of tool plugins that must install for the image to be
 # usable. Discovery returns the CLI's full whitelist; a few may lack a build on
 # the current train (e.g. model-hub-tool has no `-dev` build), so individual
@@ -111,18 +120,18 @@ RUN --mount=type=secret,id=npm_auth_token \
     : > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version" && \
     if npm install --prefix "$PREVIEW_FLOW_SDK_ROOT" \
       --save-exact --no-audit --no-fund --userconfig "$npmrc" \
-      "@uipath/flow-sdk@${FLOW_SDK_VERSION}"; then \
+      "${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION}"; then \
       if resolved_sdk_version="$(node -p \
-        "require('$PREVIEW_FLOW_SDK_ROOT/node_modules/@uipath/flow-sdk/package.json').version")" \
+        "require('$PREVIEW_FLOW_SDK_ROOT/node_modules/${FLOW_SDK_PKG_NAME}/package.json').version")" \
         && test -x "$PREVIEW_FLOW_SDK_ROOT/node_modules/.bin/flow-sdk"; then \
         printf '%s\n' "$resolved_sdk_version" > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version"; \
         printf '%s\n' available > "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status"; \
-        echo "Installed @uipath/flow-sdk@${resolved_sdk_version}"; \
+        echo "Installed ${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}"; \
       else \
-        echo "WARN: @uipath/flow-sdk@${FLOW_SDK_VERSION} installed incompletely; Flow tasks will fail at runtime"; \
+        echo "WARN: ${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION} installed incompletely; Flow tasks will fail at runtime"; \
       fi; \
     else \
-      echo "WARN: @uipath/flow-sdk@${FLOW_SDK_VERSION} unavailable; Flow tasks will fail at runtime"; \
+      echo "WARN: ${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION} unavailable; Flow tasks will fail at runtime"; \
     fi && \
     uip --version && \
     uip tools search --output json > /tmp/uip-tools-search.json && \
@@ -163,6 +172,17 @@ ENV DOTNET_ROOT=/usr/share/dotnet \
 
 # Pull the released connector catalog through the product CLI. Flow-specific
 # setup is best-effort so an SDK/feed outage does not block every non-Flow eval;
+#
+# The smoke fixture's import is rewritten to whatever THIS image installed. A
+# build arg cannot reach an import statement, so a hard-coded specifier breaks
+# one of the two builds: the new name fails an old-name baseline
+# (`--build-arg FLOW_SDK_PKG_NAME=@uipath/flow-sdk`) and the old name fails the
+# default build on `Cannot find package`. Here that is only a WARN, so it would
+# be a silently skipped smoke rather than a build failure — which is why the
+# `grep` follows the `sed`: a specifier shape the pattern misses fails on the
+# grep, in the same breath, instead of looking like an SDK defect at
+# `flow check`.
+#
 # Flow tasks still fail at runtime when their required surface is unavailable.
 # The status file records exactly which rolling dependencies resolved.
 #
@@ -235,6 +255,8 @@ RUN set -euo pipefail && \
       source_check_status=failed; \
       if (cd /opt/maestro-flow-sdk-smoke \
         && ln -s "$PREVIEW_FLOW_SDK_ROOT/node_modules" node_modules \
+        && sed -i "s#from '@uipath/[a-z0-9-]*'#from '${FLOW_SDK_PKG_NAME}'#" Smoke.flow.ts \
+        && grep -q "from '${FLOW_SDK_PKG_NAME}'" Smoke.flow.ts \
         && uip maestro flow check Smoke.flow.ts --source); then \
         source_check_status=passed; \
       else \
@@ -253,6 +275,12 @@ RUN set -euo pipefail && \
       '{sdk: {requestedVersion: $requestedVersion, resolvedVersion: (if $resolvedVersion == "" then null else $resolvedVersion end), status: $sdkStatus}, registry: {libraryHash: (if $libraryHash == "" then null else $libraryHash end), status: $registryStatus}, sourceCheck: {status: $sourceCheckStatus}}' \
       > "$FLOW_SDK_SETUP_STATUS" && \
     cat "$FLOW_SDK_SETUP_STATUS"
+
+# Persist the built-with name into the image. `ARG` is build-time only, and
+# `stage-preview-sdk-workspace.sh` reads this at TASK time — without it a
+# non-default build (an old-name baseline) would install one name and have the
+# stager look for the other.
+ENV FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}
 
 ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
     FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md \

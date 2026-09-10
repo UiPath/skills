@@ -321,19 +321,29 @@ jobs:
           docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
 
       # Build the skills extension image (`@uipath/cli`, its tool plugins, and
-      # `@uipath/flow-sdk` on top of coder-eval-agent). Matches
+      # `@uipath/maestro-builder-sdk` on top of coder-eval-agent). Matches
       # smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         env:
           DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
           CE_IMAGE_TAG: ${{ needs.partition.outputs.image_tag }}
+          FLOW_SDK_PKG_NAME: ${{ vars.FLOW_SDK_PKG_NAME }}
         run: |
+          # The image's ARG default is the post-rename package name; override it
+          # only when a repo var pins a different one. The pre-rename baseline
+          # needs BOTH this and FLOW_SDK_VERSION (see tests/docker/Dockerfile) —
+          # pinning the version alone asks for a version the new name never had.
+          pkg_name_arg=()
+          if [ -n "${FLOW_SDK_PKG_NAME:-}" ]; then
+            pkg_name_arg=(--build-arg "FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}")
+          fi
           docker build \
             --build-arg CODER_EVAL_IMAGE="ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}" \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             --build-arg FLOW_SDK_VERSION="${{ vars.FLOW_SDK_VERSION || 'latest' }}" \
+            ${pkg_name_arg[@]+"${pkg_name_arg[@]}"} \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
