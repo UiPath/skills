@@ -56,12 +56,20 @@ const managedDirectories = [
 const SIBLING_PARAGRAPH = new RegExp(
   'The sibling authoring surfaces have their own:\\n'
   + '\\[`references/case-api\\.md`\\]\\(references/case-api\\.md\\) for `(?<pkg>@[^`/]+/[^`/]+)/case`'
-  // Everything to the first "build a Flow." — the paragraph has had a short
-  // form ("Neither is needed to build a Flow.") and a long one that adds the
-  // two runtime references and wraps before "build a Flow.". A three-way merge
-  // can start from a pin carrying either, so match to the sentence end rather
-  // than to a particular wrapping.
-  + '[\\s\\S]*?build a Flow\\.',
+  // Up to the paragraph's closing "build a Flow.". The paragraph has had a short
+  // form ("Neither is needed to build a Flow.") and a long one that adds the two
+  // runtime references and wraps before "build a Flow.", and a three-way merge
+  // can start from a pin carrying either — so this matches to the sentence end
+  // rather than to a particular wrapping.
+  //
+  // BOUNDED, and that is the point. An unbounded `[\\s\\S]*?` is lazy but has no
+  // ceiling: reword the closing sentence and any later "build a Flow." becomes
+  // the match end, so the replacement SWALLOWS everything between — a silent
+  // deletion inside a large generated diff, which is the opposite of the loud
+  // failure this matcher is supposed to give. Six intervening lines clears the
+  // longest real form (seven lines) with room to spare and nothing like the
+  // distance to the next section.
+  + '(?:[^\\n]*\\n){0,6}?[^\\n]*build a Flow\\.',
 );
 
 /** What replaces it, carrying whatever specifier the upstream paragraph used. */

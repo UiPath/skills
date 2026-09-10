@@ -362,6 +362,74 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
   }
 });
 
+test('the sibling paragraph is matched by shape, not by package name', () => {
+  // The point of SIBLING_PARAGRAPH. The fixture above is byte-identical to the
+  // literal this replaced, so without this test the suite is green against both
+  // implementations — revert the matcher to three literals and nothing fails,
+  // while the real upstream body (renamed) throws on the old code and passes on
+  // the new one. That gap was the whole change and nothing recorded it.
+  const renamed = flowSiblingParagraph.replaceAll(
+    '@uipath/flow-sdk',
+    '@uipath/maestro-builder-sdk',
+  );
+  assert.match(
+    adaptFlowSkill(`${renamed}\n\n${flowStagingParagraph}`),
+    /own skills:\n`uipath-maestro-case` for `@uipath\/maestro-builder-sdk\/case`/,
+  );
+  // And the specifier is CARRIED, not assumed: the old name still round-trips.
+  assert.match(
+    adaptFlowSkill(`${flowSiblingParagraph}\n\n${flowStagingParagraph}`),
+    /own skills:\n`uipath-maestro-case` for `@uipath\/flow-sdk\/case`/,
+  );
+});
+
+test('both wordings of the sibling paragraph match', () => {
+  // A three-way merge can start from a pin carrying either form, so the matcher
+  // spans both. The long one is what upstream ships today.
+  const long = [
+    'The sibling authoring surfaces have their own:',
+    '[`references/case-api.md`](references/case-api.md) for `@uipath/maestro-builder-sdk/case`',
+    'and [`references/bpmn-api.md`](references/bpmn-api.md) for',
+    '`@uipath/maestro-builder-sdk/bpmn`; their runtime-only decisions are in',
+    '[`references/case-runtime.md`](references/case-runtime.md) and',
+    '[`references/bpmn-runtime.md`](references/bpmn-runtime.md). None are needed to',
+    'build a Flow.',
+  ].join('\n');
+  assert.match(
+    adaptFlowSkill(`${long}\n\n${flowStagingParagraph}`),
+    /own skills:\n`uipath-maestro-case` for `@uipath\/maestro-builder-sdk\/case`/,
+  );
+});
+
+test('a reworded closing sentence fails loudly instead of swallowing the file', () => {
+  // The matcher's gap is BOUNDED for this reason. Unbounded, a reworded closing
+  // sentence made any later "build a Flow." the match end, and the replacement
+  // deleted everything between — silently, inside a large generated diff.
+  const reworded = [
+    'The sibling authoring surfaces have their own:',
+    '[`references/case-api.md`](references/case-api.md) for `@uipath/maestro-builder-sdk/case`',
+    'and [`references/bpmn-api.md`](references/bpmn-api.md) for',
+    '`@uipath/maestro-builder-sdk/bpmn`. Neither is required here.',
+    '',
+    '## Quick start',
+    '',
+    'IMPORTANT SECTION THAT MUST SURVIVE',
+    '',
+    'Run `uip maestro flow init` to build a Flow.',
+  ].join('\n');
+  assert.throws(
+    () => adaptFlowSkill(`${reworded}\n\n${flowStagingParagraph}`),
+    /update SIBLING_PARAGRAPH/,
+  );
+});
+
+test('a dropped sibling section fails loudly', () => {
+  assert.throws(
+    () => adaptFlowSkill(`# Flow\n\n${flowStagingParagraph}`),
+    /update SIBLING_PARAGRAPH/,
+  );
+});
+
 test('Flow API adaptation waits for the upstream staged-path fix', () => {
   assert.equal(
     adaptFlowApi('Worked example: `example-eval/Foo.flow.ts`'),
