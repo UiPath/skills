@@ -51,13 +51,13 @@ List visible audit event sources. Pass inner `id` GUIDs from `eventTargets[]` an
 Run queries with filters and cursor pagination:
 
 ```bash
-uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04-29T00:00:00Z --limit 50 --output json
+uip admin audit tenant events --from-date <FROM_DATE>T00:00:00Z --to-date <TO_DATE>T00:00:00Z --limit 50 --output json
 ```
 
 | Flag | Required | Description |
 |---|---|---|
 | `--from-date <iso>` | no | ISO 8601 start; inclusive. Recommended for non-trivial queries. |
-| `--to-date <iso>` | no | ISO 8601 end; inclusive of the exact instant. Pass the next day’s start (for example `2026-02-01`) or `T23:59:59.999Z` to capture a full final day. Applies only to `events`; `export` bounds are whole-day inclusive, so the next-day trick over-exports. See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
+| `--to-date <iso>` | no | ISO 8601 end; inclusive of the exact instant. Pass the next day’s start or `T23:59:59.999Z` to capture a full final day. Applies only to `events`; `export` bounds are whole-day inclusive, so the next-day trick over-exports. See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
 | `--source <guid...>` | no | Repeatable event-source filter; discover IDs with `sources`. |
 | `--target <guid...>` | no | Repeatable event-target filter. |
 | `--type <guid...>` | no | Repeatable event-type filter. |
@@ -77,7 +77,7 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
   "auditEvents": [
     {
       "id": "...",
-      "createdOn": "2026-04-29T17:46:07.123Z",
+      "createdOn": "...",
       "organizationId": "...",
       "organizationName": "...",
       "tenantId": "...",
@@ -110,14 +110,14 @@ Run the long-term audit store export for `[--from-date, --to-date]` as inclusive
 
 ```bash
 uip admin audit tenant export \
-  --from-date 2026-01-01 \
-  --to-date 2026-01-31 \
+  --from-date <FROM_DATE> \
+  --to-date <TO_DATE> \
   --output-path ./audit-exports \
   --output json
 
 uip admin audit tenant export \
-  --from-date 2026-01-01 \
-  --to-date 2026-01-31 \
+  --from-date <FROM_DATE> \
+  --to-date <TO_DATE> \
   --file-format csv \
   --output-path ./audit-exports \
   --output json
@@ -130,7 +130,7 @@ uip admin audit tenant export \
   --output json
 ```
 
-Pass a directory, never a filename or extension. Each run creates `audit_<from>_<to>_<generated-at>`: a folder of day-wise JSON files by default or one merged CSV. JSON output is `./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>/`; CSV output is `./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>.csv`. The generated-at value is to the second; repeated exports do not collide.
+Pass a directory, never a filename or extension. Each run creates `audit_<from>_<to>_<generated-at>`: a folder of day-wise JSON files by default or one merged CSV. JSON output is `./audit-exports/audit_<from>_<to>_<generatedAt>/`; CSV output is `./audit-exports/audit_<from>_<to>_<generatedAt>.csv`. The generated-at value is to the second; repeated exports do not collide.
 
 This is the organization/tenant audit event store (LTS-schema columns such as `Identifier`, `DateCreatedUtc`, `ActorId`, `Action`, `Source`, `Category`) for compliance dumps, login history, and cross-platform “who did what where.” It is not `uip or audit-logs list --export` (the uipath-platform skill), which exports one Orchestrator tenant’s operational actions with `Component,User,Action,Operation,Time` columns. An org/tenant audit-event or compliance export with a date window and `--output-path`, whether JSON files or spreadsheet/Excel CSV, belongs here.
 
@@ -150,13 +150,13 @@ This is the organization/tenant audit event store (LTS-schema columns such as `I
 
 ```json
 {
-  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-01-31_20260617T112630",
+  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_<from>_<to>_<generatedAt>",
   "Format": "json",
   "Files": 27,
   "Bytes": 1841,
   "Days": 31,
   "NonEmptyDays": 27,
-  "GeneratedAt": "2026-06-17T11:26:30.000Z"
+  "GeneratedAt": "<GENERATED_AT>"
 }
 ```
 
@@ -188,7 +188,7 @@ These program-level `uip` flags appear on every command:
 ```json
 {
   "Result": "Failure",
-  "Message": "Audit export failed for 2026-04-02 (HTTP 504): Gateway Timeout",
+  "Message": "Audit export failed for <DATE> (HTTP 504): Gateway Timeout",
   "Instructions": "Ensure you are logged in with 'uip login' and have access to the audit service."
 }
 ```

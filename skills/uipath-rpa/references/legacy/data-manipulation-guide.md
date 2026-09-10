@@ -15,15 +15,17 @@ Use `System.Text.RegularExpressions.Regex` for pattern matching and extraction. 
 | Pattern | RegEx | Match Examples |
 |---|---|---|
 | Email | `[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}` | `user@example.com` |
-| Phone (US) | `\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}` | `(555) 123-4567`, `555.123.4567` |
-| Date (MM/DD/YYYY) | `\d{2}/\d{2}/\d{4}` | `01/15/2025` |
-| Date (YYYY-MM-DD) | `\d{4}-\d{2}-\d{2}` | `2025-01-15` |
+| Phone (US) | `\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}` | `(NNN) NNN-NNNN`, `NNN.NNN.NNNN` |
+| Date (MM/DD/YYYY) | `\d{2}/\d{2}/\d{4}` | `MM/DD/YYYY` |
+| Date (YYYY-MM-DD) | `\d{4}-\d{2}-\d{2}` | `YYYY-MM-DD` |
 | Currency (USD) | `\$[\d,]+\.?\d{0,2}` | `$1,234.56`, `$50` |
 | Invoice Number | `INV-\d{4,10}` | `INV-12345`, `INV-0001234567` |
 | ZIP Code (US) | `\d{5}(-\d{4})?` | `90210`, `90210-1234` |
-| SSN | `\d{3}-\d{2}-\d{4}` | `123-45-6789` |
+| SSN | `\d{3}-\d{2}-\d{4}` | `NNN-NN-NNNN` |
 | IP Address | `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}` | `192.168.1.1` |
 | Decimal Number | `-?\d+\.?\d*` | `123.45`, `-67`, `0.5` |
+
+> `N` marks a digit position. Examples for personally identifiable patterns are masked, not literal values.
 
 ### VB.NET Usage
 
@@ -376,7 +378,7 @@ CDbl("1,234.56")   ' Works on US locale, fails on German locale (1.234,56)
 Double.Parse("1,234.56", System.Globalization.CultureInfo.InvariantCulture)
 
 ' SAFE: explicit date format
-DateTime.ParseExact("01/15/2025", "MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture)
+DateTime.ParseExact(dateText, "MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture)
 ```
 
 ### Common Conversion Traps

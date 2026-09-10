@@ -273,7 +273,7 @@ namespace MyProject
             string[] userIds = new[]
             {
                 "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",  // Azure AD object ID
-                "ffffffff-1111-2222-3333-444444444444"
+                "ffffffff-aaaa-bbbb-cccc-dddddddddddd"
             };
             await roleService.AssignObjectsToApplicationGroup(appGroup, userIds);
             Log("Users assigned to application group.");
