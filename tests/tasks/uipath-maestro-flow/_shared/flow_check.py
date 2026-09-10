@@ -564,6 +564,13 @@ def run_debug(
     return payload
 
 
+# Two node shapes read entity records and tenant availability decides which:
+# the `uipath-uipath-dataservice` connector activity, or the native
+# `core.datafabric.read` node, the better build where `canvas.nodes.read-entity`
+# is on (#3041). Pass to `assert_flow_has_any_node_type`; keep both entries.
+ENTITY_QUERY_HINTS = ("uipath-dataservice.query", "core.datafabric.read")
+
+
 def assert_flow_has_node_type(
     hints: Sequence[str], *, project_glob: str = "**/project.uiproj"
 ) -> None:

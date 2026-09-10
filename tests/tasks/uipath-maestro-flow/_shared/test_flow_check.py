@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import flow_check  # noqa: E402
 from flow_check import (  # noqa: E402
+    ENTITY_QUERY_HINTS,
     assert_flow_has_any_node_type,
     assert_flow_has_api_node_targeting,
     assert_flow_has_exact_node_type,
@@ -181,6 +182,55 @@ def test_assert_flow_has_any_node_type_fails_when_none_present(tmp_path, monkeyp
 def test_assert_flow_has_any_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
     assert_flow_has_any_node_type([])
+
+
+# ── ENTITY_QUERY_HINTS (native Data Fabric node, 2026-09-10) ───────────────
+
+
+def test_entity_query_hints_accept_the_dataservice_connector(tmp_path, monkeypatch):
+    """The Integration Service activity remains acceptable wherever the native
+    tenant flag is off."""
+    root = _write_flow(
+        tmp_path, ["uipath.connector.uipath-uipath-dataservice.query-entity-records"]
+    )
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+
+
+def test_entity_query_hints_accept_the_native_node(tmp_path, monkeypatch):
+    """Regression lock for the 2026-09-10 billing failures: with
+    `canvas.nodes.read-entity` on, the skill steers the agent to the native node
+    (#3041), which the connector-only gate rejected before run_debug."""
+    root = _write_flow(tmp_path, ["core.datafabric.read"])
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+
+
+def test_entity_query_hints_reject_a_script_only_flow(tmp_path, monkeypatch):
+    """The anti-hardcode guard survives: a flow that queries nothing still fails,
+    and the message names both shapes."""
+    root = _write_flow(tmp_path, ["core.action.script"])
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit) as exc:
+        assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+    msg = str(exc.value)
+    assert "uipath-dataservice.query" in msg
+    assert "core.datafabric.read" in msg
+
+
+def test_billing_gates_use_the_shared_entity_hints():
+    """The tests above exercise the constant, not the call sites. Without this,
+    reverting either gate to the connector-only hint keeps the suite green and
+    silently restores the 2026-09-10 failure."""
+    suite = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    gates = (
+        "multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py",
+        "multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py",
+    )
+    for relative in gates:
+        with open(os.path.join(suite, relative), encoding="utf-8") as handle:
+            source = handle.read()
+        assert "assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)" in source, relative
 
 
 # ── assert_flow_has_api_node_targeting (slack-weather gate, PR #1301) ───────
