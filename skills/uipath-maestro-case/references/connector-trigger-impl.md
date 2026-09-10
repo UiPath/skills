@@ -103,7 +103,7 @@ After splicing the spec subtree (`context` / `inputs` / `outputs` and their nest
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 
-Per-plugin: each plugin's `impl-json.md` mints these onto `caseShape.inputs[]` / `caseShape.outputs[]` and writes them to its target shape (task vs trigger node).
+Per-plugin: each plugin's `impl-json.md` mints these onto `caseShape.inputs[]` / `caseShape.outputs[]` and writes them to its target shape (task vs trigger node). The target's `data.inputs` is the spliced `CaseShape.Inputs` — every envelope entry the spec returns, each with its `Body` object — never `[]`: a `wait-for-connector` or `execute-connector-activity` task with empty `inputs` passes validate and fails at runtime, and it has been the last miss on three otherwise-complete golden builds.
 
 Conventions (shared with activity):
 - **Inputs:** `var` = `v` + 8 alphanumeric chars (unique across the case — see [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule)); `id` = same as `var`
