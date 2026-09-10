@@ -119,7 +119,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Create a subflow** | [plugins/subflow/impl.md](plugins/subflow/impl.md) + [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [plugins/delay/](plugins/delay/) or [plugins/scheduled-trigger/](plugins/scheduled-trigger/) |
 | **Use queue nodes** | [plugins/queue/impl.md](plugins/queue/impl.md) |
-| **Read or write Data Fabric entity records** | [plugins/data-fabric/impl.md](plugins/data-fabric/impl.md) — `core.datafabric.read` / `create` / `update` / `delete` |
+| **Read or write Data Fabric entity records** | [plugins/data-fabric/impl.md](plugins/data-fabric/impl.md) — `core.datafabric.read` / `create` / `update` / `delete`, the default for record CRUD. Any other Data Service operation, or an explicit request for the connector, goes to [plugins/connector/impl.md](plugins/connector/impl.md) |
 
 ## Anti-patterns
 
@@ -162,7 +162,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - [planning-arch.md](planning-arch.md) — capability discovery, plugin index, topology design
 - [planning-impl.md](planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](plugins/) — per-node-type planning + impl docs:
-  - [connector](plugins/connector/) — IS connector nodes (incl. the `uipath-uipath-dataservice` entity activities; see [data-fabric](plugins/data-fabric/))
+  - [connector](plugins/connector/) — IS connector nodes, and the path for every Data Service operation that is not record CRUD, or when the user names the connector (the `uipath-uipath-dataservice` entity activities; see [data-fabric](plugins/data-fabric/))
   - [connector-trigger](plugins/connector-trigger/)
   - [script](plugins/script/) — Jint ES2020 JavaScript
   - [http](plugins/http/) — `core.action.http.v2` (Managed HTTP Request)
@@ -189,7 +189,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [inline-voice-agent](plugins/inline-voice-agent/) — voice agent on a live phone call (inbound/outbound) + the trigger, create-call, and end-call nodes
   - [ixp](plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](plugins/queue/) — Orchestrator queue item creation
-  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`)
+  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`); the default path for those four operations
 
 ### Cross-capability (shared)
 

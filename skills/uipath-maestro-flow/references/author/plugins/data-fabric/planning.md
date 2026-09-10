@@ -17,11 +17,11 @@ These are fixed OOTB node types — no registry suffix, no connector key.
 
 Whether your CLI can serve them is a property of the CLI build, not of the tenant, and `registry get <type>` is the only way to find out. Probe it once before planning around a node:
 
-```
+```bash
 uip maestro flow registry get core.datafabric.read --output json
 ```
 
-`Code: NodeGetSuccess` means you can author the node and source its `definitions[]` entry. **"Node not found"** means this CLI does not carry it — upgrade with `uip tools update`, or use the [connector](../connector/planning.md). Do not ask an administrator to change a tenant setting: no tenant setting governs this.
+`Code: NodeGetSuccess` means you can author the node and source its `definitions[]` entry. **"Node not found"** means this CLI does not carry it. Do not ask an administrator to change a tenant setting — no tenant setting governs whether the registry serves this node. Follow [impl.md — Registry validation](impl.md#registry-validation) for the recovery steps and the point at which to give up and use the [connector](../connector/planning.md); it is the single procedure for this error, so do not improvise a different one here.
 
 ## Writes require a native entity
 
@@ -50,13 +50,17 @@ Use these nodes when the record lives in **Data Fabric** and the flow itself is 
 | Bulk-load a CSV into an entity | No — that is a data-loading job, not a flow step; use `uip df records import` out of band |
 | Read a record from a non-UiPath system | No — use [connector](../connector/planning.md) or [http](../http/planning.md) |
 
-### Native node vs Data Service connector — availability decides
+### Native node vs Data Service connector — the operation decides
 
-The `uipath-uipath-dataservice` Integration Service connector also exposes entity operations (`query-entity-records`, `create-entity-record`, `update-entity-record`, `get-entity-record-by-id`, `delete-entity-record`, …), and `registry search` surfaces both families.
+The `uipath-uipath-dataservice` Integration Service connector also exposes entity operations (`query-entity-records`, `create-entity-record`, `update-entity-record`, `get-entity-record-by-id`, `delete-entity-record`, …), and `registry search` surfaces both families. Route by the operation, in this order:
 
-**Prefer the native node, and confirm it with one probe.** `registry get core.datafabric.<op>` decides: on `NodeGetSuccess` build native, on "Node not found" build with the [connector](../connector/planning.md) and stop pursuing the native path. Go to the connector regardless when the entity is federated, since the native writes require a native entity.
+1. **The user named the connector.** Build the connector activity, provided it exists for that operation. An explicit instruction outranks the default — do not silently substitute the native node.
+2. **Record CRUD (read / create / update / delete) → default to the native node.** Confirm it with one `registry get core.datafabric.<op>`; on `NodeGetSuccess` build native. On "Node not found", follow [impl.md — Registry validation](impl.md#registry-validation) and take the connector at the end of it.
+3. **Any other entity operation → the connector.** Only those four operations have a native node. Attachments, file-field downloads, entity metadata and bulk operations do not, so the connector is the only path rather than a fallback.
 
-Where the probe succeeds, the native node is the better build, because it:
+Go to the connector regardless when the entity is **federated**, since the native writes require a native entity.
+
+Where the native node applies and the probe succeeds, it is the better build, because it:
 
 - needs **no Integration Service connection** — nothing to create, bind, or keep healthy, and no `bindings[]` connection row;
 - is **user-owned** — author it with `Edit`/`Write` instead of the CLI's `node add` + `node configure` envelope (see [Author capability — Node ownership](../../CAPABILITY.md#node-ownership--who-authors-the-node));

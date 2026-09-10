@@ -174,7 +174,13 @@ Prefer, in order:
 2. `core.action.http.v2` connector mode when the connector lacks the activity, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
 3. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
 
-**Data Fabric is not on this ladder.** Entity records have two paths — the native `core.datafabric.*` nodes and the `uipath-uipath-dataservice` connector activities. Prefer the native nodes: they need no Integration Service connection. One probe decides — **`registry get core.datafabric.<op>` returning `NodeGetSuccess` means build native; "Node not found" means this CLI does not carry the node, so build with the connector activities** and never hand-write a `definitions[]` entry for a node the registry will not return. Rationale and the federated-entity case in [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--availability-decides).
+**Data Fabric entity records are the one exception, and the split is by operation.** Record CRUD has two paths — the native `core.datafabric.*` nodes and the `uipath-uipath-dataservice` connector activities:
+
+- **Record CRUD (read / create / update / delete) — default to the native node** wherever Flow carries it natively. It needs no Integration Service connection.
+- **Every other Data Service operation — use the connector activities.** Only the four CRUD operations exist natively; attachments, file fields, entity metadata and everything else have no native node, so the connector is not a fallback there, it is the only path.
+- **An explicit request for connector activities wins over both.** If the user asks for the Data Service connector by name, build it with the connector as long as that activity exists — do not override them with the native node.
+
+Confirm the native node with the probe and recovery in [data-fabric/impl.md — Registry validation](plugins/data-fabric/impl.md#registry-validation), the single procedure for this error; on its final "use the connector" outcome, build with the connector activities. Never hand-write a `definitions[]` entry for a node the registry will not return. Rationale and the federated-entity case in [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--the-operation-decides).
 
 ## Standard Port Reference
 

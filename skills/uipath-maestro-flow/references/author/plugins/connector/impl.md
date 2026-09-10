@@ -266,7 +266,12 @@ Illustrative supported activities (confirm against `registry get` for the specif
 | `uipath-sap-s4hanacloud` | `Entity` | Create Entity | POST | method |
 | `uipath-google-bigquery` | `projects::table` | List All Records | GET | method |
 
-> **Data Fabric also has native nodes — prefer them when this CLI carries them.** `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`, so they are the lighter path. Confirm with `uip maestro flow registry get core.datafabric.read` first: on `NodeGetSuccess` go native, and on "Node not found" these `uipath-uipath-dataservice` activities are the correct path — stay here. Stay here too when the entity is federated, since the native writes require a native entity.
+> **Data Fabric record CRUD has native nodes — they are the default; everything else on this connector is not.** `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`, so for those four operations go native: confirm with `uip maestro flow registry get core.datafabric.read`, and on `NodeGetSuccess` leave this doc. Stay here when **any** of these hold — and they are common:
+>
+> - the operation is **not** one of those four (attachments, file-field downloads, entity metadata, bulk work) — no native node exists, so these activities are the only path, not a fallback;
+> - the **user asked for the connector by name** — an explicit request outranks the native default, so build it here as long as the activity exists;
+> - `registry get` ends at "Node not found" after [data-fabric/impl.md — Registry validation](../data-fabric/impl.md#registry-validation);
+> - the entity is **federated**, since the native writes require a native entity.
 
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 

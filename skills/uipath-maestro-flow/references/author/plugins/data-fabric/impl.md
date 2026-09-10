@@ -29,7 +29,14 @@ Confirm on `Data.Node`:
 - `runtimeConstraints.exclude` — contains `api-function`.
 - `version` — copy it verbatim into the instance's `typeVersion`. The four are versioned independently; do not assume one version across the family.
 
-If `registry get` reports **"Node not found"**, this CLI build does not carry the node. Run `uip tools update`, then `uip maestro flow registry pull --force`, and retry once. There is no tenant setting behind this and no administrator to escalate to — the CLI decides which node manifests it asks for, and older builds did not ask for these four.
+If `registry get` reports **"Node not found"**, this CLI build does not carry the node. **This is the single recovery procedure for that error** — the planning docs defer here, so do not improvise a different one:
+
+1. Run `uip tools update`.
+2. Run `uip maestro flow registry pull --force`.
+3. Retry `registry get` **once**.
+4. Still "Node not found" → build with the connector (see below). Do not loop.
+
+No tenant setting governs **whether the registry serves this node**, so there is no administrator to escalate to for step 4: the CLI decides which node manifests it asks for, and older builds did not ask for these four. (That scoping matters — the *runtime* engine version is a separate axis, and it does have a platform-side failure mode. See the engine-fallback row in [Debug](#debug).)
 
 `registry search` is not a substitute for `registry get` here. A node can appear in search with `AvailableOnTenant: false` while `registry get` refuses it — and without `registry get` you cannot source the `definitions[]` entry, which must never be hand-written ([Author capability, rule 6](../../CAPABILITY.md#critical-rules)).
 
@@ -396,6 +403,7 @@ Use `uip df entities get` and `uip df records list` to close that gap before shi
 | `Node not found: core.datafabric.*` on `registry get` | This CLI build does not carry the node | `uip tools update`, then `uip maestro flow registry pull --force`; if it still fails, use the connector — no tenant setting governs this |
 | Node validates clean, runs green, nothing written | Most often a **selector** problem, not a binding one: `readEntityNodeId` names a missing node or a multi-record read, the read's filters do not compile, or the `fromRead` read matched more than one record at runtime | Check the Read node's `id` matches exactly and its `resultMode` is `single`; confirm the filter identifies exactly one record with `uip df records list` |
 | Write runs green, row unchanged | The body was rejected and the rejection swallowed — a federated entity, a system or attachment column, a choice-set label instead of its numeric id, an uncoercible value, or a null into a non-nullable column | Re-check the entity is native and each column against `uip df entities get` |
+| Create runs green, no row inserted | Platform-side, not authoring: the BPMN engine predates the create postprocessor, so `GetDataFabricAction()` falls back to `"update"`. The registry served the node correctly — the *runtime* is the older half | Confirm against a newer engine, or build the insert with the connector's Create Entity Record ([connector/impl.md](../connector/impl.md)) |
 | Downstream `$vars.<id>.output` is `undefined` | `variables.nodes[]` missing, or the read matched nothing | Run `uip maestro flow format`; if it persists, verify the filter matches a real record |
 | A Loop over a multi-record read iterates nothing | Wired `output` instead of `output.results` | Use `=js:$vars.<readId>.output.results` |
 | Multi-record read returns only some rows | The limit is always explicit and capped at 1000 | Page with `_skip`; raising `_recordLimit` past 1000 truncates silently |
