@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 _d = os.path.dirname(os.path.abspath(__file__))
@@ -25,16 +26,11 @@ from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
     one_or_more,
-    parse_bpmn,
     require_di_for_visible_elements,
     require_no_private_connector_values,
     require_sequence_integrity,
 )
 
-# PROJECT is resolved in main() from the located BPMN's parent, so the check
-# grades the process wherever the agent placed the project dir (top level or
-# nested under a Solution wrapper) — it grades the modeling, not the layout.
-PROJECT: Path = Path.cwd() / "CustomerEscalation"
 BPMN_NAME = "CustomerEscalation.bpmn"
 REQUIRED_FILES = [
     "project.uiproj",
@@ -45,25 +41,44 @@ REQUIRED_FILES = [
 ]
 
 
-def load_json(name: str):
-    p = PROJECT / name
+def load_json(project: Path, name: str):
+    p = project / name
     if not p.is_file():
-        fail(f"{name} is missing")
+        fail(f"{name} is missing beside {p}")
     try:
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001
         fail(f"{name} is not valid JSON: {exc}")
 
 
+def resolve_project() -> Path:
+    # Grade the project wherever the agent placed it (top level or nested under a
+    # Solution wrapper), but pick the real project unambiguously: exactly one
+    # CustomerEscalation.bpmn with project.uiproj beside it. This avoids grading a
+    # stray draft copy when two same-named files exist (find_bpmn_file matches on
+    # a substring and returns the alphabetically-first).
+    candidates = [
+        p for p in Path.cwd().rglob(BPMN_NAME) if (p.parent / "project.uiproj").is_file()
+    ]
+    if len(candidates) != 1:
+        fail(
+            f"expected exactly one {BPMN_NAME} with project.uiproj beside it, "
+            f"found {[str(p) for p in candidates]}"
+        )
+    return candidates[0].parent
+
+
 def main() -> None:
-    global PROJECT
-    path, root = parse_bpmn("CustomerEscalation")
-    PROJECT = Path(path).parent
+    project = resolve_project()
+    bpmn_file = project / BPMN_NAME
+    try:
+        root = ET.parse(bpmn_file).getroot()
+    except Exception as exc:  # noqa: BLE001
+        fail(f"{bpmn_file} is not well-formed XML: {exc}")
 
     for name in REQUIRED_FILES:
-        if not (PROJECT / name).is_file():
-            fail(f"{name} is missing")
-
+        if not (project / name).is_file():
+            fail(f"{name} is missing beside {bpmn_file}")
 
     process = one_or_more(root, "process")[0]
 
@@ -104,10 +119,10 @@ def main() -> None:
 
     # Package metadata references the BPMN file.
     for name in ("entry-points.json", "operate.json", "package-descriptor.json"):
-        if BPMN_NAME not in json.dumps(load_json(name)):
+        if BPMN_NAME not in json.dumps(load_json(project, name)):
             fail(f"{name} must reference {BPMN_NAME}")
 
-    print(f"OK: {path} classifies, routes, escalates via a user task, and ships consistent package metadata")
+    print(f"OK: {bpmn_file} classifies, routes, escalates via a user task, and ships consistent package metadata")
 
 
 if __name__ == "__main__":
