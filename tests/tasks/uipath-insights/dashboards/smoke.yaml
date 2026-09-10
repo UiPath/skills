@@ -1,0 +1,148 @@
+task_id: skill-insights-smoke-dashboard-reads
+description: >
+  Smoke test: agent uses the uipath-insights skill to read a Maestro
+  process's monitoring dashboard read-only. Given a prompt asking what a
+  process's Monitoring tab shows and which global filters it applies, the
+  agent should run the two dashboard reads, take the full definition
+  through the --output-file artifact rather than through captured stdout,
+  and treat an empty filter list or a missing dashboard as a bounded
+  answer rather than a reason to write. The CLI is authenticated; the
+  tenant may or may not hold a Maestro process or a saved dashboard, and
+  the dashboard routes are served only on Cloud and Dedicated SaaS, so a
+  not-found, empty, or configuration answer is a valid outcome.
+
+  Covers both shipped reads. The prompt supplies a placeholder process key
+  as a fallback so the read path runs on a tenant with no Maestro process:
+  a well-formed GUID passes the CLI's local validation and reaches the
+  slot read, and the criteria grade the invocation rather than the tenant's
+  answer.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  I want a read-only picture of a Maestro process's monitoring dashboard.
+  Find a Maestro process on this tenant and read the dashboard its
+  Monitoring tab shows; if the tenant has no Maestro process, say so and
+  use 00000000-0000-0000-0000-000000000000 as the process key so we still
+  exercise the read. Tell me whether a dashboard has been saved for it or
+  whether the process still shows the built-in template, and summarize
+  what the dashboard contains. Save the full definition to a file so I can
+  edit it later, and use the CLI's own file option for that rather than
+  capturing what the command prints. Then list the global filters saved on
+  that dashboard. Do not create or change anything. If a read comes back
+  empty or not found, say so plainly and say what it does and does not
+  prove, then move on. If the output says more rows exist, page through
+  them before you summarize. Run each command at most once per page; do
+  not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The --help probe is kept out of the read credit with an inline
+  # (?!\s+--help) rather than exclude_pattern. exclude_pattern is evaluated
+  # against the whole Bash invocation, so an agent that batches a help probe
+  # and a real read into one call loses credit for the read as well. The
+  # alerts smoke task made the same choice for the same reason; the RBAC
+  # task's anchored exclusion still carries that gap.
+  #
+  # Every pattern in this file bounds its wildcard with [^&;|\n]* rather
+  # than the (?!uip\s) barrier the RBAC and alerts tasks use. The barrier
+  # leaks into newline-batched neighbours and false-fails a sibling command
+  # that carries a matching flag (Skills PR Review Lessons, lesson 11). A
+  # bare .* is worse: the grader compiles with re.DOTALL and it bleeds past
+  # the end of the command entirely.
+  - type: command_executed
+    description: "Agent ran dashboards get to read the process's dashboard"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get\b(?!\s+--help)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran dashboard-filters list to read the stored global filters"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboard-filters\s+list\b(?!\s+--help)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the two criteria
+  # above pass even when the verbs exist in no installed CLI. --help is the
+  # tenant-agnostic reality gate: it exits 0 only when the CLI registers the
+  # command and exits 3 on an unknown one, so it fails against a build that
+  # has not shipped the dashboard reads. A live read cannot serve as the
+  # gate here, because these routes answer ConfigError on Automation Suite
+  # and Service Fabric and not-found on a tenant with no Maestro process.
+  - type: run_command
+    description: "CLI path is real: dashboards get is registered in the installed CLI"
+    command: "uip insights dashboards get --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # One gate per group: a CLI that ships dashboards but not dashboard-filters
+  # would otherwise pass on the first probe alone.
+  - type: run_command
+    description: "CLI path is real: dashboard-filters list is registered in the installed CLI"
+    command: "uip insights dashboard-filters list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The prompt is read-only. create is in the list even though it is a
+  # shipped command: creating a dashboard on a read-only prompt consumes
+  # the process's single slot and no delete exists to undo it, which is the
+  # most expensive mistake this surface allows. The rest of the verbs exist
+  # in no branch and catch an invented write.
+  - type: command_not_executed
+    description: "Agent did not attempt a dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(dashboards|dashboard-filters|dashboard-templates)\s+(create|update|delete|remove|copy|generate|set|patch|put|edit|save|refresh)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The cheapest way around a read-only rule is to leave the CLI. The route
+  # string is the standalone-dashboard path the SDK calls.
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach a dashboard route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|axios|insights-sdk)[^&;|\n]*standalone-dashboard'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids command substitution and shell
+  # variables inside a uip invocation. The flag branch names only the flags
+  # these two commands accept. The positional branch catches a variable
+  # dashboard id.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights dashboard command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboard[a-z-]*\s+\S+[^&;|\n]*--(process-key|source-type|localization|output-file|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+dashboard[a-z-]*\s+(get|list)\s+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Rule 4: the definition travels through the --output-file artifact, and
+  # redirected stdout is a PascalCase envelope that is valid input to
+  # nothing. Advisory rather than gating, because a user who only wants the
+  # summary counts never needs the file, and the prompt's own ask for it is
+  # what makes this worth measuring.
+  - type: command_executed
+    description: "Advisory: agent took the definition through the --output-file artifact"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get[^&;|\n]*--output-file'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

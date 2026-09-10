@@ -1,0 +1,138 @@
+task_id: skill-insights-smoke-dashboard-create
+description: >
+  Smoke test: agent uses the uipath-insights skill to author a monitoring
+  dashboard for a Maestro process and create it from a file. Given a
+  prompt asking for a dashboard with two charts, the agent should read the
+  process's current dashboard to the --output-file artifact first, author
+  the definition from the field ids that read returns, write it to a file,
+  and pass that file to create. It should never capture the read's stdout
+  into the file: stdout is a PascalCase envelope and the command refuses
+  it before any request.
+
+  It grades the local authoring flow, not the round trip. A create is one
+  shot per process slot and no delete command exists, so a task that
+  graded a successful create would consume a slot it could not release.
+  The prompt supplies a placeholder process key that belongs to no Maestro
+  process, so the create either lands on an orphan slot or is refused, and
+  no real process's dashboard is consumed either way. Same reasoning that
+  left the three by-id RBAC reads out of the RBAC smoke task.
+tags: [uipath-insights, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  Build a monitoring dashboard for the Maestro process
+  00000000-0000-0000-0000-000000000000 and create it. I want two charts:
+  process instances broken down by status, and instances over time. Start
+  from whatever that process's Monitoring tab shows today so the charts
+  use field ids that actually exist, and take that definition as a file
+  rather than copying what the command prints. Give the dashboard a name.
+  Write the definition to a file and create it from that file. If the
+  process already has a saved dashboard, stop and tell me rather than
+  trying to replace it. Send the create once: if it fails or the outcome
+  is unclear, read the slot back and tell me what you found instead of
+  running it again. Report what the result proves and what it does not.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every pattern in this file bounds its wildcard with [^&;|\n]* rather
+  # than the (?!uip\s) barrier the RBAC and alerts tasks use. The barrier
+  # leaks into newline-batched neighbours and false-fails a sibling command
+  # carrying a matching flag (Skills PR Review Lessons, lesson 11). A bare
+  # .* is worse: the grader compiles with re.DOTALL and it bleeds past the
+  # end of the command entirely.
+  #
+  # Authoring step 1: read the slot to the artifact before writing
+  # anything. Requires --output-file rather than the bare read, because the
+  # artifact is the whole point of the step: it is the only channel that
+  # carries the camelCase definition create accepts.
+  - type: command_executed
+    description: "Agent read the process's current dashboard to a file before authoring"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get[^&;|\n]*--output-file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the dashboard from a file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+create\b(?!\s+--help)[^&;|\n]*--file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the two criteria
+  # above pass even when the verb exists in no installed CLI. --help is the
+  # reality gate: it exits 0 only when the CLI registers the command and
+  # exits 3 on an unknown one. A live create cannot be the gate, for the
+  # one-shot reason in the description.
+  - type: run_command
+    description: "CLI path is real: dashboards create is registered in the installed CLI"
+    command: "uip insights dashboards create --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Rule 1: the input file is the artifact contract and CLI stdout is not
+  # it. Catches the two ways stdout becomes a file: a > or >> redirect, and
+  # a pipe into tee. The pattern names the redirect forms explicitly rather
+  # than trailing a wildcard, because [^&;|\n]* cannot cross the pipe it
+  # would need to reach. A pipe into jq to read the summary on screen is
+  # not caught and is not what the rule forbids.
+  - type: command_not_executed
+    description: "Agent did not capture read stdout into the definition file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get[^&;|\n]*(>>?|\|\s*tee)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 3: a create is sent once and never retried. The cap is 1 rather
+  # than 0, so this is a bounded command_executed rather than a
+  # command_not_executed: the loader rewrites command_not_executed to
+  # min_count 0 / max_count 0 whatever the file says
+  # (coder_eval/models/tasks.py, the success_criteria normalizer), which
+  # would fail the single legitimate create. min_count 0 keeps a run that
+  # stopped before creating from failing here as well; the criterion above
+  # is what requires the create to happen.
+  - type: command_executed
+    description: "Agent did not send the create more than once"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+create\b(?!\s+--help)'
+    min_count: 0
+    max_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids command substitution and shell
+  # variables inside a uip invocation. The flag branch names only the flags
+  # these commands accept.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights dashboard command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+\S+[^&;|\n]*--(process-key|file|output-file|source-type|localization|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # There is no --source-type, no inline JSON body, and no
+  # service-identifier flag on create: the CLI sends AO and composes the
+  # slot id itself. An agent that invents one is working against the
+  # identity the CLI owns. --json and --output are left out of the list:
+  # both are real host global options (packages/common/src/host-global-options.ts).
+  - type: command_not_executed
+    description: "Agent did not invent flags on dashboards create"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+create[^&;|\n]*--(source-type|service-identifier|dashboard-id|body|data|definition|tenant|organization)\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
