@@ -16,7 +16,7 @@ agent:
   type: claude-code
 
 run_limits:
-  max_turns: 60
+  max_turns: 35
 
 sandbox:
   python: {}
@@ -25,8 +25,6 @@ sandbox:
       - "@uipath/test-manager-tool"
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Generate a Performance Engineer report from one of my completed perf
   scenario executions. I want the percentile detail (p95/p99) and a
   per-API breakdown if my scenario is an API one. Save it in the

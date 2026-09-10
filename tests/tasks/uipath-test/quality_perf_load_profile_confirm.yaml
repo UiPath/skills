@@ -17,7 +17,7 @@ agent:
   type: claude-code
 
 run_limits:
-  max_turns: 60
+  max_turns: 35
 
 sandbox:
   python: {}
@@ -26,8 +26,6 @@ sandbox:
       - "@uipath/test-manager-tool"
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Run a full performance test on one of my existing perf scenarios with
   3 virtual users and a 2-minute peak. Confirm the load profile with me
   before kicking off the full run.

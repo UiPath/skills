@@ -15,7 +15,7 @@ agent:
   type: claude-code
 
 run_limits:
-  max_turns: 60
+  max_turns: 35
 
 sandbox:
   python: {}
@@ -24,8 +24,6 @@ sandbox:
       - "@uipath/test-manager-tool"
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Take one of my existing perf scenarios that already has a completed
   execution, and write me a Release Manager go/no-go report. Save it in
   the current working directory using the skill's default filename

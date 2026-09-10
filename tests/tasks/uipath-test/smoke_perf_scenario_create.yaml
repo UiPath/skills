@@ -17,8 +17,6 @@ sandbox:
       - "@uipath/test-manager-tool"
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Create a new UiPath Test Manager performance scenario for one of my
   existing projects. Discover what projects I have, pick a sensible one,
   and create a scenario named "AgentSmoke-Perf".
