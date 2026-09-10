@@ -38,8 +38,15 @@ defaults:
 
   # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
   # sandboxes don't leak Node module resolution).
+  #
+  # PowerShell, not `rm -rf`: this experiment only runs on
+  # uipath-windows-latest, where post_run goes to cmd.exe and `rm` does not
+  # exist, so the POSIX form warn-logged and leaked node_modules every task.
+  # Test-Path guard: exit 0 when there is nothing to clean, non-zero only on a
+  # real delete failure (bare Remove-Item errors are non-terminating). Spelled
+  # out per path rather than a loop variable: no `$`, so no shell eats it.
   post_run:
-    - command: "rm -rf node_modules .npm-prefix"
+    - command: 'pwsh -NoLogo -NoProfile -NonInteractive -Command "if (Test-Path -LiteralPath ''node_modules'') { Remove-Item -LiteralPath ''node_modules'' -Recurse -Force -ErrorAction Stop }; if (Test-Path -LiteralPath ''.npm-prefix'') { Remove-Item -LiteralPath ''.npm-prefix'' -Recurse -Force -ErrorAction Stop }"'
       timeout: 30
 
 variants:
