@@ -1,0 +1,86 @@
+task_id: skill-ah-missing-tool-install-smoke
+description: >
+  Regression guard for RPANAV-19070: when `uip ah` answers
+  `unknown command 'ah'`, the skill must recover by INSTALLING the Automation
+  Hub tool, not by treating the missing verb as a CLI-version problem or as
+  terminal. `uip` is a dispatcher — every verb ships as its own npm package and
+  `@uipath/cli` does not depend on `@uipath/automation-hub-tool`, so a host can
+  bundle a perfectly current `uip` with no `ah` and the CLI version tells you
+  nothing. A shipped UiPath Delegate did exactly that, which is what sent the
+  Automation Hub publish down its fallback path. Grades the recovery DECISION.
+tags: [uipath-automationhub, smoke, mode:diagnose]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  You are about to publish an approved business process to UiPath Automation
+  Hub with the `uipath-automationhub` skill.
+
+  Take this as given about the runtime — do NOT run commands to verify it, and
+  do NOT make any network call:
+
+    - `uip` is installed and current, but `uip ah --help` answers
+      `error: unknown command 'ah'`.
+
+  Answer in text only:
+
+    1. Why does `uip ah` not exist here, given the CLI itself is current?
+    2. What exact command do you run to fix it, and what do you do next?
+    3. If that command cannot succeed, what do you do — and what do you tell
+       the user?
+
+  Do NOT run any commands. Do NOT ask for confirmation — this is an automated
+  test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent names the install command and the re-check, rather than a CLI upgrade"
+    include_agent_output: true
+    prompt: |
+      The runtime has a current `uip` whose `ah` verb is missing.
+
+      Score 1.0 if the agent says to INSTALL the Automation Hub tool — naming
+      `uip tools install ah` (or clearly describing installing the `ah` /
+      `automation-hub-tool` package) — AND re-running `uip ah --help`
+      afterwards to decide the transport.
+      Score 0.5 if it identifies the tool as a separately-installed package but
+      names neither the install command nor the re-check.
+      Score 0.0 if it says to upgrade or reinstall `uip` / the CLI to a newer
+      version, or treats the missing verb as terminal.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Agent explains the dispatcher/packaging reason, not a version reason"
+    include_agent_output: true
+    prompt: |
+      Score 1.0 if the agent explains that `uip` verbs ship as separate
+      packages (the CLI does not bundle or depend on the Automation Hub tool),
+      so the tool can be absent from an otherwise current CLI.
+      Score 0.5 if it says the tool must be installed separately without
+      explaining why the CLI version is not the deciding factor.
+      Score 0.0 if it attributes the missing verb to the CLI being an old or
+      pre-release version.
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Agent falls back to the raw Open API flow when the install cannot succeed, and does not retry it"
+    include_agent_output: true
+    prompt: |
+      Score 1.0 if, for the case where the install cannot succeed, the agent
+      moves on to the skill's raw Open API flow (rather than retrying the
+      install, or stopping with no path forward).
+      Score 0.5 if it stops but tells the user something actionable about the
+      Automation Hub tool being missing.
+      Score 0.0 if it loops on the install or reports an unrelated cause.
+    weight: 2.0
+    pass_threshold: 0.5

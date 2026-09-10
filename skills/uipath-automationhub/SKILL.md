@@ -11,10 +11,11 @@ Work with business processes in UiPath Automation Hub (AH) through the AH Open A
 
 ## Step 0: Preflight — pick the transport once
 
-Run `uip ah --help` once per session:
+Run `uip ah --help` once per session.
 
 - **Succeeds** → use the **CLI flows**. Read [`references/cli-commands.md`](references/cli-commands.md) (command catalog + auth), then the matching `*-cli-guide.md` flow. Auth is handled by `uip` itself — never touch a token.
-- **Fails with `unknown command 'ah'`** (CLI predates the AH surface) → use the **raw Open API flows**. Read [`references/api-endpoints.md`](references/api-endpoints.md) (auth model, gateway URL, exact headers — and the header to never send), then the matching flow.
+- **Fails with `unknown command 'ah'`** → the `ah` tool isn't installed. `uip` is a dispatcher: each verb is its own package, and the AH package ships separately from the CLI, so a host can bundle `uip` without it. Run `uip tools install ah` **once**, then re-run `uip ah --help`. If it now succeeds, take the CLI flows.
+- **Still failing** (install refused, no registry access, any other error) → use the **raw Open API flows**. Read [`references/api-endpoints.md`](references/api-endpoints.md) (auth model, gateway URL, exact headers — and the header to never send), then the matching flow. Do not retry the install.
 
 Never mix the two transports in one run. The domain contract — required fields, wrapping rules, document types — is identical either way and lives in `api-endpoints.md`.
 

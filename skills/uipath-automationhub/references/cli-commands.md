@@ -1,6 +1,6 @@
 # Automation Hub via the `uip ah` CLI — Command Catalog
 
-> **Preflight (run once per session):** `uip ah --help`. If it errors with `unknown command 'ah'`, the installed CLI predates the Automation Hub surface — tell the user to update `uip` (or follow the raw-API flows in [`api-endpoints.md`](api-endpoints.md) instead). Never mix the two paths in one run.
+> **Preflight (run once per session):** `uip ah --help`. On `unknown command 'ah'` the AH tool simply isn't installed — `uip` is a dispatcher and each verb ships as its own package — so run `uip tools install ah` once and re-check. If it still fails, follow the raw-API flows in [`api-endpoints.md`](api-endpoints.md) instead. Never mix the two paths in one run.
 
 The CLI wraps the same Open API endpoints as [`api-endpoints.md`](api-endpoints.md) — every domain fact there (required fields, wrapping rules, document-type ids, tenant-required questions) still applies. What the CLI adds: auth is handled for you, every response is one uniform JSON envelope, and windowing/projection quirks are absorbed.
 
@@ -54,4 +54,6 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | `uip ah automations get <id> [--all-fields]` | one process record | default projection has `Id`/`Name`/`Phase`/`Tags`; `--all-fields` for the raw record (needed for `process_slug`) |
 | `uip ah components list --automation-id <id>` | linked components (optional, get flow) | same record shape as the tenant-wide catalogue |
 
-**Version note:** the `ah` surface first appears in `uip` **1.201.0** (as of 2026-08-21 no public release ships it — the latest release is 1.199.0; the Step-0 preflight routes older installs to the raw-API flows). `documents create --file` and `automations create --idea-flow-id` additionally come from CLI PR #3720 — if either flag is rejected as unknown, the installed `uip` has the `ah` surface but predates those flags: tell the user to upgrade `uip` and **stop**. Never switch to the raw-API path mid-run — the transport was already selected at preflight.
+**Packaging note:** `ah` is **not part of the CLI binary** — `uip` is a dispatcher and every verb is its own npm package (`@uipath/automation-hub-tool`), which `@uipath/cli` does not depend on. A host can therefore ship a perfectly current `uip` with no `ah`, and the CLI version tells you nothing about whether it is there; only `uip ah --help` does. That is what `uip tools install ah` in the preflight is for. The tool must be on the CLI's own version line (`uip tools install` handles this), and the `ah` surface first exists at **1.201.0**.
+
+`documents create --file` and `automations create --idea-flow-id` come from CLI PR #3720 — if either flag is rejected as unknown, the installed tool has the `ah` surface but predates those flags: tell the user to upgrade and **stop**. Never switch to the raw-API path mid-run — the transport was already selected at preflight.
