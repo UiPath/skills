@@ -146,8 +146,6 @@ Do_While_1 (doWhile: ${$context.variables.attempts < maxAttempts && !$context.va
       └─ If_1#Else → []
 ```
 
-For a DoWhile, use `for.in: "${ [1] }"` when a single-element input is required.
-
 ### 9. TryCatch inside If branch
 
 Put a risky operation in a TryCatch inside `#Then` when it should run only for the selected condition; handle fallback in `catch.do` and the skipped case in `#Else`.

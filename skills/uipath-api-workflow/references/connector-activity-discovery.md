@@ -216,7 +216,7 @@ Connector parameter literals are bare (`"hi"`), not `${'hi'}`. Actual references
 
 ### Rule (c) — preserve both computed keys
 
-Use `Data.SlotKey` for the activity key in `do` and `Data.ExportBucketKey` for `$context.outputs.<X>` and `export.as`. They may differ; never reconstruct or rename either. If renaming a slot, leave the export key unchanged. Re-stub with `--instance 2` for another instance rather than copying keys.
+Use `Data.SlotKey` for the activity key in `do` and `Data.ExportBucketKey` for `$context.outputs.<X>` and `export.as`. They may differ (HTTP Request: slot `HttpRequest_1`, export bucket `http_request_1`); never reconstruct or rename either. If renaming a slot, leave the export key unchanged. Re-stub with `--instance 2` for another instance rather than copying keys.
 
 ### Rule (d) — use the full endpoint
 
@@ -249,7 +249,7 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 - Do not nest connector fields or wrap connector literals as `${'literal'}`.
 - Do not remove `multipartParameters` from multipart operations.
 - Do not leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` or any `<REPLACE_WITH_*>` placeholder in a generated workflow; stop and ask the user if no working UUID or URL is available.
-- Do not skip the required-field cross-check:
+- Do not skip the required-field cross-check.
 
 <!--skill-flavor:required-field-antipattern:start-->
 - **Do NOT trust `registry stub`'s `queryParameters` / `pathParameters` / `bodyParameters` as complete.** After every stub call, cross-check via `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` (or parse `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields` from the stub output itself) and fill in anything required that's missing. Symptom of skipping: workflow runs locally on stale defaults, fails in cloud with a 4xx, or the StudioWeb properties panel marks the field invalid without a clear error.

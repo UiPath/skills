@@ -49,7 +49,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 4. **Exports.** Every activity should export output. Assign uses `{ ...$context, variables: { ...$context.variables, ...$output } }`; all others use `{ ...$context, outputs: { ...$context?.outputs, "<ActivityKey>": $output } }`. See [references/expressions-and-context.md](references/expressions-and-context.md).
 
 <!--skill-flavor:designer-literal-runtime-comparison:start-->
-5. **Literal expressions.** In Assign `set`, Response, If `when`, and variable contexts, string literals must be expressions such as `"${'literal'}"`; numbers, booleans, and references need no wrapping. Connector `bodyParameters`, `queryParameters`, and `pathParameters` instead use bare literals; references remain expressions. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) and [references/troubleshooting.md](references/troubleshooting.md#studioweb-roundtrip-pitfalls).
+5. **Literal expressions.** In Assign `set`, Response, If `when`, and variable contexts, string literals must be expressions such as `"${'literal'}"`, because Studio Web rewrites a bare `"literal"` into `"${literal}"` on save and that fails at runtime; numbers, booleans, and references need no wrapping. Connector `bodyParameters`, `queryParameters`, and `pathParameters` instead use bare literals; references remain expressions. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) and [references/troubleshooting.md](references/troubleshooting.md#studioweb-roundtrip-pitfalls).
 <!--skill-flavor:designer-literal-runtime-comparison:end-->
 
 6. **Assign.** Each Assign sets exactly one variable. Studio Web collapses multi-key `set`; use sequential Assign activities and merge each single key through the variables export.
@@ -84,9 +84,9 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
    - Connector parameters use flat dotted keys and bare literals; do not use `${'literal'}`.
    - Do not use `UiPath.Http` with a vendor connection UUID. IntSvc results are wrapped; read `$context.outputs.<ExportBucketKey>.content.<field>`.
 <!--skill-flavor:connector-solution-registration:start-->
-   - In Solutions mode, sync IntSvc bindings with `uip api-workflow bindings sync --workflow <Workflow.json>` and refresh with `uip solution resource refresh --solution-folder <path>`. Skip for HTTP, non-connectors, and standalone projects.
+   - In Solutions mode, sync IntSvc bindings with `uip api-workflow bindings sync --workflow <Workflow.json>` and refresh with `uip solution resources refresh --solution-folder <path>`. Skip for HTTP, non-connectors, and standalone projects.
 <!--skill-flavor:connector-solution-registration:end-->
-   - See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) for discovery, fields, multipart, and examples.
+   - See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) for the discovery flow, field-shape rules, and multipart.
 
 <!--skill-flavor:runtime-invocation-io:start-->
 17. **CLI input.** Pass JSON as a string: `--input-arguments '{"key":"value"}'`; invalid JSON exits 1.
@@ -155,7 +155,7 @@ uip api-workflow validate ./<project>/Workflow.json --output json
 uip api-workflow run ./<project>/Workflow.json [--no-auth] --output json
 ```
 
-Validate autonomously and fix until valid; then ask before running. If skipped, provide the exact command.
+Validate autonomously and fix until valid; then ask before running. Name the concrete side effect in the question (an email sent, a ticket created), then wait. If skipped, provide the exact command.
 <!--skill-flavor:validation-run-lifecycle:end-->
 <!--skill-flavor:runtime-troubleshooting:start-->
 Triage failures as Structure > Expression > Activity Config > Logic; see [references/troubleshooting.md](references/troubleshooting.md).
@@ -199,7 +199,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 | [references/http-retry-config.md](references/http-retry-config.md) | Workflow-level HTTP retry/backoff |
 | [references/task-types.md](references/task-types.md) | Activity shapes, required fields, exports, mistakes |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Nested If, loops, TryCatch, Break, branching, key uniqueness |
-| [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
+| [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — discovery flow, connection verification, field-shape rules, multipart |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Expressions, context, inputs, scripts, exports, strict mode |
 | [references/files-and-base64.md](references/files-and-base64.md) | **Files & base64** — `JobAttachment` references, the File to Base64 / Base64 to File activities (exact JSON, `$helpers.file.*`), `serializeData()` for inline bodies/Responses, passing local files in and getting files out of a run, pitfalls |
 <!--skill-flavor:cli-reference-navigation:start-->

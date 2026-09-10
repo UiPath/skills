@@ -373,7 +373,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     "saveToSentItems": true
   }
   ```
-- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys](connector-activity-discovery.md#rule-a--flat-dotted-keys).
+- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md — Rule (a)](connector-activity-discovery.md#rule-a--flat-dotted-keys).
 
 ### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
 
@@ -395,7 +395,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     "message.subject": "this is a claude skill test"
   }
   ```
-  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b--bare-connector-literals).
+  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md — Rule (b)](connector-activity-discovery.md#rule-b--bare-connector-literals).
 
 ### Connector slot key and export-bucket key can differ — use the stub's values
 
@@ -445,7 +445,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     ]
   }
   ```
-- **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration](connector-activity-discovery.md#multipart-endpoints).
+- **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md — Multipart endpoints](connector-activity-discovery.md#multipart-endpoints).
 
 <!--skill-flavor:solution-resource-diagnostics:start-->
 ### Properties panel: "to debug this resource, select a connection for it from the resource definition page"
@@ -793,7 +793,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### File to Base64 / Base64 to File script lost code after a Studio Web save (validate warned "rebuilds the script … and drops the rest", or did not warn at all)
 - **Symptom:** after a designer roundtrip the task's `run.script.code` is back to the bare `return { output: await $helpers.file.*(…) }` — a preceding `const`, a trailing statement, a second argument (`fileToBase64(ref, { extra: 1 })`) or an extra option key is gone; downstream logic that relied on it now fails or the wrong reference is converted
 - **Cause:** Studio Web parses only the `$helpers.file.*` call and rebuilds the script from the property panel on save. `validate` warns about extra statements but passes an extra argument / option key as `Valid`
-- **Fix:** keep the script to the single `return` expression with exactly one argument (see [files-and-base64.md §2](files-and-base64.md#2-the-two-activities)); move pre-processing into a JavaScript activity before the conversion and pass its output as the argument
+- **Fix:** keep the script to the single `return` expression with exactly one argument (see [files-and-base64.md §2](files-and-base64.md#2-file-activities)); move pre-processing into a JavaScript activity before the conversion and pass its output as the argument
 
 ### File to Base64 output used as a string (`.length`, `+`, `JSON.stringify` shows an object)
 - **Symptom:** downstream expression gets `[object Object]`, `undefined`, or an `{ ID, FullName, MimeType }` object where base64 text was expected
