@@ -4,6 +4,14 @@
 
 <!-- Template instruction: render the case body in the downstream uipath-maestro-case `sdd.md` shape. Do not emit the legacy planner-only case architecture table format. -->
 
+<!-- CELL RULES ARE COMPLETE WHERE THEY STAND. Every cell's whole rule is the angle-bracket hint
+at that cell plus the comment in its own section. Nothing outside this template adds, overrides or
+extends a cell value, so a cell named ONCE is fully specified by that one mention — a second source
+does not exist and searching the guides or the validator's source for one is the archaeology that
+burns a turn budget (§ Validation footer: RUN the validator, never read it). If a value still looks
+unstated after reading its own section, it IS unstated: take the default recorded there, or `—` where
+the cell is optional, note the provenance, and move on. -->
+
 ---
 
 ## Document History
@@ -21,7 +29,7 @@
 | Field | Value |
 |---|---|
 | **Status** | <draft \| ready — Lane A derives tasks only from ready> |
-| **Execution autonomy** | <autonomous \| interactive> |
+| **Execution autonomy** | <autonomous \| interactive — carry the draft's value when finalizing; absent, `autonomous`> |
 | **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Solution root SDD** | <PATH_TO_SOLUTION_ROOT_SDD — solution scope only; omit all four solution rows for single-product> |
@@ -107,7 +115,7 @@ Case App Disabled, Task-output passing Direct, SLA Type time-based, SLA Title `S
 | Case Name | <PascalCase name> |
 | Case Description | <2-3 sentence description of what the case manages> |
 | Case Identifier | Type: <constant \| external>. Constant → Prefix: <2-4 char UPPER prefix>. External → Source: <=vars.<In/InOut variable> \| =js:`expression`> |
-| Priority | Choiceset: <comma-separated values> — Default: <value> |
+| Priority | Choiceset: <comma-separated values> — Default: <value> · `—` when the source names no priority scheme (optional cell, no platform default; unrelated to a task's `**Priority:**`, which is the closed set Low\|Medium\|High\|Critical) |
 | Case-Level SLA | <count> <unit: min/h/d/w/m — minutes bounded 15-1000> |
 | SLA Title | <non-empty root-unique SLA rule title, no `:` — omit this row when Case-Level SLA is —> |
 | SLA Type | <time-based \| condition-based> |
@@ -138,10 +146,11 @@ duration and points here; nothing restates a response.
 
 <!-- Section required whenever ANY SLA exists (case, stage, or action task); omit only in a case with no
 SLA at all. The case-level Scope cell is the bare word `case` — not `case: root` and not the case
-name; only the stage and task scopes take a `: <name>` qualifier. One row per (Scope, SLA, Status),
-at-risk and breached separately. Source states no response
--> both statuses notify-only with Target and Interrupting `—`; never invent a stage, task, or routing
-change to carry a notification. Legal Response values and the Interrupting value each implies:
+name; only the stage and task scopes take a `: <name>` qualifier. EXACTLY two rows per (Scope, SLA) —
+one `At-Risk`, one `Breached` — always. A status the source says nothing about
+is still authored: `notify-only` with Target and Interrupting `—`. An omitted row is never how "nothing
+was asked for" gets expressed, and a stated response for one status never removes the other status's row;
+never invent a stage, task, or routing change to carry a notification. Legal Response values and the Interrupting value each implies:
 case-design-layers-guide.md § Choosing the response. Two-way closure against the SDD's
 `sla-status-change` rows is enforced by audit_sdd.py — it is not re-checked by hand. -->
 
@@ -312,7 +321,7 @@ the exact stage display name — never the case name. -->
 
 ###### Action Task Detail (type: `action`)
 
-**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>>
+**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
@@ -607,17 +616,27 @@ there. Pass --draft so the gate also checks inventory parity, verbatim `=js:` pr
 executable threshold encoding. What the DRAFT specifically needs repaired on the way through is the
 lane guide's § Resumption; the shape is here.
 
-Gate: run  <py> "<skill folder>/scripts/case/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
-on-disk file BEFORE the Status: ready flip — in every mode. `<py>` = the first of `python3`, `python`,
-`py` that runs (Windows usually has no `python3` alias); only if all three are absent verify manually. RUN it, never open the script source —
+Gate: run this on the on-disk file BEFORE the Status: ready flip — in every mode:
+
+    python3 "<skill base dir>/scripts/case/audit_sdd.py" <sdd path> [--draft <draft path>]
+
+`<skill base dir>` is the path handed to you at invocation. The script is always at exactly that
+relative location, so never `find`, `ls`, `which` or otherwise search for it or for an interpreter:
+a locate call is the first rung of the source-reading this footer forbids, and it answers nothing the
+cells above have not already answered. Only when `python3` reports command-not-found, re-run the same
+line with `python`, then `py` (Windows usually has no `python3` alias); if all three are absent,
+verify manually against the cell rules above. RUN it, never open the script source —
 its findings are the interface. Minting charset is ADVISORY — it never gates, and a name the user, the
 source, or a draft supplied is kept verbatim (pass --draft so the validator knows). ':' gates always. Repair findings with Edit, re-run to AUDIT OK
 (max 3 rounds, then stop and present findings). Never ship a summary SDD (top-level headings like
 ## Source / ## Case Objective / ## Stages / ## Task Plan, or build-mode/path narration) even if a later
 caseplan.json would validate — rewrite from the model and this template.
 
-The validator's checks, by family — RUN it, do not hand-verify this list. Each name is what a finding
-will refer to; the rules themselves live at the cells above and in case-design-layers-guide.md:
+The validator's checks, by family — RUN it, do not hand-verify this list. Each name is only what a
+finding will refer to; the enforcement detail behind every family is the cell rules above, and for the
+render contract those cells are COMPLETE — there is no third location, and the script's source states
+nothing they do not. (Design semantics — which response, which gate, which default — stay
+case-design-layers-guide.md's; the cells own the shape.) The families:
 
  1. Document skeleton · 2. Closed enums + gate-slot pairing · 3. Names (':' ban + case-wide uniqueness;
  charset is advisory)
@@ -628,8 +647,8 @@ will refer to; the rules themselves live at the cells above and in case-design-l
  required-*, SLA bounds) · 9. Draft parity (--draft: inventory, =js: expressions, thresholds encoded
  executably)
 
-If no interpreter is available at all, the enforcement detail behind each family is in the cell rules
-above — every one of them must hold.
+With no interpreter at all, author against the cell rules above — every one of them must hold, and
+they are the same rules the validator would have applied.
 
 ===================================================================================== -->
 
