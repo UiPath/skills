@@ -50,23 +50,19 @@ The performer's start event **is** the queue trigger, so this shape always begin
 the process. It cannot be inserted into an existing path or nested in a
 subprocess, and it has no Entry row in the droppable sense.
 
-**The entire performer shape is placeholder structural BPMN — do not search the
-registry, `uip or`, or `uip login` for any of it.** This is a queue-themed
-process, but nothing in it maps to a queue-specific registry payload:
+**The performer's nodes carry no `uipath:*` payload — author them as bare
+structural BPMN.** Discovery still applies to the queue key itself (rule 2), but
+nothing in the performer's shape is a queue-specific registry template:
 
 - The start is a plain `bpmn:startEvent` (an optional `bpmn:messageEventDefinition`
-  child is semantic only) — not a registry "queue trigger" type.
+  child documents the trigger) — there is no `Orchestrator.QueueTrigger` registry
+  type; the queue binding is configured outside the BPMN.
 - `per_item_action` and the three outcome nodes (`set_successful`, `set_failed`,
-  `postpone`) are placeholder `bpmn:serviceTask`s. Marking the queue item's
-  transaction status happens at runtime; you do NOT bind
-  `Orchestrator.SetTransactionStatus`, `SetQueueItemStatus`, or any queue
-  activity, and there is no such template to fetch.
-
-The check grades one start event with nothing flowing back, an exclusive gateway
-with three outcome branches each starting with an activity, and three ends — no
-`uipath:*` payload anywhere. Author the nodes directly and move on. Do not spend
-turns on `registry search`, `registry get`, `uip or queues`, or `uip login`
-chasing a queue type — none exists and none is needed.
+  `postpone`) are bare `bpmn:serviceTask`s with no extension payload. Marking the
+  queue item's transaction status happens at runtime; there is no
+  `Orchestrator.SetTransactionStatus` or `SetQueueItemStatus` type to fetch. (The
+  dispatcher's `bulk_add` is different: `Orchestrator.CreateQueueItem` is a real
+  OOTB template.)
 
 | Node | Element | Role |
 | --- | --- | --- |
@@ -118,11 +114,10 @@ already exists without touching whatever produces the items.
 - **`postpone`** — earliest reprocessing time, and a deadline if the item should
   eventually stop being retried.
 
-The queue activity types this shape needs are newer than the extension list
-bundled with the validator, so do not assume the names. Resolve them with
-`uip maestro bpmn registry list --output json` and fetch each template with
-`registry get` before authoring — see
-[registry-workflow.md](../registry-workflow.md).
+The dispatcher's queue activity (`Orchestrator.CreateQueueItem` /
+`Orchestrator.CreateAndWaitForQueueItem`) is a bundled OOTB type — fetch its
+template with `registry get` and see [registry-workflow.md](../registry-workflow.md).
+The performer's nodes need no such lookup (see the Performer section above).
 
 ## Adapting it
 
