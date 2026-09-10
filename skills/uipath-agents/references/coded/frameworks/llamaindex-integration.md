@@ -8,12 +8,12 @@ If there is **no existing agent code**, scaffold a LlamaIndex project with:
 
 ```bash
 mkdir my-agent && cd my-agent
-uip codedagent new my-agent --agent-framework llamaindex
+uip codedagent new my-agent
 ```
 
 This generates `main.py` (with a Workflow template), `llama_index.json`, and `pyproject.toml`. Then modify `main.py` to implement your actual agent logic.
 
-> **Prerequisite:** `uipath-llamaindex` must be installed in the active venv, and `--agent-framework llamaindex` selects this template. Never pass `--type` — `uip codedagent new` forwards `--type agent` to `uipath new` itself. Confirm `llama_index.json` exists after `new`; if `uipath.json` with a `functions` map appeared instead, or the CLI answers `No such option`, recover per [../lifecycle/setup.md](../lifecycle/setup.md) § Verify the Scaffold.
+> **Prerequisite:** `uipath-llamaindex` must be installed in the active venv before `new` — `uipath new` defaults to `--type auto` and picks the LlamaIndex template from the installed package. Confirm `llama_index.json` exists after `new`; if `uipath.json` with a `functions` map appeared instead, the package was missing — recover per [../lifecycle/setup.md](../lifecycle/setup.md) § Verify the Scaffold.
 
 ## Project Structure
 

@@ -52,7 +52,7 @@ mkdir <SolutionName>/<AgentProject>
   uv venv --python 3.13 && . .venv/bin/activate && \
   uv pip install <framework-package> && \
   uip codedagent setup --force --output json && \
-  uip codedagent new <AgentName> --agent-framework <agent-framework> )  # langchain | llamaindex | openai-agents
+  uip codedagent new <AgentName> )
 # Implement the generated project, then from that directory:
 #   . .venv/bin/activate && uv sync && uip codedagent init
 #   uip codedagent run <entry-point> '<one representative JSON input>'

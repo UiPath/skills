@@ -54,7 +54,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 3. **`uip function init` must run before `pack` or `push`** — it generates `entry-points.json`, `bindings.json`, `project.uiproj`; re-run after any schema or entrypoint change.
 4. **Typed I/O is mandatory** — Pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin typed class; apply `@traced(name=..., run_type="uipath")` to the entrypoint for LLM Ops Traces.
 5. **`pyproject.toml` needs `authors`** (else `pack` rejects: `Project authors cannot be empty`) and no `[build-system]` section.
-6. **`uip function new -l py` produces a function scaffold** — `uipath.json` with a `functions` map, no `langgraph.json`. The CLI forwards `--type function` to `uipath new`, so an installed agent framework (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) no longer changes the result. If an agent scaffold appears anyway (`langgraph.json` plus an LLM `main.py`), an older `@uipath/cli` or framework integration still hijacks the scaffold — reshape it (see [references/python/workflow-guide.md](references/python/workflow-guide.md) Step 1), don't re-run `new`. If `new` fails with `No such option '--type'`, the venv's `uipath` predates the option: `uv pip install --upgrade uipath`, then re-run.
+6. **The scaffold follows installed packages**: with an agent framework present, `uip function new -l py` emits an agent scaffold — reshape it (see [references/python/workflow-guide.md](references/python/workflow-guide.md) Step 1), don't re-run `new`.
 
 ### JS/TS
 
@@ -77,7 +77,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 ### Python
 
 ```bash
-uip function new <NAME> -l py    # scaffold — function project (CLI forwards --type function); older CLI/framework packages may hijack it, see workflow guide Step 1
+uip function new <NAME> -l py    # scaffold (agent-framework packages hijack the scaffold — see workflow guide Step 1)
 # author: Pydantic Input/Output + @traced entrypoint, lazy UiPath() singleton, errors returned not raised
 uip function init                # generate entry-points.json / bindings.json / project.uiproj
 uip function run <ENTRYPOINT> '{"document_id": "42"}'
