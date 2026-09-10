@@ -281,3 +281,160 @@ def test_dot_separated_argument_value_not_treated_as_verb(tmp_path):
         f"Expected no findings — `core.action.script` is an argument, "
         f"got {findings!r}."
     )
+
+
+# --- cli_called criteria are in scope for the catalog check -------------------
+
+def _task(tmp_path, body, name="task.yaml"):
+    task = tmp_path / name
+    task.write_text("success_criteria:\n" + body)
+    return task
+
+
+CLI_CALLED_CATALOG = {"ixp", "ixp projects", "ixp projects list",
+                      "ixp projects get", "ixp projects delete"}
+
+
+def test_cli_called_verb_is_linted_at_all(tmp_path):
+    """`cli_called` names its verb in `verb`, not in a `command_pattern`.
+
+    The checker only ever parsed `command_pattern`, so every task migrated from
+    `file_matches_regex`/`command_executed` to `cli_called` silently left the
+    catalog linter's reach — a stale verb in a migrated task was unreachable by
+    any gate in the repo.
+    """
+    task = _task(tmp_path,
+                 '  - type: cli_called\n'
+                 '    description: "typo"\n'
+                 '    verb: "ixp projects lisst"\n'
+                 '    tool: "uip"\n')
+    findings = cli.lint_file(task, CLI_CALLED_CATALOG, {})
+    assert [f["severity"] for f in findings] == ["High"], (
+        f"Expected one High for a verb absent from the catalog, got {findings!r}."
+    )
+    assert findings[0]["source"] == "cli_called"
+
+
+def test_cli_called_typoed_leaf_not_rescued_by_group_prefix(tmp_path):
+    """`classify`'s longest-prefix fallback must NOT apply to a cli_called verb.
+
+    A `command_pattern` can carry a trailing fragment the regex happened to
+    capture, so it needs the fallback. A `cli_called` verb is a complete literal
+    chain, and `ixp projects` is itself a catalog entry — so under the fallback
+    the typo `ixp projects lisst` matched the parent group and scored reachable,
+    which is the exact blind spot this check exists to close.
+    """
+    verdict, _ = cli.classify(["ixp projects lisst"], CLI_CALLED_CATALOG, {},
+                              exact=True)
+    assert verdict == "unknown", (
+        f"Expected 'unknown' — the leaf is a typo and must not match the "
+        f"`ixp projects` group; got {verdict!r}."
+    )
+    # The prefix fallback is still what `command_pattern` needs.
+    verdict_prefix, _ = cli.classify(["ixp projects lisst"],
+                                     CLI_CALLED_CATALOG, {})
+    assert verdict_prefix == "reachable"
+
+
+def test_cli_called_deliberately_short_verb_stays_reachable(tmp_path):
+    """A group-level verb is legal — `verb` is an ordered PREFIX of the argv, so
+    a `max_count: 0` guard on `ixp projects` deliberately fires on every
+    subcommand. The catalog holds group entries, so exact matching accepts it.
+    """
+    task = _task(tmp_path,
+                 '  - type: cli_called\n'
+                 '    description: "group guard"\n'
+                 '    verb: "ixp projects"\n'
+                 '    tool: "uip"\n'
+                 '    min_count: 0\n'
+                 '    max_count: 0\n')
+    assert cli.lint_file(task, CLI_CALLED_CATALOG, {}) == []
+
+
+def test_cli_called_verb_any_of_reachable_if_any_spelling_is(tmp_path):
+    """`verb_any_of` entries are alternatives, so they classify as a group —
+    the same way a regex alternation's paths do. One reachable spelling means
+    the criterion can still fire.
+    """
+    task = _task(tmp_path,
+                 '  - type: cli_called\n'
+                 '    description: "channel"\n'
+                 '    verb_any_of: ["ixp projects get", "ixp projects list"]\n'
+                 '    tool: "uip"\n')
+    assert cli.lint_file(task, CLI_CALLED_CATALOG, {}) == []
+
+    both_bad = _task(tmp_path,
+                     '  - type: cli_called\n'
+                     '    description: "channel"\n'
+                     '    verb_any_of: ["ixp projects gett", "ixp projects listt"]\n'
+                     '    tool: "uip"\n',
+                     name="both_bad.yaml")
+    findings = cli.lint_file(both_bad, CLI_CALLED_CATALOG, {})
+    assert [f["severity"] for f in findings] == ["High"], (
+        f"Expected High when NO spelling is reachable, got {findings!r}."
+    )
+
+
+def test_cli_called_retired_verb_is_medium_with_suggestion(tmp_path):
+    """Renames stay prefix-matched under `exact`, so a retired ancestor still
+    yields the canonical suggestion rather than a bare High.
+    """
+    task = _task(tmp_path,
+                 '  - type: cli_called\n'
+                 '    description: "retired"\n'
+                 '    verb: "solution new"\n'
+                 '    tool: "uip"\n')
+    findings = cli.lint_file(task, {"solution", "solution init"},
+                             {"solution new": "solution init"})
+    assert [f["severity"] for f in findings] == ["Medium"], (
+        f"Expected Medium for a retired verb, got {findings!r}."
+    )
+    assert "solution init" in findings[0]["message"]
+
+
+def test_cli_called_non_uip_tool_gets_no_verdict(tmp_path):
+    """`record_cli` shims several executables into ONE shared log, and `tool`
+    is what separates them. A verb recorded under `curl` is not a uip verb, and
+    an ABSENT `tool` matches any executable — neither can be claimed against the
+    uip catalog, so both are skipped without a finding.
+    """
+    other_tool = _task(tmp_path,
+                       '  - type: cli_called\n'
+                       '    description: "curl guard"\n'
+                       '    verb: "not a uip verb"\n'
+                       '    tool: "curl"\n'
+                       '    min_count: 0\n'
+                       '    max_count: 0\n')
+    assert cli.lint_file(other_tool, CLI_CALLED_CATALOG, {}) == []
+
+    no_tool = _task(tmp_path,
+                    '  - type: cli_called\n'
+                    '    description: "tool-less"\n'
+                    '    verb: "not a uip verb"\n',
+                    name="no_tool.yaml")
+    assert cli.lint_file(no_tool, CLI_CALLED_CATALOG, {}) == []
+
+
+def test_cli_called_verbless_criterion_is_skipped(tmp_path):
+    """A flags-only or positional-only `cli_called` is legal and names no verb."""
+    task = _task(tmp_path,
+                 '  - type: cli_called\n'
+                 '    description: "flags only"\n'
+                 '    tool: "uip"\n'
+                 '    flags:\n'
+                 '      force: {present: true}\n'
+                 '    min_count: 0\n'
+                 '    max_count: 0\n')
+    assert cli.lint_file(task, CLI_CALLED_CATALOG, {}) == []
+
+
+def test_cli_called_verb_whitespace_is_normalised(tmp_path):
+    """coder_eval splits the verb on whitespace (`verb.split()`), so irregular
+    inner spacing is the same verb and must not read as absent from the catalog.
+    """
+    task = _task(tmp_path,
+                 '  - type: cli_called\n'
+                 '    description: "spacing"\n'
+                 '    verb: "ixp   projects  list"\n'
+                 '    tool: "uip"\n')
+    assert cli.lint_file(task, CLI_CALLED_CATALOG, {}) == []

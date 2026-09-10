@@ -160,7 +160,7 @@ Severity:
 
 ### CLI verb reachability
 
-Run `python3 scripts/check-cli-verbs.py --json <task-path>` and merge its findings into this task's issue list. The script verifies that every `command_executed` criterion's `command_pattern` actually corresponds to a real `uip` verb listed in `assets/uip-catalog-snapshot.json`, with retired-verb suggestions sourced from `.claude/rules/cli-renames.md`.
+Run `python3 scripts/check-cli-verbs.py --json <task-path>` and merge its findings into this task's issue list. The script verifies that the verb a criterion names actually corresponds to a real `uip` verb listed in `assets/uip-catalog-snapshot.json`, with retired-verb suggestions sourced from `.claude/rules/cli-renames.md`. Two criterion types are covered: `command_executed` (verb literals parsed out of `command_pattern`) and `cli_called` (`verb` / `verb_any_of`, checked only when the criterion carries `tool: uip`). Findings carry a `source` field naming which one. A `cli_called` verb is matched against the catalog exactly, so a typo'd leaf is not rescued by its parent group.
 
 Severity passthrough from the script's findings:
 
