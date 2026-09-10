@@ -16,7 +16,7 @@ Before creating evaluations, ensure your project has:
 - `entry-points.json` - Agent definitions
 - `evaluations/` directory for test cases
 
-If missing, create an agent first using `uip codedagent new <name> --type agent --agent-framework <framework>` and `uip codedagent init`.
+If missing, create an agent first using `uip codedagent new <name> --agent-framework <framework>` and `uip codedagent init`.
 
 ### Phase 2: Define Evaluation Details
 

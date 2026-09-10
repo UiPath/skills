@@ -58,15 +58,15 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    source .venv/bin/activate       # .venv/Scripts/activate on Windows
    uv pip install <FRAMEWORK_PACKAGE>   # e.g. uipath-langchain for LangGraph
    uip codedagent setup --force
-   uip codedagent new <agent-name> --type agent --agent-framework <AGENT_FRAMEWORK>   # langchain | llamaindex | openai-agents
+   uip codedagent new <agent-name> --agent-framework <AGENT_FRAMEWORK>   # langchain | llamaindex | openai-agents
    uv sync
    ```
 
-   Confirm `<framework>.json` exists before continuing — without `--type agent`, `new` writes a Coded Function project (see [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold).
+   Confirm `<framework>.json` exists before continuing — a `uipath.json` `functions` map without it is a function scaffold (see [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold).
 
    For a simple stub with no LLM call, use the Coded Function framework
-   (`uipath` package): `uv pip install uipath`, then `uip codedagent new <agent-name>`
-   without `--type agent` (the default is `--type function`). This avoids downloading
+   (`uipath` package only): `uv pip install uipath`, then `uip function new <agent-name> -l py`
+   — `uip codedagent new` always scaffolds an agent. This avoids downloading
    the full LangGraph or LlamaIndex stack and keeps the setup fast.
 
 2. Implement `main.py`. Use lazy LLM initialization (create clients inside functions, never at module level).

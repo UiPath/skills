@@ -16,13 +16,15 @@ uip function new <name> --language js       # JavaScript Function → ../js/
 
 `--empty` skips the hello-world function (JS/TS only).
 
-**The Python scaffold is a function project.** `uip function new -l py` forwards to `uipath new`, whose default is `--type function`, so `main.py` + `pyproject.toml` + `uipath.json` with a `functions` map is the expected result even when `uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents` is installed. Exception: an older `uipath` (before the `--type` option) or an older framework integration lets the framework middleware hijack the scaffold — you get `langgraph.json` plus an LLM `main.py`. Not a broken flag. Recovery, in one pass:
+**The Python scaffold is a function project.** `uip function new -l py` forwards `--type function` to `uipath new`, so `main.py` + `pyproject.toml` + `uipath.json` with a `functions` map is the expected result even when `uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents` is installed. Exception: an older `@uipath/cli` (no `--type function` forwarding) paired with an older framework integration lets the framework middleware hijack the scaffold — you get `langgraph.json` plus an LLM `main.py`. Not a broken flag. Recovery, in one pass:
 
 1. Delete the framework config (`langgraph.json` and equivalents).
 2. Replace `main.py` with the function template (Step 3).
 3. Keep `pyproject.toml`'s `[project]` metadata (Step 5) — swap `dependencies` for what the function needs.
 
 Do not re-run `new` with different flag spellings, and do not read CLI or SDK internals to explain the scaffold. Reshape the project and move on.
+
+If `new` fails with `Error: No such option '--type'`, the venv's `uipath` predates the option the CLI forwards: `uv pip install --upgrade uipath`, then re-run `uip function new -l py`.
 
 ## Step 2: Define Function Schema
 

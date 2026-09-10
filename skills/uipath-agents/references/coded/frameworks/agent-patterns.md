@@ -10,7 +10,7 @@ Common implementation patterns for building UiPath coded agents, from coded func
 
 See the **[Project Setup Guide](../lifecycle/setup.md)** for:
 - Creating a new project directory
-- Scaffolding with `uip codedagent new <name> --type agent --agent-framework <framework>`
+- Scaffolding with `uip codedagent new <name> --agent-framework <framework>`
 - Installing dependencies with `uv sync`
 - Defining Input/Output Pydantic models
 - Configuring your agent with `uip codedagent init`
