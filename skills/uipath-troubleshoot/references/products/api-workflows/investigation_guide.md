@@ -50,3 +50,21 @@ Confirm the job's process is the one the user means, and that the folder matches
 ## 6. Suspect the designer if "runs locally, breaks after Studio Web"
 
 If the workflow ran under `uip api-workflow run` and only broke after being opened/saved in Studio Web, the on-disk file was rewritten by the designer's normalization passes (literal wrapping, multi-key Assign collapse, Response object corruption, dropped connector fields). Treat the file on disk as authoritative and diff it against the last-known-good version.
+
+## 7. Before blaming the workflow, confirm it ran and was allowed to finish
+
+Three classes of API Workflow fault have no signature inside the workflow JSON. `validate` clears them and `run --no-auth` reproduces none of them, so an investigation that stays local will conclude the workflow is healthy and stop. Check them explicitly:
+
+1. **Did a job exist at all?** If the user reports "it didn't run", establish whether a job record exists before looking for a fault. No job = an invocation fault, not a workflow fault — see [never-ran-no-job.md](./playbooks/never-ran-no-job.md).
+2. **Did the run end on its own logic, or at a ceiling?** A run that stops with no exception accounting for it, and that is input-size-dependent, is a platform limit — the Script activity's 30-second cap, a `Do While` `Limit`, or the serverless 15-minute job ceiling. See [platform-limits.md](./playbooks/platform-limits.md).
+3. **Did the outbound call actually reach the target?** A clean connection ping plus a call that times out against a firewalled host is a network-reachability fault, not auth. Which of the two outbound IP ranges applies depends on the activity's authentication mode — see [outbound-call-blocked.md](./playbooks/outbound-call-blocked.md).
+
+## 8. Read the workflow's own Log Message output
+
+`Log Message` writes Info/Warning/Error lines to Orchestrator Logs and is the only native in-workflow observability hook — no Script activity required. Read it with the execution logs:
+
+```bash
+uip or jobs logs <job-key> --output json
+```
+
+Its absence is also evidence: a workflow with no `Log Message` activities narrates nothing about its own progress, so the per-activity output from a local `run` is the only narrative you will get. Say so rather than reporting the logs as empty.
