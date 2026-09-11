@@ -44,7 +44,7 @@ Do NOT create edges for any stage. If the sdd.md describes a stage "connected vi
 | `label` | sdd.md stage name | Shown in the UI. |
 | `type` | sdd.md intent | `stage` (default) or `secondary` — see above |
 | `rationale` | sdd.md Design Rationale | Required reviewer context explaining the stage-kind and routing choice. A global-event secondary stage states why one interrupting entry replaces per-stage duplication. Emitted as `data.description`. |
-| `description` | sdd.md stage Design Rationale | The rationale above, written into the stage element. |
+| `description` | sdd.md stage Design Rationale | The rationale above, written into the stage element. An SDD with no rationale heads the same prose `Description`; use that. |
 | `isRequired` | sdd.md (default `true` for regular, `false` for secondary) | **Planning-only metadata.** See note below. |
 
 ### Note on `isRequired`
@@ -77,7 +77,7 @@ Stages have no registry lookup, so a stage produces **no `tasks/registry-resolve
 stage "<label>"
 - type: stage
 - rationale: "<why this is a primary stage and how it is reached/exited>"
-- description: "<stage Design Rationale from sdd.md>"
+- description: "<stage Design Rationale from sdd.md, or its Description when the SDD has no rationale>"
 - isRequired: <true|false from sdd.md; false if unspecified>
 - verify: Confirm Result: Success, capture StageId
 ```
@@ -88,7 +88,7 @@ Secondary variant:
 secondary stage "<label>"
 - type: secondary
 - rationale: "<why this is interrupting and which global/conditional event it handles>"
-- description: "<stage Design Rationale from sdd.md>"
+- description: "<stage Design Rationale from sdd.md, or its Description when the SDD has no rationale>"
 - isRequired: <true|false from sdd.md; false if unspecified>
 - verify: Confirm Result: Success, capture StageId
 ```
