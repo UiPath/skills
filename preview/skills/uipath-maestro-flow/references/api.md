@@ -563,6 +563,9 @@ export declare function entryInput(entryPointId: string, name: string): Expr;
 /**
  * Reference an upstream step's output → `$vars.<step>.output[.<path>]`.
  * e.g. `out('fetchRate', 'body.rate')`.
+ *
+ * @enforcedBy VARS_BRACKET_READ Reach a step by a dot, not a bracket — the bracketed
+ *   spelling is the one the compiler cannot rewrite.
  */
 export declare function out(step: string, path?: string): Expr;
 ````
@@ -586,11 +589,13 @@ export declare function ran(step: string): Expr;
  * Reference a FAILED step's error → `$vars.<step>.error[.<field>]`.
  *
  * @enforcedBy ERROR_READ_VIA_OUT Read an error with `err()`, never `out('<step>',
- *   'error')` — the envelope has no `error` field of its own.
+ *   'error')` — the success output has no `error` field of its own.
+ * @enforcedBy ERROR_ENVELOPE_VIA_OUTPUT Inside a handler, the failed step's `.output`
+ *   is empty; an envelope field read from it resolves to nothing.
  */
 export declare function err(step: string, field?: ErrorEnvelopeField): Expr;
 
-// ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status'
+// ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status' | 'response' | 'element'
 ````
 
 ## js (function)
@@ -970,6 +975,8 @@ declare class FlowBuilder extends StepList {
 /** Collects a sequence of steps. Used for the flow body and each branch/loop arm. */
 declare class StepList {
     steps: Step[];
+    /** Read the failure that led into this handler → `err('<the failed step>', field)`. */
+    err(field?: ErrorEnvelopeField): Expr;
     /** Add an action node (see `http` / `script` / `subflow`). */
     step(name: string, spec: FlowActionSpec | FlowAction, options?: NodeOptions): this;
     /**
@@ -1029,6 +1036,8 @@ declare class StepList {
     /** Terminate this path, binding flow outputs to expressions. */
     return(values?: Record<string, Expr | unknown>, options?: ReturnOptions): this;
 }
+
+// ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status' | 'response' | 'element'
 ````
 
 ## ArmBuilder (class)
@@ -2493,7 +2502,7 @@ export type ActionSpec = {
 ## ErrorEnvelopeField (type)
 
 ````ts
-export type ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status';
+export type ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status' | 'response' | 'element';
 ````
 
 ## RawReference (type)
