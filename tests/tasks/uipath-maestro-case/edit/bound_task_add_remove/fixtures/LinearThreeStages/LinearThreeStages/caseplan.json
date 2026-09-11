@@ -52,7 +52,7 @@
     "variables": {
         "inputs": [
             {
-                "id": "pQr7Ks2Wm",
+                "id": "vPq7Ks2Wm",
                 "name": "caseRef",
                 "type": "string",
                 "default": "",
@@ -61,7 +61,7 @@
         ],
         "outputs": [
             {
-                "id": "nBt4Xh9Vc",
+                "id": "vNb4Xh9Vc",
                 "name": "finalDecision",
                 "type": "string",
                 "var": "finalDecision"
@@ -72,7 +72,7 @@
                 "id": "skipReview",
                 "name": "skipReview",
                 "type": "boolean",
-                "default": false,
+                "default": "false",
                 "custom": true,
                 "elementId": "root"
             },
@@ -468,7 +468,7 @@
                         {
                             "name": "caseRef",
                             "type": "string",
-                            "source": "=vars.pQr7Ks2Wm",
+                            "source": "=vars.vPq7Ks2Wm",
                             "var": "caseRef"
                         }
                     ]

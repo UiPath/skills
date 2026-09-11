@@ -51,6 +51,12 @@ Both paths can coexist in a single agent — use SDK for known operations and `c
 
 Use the Python SDK's `EntitiesService` for deterministic CRUD operations. No LLM intermediary — the agent code specifies exactly what to fetch or write.
 
+> **MANDATORY: every `sdk.entities.*` call MUST be inside a `@tool`-decorated function, registered with `create_agent(..., tools=[...])`.**
+>
+> This is NOT optional, even when the query is always the same shape. A plain `StateGraph` node that calls `sdk.entities.*` directly is **wrong** — it is not invocable by the agent, not bindable, and not testable. The correct architecture is always: `@tool` function wrapping the SDK call → `create_agent(llm, tools=[...])`.
+>
+> "Fixed-shape" describes the tool's *body* (same filter every time), not a reason to skip the tool pattern. Do NOT rationalize a simpler graph architecture — the tool pattern is mandatory regardless of query complexity.
+
 ### Setup
 
 ```python
@@ -63,13 +69,13 @@ sdk = UiPath()
 
 ### Reading Records
 
+`list_records` supports pagination only — it has NO `filter`/`select`/`orderby` parameters. To filter, sort, or project, use `retrieve_records` (see Structured Query with Filters below).
+
 ```python
-# List with OData-style filter and pagination
+# List with pagination
 records = await sdk.entities.list_records_async(
     entity_key="Orders",
-    filter="Status eq 'Open'",
-    select=["OrderId", "CustomerName", "Total"],
-    orderby="CreatedTime desc",
+    start=0,
     limit=50,
 )
 
@@ -193,13 +199,19 @@ content: bytes = await sdk.entities.download_attachment_async(
 )
 ```
 
-### Wiring into a LangGraph Agent
+### Wiring into a LangGraph Agent (MANDATORY)
 
-Wrap SDK calls as LangChain tools so the agent can invoke them:
+Every SDK call MUST be a `@tool`-decorated async function passed to `create_agent(llm, tools=[...])`. No exceptions — not for single-query agents, not for "simple" graphs, not for fixed-shape operations. A `StateGraph` node that calls `sdk.entities.*` inline is the most common and most expensive mistake on this path.
 
 ```python
 from langchain_core.tools import tool
 from uipath.platform import UiPath
+from uipath.platform.entities import (
+    EntityQueryFilter,
+    EntityQueryFilterGroup,
+    LogicalOperator,
+    QueryFilterOperator,
+)
 
 
 @tool
@@ -210,17 +222,29 @@ async def get_open_orders(customer_name: str) -> str:
         customer_name: The customer name to look up.
     """
     sdk = UiPath()
-    # Escape single quotes for OData string literals (e.g. O'Brien → O''Brien)
-    safe_name = customer_name.replace("'", "''")
-    records = await sdk.entities.list_records_async(
+    result = await sdk.entities.retrieve_records_async(
         entity_key="Orders",
-        filter=f"CustomerName eq '{safe_name}' and Status eq 'Open'",
-        select=["OrderId", "Total", "CreatedTime"],
+        filter_group=EntityQueryFilterGroup(
+            logical_operator=LogicalOperator.And,
+            query_filters=[
+                EntityQueryFilter(
+                    field_name="CustomerName",
+                    operator=QueryFilterOperator.Equals,
+                    value=customer_name,
+                ),
+                EntityQueryFilter(
+                    field_name="Status",
+                    operator=QueryFilterOperator.Equals,
+                    value="Open",
+                ),
+            ],
+        ),
+        selected_fields=["OrderId", "Total", "CreatedTime"],
         limit=50,
     )
-    if not records:
+    if not result.items:
         return f"No open orders found for {customer_name}."
-    lines = [f"- {r.model_extra['OrderId']}: ${r.model_extra['Total']}" for r in records]
+    lines = [f"- {r.model_extra['OrderId']}: ${r.model_extra['Total']}" for r in result.items]
     return f"Open orders for {customer_name}:\n" + "\n".join(lines)
 
 
@@ -243,14 +267,15 @@ async def close_order(order_id: str) -> str:
 Then add to your agent graph:
 
 ```python
-from uipath_langchain.agent import create_agent
+from langchain_core.messages import SystemMessage
+from uipath_langchain.agent.react.agent import create_agent
 from uipath_langchain.chat import UiPathChat
 
 def _make_llm():
     """Lazy LLM factory — never call at module level."""
     return UiPathChat(model="gpt-4.1-mini-2025-04-14")
 
-graph = create_agent(_make_llm(), tools=[get_open_orders, close_order], system_prompt="...")
+graph = create_agent(_make_llm(), tools=[get_open_orders, close_order], messages=[SystemMessage("...")])
 ```
 
 ---
@@ -274,6 +299,7 @@ Use the entity ID, name, and folder key from Step 1 discovery.
 ### Usage
 
 ```python
+from langchain_core.messages import SystemMessage
 from uipath.platform.entities import DataFabricEntityItem
 from uipath_langchain.agent.react.agent import create_agent
 from uipath_langchain.agent.tools import create_datafabric_tool
@@ -307,12 +333,12 @@ datafabric_tool = create_datafabric_tool(
     ],
 )
 
-graph = create_agent(llm, tools=[datafabric_tool], system_prompt=system_prompt)
+graph = create_agent(llm, tools=[datafabric_tool], messages=[SystemMessage(system_prompt)])
 ```
 
 ### Key Design Constraint
 
-**The same `system_prompt` must be passed to both `create_agent` and `create_datafabric_tool`.** The tool forwards it to the inner SQL-generation sub-graph so the agent's instructions apply consistently at both levels.
+**The same instruction string must reach both levels: pass it as `messages=[SystemMessage(...)]` to `create_agent` and as `base_system_prompt` to `create_datafabric_tool`.** The tool forwards it to the inner SQL-generation sub-graph so the agent's instructions apply consistently at both levels.
 
 ### How It Works Internally
 
@@ -342,7 +368,7 @@ def create_datafabric_tool(
 |-------|------|----------|--------|
 | `id` | `str` (UUID) | Yes | `uip df entities list` |
 | `name` | `str` | Yes | Entity display name |
-| `folder_key` | `str` (UUID) | Yes | `uip df entities list` or Orchestrator folder ID |
+| `folder_key` | `str` (UUID) | Yes | `uip df entities list` or Orchestrator folder ID. Tenant-level entities: pass the discovered all-zeros `FolderId` (`00000000-0000-0000-0000-000000000000`) as-is |
 | `entity_key` | `str` | No | Technical entity identifier |
 | `description` | `str` | No | Helps the LLM understand the entity's purpose |
 
@@ -353,10 +379,11 @@ def create_datafabric_tool(
 A single agent can use both paths. Use SDK tools for known operations and the DataFabric tool for open-ended exploration:
 
 ```python
+from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
 from uipath.platform import UiPath
 from uipath.platform.entities import DataFabricEntityItem
-from uipath_langchain.agent import create_agent
+from uipath_langchain.agent.react.agent import create_agent
 from uipath_langchain.agent.tools import create_datafabric_tool
 from uipath_langchain.chat import UiPathChat
 
@@ -402,7 +429,7 @@ query_tool = create_datafabric_tool(
     ],
 )
 
-graph = create_agent(llm, tools=[query_tool, close_order], system_prompt=system_prompt)
+graph = create_agent(llm, tools=[query_tool, close_order], messages=[SystemMessage(system_prompt)])
 ```
 
 ---
@@ -413,13 +440,15 @@ graph = create_agent(llm, tools=[query_tool, close_order], system_prompt=system_
 
 2. **For freeform queries, use `create_datafabric_tool` — not a custom solution.** Import it from `uipath_langchain.agent.tools`. Do NOT use `create_datafabric_query_tool` or any other internal function — those are implementation details and may change without notice.
 
-3. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
+3. **SDK-direct calls are ALWAYS `@tool`-wrapped — no exceptions.** "Same query every time" describes the tool's body, not a reason to skip the tool. An `sdk.entities.*` call inline in a `StateGraph` node is **wrong** — it is not invocable by the agent. Use `@tool` + `create_agent(llm, tools=[...])`. This is the #1 shape failure on this path; agents that build a "simpler" plain graph without `@tool` always fail validation.
 
-4. **SQL query constraints** — `query_entity_records` only accepts SELECT statements. Queries without WHERE must include LIMIT. Subqueries, UNION, WITH, and DML/DDL are forbidden.
+4. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
 
-5. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
+5. **SQL query constraints** — `query_entity_records` only accepts SELECT statements. Queries without WHERE must include LIMIT. Subqueries, UNION, WITH, and DML/DDL are forbidden.
 
-6. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
+6. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
+
+7. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
 
 ## Comparison with Low-Code DataFabric Context
 

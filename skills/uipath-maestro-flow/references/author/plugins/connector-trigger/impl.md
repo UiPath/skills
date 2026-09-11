@@ -124,7 +124,7 @@ Shape only — do not iterate:
 }
 ```
 
-**`filterFields`** — fields used to narrow *which* events fire the trigger (e.g., only emails from a specific sender). These are optional filter criteria and are passed as a structured tree in `--detail.filter` (see [Filter Trees](#filter-trees)).
+**`filterFields`** — fields used to narrow *which* events fire the trigger (e.g., only emails from a specific sender). These are optional filter criteria and are passed as a structured tree under the `filter` key of `--detail` (see [Filter Trees](#filter-trees)).
 
 ```json
 {
@@ -165,6 +165,8 @@ uip is resources run list "<connector-key>" "<reference.objectName>" \
 ```
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `run list` call — in the trigger's event parameter configuration.
+
+> **If the `run list` call fails, you have no ID.** Do not fall back to the display name, a vendor well-known alias, or an ID from memory — each validates clean and faults at runtime. Stop and report the failed resolve. See [reference-resolution.md — When the Lookup Call Fails](../../../../../uipath-platform/references/integration-service/reference-resolution.md#when-the-lookup-call-fails-critical).
 
 > **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../uipath-platform/references/integration-service/resources.md#pagination).
 
@@ -294,7 +296,7 @@ Filters are authored as a **structured tree**, not a string expression. The CLI 
       "value": {
         "value": <typed value>,   // string / number / boolean / ISO-8601 date-time
         "rawString": "\"...\"",   // verbatim user-entered text (with quotes for strings)
-        "isLiteral": true         // literals only — expression values are not supported
+        "isLiteral": true         // false for a dynamic operand; eventParameters stay literal
       }
     }
   ],
@@ -387,7 +389,7 @@ Then follow [/uipath:uipath-platform — triggers.md > Building Filter Trees fro
 | `{ "id": "fields.subject", ... }` | `fields.` prefix — use the bare field name from `filterFields.fields[].name`. | `{ "id": "subject", ... }` |
 | `{ "id": "subject", "operator": "contains", ... }` | Operator is case-sensitive — use PascalCase. | `"operator": "Contains"` |
 | `{ "value": "urgent" }` on a leaf | Bare string — must be wrapped in the `WorkflowValue` object. | `{ "value": { "value": "urgent", "rawString": "\"urgent\"", "isLiteral": true } }` |
-| `{ "isLiteral": false, "value": "${var}" }` | Expression values are not yet supported by the CLI port. | Resolve the value first, then pass it as a literal. |
+| `{ "isLiteral": false, "value": "${var}" }` on an `eventParameters` value | Filter-tree leaf operands may be dynamic (`isLiteral: false`, compiled to a `{var_…}` placeholder plus `filterVariables`), but `eventParameters` must be literals — a trigger is evaluated before any flow run exists. | Resolve the value first and pass it as a literal; use a dynamic operand only inside the `filter` tree. |
 | Adding a freeform leaf for a connector-mandated field (e.g. Gmail folder, Slack channelId) | Mandatory filters derived from connector event metadata are emitted automatically by the CLI from `eventParameters` — duplicating them in the freeform tree double-applies the clause. | Set the value through `eventParameters` only; the CLI AND-joins the mandatory JMES clause into the top-level `inputs.detail.filterExpression` (matching SW's `combinedFilterExpression`). It is *not* persisted on `essentialConfiguration` — SW classifies it optional and rebuilds it from input field values on restore. |
 
 ---

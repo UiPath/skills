@@ -144,8 +144,8 @@ Host-intercepted publication starts Unified Build packaging in the background. A
 
 First distinguish bridge rejection from background failure:
 
-- `uip solution publish --help` confirms the supported bridge flags.
-- For an explicit approved publication, invoke `uip solution publish [--description <text>] [--release-notes <text>] [--version <version>] [--location <value>] [--location-name <value>] [--personal-workspace]` for the active solution.
+- An unknown-flag error names the rejected flag and lists the supported ones; the destination flag is `--location`. Nothing was published.
+- A multiple-destinations listing is not an error: nothing was published — ask the user which destination to use and rerun `uip solution publish --location "<key or name>"` (or `--personal-workspace`).
 - Immediate command failure is a request, flag, or authorization problem; report the exact host result.
 - Immediate success means request accepted. Check Studio Web's Publish history for the terminal packaging and publication status and diagnose from that entry.
 <!--skill-flavor:local-publish-errors:end-->
@@ -177,3 +177,13 @@ First distinguish bridge rejection from background failure:
 <!--skill-flavor:allowlist-run-proof:start-->
   Some task types the runtime can execute are still not authorable, so **an activity that appears to work is not proof it can be published.** The validator is the gate.
 <!--skill-flavor:allowlist-run-proof:end-->
+
+<!--skill-flavor:file-base64-cli-pitfalls:start-->
+### File to Base64 / Base64 to File fail in a run
+- **Symptom:** a `RunProject` run fails inside a File to Base64 or Base64 to File task with a storage or authentication error
+- **Cause:** `$helpers.file.*` reads and writes Orchestrator blob storage through the active Studio Web session
+- **Fix:** report the exact host result as an authentication or capability blocker and retry after the relevant host state changes; static validation with `uip api-workflow validate` stays available meanwhile
+<!--skill-flavor:file-base64-cli-pitfalls:end-->
+
+<!--skill-flavor:file-base64-cli-folder:start-->
+<!--skill-flavor:file-base64-cli-folder:end-->

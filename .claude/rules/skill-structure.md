@@ -67,6 +67,31 @@ python3 scripts/check-skill-status.py --write-readme
 
 `scripts/check-skill-status.py` (run in CI by `validate-skill-status.yml`) enforces that every skill has a manifest entry with a valid status, that the README table is current, and that no status markers leak into SKILL.md frontmatter or body.
 
+## skills.sh Grouping
+
+[`skills.sh.json`](../../skills.sh.json) is the display grouping for the repository's page on skills.sh. Every `skills/<name>/` MUST appear in exactly one grouping, and every grouped name MUST exist on disk.
+
+This file is presentation-only — it never changes what the `skills` CLI or `uip skills install` installs. That is exactly why it rots: nothing else in the build reads it, so a skill added, renamed, or removed under `skills/` produces no error anywhere except this one check, and the public page keeps showing the old grouping.
+
+**Any change to the set of skill folder names requires the matching edit to `skills.sh.json` in the same PR:**
+
+| Change to `skills/` | Required edit to `skills.sh.json` |
+|---|---|
+| Add `skills/<new>/` | Add `<new>` to the grouping that matches its purpose |
+| Rename `skills/<old>/` → `skills/<new>/` | Replace `<old>` with `<new>` — a rename is a remove plus an add, and both halves fail the check |
+| Delete `skills/<name>/` | Remove `<name>`; drop the grouping too if it is left empty |
+
+Validate before opening the PR:
+
+```bash
+python3 scripts/check-skills-sh.py          # must print "OK — N skills grouped across M section(s)."
+python3 scripts/check-skills-sh.py --fix    # removes stale entries for renamed/deleted skills
+```
+
+`--fix` will NOT place a newly added skill. Which of the four sections a skill belongs to (Authoring, Solution & Planning, Platform & Operations, Diagnostics & Feedback — the same four the README catalog uses) is an editorial judgement, so choose it by hand.
+
+`scripts/check-skills-sh.py` (run in CI by `validate-skills-sh.yml`) validates the whole tree but scopes its exit code to drift the PR introduces, via `--baseline-ref`. A finding reported as **pre-existing** was already on the base branch and does not block the PR — but do not treat it as someone else's problem if the PR is the one renaming that skill.
+
 ## Naming Conventions
 
 | Item | Pattern | Example |

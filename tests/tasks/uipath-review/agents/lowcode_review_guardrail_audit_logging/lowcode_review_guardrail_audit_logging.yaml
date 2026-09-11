@@ -26,7 +26,7 @@ initial_prompt: |
   solution `ReviewSol`. Review the agent project for issues and save your review
   report to `./_review_report.md` at the sandbox root.
 
-  This is a read-only review — do not modify anything inside `ReviewSol/`.
+  Do not manually edit files inside `ReviewSol/`.
 
 success_criteria:
   - type: skill_triggered
@@ -86,4 +86,12 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Step 6 recorded the final grade in CLI-owned review-history.json"
+    command: 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_review_history.py --project ReviewSol/SampleAgent --report _review_report.md'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0

@@ -326,13 +326,14 @@ Local `uip maestro flow validate` returns `Result: Success`. The same flow fails
 
 Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expression-reference linting, and a small set of structural rules.
 
-**Caught** (validate exits non-zero, with a precise field path and remediation hint):
+**Caught** (each with a precise field path and remediation hint). **Error** severity exits non-zero; **warning** severity still exits **0**, so read `Data.Warnings` rather than the exit code:
 
 - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` — emitted by cli-side `expression-prefix-validator`
 - Invented `nodes.<id>.output.<...>` syntax (same failure class) — same validator, suggests `=js:$vars.<id>.output.<...>` as the fix
 - References to unknown variable IDs or node IDs in `=js:` expressions (`EXPR_UNRESOLVED_REF`) — flow-schema `expression-ref` rule
 - Output-path walks that descend into a declared primitive (`type: "string"` etc.) or a schema closed with `additionalProperties: false` (`EXPR_INVALID_OUTPUT_PATH`) — flow-schema `expression-ref` rule
 - Missing End-node output mappings for declared `out` variables (`MISSING_OUTPUT_MAPPING`, **warning** severity) — flow-schema `output-mapping` rule
+- A `$vars.<nodeId>` read whose node is not in the reader's scope (`EXPRESSION_DIAGNOSTIC`, **warning** severity). The message prints the scope it *is* in: `Property '<nodeId>' does not exist on type '{ … }'`. Never ship it, but diagnose the runtime symptom from *why* the node is out of scope, because the three causes do not behave alike: a Decision or Switch is unreadable from anywhere downstream and reads `undefined`, silently yielding a wrong result instead of faulting ([decision/impl.md — Outputs](../author/plugins/decision/impl.md#outputs)); a node that runs *after* the reader faults instead, with `[400302]`/`[400300]` ([brownfield.md — Common edits](../author/brownfield.md#common-edits)); a node on a branch the reader is not on reads `undefined`, having never executed
 - Connector `inputs.detail.configuration` missing, empty, missing the `essentialConfiguration` envelope, or containing invalid JSON inside the `=jsonString:` prefix — emitted with a shape hint pointing at `uip maestro flow node configure`. Re-run that command rather than hand-editing.
 
 **Not caught** — these still surface only at `flow debug` or in deployed runs:

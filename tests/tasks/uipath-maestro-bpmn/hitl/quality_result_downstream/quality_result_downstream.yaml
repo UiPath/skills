@@ -29,7 +29,7 @@ initial_prompt: |
     `uipath:activity` shell from the registry template.
   - A downstream gateway condition MUST reference the HITL output variable using
     a `vars.<id>` expression (the exact variable the HITL activity binds).
-  - Declare process variables with the registry BPMN.Variables template.
+  - Declare process variables in `<uipath:variables>`, each with an `elementId`.
   - Use synthetic placeholder resource names only.
   - Include BPMN DI for every visible node and sequence flow.
   - Do not upload, publish, deploy, debug, or run the process. Do not pause for

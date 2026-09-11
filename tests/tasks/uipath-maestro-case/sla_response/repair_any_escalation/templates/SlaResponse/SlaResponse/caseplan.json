@@ -60,7 +60,7 @@
     "variables": {
         "inputs": [
             {
-                "id": "pQr7Ks2Wm",
+                "id": "vPq7Ks2Wm",
                 "name": "caseRef",
                 "type": "string",
                 "default": "",
@@ -415,7 +415,7 @@
                         {
                             "name": "caseRef",
                             "type": "string",
-                            "source": "=vars.pQr7Ks2Wm",
+                            "source": "=vars.vPq7Ks2Wm",
                             "var": "caseRef"
                         }
                     ]

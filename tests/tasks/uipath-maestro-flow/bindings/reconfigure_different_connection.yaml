@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-bindings-reconfigure-different-connection
 description: >
   When the same connector node is reconfigured against a different connection,
@@ -15,55 +18,50 @@ run_limits:
 
 initial_prompt: |
   PRECONDITION CHECK — do this FIRST, before any flow work:
-  Run `uip is connections list --all-folders --output json` once. Group the
-  enabled connections by `ConnectorKey` and find a connector with two or
-  more enabled connections. That connector supplies A and B.
+  Inspect the tenant-wide Integration Service connection inventory once,
+  including connections in every folder. Group the enabled connections by
+  connector key and find a connector with two or more enabled connections.
+  That connector supplies A and B.
 
   If no connector has two or more enabled connections, the precondition
   is not met for this tenant. Stop IMMEDIATELY: write
   `PRECONDITION_NOT_MET.txt` at the sandbox root containing one line per
   ConnectorKey with its enabled-connection count, then end your turn.
 
-  Do NOT try to create a second connection via `uip is connections create`
-  or `--no-wait`. OAuth authorization requires an interactive browser and
-  cannot complete in this sandbox; pending connections are not a valid
-  substitute. Do NOT scan for mocks or alternative connectors beyond the
-  single `connections list` call above.
+  Do NOT try to create a second connection. OAuth authorization requires an
+  interactive browser and cannot complete in this sandbox; pending connections
+  are not a valid substitute. Do NOT scan for mocks or alternative connectors
+  beyond that single connection inventory.
 
   If the precondition IS met, proceed:
 
-  Build a flow named "BindingsReconfigure" — Manual Trigger → IS connector
-  node → End — saved as `BindingsReconfigure/flow_files/BindingsReconfigure.flow`
-  with `BindingsReconfigure/project.uiproj`.
+  Build a flow named "BindingsReconfigure" with a Manual Trigger, an Integration
+  Service connector node, and an End node.
 
   Pick the connector that has two or more enabled connections, and use two
   distinct connection ids from that connector as A and B.
 
-  Record the ids at the sandbox root and snapshot the .flow after each configure:
+  Record the ids at the sandbox root in `conn_ids.json` as keys `a` and `b`.
+  Save the configured flow after A as `after_a.flow`, then reconfigure the SAME
+  node with B and save that result as `after_b.flow`, both at the sandbox root.
 
-      echo '{"a":"<connection-a-id>","b":"<connection-b-id>"}' > conn_ids.json
-
-  After configuring with A:
-      cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_a.flow
-
-  After reconfiguring the SAME node with B:
-      cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_b.flow
-
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
-  # min_count: 1 (not 2). Per uipath-maestro-flow SKILL.md rule #10, agents
-  # chain sequential `uip` calls — e.g. `node configure <A> && ... && node
-  # configure <B> && validate && format` — into ONE Bash event. command_executed
-  # counts matching Bash events, not command occurrences within an event, so a
-  # correct batched run registers only 1 match and this criterion false-fails.
-  # Multiplicity is instead proven by the A/B snapshot checks below: after_a
-  # references connection A while after_b references ONLY B (no leak, equal
-  # count) — a result a single configure cannot produce. Mirrors the min_count:1
-  # convention in multi_connector_independence.yaml / no_duplicate_connection_bindings.yaml.
-  - type: command_executed
-    description: "Agent used `uip flow node configure` at least once"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
-    min_count: 1
+  - type: run_command
+    description: "The final snapshot is configured only with connection B"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -77,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "after_a.flow references connection A"
-    command: "python3 $TASK_DIR/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -85,7 +83,7 @@ success_criteria:
 
   - type: run_command
     description: "after_b.flow has zero references to connection A (no stale rows)"
-    command: "python3 $TASK_DIR/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a"
     timeout: 10
     expected_exit_code: 0
     weight: 4.0
@@ -93,7 +91,7 @@ success_criteria:
 
   - type: run_command
     description: "after_b.flow ConnectionId binding points at connection B"
-    command: "python3 $TASK_DIR/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -101,7 +99,7 @@ success_criteria:
 
   - type: run_command
     description: "Reconfigure did not grow bindings count"
-    command: "python3 $TASK_DIR/check_bindings.py count_equal 'after_a.flow' 'after_b.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py count_equal 'after_a.flow' 'after_b.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -109,7 +107,7 @@ success_criteria:
 
   - type: run_command
     description: "No empty-keyed Connection bindings in final snapshot"
-    command: "python3 $TASK_DIR/check_bindings.py no_empty_stubs 'after_b.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_empty_stubs 'after_b.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

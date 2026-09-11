@@ -1,0 +1,3 @@
+<!--skill-flavor:solution-terminal-artifact:start-->
+11. **In Studio Web the deliverable is the open solution.** The SDD's `## Next Steps` section tells the user each project is created inside the open Studio Web solution (`uip <family> init <ProjectName>` per project); there is no solution to create and no packing step. Exception: when the Constraint Gate blocks Solutions for the delivery model — standalone, Automation Suite older than 2.2510, or a user exclusion — rewrite Next Steps to per-package Orchestrator publish routed via `uipath-platform`.
+<!--skill-flavor:solution-terminal-artifact:end-->

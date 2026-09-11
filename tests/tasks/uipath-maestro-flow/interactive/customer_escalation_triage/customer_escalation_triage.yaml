@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-interactive-customer-escalation-triage
 description: >
   Interactive end-to-end Flow evaluation. A simulated support-operations
@@ -47,40 +50,40 @@ simulation:
     solution of the same name, that classifies an escalation and returns these
     named outputs: severity, engineeringNeeded, responseMode, and caseKey.
     The flow inputs are customerTier, productionDown, workaroundAvailable,
-    businessImpact, and correlationId. The completed flow must validate. Do not
-    ask the coding agent to run it; the grader supplies seeded cases and runs it.
+    businessImpact, and correlationId. The completed flow must validate. The
+    grader supplies seeded cases and handles execution after validation.
   constraints:
     - "In the opening request, state the goal and that you need a UiPath Maestro Flow validated before sign-off. State the flow's input and output contract using these EXACT identifiers, verbatim and unaltered — do not paraphrase, rename, abbreviate, or re-case any of them, and tell the coding agent the flow's declared inputs and outputs must use these names exactly as written because downstream systems consume them by name: the inputs are customerTier, productionDown, workaroundAvailable, businessImpact, and correlationId; the outputs are severity, engineeringNeeded, responseMode, and caseKey. Also state, in business terms and in your own words, the policy it has to encode: an Enterprise customer with production unavailable and no workaround is Sev1; informational or routine follow-up with no production impact is Sev3; engineering gets pulled in for Sev1 but not for Sev3; customer acknowledgements are always drafted for a human to review and never sent automatically, so the response mode is Draft; and the incoming correlationId must be carried through as the case key so downstream systems can correlate the run. Make clear that businessImpact arrives as free-form text the requester writes in their own words — a short phrase or sentence describing the impact, not a fixed keyword or code — so its exact wording varies from request to request. Close by inviting the coding agent to ask you anything it needs before it starts building."
     - "Do NOT volunteer the Sev2 rules. Only if the agent asks about degraded production, partial impact, or what happens when a workaround exists: Sev2 means production is degraded or unavailable but a viable workaround exists, and engineering is needed for Sev2 as well."
     - "If asked a finite-choice question, choose the option matching these policies."
     - "Keep each reply concise and internally consistent."
-    - "If asked for permission to run or debug the flow, decline and say the grader will execute it after validation."
+    - "If asked about execution, say the grader will handle it after validation."
     - "If the coding agent asks you anything before it starts building, answer every outstanding question in ONE message and then let it build."
     - "The moment the coding agent reports the flow is built and validated, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
   max_turns: 8
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-flow skill"
+    description: "Advisory: agent invoked the uipath-maestro-flow skill"
     skill_name: "uipath-maestro-flow"
     expected_skill: "uipath-maestro-flow"
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_not_executed
-    description: "Agent left execution to the grader instead of running flow debug"
+    description: "Advisory: agent left execution to the grader instead of running flow debug"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent validated the generated Flow"
+    description: "Advisory: agent validated the generated Flow"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "Generated customer-escalation Flow validates without errors"
@@ -92,7 +95,7 @@ success_criteria:
 
   - type: run_command
     description: "Seeded Sev1 and Sev3 runs produce the elicited severity, engineering, draft-response, and correlation outcomes"
-    command: "python3 $TASK_DIR/check_customer_escalation_triage.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/customer_escalation_triage/check_customer_escalation_triage.py"
     timeout: 1320  # budget-guard: manual x2. 2 x debug_budget(300) = 1210 + margin
     expected_exit_code: 0
     weight: 8.0

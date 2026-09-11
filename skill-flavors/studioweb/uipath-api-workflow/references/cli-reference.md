@@ -3,7 +3,7 @@ Studio Web command and tool reference for authoring, static validation, approved
 <!--skill-flavor:reference-surface-summary:end-->
 
 <!--skill-flavor:host-command-scope:start-->
-> **Studio Web command surface:** use the host-registered embedded CLI for `api-workflow validate`, `api-workflow registry resolve` / `stub`, read-only `uip is` discovery (`list`, `describe`, `ping`), and `uip solution publish --help` plus approved host-intercepted active-solution publication. Authentication comes from the active Studio Web session. Use consent-gated, schema-inspected `proxy-tools-Api` / `RunProject` for execution and live host schemas for project, resource, and lifecycle operations.
+> **Studio Web command surface:** use the host-registered embedded CLI for `api-workflow validate`, `api-workflow registry resolve` / `stub`, read-only `uip is` discovery (`list`, `describe`, `ping`), and approved host-intercepted active-solution publication via `uip solution publish`. Authentication comes from the active Studio Web session. Use consent-gated, schema-inspected `proxy-tools-Api` / `RunProject` for execution and live host schemas for project, resource, and lifecycle operations.
 
 <!--skill-flavor:host-command-scope:end-->
 
@@ -69,28 +69,28 @@ Use `CreateProjects` for project creation and schema-inspected Studio Web capabi
 
 ### Publish the active Studio Web solution
 
-Studio Web intercepts `solution:publish` through Unified Build. The help form is read-only:
+Studio Web intercepts `solution:publish` through Unified Build. There is no help form — an unknown flag (including `--help`) fails the command without publishing. For an explicit user publish request or approval, start with the bare form:
 
 ```bash
-uip solution publish --help
+uip solution publish
 ```
 
-For an explicit user publish request or approval, run the active-solution form:
+With one publish destination this publishes there directly. With several it publishes nothing and lists them — ask the user which destination to use (personal workspace vs shared location), then rerun with the choice:
 
 ```bash
-uip solution publish [--description <text>] [--release-notes <text>] [--version <version>] [--location <value>] [--location-name <value>] [--personal-workspace]
+uip solution publish --location "<key or name>" [--description <text>] [--release-notes <text>] [--version <version>]
 ```
 
 Supported bridge flags:
 
 | Flag | Purpose |
 |---|---|
+| `--location <key or name>` | Destination, matched by key or name against the listed destinations. |
+| `--personal-workspace` | Select the personal-workspace destination without knowing its key. |
+| `--version <version>` | Requested solution version. |
 | `--description <text>` | Publication description. |
 | `--release-notes <text>` | Release notes for this publication. |
-| `--version <version>` | Requested solution version. |
-| `--location <value>` | Target location identifier accepted by the Studio Web bridge. |
-| `--location-name <value>` | Target location name accepted by the Studio Web bridge. |
-| `--personal-workspace` | Publish to the personal workspace target. |
+| `--location-name <name>` | Override the destination display name (rarely needed). |
 
 The active Studio Web solution is implicit. A successful command result means Unified Build accepted the request and background packaging began. Check Studio Web's Publish history for the final success or failure state.
 <!--skill-flavor:local-solution-lifecycle:end-->

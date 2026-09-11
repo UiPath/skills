@@ -1,0 +1,99 @@
+{
+  "identifier": "f1x7ure0-0000-4000-8000-000000000001",
+  "productIdentifier": "UnsupportedTypes",
+  "isRestricted": true,
+  "product": {
+    "name": "UnsupportedTypes",
+    "label": "Unsupported Types",
+    "isRestricted": true,
+    "isCloud": false,
+    "isRemote": false
+  },
+  "version": {
+    "major": 99,
+    "minor": 99,
+    "hotfix": 99
+  },
+  "template": {
+    "type": "form",
+    "display": "form",
+    "name": "unsupportedTypes",
+    "title": "Unsupported Types",
+    "components": [
+      {
+        "label": "Text Field",
+        "tableView": true,
+        "key": "textField",
+        "type": "textfield",
+        "input": true,
+        "defaultValue": "input-text"
+      },
+      {
+        "label": "Checkbox",
+        "tableView": false,
+        "key": "checkbox",
+        "type": "checkbox",
+        "input": true,
+        "defaultValue": true
+      },
+      {
+        "label": "Uploaded File",
+        "tableView": false,
+        "key": "uploadedFile",
+        "type": "file",
+        "input": true,
+        "storage": "base64",
+        "fileMaxSize": "1GB"
+      },
+      {
+        "label": "Signature",
+        "tableView": false,
+        "key": "signature",
+        "type": "signature",
+        "input": true
+      },
+      {
+        "label": "Address",
+        "tableView": false,
+        "key": "address",
+        "type": "address",
+        "input": true,
+        "provider": "nominatim"
+      },
+      {
+        "label": "Data Map",
+        "tableView": false,
+        "key": "dataMap",
+        "type": "datamap",
+        "input": true,
+        "valueComponent": {
+          "type": "textfield",
+          "key": "key",
+          "label": "Value",
+          "input": true,
+          "hideLabel": true,
+          "tableView": true
+        }
+      },
+      {
+        "type": "button",
+        "label": "Submit",
+        "key": "submit",
+        "disableOnInvalid": true,
+        "input": true,
+        "tableView": false
+      }
+    ]
+  },
+  "defaultData": {
+    "data": {
+      "textField": "input-text",
+      "checkbox": true,
+      "uploadedFile": [],
+      "signature": "",
+      "address": {},
+      "dataMap": {},
+      "submit": true
+    }
+  }
+}

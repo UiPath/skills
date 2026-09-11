@@ -31,7 +31,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Read `caseplan.json`. Locate top-level `metadata` object (initialize `metadata: {}` if missing — should already exist from T01). Initialize `metadata.caseExitRules = []` if absent.
 4. Read the rule type and marks-case-complete flag from the SDD's Case Exit Conditions row; pick the recipe below
-5. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-case-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `metadata.caseExitRules[]` whose `marksCaseComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
+5. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-case-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. FE keeps the two kinds on independent counters, but each counts **case-wide**, not within `metadata.caseExitRules[]` alone: scan the whole `caseplan.json` for that kind's pattern across `metadata.caseExitRules[]` and every stage's `data.exitConditions[]`, then `N` = highest + 1 (`1` when none). Case-exit rules share the pool with stage exits; `validate` reports a collision here as `[nodes[root]]` — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness). Never emit a blank or omitted `displayName`.
 6. Append the condition object to `metadata.caseExitRules[]`
 
 ## Rule Types

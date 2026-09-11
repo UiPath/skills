@@ -23,7 +23,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from _shared.flow_check import assert_flow_has_node_type  # noqa: E402
+from _shared.flow_check import assert_flow_has_node_type, find_flow_file  # noqa: E402
 
 CONNECTOR_KEY = "uipath-microsoft-azureactivedirectory"
 FLOW_GLOB = "**/CeqlWhereTest*.flow"
@@ -134,10 +134,24 @@ def _check_where_detail() -> None:
 
 
 def _find_flow() -> str:
-    flows = glob.glob(FLOW_GLOB, recursive=True)
-    if not flows:
-        sys.exit(f"FAIL: No flow file matching {FLOW_GLOB}")
-    return flows[0]
+    return find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
+
+
+def _is_groups_operation(node: dict) -> bool:
+    node_type = str(node.get("type") or "").lower()
+    if CONNECTOR_KEY not in node_type:
+        return False
+    if "group" in node_type:
+        return True
+
+    detail = node.get("inputs", {}).get("detail", {}) or {}
+    object_name = detail.get("objectName") or (detail.get("pathParameters") or {}).get("objectName")
+    endpoint = str(detail.get("endpoint") or "").rstrip("/").lower()
+    return (
+        node_type.endswith(".list-all-records")
+        and str(object_name or "").lower() == "groups"
+        and (not endpoint or endpoint.endswith("/groups"))
+    )
 
 
 def _check_flow_structure() -> None:
@@ -158,12 +172,7 @@ def _check_flow_structure() -> None:
             "the registered key with `uip maestro flow registry search`."
         )
 
-    found_groups = False
-    for node in flow.get("nodes", []):
-        node_type = node.get("type", "")
-        if CONNECTOR_KEY in node_type and "group" in node_type.lower():
-            found_groups = True
-            break
+    found_groups = any(_is_groups_operation(node) for node in flow.get("nodes", []))
     if not found_groups:
         sys.exit(
             f"FAIL: No connector node of type "

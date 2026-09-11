@@ -9,7 +9,9 @@ description: >
 
   The negative twin of gate_create (which seeds the panel-created folder and
   expects the agent to stop and ask): together they pin the condition the gate
-  hinges on. Local-only.
+  hinges on. The prompt names the output key because the grader exact-matches
+  `{ "sum": 5 }` — an agent that picks `result`, or returns `{ result, sum }`
+  (gemini-3.6-flash, 2026-09-03), is not what this task measures. Local-only.
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:eval]
 
 sandbox:
@@ -21,7 +23,7 @@ pre_run:
 
 initial_prompt: |
   Create an API workflow in the scaffolded project ./AddNumbers that takes two
-  numbers `a` and `b` and returns their sum.
+  numbers `a` and `b` and returns their sum as `{ "sum": <a + b> }`.
 
 success_criteria:
   - type: run_command

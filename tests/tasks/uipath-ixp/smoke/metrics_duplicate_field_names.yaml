@@ -1,0 +1,171 @@
+task_id: skill-ixp-metrics-duplicate-field-names-smoke
+description: >
+  Smoke: comparing two model versions, the agent matches fields on `FieldId`
+  and reports `Name` — improve-prompts-guide 1a.
+
+  The fixture gives two fields the same display name "Description", one in each
+  of two groups. An agent that joins the versions on `Name` collapses the pair
+  and reports three fields instead of four; one that looks the baseline up by
+  name reports four but reads the wrong baseline for the Invoice-group
+  "Description" (0.900 instead of its own 0.700) and calls an unchanged field
+  regressed. Matching on `FieldId` gives both the right count and the right
+  verdicts.
+
+  Because the two share a name, guide 1a also requires qualifying them with
+  their `FieldGroup` — a bare "Description" twice tells the reader nothing.
+
+  Field `dddd000000000003` is renamed between the versions — `Notes` in v20,
+  `Remarks` in v21. Both are correct: `Name` resolves against the taxonomy each
+  version was trained on. The report must carry one row for it, under the
+  current name.
+
+  The prompt pins the name to version 21, so the renamed field has exactly one
+  right answer. It still names only the display name — the `FieldId` join is
+  graded through its consequences, never mentioned.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:improve]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_metrics}
+
+initial_prompt: |
+  An improvement iteration just finished on the IXP project
+  `invoices_dup-3e8b52c7-ixp`. Model version 20 was the state before it;
+  version 21 is the result.
+
+  Compare every field's F1 between the two versions and write
+  `comparison.json` in the working directory:
+
+      {"fields": [
+         {"name": ..., "baseline_f1": ..., "current_f1": ..., "verdict": ...},
+         ...
+      ]}
+
+  `verdict` is "regressed" if the field's F1 fell from version 20 to version
+  21, otherwise "unchanged".
+
+  Report each field under the name it has in version 21.
+
+  Sort `fields` by `current_f1`, lowest first. Include every field, not only
+  the ones that moved.
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Read the baseline version (20), not just the current one"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\b(?=.*(?:--model-version[= ]|-m\s+)20\b).*)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Two fields share the name "Description", so an agent keyed on `Name`
+  # collapses the pair. A name-keyed union of both versions reports four
+  # instead but splits the renamed field, which the rename criterion catches.
+  - type: json_check
+    description: "Kept the two same-named fields apart — four fields compared, not three"
+    path: "comparison.json"
+    assertions:
+      - expression: "length(fields)"
+        operator: equals
+        expected: 4
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # A shared name must stay distinguishable, so guide 1a qualifies it with
+  # `FieldGroup`. Two `contains` rather than one `equals`: the guide fixes
+  # what must appear, not the separator.
+  - type: json_check
+    description: "Reported the regressed field as its group + display name, against its own 0.900 baseline"
+    path: "comparison.json"
+    assertions:
+      - expression: "fields[0].name"
+        operator: contains
+        expected: "Description"
+      - expression: "fields[0].name"
+        operator: contains
+        expected: "Line Items"
+      # Bracketed, not equal: the backend serves float32 widened to double
+      # (0.8999999761581421), and the guide says to round for display.
+      - expression: "fields[0].baseline_f1"
+        operator: gte
+        expected: 0.89
+      - expression: "fields[0].baseline_f1"
+        operator: lte
+        expected: 0.91
+      - expression: "fields[0].verdict"
+        operator: equals
+        expected: "regressed"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The namesake. Its baseline (0.700) differs from the other "Description"
+  # (0.900), so an agent that looks baselines up by name reads 0.900 here and
+  # calls it regressed. Only a FieldId match gives it its own 0.700.
+  - type: json_check
+    description: "Read the other `Description` field's own baseline — unchanged at 0.700, not regressed against its namesake's 0.900"
+    path: "comparison.json"
+    assertions:
+      # This row named `Description` and qualified with `Invoice`, NOT
+      # `Invoice > Line Items` — separator and word order free. A regex
+      # because `contains` cannot express the exclusion.
+      - expression: "fields[1].name"
+        operator: regex
+        expected: "(?i)^(?!.*line[ _-]*items)(?=.*description)(?=.*invoice).*$"
+      - expression: "fields[1].baseline_f1"
+        operator: gte
+        expected: 0.69
+      - expression: "fields[1].baseline_f1"
+        operator: lte
+        expected: 0.71
+      - expression: "fields[1].verdict"
+        operator: equals
+        expected: "unchanged"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The renamed field. v20 calls it `Notes`, v21 `Remarks` — both correct,
+  # since `Name` resolves per version. A regex, so "Notes -> Remarks" passes
+  # too, and because `contains` rejects literals under 8 characters.
+  - type: json_check
+    description: "Reported the renamed field as one row under its current name"
+    path: "comparison.json"
+    assertions:
+      - expression: "fields[2].name"
+        operator: regex
+        expected: "(?i)remarks"
+      # Bracketed for the same float32-widening reason as the rows above.
+      - expression: "fields[2].baseline_f1"
+        operator: gte
+        expected: 0.79
+      - expression: "fields[2].baseline_f1"
+        operator: lte
+        expected: 0.81
+      - expression: "fields[2].current_f1"
+        operator: gte
+        expected: 0.79
+      - expression: "fields[2].current_f1"
+        operator: lte
+        expected: 0.81
+      - expression: "fields[2].verdict"
+        operator: equals
+        expected: "unchanged"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # `get-metrics` carries `Name`, so a taxonomy fetch is a wasted call. The
+  # mock still serves get-taxonomy, so this grades the choice, not the
+  # capability. Both taxonomy verbs count.
+  - type: command_not_executed
+    description: "Did NOT fetch the taxonomy to name fields — `get-metrics` already returns `Name`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+(?:projects|deployments)\s+get-taxonomy\b'
+    weight: 1.5
+    pass_threshold: 1.0

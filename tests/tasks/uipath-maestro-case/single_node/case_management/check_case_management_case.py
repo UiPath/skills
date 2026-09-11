@@ -17,8 +17,9 @@ def main():
     task = assert_task_type_present("case-management")
     if task_is_skeleton(task):
         sys.exit(
-            "FAIL: case-management task is a skeleton — debug requires a "
-            "resolved CaseTest registry entry with a real taskTypeId"
+            "FAIL: case-management task is a skeleton — data.name and "
+            "data.folderPath are unset. Resolve the CaseTest registry entry and "
+            "wire it into the task; debug cannot run against an unwired reference."
         )
     run_debug(timeout=540)
     print(

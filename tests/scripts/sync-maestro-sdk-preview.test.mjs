@@ -160,19 +160,19 @@ function createInitialSnapshot(skillsRoot, upstreamRoot, pin) {
     [
       'uipath-maestro-flow',
       'typescript/sdk/skill/SKILL.md',
-      'preview/uipath-maestro-flow/SKILL.md',
+      'preview/skills/uipath-maestro-flow/SKILL.md',
       adaptFlowSkill,
     ],
     [
       'uipath-maestro-case',
       'typescript/sdk/skill/SKILL-case.md',
-      'preview/uipath-maestro-case/SKILL.md',
+      'preview/skills/uipath-maestro-case/SKILL.md',
       adaptCaseSkill,
     ],
     [
       'uipath-maestro-bpmn',
       'typescript/sdk/skill/SKILL-bpmn.md',
-      'preview/uipath-maestro-bpmn/SKILL.md',
+      'preview/skills/uipath-maestro-bpmn/SKILL.md',
       adaptBpmnSkill,
     ],
   ];
@@ -186,52 +186,52 @@ function createInitialSnapshot(skillsRoot, upstreamRoot, pin) {
 
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/references/api.md',
+    'preview/skills/uipath-maestro-flow/references/api.md',
     adaptFlowApi(read(upstreamRoot, 'typescript/sdk/skill/references/api.md')),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/references/guide.md',
+    'preview/skills/uipath-maestro-flow/references/guide.md',
     read(upstreamRoot, 'typescript/sdk/skill/references/guide.md'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/references/api.md',
+    'preview/skills/uipath-maestro-case/references/api.md',
     read(upstreamRoot, 'typescript/sdk/skill/references/case-api.md'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-bpmn/references/api.md',
+    'preview/skills/uipath-maestro-bpmn/references/api.md',
     read(upstreamRoot, 'typescript/sdk/skill/references/bpmn-api.md'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/examples/Foo.flow.ts',
+    'preview/skills/uipath-maestro-flow/examples/Foo.flow.ts',
     read(upstreamRoot, 'typescript/sdk/example-eval/Foo.flow.ts'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/examples/bindings.json',
+    'preview/skills/uipath-maestro-flow/examples/bindings.json',
     read(upstreamRoot, 'typescript/sdk/example-eval/bindings.json'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/examples/Other.case.ts',
+    'preview/skills/uipath-maestro-case/examples/Other.case.ts',
     read(upstreamRoot, 'typescript/sdk/example/Other.case.ts'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts',
+    'preview/skills/uipath-maestro-case/examples/NotifyOnApproval.case.ts',
     adaptCaseExample(read(upstreamRoot, 'typescript/sdk/example/NotifyOnApproval.case.ts')),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/examples/bindings.json',
+    'preview/skills/uipath-maestro-case/examples/bindings.json',
     read(upstreamRoot, 'typescript/sdk/example/case-bindings.json'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-bpmn/examples/NotifyChannel.bpmn.ts',
+    'preview/skills/uipath-maestro-bpmn/examples/NotifyChannel.bpmn.ts',
     read(upstreamRoot, 'typescript/sdk/example/NotifyChannel.bpmn.ts'),
   );
 }
@@ -302,56 +302,56 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
       { oldPin, newPin, changed: true },
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-flow/references/api.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/references/api.md'),
       '# Flow API v2\n\nWorked example: `examples/Foo.flow.ts`\n',
     );
     assert.equal(
-      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/guide.md')),
+      fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/references/guide.md')),
       false,
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-flow/references/new.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/references/new.md'),
       '# New reference\n',
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-flow/examples/Foo.flow.ts'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/examples/Foo.flow.ts'),
       'export const value = 2;\n',
     );
     assert.match(
-      read(skillsRoot, 'preview/uipath-maestro-flow/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/SKILL.md'),
       /\| Script action \|.*`examples\/Foo\.flow\.ts`/,
     );
     assert.match(
-      read(skillsRoot, 'preview/uipath-maestro-case/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-case/SKILL.md'),
       /New upstream Case guidance/,
     );
     assert.match(
-      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-bpmn/SKILL.md'),
       /# BPMN fixture v2[\s\S]*`examples\/NotifyChannel\.bpmn\.ts`/,
     );
     assert.doesNotMatch(
-      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-bpmn/SKILL.md'),
       /representative process/,
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-case/references/case-runtime.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-case/references/case-runtime.md'),
       '# Case runtime\n\nSee [Case API](api.md).\n',
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-bpmn/references/bpmn-runtime.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-bpmn/references/bpmn-runtime.md'),
       '# BPMN runtime\n\nSee [BPMN API](api.md).\n',
     );
     assert.equal(
-      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/case-runtime.md')),
+      fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/references/case-runtime.md')),
       false,
     );
     assert.equal(
-      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/bpmn-runtime.md')),
+      fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/references/bpmn-runtime.md')),
       false,
     );
     for (const skill of ['flow', 'case', 'bpmn']) {
       assert.match(
-        read(skillsRoot, `preview/uipath-maestro-${skill}/SKILL.md`),
+        read(skillsRoot, `preview/skills/uipath-maestro-${skill}/SKILL.md`),
         new RegExp(`@ ${newPin}\\. Canonical source`),
       );
     }
@@ -360,6 +360,74 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
   } finally {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+test('the sibling paragraph is matched by shape, not by package name', () => {
+  // The point of SIBLING_PARAGRAPH. The fixture above is byte-identical to the
+  // literal this replaced, so without this test the suite is green against both
+  // implementations — revert the matcher to three literals and nothing fails,
+  // while the real upstream body (renamed) throws on the old code and passes on
+  // the new one. That gap was the whole change and nothing recorded it.
+  const renamed = flowSiblingParagraph.replaceAll(
+    '@uipath/flow-sdk',
+    '@uipath/maestro-builder-sdk',
+  );
+  assert.match(
+    adaptFlowSkill(`${renamed}\n\n${flowStagingParagraph}`),
+    /own skills:\n`uipath-maestro-case` for `@uipath\/maestro-builder-sdk\/case`/,
+  );
+  // And the specifier is CARRIED, not assumed: the old name still round-trips.
+  assert.match(
+    adaptFlowSkill(`${flowSiblingParagraph}\n\n${flowStagingParagraph}`),
+    /own skills:\n`uipath-maestro-case` for `@uipath\/flow-sdk\/case`/,
+  );
+});
+
+test('both wordings of the sibling paragraph match', () => {
+  // A three-way merge can start from a pin carrying either form, so the matcher
+  // spans both. The long one is what upstream ships today.
+  const long = [
+    'The sibling authoring surfaces have their own:',
+    '[`references/case-api.md`](references/case-api.md) for `@uipath/maestro-builder-sdk/case`',
+    'and [`references/bpmn-api.md`](references/bpmn-api.md) for',
+    '`@uipath/maestro-builder-sdk/bpmn`; their runtime-only decisions are in',
+    '[`references/case-runtime.md`](references/case-runtime.md) and',
+    '[`references/bpmn-runtime.md`](references/bpmn-runtime.md). None are needed to',
+    'build a Flow.',
+  ].join('\n');
+  assert.match(
+    adaptFlowSkill(`${long}\n\n${flowStagingParagraph}`),
+    /own skills:\n`uipath-maestro-case` for `@uipath\/maestro-builder-sdk\/case`/,
+  );
+});
+
+test('a reworded closing sentence fails loudly instead of swallowing the file', () => {
+  // The matcher's gap is BOUNDED for this reason. Unbounded, a reworded closing
+  // sentence made any later "build a Flow." the match end, and the replacement
+  // deleted everything between — silently, inside a large generated diff.
+  const reworded = [
+    'The sibling authoring surfaces have their own:',
+    '[`references/case-api.md`](references/case-api.md) for `@uipath/maestro-builder-sdk/case`',
+    'and [`references/bpmn-api.md`](references/bpmn-api.md) for',
+    '`@uipath/maestro-builder-sdk/bpmn`. Neither is required here.',
+    '',
+    '## Quick start',
+    '',
+    'IMPORTANT SECTION THAT MUST SURVIVE',
+    '',
+    'Run `uip maestro flow init` to build a Flow.',
+  ].join('\n');
+  assert.throws(
+    () => adaptFlowSkill(`${reworded}\n\n${flowStagingParagraph}`),
+    /update SIBLING_PARAGRAPH/,
+  );
+});
+
+test('a dropped sibling section fails loudly', () => {
+  assert.throws(
+    () => adaptFlowSkill(`# Flow\n\n${flowStagingParagraph}`),
+    /update SIBLING_PARAGRAPH/,
+  );
 });
 
 test('Flow API adaptation waits for the upstream staged-path fix', () => {

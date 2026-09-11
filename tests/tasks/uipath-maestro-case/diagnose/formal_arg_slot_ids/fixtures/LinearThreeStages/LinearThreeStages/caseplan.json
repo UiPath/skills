@@ -51,7 +51,7 @@
         "id": "skipReview",
         "name": "skipReview",
         "type": "boolean",
-        "default": false,
+        "default": "false",
         "custom": true,
         "elementId": "root"
       },
@@ -408,7 +408,7 @@
             {
               "name": "caseRef",
               "type": "string",
-              "source": "=vars.pQr7Ks2Wm",
+              "source": "=vars.vPq7Ks2Wm",
               "var": "caseRef"
             }
           ]

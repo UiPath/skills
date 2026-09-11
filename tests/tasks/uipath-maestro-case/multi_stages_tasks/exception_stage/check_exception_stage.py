@@ -15,6 +15,7 @@ from _shared.case_check import (  # noqa: E402
     iter_stage_exit_conditions,
     partition_return_to_origin_conditions,
     read_caseplan,
+    selected_stage_ids,
 )
 
 
@@ -77,10 +78,10 @@ def main():
             f"FAIL: 'Issues' interrupting rule should be 'selected-stage-exited'; "
             f"got {issues_rule and issues_rule.get('rule')!r}"
         )
-    if issues_rule.get("selectedStageId") != process["id"]:
+    if process["id"] not in selected_stage_ids(issues_rule):
         sys.exit(
             f"FAIL: 'Issues' rule.selectedStageId should be Process id "
-            f"({process['id']}), got {issues_rule.get('selectedStageId')!r}"
+            f"({process['id']}), got {selected_stage_ids(issues_rule)!r}"
         )
 
     critical_entry = list(iter_stage_entry_conditions(critical))
@@ -93,10 +94,10 @@ def main():
             f"FAIL: 'Critical' interrupting rule should be 'selected-stage-exited'; "
             f"got {critical_rule and critical_rule.get('rule')!r}"
         )
-    if critical_rule.get("selectedStageId") != process["id"]:
+    if process["id"] not in selected_stage_ids(critical_rule):
         sys.exit(
             f"FAIL: 'Critical' rule.selectedStageId should be Process id "
-            f"({process['id']}), got {critical_rule.get('selectedStageId')!r}"
+            f"({process['id']}), got {selected_stage_ids(critical_rule)!r}"
         )
 
     for label, node in (("Issues", issues), ("Critical", critical)):
@@ -147,7 +148,7 @@ def main():
     critical_case_exits = []
     for cond in get_case_exit_conditions(plan):
         rule = first_rule_of_condition(cond) or {}
-        if rule.get("selectedStageId") == critical["id"]:
+        if critical["id"] in selected_stage_ids(rule):
             critical_case_exits.append(cond)
     if not critical_case_exits:
         sys.exit("FAIL: terminal secondary stage 'Critical' needs a root case-exit row")

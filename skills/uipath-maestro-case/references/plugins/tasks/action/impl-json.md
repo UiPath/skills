@@ -31,15 +31,17 @@
 
 ## Action-Specific Fields
 
-> **Unresolved → `"data": {}`.** When `action-app-id` is `<UNRESOLVED>` (or `action-apps-index.json` returned 0 nodes), the entire shape collapses to `"data": {}`. **No exception** for `taskTitle`, `priority`, `recipient`, `labels`, `name`, `folderPath`, `inputs`, `outputs`, or optional `actionCatalogName` — omit every `data.*` key. See [placeholder-tasks.md](../../../placeholder-tasks.md).
+> **Unresolved → `"data": {}`.** When `action-app-id` is `<UNRESOLVED>` (or `action-apps-index.json` returned 0 nodes), the entire shape collapses to `"data": {}`. **No exception** for `taskTitle`, `priority`, `recipient`, `labels`, `name`, `folderPath`, `inputs`, or `outputs` — omit every `data.*` key. See [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 | Field | Notes |
 |---|---|
 | `data.taskTitle` | Required on **resolved** action tasks — validator rejects empty. Placeholders omit it (along with every other `data.*` action-specific key); see [placeholder-tasks.md](../../../placeholder-tasks.md). |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
 | `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
-| `data.actionCatalogName` | **Optional.** Must bind to an existing action catalog resource. Omit unless the SDD references a known catalog. |
+| `data.actionCatalogName` | **Omit the key.** See the note below. |
 | `data.labels` | Label set from the SDD |
+
+> **Omit `data.actionCatalogName`.** An sdd.md never names an action catalog, so there is nothing to write here. Do not derive a value from another SDD field. The key names an action catalog, an Orchestrator resource that exists per folder, and the platform resolves that name in the **app's deployment folder** (the folder `data.folderPath` binds), not in the folder the case runs in. A name that folder does not hold fails the task the moment it opens, with `No task catalog exists with name <value>`, and nothing before that reports it: the name resolves against tenant state, so `validate` cannot check it, and the task's own app bindings are correct, so the caseplan reads as complete. Omitting the key creates the task with no catalog; its folder, its assignee and its inputs are unaffected, because a catalog only groups tasks and carries their encryption and retention settings. When the USER names a catalog explicitly, confirm it exists in that folder before writing it: `uip tasks catalogs list --folder-path "<app deployment folder>" --output json`.
 
 `recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"` (sdd `Expression:`). **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant placeholder, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it.
 
@@ -66,7 +68,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 **Step 2 — Write task:**
 
 1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
-2. Set `data.taskTitle`, `data.priority`, `data.labels` from the SDD now (plain strings, not Phase-3 bindings); set `data.actionCatalogName` only when the SDD references an existing catalog. **`data.recipient` is an object, NEVER a bare string.** Wrap the SDD's recipient value as `{ "Type": <int>, "Value": <value> }`. `UserGroup:` is the one prefix planning keeps: strip it and emit `Type 1` with the **group name** in `Value`, never a UUID. Every other value arrives bare and its Type comes from its shape (`=vars.X` → `3`, email → `2`, user UUID → `0`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`, and `recipient: UserGroup: Compliance` → `{ "Type": 1, "Value": "Compliance" }`. Do not copy the bare value through as `data.recipient`.
+2. Set `data.taskTitle`, `data.priority`, `data.labels` from the SDD now (plain strings, not Phase-3 bindings); omit `data.actionCatalogName` (see the note under § Action-Specific Fields for the one case that writes it). **`data.recipient` is an object, NEVER a bare string.** Wrap the SDD's recipient value as `{ "Type": <int>, "Value": <value> }`. `UserGroup:` is the one prefix planning keeps: strip it and emit `Type 1` with the **group name** in `Value`, never a UUID. Every other value arrives bare and its Type comes from its shape (`=vars.X` → `3`, email → `2`, user UUID → `0`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`, and `recipient: UserGroup: Compliance` → `{ "Type": 1, "Value": "Compliance" }`. Do not copy the bare value through as `data.recipient`.
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
@@ -83,12 +85,14 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever the SDD recorded a recipient (omitted only for Skip or no-Type-maps). A group/role is `Type 1` carrying the group **name**; dropping it leaves the task created and reaching nobody
+- `data.actionCatalogName` is absent (present only for a catalog the USER named and you confirmed in the app's deployment folder)
 - `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the SDD declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))
 - `id` captured in `id-map.json`
 
 ## Anti-patterns
 
 - **Do NOT emit `data.recipient` as a bare string, drop it, or "resolve" it.** It is always the object `{ Type, Value }` written at Step 2 (not an io-binding target). The SDD value (`=vars.X`, email, UUID) is the `Value` — wrap it, don't pass it through. `Type 3` `=vars.X` is the finished runtime reference; copying it through as a string, deferring to Phase 3, or rewriting it to the var's email each break the task. Symptoms: `data.recipient` is a string, or missing while the SDD names a recipient.
+- **Do NOT derive `data.actionCatalogName` from the SDD.** An sdd.md names no catalog, so any value taken from it is invented, and a name the app's deployment folder does not hold faults the task on open (see the note above § Action-Specific Fields).
 - **CLI `validate` does NOT check `data.recipient`** — verify presence/shape explicitly (Post-Write Verification).
 
 <!-- END: impl-json.md -->

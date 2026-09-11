@@ -31,7 +31,6 @@ returns FLATTENED records (top-level `sys_id`, …), which the check reports.
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import sys
@@ -40,7 +39,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from _shared.flow_check import (  # noqa: E402
     _get_ci,
     assert_flow_uses_connector_target,
-    find_project_dir,
+    find_flow_file,
     run_debug,
 )
 
@@ -56,11 +55,9 @@ OPERATION_SLUGS = ("list-records", "list-all-records")
 OBJECT_NAME = "acr_user"
 
 
-def _load_flow_nodes(project_dir: str) -> list[dict]:
-    flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
-    if not flows:
-        sys.exit(f"FAIL: No .flow file found under {project_dir}")
-    with open(flows[0]) as f:
+def _load_flow_nodes() -> list[dict]:
+    flow_path = find_flow_file(flow_glob="AcrUserList*.flow")
+    with open(flow_path) as f:
         flow = json.load(f)
     return flow.get("nodes") or []
 
@@ -132,7 +129,7 @@ def _assert_structure() -> None:
     # A real ServiceNow connector node must be present (native connector node).
     assert_flow_uses_connector_target(CONNECTOR_KEY)
 
-    nodes = _load_flow_nodes(find_project_dir())
+    nodes = _load_flow_nodes()
     list_nodes = []
     for n in nodes:
         if CONNECTOR_KEY not in str(n.get("type", "")).lower():

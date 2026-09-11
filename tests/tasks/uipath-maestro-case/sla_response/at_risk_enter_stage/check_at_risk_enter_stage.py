@@ -5,6 +5,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import is_non_required  # noqa: E402
 from _shared.sla_response_check import (  # noqa: E402
     assert_at_risk_shape,
     assert_interrupting,
@@ -33,7 +34,7 @@ def main() -> None:
     lane = lanes[0]
     lane_data = lane["data"]
 
-    if lane_data.get("isRequired") is not False:
+    if not is_non_required(lane_data):
         fail(
             f"lane {label_of(lane)!r} has isRequired={lane_data.get('isRequired')!r}; an SLA lane "
             "must stay out of the happy-path required-stages-completed set"
