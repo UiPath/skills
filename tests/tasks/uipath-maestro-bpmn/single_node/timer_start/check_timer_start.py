@@ -27,6 +27,7 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
+UIPATH_NS = "http://uipath.org/schema/bpmn"
 # ISO-8601 repeating interval: R[n]/ then a period or start-datetime.
 REPEATING = re.compile(r"^R\d*/")
 
@@ -51,13 +52,23 @@ def main() -> None:
             timer_starts.append(start)
     if not timer_starts:
         fail("no bpmn:startEvent with Intsvc.TimerTrigger + timerEventDefinition")
+    if len(timer_starts) != 1:
+        fail(f"expected exactly one timer start event; found {len(timer_starts)}")
     start = timer_starts[0]
 
     # No manual start: every start event must be the timer start (the flow port
-    # replaced manual with scheduled — they must not coexist).
+    # replaced manual with scheduled -- they must not coexist). This is a
+    # source-only shape by design: entry-point derivation selects manual root
+    # starts only, so the project is deliberately not package-ready and the task
+    # never calls refresh or pack.
     non_timer = [s for s in starts if s not in timer_starts]
     if non_timer:
         fail(f"a non-timer (manual) start event remains: {[attr(s, 'id') for s in non_timer]}")
+
+    # No entryPointId assertion: derivation selects manual root starts only, so
+    # an id here is accepted but inert (structural-bpmn.md). The prompt does not
+    # ask for one and Intsvc.TimerTrigger's template has no slot for it, so
+    # grading it failed every agent that followed the task.
 
     timer_def = child(start, "timerEventDefinition")
     cycle = child(timer_def, "timeCycle")

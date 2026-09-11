@@ -66,6 +66,23 @@ the body CDATA. Leave the structural placeholders (`{incomingEdge}` /
 `{outgoingEdge}`) wired to the sequence-flow ids you create in
 [structural-bpmn.md](structural-bpmn.md).
 
+Treat each template output and its process variable as one contract. Replace
+`{varId}` with a stable id and declare a task-scoped `uipath:inputOutput` with
+the template output's exact `type` and `elementId="<node-id>"`. This includes
+opaque types such as `custom` and product-specific types such as
+`Actions.HITL`; do not search examples for a guessed schema or coerce the type
+to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; live
+enrichment replaces it with concrete typed rows later, so do not pre-empt it.
+
+For an unresolved portable dynamic node, fill resource identity slots with the
+escaped public placeholders SKILL.md defines (`&lt;TENANT_URL&gt;`,
+`&lt;FOLDER_KEY&gt;`, `&lt;CONNECTION_NAME&gt;`), keep the retrieved
+context/output shape, and use only user-supplied values in the body or
+configurable context fields. Report the node as **draft** and name the
+CLI-owned blocker literally, including the exact phrase `connection binding` where
+that is what is missing. Do not inspect sibling skills, test fixtures, or
+generated packages to invent the missing live schema.
+
 ## 3. Connector (`Intsvc.*`) enrichment
 
 For connector types (`requiresDiscovery: Yes`, e.g.
@@ -146,11 +163,16 @@ schema fields returned by discovery). Do not add a downstream script task solely
 to split the API workflow service-task result into variables; that hides the
 requested service-task output contract from the model.
 
-## Integration Service triggers — bind trigger properties via the CLI
+## Integration Service triggers
 
-`Intsvc.TimerTrigger` and `Intsvc.EventTrigger` (and connector waits like
-`Intsvc.WaitForEvent`) need their **trigger properties** enriched/bound through
-the CLI — the same enrichment path as `Intsvc.*` activities (§3). A hand-authored
+`Intsvc.TimerTrigger` is portable: its registry entry has
+`RequiresDiscovery=false`, no binding, context, or input fields, and needs only
+the exact `registry get Intsvc.TimerTrigger` template. It does not require a
+live connection or schema enrichment.
+
+`Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` do need
+their **trigger properties** enriched/bound through the CLI — the same
+enrichment path as `Intsvc.*` activities (§3). A hand-authored connector
 trigger shell stays **draft** until the CLI supplies the concrete trigger
 properties, connection binding, and schemas.
 

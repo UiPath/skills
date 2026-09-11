@@ -1,11 +1,13 @@
 task_id: skill-bpmn-timer-start
 description: >
-  Timer start-event eval: agent uses the uipath-maestro-bpmn skill to author a
-  scheduled (timer) start event that fires on a recurring hourly cycle, using the
-  registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a
-  bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to a
-  BPMN timer start event. Authoring only — a timer only fires in a live engine,
-  so this validates the structure locally.
+  Timer start-event eval: agent uses the uipath-maestro-bpmn skill to author
+  a scheduled (timer) start event that fires on a recurring hourly cycle,
+  using the registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a
+  bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to
+  a BPMN timer start event. Source-only by construction: a timer start
+  derives no entry point, so the project is deliberately not package-ready.
+  Authoring only — a timer only fires in a live engine, so this validates
+  the structure locally.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:trigger"]
 
 run_limits:
@@ -26,10 +28,15 @@ initial_prompt: |
   scheduled timer start -> a script task that assembles a report -> end.
 
   Requirements:
-  - Discover the timer-trigger extension type via the registry and author its
-    node from the registry template. Do not hand-author uipath:* XML from prose.
+  - Retrieve the Intsvc.TimerTrigger template with `uip maestro bpmn registry
+    get` before authoring, and author the node from that template rather than
+    from prose.
+    Author the node from that template, not from prose.
   - The process start MUST be a bpmn:startEvent carrying the Intsvc.TimerTrigger
     wrapper and a bpmn:timerEventDefinition. There must be NO manual start event.
+    This makes the process source-only: only a manual root start derives an
+    entry point, so `refresh` and `pack` are unavailable for this shape and are
+    not part of the task.
   - Configure a recurring hourly schedule using a bpmn:timeCycle with a valid
     ISO-8601 repeating interval (for example R/PT1H). Do not use a never-firing
     interval.
@@ -42,6 +49,19 @@ initial_prompt: |
     pause for approval or confirmation.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent retrieved the Intsvc.TimerTrigger registry template"
+    tool_name: "Bash"
+    # Both tokens in one invocation, either order: agents legitimately batch
+    # lookups through a shell loop (`for t in Intsvc.TimerTrigger ...; do uip
+    # maestro bpmn registry get "$t"`), where the literal type never follows
+    # `get` directly. Still requires retrieving THIS type from the registry.
+    command_pattern: >-
+      (?s)(uip\s+maestro\s+bpmn\s+registry\s+get[\s\S]*Intsvc\.TimerTrigger|Intsvc\.TimerTrigger[\s\S]*uip\s+maestro\s+bpmn\s+registry\s+get)
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
     tool_name: "Bash"
