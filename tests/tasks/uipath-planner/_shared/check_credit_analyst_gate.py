@@ -8,7 +8,11 @@ import sys
 from pathlib import Path
 
 
-THRESHOLD = r"(?:\$?\s*5\s*(?:m(?:illion)?|million)\b|5,?000,?000\b)"
+# The optional `$` is OUTSIDE the alternation on purpose: inside the first branch
+# only, it made every dollar-signed digit form unmatchable ("greater than
+# $5,000,000" failed while "greater than 5,000,000" passed), which failed correct
+# designs — see tests/scripts/test_credit_analyst_gate_threshold.py.
+THRESHOLD = r"\$?\s*(?:5\s*(?:m(?:illion)?|million)\b|5,?000,?000\b)"
 HIGH_SIDE = rf"(?:>(?!=)\s*{THRESHOLD}|(?:over|above|greater\s+than|more\s+than|in\s+excess\s+of)\s*{THRESHOLD})"
 LOW_SIDE = re.compile(
     rf"(?:<=|<)\s*{THRESHOLD}|\b(?:at\s+or\s+below|below|under|up\s+to|no\s+more\s+than|not\s+more\s+than)\b",
