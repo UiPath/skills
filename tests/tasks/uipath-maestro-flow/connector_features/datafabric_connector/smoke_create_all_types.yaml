@@ -32,6 +32,10 @@ initial_prompt: |
   * lastUpdated: "2024-03-10T09:00:00" (DATETIME)
   * externalId: any valid UUID value of your choice
 
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for this operation, not
+  the native `core.datafabric.*` nodes.
+
   The Flow is not complete until `uip maestro flow validate` passes.
 
   This run is headless. No user is present and nobody will answer a question or

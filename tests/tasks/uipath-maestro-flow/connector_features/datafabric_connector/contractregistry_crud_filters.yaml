@@ -37,6 +37,10 @@ initial_prompt: |
   6. Map the created, queried, updated, and retrieved values to the flow
      output where the activity supports output mapping.
 
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
+
   The Flow is not complete until `uip maestro flow validate` passes.
 
   This run is headless. No user is present and nobody will answer a question or
