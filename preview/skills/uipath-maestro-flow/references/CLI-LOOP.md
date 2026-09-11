@@ -68,7 +68,11 @@ scaffold once:
 ```bash
 uip solution init <Solution>
 ( cd <Solution> && uip maestro flow init <Name> )
+uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o <Name>.flow.ts --no-pipeline
 ```
+
+That third command seeds the authored source from the stub `flow init` just wrote, so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
+Skip it when the source already exists, and skip the whole block for an existing project.
 
 `<Solution>` and `<Name>` are the request's own names, used verbatim: a request
 that gives one name for both ("inside a solution of the same name") uses it for

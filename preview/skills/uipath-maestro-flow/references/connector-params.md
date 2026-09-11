@@ -38,7 +38,8 @@ source. The loop is:
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
 4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
    invocation, and it finds the connection itself and writes `bindings.json`.
-   Switch to the generated descriptor import where it printed one.
+   `prepare` repoints the import itself; it only asks when two flows
+   import the same connector, or you passed `--no-source-rewrite`.
 5. **Check again, then compile.**
 
 Every prepare command below is the one `check` prints at step 3 — shown here
