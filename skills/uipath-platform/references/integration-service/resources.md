@@ -167,7 +167,7 @@ Common JMESPath patterns:
 
 ### Pagination rules
 
-1. **Always check `Data.Pagination`** — every `list` response may contain pagination state. Never assume a single page contains all results.
+1. **Always check `Data.Pagination`** — every `list` response may contain pagination state. Never assume a single page contains all results. `--output-filter` projects `Data` and drops `Pagination` with it, so never pass it on a lookup you are searching: filter the full envelope yourself.
 2. **Complete the pagination loop** — when searching for a specific item, keep paginating until `Data.Pagination.HasMore` is `"false"` or the item is found. Do NOT abandon pagination mid-loop to try alternative APIs (e.g., search endpoints, admin endpoints, HTTP fallback).
 3. **Stop early on match** — if you find the target item in the current page, stop. No need to fetch remaining pages.
 4. **Report not-found only after exhausting all pages** — only conclude an item does not exist after `HasMore` is `"false"` and every page has been checked.
