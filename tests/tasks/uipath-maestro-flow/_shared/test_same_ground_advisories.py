@@ -144,6 +144,186 @@ def test_native_anti_hardcode_guard_survives(tmp_path: Path) -> None:
     assert "$vars" in result.stdout + result.stderr
 
 
+def _native_rows(flow: dict) -> list[dict]:
+    """Every native read's root filter rows, for a test to mutate in place."""
+    return [
+        ((node.get("inputs") or {}).get("entityConfig") or {})["_filters"]["rows"]
+        for node in flow["nodes"]
+        if (node.get("inputs") or {}).get("entityConfig")
+    ]
+
+
+def _run_invoice_native(tmp_path: Path, mutate) -> subprocess.CompletedProcess:
+    target = native_build("advisory_billing_invoice_lookup.py", tmp_path)
+    flow = json.loads(target.read_text())
+    mutate(flow)
+    target.write_text(json.dumps(flow))
+    return run_script("advisory_billing_invoice_lookup.py", target)
+
+
+def test_native_filter_with_no_rows_fails(tmp_path: Path) -> None:
+    """An unfiltered read is the client-side-filter build the gate exists to name."""
+
+    def mutate(flow):
+        for rows in _native_rows(flow):
+            rows.clear()
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "no `entityConfig._filters` rows" in result.stdout + result.stderr
+
+
+def test_native_filter_no_rows_message_follows_result_mode(tmp_path: Path) -> None:
+    """A `single` read's failure is an over-match fault, not 100 arbitrary rows."""
+
+    def mutate(flow):
+        for node in flow["nodes"]:
+            config = (node.get("inputs") or {}).get("entityConfig")
+            if config:
+                config["resultMode"] = "single"
+                config["_filters"]["rows"].clear()
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "over-match" in result.stdout + result.stderr
+
+
+def test_native_filter_unsupported_operator_fails(tmp_path: Path) -> None:
+    """The serializer refuses the WHOLE query, so the node emits nothing and
+    every downstream `$vars` reference breaks."""
+
+    def mutate(flow):
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["operator"] = "not in"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "'not in'" in result.stdout + result.stderr
+
+
+def test_native_filter_blank_value_fails(tmp_path: Path) -> None:
+    """Reachable only past the references check, so the valid row stays: an
+    expression switched on and left blank is refused rather than dropped."""
+
+    def mutate(flow):
+        for rows in _native_rows(flow):
+            rows.append({"field": "status", "operator": "=", "value": "   "})
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "blank value" in result.stdout + result.stderr
+
+
+def test_native_filter_self_reference_fails(tmp_path: Path) -> None:
+    """A query cannot wait on the record it is being run to fetch."""
+
+    def mutate(flow):
+        for rows in _native_rows(flow):
+            rows.append({"field": "status", "operator": "=", "value": "=js:$self.Id"})
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "$self" in result.stdout + result.stderr
+
+
+def test_native_filter_in_a_nested_group_is_found(tmp_path: Path) -> None:
+    """`_filters` is a grouped model, so the computed row may sit in a group."""
+
+    def mutate(flow):
+        for node in flow["nodes"]:
+            config = (node.get("inputs") or {}).get("entityConfig")
+            if not config:
+                continue
+            rows = config["_filters"]["rows"]
+            config["_filters"] = {
+                "logicalOperator": "AND",
+                "rows": [],
+                "groups": [{"logicalOperator": "OR", "rows": list(rows), "groups": []}],
+            }
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_filter_reached_through_a_script_hop(tmp_path: Path) -> None:
+    """The prompt asks to normalise the input and THEN look up, and a native row
+    is a single `value`, so the normalisation lands in a Script the row reads.
+    Section 6 of this advisory already tolerates the hop for outputs."""
+
+    def mutate(flow):
+        flow["nodes"].append(
+            {
+                "id": "normalizeInvoice",
+                "type": "core.action.script",
+                "inputs": {"value": "=js:$vars.start.output.invoiceNumber.trim().toUpperCase()"},
+            }
+        )
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["value"] = "=js:$vars.normalizeInvoice.output.value"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_filter_hop_to_nothing_still_fails(tmp_path: Path) -> None:
+    """Following the hop must not degrade into accepting any `$vars` reference."""
+
+    def mutate(flow):
+        flow["nodes"].append(
+            {"id": "constant", "type": "core.action.script", "inputs": {"value": "MCS-9999-00000"}}
+        )
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["value"] = "=js:$vars.constant.output.value"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "invoiceNumber" in result.stdout + result.stderr
+
+
+def test_native_read_beside_a_connector_write_is_not_a_mix(tmp_path: Path) -> None:
+    """Each native op has its own tenant flag, so `read-entity` on with
+    `create-entity` off is a real configuration, not a half-migrated flow."""
+
+    def mutate(flow):
+        flow["nodes"].append(
+            {
+                "id": "auditWrite",
+                "type": "uipath.connector.uipath-uipath-dataservice.create-entity-record",
+                "inputs": {},
+            }
+        )
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_blank_folder_key_fails(tmp_path: Path) -> None:
+    """It is the key's PRESENCE that switches the emitted target to the
+    folder-qualified form, so a blank one emits that form with no folder."""
+
+    def mutate(flow):
+        for node in flow["nodes"]:
+            config = (node.get("inputs") or {}).get("entityConfig")
+            if config:
+                config["_folderKey"] = ""
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "leaves it blank" in result.stdout + result.stderr
+
+
+def test_bindings_checker_accepts_a_valid_connection_pair(tmp_path: Path) -> None:
+    flow = json.loads((FLOW_TASKS / REFERENCE_CASES["advisory_billing_invoice_lookup.py"]).read_text())
+    cwd = _project(tmp_path, flow, CONNECTION_BINDINGS, "BillingInvoiceLookup")
+
+    result = run_script("check_bindings_no_stubs.py", cwd=cwd)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "(connector)" in result.stdout
+
+
 def test_native_half_authored_folder_scope_fails(tmp_path: Path) -> None:
     """`_folderKey` switches the emitted target to the folder-qualified form, so
     without `_resourceKey` and both Entity binding rows the name and folder
@@ -218,14 +398,18 @@ def test_mixed_entity_read_shapes_fail(tmp_path: Path) -> None:
     assert "mixes both entity-read shapes" in result.stdout + result.stderr
 
 
-def _project(tmp_path: Path, flow: dict, bindings: dict) -> Path:
+def _project(tmp_path: Path, flow: dict, bindings: dict, name: str) -> Path:
     """A generated-solution tree as the two billing checkers walk it: one flow
     and one bindings file under the cwd they are run from."""
     project = tmp_path / "proj"
     project.mkdir(parents=True, exist_ok=True)
-    (project / "BillingInvoiceLookup.flow").write_text(json.dumps(flow))
+    (project / f"{name}.flow").write_text(json.dumps(flow))
     (project / "bindings_v2.json").write_text(json.dumps(bindings))
     return tmp_path
+
+
+def _native_flow() -> dict:
+    return json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
 
 
 CONNECTION_BINDINGS = {
@@ -242,8 +426,9 @@ CONNECTION_BINDINGS = {
     ],
 }
 # What a native build actually writes: resources for the IxP model, the API
-# workflow and the context index, and no `connection` row at all.
-NATIVE_BINDINGS = {
+# workflow and the context index, and no `connection` row at all. Named for what
+# it lacks, because the connector cases below reuse it to mean "the row is gone".
+NON_CONNECTION_BINDINGS = {
     "version": "2.0",
     "resources": [
         {"resource": "process", "key": "p", "value": {"name": {"defaultValue": "FinancialPostingFunction"}}}
@@ -254,8 +439,7 @@ NATIVE_BINDINGS = {
 def test_bindings_checker_accepts_a_native_build_with_no_connection(tmp_path: Path) -> None:
     """A flow whose only external calls are native reads has no Integration
     Service connection to bind, so `declares no bindings at all` is wrong there."""
-    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
-    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+    cwd = _project(tmp_path, _native_flow(), NON_CONNECTION_BINDINGS, "BillingDisputeResolution")
 
     result = run_script("check_bindings_no_stubs.py", cwd=cwd)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -266,7 +450,7 @@ def test_bindings_checker_still_requires_one_for_a_connector_build(tmp_path: Pat
     """The regression the check exists for: a connector build that dropped its
     connection row deploys and faults with [102010]."""
     flow = json.loads((FLOW_TASKS / REFERENCE_CASES["advisory_billing_invoice_lookup.py"]).read_text())
-    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+    cwd = _project(tmp_path, flow, NON_CONNECTION_BINDINGS, "BillingInvoiceLookup")
 
     result = run_script("check_bindings_no_stubs.py", cwd=cwd)
     assert result.returncode != 0
@@ -275,10 +459,9 @@ def test_bindings_checker_still_requires_one_for_a_connector_build(tmp_path: Pat
 
 def test_bindings_checker_rejects_a_stub_connection_on_a_native_build(tmp_path: Path) -> None:
     """Zero connection rows is fine; a row that is there and wrong is not."""
-    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
     stub = json.loads(json.dumps(CONNECTION_BINDINGS))
     stub["resources"][0]["value"]["ConnectionId"]["defaultValue"] = "00000000-0000-0000-0000-000000000001"
-    cwd = _project(tmp_path, flow, stub)
+    cwd = _project(tmp_path, _native_flow(), stub, "BillingDisputeResolution")
 
     result = run_script("check_bindings_no_stubs.py", cwd=cwd)
     assert result.returncode != 0
@@ -287,8 +470,7 @@ def test_bindings_checker_rejects_a_stub_connection_on_a_native_build(tmp_path: 
 
 def test_server_side_filter_accepts_native_rows(tmp_path: Path) -> None:
     checker = FLOW_TASKS / "multi_node/billing_invoice_lookup/check_server_side_filter.py"
-    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
-    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+    cwd = _project(tmp_path, _native_flow(), NON_CONNECTION_BINDINGS, "BillingDisputeResolution")
 
     result = subprocess.run(
         [sys.executable, str(checker)], cwd=cwd, capture_output=True, text=True, check=False
@@ -300,12 +482,12 @@ def test_server_side_filter_rejects_an_empty_native_filter(tmp_path: Path) -> No
     """The `_filters` container is always present, so its emptiness is what
     separates a server-side filter from fetching the entity whole."""
     checker = FLOW_TASKS / "multi_node/billing_invoice_lookup/check_server_side_filter.py"
-    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
+    flow = _native_flow()
     for node in flow["nodes"]:
         config = (node.get("inputs") or {}).get("entityConfig")
         if config:
             config["_filters"] = {"logicalOperator": "AND", "rows": [], "groups": []}
-    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+    cwd = _project(tmp_path, flow, NON_CONNECTION_BINDINGS, "BillingDisputeResolution")
 
     result = subprocess.run(
         [sys.executable, str(checker)], cwd=cwd, capture_output=True, text=True, check=False

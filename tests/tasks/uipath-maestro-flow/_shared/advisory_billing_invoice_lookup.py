@@ -79,7 +79,7 @@ def main():
         fail(f"the read addresses {entity!r}, not {ENTITY!r} — the entity the task names")
 
     # ── 3. the FILTER is computed from the flow's input, not a constant ───────
-    assert_read_filters_input(q, shape, "invoiceNumber", "invoice")
+    assert_read_filters_input(q, shape, "invoiceNumber", "invoice", nodes)
 
     # ── 4. the ANSWER is nowhere in the flow, and neither is a lookup table ───
     if carries_literal(f, CANONICAL):

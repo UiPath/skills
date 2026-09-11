@@ -112,19 +112,22 @@ def node_dependencies(nodes: Iterable[dict[str, Any]]) -> dict[str, set[str]]:
     }
 
 
-def source_depends_on(value: Any, producer: str, dependencies: dict[str, set[str]]) -> bool:
-    """Follow exact `$vars.<node>` references through any number of reader nodes."""
+def transitive_refs(value: Any, dependencies: dict[str, set[str]]) -> set[str]:
+    """Every node id reachable from a value's `$vars.<node>` references."""
     pending = list(value_refs(value))
     seen: set[str] = set()
     while pending:
         current = pending.pop()
-        if current == producer:
-            return True
         if current in seen:
             continue
         seen.add(current)
         pending.extend(dependencies.get(current, ()))
-    return False
+    return seen
+
+
+def source_depends_on(value: Any, producer: str, dependencies: dict[str, set[str]]) -> bool:
+    """Follow exact `$vars.<node>` references through any number of reader nodes."""
+    return producer in transitive_refs(value, dependencies)
 
 
 def references_field(value: Any, field: str) -> bool:
@@ -155,8 +158,15 @@ def query_references_input(detail: dict[str, Any], field: str) -> bool:
 # checkers; keep the two in step.
 CONNECTOR_READ = "connector"
 NATIVE_READ = "native"
-CONNECTOR_READ_PREFIX = "uipath.connector.uipath-uipath-dataservice."
+CONNECTOR_NODE_PREFIX = "uipath.connector."
+CONNECTOR_READ_PREFIX = f"{CONNECTOR_NODE_PREFIX}uipath-uipath-dataservice."
 NATIVE_READ_TYPE = "core.datafabric.read"
+# The connector operations that READ. The prefix above covers the whole Data
+# Service family, writes included, and each native op has its own tenant flag
+# (planning.md — Node types), so `read-entity` on with `create-entity` off is a
+# real configuration: a native read beside a connector write. Only a connector
+# READ alongside a native one is a flow with two sets of the same reads.
+CONNECTOR_READ_OPS = (".query-entity-records", ".get-entity-record-by-id")
 
 # Operators the native serializer can emit, spelled as the file spells them
 # (data-fabric/impl.md — Filters). There is deliberately no `not in`, `not
@@ -196,10 +206,14 @@ def entity_reads(nodes: Iterable[dict[str, Any]]) -> tuple[str, list[dict[str, A
         if str(node.get("type") or "").startswith(CONNECTOR_READ_PREFIX)
     ]
     native = [node for node in nodes if str(node.get("type") or "") == NATIVE_READ_TYPE]
-    if connector and native:
+    connector_reads = [
+        node for node in connector
+        if str(node.get("type") or "").endswith(CONNECTOR_READ_OPS)
+    ]
+    if connector_reads and native:
         fail(
             f"the flow mixes both entity-read shapes — connector "
-            f"{[node.get('id') for node in connector]} and native "
+            f"{[node.get('id') for node in connector_reads]} and native "
             f"{[node.get('id') for node in native]}. Availability decides one shape per "
             f"flow; two means one set of reads was left behind"
         )
@@ -246,7 +260,13 @@ def native_filter_rows(node: dict[str, Any]) -> list[dict[str, Any]]:
     return list(walk(entity_config(node).get("_filters")))
 
 
-def assert_read_filters_input(node: dict[str, Any], shape: str, field: str, label: str) -> None:
+def assert_read_filters_input(
+    node: dict[str, Any],
+    shape: str,
+    field: str,
+    label: str,
+    nodes: Iterable[dict[str, Any]] = (),
+) -> None:
     """Assert the read filters on ``field``, computed, in a form the server accepts.
 
     The computed half is the anti-hardcode gate: a filter that writes the answer
@@ -259,14 +279,20 @@ def assert_read_filters_input(node: dict[str, Any], shape: str, field: str, labe
     if shape == NATIVE_READ:
         rows = native_filter_rows(node)
         if not rows:
+            mode = str(unwrap(entity_config(node).get("resultMode")) or "").strip()
+            consequence = (
+                "faults on the over-match as soon as the entity holds more than one row"
+                if mode == "single"
+                else "returns the first 100 rows in arbitrary order, not the record the flow asked for"
+            )
             fail(
                 f"the {label} read sets no `entityConfig._filters` rows — an unfiltered "
-                f"`resultMode: \"multiple\"` read returns the first 100 rows in arbitrary order, "
-                f"not the record the flow asked for"
+                f"`resultMode: {mode or 'multiple'!r}` read {consequence}"
             )
-        if not read_references_input(node, shape, field):
+        if not read_references_input(node, shape, field, nodes):
             fail(
-                f"no {label} filter row takes its value from $vars.…{field} — the rows are "
+                f"no {label} filter row reaches $vars.…{field}, directly or through a node it "
+                f"reads — the rows are "
                 f"{[{'field': row.get('field'), 'value': unwrap(row.get('value'))} for row in rows]!r}. "
                 f"Each lookup must filter on its own flow input; a literal there is the answer "
                 f"written in"
@@ -297,7 +323,7 @@ def assert_read_filters_input(node: dict[str, Any], shape: str, field: str, labe
     if "queryExpression" not in query:
         fail(f"the {label} query sets no queryExpression; queryParameters: {sorted(query)}")
     expression = str(query["queryExpression"])
-    if not read_references_input(node, shape, field):
+    if not read_references_input(node, shape, field, nodes):
         fail(
             f"the {label} queryExpression is {expression!r} and its filterVariables do not reference "
             f"{field!r} — each lookup must filter on its own flow input. Author the filter via "
@@ -311,15 +337,42 @@ def assert_read_filters_input(node: dict[str, Any], shape: str, field: str, labe
         )
 
 
-def read_references_input(node: dict[str, Any], shape: str, field: str) -> bool:
-    """True when the read's filter takes its value from the named flow input."""
-    if shape == NATIVE_READ:
-        return any(
-            "$vars." in str(unwrap(row.get("value")) or "")
-            and references_field(row.get("value"), field)
-            for row in native_filter_rows(node)
-        )
-    return query_references_input(read_detail(node), field)
+def read_references_input(
+    node: dict[str, Any],
+    shape: str,
+    field: str,
+    nodes: Iterable[dict[str, Any]] = (),
+) -> bool:
+    """True when the read's filter reaches the named flow input.
+
+    A filter row may read the input directly, or read a node that does: the
+    prompts ask for normalisation before the lookup ("trim, uppercase, prepend
+    `MCS-`"), and a native row is a single `value`, so a Script hop is at least
+    as natural there as the connector's inline template. The same advisory
+    already tolerates the hop for outputs, and for the same reason.
+    """
+    if shape != NATIVE_READ:
+        return query_references_input(read_detail(node), field)
+
+    nodes = list(nodes)
+    inputs_by_id = {
+        str(other.get("id")): json.dumps(other.get("inputs") or {}, sort_keys=True)
+        for other in nodes
+        if other.get("id")
+    }
+    dependencies = node_dependencies(nodes)
+    for row in native_filter_rows(node):
+        value = row.get("value")
+        if "$vars." not in str(unwrap(value) or ""):
+            continue
+        if references_field(value, field):
+            return True
+        if any(
+            references_field(inputs_by_id.get(upstream, ""), field)
+            for upstream in transitive_refs(value, dependencies)
+        ):
+            return True
+    return False
 
 
 def assert_read_resolves(node: dict[str, Any], shape: str, label: str, flow: dict[str, Any]) -> str:
@@ -340,9 +393,15 @@ def assert_read_resolves(node: dict[str, Any], shape: str, label: str, flow: dic
     """
     if shape == NATIVE_READ:
         config = entity_config(node)
+        if "_folderKey" not in config:
+            return "tenant-scoped entity (no connection, no binding row)"
         folder = str(unwrap(config.get("_folderKey")) or "").strip()
         if not folder:
-            return "tenant-scoped entity (no connection, no binding row)"
+            fail(
+                f"the {label} read declares `_folderKey` but leaves it blank ({config.get('_folderKey')!r}). "
+                f"It is the key's PRESENCE that switches the emitted target to the folder-qualified form, "
+                f"so a blank one emits that form with no folder. Omit the key to stay tenant-scoped"
+            )
 
         key = str(unwrap(config.get("_resourceKey")) or unwrap(config.get("_entityKey")) or "").strip()
         if not key:

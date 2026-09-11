@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from advisory_flow_utils import CONNECTOR_READ_PREFIX
+from advisory_flow_utils import CONNECTOR_NODE_PREFIX
 
 EXCLUDED_PARTS = {
     ".cli-stage",
@@ -83,18 +83,18 @@ def _generated(cwd: Path, pattern: str) -> list[Path]:
 
 
 def needs_a_connection(cwd: Path) -> bool:
-    """True when any generated flow carries a connector node.
+    """True when any generated flow carries an Integration Service connector node.
 
-    The two callers are Data Fabric scenarios, so "no connector node" means the
-    entity reads are native and there is nothing for a `connection` resource to
-    point at.
+    Matched on the whole `uipath.connector.` family rather than the Data Service
+    one: a checker that only knew Data Service would stop requiring bindings for
+    a flow whose connector is Slack or Jira, which is a silent pass, not a fix.
     """
     for path in _generated(cwd, "*.flow"):
         try:
             nodes = json.loads(path.read_text(encoding="utf-8")).get("nodes") or []
         except (OSError, json.JSONDecodeError):
             continue
-        if any(str(node.get("type") or "").startswith(CONNECTOR_READ_PREFIX) for node in nodes):
+        if any(str(node.get("type") or "").startswith(CONNECTOR_NODE_PREFIX) for node in nodes):
             return True
     return False
 
