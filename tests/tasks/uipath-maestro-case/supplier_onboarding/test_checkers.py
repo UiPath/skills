@@ -1063,17 +1063,21 @@ class TasksIoTests(CheckerBase):
     def test_accepts_a_task_whose_entry_rule_is_present(self):
         self.accepts(baseline_plan())
 
-    def test_rejects_an_empty_string_file_input(self):
-        # Integration Services reads a blank string there as a multipart attachment with no
-        # content and refuses the request with 400 `Unable to parse multipart body`. Three of
-        # six runs wrote it on all eight send tasks at once, and it stops the stage on its
-        # first sequential task. validate reports Valid either way.
+    def test_accepts_an_empty_string_file_input(self):
+        """Neither shape of an unused optional `file` reaches the request.
+
+        The engine keeps a file entry only when its value parses as a file reference
+        (`IntSvcSendTaskArgs.cs:187`), so `""` is filtered out exactly as an absent key
+        is. Run 34049629743 shipped eight of them and delivered mail on four routes;
+        34632354461 shipped eight and carried all seven. An assertion here fired on 9 of
+        32 runs and docked three that worked.
+        """
         plan = baseline_plan()
         item = task(plan, "Notify buyer of application")
         item["data"].setdefault("inputs", []).append(
             {"name": "file", "type": "string", "id": "vFile01", "var": "vFile01", "value": ""}
         )
-        self.rejects(plan, "empty-string `file` input")
+        self.accepts(plan)
 
     def test_accepts_a_file_input_left_null(self):
         plan = baseline_plan()

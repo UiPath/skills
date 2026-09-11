@@ -353,18 +353,23 @@ def task_input_expressions(task: dict) -> list[tuple[str, str]]:
 
 
 def activity_type_ids(task: dict) -> set[str]:
-    """Every `uiPathActivityTypeId` a connector task carries.
+    """Every activity type id a connector task carries, under either spelling.
 
     The id names which operation of the connector the task runs, and it sits several
     levels down inside `data.context[].body`, under a different parent per context
     entry. Walking for the key is what keeps this independent of that nesting.
+
+    Builds write `uiPathActivityTypeId` and `UiPathActivityTypeId`, 290 and 32 of the
+    340 connector tasks on hand, and both reach the runtime: four runs delivered mail
+    with the lowercase spelling and run 34632354461 carried all seven routes with the
+    capital one. Matching one spelling reported the other as no activity type at all.
     """
     found: set[str] = set()
 
     def walk(node):
         if isinstance(node, dict):
             for key, value in node.items():
-                if key == "uiPathActivityTypeId" and isinstance(value, str) and value:
+                if key.lower() == "uipathactivitytypeid" and isinstance(value, str) and value:
                     found.add(value)
                 walk(value)
         elif isinstance(node, list):

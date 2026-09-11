@@ -448,24 +448,6 @@ def main() -> int:
                 f"{E.OUTLOOK_ACTIVITY_TYPE_ID!r}"
             )
 
-    # ---- an optional connector `file` is null, never an empty string --------
-    # Integration Services reads a blank string there as a multipart attachment with no
-    # content and refuses the request with 400 `Unable to parse multipart body`, which
-    # stops the stage on its first sequential task.
-    blank_file = [
-        P.task_name(task)
-        for _stage, task in P.all_tasks(caseplan)
-        if any(
-            i.get("name") == "file" and i.get("value") == ""
-            for i in ((task.get("data") or {}).get("inputs") or [])
-        )
-    ]
-    if blank_file:
-        problems.append(
-            f"{len(blank_file)} task(s) carry an empty-string `file` input: {sorted(blank_file)[:6]}"
-            + (" ..." if len(blank_file) > 6 else "")
-            + ". An unused optional input must be null"
-        )
 
     # ---- actionCatalogName binds a catalog, or is absent --------------------
     # The SDD names an action type inside an app. That name is not a catalog, and a task
