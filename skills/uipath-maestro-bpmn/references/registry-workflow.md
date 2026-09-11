@@ -38,6 +38,17 @@ connection ids, `<uipath:bindings>` `default`s) unresolved. The exhaustive-
 discovery rules above, and the `processType` selection below, apply only once a
 real tenant with deployed resources is in play.
 
+**A node's output mapping is enrichment too — do not resolve it while drafting.**
+When a downstream gateway or node reads a value a job / agent / activity
+produces (`=vars.aiConfidence`, `=vars.routeCategory`, a batch summary), the
+authoring job is to **declare that variable** (`BPMN.Variables`) and reference
+it in the condition or mapping. Leave the node's `<uipath:output>` → variable
+wiring — the exact output field path, `OutputArguments`, `result.*`, the job
+response shape — unresolved: it comes from the deployed resource's real output
+schema, which a greenfield pass does not have. Do not grep the references or
+registry templates trying to pin the output path before authoring; declare the
+variable, write the condition, and move on.
+
 `registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
 `uip login`). Each extension-type row carries `ExtensionType`, `Label`,
