@@ -85,10 +85,10 @@ success_criteria:
   # Mirrors the skills-repo check_devcon_expense_approval.py: exactly one inline
   # HITL node whose schema has an amount(number) field, captures the manager
   # decision (boolean output OR approve/reject outcomes), exposes a text reason
-  # output field, wires the completed handle, and is read downstream via
-  # $vars.<hitl>.output.
+  # output field, wires every outcome's own port (never the outcome-completed
+  # placeholder), and is read downstream via $vars.<hitl>.output.
   - type: run_command
-    description: "Flow has a correct inline HITL schema, decision capture, completed wiring, and downstream .output access"
+    description: "Flow has a correct inline HITL schema, decision capture, outcome-port wiring, and downstream .output access"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py expense"
     timeout: 15
     expected_exit_code: 0

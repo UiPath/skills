@@ -26,7 +26,9 @@ initial_prompt: |
      where <nodeId> is the HITL node's id.
   4. End node
 
-  Wire: Trigger -> HITL ->|completed| Script -> End
+  Wire: Trigger -> HITL -> Script -> End, with both outcomes (Approve and
+  Reject) routed to the Script node — every outcome needs its own wired
+  port; the script logs the decision either way.
 
   Use the inline quickform node (uipath.human-in-the-loop.quick-form).
   Validate the flow after building.
