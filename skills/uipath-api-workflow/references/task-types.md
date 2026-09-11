@@ -219,7 +219,7 @@ Iterates over a collection. Requires `#Body` inside `do`.
 { ...$context, outputs: { ...$context?.outputs, "For_Each_N": { ...$context?.outputs?.For_Each_N, results: [ ...($currentItemIndex == 0 ? [] : ($context?.outputs?.For_Each_N?.results ?? [])), ...([$output] ?? []) ] } } }
 ```
 
-**Output pattern:** `${$context.outputs.For_Each_N}`
+**Output pattern:** `${$context?.outputs?.For_Each_N}` — optional chaining is REQUIRED. With zero iterations the body never runs, so `$context.outputs` is undefined and a bare `$context.outputs.For_Each_N` throws. A trailing `?? { results: [] }` does NOT save it: the throw happens before `??` is reached.
 
 **Minimal JSON:**
 ```json
@@ -240,7 +240,7 @@ Iterates over a collection. Requires `#Body` inside `do`.
         }
       }
     ],
-    "output": { "as": "${$context.outputs.For_Each_1}" },
+    "output": { "as": "${$context?.outputs?.For_Each_1}" },
     "metadata": { "activityType": "ForEach", "displayName": "For Each", "fullName": "ForEach" }
   }
 }
@@ -253,6 +253,7 @@ Inside the body, the iterator and index are accessible as globals **with a `$` p
 - Wrapping `each` or `at` in `${...}` — they are plain variable names, not expressions
 - Missing `for.at`
 - Wrong body export pattern (must use the index-aware reset shown above, not the simpler DoWhile pattern)
+- Dropping the `?.` in `output.as` — a bare `$context.outputs.For_Each_N` throws when the loop runs zero times
 
 **Nesting:**
 - Each ForEach activity's iterator and index variable names are scoped to that loop. Inner loops MUST use distinct names — e.g. outer `for.each: "outerItem"` / inner `for.each: "innerItem"`. Reusing `currentItem` in both loops shadows the outer one.
@@ -288,7 +289,7 @@ Repeat-until loop. Body always executes at least once.
         }
       }
     ],
-    "output": { "as": "${$context.outputs.Do_While_1}" },
+    "output": { "as": "${$context?.outputs?.Do_While_1}" },
     "metadata": { "activityType": "DoWhile", "displayName": "Do While", "fullName": "DoWhile" }
   }
 }
@@ -298,6 +299,7 @@ The body MUST update the condition variable, otherwise the loop runs forever.
 
 **Common mistakes:**
 - Using a real collection for `for.in` instead of `"${ [1] }"`
+- Dropping the `?.` in `output.as` — write `${$context?.outputs?.Do_While_N}`, never `${$context.outputs.Do_While_N}`
 - Missing `#Body` suffix
 - Body does not update the `doWhile` condition variable → infinite loop
 - Missing `output.as` on the loop itself
