@@ -8,7 +8,9 @@ These rules are the canonical source for rules specific to low-code conversation
 
 ## What NOT to Do
 
-1. **Do not add properties to the `outputSchema` of a conversational agent.** After initialization, leave `outputSchema` empty. The conversational agent runtime streams responses/tool-call events during the execution, so the final output is not relevant for the end-user in the conversation.
+1. **Do not add properties to the `outputSchema` of a conversational agent built here.** After initialization, leave `outputSchema` empty. Standalone, in-solution and published conversational agents **do not support structured outputs at all** — the runtime streams responses/tool-call events during the execution, so the final output is not relevant for the end-user in the conversation, and a populated schema is never filled.
+
+   **The one conversational flavor that does support them is an agent scaffolded inline in a Maestro Flow** (`uip agent init "<FlowProject>" --inline-in-flow --conversational`, driving a `uipath.agent.conversational` node). There the schema properties are how a downstream Decision or Switch routes, and they are paired with matching `agentOutputVariables[]` entries on the flow node. Authoring rules for that node — including the requirement that instructions for *filling* the fields stay out of the system prompt — belong to the `uipath-maestro-flow` skill. **Do not apply this anti-pattern to an inline-in-flow conversational agent, and do not "fix" one by emptying its `outputSchema`.**
 
 2. **Do not author any `builtInValidator` guardrail on a conversational agent, and do not set `selector.scopes` to anything other than `["Tool"]`.** Built-in validators (any `$guardrailType: "builtInValidator"`) are autonomous-only; Agent- and Llm-scoped guardrails are likewise not honored. Author the Custom `Tool` guardrail at the `agent.json` root `guardrails[]` (authoritative for UI + runtime) and mirror it into the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`; a guardrail only in the tool resource is invisible in Studio Web and does not run on the Unified (Python) runtime, per Critical Rule 1.
 
