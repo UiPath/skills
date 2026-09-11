@@ -1,0 +1,183 @@
+task_id: skill-insights-smoke-alert-history-filters
+description: >
+  Smoke test: agent uses the uipath-insights skill to narrow alert trigger
+  history with the filters the history routes actually accept. Given a prompt
+  asking which alert fired, at what severity, in which folders, and how the
+  counts bucket over time, the agent should turn an alert name into history
+  rows with `--alert-name`, narrow by `--severity`, scope by `--folder-name`,
+  page the list route when more rows exist, and switch to `get-metrics` for
+  the counts instead of counting rows client-side. The CLI is authenticated;
+  the tenant may hold no alert definitions and no trigger history, and both
+  are valid outcomes.
+
+  Covers the four history filters and the two paging flags that the existing
+  alerts smoke leaves untouched: it asserts the verbs, this asserts the
+  filters. `--since`/`--until` stay out because
+  `smoke_absolute_time_range.yaml` already owns absolute bounds.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Something has been firing alerts and I need the shape of it. Find the alert
+  definitions on this tenant, then for whichever alert has fired take its
+  history over the last 30 days and narrow it down for me: only the ERROR and
+  WARN triggers, and only the folders those triggers landed in. Then give me
+  the trigger counts bucketed by day over the same window. Use the filters the
+  commands accept rather than filtering the output yourself, and get the
+  counts from the CLI rather than counting rows. If the output says more rows
+  exist, page through them before you summarize. If a category comes back
+  empty, say so plainly and say what that does and does not prove. Run each
+  command at most once per page; do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every flag-bearing pattern below keeps the flag in the same invocation as
+  # the verb with (?:(?!uip\s)[^&;|])*, not a \n-excluding class: the grader
+  # matches a shlex-normalized haystack too, where embedded newlines collapse
+  # to spaces (coder_eval/criteria/command_executed.py, _normalize_shell), so a
+  # newline-batched pair bleeds across the boundary on that form. A negative
+  # lookahead for the next `uip ` survives normalization. Same construction as
+  # the alerts and rbac smoke tasks in this directory.
+  - type: command_executed
+    description: "Agent narrowed history to one alert with --alert-name"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+(list|get-metrics)(?:(?!uip\s)[^&;|])*--alert-name\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Both spellings of a repeatable option: `--severity ERROR --severity WARN`
+  # and the variadic `--severity ERROR WARN`. The CLI declares
+  # `--severity <severities...>` with .choices(INFO, WARN, ERROR, NORMAL)
+  # (packages/insights-tool/src/commands/alert-history.ts, addHistoryFilterOptions),
+  # so both forms parse and an unlisted value exits 3.
+  - type: command_executed
+    description: "Agent narrowed history by severity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+(list|get-metrics)(?:(?!uip\s)[^&;|])*--severity\s+(INFO|WARN|ERROR|NORMAL)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scoped history by folder name"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+(list|get-metrics)(?:(?!uip\s)[^&;|])*--folder-name\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Paging belongs to the two list routes only. Short aliases are real: the CLI
+  # declares `-l, --limit` and `-o, --offset` (utils/list-options.ts), so an
+  # agent copying the short form still earns this.
+  - type: command_executed
+    description: "Agent paged a list route with --limit or --offset"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history)\s+list(?:(?!uip\s)[^&;|])*(--limit|--offset|\s-l\s|\s-o\s)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # get-metrics is the server-side count, and --time-grouping is mandatory on
+  # it (.makeOptionMandatory(), choices FifteenMinutes|Hour|Day). Requiring the
+  # flag rather than the bare verb means a call that cannot succeed scores zero.
+  - type: command_executed
+    description: "Agent got counts from get-metrics with a bucket size"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--time-grouping\s+(FifteenMinutes|Hour|Day)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so every criterion above
+  # passes against a CLI that never shipped these flags. These three gates
+  # re-run the surface at grading time. They are tenant-agnostic: --help and
+  # the two parse failures never reach the backend.
+  - type: run_command
+    description: "CLI path is real: alert-history list is registered in the installed CLI"
+    command: "uip insights alert-history list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Proves .choices() is wired rather than the flag merely being accepted: a
+  # CLI that took any string would exit 0 here. Verified against the source CLI
+  # 2026-09-11 — a ValidationError envelope with ErrorCode invalid_argument and
+  # exit 3, which is EXIT_CODES.Failure for a parse error.
+  - type: run_command
+    description: "Severity is a closed choice list: an unlisted value is rejected"
+    command: "uip insights alert-history list --time-range 60 --severity BOGUS"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The paging-is-list-only rule, enforced against the CLI instead of the
+  # agent: addListPaginationOptions wraps `list` only, so get-metrics answers
+  # --limit with "unknown option" and exit 3. Verified 2026-09-11.
+  - type: run_command
+    description: "Paging is list-only: get-metrics rejects --limit"
+    command: "uip insights alert-history get-metrics --time-range 60 --time-grouping Hour --limit 5"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not page the aggregate route"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*(--limit|--offset|\s-l\s|\s-o\s)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The guide names these as filters the history routes do not have; an agent
+  # that infers them from the row fields would otherwise look correct. Rows
+  # carry no folder field, so --folder-key is the likeliest invention.
+  - type: command_not_executed
+    description: "Agent did not invent history filters the routes do not accept"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+\S+(?:(?!uip\s)[^&;|])*--(folder-key|alert-id|process-name|machine-name|delivery-id)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Critical Rule: every change to an alert definition or a delivery belongs in
+  # the Insights UI. Same verb vocabulary as the rbac smoke's write guard, for
+  # the same reason: no alert write exists in the CLI to copy a name from.
+  - type: command_not_executed
+    description: "Agent did not attempt an alert write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history|alert-deliveries)\s+(create|update|delete|set|edit|patch|put|enable|disable|snooze|acknowledge|mute)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach an alert route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|axios|insights-sdk)(?:(?!uip\s)[^&;|])*insightsrtm_'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Critical Rule 9: `uip login` opens an interactive browser flow that hangs
+  # the session, and no task in this skill's corpus asserted it before. The
+  # four subcommands (refresh, status, tenant, which) are all non-interactive,
+  # so only the bare form and its flag forms are forbidden.
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
