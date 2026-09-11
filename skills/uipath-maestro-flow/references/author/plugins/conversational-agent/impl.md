@@ -217,25 +217,23 @@ Declare each field in two places or it yields nothing at run time:
 
 Bind it downstream as `$vars.<agentNodeId>.output.shouldHandoff`. Writing one side without the other passes `agent validate` and `flow validate` — nothing checks the pair.
 
-> `uip agent refresh` normalizes each `outputSchema` property down to `type` + `description`, stripping `enum` and `required`. The description is the only place a constraint survives, so enumerate the allowed values in prose there rather than relying on `enum`.
-
 ### Prompting: what goes where
 
-The agent generates its chat reply and its structured outputs from different inputs:
+The prompts that drive the agent's chat replies and structured output differ:
 
 | Generated | Driven by |
 | --- | --- |
 | the chat reply | the system prompt **only** |
 | the structured outputs | the system prompt **plus** each field's `description` |
 
-So split the instructions by destination — *what to say* in the system prompt, *how to fill the field* in that field's `description` (write the same description in both `agentOutputVariables[]` and `outputSchema.properties`):
+So split the instructions by destination — *what to say* and *response instructions* in the system prompt, *how to fill the field* in that field's `description` (write the same description in both `agentOutputVariables[]` and `outputSchema.properties`):
 
 | Where | Example |
 | --- | --- |
 | system prompt | "Thank the user when they would like to end the conversation." |
 | `endConversation` (boolean) `description` | "Set to true when the user intends to end the conversation." |
 
-**Never name the output field, its values, or the flow's routing in the system prompt.** Because the chat reply is generated from the system prompt alone, an instruction like "set `route` to `end_conversation` when the user says goodbye" may make the LLM emit the structured value inline or look for a tool to set the output variables.
+**Never name the output field, its values, or the flow's routing in the system prompt.** Because the chat reply is generated from the system prompt alone, an instruction like "set `endConversation` to `true` when the user says goodbye" may make the LLM emit the structured value to the chat or look for a tool to set the output variables.
 
 ## Wire the Edges
 
