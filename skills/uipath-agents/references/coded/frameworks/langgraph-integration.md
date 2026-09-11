@@ -13,7 +13,7 @@ uip codedagent new my-agent
 
 This generates `main.py` (with a StateGraph template), `langgraph.json`, and `pyproject.toml`. Then modify `main.py` to implement your actual agent logic.
 
-> **Prerequisite:** `uipath-langchain` must be installed for the LangGraph template to be used. If you get a base template instead, install `uipath-langchain` first.
+> **Prerequisite:** `uipath-langchain` must be installed in the active venv before `new` — `uipath new` defaults to `--type auto` and picks the LangGraph template from the installed package. Confirm `langgraph.json` exists after `new`; if `uipath.json` with a `functions` map appeared instead, the package was missing — recover per [../lifecycle/setup.md](../lifecycle/setup.md) § Verify the Scaffold.
 
 ## Project Structure
 

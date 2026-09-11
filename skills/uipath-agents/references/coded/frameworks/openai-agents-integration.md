@@ -17,7 +17,7 @@ uip codedagent new my-agent
 
 This generates `main.py` (with an Agent + tool template), `openai_agents.json`, `AGENTS.md`, and `pyproject.toml`. Then modify `main.py` to implement your actual agent logic.
 
-> **Prerequisite:** `uipath-openai-agents` must be installed for the OpenAI Agents template to be used.
+> **Prerequisite:** `uipath-openai-agents` must be installed in the active venv before `new` — `uipath new` defaults to `--type auto` and picks the OpenAI Agents template from the installed package. Confirm `openai_agents.json` exists after `new`; if `uipath.json` with a `functions` map appeared instead, the package was missing — recover per [../lifecycle/setup.md](../lifecycle/setup.md) § Verify the Scaffold.
 
 ## Project Structure
 

@@ -34,6 +34,7 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 ## Critical Rules
 
 - **NEVER add a `[build-system]` section to `pyproject.toml`**. No `hatchling`, no `setuptools`, no build backend. UiPath agents do not use a build system. Only include `[project]`, `[dependency-groups]`, and `[tool.*]` sections.
+- **Install the framework package before `uip codedagent new`, then verify the scaffold.** `uipath new` defaults to `--type auto`: the framework package installed in the active venv selects the agent template, and with none installed you get a Coded Function project (`uipath.json` with a `functions` map, no `<framework>.json`) or, on a CLI that forwards `--type agent`, an error naming the missing package. After `new`, confirm `<framework>.json` exists; if it is missing, install the package, delete the generated files and re-run `new` per [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold — do not hand-write `<framework>.json`.
 - **Always create a smoke evaluation set.** Every agent must include `evaluations/eval-sets/smoke-test.json` with 2-3 test cases covering the primary happy path (not exhaustive error-case coverage — the smoke set exists to catch regressions, not to fully validate behavior). Create it in the Evaluate step, not during Build.
 - **Select a framework before writing any code.** If the prompt clearly implies a framework (e.g., mentions tools, RAG, multi-step orchestration, or a specific SDK), pick the best match. If the prompt is ambiguous, ask the user to choose from: Coded Function, LangGraph, LlamaIndex, or OpenAI Agents.
 - **Never switch an existing project's framework.** When `framework != none` (a `<framework>.json` is already present), the framework is fixed: do not migrate to another framework, swap the `<framework>.json`, or change framework dependencies in `pyproject.toml`. Work within the existing framework's capabilities; if a request cannot be met within them, tell the user the limitation and let them decide.
@@ -57,7 +58,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 | Stage | Reference | CLI Commands |
 |-------|-----------|-------------|
 | **Auth** | [../authentication.md](../authentication.md) | `uip login` |
-| **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add <framework-package>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
+| **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uv pip install <framework-package>`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
 | **Build** | [lifecycle/build.md](lifecycle/build.md) | Code agent logic with framework patterns |
 | **Bindings** | [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md) | Sync resource overrides in `bindings.json` |
 | **Env vars** | [lifecycle/environment-variables.md](lifecycle/environment-variables.md) | Which store the cloud runtime reads (not `.env`); `%ASSETS/<ASSET_NAME>%` to pull a value from an Orchestrator asset |
@@ -280,7 +281,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    uv sync
    ```
 
-   `uv add` requires the `pyproject.toml` that `codedagent new` generates — run it only after `new`, never at the solution root.
+   `uv add` requires the `pyproject.toml` that `codedagent new` generates — run it only after `new`, never at the solution root. Confirm `<framework>.json` exists before continuing; a `uipath.json` `functions` map without it is a function scaffold (see [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold).
 
 <!--skill-flavor:agent-scaffold-result-paths:start-->
    Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
