@@ -165,7 +165,7 @@ These are the common flags; use only the ones the behavior claim needs:
 |---|---|
 | JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
-| Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Folder | omit it. Debug provisions into your personal workspace, so `--folder-path`/`--folder-key` at a shared folder fails with `HTTP 500` at `prepare-custom-debug` and retrying cannot help. A folder the task names holds the flow's *resources*; those arrive via `uip solution resources refresh`. |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |
 | Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
