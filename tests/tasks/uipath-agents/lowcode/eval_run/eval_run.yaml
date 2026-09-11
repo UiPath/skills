@@ -18,7 +18,7 @@ description: >
   there, hand-writing UUIDs is a documented anti-pattern.
   Deliberately scoped to a SINGLE eval run. `uip agent eval run
   compare` needs a second run, and observed cloud-run duration varies ~4x
-  (393s-1476s). Compare and `uip or eval run-offline-evals` belong in their own
+  (393s-1476s). Compare and `uip eval run-offline-evals` belong in their own
   task.
 tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code, feature:eval]
 
