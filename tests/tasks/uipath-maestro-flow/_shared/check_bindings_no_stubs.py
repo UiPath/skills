@@ -6,6 +6,12 @@ Integration Service connection to bind, so it legitimately declares no
 `connection` resource. Demanding one there fails the better build (see
 advisory_flow_utils — entity reads). Any connection resource that IS declared is
 still held to a real tenant key.
+
+Measured on the 2026-09-11 eval: such a flow emits NO bindings file at all, not
+an empty one. A pure Data Fabric flow references no packaged resource, so the CLI
+writes nothing, and both native billing tasks died on `assert candidates` one
+line before the connection check could apply. The presence of a `.flow` is what
+separates that from the checker running in the wrong tree and finding nothing.
 """
 
 from __future__ import annotations
@@ -106,8 +112,20 @@ def main() -> None:
         for path in _generated(cwd, "bindings*.json")
         if path.name in {"bindings.json", "bindings_v2.json"}
     ]
-    assert candidates, "no generated bindings.json or bindings_v2.json found"
     required = needs_a_connection(cwd)
+
+    if not candidates:
+        # A `.flow` has to be here for "no bindings file" to mean "none needed"
+        # rather than "this ran in the wrong tree and found nothing".
+        assert _generated(cwd, "*.flow"), (
+            "found neither a generated bindings file nor a .flow to check against"
+        )
+        assert not required, (
+            "no generated bindings.json or bindings_v2.json found, and the flow carries a connector "
+            "node that needs one"
+        )
+        print("no bindings file, and no connector node that needs one (native entity reads)")
+        return
 
     checked = 0
     for path in candidates:

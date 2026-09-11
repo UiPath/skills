@@ -565,6 +565,42 @@ def test_bindings_checker_accepts_a_native_build_with_no_connection(tmp_path: Pa
     assert "no connection to bind" in result.stdout
 
 
+def test_bindings_checker_accepts_a_native_build_with_no_bindings_file(tmp_path: Path) -> None:
+    """What the 2026-09-11 eval actually produced. A pure Data Fabric flow
+    references no packaged resource, so the CLI writes no bindings file at all,
+    and both native billing tasks died on `assert candidates` one line before the
+    connection check could apply. The fixture that supplied an empty-of-
+    connections file did not reproduce this: that shape never occurs."""
+    project = tmp_path / "proj"
+    project.mkdir()
+    (project / "BillingInvoiceLookup.flow").write_text(json.dumps(_native_flow()))
+
+    result = run_script("check_bindings_no_stubs.py", cwd=tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "no bindings file, and no connector node that needs one" in result.stdout
+
+
+def test_bindings_checker_requires_a_file_for_a_connector_build(tmp_path: Path) -> None:
+    """The other half: a connector flow with no bindings file at all is the
+    missing-connection regression, not a native build."""
+    project = tmp_path / "proj"
+    project.mkdir()
+    flow = json.loads((FLOW_TASKS / REFERENCE_CASES["advisory_billing_invoice_lookup.py"]).read_text())
+    (project / "BillingInvoiceLookup.flow").write_text(json.dumps(flow))
+
+    result = run_script("check_bindings_no_stubs.py", cwd=tmp_path)
+    assert result.returncode != 0
+    assert "carries a connector node that needs one" in result.stdout + result.stderr
+
+
+def test_bindings_checker_fails_when_it_finds_no_flow(tmp_path: Path) -> None:
+    """Relaxing the bindings-file requirement must not let a checker that ran in
+    the wrong tree report success on an empty directory."""
+    result = run_script("check_bindings_no_stubs.py", cwd=tmp_path)
+    assert result.returncode != 0
+    assert "neither a generated bindings file nor a .flow" in result.stdout + result.stderr
+
+
 def test_bindings_checker_still_requires_one_for_a_connector_build(tmp_path: Path) -> None:
     """The regression the check exists for: a connector build that dropped its
     connection row deploys and faults with [102010]."""
