@@ -206,7 +206,7 @@ Reads recent exchanges without waiting. Rarely needed, and constrained — see [
 
 ## Structured Outputs
 
-In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Published and in-solution agents do not have structured output fields.
+In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Imported standalone conversational agents (published or in-solution) do not support structured output fields.
 
 Declare each field in two places or it yields nothing at run time:
 
