@@ -35,7 +35,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
   "type": "case-management:Stage",
   "data": {
     "label": "<displayName>",
-    "description": "<stage Design Rationale from sdd.md, copied verbatim; its Description when the SDD has no rationale>",
+    "description": "<the stage's **Description:** line from sdd.md, word for word>",
     "isRequired": <true|false from sdd.md; false if unspecified>,
     "parentElement": { "id": "root", "type": "case-management:root" },
     "isInvalidDropTarget": false,
@@ -44,6 +44,8 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
   }
 }
 ```
+
+- `description`: the stage's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 > **`parentElement.id` stays `"root"`** even though there is no `"root"` node on disk. The literal `"root"` is canvas-side — `transformCaseInMemoryJsonToDiskJson` keeps the reference intact.
 
@@ -64,7 +66,7 @@ Same as a primary Stage, with `data.stageType: "secondary"` and two additional `
   "data": {
     "stageType": "secondary",
     "label": "<displayName>",
-    "description": "<stage Design Rationale from sdd.md, copied verbatim; its Description when the SDD has no rationale>",
+    "description": "<the stage's **Description:** line from sdd.md, word for word>",
     "isRequired": <true|false from sdd.md; false if unspecified>,
     "parentElement": { "id": "root", "type": "case-management:root" },
     "isInvalidDropTarget": false,

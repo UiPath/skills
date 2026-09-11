@@ -211,7 +211,7 @@ Generate the task skeleton:
   "elementId": "<stageId>-<taskId>",
   "isRequired": "<from sdd.md Required, default true>",
   "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
-  "description": "<task Design Rationale from sdd.md, copied verbatim; its Description when the SDD has no rationale>",
+  "description": "<the task's **Description:** line from sdd.md, word for word>",
   "data": {
     "serviceType": "Intsvc.ActivityExecution",
     "context": "<caseShape.context — placeholders substituted in Step 6>",
@@ -221,6 +221,8 @@ Generate the task skeleton:
   }
 }
 ```
+
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 

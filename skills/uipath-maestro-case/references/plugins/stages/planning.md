@@ -77,7 +77,7 @@ Stages have no registry lookup, so a stage produces **no `tasks/registry-resolve
 stage "<label>"
 - type: stage
 - rationale: "<why this is a primary stage and how it is reached/exited>"
-- description: "<stage Design Rationale from sdd.md, copied verbatim; its Description when the SDD has no rationale>"
+- description: "<the stage's **Description:** line from sdd.md, word for word>"
 - isRequired: <true|false from sdd.md; false if unspecified>
 - verify: Confirm Result: Success, capture StageId
 ```
@@ -88,7 +88,7 @@ Secondary variant:
 secondary stage "<label>"
 - type: secondary
 - rationale: "<why this is interrupting and which global/conditional event it handles>"
-- description: "<stage Design Rationale from sdd.md, copied verbatim; its Description when the SDD has no rationale>"
+- description: "<the stage's **Description:** line from sdd.md, word for word>"
 - isRequired: <true|false from sdd.md; false if unspecified>
 - verify: Confirm Result: Success, capture StageId
 ```
