@@ -1,0 +1,179 @@
+task_id: skill-insights-smoke-alert-absolute-window-triage
+description: >
+  Smoke test: agent confirms the active session, then triages alerts over an
+  absolute window and for one agentic process. Given a prompt that names an
+  exact epoch-second range and a Maestro process key, the agent should check
+  the login before it calls the cloud, read trigger history with `--since` and
+  `--until` rather than converting the range to a relative window, pass
+  `--agentic` with the `--process-key` it requires, and keep the trigger and
+  the delivery as two separate claims. The CLI is authenticated; the window
+  may hold no triggers and the process key may match nothing, and both are
+  valid outcomes.
+
+  Closes the last gaps the sibling tasks leave. `filtered_history_smoke.yaml`
+  owns the relative-window filters and paging; this one owns the absolute
+  bounds, the agentic pair, Shared Workflow step 1, and Critical Rule 13.
+  `alert-deliveries get` stays out for the reason the alerts smoke gives: it
+  needs a DeliveryId that an empty tenant cannot supply.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Before you call the cloud, confirm which session and tenant you are pointed
+  at, and tell me.
+
+  Then triage alerting for exactly one window: epoch seconds 1788000000 to
+  1788086400, no relative shortcut, that literal range. Tell me which alerts
+  fired inside it. Separately, list the alert definitions that belong to the
+  agentic process with key 00000000-0000-0000-0000-000000000000.
+
+  Finish with two clearly separate statements: what fired, and what was
+  actually delivered to anyone. Do not let one stand in for the other. Report
+  deliveries as a type and a count, never as recipients. If the window or the
+  process key matches nothing, say so plainly and say what that does and does
+  not prove.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Shared Workflow step 1, which no task in this skill's corpus asserted.
+  # `login status` is the read form and is explicitly allowed; the interactive
+  # bare `uip login` stays forbidden by the guard further down.
+  - type: command_executed
+    description: "Step 1: agent checked the active login before calling the cloud"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Absolute bounds in epoch SECONDS on the alert routes, which is the unit
+  # that differs from the jobs family's epoch milliseconds (Critical Rule 4).
+  # Verified live 2026-09-11: --since/--until with epoch seconds returns a
+  # Success envelope with InsightsAlertHistoryList rows.
+  - type: command_executed
+    description: "Agent used --since for the absolute lower bound"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+(list|get-metrics)(?:(?!uip\s)[^&;|])*--since[\s=]+1788000000\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --until for the absolute upper bound"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+(list|get-metrics)(?:(?!uip\s)[^&;|])*--until[\s=]+1788086400\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # The agentic pair. --agentic is refused without --process-key before any
+  # request (packages/insights-tool/src/commands/alerts.spec.ts: "Missing
+  # required field: --process-key."), so asserting the pair rather than the
+  # bare flag means a call that cannot succeed scores zero.
+  - type: command_executed
+    description: "Agent paired --agentic with the --process-key it requires"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alerts\s+list(?:(?!uip\s)[^&;|])*--agentic(?:(?!uip\s)[^&;|])*--process-key|uip\s+insights\s+alerts\s+list(?:(?!uip\s)[^&;|])*--process-key(?:(?!uip\s)[^&;|])*--agentic'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string. These two gates re-run the
+  # surface at grading time and are tenant-agnostic: neither reaches a tenant's
+  # data. Verified against the source CLI 2026-09-11.
+  - type: run_command
+    description: "CLI path is real: alerts list is registered in the installed CLI"
+    command: "uip insights alerts list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Proves the dependency is enforced rather than the flag merely accepted: a
+  # CLI that took --agentic alone would exit 0 here. Exit 3 with a
+  # ValidationError envelope and ErrorCode invalid_argument.
+  - type: run_command
+    description: "--agentic requires --process-key: the bare flag is rejected"
+    command: "uip insights alerts list --agentic"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 13, the one reporting rule the reporting-discipline task does
+  # not cover. A history row proves the alert fired; it does not prove anyone
+  # was notified. Conflating the two is the failure this scores.
+  - type: llm_judge
+    description: "Rule 13: agent reported the trigger and the delivery as separate claims"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      In UiPath Insights an alert trigger and an alert delivery are different
+      facts. A trigger-history row proves the alert fired. It does not prove a
+      notification reached anyone; that is what the delivery metadata is for.
+      The skill requires the two be reported separately. Read the agent's
+      response.
+
+      Score 1.0 if the response keeps them distinct: it says what fired and,
+      separately, what is or is not known about delivery, without letting one
+      imply the other. Saying "an alert fired; I have no delivery evidence for
+      it" earns full credit, and so does a response where both came back empty
+      and it says so for each.
+      Score 0.5 if it reports both but blurs them into one claim.
+      Score 0.0 if it treats a trigger as proof that someone was notified, or
+      reports a delivery it never read.
+    weight: 2.5
+    pass_threshold: 0.7
+
+  # Rule 4's unit rule, from the other direction: the alert routes take epoch
+  # SECONDS, and the jobs family's epoch-millisecond flags do not exist here.
+  # A 13-digit value on an alert route is the millisecond mistake.
+  - type: command_not_executed
+    description: "Agent did not pass millisecond bounds or jobs time flags to an alert route"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+\S+(?:(?!uip\s)[^&;|])*(--(started-after|started-before)\b|--(since|until)[\s=]+\d{13})'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 4 again: the absolute and relative forms are exclusive, and
+  # the handler validates exactly one selection.
+  - type: command_not_executed
+    description: "Agent did not combine --time-range with the absolute bounds"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+\S+(?:(?!uip\s)[^&;|])*--time-range(?:(?!uip\s)[^&;|])*--(since|until)\b|uip\s+insights\s+alert-history\s+\S+(?:(?!uip\s)[^&;|])*--(since|until)(?:(?!uip\s)[^&;|])*--time-range\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt an alert write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history|alert-deliveries)\s+(create|update|delete|set|edit|patch|put|enable|disable|snooze|acknowledge|mute)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach an alert route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|axios|insights-sdk)(?:(?!uip\s)[^&;|])*insightsrtm_'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
