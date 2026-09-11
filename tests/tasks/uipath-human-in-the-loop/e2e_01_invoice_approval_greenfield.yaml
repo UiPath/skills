@@ -19,10 +19,20 @@ run_limits:
   # nightly.yaml). This test declared turn_timeout 2400 without also raising
   # task_timeout (previously fixed in 34aa3c773, since lost) so it kept
   # inheriting the 1200s default and dying mid-first-turn at exactly that
-  # mark, as re-confirmed on 2026-09-10 run 2026-09-10_04-18-49
-  # ("Task timed out after 1200s", iteration_count 1).
-  task_timeout: 2400
-  turn_timeout: 2400
+  # mark, confirmed on 2026-09-10 run 2026-09-10_04-18-49 ("Task timed out
+  # after 1200s", iteration_count 1) and fixed to 2400/2400 in #3196.
+  # 2400 still wasn't enough: 2026-09-11 run 2026-09-11_04-17-20 ran the full
+  # 2400s and timed out again ("Agent turn timed out after 2400s", iteration
+  # 1, 119 assistant turns, max_turns_exhausted False). The iteration log
+  # shows real forward progress the whole time, not a loop: live SharePoint/
+  # SAP connection discovery, IXP taxonomy lookup for invoice extraction, and
+  # registry lookups for every node type, each a real network round trip,
+  # before the agent even started writing the flow JSON around the 25-minute
+  # mark. Raised to 3600, matching the established heavy-single-turn budget
+  # used elsewhere in the repo (e.g. uipath-maestro-bpmn's external_wait and
+  # high_volume_batch tasks).
+  task_timeout: 3600
+  turn_timeout: 3600
 
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that extracts invoice data
