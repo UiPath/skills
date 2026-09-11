@@ -16,7 +16,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
   "shouldRunOnlyOnce": false,
-  "description": "<task Design Rationale from sdd.md>",
+  "description": "<task Design Rationale from sdd.md, or its Description when the SDD has no rationale>",
   "skipCondition": "=js:vars.skipReview === true",
   "data": {
     "timerType": "timeDuration",
@@ -44,7 +44,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
   "shouldRunOnlyOnce": false,
-  "description": "<task Design Rationale from sdd.md>",
+  "description": "<task Design Rationale from sdd.md, or its Description when the SDD has no rationale>",
   "data": {}
 }
 ```

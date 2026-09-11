@@ -12,7 +12,7 @@
   "elementId": "Stage_aB3kL9-tK7nRs3Wp",
   "isRequired": true,
   "shouldRunOnlyOnce": false,
-  "description": "<task Design Rationale from sdd.md>",
+  "description": "<task Design Rationale from sdd.md, or its Description when the SDD has no rationale>",
   "data": {
     "name": "=bindings.bG0SraLpg",
     "folderPath": "=bindings.bH1iJK2lm",

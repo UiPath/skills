@@ -12,7 +12,7 @@
   "elementId": "Stage_aB3kL9-ty5UcykfU",
   "isRequired": true,
   "shouldRunOnlyOnce": false,
-  "description": "<task Design Rationale from sdd.md>",
+  "description": "<task Design Rationale from sdd.md, or its Description when the SDD has no rationale>",
   "data": {
     "taskTitle": "Please review this PO and approve or reject",
     "priority": "High",
