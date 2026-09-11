@@ -210,11 +210,10 @@ def entity_reads(nodes: Iterable[dict[str, Any]]) -> tuple[str, list[dict[str, A
         and str(node.get("type") or "").endswith(CONNECTOR_READ_OPS)
     ]
     native = [node for node in nodes if str(node.get("type") or "") == NATIVE_READ_TYPE]
-    connector_reads = connector
-    if connector_reads and native:
+    if connector and native:
         fail(
             f"the flow mixes both entity-read shapes — connector "
-            f"{[node.get('id') for node in connector_reads]} and native "
+            f"{[node.get('id') for node in connector]} and native "
             f"{[node.get('id') for node in native]}. Availability decides one shape per "
             f"flow; two means one set of reads was left behind"
         )
