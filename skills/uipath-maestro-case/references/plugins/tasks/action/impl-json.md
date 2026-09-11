@@ -12,6 +12,7 @@
   "elementId": "Stage_aB3kL9-ty5UcykfU",
   "isRequired": true,
   "shouldRunOnlyOnce": false,
+  "skipCondition": "=js:vars.skipReview === true",
   "data": {
     "taskTitle": "Please review this PO and approve or reject",
     "priority": "High",
@@ -26,7 +27,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
-- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
+- `isRequired`, `shouldRunOnlyOnce` and `skipCondition` come from the SDD task envelope's three columns; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Action-Specific Fields
