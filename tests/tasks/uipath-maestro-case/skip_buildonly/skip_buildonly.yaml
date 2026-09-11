@@ -1,0 +1,102 @@
+task_id: skill-case-skip-buildonly
+description: >
+  BUILD-ONLY REPLICATE - the same greenfield SupplierOnboarding build from the same
+  2093-line SDD, stopped at validate. Grades one thing: whether the build carries the
+  one Skip Condition that SDD's Task envelope tables declare. Everything the full task
+  grades after validate is dropped, because the envelope is written while the caseplan
+  is written and needs no deployed case to observe. Never uploads and never starts an
+  instance, so replicates run in parallel.
+tags:
+  - uipath-maestro-case
+  - smoke
+  - mode:build
+  - lifecycle:generate
+  - shape:multi-node
+  - resource
+  - feature:registry
+
+run_limits:
+  task_timeout: 18000
+  max_turns: 700
+  turn_timeout: 18000
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our supplier-onboarding case-management solution - it is
+  staged as `sdd.md` in this folder. Build a UiPath Case Management solution named
+  "SupplierOnboarding" containing a project also named "SupplierOnboarding" from it.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do not
+  re-interview me, and do not redesign the process.
+
+  The tenant is LIVE and already hosts every referenced resource: the folder paths,
+  resource identities, connection ID, and connector activity type ID in the SDD are
+  real. Resolve every task and connector rule against them - skeleton or placeholder
+  bindings are NOT acceptable.
+
+  Important:
+  - The `uip` CLI is available and already authenticated against the target tenant.
+    Resolve against a FRESH registry cache; a stale local cache is not acceptable.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1 planning
+    approval, Phase 2 publish-for-review, and Phase 5 publish. Choose the continue /
+    skip-publish path and keep going.
+  - Do NOT call AskUserQuestion - it is not available in this harness.
+  - Do NOT edit `sdd.md`. It is the input, not a working file.
+  - Do NOT publish the solution and do NOT run `uip maestro case debug` (this case
+    suspends on fourteen human tasks and seven SLA clocks).
+  - Persist each connector's `case spec` response before writing it into
+    `caseplan.json` - never reconstruct it from memory.
+  - Finish with
+    `uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --output json`
+    passing on the resulting caseplan.json.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated SupplierOnboarding caseplan.json"
+    command: "uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      the director sign-off task carries the Skip Condition its SDD Task envelope
+      declares, top-level rather than nested inside `data` where the platform never
+      reads it
+    command: "python3 $TASK_DIR/check_skip_condition.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      sdd.md is byte-identical to the staged fixture - the SDD is the input, and a build
+      that edits its own input has moved the goalposts rather than met them
+    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 53edbb9d5ea2a8a05f83f1d162658c003ab5e39509cc01602259905183ae4403"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not publish : the task stops at validate"
+    tool_name: "Bash"
+    command_pattern: '(uip|$UIP)\s+solution\s+(publish|upload)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run case debug : no instance may be started, replicates share the tenant"
+    tool_name: "Bash"
+    command_pattern: '(uip|$UIP)\s+maestro\s+case\s+debug\b'
+    weight: 1.0
+    pass_threshold: 1.0
