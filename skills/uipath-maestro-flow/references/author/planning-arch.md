@@ -230,7 +230,7 @@ Every edge requires `sourcePort` and `targetPort`.
 | `core.datafabric.create` | `input` | `output` |
 | `core.datafabric.update` | `input` | `output` |
 | `core.datafabric.delete` | `input` | `output` (sequencing only — the node produces no data) |
-| `uipath.human-in-the-loop.quick-form` | `input` | `completed` |
+| `uipath.human-in-the-loop.quick-form` | `input` | one `outcome-<outcome.id>` per outcome — see [hitl/impl.md](plugins/hitl/impl.md) |
 | `uipath.core.human-task.{key}` | `input` | `output` |
 
 `error` is an implicit source port on action nodes with `supportsErrorHandling: true`, off by default. Wire it only when requirements specify failure behavior; otherwise the node faults the flow. This differs from HTTP `inputs.branches` and content-based decision/switch routing. See [Implicit error port on action nodes](../shared/file-format.md#implicit-error-port-on-action-nodes).
