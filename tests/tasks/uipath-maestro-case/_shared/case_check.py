@@ -22,6 +22,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Any, Iterable, NoReturn, Sequence
 
 
@@ -450,6 +451,40 @@ def _fail(msg: str) -> NoReturn:
     sys.exit(f"FAIL: {msg}")
 
 
+# `uip maestro case debug` drives a live tenant, and three of its faults are the
+# service's, not the plan's: the poll returning 403/5xx mid-run, and the debug
+# instance being cancelled out from under the poll. All three exit non-zero with
+# the plan intact, and none survived a re-run — measured 2026-09-11 on
+# skill-case-single-api-workflow (403 Forbidden on poll-instance-status),
+# skill-case-multi-linear-three-stages (finalStatus Cancelled, and a 504 on the
+# same poll in CI run 34510099349), each of which then passed 4/4 on re-run
+# across both harnesses. One retry is therefore the difference between grading
+# the build and grading the tenant's afternoon. A fault that is NOT in this set
+# still fails on the first attempt: a plan defect must never be retried into a
+# pass, and a real platform regression must still turn the suite red — which is
+# why the retry announces itself on stdout instead of absorbing the fault.
+_TRANSIENT_DEBUG_HTTP = frozenset({"403", "408", "409", "425", "429", "500", "502", "503", "504"})
+_DEBUG_PHASE_FAULT = re.compile(r"Failed during [\w-]+:\s*(\d{3})\b")
+_DEBUG_CANCELLED = re.compile(r'"finalStatus"\s*:\s*"Cancelled"', re.IGNORECASE)
+_DEBUG_RETRY_SLEEP_S = 15
+
+
+def debug_fault_is_transient(output: str) -> str | None:
+    """Name the tenant-side fault in a failed ``case debug`` output, else None.
+
+    Matches only the two observed shapes: an HTTP status from the debug
+    service's own phase report, and a cancelled instance. Anything else —
+    validation errors, unresolved resources, a plan that cannot start — returns
+    None and fails on the first attempt.
+    """
+    match = _DEBUG_PHASE_FAULT.search(output)
+    if match and match.group(1) in _TRANSIENT_DEBUG_HTTP:
+        return f"HTTP {match.group(1)} from the debug service"
+    if _DEBUG_CANCELLED.search(output):
+        return "the debug instance was cancelled mid-run"
+    return None
+
+
 def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
     """``subprocess.run`` that reports a timeout as a FAIL, not a traceback.
 
@@ -630,6 +665,22 @@ def run_debug(
         refresh_timeout=refresh_timeout,
     )
     status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
+    if status == "Cancelled":
+        # Same tenant-side fault as the non-zero-exit path, reported through a
+        # clean exit. One retry, announced, then it counts.
+        print(
+            "NOTE: retrying `uip maestro case debug` once — the debug instance "
+            "was cancelled mid-run, which is the tenant's fault and not the plan's.",
+            flush=True,
+        )
+        time.sleep(_DEBUG_RETRY_SLEEP_S)
+        payload = start_debug(
+            timeout=timeout,
+            project_glob=project_glob,
+            solution_glob=solution_glob,
+            refresh_timeout=refresh_timeout,
+        )
+        status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
     if status != "Completed" and status != "Successful":
         _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
     return payload
@@ -678,11 +729,23 @@ def start_debug(
         "uip", "maestro", "case", "debug", project_dir,
         "--log-level", "debug", "--output", "json",
     ]
-    r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
-    if r.returncode != 0:
-        _fail(
-            f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}"
+    for attempt in (1, 2):
+        r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
+        if r.returncode == 0:
+            break
+        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
+        if fault is None or attempt == 2:
+            retried = " (after one retry)" if attempt == 2 else ""
+            _fail(
+                f"case debug exit {r.returncode}{retried}\n"
+                f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            )
+        print(
+            f"NOTE: retrying `uip maestro case debug` once — {fault}, "
+            f"which is the tenant's fault and not the plan's.",
+            flush=True,
         )
+        time.sleep(_DEBUG_RETRY_SLEEP_S)
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from case debug\n{r.stdout}")
