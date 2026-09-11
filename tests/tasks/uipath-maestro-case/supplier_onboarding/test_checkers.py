@@ -1235,6 +1235,44 @@ class FieldNameTests(CheckerBase):
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
 
+    def _task_with_outputs(self, plan):
+        for node in plan["nodes"]:
+            for item in tasks_of(node):
+                outs = (item.get("data") or {}).get("outputs")
+                if outs:
+                    return item, outs
+        self.fail("the baseline has no task carrying outputs")
+
+    def test_accepts_a_row_reading_an_earlier_output_on_its_own_task(self):
+        """A task output publishes its own slot, so a later row on the same task can read
+        it. Run 33981915823 ships eight connector tasks shaped this way, and checking
+        against the declared variables alone called all sixteen reads undefined."""
+        plan = baseline_plan()
+        item, outs = self._task_with_outputs(plan)
+        outs.append({
+            "name": "Response", "type": "jsonSchema", "id": "response9",
+            "var": "response9", "value": "response9", "source": "=response",
+            "target": "=response9", "elementId": item.get("elementId", "root"),
+        })
+        outs.append({
+            "name": "derived", "type": "string", "custom": True,
+            "var": "derivedStatus", "value": "=js:vars.response9.status",
+            "source": "=js:vars.response9.status", "target": "", "body": "",
+            "elementId": "root",
+        })
+        self.accepts(plan)
+
+    def test_rejects_a_dotted_read_of_a_name_nothing_writes(self):
+        plan = baseline_plan()
+        _item, outs = self._task_with_outputs(plan)
+        outs.append({
+            "name": "derived", "type": "string", "custom": True,
+            "var": "derivedStatus", "value": "=js:vars.noSuchSlot.status",
+            "source": "=js:vars.noSuchSlot.status", "target": "", "body": "",
+            "elementId": "root",
+        })
+        self.rejects(plan, "not a variable the plan holds")
+
     def test_accepts_pascal_case_output_labels(self):
         """A PascalCase `displayName` is a label, not the wire path."""
         plan = baseline_plan()

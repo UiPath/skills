@@ -394,6 +394,29 @@ def output_targets(task: dict) -> set[str]:
     return out
 
 
+def runtime_readable_names(plan: dict) -> set[str]:
+    """Every name a `vars.X` expression can resolve at runtime.
+
+    Wider than the case's variable namespace. A task output row also publishes its own
+    slot: the row carries `var` and `target` (`=response2`), and the engine writes that
+    name back before later rows on the same task evaluate, so a row reading
+    `=js:vars.response2.status` resolves. Run 33981915823 ships eight connector tasks
+    shaped that way, each with a `response` row and a later row reading it.
+
+    `variable_names` and `variable_ids` answer the narrower question, which stays the
+    right one wherever the assertion is about the case's declared variables.
+    """
+    out = variable_names(plan) | variable_ids(plan)
+    for _stage, task in all_tasks(plan):
+        for entry in task_outputs(task):
+            var = entry.get("var")
+            if isinstance(var, str) and var:
+                out.add(var)
+            target = entry.get("target")
+            if isinstance(target, str) and target.startswith("="):
+                out.add(target[1:])
+    return out
+
 def output_wire_paths(task: dict) -> set[str]:
     """The `source` path each reassign wire reads from, with its `=` stripped.
 

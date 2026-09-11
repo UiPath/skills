@@ -179,7 +179,11 @@ def main() -> int:
         )
 
     # ---- 5. dotted dereferences resolve ------------------------------------
-    declared = P.variable_names(caseplan) | P.variable_ids(caseplan)
+    # A task output row publishes its own slot as well as the case variable it feeds, so
+    # a later row on the same task may read `vars.<slot>.field`. Checking against the
+    # declared variables alone reported all eight of those reads on run 33981915823 as
+    # undefined, 16 findings, every one of them a legal shape.
+    declared = P.runtime_readable_names(caseplan)
     for path, expr in P.expressions(caseplan):
         for root, prop in _DOTTED_RE.findall(expr):
             if root not in declared:
