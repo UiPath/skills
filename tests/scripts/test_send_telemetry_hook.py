@@ -97,6 +97,151 @@ def test_session_start_maps_and_carries_source():
     assert event["schemaVersion"] == 3
 
 
+@pytest.mark.parametrize(
+    ("model_value", "expected"),
+    [
+        pytest.param("claude-opus-5", "claude-opus-5", id="string"),
+        pytest.param(
+            {"id": "claude-opus-5", "display_name": "Opus 5"},
+            "claude-opus-5",
+            id="object-prefers-id",
+        ),
+        pytest.param(
+            {"display_name": "Opus 5"}, "Opus 5", id="object-falls-back-to-display-name"
+        ),
+        pytest.param({}, "", id="object-empty"),
+        pytest.param(None, "", id="null"),
+        pytest.param(True, "", id="bool"),
+        pytest.param(5, "", id="number"),
+        pytest.param(["claude-opus-5"], "", id="array"),
+    ],
+)
+def test_session_start_agent_model_is_shape_tolerant(model_value, expected):
+    """String or object (id, else display_name); any other shape -> "".
+    Both twins must agree — a [string] cast renders `True` / `@{id=...}`."""
+    event = run_hook(
+        {
+            "hook_event_name": "SessionStart",
+            "session_id": "sess-1",
+            "source": "startup",
+            "model": model_value,
+        }
+    )
+    assert event["agent_model"] == expected
+
+
+def test_session_start_without_model_key_is_empty():
+    """An absent key must be "", never the literal "null"."""
+    event = run_hook(
+        {"hook_event_name": "SessionStart", "session_id": "sess-1", "source": "resume"}
+    )
+    assert event["agent_model"] == ""
+
+
+def _transcript(tmp_path, *entries):
+    """Write a JSONL transcript and return its path."""
+    p = tmp_path / "transcript.jsonl"
+    p.write_text("\n".join(json.dumps(e) for e in entries) + "\n")
+    return str(p)
+
+
+def _assistant(model):
+    return {"type": "assistant", "message": {"id": "m", "model": model, "content": []}}
+
+
+def test_agent_model_falls_back_to_transcript(tmp_path):
+    """Read from the last assistant entry when the envelope has no model."""
+    tp = _transcript(
+        tmp_path,
+        {"type": "user", "message": {"content": "hi"}},
+        _assistant("claude-opus-5"),
+    )
+    event = run_hook(
+        {
+            "hook_event_name": "Stop",
+            "session_id": "sess-1",
+            "transcript_path": tp,
+        }
+    )
+    assert event["agent_model"] == "claude-opus-5"
+
+
+def test_transcript_tracks_mid_session_model_change(tmp_path):
+    """The LAST entry reflects a mid-session /model switch — why this is
+    resolved per event rather than cached at session start."""
+    tp = _transcript(
+        tmp_path, _assistant("claude-haiku-4-5"), _assistant("claude-sonnet-5")
+    )
+    event = run_hook(
+        {"hook_event_name": "Stop", "session_id": "sess-1", "transcript_path": tp}
+    )
+    assert event["agent_model"] == "claude-sonnet-5"
+
+
+def test_envelope_model_wins_over_transcript(tmp_path):
+    """The payload is authoritative; the transcript is a fallback."""
+    tp = _transcript(tmp_path, _assistant("claude-opus-5"))
+    event = run_hook(
+        {
+            "hook_event_name": "SessionStart",
+            "session_id": "sess-1",
+            "source": "startup",
+            "model": "claude-fable-5",
+            "transcript_path": tp,
+        }
+    )
+    assert event["agent_model"] == "claude-fable-5"
+
+
+def test_transcript_skips_synthetic_model(tmp_path):
+    """`<synthetic>` is a local turn, not a model id."""
+    tp = _transcript(
+        tmp_path, _assistant("claude-opus-5"), _assistant("<synthetic>")
+    )
+    event = run_hook(
+        {"hook_event_name": "Stop", "session_id": "sess-1", "transcript_path": tp}
+    )
+    assert event["agent_model"] == "claude-opus-5"
+
+
+def test_transcript_ignores_model_json_inside_message_content(tmp_path):
+    """Assistant content can contain JSON-shaped `"model":"..."`. The real key
+    precedes content and embedded quotes are escaped, so injection never wins."""
+    entry = _assistant("claude-opus-5")
+    entry["message"]["content"] = [
+        {"type": "text", "text": 'I wrote "model":"FAKE-INJECTED" in a file'}
+    ]
+    tp = _transcript(tmp_path, entry)
+    event = run_hook(
+        {"hook_event_name": "Stop", "session_id": "sess-1", "transcript_path": tp}
+    )
+    assert event["agent_model"] == "claude-opus-5"
+
+
+def test_missing_transcript_is_a_no_op(tmp_path):
+    """A cold SessionStart fires before the transcript exists -> ""."""
+    event = run_hook(
+        {
+            "hook_event_name": "SessionStart",
+            "session_id": "sess-1",
+            "source": "startup",
+            "transcript_path": str(tmp_path / "does-not-exist.jsonl"),
+        }
+    )
+    assert event["agent_model"] == ""
+
+
+def test_transcript_path_is_never_forwarded(tmp_path):
+    """transcript_path embeds the project directory name; it must never be
+    forwarded."""
+    tp = _transcript(tmp_path, _assistant("claude-opus-5"))
+    event = run_hook(
+        {"hook_event_name": "Stop", "session_id": "sess-1", "transcript_path": tp}
+    )
+    assert not any("transcript" in k.lower() for k in event)
+    assert tp not in json.dumps(event)
+
+
 def test_session_end_carries_reason():
     event = run_hook(
         {
