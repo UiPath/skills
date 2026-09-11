@@ -120,22 +120,28 @@
       "type": "uipath.connector.uipath-salesforce-slack.send-message-to-channel",
       "typeVersion": "1.0.0",
       "display": {
-        "label": "Post Resolution to Slack"
+        "label": "Send Message to Channel"
       },
       "inputs": {
         "detail": {
           "connector": "uipath-salesforce-slack",
-          "connectionId": "fb06f30e-cde8-4e4a-a534-29cb485971d4",
-          "connectionFolderKey": "692bbf4e-5754-4bdc-8ec6-d8e3a986dea2",
+          "connectionId": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "connectionResourceId": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "method": "POST",
+          "endpoint": "/send_message_to_channel_v2",
+          "bodyParameters": {
+            "channel": "C0B2FDZD1M3",
+            "messageToSend": "=js:`${$vars.start.output.correlationId}: ${$vars.resolutionWriter.output.body}`"
+          },
           "queryParameters": {
             "send_as": "user"
           },
-          "channel": "coding-agent-testing",
-          "messageToSend": {
-            "type": "jsExpression",
-            "expression": "`${$vars.start.output.correlationId}\n${$vars.resolutionWriter.output.body}`",
-            "fieldType": "string"
-          }
+          "uiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"send_message_to_channel_v2\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/send_message_to_channel_v2\",\"unifiedTypesCompatible\":true}}"
         }
       }
     },

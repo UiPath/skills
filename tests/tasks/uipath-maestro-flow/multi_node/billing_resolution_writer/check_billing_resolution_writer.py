@@ -6,15 +6,14 @@ drafts a resolution and then posts it to Slack. Three layers:
   1. Structural: the flow contains an inline autonomous agent node (anti-hardcode
      — a Script node cannot stand in for the agent) AND a real Slack connector
      send node.
-  2. Draft behavior: `flow debug` completes and the drafted email — landed in the
-     mapped `emailBody` output — cites the invoice and the approved credit.
+  2. Draft behavior: `flow debug` completes; the drafted email — landed in the
+     mapped `emailBody` output — cites the invoice and the approved credit, AND
+     `emailBody` is the EXECUTED agent node's own output (not a JS template that
+     fabricates it from the trigger inputs — the node-type check is source-only).
   3. Slack outcome: the `Send Message to channel` activity actually posted — the
      flow surfaces the posted message's ts as `slackMessageId`, verified against
      the executed send node's own response, and the message carries the drafted
-     resolution (a slice of `emailBody`), not only the trigger echoes. Requiring
-     the draft in the post closes the same input-echo false pass warned about for
-     `emailBody`: correlationId + invoice are flow inputs, so a canned template
-     over them would satisfy an ids-only Slack gate one layer out.
+     `emailBody`, not only the trigger echoes.
 
 The behavior grade scopes to the `emailBody` output global, NOT the whole debug
 payload. Matching the whole payload is a false pass: the trigger echoes the
@@ -39,6 +38,8 @@ from _shared.flow_check import (  # noqa: E402
     assert_named_output_contains,
     assert_output_nonempty,
     assert_slack_message_posted,
+    completed_node_ids_of_type,
+    node_output_leaves,
     run_debug,
 )
 
@@ -78,14 +79,20 @@ def main():
     assert_named_output_contains(payload, "emailBody", ["1610", "1,610"], require_all=False)
     print(f"OK: emailBody drafted, cites invoice {INVOICE} and the approved credit")
 
+    # emailBody must come FROM the executed agent, not a JS template that fabricates
+    # it from the trigger inputs. assert_flow_has_node_type is source-only, so without
+    # this an unexecuted agent node plus one template feeding both emailBody and the
+    # Slack text would pass at full weight. Tie the value to the agent's own response.
+    agent_ids = completed_node_ids_of_type(payload, "uipath.agent.autonomous")
+    if str(body).strip() not in node_output_leaves(payload, agent_ids):
+        sys.exit("FAIL: emailBody did not come from the executed uipath.agent.autonomous node")
+    print("OK: emailBody is the executed agent's own output")
+
     # caseKey must echo the incoming correlationId (opaque id — exact case).
     assert_named_equals(payload, "caseKey", CORRELATION_ID, case_sensitive=True)
 
-    # Slack outcome — verified against the executed send's own response. The posted
-    # message must carry the agent's DRAFT (a slice of emailBody), not only the
-    # trigger echoes: correlationId + invoice are flow inputs, so a canned template
-    # over them would pass on those alone. Requiring body[:80] ties the delivered
-    # side effect to the agent's work product (cf. check_escalation_slack_alert.py:107).
+    # Slack outcome — verified against the executed send's own response: the posted
+    # message must carry the mapped emailBody (body[:80]), not only the trigger echoes.
     assert_slack_message_posted(
         payload,
         "slackMessageId",

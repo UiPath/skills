@@ -167,18 +167,30 @@ def main():
 
     # Exactly one Slack SEND node (native connector node or connector-mode HTTP
     # proxy to the send op) — a read/search activity is not a delivery.
+    def _bound(v):
+        return v is not None and (not isinstance(v, str) or v.strip() != "")
+
     def is_slack_send(n: dict) -> bool:
         t = str(n.get("type", ""))
         if SLACK_KEY in t and SLACK_OP in t:
             return True
         detail = (n.get("inputs") or {}).get("detail") or {}
-        body = detail.get("bodyParameters") or {} if isinstance(detail, dict) else {}
+        if not isinstance(detail, dict):
+            return False
+        body = detail.get("bodyParameters") or {}
+        body = body if isinstance(body, dict) else {}
         target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
         auth = str(body.get("authentication") or "").lower()
+        # Mirror the live gate (_connector_node_ids): a connector-mode HTTP proxy
+        # counts only with a real bound connection. Without connectionId +
+        # connectionFolderKey it would pass here but fail assert_slack_message_posted
+        # with "no connected send node found".
         return (
             t.lower().startswith("core.action.http")
             and target == SLACK_KEY
             and auth == "connector"
+            and _bound(detail.get("connectionId"))
+            and _bound(detail.get("connectionFolderKey"))
             and SLACK_OP.replace("-", "") in json.dumps(detail).lower().replace("-", "").replace("_", "")
         )
 

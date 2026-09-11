@@ -70,7 +70,7 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Advisory: STRUCTURAL (covering): exactly one INLINE agent (no published agent, no script stand-in), fed all three inputs through bindings or Flow/sidecar prompt references, both fields declared in returns, both outputs read from the agent, and no email literals'
+    description: 'Advisory: STRUCTURAL (covering): exactly one INLINE agent (no published agent, no script stand-in), fed all three inputs through bindings or Flow/sidecar prompt references, both fields declared in returns, both outputs read from the agent, no email literals; plus the Slack contract — correlationId in-global, caseKey/slackMessageId out-globals, exactly one Slack send-message-to-channel node sending as user, the posted message depending on the agent, caseKey routing the correlationId and slackMessageId from the executed send'
     command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_resolution_writer.py
     timeout: 30
     expected_exit_code: 0
