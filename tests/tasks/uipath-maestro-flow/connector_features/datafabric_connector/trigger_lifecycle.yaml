@@ -37,6 +37,11 @@ initial_prompt: |
 
   For both flows, keep the configured connection and correct entity on every
   trigger and Data Fabric activity.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
+
   Validate every final flow file.
 
   This run is headless. No user is present and nobody will answer a question or

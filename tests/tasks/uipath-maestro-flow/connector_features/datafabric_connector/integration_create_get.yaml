@@ -39,7 +39,9 @@ initial_prompt: |
   at expansionLevel=1, expansionLevel=2, and expansionLevel=3. Delete when
   done.
 
-  Use the Data Fabric Integration Service connector activities (`uipath.connector.uipath-uipath-dataservice.*`) for these operations — not the native `core.datafabric.*` nodes.
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

@@ -24,7 +24,9 @@ initial_prompt: |
      FlowCodeEvalEntity for title='ErrorTestRecord'.
   3. In the same parallel branch, Query FlowCodeEvalEntity with no filter.
 
-  Use the Data Fabric Integration Service connector activities (`uipath.connector.uipath-uipath-dataservice.*`) for these operations — not the native `core.datafabric.*` nodes.
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

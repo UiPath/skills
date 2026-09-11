@@ -6,7 +6,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice]
 
 run_limits:
-  max_turns: 150
+  max_turns: 100
   turn_timeout: 2400
   task_timeout: 3600
 
@@ -41,7 +41,9 @@ initial_prompt: |
   tree, sort, and limit, but use offset/start 2 for the next page. Query 3 must
   filter active equals true, sort by score descending, and use a limit of 4.
 
-  Use the Data Fabric Integration Service connector activities (`uipath.connector.uipath-uipath-dataservice.*`) for these operations — not the native `core.datafabric.*` nodes.
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 
