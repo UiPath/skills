@@ -142,7 +142,7 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 Use the global `--output-filter` flag with a JMESPath expression to extract specific fields from large responses if possible via JMESPath.
 
 ```bash
-# Extract only id, name, and email from a user list
+# Extraction, not search: returns fields from THIS page only
 uip is resources run list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
   --connection-id "<CONNECTION_ID>" \
   --output json \
