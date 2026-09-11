@@ -1,43 +1,18 @@
 # Filter Platform Contract
 
-Which operators each field type accepts, so you can build a valid `records query` filter. For body usage and unsupported-operator handling, see [`records-query.md`](records-query.md) and data-fabric.md Rule 17.
+Defines valid `records query` filter operators by field type. For filter-body usage and unsupported-operator handling, see [`records-query.md`](records-query.md) and data-fabric.md Rule 17.
 
-## Filter body
+## Filter body and pagination
 
-A filter group has three fields:
+A filter group has `logicalOperator` (`AND`/`OR` or `0`/`1`, case-insensitive), leaf `queryFilters` (`{ fieldName, operator, value }`), and optional nested `filterGroups` with the same structure.
 
-- `logicalOperator` — `AND`/`OR` or `0`/`1`; case-insensitive.
-- `queryFilters` — array of leaf clauses, each `{ fieldName, operator, value }` (or `valueList` for `in` / `not in`).
-- `filterGroups` — optional array of nested groups. **Each nested group has the same structure as the parent**, so AND/OR may mix per level.
+Use JSON-string `value` (`"18"`, `"true"`, or an ISO-8601 date), except `null` for empty checks. Use `valueList` only with `in`/`not in`; all other operators use `value`. `null` means is-empty (`=`) or is-not-empty (`!=`).
 
-Example:
-
-```json
-{
-  "logicalOperator": "AND",
-  "queryFilters": [
-    { "fieldName": "Status", "operator": "=",  "value": "Active" },
-    { "fieldName": "Status", "operator": "in", "valueList": ["A", "B"] }
-  ],
-  "filterGroups": [
-    {
-      "logicalOperator": "OR",
-      "queryFilters": [
-        { "fieldName": "Priority", "operator": "=", "value": "high" }
-      ]
-    }
-  ]
-}
-```
-
-- `value` is a JSON **string** (`"18"`, `"true"`, ISO-8601 dates), except `null` for empty checks.
-- `in` / `not in` use `valueList`; everything else uses `value`.
-- `null` value = is-empty (`=`) / is-not-empty (`!=`).
-- Response data: `Data: { Items, TotalCount, HasNextPage, NextCursor: { Value }, CurrentPage, TotalPages, SupportsPageJump }`. Records live in `Data.Items`. Page with `--limit` / `--cursor` flags (pass `NextCursor.Value`), never body keys.
+Responses are `Data: { Items, TotalCount, HasNextPage, NextCursor: { Value }, CurrentPage, TotalPages, SupportsPageJump }`; records are in `Data.Items`. Paginate with `--limit` / `--cursor`, passing `NextCursor.Value`; never use body keys for pagination.
 
 ## Operator support by field type
 
-Build only within this matrix (✅ supported). The API *runs* some ❌ cells anyway (e.g. `<` on Text — lexicographic, so `"user2@…" < "user20@…"`) and 400s only on unknown operators (`==`, `Equals`, `like`). Never rely on that: when a request needs an unsupported operator/type combo, or has no value, ask the user — don't silently run it (data-fabric.md Rule 17).
+Build filters only within this matrix (✅ supported). Unsupported combinations may execute with unintended behavior (for example, `<` on Text is lexicographic); never rely on them. Unknown operators such as `==`, `Equals`, or `like` return 400. If the requested operator/type is unsupported or lacks a value, ask before running it (data-fabric.md Rule 17).
 
 | Operator | Text / Multiline | Number / Autonum | Date/Time | Boolean | Choice Set | Relationship | File | Unique ID |
 |---|---|---|---|---|---|---|---|---|
@@ -48,10 +23,13 @@ Build only within this matrix (✅ supported). The API *runs* some ❌ cells any
 | is empty / not empty | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `in` `not in` | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
 
-Complex-field values: **Choice Set** — the integer `NumberId` (multi: `=` takes a sorted JSON-array string `"[1,3]"`, `contains` takes a bare id `"3"`). **Relationship** — the target record's UUID `Id`.
+Complex-field values:
 
-**`MULTILINE_MAX` is outside the matrix entirely** — the Text / Multiline column does NOT cover it. No operator is supported (including is-empty), and no `sortOptions`: server rejects with 400 — *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Don't offer the field in filter/sort; if the user asks, surface the limitation and (only with their approval) fetch full values via `records get` and evaluate client-side.
+- **Choice Set:** use the integer `NumberId`. For multi-value fields, `=` takes a sorted JSON-array string such as `"[1,3]"`; `contains` takes a bare ID such as `"3"`.
+- **Relationship:** use the target record's UUID `Id`.
 
-## Unsupported operator, or missing value
+**`MULTILINE_MAX` is outside the matrix entirely.** Text / Multiline support does not apply: no operator, including is-empty, and no `sortOptions` is supported. The server rejects these requests with 400 — *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Do not offer this field for filtering or sorting. If requested, explain the limitation and, only with the user's approval, fetch full values via `records get` and evaluate client-side.
 
-If a request needs an out-of-matrix operator/type combo (or an operator outside the list above — `BETWEEN`, regex, `like`), or an operator other than is-empty/not-empty has no value, **don't silently run it**. Ask the user to either **(a)** run the query without that filter, or **(b)** supply a supported one — then apply only their choice, never a default. Compositions often help: `BETWEEN x AND y` → `>=` + `<=` in one `queryFilters` (`logicalOperator: 0`); regex → `contains` / `startswith` / `endswith`.
+## Unsupported operators or missing values
+
+For an out-of-matrix combination, unlisted operator (`BETWEEN`, regex, `like`), or missing value for any operator other than is-empty/not-empty, do not run silently. Ask the user to either **(a)** run without that filter or **(b)** supply a supported one; apply only their choice and never default. Compose supported operators when appropriate: `BETWEEN x AND y` becomes `>=` plus `<=` in one `queryFilters` (`logicalOperator: 0`), and regex becomes `contains`, `startswith`, or `endswith`.

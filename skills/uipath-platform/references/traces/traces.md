@@ -4,24 +4,18 @@
 
 ## When to use this
 
-- Debugging an Agent-type process that uses LLM calls
-- Inspecting tool calls, LLM interactions, and agent decisions during execution
-- Getting detailed observability data beyond what `uip or jobs logs` provides
+- Debug an Agent-type process that uses LLM calls.
+- Inspect tool calls, LLM interactions, and agent decisions.
+- Get observability data beyond `uip or jobs logs`.
 
-## Two tools, two levels of detail
+## Retrieval levels
 
-| Command | Tool | What it returns |
-|---------|------|-----------------|
-| `uip or jobs traces <job-key>` | orchestrator-tool | Lists trace IDs attached to a job |
-| `uip traces spans get` | traces-tool | Fetches detailed span data for a trace or job |
+| Command | Tool | Returns |
+|---------|------|---------|
+| `uip or jobs traces <job-key>` | orchestrator-tool | Trace IDs attached to a job |
+| `uip traces spans get` | traces-tool | Detailed span data for a trace or job |
 
-**Typical flow:** Use `uip or jobs traces` to discover trace IDs, then `uip traces spans get` for the full span tree.
-
-Or skip straight to spans by job key:
-
-```bash
-uip traces spans get --job-key <job-key> --output json
-```
+Run `uip or jobs traces <job-key>` to discover trace IDs, then run `uip traces spans get` for the full span tree. Alternatively, run `uip traces spans get --job-key <job-key> --output json` directly.
 
 ## Command: `uip traces spans get`
 

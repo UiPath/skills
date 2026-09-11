@@ -1,26 +1,22 @@
 # Resources (`uip or`)
 
-Manage Orchestrator resources -- assets, queues, queue items, buckets, files, triggers, libraries, and webhooks.
+Manage Orchestrator assets, queues, queue items, buckets, files, triggers, libraries, and webhooks.
 
-> **Important:** These commands live under `uip or` (the former standalone resource tool was retired and folded into `uip or`). The old `storage-buckets`/`storage-bucket-files` names are now `buckets`/`bucket-files`.
+> **Important:** Run these commands under `uip or`; the former standalone resource tool was retired. Use `buckets`/`bucket-files`, not `storage-buckets`/`storage-bucket-files`.
 
-> For full option details on any command, use `--help` (e.g., `uip or assets list --help`).
-
----
+> For full options, run `uip or <resource> <verb> --help`.
 
 ## Common Flags
 
 | Flag | Scope | Purpose |
 |------|-------|---------|
 | `--tenant <name>` | All commands | Override the default tenant. |
-| `--output json` | All commands | Emit structured JSON. Always use this when parsing output programmatically. |
-| `--folder-path <path>` | Folder-scoped commands | Target folder by path (e.g., `"Finance"` or `"Finance/Invoicing"`). |
-| `--folder-key <key>` | Folder-scoped commands | Target folder by GUID key. |
-| `--limit <n>` | List commands | Number of items to return (default 50). |
-| `--offset <n>` | List commands | Number of items to skip for pagination. |
-| `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
-
----
+| `--output json` | All commands | Emit structured JSON for programmatic parsing. |
+| `--folder-path <path>` | Folder-scoped commands | Target a folder by path, such as `"Finance"` or `"Finance/Invoicing"`. |
+| `--folder-key <key>` | Folder-scoped commands | Target a folder by GUID key. |
+| `--limit <n>` | List commands | Number of items returned; default 50. |
+| `--offset <n>` | List commands | Number of items to skip. |
+| `--sort-by <field>` | List commands | OData-style sort, such as `'Name asc'` or `'Id desc'`. |
 
 ## Command Tree
 
@@ -36,11 +32,9 @@ uip or
   └── webhooks            (7 verbs)
 ```
 
----
-
 ## Workflow References
 
-Each workflow doc covers a multi-command choreography for a specific goal. Load the one that matches your task.
+Load the workflow document matching the task:
 
 | Workflow | File | Covers |
 |----------|------|--------|
@@ -49,26 +43,26 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Work with Storage | [work-with-storage.md](work-with-storage.md) | Buckets, file upload/download, pre-signed URLs |
 | Triggers & Webhooks | [triggers-and-webhooks.md](triggers-and-webhooks.md) | Time/queue/API triggers, webhook management |
 
----
-
 ## Libraries
 
-Libraries are tenant-scoped -- no folder context needed.
+Libraries are tenant-scoped; no folder context is needed.
 
 | Command | Description |
 |---------|-------------|
-| `uip or libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`, `--all-fields`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns curated rows: `Key`, `Title`, `Version`, `Authors`, `Published`, `IsLatestVersion`, `IsPrerelease`, `ProjectType`. Note: `Published` is often empty on list rows (the bare collection endpoint doesn't populate it server-side); `get`/`versions` return it. |
-| `uip or libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns a curated detail view (adds `Description`, `PackageSize`, `Created`, `LastUpdated`, etc.); `--all-fields` for the raw DTO. Dates the feed doesn't track are returned as empty strings (the API serializes 0001-01-01 sentinels; the CLI strips them). |
-| `uip or libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). Curated rows like `list`; `--all-fields` for raw. Fails with `Library not found` when the package ID doesn't exist (instead of an empty success). |
-| `uip or libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. The file must exist (checked client-side). The default shared feed is read-only on many tenants — if upload fails with a read-only/feed-not-found error, enable Tenant Libraries in tenant settings or target a writable feed with `--feed-id` (`uip or feeds list`). |
-| `uip or libraries download <key> --destination <path>` | Download a `.nupkg` to local disk. `--destination` creates missing parent dirs and overwrites an existing file. |
-| `uip or libraries delete <key>` | Delete a specific library version. Key format is `PackageId:Version` (validated client-side). |
+| `uip or libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`, `--all-fields`. There is no native search; filter client-side with global `--output-filter "<JMESPath>"`. Curated rows contain `Key`, `Title`, `Version`, `Authors`, `Published`, `IsLatestVersion`, `IsPrerelease`, `ProjectType`. `Published` is often empty in list rows because the bare collection endpoint does not populate it; `get`/`versions` return it. |
+| `uip or libraries get <key>` | Get library details. Use key format `PackageId:Version`, such as `MyLib:1.0.0`. The curated view adds `Description`, `PackageSize`, `Created`, `LastUpdated`, etc.; use `--all-fields` for the raw DTO. Dates the feed does not track are empty strings because the API serializes 0001-01-01 sentinels and the CLI strips them. |
+| `uip or libraries versions <package-id>` | List all versions by package ID, which is the `Title` from `list` output. Use `--all-fields` for raw rows. A nonexistent package ID fails with `Library not found` instead of returning an empty success. |
+| `uip or libraries upload --file <path>` | Upload a `.nupkg` package; the file must exist, checked client-side. The default shared feed is read-only on many tenants. If upload fails with a read-only/feed-not-found error, enable Tenant Libraries in tenant settings or target a writable feed with `--feed-id` (`uip or feeds list`). |
+| `uip or libraries download <key> --destination <path>` | Download a `.nupkg`; `--destination` creates missing parent directories and overwrites an existing file. |
+| `uip or libraries delete <key>` | Delete a specific library version. Use key format `PackageId:Version`; it is validated client-side. |
+
+Run these examples as needed:
 
 ```bash
 # List libraries (first 500). Default --limit is 50; bump it for tenants with many libraries.
 uip or libraries list --limit 500 --output json
 
-# Filter by name client-side. Title can be null — guard with `Title != null` or contains() will error.
+# Filter by name client-side. Title can be null — guard with Title != null or contains() will error.
 uip or libraries list --limit 500 \
   --output-filter "[?Title != null && contains(Title, 'Excel')]" \
   --output json
@@ -90,13 +84,11 @@ uip or libraries download "UiPath.System.Activities:24.10.0" \
 uip or libraries delete "UiPath.System.Activities:24.4.0" --yes --output json
 ```
 
----
-
 ## Output Behavior
 
-These commands return a **curated PascalCase view** by default — a focused projection of the most useful fields. Pass `--all-fields` on list/get-style commands to receive the raw API DTO instead (raw DTO keys are camelCase; the two shapes do not share casing). This matches the convention across all `uip or` commands; see [orchestrator.md](orchestrator.md).
+By default, commands return a **curated PascalCase view**. On list/get-style commands, pass `--all-fields` for the raw API DTO, whose keys are camelCase; the shapes do not share casing. This follows the `uip or` convention described in [orchestrator.md](orchestrator.md).
 
-List responses include a `Pagination` block:
+List responses include:
 
 ```json
 {
@@ -105,9 +97,7 @@ List responses include a `Pagination` block:
 }
 ```
 
-When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Continue until `HasMore` is `false` or `Returned < Limit`.
-
----
+When `HasMore` is `true`, run another request with `--offset` increased by `--limit`. Continue until `HasMore` is `false` or `Returned < Limit`.
 
 ## Related
 

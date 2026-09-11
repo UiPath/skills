@@ -1,22 +1,22 @@
 # File Attachments Reference
 
-Data Fabric supports file-type fields on entities. Files are stored per-record per-field.
+Data Fabric stores FILE fields per record and field.
 
-> **⚠ Do NOT put FILE-typed keys in `records insert`, `records update`, or `records import` payloads.** Expected behavior: the platform silently strips FILE values — paths, base64, filenames, UUIDs, CSV cells, `null` — and returns `Result: Success` with the FILE column unchanged (data-fabric.md Rules 6 and 20). Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required write path: `records insert` (no FILE column) → capture `Data.Id` → `files upload <entity-id> <record-id> <field-name> --file <path>`. To clear: `files delete`. Never `records update`.
+> **⚠ Do NOT put FILE-typed keys in `records insert`, `records update`, or `records import` payloads.** The platform silently strips FILE values—paths, base64, filenames, UUIDs, CSV cells, and `null`—and returns `Result: Success` with the FILE column unchanged (data-fabric.md Rules 6 and 20). Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear, and `records update receipt:"<uuid>"` does **not** swap. Run `records insert` without the FILE column, capture `Data.Id`, then run `files upload <entity-id> <record-id> <field-name> --file <path>`. Run `files delete` to clear. Never use `records update` for FILE values.
 
-## Creating a FILE field correctly
+## Creating a FILE field
 
 When creating a FILE field through the CLI, use only `{"name":"X","type":"FILE"}`. The server auto-wires the `EntityAttachment` binding. See [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
 
 ## Prerequisites
 
-1. **The entity must have a FILE field.** Use `uip df entities get <entity-id> --output json` to identify file-type fields. A correctly-defined FILE field shows `FieldDataType.Name: "FILE"`, `FieldDisplayType: "File"`, `IsForeignKey: true`, and `ReferenceEntity.Name == "EntityAttachment"`.
-2. **The target record must already exist.** `files upload` writes against a `<record-id>` — create the row first with `records insert` (omit the FILE column — Rule 6) and capture `Data.Id` from the response.
-3. **All three `files` commands accept `--folder-key <GUID>`**. Pass it when the parent entity lives in a folder; omit it for tenant-scoped entities.
+1. Run `uip df entities get <entity-id> --output json` and verify a FILE field with `FieldDataType.Name: "FILE"`, `FieldDisplayType: "File"`, `IsForeignKey: true`, and `ReferenceEntity.Name == "EntityAttachment"`.
+2. Run `records insert` without the FILE column (Rule 6), capture `Data.Id`, and use it as `<record-id>`; `files upload` requires an existing record.
+3. Pass `--folder-key <GUID>` to all three `files` commands when the parent entity is in a folder; omit it for tenant-scoped entities.
 
-## Upload or Replace a File
+## Upload or replace a file
 
-`files upload` is the only verb for writing a FILE field. It both **attaches** (when the field is currently empty) and **replaces in place** (when a file is already attached) — no `files delete` is needed first.
+Run `files upload` to attach or replace a file; do not run `files delete` first.
 
 ```bash
 uip df files upload <entity-id> <record-id> <field-name> \
@@ -25,14 +25,13 @@ uip df files upload <entity-id> <record-id> <field-name> \
   --output json
 ```
 
-- `<field-name>` is **case-sensitive** — must match exactly the field name from `entities get`
-- The record must already exist before uploading
-- Pass `--folder-key` when the parent entity is folder-scoped
-- Replacing in place: the per-record-per-field UUID handle (the value at `expansionLevel: 0`, or `Document.Id` at level 1+) is preserved across the upload — only the bytes, filename, `Size`, `Type`, and `UpdateTime` change. Don't use the handle to detect content change — compare bytes or watch `UpdateTime`.
+Use the case-sensitive `<field-name>` returned by `entities get`. The record must exist, and folder-scoped entities require `--folder-key`.
+
+The per-record-per-field UUID handle—the value at `expansionLevel: 0`, or `Document.Id` at level 1+—is preserved when replacing a file. Only the bytes, filename, `Size`, `Type`, and `UpdateTime` change. Do not use the handle to detect content changes; compare bytes or watch `UpdateTime`.
 
 Response: `{ Code: "FileUploaded", Data: { EntityId, RecordId, FieldName, FileName } }`
 
-## Download a File
+## Download a file
 
 ```bash
 uip df files download <entity-id> <record-id> <field-name> \
@@ -41,11 +40,11 @@ uip df files download <entity-id> <record-id> <field-name> \
   --output json
 ```
 
-- If `--destination` is omitted, the file is saved as `<record-id>_<field-name>.bin` in the current directory
+If `--destination` is omitted, the file is saved as `<record-id>_<field-name>.bin` in the current directory.
 
 Response: `{ Code: "FileDownloaded", Data: { EntityId, RecordId, FieldName, OutputPath } }`
 
-## Delete a File
+## Delete a file
 
 ```bash
 uip df files delete <entity-id> <record-id> <field-name> \
@@ -54,19 +53,19 @@ uip df files delete <entity-id> <record-id> <field-name> \
   --output json
 ```
 
-Response: `{ Code: "FileDeleted", Data: { EntityId, RecordId, FieldName, Reason } }` — `Reason` echoes the `--reason` value.
+Response: `{ Code: "FileDeleted", Data: { EntityId, RecordId, FieldName, Reason } }`; `Reason` echoes `--reason`.
 
-## What records reads return for a FILE field
+## FILE fields in record reads
 
-The shape depends on the `expansionLevel` used by the call. `records get` and `records list` always run at level `0` (neither verb exposes a way to raise it). `records query` accepts an `expansionLevel` value inside `--body` (default `0`), so the same field can come back two ways:
+`records get` and `records list` always use `expansionLevel: 0`. `records query` accepts `expansionLevel` inside `--body` and defaults to `0`.
 
-**`expansionLevel: 0` (default)** — FILE field is a UUID string, or omitted / `null` when no file is attached:
+At `expansionLevel: 0`, a FILE field is a UUID string, or is omitted / `null` when empty:
 
 ```json
 { "Id": "<record-uuid>", "Document": "16633BC7-F76A-F111-AC99-000D3A98AF8F" }
 ```
 
-**`expansionLevel: 1` or higher** — FILE field is an object with the attachment metadata:
+At `expansionLevel: 1` or higher, it is an attachment-metadata object:
 
 ```json
 {
@@ -88,12 +87,12 @@ The shape depends on the `expansionLevel` used by the call. `records get` and `r
 }
 ```
 
-Parse by inspecting the field's runtime type (string vs object) — or pin the shape by always setting `expansionLevel` explicitly in the body. The FILE-field object shape is the same at level 1 and level 2; only *related* fields like `UpdatedBy` / `CreatedBy` keep expanding past level 1. Same write rules still apply — the value is read-only metadata:
+Inspect the runtime type (string versus object), or set `expansionLevel` explicitly in the query body. The FILE object shape is the same at levels 1 and 2; only related fields such as `UpdatedBy` and `CreatedBy` expand beyond level 1.
 
-- Do not use the UUID handle (or `Document.Id`) to detect content change. The handle stays identical across `files upload` calls — the bytes change, the UUID does not. Compare downloaded bytes or watch `UpdateTime` instead.
-- Do not try to set, swap, or clear the field via `records insert` / `records update`. Expected behavior: silently dropped (see warning above).
-- To check whether a file is attached, look for the field's presence and non-null value. To clear, call `files delete`.
+Treat read values as read-only metadata:
 
-To read the filename through the CLI, query with `expansionLevel: 1` and read
-`Data.Items[].<field-name>.Name`. `files upload` also returns it as
-`Data.FileName`; verify bytes with `files download` when content matters.
+- Do not use the UUID handle or `Document.Id` to detect content changes; it remains identical across `files upload` calls. Compare downloaded bytes or watch `UpdateTime`.
+- Do not set, swap, or clear FILE fields through `records insert` or `records update`; values are silently dropped (Rules 6 and 20).
+- Check attachment status by the field's presence and non-null value. Run `files delete` to clear it.
+
+Run a query with `expansionLevel: 1` and read `Data.Items[].<field-name>.Name` to obtain the filename. `files upload` also returns it as `Data.FileName`; run `files download` to verify bytes when content matters.

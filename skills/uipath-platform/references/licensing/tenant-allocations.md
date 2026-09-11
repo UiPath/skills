@@ -1,159 +1,116 @@
 # Tenant License Allocations
 
-Allocate license units (`UNATT`, `RU`, `PLTU`, `NONPR`, etc.) from the account pool to specific tenants, and inspect what each tenant currently has reserved and consumed.
+Allocate account-pool license units (`UNATT`, `RU`, `PLTU`, `NONPR`, etc.) to tenants, or inspect tenant reservations and consumption.
 
-> For full option details, run `uip platform tenants licenses get --help` or `... set --help`.
-
----
+> Run `uip platform tenants licenses get --help` or `uip platform tenants licenses set --help` for full options.
 
 ## When to Use
 
-- Provisioning a new tenant with a runtime allocation (e.g., 5 Unattended Robots)
-- Rebalancing licenses across tenants (move 10 RU from dev to prod)
-- Auditing per-tenant `allocated` vs `consumed` to find under- or over-provisioned tenants
-- Scripting CI/CD pipeline that bumps tenant capacity before a load test
+- Provision, resize, or rebalance tenant allocations.
+- Audit per-tenant `allocated` versus `consumed`.
+- Increase tenant capacity for CI/CD or load testing.
 
 ## Prerequisites
 
-1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
-2. Org admin permissions to allocate licenses
-3. Tenant key (GUID) of the target tenant — discover with `uip or settings list --tenant <name>` or the Automation Cloud portal
-
----
+1. Run `uip login status`. If unauthenticated, ask the user to run `uip login` (interactive browser flow).
+2. Have org admin permissions to allocate licenses.
+3. Obtain the target tenant GUID with `uip or settings list --tenant <name>` or from the Automation Cloud portal.
 
 ## Commands
 
-| Command | What it does |
-|---------|--------------|
-| `uip platform tenants licenses get <tenant-key>` | Read current allocation, availability, and consumption per product code |
-| `uip platform tenants licenses set <tenant-key> --input <path>` | Overlay per-product quantities onto the tenant's existing service licenses |
+| Command | Purpose |
+|---|---|
+| `uip platform tenants licenses get <tenant-key>` | Read allocation, availability, and consumption by product code. |
+| `uip platform tenants licenses set <tenant-key> --input <path>` | Overlay product quantities onto existing tenant service licenses. |
 
----
+## 1. Inspect Current Allocation
 
-## Step 1: Inspect Current Allocation
+Run:
 
 ```bash
 uip platform tenants licenses get <TENANT_KEY> --output json
 ```
 
-Returns one row per product currently in an active interval (current time falls between `startDate` and `endDate`):
+The result contains one row per product in the active interval (`startDate` <= current time <= `endDate`):
 
 ```json
-{
-  "Result": "Success",
-  "Code": "TenantLicenses",
-  "Data": [
-    {
-      "code": "PLTU",
-      "name": "Platform Units",
-      "allocated": 300,
-      "availableForAllocation": 4700,
-      "allocatedAcrossOtherTenants": 0,
-      "totalUnitsInAccount": 5000,
-      "consumed": 50,
-      "startDate": "2023-11-14T22:13:20.000Z",
-      "endDate": "2027-09-15T18:40:00.000Z"
-    }
-  ]
-}
+{"Result":"Success","Code":"TenantLicenses","Data":[{"code":"PLTU","name":"Platform Units","allocated":300,"availableForAllocation":4700,"allocatedAcrossOtherTenants":0,"totalUnitsInAccount":5000,"consumed":50,"startDate":"2023-11-14T22:13:20.000Z","endDate":"2027-09-15T18:40:00.000Z"}]}
 ```
 
-Field reference:
+- `allocated`: units reserved for this tenant.
+- `availableForAllocation`: units free in the account pool.
+- `allocatedAcrossOtherTenants`: units reserved for other tenants.
+- `totalUnitsInAccount`: purchase total; equals `allocated + availableForAllocation + allocatedAcrossOtherTenants`.
+- `consumed`: units used by running jobs; a subset of `allocated`.
+- `startDate` / `endDate`: bundle window in ISO 8601.
 
-| Field | Meaning |
-|-------|---------|
-| `allocated` | Units currently reserved for this tenant |
-| `availableForAllocation` | Units still free in the account pool (could be moved to this or any tenant) |
-| `allocatedAcrossOtherTenants` | Units reserved for other tenants |
-| `totalUnitsInAccount` | Account purchase total. Equals `allocated + availableForAllocation + allocatedAcrossOtherTenants` |
-| `consumed` | Units actually used by running jobs (subset of `allocated`) |
-| `startDate` / `endDate` | Bundle window in ISO 8601 |
+## 2. Prepare the Input File
 
-## Step 2: Prepare the Input File
-
-Create a JSON array of product entries with absolute target quantities:
+Create a JSON array of absolute target quantities:
 
 ```json
-[
-  {"code": "UNATT", "quantity": 10},
-  {"code": "PLTU", "quantity": 500}
-]
+[{"code":"UNATT","quantity":10},{"code":"PLTU","quantity":500}]
 ```
 
-Validation rules:
-- `code` must be a non-empty string
-- `quantity` must be a finite, non-negative number (zero is allowed — sets the allocation to zero)
-- Each `code` must already exist on the tenant's current service licenses (cannot introduce new product codes)
+Validate that:
 
-## Step 3: Apply the Allocation
+- `code` is a non-empty string.
+- `quantity` is a finite, non-negative number; zero sets the allocation to zero.
+- Each `code` already exists on the tenant's current service licenses; `set` cannot introduce product codes.
 
-> **Diagnosing, not fixing? Stop here.** If you are explaining why an allocation
-> behaved unexpectedly, do not run `set` at all — not even to reproduce the
-> command the user described. `set` is an overlay: running it destroys the
-> evidence of the prior state, and the semantics you need are documented in
-> [Gotchas](#gotchas) and in `set --help`. A CLI that looks disconnected is not
-> permission to try it — an unauthenticated command is not guaranteed to fail,
-> and if the credentials resolve you have mutated production while diagnosing.
-> Read `get`, cite the semantics, and let the user authorize any fix.
+## 3. Apply the Allocation
 
+> **Diagnosing, not fixing? Stop here.** Do not run `set` while explaining unexpected behavior or reproducing the user's command. `set` mutates production by overlaying and potentially overwriting the state being diagnosed. A seemingly disconnected CLI is not permission to try it; an unauthenticated command is not guaranteed to fail if credentials resolve. Read `get`, cite the documented semantics in [Gotchas](#gotchas) and `set --help`, and let the user authorize any fix.
+
+Run:
 
 ```bash
 uip platform tenants licenses set <TENANT_KEY> --input ./delta.json --output json
 ```
 
-Overlay semantics (`mergeProducts`):
-1. CLI reads the tenant's current per-service allocation
-2. For each input entry, the listed `quantity` replaces the current value for that `code`
-3. Codes already on the tenant but **not** in the input keep their current quantity
-4. The CLI auto-routes each code to the service license that owns it (orchestrator, dataservice, etc.)
-5. Re-running the same input is idempotent — safe to retry
+`set` uses `mergeProducts` overlay semantics:
 
-Returns one row per product per touched service license:
+1. The CLI reads the tenant's current per-service allocation.
+2. Each input `quantity` replaces the current value for that `code`.
+3. Omitted existing codes retain their quantities.
+4. Each code is routed to its owning service license (orchestrator, dataservice, etc.).
+5. Repeating identical input is idempotent and safe to retry.
+
+The result contains one row per product on each touched service license:
 
 ```json
-{
-  "Result": "Success",
-  "Code": "TenantLicensesSet",
-  "Data": [
-    {"serviceType": "orchestrator", "code": "UNATT", "name": "Unattended Robot", "quantity": 10},
-    {"serviceType": "orchestrator", "code": "PLTU", "name": "Platform Units", "quantity": 500}
-  ]
-}
+{"Result":"Success","Code":"TenantLicensesSet","Data":[{"serviceType":"orchestrator","code":"UNATT","name":"Unattended Robot","quantity":10},{"serviceType":"orchestrator","code":"PLTU","name":"Platform Units","quantity":500}]}
 ```
 
-## Step 4: Verify
+## 4. Verify
 
-Re-run `get` and confirm the new `allocated` values match the input.
+Run:
 
 ```bash
 uip platform tenants licenses get <TENANT_KEY> --output json
 ```
 
----
+Confirm that `allocated` matches the requested quantities.
 
 ## Error Conditions
 
 | Error | Cause | Resolution |
-|-------|-------|------------|
-| `No service licenses found for tenant '<key>'` | Wrong tenant GUID, or tenant has no provisioned services | Verify the tenant key against `uip or` or the portal |
-| `Cannot route product code(s) for tenant '<key>': <code>` | The product code is not already present on this tenant's service licenses | The CLI cannot introduce new codes. Use the UiPath portal to add the SKU first, then re-run `set` |
-| `Ambiguous routing for tenant '<key>': '<code>' (matches service types: ...)` | Same code exists on more than one of the tenant's service licenses | Resolve the duplicate allocation in the portal or via support, then retry |
-| `Invalid input JSON. "quantity" must be a finite, non-negative number.` | Bad input file | Fix the JSON; `quantity` must be ≥ 0 |
-| `Error connecting to the License Resource Manager.` | Auth expired or network issue | Re-run `uip login` |
-
----
+|---|---|---|
+| `No service licenses found for tenant '<key>'` | Wrong tenant GUID or no provisioned services. | Verify the tenant key with `uip or` or the portal. |
+| `Cannot route product code(s) for tenant '<key>': <code>` | Code is not on the tenant's service licenses. | Add the SKU through the UiPath portal, then run `set` again. |
+| `Ambiguous routing for tenant '<key>': '<code>' (matches service types: ...)` | Code exists on multiple tenant service licenses. | Resolve the duplicate in the portal or through support, then retry. |
+| `Invalid input JSON. "quantity" must be a finite, non-negative number.` | Invalid input file. | Fix the JSON; `quantity` must be ≥ 0. |
+| `Error connecting to the License Resource Manager.` | Expired authentication or network issue. | Run `uip login` again. |
 
 ## Gotchas
 
-- **Never run `set` while diagnosing.** Reproducing the user's own `set` is still a mutation, and it overwrites the state you are trying to explain. See [Step 3](#step-3-apply-the-allocation).
-- **`quantity` is absolute, not delta.** `{"code":"UNATT","quantity":5}` sets the tenant to 5 — it does not add 5 to the current value. Read `get` first to know the starting point.
-- **Codes are overlay, not replace.** A product already on the tenant but missing from the input keeps its current quantity. To zero out a code, include it explicitly with `quantity: 0`.
-- **Cannot add new product codes.** If a tenant doesn't have `AIU` on its service licenses, you cannot introduce it via `set`. Provision the SKU through the portal first.
-- **`availableForAllocation: 0`** means the account pool is exhausted. To allocate more to this tenant, first reduce another tenant's allocation or purchase additional units.
-- **`consumed` lags real-time.** It reflects accountant-side aggregation; expect minutes of delay after a job completes.
-- **Bundle window matters.** `get` filters out products outside the currently active interval — an expired bundle won't appear even if `allocated > 0` historically.
-
----
+- **Never run `set` while diagnosing.** Reproducing a user's `set` is still a mutation and overwrites evidence. See [Step 3](#3-apply-the-allocation).
+- **`quantity` is absolute, not delta.** `{"code":"UNATT","quantity":5}` sets the tenant to 5; it does not add 5. Run `get` first to establish the starting value.
+- **Codes are overlaid, not replaced.** Omitted existing codes retain their quantities; use `quantity: 0` to zero a code.
+- **New product codes cannot be added.** Provision a missing SKU through the portal first.
+- **`availableForAllocation: 0`** means the account pool is exhausted. Reduce another tenant's allocation or purchase additional units before allocating more.
+- **`consumed` lags real time.** Accountant-side aggregation may take minutes to update after a job completes.
+- **Bundle windows matter.** `get` omits products outside the active interval; an expired bundle will not appear even if it historically had `allocated > 0`.
 
 ## Related
 
