@@ -18,7 +18,7 @@ Write the Phase 2 stage-entry condition directly to the target stage's `data.ent
       {
         "id": "Rule_jdBFrJ",
         "rule": "selected-stage-exited",
-        "selectedStageId": "Stage_aB3kL9"
+        "selectedStageIds": ["Stage_aB3kL9"]
       }
     ]
   ]
@@ -54,7 +54,7 @@ Rules use DNF — outer array is OR, inner array is AND.
   {
     "id": "Rule_xxxxxx",
     "rule": "selected-stage-exited",
-    "selectedStageId": "Stage_aB3kL9"
+    "selectedStageIds": ["Stage_aB3kL9"]
   }
 ]]
 ```
@@ -115,8 +115,8 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 | `rule` | Required extra field |
 |---|---|
 | `case-entered` | — |
-| `selected-stage-completed` | `selectedStageId` |
-| `selected-stage-exited` | `selectedStageId` |
+| `selected-stage-completed` | `selectedStageIds` (array, even for one stage) |
+| `selected-stage-exited` | `selectedStageIds` (array, even for one stage) |
 | `user-selected-stage` | — |
 | `sla-status-change` | `slaId` from the Step 11 SLA object; `escalationId` **at-risk only** (omit for breach) |
 | `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-impl.md#target-connector-bound-condition-rule)) |

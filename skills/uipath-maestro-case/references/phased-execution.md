@@ -8,7 +8,7 @@ Authoritative reference for the post-resolution execution flow. Read before writ
 
 ## Downstream CLI compatibility
 
-The skill emits the `27.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
+The skill emits the `30.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
 
 | Phase | Behavior |
 |---|---|

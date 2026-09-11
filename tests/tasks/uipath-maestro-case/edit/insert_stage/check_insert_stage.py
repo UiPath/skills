@@ -67,12 +67,12 @@ def main():
     if not find_transitions(plan, source=review["id"], target=approval["id"]):
         sys.exit(
             "FAIL: no Review → Approval transition; Approval's entry condition must "
-            "name Review (selected-stage-completed/-exited selectedStageId=Review)"
+            "name Review (selected-stage-completed/-exited selectedStageIds=[Review])"
         )
     if not find_transitions(plan, source=approval["id"], target=decision["id"]):
         sys.exit(
             "FAIL: no Approval → Decision transition; Decision's entry condition must "
-            "name Approval (selected-stage-completed/-exited selectedStageId=Approval)"
+            "name Approval (selected-stage-completed/-exited selectedStageIds=[Approval])"
         )
 
     # True insert, not append: the old direct Review → Decision hand-off must

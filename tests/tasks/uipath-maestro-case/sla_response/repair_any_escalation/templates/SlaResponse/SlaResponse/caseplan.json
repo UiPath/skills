@@ -1,6 +1,6 @@
 {
     "id": "case-SlaRespns1",
-    "version": "27.0.0",
+    "version": "30.0.0",
     "name": "SlaResponse",
     "description": "Three-stage case with a case-level SLA and a Review-stage SLA; SLA responses are added by the task under test.",
     "metadata": {
@@ -177,7 +177,7 @@
                                 {
                                     "id": "Rule_Gw3kPj",
                                     "rule": "selected-stage-completed",
-                                    "selectedStageId": "Stage_Kp3mRx"
+                                    "selectedStageIds": ["Stage_Kp3mRx"]
                                 }
                             ]
                         ]
@@ -264,7 +264,7 @@
                                 {
                                     "id": "Rule_Xz4pQw",
                                     "rule": "selected-stage-completed",
-                                    "selectedStageId": "Stage_Qn7tBz"
+                                    "selectedStageIds": ["Stage_Qn7tBz"]
                                 }
                             ]
                         ]
