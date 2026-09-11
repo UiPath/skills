@@ -31,6 +31,10 @@ initial_prompt: |
   - Outputs: `matchedInvoiceNumber` (string, first matched row's invoiceNumber)
     and `lineItemCount` (number of rows returned).
 
+  Build the lookup on the Data Service `query-entity-records` activity, not
+  the native Data Fabric nodes: the tenants this ships to do not all enable
+  them.
+
   Validate the final flow file — the task is not complete until `uip maestro
   flow validate` passes. Grading then runs the flow under debug against live
   tenant data, so build it to actually run, not merely validate.
