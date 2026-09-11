@@ -2,11 +2,13 @@ task_id: skill-ixp-per-occurrence-confirm-smoke
 description: >
   Smoke: a repeatable field group returns 4 line-item extractions in
   order; one is a row the model invented that isn't on the document. The
-  agent must number the occurrences itself (0-based, extraction order),
-  confirm only the matching ones with `--group + --occurrence` (or
-  `--updates`) — NOT plain `--fields` (confirms every occurrence) and NOT
-  `--corrections` (the bad row isn't OCR-mangled, it's simply absent, so
-  it must be left unconfirmed). Locks in Critical Rules 8 and 13.
+  agent must number the occurrences itself (0-based, extraction order) and
+  confirm the matching ones in ONE `--group + --updates` call — NOT one
+  `--occurrence` call per row (Rule 18: the first write renumbers the group,
+  so every later index would need a fresh read), NOT plain `--fields`
+  (confirms every occurrence) and NOT `--corrections` (the bad row isn't
+  OCR-mangled, it's simply absent, so it must be left unconfirmed). Locks
+  in Critical Rules 8, 13, 18 and 19.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -36,6 +38,8 @@ initial_prompt: |
     the row simply does not exist on the document.
   - "Pallet wrap", Qty 12, Total $36 — matches a line on the invoice.
 
+  `get-predictions` reports these extractions are from ModelVersion 7.
+
   Confirm the extractions that match the document and leave the invented
   one unconfirmed.
 
@@ -47,33 +51,19 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The three matching rows are extraction-order occurrences 0, 1, and 3
-  # (the invented "Premium freight surcharge" is occurrence 2). Each check
-  # accepts either shape: a `--occurrence N` call or an `--updates` entry
-  # `"occurrence":N`. The agent must derive these indices itself — the
-  # prompt never states them.
+  # Three targets, so ONE `--updates` call: every index in a single call
+  # resolves against the same read (Critical Rule 18). Chaining `--occurrence`
+  # calls off one read is the anti-pattern — the first write renumbers the
+  # group, so each later index needs a fresh `get-predictions`, which cannot
+  # succeed on this all-failing mock. The single-occurrence form is covered by
+  # per_occurrence_unconfirm, whose one target makes it the right shape there.
+  # The agent must derive the indices itself — the prompt never states them.
   - type: file_matches_regex
-    description: "Confirms occurrence 0 (Steel bolts) via --group + occurrence 0"
+    description: "Confirms occurrences 0, 1 and 3 (Steel bolts, Copper wire, Pallet wrap) in ONE --group + --updates call, pinning the reviewed version (Critical Rules 13, 18, 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?.*--group\s+["']?Line Items["']?.*(--occurrence\s+0\b|"occurrence"\s*:\s*0\b))[^\r\n]*$
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "Confirms occurrence 1 (Copper wire) via --group + occurrence 1"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?.*--group\s+["']?Line Items["']?.*(--occurrence\s+1\b|"occurrence"\s*:\s*1\b))[^\r\n]*$
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "Confirms occurrence 3 (Pallet wrap) via --group + occurrence 3"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?.*--group\s+["']?Line Items["']?.*(--occurrence\s+3\b|"occurrence"\s*:\s*3\b))[^\r\n]*$
-    weight: 2.0
+      (?m)^(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--group\s+["']?Line Items["']?)(?=[^\r\n]*--updates)(?=[^\r\n]*"occurrence"\s*:\s*0\b)(?=[^\r\n]*"occurrence"\s*:\s*1\b)(?=[^\r\n]*"occurrence"\s*:\s*3\b)uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?[^\r\n]*$
+    weight: 8.0
     pass_threshold: 1.0
 
   # The invented row (occurrence 2) must never be confirmed.

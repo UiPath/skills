@@ -32,7 +32,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation. **Running non-interactively (CI/headless — no user available to answer):** do not block — design the schema from the prompt and any upstream `.flow` data, write the node, and record the chosen schema prominently in the final report. Only stop and report the open decision if the request is too ambiguous to pick a sensible default. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
+1. **Never block on schema confirmation.** Design the schema from the prompt and any upstream `.flow`/`caseplan.json` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Asking the user is never a precondition for proceeding — if the user is present and offers input, use it, but do not wait for it. Only stop and report the open decision when the request is genuinely too ambiguous to make any reasonable inference. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
 2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle — **not** `output`, `success`, or any other name. This is true even when inserting into an existing flow whose other nodes use `"sourcePort": "output"`.
 3. **Always add the definition entry when inserting into an existing flow.** Before writing the node, check `workflow.definitions[]` for the correct `nodeType` for the selected path (`"uipath.human-in-the-loop.quick-form"` for QuickForm, `"uipath.human-in-the-loop.coded-action-app"` for app-based). If absent, append the full definition entry (with `handleConfiguration` including the `completed` handle). Skipping the definition means the `completed` handle is invisible to the runtime and the wiring check fails.
 4. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
@@ -75,7 +75,7 @@ find . -name "*.flow" -maxdepth 4 | head -5
 # Check for a Case Management project. The on-disk filename varies
 # (caseplan.json, or content/<name>.json.bpmn under a `uip maestro case init`
 # project) — detect by content marker, not by filename.
-grep -rl '"case-management:root"' --include="*.json*" . 2>/dev/null | head -3
+find . -maxdepth 4 -iname "*.json*" -print0 2>/dev/null | xargs -0 grep -l '"case-management:root"' 2>/dev/null | head -3
 
 # Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
@@ -135,26 +135,26 @@ Read the existing `.flow` file to understand current nodes and edges. Use the Re
 | "fills in missing", "validates extraction", "corrects" | Data enrichment | Automation produced incomplete data |
 | "compliance", "regulatory", "audit trail" | Compliance checkpoint | Mandated human sign-off |
 
-**When a signal is found, say this before doing anything else:**
+**Never block on this.** When a signal is clear-cut (an explicit approval / review / sign-off requirement), add the HITL step and state that you did so, in this form:
 
-> "I noticed that [quote the specific part of their description]. This is a [pattern name] — a point where [brief consequence if no human reviews]. I recommend inserting a Human-in-the-Loop step here so that [human role] can [action] before the automation [continues/writes/sends]. Should I add it?"
+> "I noticed that [quote the specific part of their description]. This is a [pattern name] — a point where [brief consequence if no human reviews]. I'm inserting a Human-in-the-Loop step here so that [human role] can [action] before the automation [continues/writes/sends]."
 
-Wait for confirmation. Do not proceed to schema design until the user confirms. **Running non-interactively (CI/headless — no user available to answer):** treat the recommendation as accepted when the signal is clear-cut (an explicit approval / review / sign-off requirement), add the HITL step, and record that you did so in the final report; only skip it and report the open decision when the signal is ambiguous.
+Proceed straight to schema design after saying this — do not wait for a reply. Record the decision prominently in the final report so the user can remove the step if they disagree. Only skip adding it and report the open decision when the signal is genuinely ambiguous (not just "no explicit HITL mention" — the signals table above is itself the ambiguity test).
 
 **Example:**
 > User: "Build an automation that reads support tickets, uses AI to generate an RCA, and updates the ticket in ServiceNow."
 >
-> Agent: "I noticed that the automation writes AI-generated content directly back to ServiceNow. This is a write-back validation pattern — if the RCA is incorrect and nobody reviews it, wrong data goes into production tickets. I recommend inserting a Human-in-the-Loop step so that a support lead can review and optionally edit the RCA before the update is applied. Should I add it?"
+> Agent: "I noticed that the automation writes AI-generated content directly back to ServiceNow. This is a write-back validation pattern — if the RCA is incorrect and nobody reviews it, wrong data goes into production tickets. I'm inserting a Human-in-the-Loop step so that a support lead can review and optionally edit the RCA before the update is applied."
 
 ---
 
 ## Step 3 — Choose Task Type
 
-**The options differ by surface.** Present the options for the detected surface and confirm before doing anything.
+**The options differ by surface.** Never block here — pick the option that best fits the surface and the business description, state the choice, and proceed. Only ask when the user is actually present and available; in a non-interactive run, infer and move on.
 
 ### Surface: Flow
 
-Present three options. Do not choose on behalf of the user or perform any registry search.
+Infer the right option from the signals below and state your choice — do not perform a registry search first, and do not wait for the user to pick before proceeding.
 
 | # | Option | Node type | Description |
 |---|---|---|---|
@@ -162,65 +162,65 @@ Present three options. Do not choose on behalf of the user or perform any regist
 | 2 | **New Coded Action App** | `uipath.human-in-the-loop.coded-action-app` | Scaffold a new React + TypeScript app inside the solution — full UI control |
 | 3 | **Existing Deployed App** | `uipath.human-in-the-loop.coded-action-app` | Reference an app already deployed to Orchestrator |
 
-> **If the user's request is purely business-oriented** (no mention of a deployed app, coded action app, or custom UI): skip the question and proceed directly with QuickForm. Do not ask. Say: "I'll use QuickForm — it's inline, no deployment step needed, and works for most approval and review tasks."
+> **Default: QuickForm.** Pick QuickForm unless the request explicitly names a deployed app, a coded action app, or a custom UI requirement — those are the only signals that point at options 2 or 3. State the choice, do not ask: "I'll use QuickForm — it's inline, no deployment step needed, and works for most approval and review tasks. You can swap in a Coded Action App or an existing deployed app later if you need one."
 
-> **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a Coded Action App later."
-
-| User selects | Next step |
+| Option chosen | Next step |
 |---|---|
 | QuickForm | Read [How to write a QuickForm HITL node](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
 | New Coded Action App | Read [How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
-| Existing Deployed App → ask: "What is the name of the deployed action app?" | Read [How to wire an existing deployed Action App](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
+| Existing Deployed App — the request must already name the app | Read [How to wire an existing deployed Action App](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
 
-**Fallback rules — what to do when the chosen path hits a blocker:**
+**Fallback rules — never block on these, fall back and state what you did:**
 
 | Path | Blocker | Response |
 |---|---|---|
-| Existing Deployed App | App not found in Orchestrator | "I couldn't find an app with that name. Would you like to try a different name, or fall back to QuickForm while you prepare the app?" |
-| New Coded Action App | No `dist/` build present in the source path | "The source folder doesn't have a `dist/` build yet. Run your build first (`npm run build` or equivalent), then come back. Or I can set up a QuickForm now so the flow is wired and ready — you can swap in the app later." |
-| New Coded Action App | User can't provide a source path | "If you don't have the app code ready yet, I'll use QuickForm to wire the HITL checkpoint. You can replace it with a Coded Action App once it's built." |
-| Any custom app | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
+| Existing Deployed App | App not found in Orchestrator, or no app name was given | Fall back to QuickForm and proceed. State: "I couldn't find (or wasn't given) a deployed app name, so I used QuickForm instead. Point me at a real app name and I'll swap it in." |
+| New Coded Action App | No `dist/` build present in the source path | Fall back to QuickForm and proceed. State: "The source folder doesn't have a `dist/` build yet, so I wired a QuickForm for now — run your build and ask me to swap in the Coded Action App once it's ready." |
+| New Coded Action App | No source path given | Fall back to QuickForm and proceed. State: "No app source path was given, so I used QuickForm to wire the checkpoint now. Point me at the app code and I'll replace it with a Coded Action App." |
+| Any custom app | Auth expired (401 on API call) | Fall back to QuickForm and proceed. State: "The session looked expired, so I used QuickForm rather than stall on re-authenticating. Run `uip login` and ask me to swap in the app when you're ready." |
 
 ---
 
 ### Surface: Case
 
-Present two options. Do not choose on behalf of the user or pull the registry.
+Infer the right option from the description below — do not pull the registry first, and do not wait for the user to pick before proceeding.
 
 | # | Option | Fingerprint | Description |
 |---|---|---|---|
 | 1 | **QuickForm (file-based schema)** | separate `<TaskLabel>.hitl.json` file + `hitlType: "quick"` context entry in the action task | Structured form fields in a `.hitl.json` file alongside `caseplan.json`. Action Center renders fields at runtime. No deployed app needed. |
 | 2 | **App-based action task** | `data.name` and `data.folderPath` as `=bindings.<id>` references + `data.actionCatalogName` | Uses a deployed Action Center app with custom input/output fields. Requires the app to exist in Orchestrator. |
 
-> **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up, supports structured form fields, and doesn't need a deployed app. You can upgrade to an app-based task later if you need a custom UI layout."
+> **Default: QuickForm.** Pick QuickForm unless the request explicitly names a deployed Action Center app. State the choice, do not ask: "I'll use QuickForm — it's the quickest to set up, supports structured form fields, and doesn't need a deployed app. You can upgrade to an app-based task later if you need a custom UI layout."
 
 > **Build vs design time.** QuickForm in case management must round-trip both ways: the JSON written here is what Studio Web's case designer reads (design time), and what `uip maestro case validate` + Action Center render at runtime (build time). Always validate after writing.
 
-| User selects | Next step |
+| Option chosen | Next step |
 |---|---|
 | QuickForm (file-based schema) | Read [references/hitl-casetask-action.md — Path 1](references/hitl-casetask-action.md#path-1--quickform-file-based-schema-no-deployed-app), then continue with Step 4 |
-| App-based action task → ask: "What is the name of the deployed Action Center app?" | Read [references/hitl-casetask-action.md — Path 2](references/hitl-casetask-action.md#path-2--app-based-action-task-deployed-action-center-app), then continue with Step 4 |
+| App-based action task — the request must already name the app | Read [references/hitl-casetask-action.md — Path 2](references/hitl-casetask-action.md#path-2--app-based-action-task-deployed-action-center-app), then continue with Step 4 |
 
-**Fallback rules:**
+**Fallback rules — never block on these, fall back and state what you did:**
 
 | Path | Blocker | Response |
 |---|---|---|
-| App-based | App not found in registry or `action-apps-index.json` | "I couldn't find that app. Would you like to try a different name, or fall back to QuickForm while the app is prepared?" |
-| QuickForm | Schema design rejected on validate (e.g. duplicate field IDs, missing primary outcome) | Surface the validator's error, fix the schema, re-show to user, validate again. Apply Step 4b checks. |
-| Any | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
+| App-based | App not found in registry or `action-apps-index.json`, or no app name was given | Fall back to QuickForm and proceed. State: "I couldn't find (or wasn't given) that app, so I used QuickForm instead. Point me at a real app name and I'll swap it in." |
+| QuickForm | Schema design rejected on validate (e.g. duplicate field IDs, missing primary outcome) | Fix the schema yourself from the validator's error and re-validate. Apply Step 4b checks. Note the fix in the final report — do not pause to re-show the schema first. |
+| Any | Auth expired (401 on API call) | Fall back to QuickForm and proceed. State: "The session looked expired, so I used QuickForm rather than stall on re-authenticating. Run `uip login` and ask me to swap in the app when you're ready." |
 
 ---
 
 ## Step 4 — Common configuration
 
-| Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
-| Priority | "What priority should this task have? Options: Low, Medium, High (default: Low)" |
+Never block on these — use the stated default when no answer is available, write it into the node, and note the default in the final report so the user can change it.
+
+| Timeout | Default: 24 hours. If the description states or implies a different duration, use that instead. |
+| Priority | Default: Low. If the description states or implies urgency (e.g. "high priority", "urgent", "time-sensitive"), use High or Medium accordingly. Write the chosen value into the node's `priority` field — asking the question is not enough; the value must land in the node. |
 
 ---
 
 ## Step 4b — Schema Design Resilience (QuickForm — Flow and Case)
 
-Apply these checks while designing the schema before confirming with the user. Applies equally to Flow QuickForm nodes and Case QuickForm action tasks — same `fields[]` + `outcomes[]` shape, same `direction` semantics.
+Apply these checks while designing the schema, before writing it — per Critical Rule 1, do not wait on the user to confirm. Applies equally to Flow QuickForm nodes and Case QuickForm action tasks — same `fields[]` + `outcomes[]` shape, same `direction` semantics.
 
 ### Field direction
 
@@ -394,10 +394,10 @@ Notes on what's easy to get wrong:
 - **`<uipath:inputSchema>` (last child of `<uipath:context>`) and `<uipath:input name="HitlTaskArguments">` (sibling of `<uipath:context>`, not inside it) are both required.** Without them the "Edit Schema" canvas in Studio Web doesn't open at all — confirmed by direct reproduction. This mirrors the Case surface's `data.inputSchema`/`data.inputs[]` requirement — see [hitl-casetask-action.md § Step 3](references/hitl-casetask-action.md) for the parallel Case shape and full field-by-field rationale.
 - **The `Action` output requires a matching process-level variable declaration** — add `<uipath:inputOutput id="<varId>" name="Action" type="string" elementId="<taskId>" />` inside the process's top-level `<uipath:variables version="v1">` block.
 - **A separate `<TaskLabel>.hitl.json` sidecar file is required**, same shape as the Case surface's (`title`, `fields[]` with `direction`/optional `colSpan`/`binding` or `variable`, `outcomes[]` with **no** `action` key, `schemaId`) — see [hitl-casetask-action.md § Step 2](references/hitl-casetask-action.md) for the exact shape; it's identical across both surfaces.
-- **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** A placeholder value makes "Edit Schema" fail silently (a `404` on Studio Web's internal `FileOperations/File/Rename` call, confirmed by direct reproduction). There is no `uip` CLI command that resolves this today. The only known working procedure: upload once, look up the real file ID Studio Web assigned to the `.hitl.json` via `GET /api/Project/{projectId}/FileOperations/Structure` (an internal Studio Web REST endpoint, not a CLI verb), patch `_schemaFileId` to that real ID, then push the corrected `.bpmn` back with a **targeted single-file update** (`PUT /api/Project/{projectId}/FileOperations/File/{fileId}`) — **not** another whole-project `uip solution upload`, which re-pushes every file and mints a fresh random file ID for each one, invalidating whatever was just patched. This is a real product/tooling gap, not just a documentation gap — flag it to the user rather than silently attempting it, unless they've explicitly asked for the schema to be Studio-Web-editable.
+- **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** A placeholder value makes "Edit Schema" fail silently (a `404` on Studio Web's internal `FileOperations/File/Rename` call, confirmed by direct reproduction). There is no `uip` CLI command that resolves this today. **Never block on this.** Write a fresh placeholder UUID v4, finish the rest of the node, validate, and move on — do not attempt the live reconciliation yourself and do not stop to ask about it. State plainly in the final report: "This task's schema was written with a placeholder `_schemaFileId`, so Studio Web's 'Edit Schema' canvas won't open for it yet. Making it editable requires resolving the real file ID Studio Web assigns to the `.hitl.json` after upload (`GET /api/Project/{projectId}/FileOperations/Structure`) and pushing it back with a targeted single-file update (`PUT /api/Project/{projectId}/FileOperations/File/{fileId}`) — not another whole-project `uip solution upload`, which re-pushes every file and mints a fresh random file ID for each one, undoing the fix. Ask me to do this reconciliation if you want the schema editable in Studio Web." This is a real product/tooling gap the user can act on later, not something to resolve mid-task.
 - **Diagram-interchange edges are required for the connector lines to render, even though the logical `bpmn:sequenceFlow`s already exist.** Every `bpmn:sequenceFlow` needs a matching `bpmndi:BPMNEdge` (with two `di:waypoint` points, aligned to the source/target shapes' connecting edges) in the `bpmndi:BPMNPlane` — omitting it leaves the nodes logically connected but visually disconnected in the canvas. Confirmed by direct reproduction.
 
-Design the schema per Step 4b, confirm it with the user, then validate frequently (`uip maestro bpmn validate <file>.bpmn --output json`) while wiring the node so any shape mistakes surface immediately rather than at deploy time. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
+Design the schema per Step 4b — never block waiting on the user, per Critical Rule 1 — then validate frequently (`uip maestro bpmn validate <file>.bpmn --output json`) while wiring the node so any shape mistakes surface immediately rather than at deploy time. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
 ---
 

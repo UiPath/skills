@@ -188,8 +188,8 @@ auth, schema, or enrichment decision is missing).
 
 1. Build the document scaffold and process (see
    [structural-bpmn.md](structural-bpmn.md)).
-2. Declare root variables (`BPMN.Variables` template) and the
-   `<uipath:bindings>` block.
+2. Declare the process's variables (`<uipath:variables>`, each with an
+   `elementId`) and the `<uipath:bindings>` block.
 3. For each node, paste its `registry get` `xmlTemplate`, fill placeholders, and
    wire `{incomingEdge}`/`{outgoingEdge}` to your sequence flows.
 4. Author the structural BPMN the registry does not emit: sequence flows,

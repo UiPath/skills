@@ -18,7 +18,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 |-------|--------|-------|
 | `<stage-id>`, `<task-id>` | Captured from prior steps | |
 | `rationale` | sdd.md task Design Rationale | Required reviewer context for the activation/sequencing choice. Not emitted into caseplan JSON. |
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim. Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
 | `rule-type` | From catalog below | |
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
 | `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
@@ -53,7 +53,7 @@ The Case App selector has three distinct modes:
 
 `adhoc` is task-entry-only. It is never a stage entry rule, never a case trigger, never a substitute for `wait-for-connector`, and never the way to model a user-selected interrupting lane. Use a secondary stage with `user-selected-stage` for that.
 
-While authoring a new SDD, any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use parallel mode only when the rationale says the tasks are independent. **Phase 1 does not re-author a supplied or approved SDD:** if its task row explicitly says `selected-tasks-completed("<previous task>")`, preserve that exact rule and selector even when the selected task is immediately previous.
+During design-lane authoring (`uipath-planner`), any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use parallel mode only when the rationale says the tasks are independent. **Phase 1 does not re-author a supplied or approved SDD:** if its task row explicitly says `selected-tasks-completed("<previous task>")`, preserve that exact rule and selector even when the selected task is immediately previous.
 
 ## Phase 1 Plan Presentation Contract
 
@@ -72,6 +72,7 @@ For every task-entry-condition element, verify the task's `activation-mode` and 
 |---|---|
 | `sequential` | `runs-sequentially` |
 | `parallel` | `current-stage-entered` |
+| `parallel-after-predecessor` | `runs-sequentially`, with the siblings sharing the next task set after one predecessor |
 | `event-triggered` | `wait-for-connector` or another explicitly authored event/condition rule |
 | `adhoc` | `adhoc` |
 | `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
@@ -93,7 +94,7 @@ A condition produces **no `tasks/registry-resolved.json` entry** unless its `rul
 task-entry condition on task "<task>" in stage "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - target-task: "<task-name>"
-- activation-mode: sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate
+- activation-mode: sequential | parallel | parallel-after-predecessor | event-triggered | adhoc | fan-in | conditional-gate
 - rationale: "<why this activation/sequencing mode fits>"
 - display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
 - rule-type: selected-tasks-completed

@@ -92,10 +92,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan covers every declaration in the staged sdd.md — no dropped stage, task, variable, condition or SLA row, and every task carries an entry rule (validate only warns; a miss hangs debug)"
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
     command: >-
-      python3 $SKILLS_REPO_PATH/skills/uipath-maestro-case/scripts/audit_caseplan.py
-      ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1)
+      uip maestro case validate ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

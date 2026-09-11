@@ -5,10 +5,10 @@ task_id: skill-flow-paginated-reference-lookup
 description: >
   Build a Flow with a Slack `Send Message to Channel` node targeting the
   `simple` channel. The channel lives on a later page of the `is-sandboxes`
-  curated_channels list, so resolving the Slack channel id forces the agent
-  to paginate `uip is resources run list`. Triggered by the `resources.md`
-  read-before-call rule added in #1059 (ENGCE-58198) — old behavior was to
-  abandon pagination after page 1 and bail to AskUserQuestion.
+  Slack channel resources, so resolving the Slack channel id requires either
+  explicit pagination or the SDK's lookup resolver. Triggered by the
+  `resources.md` read-before-call rule added in #1059 (ENGCE-58198) — old
+  behavior was to abandon pagination after page 1 and bail to AskUserQuestion.
 tags:
   - uipath-maestro-flow
   - integration
@@ -34,30 +34,44 @@ initial_prompt: |
   For Slack, use the connection name `is-sandboxes`. If more than one
   connection matches that name, use any enabled one.
   Validate the flow when you're done.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a single pass.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
+# TWO ROUTES ARE CORRECT: the live-v1 loop pages `uip is resources run list`
+# by hand (the collection may be exposed as `conversations` or
+# `curated_channels`); the SDK route resolves the name inside
+# `npx flow-sdk registry prepare … --resolve channel:`. The first criterion is
+# v1-route telemetry is advisory (the SDK arm never runs it); the second records
+# "went past page 1" for either route and only counts a command that succeeded —
+# typing the flag on a failing command does not page. It is also advisory because
+# a command cut off by a turn timeout has unknown status. The final artifact
+# criterion (resolved id C083AN4E61E) stays the authority.
   - type: command_executed
-    description: "Agent invoked `uip is resources run list ... curated_channels` more than once (pagination loop ran)"
+    description: "Advisory (live-v1 route): paged Slack channel-resource loop ran more than once"
     tool_name: "Bash"
-    # Commands are recorded as the raw `bash -lc '...'`/`bash -lc "..."` wrapper. When the
-    # command carries an --output-filter with an embedded single-quoted JMESPath
-    # (items[?name=='simple']), the wrapper switches to double quotes and backslash-escapes the
-    # inner quotes (\"uipath-salesforce-slack\"). Allow an optional escaping backslash before each
-    # quote so both quoting styles match; otherwise paginated calls are silently uncounted.
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?curated_channels'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)'
     min_count: 2
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent used `nextPage=<token>` to advance pagination at least once"
+    description: "Agent went past page 1 — a channel-resource list call carrying `nextPage=<token>`, or `registry prepare … --resolve channel:` which pages inside `prepare`"
     tool_name: "Bash"
-    command_pattern: 'nextPage='
+    command_pattern: '(uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)[^\n]*nextPage=|registry\s+prepare\s+\\?"?uipath-salesforce-slack\\?"?[^\n]*--resolve\s+\\?"?channel:)'
     min_count: 1
+    require_success: true
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent ran `uip maestro flow validate` on the generated flow"

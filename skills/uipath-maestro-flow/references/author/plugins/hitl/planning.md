@@ -30,6 +30,19 @@ Available: always — no `uip login` or registry pull required.
 | Need a quick form with specific fields and outcomes | Yes |
 | Existing coded/Action Center app should be used | No — use Option 2 |
 | Fully automated processing, no human involvement | No |
+| The user wants to **see** a value the flow produced | Only if a human will open the task — see below |
+
+**A HITL node blocks until a human completes its task, so place one only where a human actually will.** The task appears in Action Center; if it has no assignee, or the run is unattended (a schedule, a `flow debug`, an eval), nobody opens it and the flow never reaches its End node. The instance stays `Running` until the caller's timeout, with no output. The `outcome-completed` port can be wired correctly and this still happens, so it does not present as the unwired-port failure below.
+
+**"Show me the result" does not by itself mean a form.** The mechanisms differ in who can consume them, so ask what *seeing it* means before choosing:
+
+| Mechanism | Reaches | Completes unattended |
+| --- | --- | --- |
+| HITL form | a person who opens Action Center | No — blocks until submitted |
+| Message to a channel or mailbox (connector node) | a person wherever they already are | Yes |
+| `out` variable mapped on the End node | whoever or whatever invoked the flow | Yes |
+
+With no user to ask, pick one that terminates unattended and record which you chose and why. Do not reach for a form because the request said "display" — that word describes the goal, not the node.
 
 ### Ports
 

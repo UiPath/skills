@@ -31,7 +31,8 @@ run_limits:
 initial_prompt: |
   For an access review, list the roles my own account — the identity this CLI is
   logged in as — holds at the organization level of my UiPath organization. Save
-  the complete JSON result to ./my-assignments.json.
+  the raw JSON output of that listing verbatim to ./my-assignments.json — do not
+  summarize, reformat, or hand-author the file.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 

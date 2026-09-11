@@ -5,6 +5,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import is_non_required  # noqa: E402
 from _shared.sla_response_check import (  # noqa: E402
     assert_breach_shape,
     assert_interrupting,
@@ -31,7 +32,7 @@ def main() -> None:
             f"{[label_of(n) for n in lanes]}"
         )
     lane = lanes[0]
-    if lane["data"].get("isRequired") is not False:
+    if not is_non_required(lane["data"]):
         fail(f"lane {label_of(lane)!r} must be isRequired False")
 
     hits = [(n, c, r) for n, c, r in iter_sla_status_change(plan) if n is lane]

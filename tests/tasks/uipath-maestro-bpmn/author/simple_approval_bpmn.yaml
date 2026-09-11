@@ -2,15 +2,22 @@ task_id: skill-bpmn-simple-approval-bpmn
 description: >
   Authoring eval: agent composes a model-authored simple approval BPMN that
   combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task,
-  declared root variables, numeric migration metadata, and BPMN DI. Mirrors the
-  manual smoke "simple approval" scenario.
-tags: [uipath-maestro-bpmn, integration, "mode:build", lifecycle:generate, shape:multi-node, node:gateway, node:script, node:service-task, resource]
+  declared root variables, the supported local project scaffold, integer
+  migration metadata, and BPMN DI. Mirrors the manual smoke "simple approval"
+  scenario.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", resource]
 
 run_limits:
   task_timeout: 2400
   turn_timeout: 1800
-  expected_turns: 24
-  max_turns: 90
+  # Three local claude-sonnet-5 runs on this PR's tree, all 3/3 at score 1.000:
+  # 37, 60, and 80 turns. The spread is the point -- 80 was 89% of the old cap
+  # of 90, so a run on the high side failed on budget rather than behavior. The
+  # task grew a CLI `init` plus a `refresh` round-trip in this PR, and how many
+  # turns that takes varies a lot. Sized like patterns/no_pattern: expected
+  # tracks the middle of observed, cap keeps ~1.5x margin over the worst.
+  expected_turns: 60
+  max_turns: 120
 initial_prompt: |
   Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
   - Manual start with input variable `expenseId` and `amount`, and output
@@ -29,8 +36,7 @@ initial_prompt: |
     user names.
   - Declare root `uipath:variables version="v1"` entries for `expenseId`,
     `amount`, and `decision` with documented types.
-  - Include a numeric `uipath:migrationVersion` element (for example `version`
-    `11` or `11.5`) on the process.
+  - Include an integer `uipath:migrationVersion` element on the process.
   - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`, include
     `uipath:scriptVersion`, prefer `v3`, and keep the script compatible with
     the Jint runtime (no Node.js, browser, filesystem, or network APIs).
@@ -39,20 +45,24 @@ initial_prompt: |
   - Do not upload, publish, deploy, debug, or run the process.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was created"
-    path: "ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Project metadata was created"
-    path: "ExpenseApprovalBpmn/project.uiproj"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('ExpenseApprovalBpmn.bpmn')) else 'ExpenseApprovalBpmn.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Simple approval BPMN combines StartAgentJob, gateway, CreateQueueItem, script, variables, migration, and DI"
+    description: "Project metadata was created beside the BPMN"
+    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('ExpenseApprovalBpmn.bpmn'), None); sys.exit(0 if b and ((b.parent / 'project.uiproj').is_file()) else 'project.uiproj missing beside BPMN')\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Simple approval BPMN has the requested nodes, supported local project scaffold, migration metadata, and complete DI"
     command: "python3 $TASK_DIR/check_simple_approval_bpmn.py"
     timeout: 30
     expected_exit_code: 0

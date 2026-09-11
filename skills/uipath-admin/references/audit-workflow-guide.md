@@ -59,8 +59,8 @@ uip admin audit tenant events \
   --source <ORCHESTRATOR_SOURCE_GUID> \
   --target <FOLDERS_TARGET_GUID> \
   --type   <DELETE_FOLDER_TYPE_GUID> \
-  --from-date   2026-05-11T00:00:00Z \
-  --to-date     2026-05-18T00:00:00Z \
+  --from-date   <FROM_TIMESTAMP> \
+  --to-date     <TO_TIMESTAMP> \
   --limit  50 \
   --output json
 ```
@@ -120,11 +120,13 @@ Run:
 uip admin audit org events \
   --user-id   <USER_GUID> \
   --type      <USER_LOGIN_TYPE_GUID> \
-  --from-date 2026-04-01T00:00:00Z \
-  --to-date   2026-04-29T23:59:59Z \
+  --from-date <FROM_TIMESTAMP> \
+  --to-date   <TO_TIMESTAMP> \
   --limit     200 \
   --output    json
 ```
+
+Pass full ISO instants here: a date-only `--to-date` stops at midnight and drops the final day’s logins.
 
 For failed logins, run:
 
@@ -133,8 +135,8 @@ uip admin audit org events \
   --user-id   <USER_GUID> \
   --type      <USER_LOGIN_TYPE_GUID> \
   --status    Failure \
-  --from-date 2026-04-01T00:00:00Z \
-  --to-date   2026-04-29T23:59:59Z \
+  --from-date <FROM_TIMESTAMP> \
+  --to-date   <TO_TIMESTAMP> \
   --output    json
 ```
 
@@ -165,23 +167,23 @@ Run the applicable command:
 ```bash
 # Tenant scope — most events (default json: a uniquely-named folder of day-wise JSON files under the base dir)
 uip admin audit tenant export \
-  --from-date 2026-01-01 \
-  --to-date   2026-01-31 \
+  --from-date <FROM_DATE> \
+  --to-date   <TO_DATE> \
   --output-path ./audit-exports \
   --output json
 
 # Tenant scope as a single merged CSV (flat, Excel-friendly)
 uip admin audit tenant export \
-  --from-date 2026-01-01 \
-  --to-date   2026-01-31 \
+  --from-date <FROM_DATE> \
+  --to-date   <TO_DATE> \
   --file-format csv \
   --output-path ./audit-exports \
   --output json
 
 # Org scope — admin events (memberships, license, tenant lifecycle)
 uip admin audit org export \
-  --from-date 2026-01-01 \
-  --to-date   2026-01-31 \
+  --from-date <FROM_DATE> \
+  --to-date   <TO_DATE> \
   --output-path ./audit-exports \
   --output json
 ```
@@ -200,10 +202,10 @@ Typical layout:
 
 ```text
 audit-exports/
-└── audit_2026-01-01_2026-01-31_20260617T112630/
-    ├── 2026-01-01.json
+└── audit_<from>_<to>_<generatedAt>/
+    ├── <FROM_DATE>.json
     ├── ...
-    └── 2026-01-31.json
+    └── <TO_DATE>.json
 ```
 
 Each file is a JSON array with LTS-schema keys (`Identifier`, `DateCreatedUtc`, `OrganizationId`, `ActorId`, `User`, `Action`, …), unlike the camelCase live `events` response. Tell downstream users about this difference.
@@ -233,8 +235,8 @@ Run both scopes over a bounded recent window without filters, then summarize eve
 Run:
 
 ```bash
-uip admin audit org    events --from-date 2026-04-22 --to-date 2026-04-29 --limit 100 --output json > /tmp/org-events.json
-uip admin audit tenant events --from-date 2026-04-22 --to-date 2026-04-29 --limit 100 --output json > /tmp/tenant-events.json
+uip admin audit org    events --from-date <FROM_DATE> --to-date <TO_DATE> --limit 100 --output json > /tmp/org-events.json
+uip admin audit tenant events --from-date <FROM_DATE> --to-date <TO_DATE> --limit 100 --output json > /tmp/tenant-events.json
 ```
 
 ### Step 2 — Group by event type
@@ -265,8 +267,8 @@ If multiple signals appear, run the investigations in sequence and stitch the re
 
 - **Tenant context:** `tenant` commands fail without an active tenant. Re-run `uip login` with a tenant or pass `--tenant-id <guid>` on every call.
 - **Pagination:** `next` means newer and is often null; `previous` means older. The CLI follows `previous` automatically for `--limit > 200`; do not reimplement it.
-- **Events dates:** date-only ISO strings mean UTC midnight. `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To include the full final day, use `--to-date 2026-02-01` as an exclusive next day or `--to-date 2026-01-31T23:59:59.999Z`.
-- **Export dates:** bounds are inclusive whole UTC days. January is `--from-date 2026-01-01 --to-date 2026-01-31`; a single day uses the same date for both. Do not use the events next-day convention for exports.
+- **Events dates:** a date-only ISO string means UTC midnight — `--from-date` given a bare `YYYY-MM-DD` resolves to `T00:00:00Z` on that day. To include the full final day, pass the day *after* the window as an exclusive `--to-date`, or give `--to-date` a full instant ending `T23:59:59.999Z`.
+- **Export dates:** bounds are inclusive whole UTC days. A whole month is its first and last day; a single day uses the same date for both. Do not use the events next-day convention for exports.
 - **Export lag:** the long-term store typically lags live `events` by up to 24–48 hours. Recent trailing days may be empty; offer to rerun later or end the window 2 days earlier when completeness matters.
 - **Relative dates:** resolve them with `date -u +%F`, `date -u -d 'yesterday' +%F`, or macOS/BSD `date -u -v-1d +%F`, and echo the window.
 - **Export schema:** default `json` writes one `<YYYY-MM-DD>.json` per UTC day in a generated folder; `--file-format csv` writes one merged CSV with the same LTS-schema field names. Both differ from live camelCase `events`; do not feed exports to a live-shape parser.

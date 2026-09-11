@@ -2,7 +2,7 @@
 
 Resolve every resource the design document (`sdd.md`) names into tenant identities, and record them in `tasks/registry-resolved.json`. `sdd.md` stays the plan; this phase only fills in what the SDD could not know — task type IDs, connection IDs, folder paths, recipient identities. The downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug → Phase 7 Publish to Orchestrator) read the SDD and this ledger and write `caseplan.json` directly. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
-> **There is no intermediate plan file.** The SDD is the plan. Do not author a `tasks.md`, a T-numbered task list, or any other restatement of the SDD — it costs a full rewrite of the design and drifts from it. Losslessness is enforced against the finished artifact by the Step 12 `audit_caseplan.py` gate ([implementation.md](implementation.md)).
+> **There is no intermediate plan file.** The SDD is the plan. Do not author a `tasks.md`, a T-numbered task list, or any other restatement of the SDD — it costs a full rewrite of the design and drifts from it. Step 12 walks the SDD against the artifact and closes with `validate --strict` ([implementation.md](implementation.md)).
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
 

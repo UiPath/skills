@@ -5,7 +5,7 @@ Asserts:
   1. `main.py` (or `graph.py`) imports `UiPath` from `uipath.platform`.
   2. The graph module calls a specific sdk.entities retrieval method
      (list_records, retrieve_records, query_entity_records, or get_record).
-  3. A `filter=` parameter is present in the retrieval call.
+  3. A `filter=` or `filter_group=` parameter is present in the retrieval call.
   4. An `entity_key=` parameter references a discovered entity.
   5. A `@tool`-decorated function wraps the SDK call.
   6. No module-level `UiPath()` or LLM client construction.
@@ -46,7 +46,7 @@ def find_graph_module() -> Path:
 
 def check_sdk_import(text: str) -> None:
     if not re.search(
-        r"from\s+uipath\.platform\s+import\s+[^\n]*\bUiPath\b", text
+        r"from\s+uipath\.platform\s+import\s+(?:[^\n]*\bUiPath\b|\([^)]*\bUiPath\b)", text
     ):
         sys.exit(
             "FAIL: must import UiPath from `uipath.platform` "
@@ -69,7 +69,7 @@ def check_entities_usage(text: str) -> None:
 
 
 def check_filter_usage(text: str) -> None:
-    if not re.search(r'\bfilter\s*=', text):
+    if not re.search(r'\bfilter(?:_group)?\s*=', text):
         sys.exit(
             "FAIL: no filter= parameter found — "
             "expected the tool to filter records by customer name"
@@ -80,8 +80,13 @@ def check_filter_usage(text: str) -> None:
 def check_entity_key(text: str) -> None:
     # The agent should have discovered an entity and passed its name
     # as entity_key= to the SDK call. We don't check for a specific
-    # entity name — just that entity_key is present with a non-empty string.
-    if not re.search(r'entity_key\s*=\s*["\'][^"\']+["\']', text):
+    # entity name — just that entity_key is present, either as an inline
+    # string or as a module-level constant (entity_key=ORDER_ENTITY where
+    # ORDER_ENTITY = "..."), matching the combined-task checker's tolerance.
+    if not (
+        re.search(r'entity_key\s*=\s*["\'][^"\']+["\']', text)
+        or re.search(r'entity_key\s*=\s*[A-Za-z_][A-Za-z0-9_]*', text)
+    ):
         sys.exit(
             "FAIL: no entity_key= with a string value found — "
             "expected the agent to reference a discovered Data Fabric entity"

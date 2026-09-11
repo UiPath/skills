@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-inline-agent-robust
 description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to build a
@@ -12,13 +15,9 @@ run_limits:
   max_turns: 90
 
 initial_prompt: |
-  Create a new UiPath Flow project called "EmailTriage" (inside a solution) and
+  Create a new UiPath Flow project called "EmailTriage" and
   add an inline agent node that classifies an inbound support email into a
   category and priority.
-
-  A Flow project MUST be created
-  inside a solution, so the inline agent lands at:
-    EmailTriage/EmailTriage/<agent-uuid>/agent.json
 
   Configure the inline agent to a production standard, not the scaffold default:
   - Pick an appropriate current model (do not keep the scaffold default).
@@ -26,41 +25,49 @@ initial_prompt: |
   - Declare a typed outputSchema (e.g. category, priority) — not a bare
     `content` string.
 
-  The task is NOT complete until `uip maestro flow validate` passes for
-  EmailTriage/EmailTriage/EmailTriage.flow.
+  Validate the flow.
 
-  Important:
-  - The `uip` CLI is already available in the environment.
-  - Validate locally with `uip maestro flow validate`.
-
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
-  - type: command_executed
-    description: "Agent scaffolded the inline agent with uip agent init --inline-in-flow"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--inline-in-flow'
-    min_count: 1
+  - type: run_command
+    description: "Inline agent sidecar was created"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" --check exists "**/agent.json"'
+    timeout: 15
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent discovered available models with uip agent model list"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+agent\s+model\s+list'
-    min_count: 1
+  - type: run_command
+    description: "Inline agent uses an explicitly selected current model"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" --check model "**/agent.json"'
+    timeout: 15
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Flow file was created inside the solution"
-    path: "EmailTriage/EmailTriage/EmailTriage.flow"
+  - type: run_command
+    description: "Flow file was created in a supported authoring layout"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EmailTriage"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains the inline agent node type"
-    path: "EmailTriage/EmailTriage/EmailTriage.flow"
-    includes:
-      - '"uipath.agent.autonomous"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EmailTriage 'uipath.agent.autonomous'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -68,11 +75,11 @@ success_criteria:
   # knowable — the shared checker globs it (excluding generated .agent-builder/)
   # and asserts the three production-quality properties the skill now teaches:
   # model overridden off gpt-4o, real (non-placeholder) system prompt, and a
-  # typed outputSchema beyond bare `content`. $TASK_DIR is this YAML's dir;
-  # _shared is its sibling.
+  # typed outputSchema beyond bare `content`. Use the mounted checker repository
+  # because preview freezes only this task directory at $TASK_DIR.
   - type: run_command
     description: "Inline agent.json: model overridden, real system prompt, typed outputSchema"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" "EmailTriage/EmailTriage/*/agent.json"'
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" "**/agent.json"'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0

@@ -77,9 +77,13 @@ When the user picks **Create** at the gate, the skill builds each selected resou
 
 ### 0 — Prerequisite (solution must exist) + capability probe (once per run)
 
+<!--skill-flavor:solution-prerequisite:start-->
 **Solution prerequisite.** Register (§3) and `--local` rediscovery (§0/§4) all require an enclosing solution `.uipx` (the CLI walks cwd → parent → grandparent — that walk MUST resolve to the case's *own* solution: keep the working root free of an unrelated ancestor `.uipx`, else the built sibling registers into the wrong solution). The Create gate fires in **Phase 1 planning**, *before* [Phase 2 Step 6.0](implementation.md) normally scaffolds the solution — so on a fresh run no `.uipx` exists yet. **When the user selects Create and no `.uipx` is found, run `uip solution init <SolutionName>` first — deriving `<SolutionName>` and its working-root location EXACTLY as Step 6.0 does** (the canonical rule: [plugins/case/planning.md § Naming](plugins/case/planning.md#project-structure-prerequisites)). Do NOT invent a different name/location: Step 6.0 keys its idempotent skip on that exact `.uipx`, so a mismatch double-inits or forks the solution (sibling in one `.uipx`, case project in another). Everything below assumes the `.uipx` now exists.
+<!--skill-flavor:solution-prerequisite:end-->
 
+<!--skill-flavor:capability-probe:start-->
 **Capability probe.** Confirm the CLI supports local discovery: run `uip maestro case registry list --local --output json`. Distinguish the failure modes: an **unknown-option** error → `--local` is unsupported → **suppress the Create option entirely** (the gate stays Force pull / Use placeholders for all), use placeholders. A **`No solution found for --local`** error is NOT a suppress signal — it confirms `--local` IS supported (a missing-solution error, not unknown-option). **Do NOT scaffold at probe time.** At the pre-gate in-solution sibling check (which fires before Create is offered), "No solution found" simply means no sibling exists yet — a solution holds no siblings before it exists — so record "no local sibling" and proceed to the gate. Scaffolding (`uip solution init`, the Solution prerequisite above) happens **only inside the Create flow, after the user selects Create** — never during the probe or the pre-gate sibling check. Offer Create unless the probe returns the unknown-option (unsupported) case. Run the probe **at first need and cache the result for the rest of the run** — whichever comes first: the pre-gate in-solution sibling check ([agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution) / [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution), which also gates on `--local`) or this gate.
+<!--skill-flavor:capability-probe:end-->
 
 ### 1 — Select
 
@@ -138,6 +142,7 @@ The skill itself never runs the type CLI's `init` — build knowledge lives in t
 
 ### 3 — Register (sequential)
 
+<!--skill-flavor:register-step:start-->
 The `.uipx` is a shared file; concurrent registration races. So build skips registration, and **the parent registers each built sibling sequentially** after the wave returns:
 
 ```bash
@@ -145,13 +150,16 @@ uip solution projects add "<built path>" "<solution .uipx>" --output json   # on
 ```
 
 Both positionals MUST be absolute paths — the relative form fails with `Failed to add project to solution` regardless of CWD (see [implementation.md](implementation.md) § Step 6.0b). Then run `uip solution resources refresh` (Rule 14) so the solution-level resource files + `debug_overwrites.json` are generated before any upload/debug.
+<!--skill-flavor:register-step:end-->
 
 ### 3b — "Already exists" = adopt (kind-agnostic residual)
 
 An interrupted prior run can leave a built sibling **on disk but unregistered**. Nothing that reads `.uipx` `Projects[]` sees it — the pre-gate `--local` check misses, the gate fires, and the build/register step collides: the type's `init` fails *"directory exists / not empty"*, or `uip solution projects add` returns *"Project name already exists"*. **Neither is a failure.** Adopt:
 
 1. **Kind-check the collision.** Name present in `uip maestro case registry list --local --output json` → its `Category` identifies a registered owner; a different kind = cross-kind name collision, NOT a prior build → rename the new resource (§1 name-uniqueness) and rebuild. Name absent (`list --local` also reads only `Projects[]`) → read the colliding directory's `project.uiproj` `ProjectType`. Matching kind → adopt:
+<!--skill-flavor:adopt-register:start-->
 2. **Register.** `uip solution projects add` (absolute paths). It can refuse *"Project name already exists"* even when the name is absent from `.uipx` `Projects[]` — its collision check keys on **stale resource declaration files** from a prior registration, not the manifest. Clear the stale declaration with `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json` (key from `uip solution resources list --source local`; removing the `process` entry cascades to its `package` declaration — never delete either file by hand, see [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)), re-run `project add`, then `uip solution resources refresh` regenerates them.
+<!--skill-flavor:adopt-register:end-->
 3. **Continue at §4** (rediscover, verify, bind). Never rebuild, never Retry/Skip, never placeholder — the sibling is already built.
 
 Per-type verbs and kind markers: each plugin's § Failure blockquote.

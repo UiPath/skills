@@ -16,8 +16,9 @@ def main():
     task = assert_task_type_present("rpa")
     if task_is_skeleton(task):
         sys.exit(
-            "FAIL: rpa task is a skeleton — debug requires a resolved "
-            "HelpDeskLookup registry entry with a real taskTypeId"
+            "FAIL: rpa task is a skeleton — data.name and data.folderPath "
+            "are unset. Resolve the HelpDeskLookup registry entry and wire it "
+            "into the task; debug cannot run against an unwired reference."
         )
     run_debug(timeout=720)
     print(

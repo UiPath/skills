@@ -216,7 +216,7 @@ initial_prompt: |
 
   ### Stage 4: Join (`join`)
   **Type:** Stage
-  **Description:** Joins both branches; activates after BOTH upstream branches have completed.
+  **Description:** Fan-in stage downstream of both parallel branches; carries one entry row per upstream branch.
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |

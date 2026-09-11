@@ -1,6 +1,6 @@
 # Guardrail Review — LLM-as-judge (audit + recommend)
 
-The read-only **review** counterpart of the `uipath-agents` guardrail recommend/validate capability. It powers [`../agents-lowcode-rules.md`](../agents-lowcode-rules.md) §GuardrailsChecker and runs during low-code agent review (SKILL.md Step 2.5b), **after** `uip agent review` (Step 2.5a).
+The read-only **review** counterpart of the `uipath-agents` guardrail recommend/validate capability. It powers [`../agents-lowcode-rules.md`](../agents-lowcode-rules.md) §GuardrailsChecker and runs during low-code agent review (agent-review-guide.md Step 2.5b), **after** `uip agent review` (Step 2.5a).
 
 Modes:
 - **Audit Mode:** existing guardrails → effective and appropriate? Emit **defects**.
@@ -77,7 +77,7 @@ Build `{ validatorId: status }` from the `Data` array, using only `Status == "Av
 
 If output contains `"Code": "GuardrailCatalogUnavailable"` or the CLI is unavailable, do not guess:
 
-- **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 10 — Rules Skipped). Emit no catalog-grounded effectiveness/relevance verdict.
+- **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 9 — Rules Skipped). Emit no catalog-grounded effectiveness/relevance verdict.
 - **Recommend Mode:** continue `agent.json`-only schema/prompt/tool inference; use generic scope/action wording and note `catalog-limited`.
 
 ## Audit Mode — existing guardrails (defects)
@@ -133,7 +133,7 @@ Do not name platform-documented validators (`harmful_content`, `intellectual_pro
 
 ## Report
 
-Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
+Merge findings into the Step 5 Critical / Warning / Info findings tables (agent-review-guide.md Step 2.5b), one row per finding:
 
 ```text
 | <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |

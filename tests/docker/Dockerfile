@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Custom image for UiPath skills smoke tests
-# Extends coder-eval-agent with UiPath CLI tools pre-installed
+# Extends coder-eval-agent with UiPath CLI tools and the Flow SDK pre-installed
 ARG CODER_EVAL_IMAGE=coder-eval-agent:latest
 FROM ${CODER_EVAL_IMAGE}
 
@@ -17,6 +17,20 @@ ARG NPM_AUTH_TOKEN=
 # and ETARGETs. A pin freezes the CLI; the tools ride the train's tag.
 ARG CLI_VERSION=dev
 
+# The builder SDK is released independently from the CLI. Follow its rolling
+# release just as CLI_VERSION follows the live CLI train; callers can still
+# override this with an exact version for a reproducible comparison.
+ARG FLOW_SDK_VERSION=latest
+
+# The package NAME is a build arg for the same reason the version is: the rename
+# split the published history. `@uipath/maestro-builder-sdk` starts at 5.0.0;
+# everything at or below 4.0.0 exists only under `@uipath/flow-sdk`. So a
+# baseline comparison against a pre-rename build passes both:
+#   --build-arg FLOW_SDK_PKG_NAME=@uipath/flow-sdk --build-arg FLOW_SDK_VERSION=4.0.0
+# The CLI resolves either name (UiPath/cli#4009), and stage-preview-sdk-workspace.sh
+# reads the same variable so the workspace agrees with what the image installed.
+ARG FLOW_SDK_PKG_NAME=@uipath/maestro-builder-sdk
+
 # Floor on the number of tool plugins that must install for the image to be
 # usable. Discovery returns the CLI's full whitelist; a few may lack a build on
 # the current train (e.g. model-hub-tool has no `-dev` build), so individual
@@ -28,7 +42,11 @@ ARG MIN_TOOLS=25
 # CLI, sync would try to re-align tools through the release-channel path (which
 # can't resolve `-dev` tool builds — see below) and would undo the plugins baked
 # here. Belt-and-suspenders with the eval harness env.
-ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1
+ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1 \
+    PREVIEW_FLOW_SDK_ROOT=/opt/preview-flow-sdk \
+    PREVIEW_FLOW_SDK_ASSETS_ROOT=/opt/preview-flow-sdk-assets \
+    UIP_MAESTRO_REGISTRY_HOME=/opt/preview-flow-sdk-assets/registry \
+    FLOW_SDK_SETUP_STATUS=/opt/preview-flow-sdk-assets/setup-status.json
 
 # Install the UiPath CLI shell from its public npm release and pre-bake EVERY
 # whitelisted tool plugin from GitHub Packages. Stable CLI releases such as the
@@ -95,6 +113,26 @@ RUN --mount=type=secret,id=npm_auth_token \
     if [ "$public_cli" = false ]; then \
       npm install -g "@uipath/cli@${CLI_VERSION}"; \
     fi && \
+    mkdir -p "$PREVIEW_FLOW_SDK_ROOT" "$PREVIEW_FLOW_SDK_ASSETS_ROOT" && \
+    printf '%s\n' '{"private":true,"type":"module"}' \
+      > "$PREVIEW_FLOW_SDK_ROOT/package.json" && \
+    printf '%s\n' unavailable > "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status" && \
+    : > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version" && \
+    if npm install --prefix "$PREVIEW_FLOW_SDK_ROOT" \
+      --save-exact --no-audit --no-fund --userconfig "$npmrc" \
+      "${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION}"; then \
+      if resolved_sdk_version="$(node -p \
+        "require('$PREVIEW_FLOW_SDK_ROOT/node_modules/${FLOW_SDK_PKG_NAME}/package.json').version")" \
+        && test -x "$PREVIEW_FLOW_SDK_ROOT/node_modules/.bin/flow-sdk"; then \
+        printf '%s\n' "$resolved_sdk_version" > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version"; \
+        printf '%s\n' available > "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status"; \
+        echo "Installed ${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}"; \
+      else \
+        echo "WARN: ${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION} installed incompletely; Flow tasks will fail at runtime"; \
+      fi; \
+    else \
+      echo "WARN: ${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION} unavailable; Flow tasks will fail at runtime"; \
+    fi && \
     uip --version && \
     uip tools search --output json > /tmp/uip-tools-search.json && \
     tools="$(grep -oE '@uipath/[a-z0-9-]+-tool' /tmp/uip-tools-search.json | sort -u || true)" && \
@@ -132,8 +170,128 @@ ENV DOTNET_ROOT=/usr/share/dotnet \
     DOTNET_NOLOGO=1 \
     DOTNET_CLI_TELEMETRY_OPTOUT=1
 
+# Pull the released connector catalog through the product CLI. Flow-specific
+# setup is best-effort so an SDK/feed outage does not block every non-Flow eval;
+#
+# The smoke fixture's import is rewritten to whatever THIS image installed. A
+# build arg cannot reach an import statement, so a hard-coded specifier breaks
+# one of the two builds: the new name fails an old-name baseline
+# (`--build-arg FLOW_SDK_PKG_NAME=@uipath/flow-sdk`) and the old name fails the
+# default build on `Cannot find package`. Here that is only a WARN, so it would
+# be a silently skipped smoke rather than a build failure — which is why the
+# `grep` follows the `sed`: a specifier shape the pattern misses fails on the
+# grep, in the same breath, instead of looking like an SDK defect at
+# `flow check`.
+#
+# Flow tasks still fail at runtime when their required surface is unavailable.
+# The status file records exactly which rolling dependencies resolved.
+#
+# Where the pull lands is the CLI's business, and it moved: up to
+# maestro-tool 1.202.0-dev.8425 `uip maestro registry pull` unpacked a snapshot
+# under $UIP_MAESTRO_REGISTRY_HOME and wrote `current.json` there; from
+# dev.8461 (cli#3823) it delegates to the Flow SDK, which caches the library
+# under ~/.uipath/cache/flow-sdk/library/<sha256>/ and writes no current.json.
+# This step reads BOTH: the old pointer when the CLI still writes it, otherwise
+# `uip maestro registry path` (the CLI's own answer to "where is it") — and then
+# records the image's provenance pointer itself, so the per-task
+# stage-preview-sdk-workspace.sh and the run scripts keep one contract
+# ($UIP_MAESTRO_REGISTRY_HOME/current.json: libraryHash + snapshotPath) no matter
+# which layout the installed CLI produced. Hard-coding either layout broke the
+# 2026-09-01 image build the moment the @dev tool moved, and under best-effort it
+# would be worse than a break: the image would go GREEN with no connector
+# library, and every connector-backed task would fail at runtime behind a
+# warning nobody reads.
+#
+# `connectors/` is symlinked when present and never gates the library. The
+# current layout does not produce it — `registry pull` emits descriptors only
+# for connectors a project references, and says so ("no connector referenced by
+# this project yet ... 0 TypeScript modules"). Requiring it would have pinned
+# registry_status at `failed` forever, taking the library-json/md symlinks down
+# with it since they share the chain.
+COPY tests/fixtures/maestro-flow-sdk-smoke/ /opt/maestro-flow-sdk-smoke/
+RUN set -euo pipefail && \
+    sdk_status="$(tr -d '[:space:]' < "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status")" && \
+    resolved_sdk_version="$(tr -d '[:space:]' < "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version")" && \
+    registry_status=skipped && \
+    source_check_status=skipped && \
+    library_hash='' && \
+    if [ "$sdk_status" = available ]; then \
+      registry_status=failed; \
+      if registry_output="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
+        uip maestro registry pull --force --output json 2>&1)"; then \
+        printf '%s\n' "$registry_output"; \
+        registry_snapshot=''; \
+        if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
+          registry_snapshot="$(jq -er '.snapshotPath' "$UIP_MAESTRO_REGISTRY_HOME/current.json" || true)"; \
+          library_hash="$(jq -er '.libraryHash' "$UIP_MAESTRO_REGISTRY_HOME/current.json" || true)"; \
+        else \
+          library_json="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
+            readlink -f "$(uip maestro registry path --library-json --output plain | tail -1)" || true)"; \
+          library_hash="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
+            uip maestro registry path --sha --output plain | tail -1 || true)"; \
+          if [ -n "$library_json" ] && [ -d "$library_json" ] && [ -n "$library_hash" ]; then \
+            registry_snapshot="$(dirname "$library_json")"; \
+            mkdir -p "$UIP_MAESTRO_REGISTRY_HOME"; \
+            jq -n --arg libraryHash "$library_hash" --arg snapshotPath "$registry_snapshot" \
+              '{libraryHash: $libraryHash, snapshotPath: $snapshotPath}' \
+              > "$UIP_MAESTRO_REGISTRY_HOME/current.json"; \
+          fi; \
+        fi; \
+        if [ -n "$registry_snapshot" ] && [ -n "$library_hash" ] \
+          && test -f "$registry_snapshot/library-json/index.json" \
+          && test -f "$registry_snapshot/library-md/index.json" \
+          && ln -s "$registry_snapshot/library-json" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-json" \
+          && ln -s "$registry_snapshot/library-md" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-md"; then \
+          registry_status=available; \
+          if [ -d "$registry_snapshot/connectors" ]; then \
+            ln -s "$registry_snapshot/connectors" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/connectors"; \
+          fi; \
+        else \
+          echo "WARN: Maestro registry snapshot was incomplete; connector-backed Flow tasks will fail at runtime"; \
+        fi; \
+      else \
+        printf 'WARN: Maestro registry pull failed; connector-backed Flow tasks will fail at runtime\n%s\n' "$registry_output"; \
+      fi; \
+      source_check_status=failed; \
+      if (cd /opt/maestro-flow-sdk-smoke \
+        && ln -s "$PREVIEW_FLOW_SDK_ROOT/node_modules" node_modules \
+        && sed -i "s#from '@uipath/[a-z0-9-]*'#from '${FLOW_SDK_PKG_NAME}'#" Smoke.flow.ts \
+        && grep -q "from '${FLOW_SDK_PKG_NAME}'" Smoke.flow.ts \
+        && uip maestro flow check Smoke.flow.ts --source); then \
+        source_check_status=passed; \
+      else \
+        echo "WARN: Maestro Flow source smoke check failed; Flow tasks will fail at runtime"; \
+      fi; \
+    else \
+      echo "WARN: Skipping Maestro registry pull and source check because the Flow SDK is unavailable"; \
+    fi && \
+    jq -n \
+      --arg requestedVersion "$FLOW_SDK_VERSION" \
+      --arg resolvedVersion "$resolved_sdk_version" \
+      --arg sdkStatus "$sdk_status" \
+      --arg registryStatus "$registry_status" \
+      --arg libraryHash "$library_hash" \
+      --arg sourceCheckStatus "$source_check_status" \
+      '{sdk: {requestedVersion: $requestedVersion, resolvedVersion: (if $resolvedVersion == "" then null else $resolvedVersion end), status: $sdkStatus}, registry: {libraryHash: (if $libraryHash == "" then null else $libraryHash end), status: $registryStatus}, sourceCheck: {status: $sourceCheckStatus}}' \
+      > "$FLOW_SDK_SETUP_STATUS" && \
+    cat "$FLOW_SDK_SETUP_STATUS"
+
+# Persist the built-with name into the image. `ARG` is build-time only, and
+# `stage-preview-sdk-workspace.sh` reads this at TASK time — without it a
+# non-default build (an old-name baseline) would install one name and have the
+# stager look for the other.
+ENV FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}
+
+ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
+    FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md \
+    FLOW_SDK_CONNECTORS_DIR=/opt/preview-flow-sdk-assets/connectors
+
 # Pre-install Python packages needed by coded-agent sandbox fixtures so agents
 # don't trigger a live uv-sync download (which takes 1-2 min and causes retry
 # loops in the turn timeline). uipath-langchain is declared in the
 # SimpleCodedAgent fixture's pyproject.toml but has no pre-built venv.
 RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"
+
+# a2a-sdk, pulled in above, caps protobuf below 7, which leaves google-antigravity
+# unable to load its gencode-7.35 stubs. a2a's own stubs are 5.29.3, so 7.x serves both.
+RUN pip install --no-cache-dir "protobuf>=7.35,<8"

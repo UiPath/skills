@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """BillingInvoiceLookup: the agent builds + validates only; this check runs
 `uip maestro flow debug` itself for three malformed invoice-number forms and
-asserts each resolves, via a real Data Service query, to invoice MCS-2026-04872
+asserts each resolves, via a real entity query, to invoice MCS-2026-04872
 with 8 line items.
 
 The flow normalizes a raw `invoiceNumber` (trim, uppercase, ensure the "MCS-"
-prefix) and queries the seeded `BillingDisputeERP` entity. A Data Service query
-node is required (anti-hardcode): you cannot fake `lineItemCount == 8` for three
+prefix) and queries the seeded `BillingDisputeERP` entity. An entity query node
+is required (anti-hardcode): you cannot fake `lineItemCount == 8` for three
 different inputs without actually querying. The seeded invoice has exactly 8
 line items, so the count is a deterministic oracle.
 """
@@ -20,7 +20,8 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 from _shared.flow_check import (  # noqa: E402
-    assert_flow_has_node_type,
+    ENTITY_QUERY_HINTS,
+    assert_flow_has_any_node_type,
     assert_output_value,
     find_project_dir,
     read_flow_input_vars,
@@ -39,9 +40,9 @@ CASES = [
 
 
 def main():
-    # Must actually query Data Service — blocks hardcoding the answer, which
+    # Must actually query the entity — blocks hardcoding the answer, which
     # would otherwise pass since all three cases expect the same output.
-    assert_flow_has_node_type(["uipath-dataservice.query"])
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
 
     in_vars = read_flow_input_vars(find_project_dir())
     if not in_vars:

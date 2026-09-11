@@ -11,9 +11,13 @@ Asserts the primitives that together make
      `CreateEscalation` for that path (`CreateTask` is the general
      form for non-escalation HITL).
   3. `bindings.json` declares the `app` resource for the Action
-     Center app the escalation targets — `app_name=ExpenseReview`,
-     `app_folder_path=Finance`. Without this binding,
-     `uipath push` would not create the virtual placeholder.
+     Center app the escalation targets — `app_name=ExpenseReviewApp`,
+     `app_folder_path=Shared/uipath-agents/ExpenseReviewSol`. Without
+     this binding, `uipath push` would not create the virtual
+     placeholder. The binding `key` is accepted in either form: the
+     `{kind}.{name}.{folder}` form that `uip codedagent init` (SDK
+     >= 2.14) generates and the runtime resolves, or the bare
+     `{name}.{folder}` form documented in bindings-reference.md.
 
 Also runs the lazy-LLM-init AST scan as a hygiene check.
 """
@@ -31,6 +35,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from _shared.project_root import find_project_root  # noqa: E402
 
 ROOT = find_project_root("expense-approver")
+
+APP_NAME = "ExpenseReviewApp"
+APP_FOLDER = "Shared/uipath-agents/ExpenseReviewSol"
+# SDK-generated (`uip codedagent init`, uipath >= 2.14) and hand-authored
+# (bindings-reference.md) key forms — both resolve at runtime.
+APP_KEYS = (f"app.{APP_NAME}.{APP_FOLDER}", f"{APP_NAME}.{APP_FOLDER}")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.bindings_assertions import (  # noqa: E402
@@ -60,7 +70,7 @@ def _module_constants(tree: ast.Module) -> dict[str, object]:
     """Collect module-level `<Name> = <Constant>` assignments.
 
     Resolves the common pattern where the agent extracts string literals
-    into constants (e.g. ``ACTION_CENTER_APP = "ExpenseReview"``).
+    into constants (e.g. ``ACTION_CENTER_APP = "ExpenseReviewApp"``).
     """
     consts: dict[str, object] = {}
     for node in tree.body:
@@ -73,7 +83,7 @@ def _module_constants(tree: ast.Module) -> dict[str, object]:
             and isinstance(node.value, ast.Constant)
             and isinstance(node.target, ast.Name)
         ):
-            # Annotated constant, e.g. ``APP_NAME: str = "ExpenseReview"``.
+            # Annotated constant, e.g. ``APP_NAME: str = "ExpenseReviewApp"``.
             consts[node.target.id] = node.value.value
     return consts
 
@@ -106,10 +116,10 @@ def _find_create_escalation_call(tree: ast.Module) -> ast.Call | None:
 
 
 def check_imports_and_calls(text: str, tree: ast.Module) -> None:
-    if not re.search(r"from\s+langgraph\.types\s+import\s+[^\n]*\binterrupt\b", text):
+    if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         sys.exit("FAIL: missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateEscalation\b", text):
+    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+(?:[^\n]*\bCreateEscalation\b|\([^)]*\bCreateEscalation\b)", text):
         sys.exit(
             "FAIL: missing `from uipath.platform.common import CreateEscalation`. "
             "The prompt describes an explicit escalation — the skill prescribes "
@@ -122,7 +132,7 @@ def check_imports_and_calls(text: str, tree: ast.Module) -> None:
     print("OK: graph node calls interrupt(CreateEscalation(...))")
     consts = _module_constants(tree)
     kwargs = {kw.arg: kw.value for kw in call.keywords if kw.arg is not None}
-    expected = {"app_name": "ExpenseReview", "app_folder_path": "Finance"}
+    expected = {"app_name": APP_NAME, "app_folder_path": APP_FOLDER}
     for kw, want in expected.items():
         if kw not in kwargs:
             sys.exit(f'FAIL: `CreateEscalation(...)` is missing `{kw}=`')
@@ -131,17 +141,23 @@ def check_imports_and_calls(text: str, tree: ast.Module) -> None:
             sys.exit(
                 f'FAIL: `CreateEscalation({kw}=...)` resolves to {got!r}, expected {want!r}.'
             )
-    print('OK: escalation targets app_name="ExpenseReview" / app_folder_path="Finance"')
+    print(f'OK: escalation targets app_name="{APP_NAME}" / app_folder_path="{APP_FOLDER}"')
 
 
 def check_app_binding() -> None:
     doc = load_bindings(ROOT / "bindings.json")
-    entry = find_resource(doc, resource="app", key="ExpenseReview.Finance")
-    assert_value_field(entry, field="name", expected="ExpenseReview")
-    assert_value_field(entry, field="folderPath", expected="Finance")
+    present = {
+        r.get("key")
+        for r in (doc.get("resources") or [])
+        if isinstance(r, dict) and r.get("resource") == "app"
+    }
+    key = next((k for k in APP_KEYS if k in present), APP_KEYS[0])
+    entry = find_resource(doc, resource="app", key=key)
+    assert_value_field(entry, field="name", expected=APP_NAME)
+    assert_value_field(entry, field="folderPath", expected=APP_FOLDER)
     assert_metadata_field(entry, field="ActivityName", expected="create_async")
-    assert_metadata_field(entry, field="DisplayLabel", expected="ExpenseReview")
-    print("OK: bindings.json declares the ExpenseReview/Finance `app` resource")
+    assert_metadata_field(entry, field="DisplayLabel", expected=APP_NAME)
+    print(f'OK: bindings.json declares the {APP_NAME} `app` resource (key="{key}")')
 
 
 def main() -> None:

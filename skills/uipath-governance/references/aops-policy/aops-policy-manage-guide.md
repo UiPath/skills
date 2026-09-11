@@ -276,7 +276,7 @@ Display the current values (name, product, priority, description, availability) 
 **Extract the existing policy's data as the update blueprint** — this is the object the user will edit, and any fields not touched must retain their existing values (NOT revert to product defaults):
 
 ```bash
-jq '.Data.data' "$SESSION_DIR/current-policy.json" > "$SESSION_DIR/existing-policy-data.json"
+jq '.Data.Data // .Data.data' "$SESSION_DIR/current-policy.json" > "$SESSION_DIR/existing-policy-data.json"
 ```
 
 > **Critical:** on update, the blueprint is the existing policy's `data` object — NOT the product's default `form-data.json`. Using the product defaults would silently wipe every non-default setting the user previously configured. Only use form-data defaults as a fallback for brand-new fields added to the product template after the policy was originally created.

@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-batch-transform
 description: >
   Create a UiPath Flow that runs a Batch Transform pattern node over a CSV
@@ -41,12 +44,21 @@ initial_prompt: |
   the result file handle as a flow output variable named `result` mapped via
   `outputs.result.source: "=js:$vars.<bt-node-id>.output"`.
 
-  Do NOT run flow debug — just validate the flow.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a single pass.
+  Validate the completed flow.
   Before starting, follow the documented workflow steps exactly — in particular, the batch-transform plugin's
   `outputColumns` shape (array of `{ name, description }`).
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
@@ -60,7 +72,7 @@ success_criteria:
   # ── Structural checks (node type, inputs, outputColumns shape) ─────────
   - type: run_command
     description: "Flow has a Batch Transform node with required inputs and the {name,description} outputColumns shape"
-    command: "python3 $TASK_DIR/check_batch_transform_flow.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/context-grounding/batch_transform/check_batch_transform_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

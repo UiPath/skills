@@ -12,8 +12,8 @@
       <uipath:migrationVersion version="11.5" />
       <uipath:caseManagement version="v1"><![CDATA[{"owner":"warehouse","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" />
-        <uipath:inputOutput id="Var_Label" name="Label" type="string" />
+        <uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" elementId="Process_Fulfillment" />
+        <uipath:inputOutput id="Var_Label" name="Label" type="string" elementId="Process_Fulfillment" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SP</bpmn:outgoing></bpmn:startEvent>
@@ -21,35 +21,35 @@
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_SP</bpmn:incoming><bpmn:outgoing>Flow_PP</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: "picked" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return "picked";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Pack" name="Pack Box" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_PP</bpmn:incoming><bpmn:outgoing>Flow_PS</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: "packed" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return "packed";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Ship" name="Ship Parcel" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
           <uipath:output name="label" type="string" var="Var_Label" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_PS</bpmn:incoming><bpmn:outgoing>Flow_SE</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: "label-123" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return "label-123";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_SE</bpmn:incoming></bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_SP" sourceRef="Start_1" targetRef="Task_Pick" />

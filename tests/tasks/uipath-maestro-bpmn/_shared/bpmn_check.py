@@ -71,7 +71,33 @@ def text_content(element: ET.Element) -> str:
 
 def has_uipath_extension(element: ET.Element, token: str) -> bool:
     ext = element.find("bpmn:extensionElements", NS)
-    return ext is not None and token in ET.tostring(ext, encoding="unicode")
+    if ext is not None and token in ET.tostring(ext, encoding="unicode"):
+        return True
+    return any(
+        token in ET.tostring(child, encoding="unicode")
+        for child in element
+        if child.tag.startswith(f"{{{NS['uipath']}}}")
+    )
+
+
+def has_typed_uipath_extension(
+    element: ET.Element, extension_name: str, type_value: str
+) -> bool:
+    """Match both registry-supported UiPath payload type declarations."""
+    payloads = list(element.findall(f"uipath:{extension_name}", NS))
+    ext = element.find("bpmn:extensionElements", NS)
+    if ext is not None:
+        payloads.extend(ext.findall(f"uipath:{extension_name}", NS))
+
+    for payload in payloads:
+        if payload.attrib.get("type") == type_value:
+            return True
+        if any(
+            type_elem.attrib.get("value") == type_value
+            for type_elem in payload.findall("uipath:type", NS)
+        ):
+            return True
+    return False
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:
