@@ -25,7 +25,9 @@ initial_prompt: |
   4. Script node — logs the final RCA text and severity from the reviewer's output
   5. End node
 
-  Wire: Trigger → Script → HITL →|completed| Script (log) → End
+  Wire: Trigger → Script → HITL → Script (log) → End, with both outcomes
+  (Approve and Request Changes) routed to the log Script node — every
+  outcome needs its own wired port.
 
   Validate the flow after building.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
