@@ -13,7 +13,7 @@ Keys inside `Data` are PascalCase in the CLI's JSON output. Read `MachineName`, 
 --started-after <epoch-ms>    Absolute window start, needs --started-before
 --started-before <epoch-ms>   Absolute window end, needs --started-after
 --machine-name <names...>     Machine names to restrict to, space separated
---host-name <names...>        Host machine names to restrict to, space separated
+--host-machine-name <names...>  Host machine names to restrict to, space separated
 --machine-type <types...>     Machine type labels to restrict to, space separated
 --limit <number>              Rows to return, 1 to 10000 (default 50)
 --offset <number>             Rows to skip before returning results (default 0)
@@ -33,8 +33,8 @@ Keys inside `Data` are PascalCase in the CLI's JSON output. Read `MachineName`, 
 5. **Every page repeats the whole backend request.** These commands page the CLI's own copy of the list; read `Pagination.Total` and `Pagination.HasMore`.
 6. **A machine name and host pair is not a unique identity.** Two live machine keys can carry the same name, producing two rows that agree on `MachineName` and `HostMachineName`. Only `availability-timeline` returns `MachineKey`.
 7. **An empty string is an answer, not an error.** `CurrentProcess` is empty when no job is running and `MachineType` is empty when the type cannot be classified. Report the meaning, not a blank.
-8. **`top-errors` and `utilization` return at most ten rows**, ranked server-side. A machine missing from either list is not proof of zero; for `utilization` an omitted machine has no reconstructed runtime, which is not the same as a zero-minute row.
-9. **Row order is the server's on `availability-timeline`, `top-errors`, and `utilization`.** The CLI sorts only `details` (by machine, then host) before paging. That sort has no tie-break: the backend adds no order of its own and returns no machine key for `details`, so two rows agreeing on both fields can swap between one `--offset` page and the next once the 60-second cache expires. Page through the whole list inside that minute when the split across pages matters. Timeline timestamps are culture-formatted `GMT` strings; never parse or re-sort them.
+8. **`top-failures` and `utilization` return at most ten machine-and-host groups**, ranked server-side. A machine missing from either list is not proof of zero; for `utilization` an omitted machine has no reconstructed runtime, which is not the same as a zero-minute row.
+9. **Row order is the server's on `availability-timeline`, `top-failures`, and `utilization`.** The CLI sorts only `details` (by machine, then host) before paging, and breaks any remaining tie on the whole row, so one backend response always splits into the same pages. What can still move is the data: an `--offset` page taken after the 60-second cache expires re-runs the query, and a machine that appeared or dropped out in between shifts the split. Timeline timestamps are culture-formatted `GMT` strings; never parse or re-sort them.
 10. **These commands need a Cloud or Dedicated SaaS deployment.** On Automation Suite and Service Fabric they return `Result: ConfigError` with `ErrorCode: configuration_error` before the tenant is consulted. That is a deployment fact, not a permission or data answer, and retrying will not change it.
 
 ## Errors
@@ -88,12 +88,12 @@ Four reading rules:
 
 Timestamps end in ` GMT` and follow the service host's own formatting. Quote them verbatim; never parse, convert, or re-sort them.
 
-### machines top-errors
+### machines top-failures
 
 Machines ranked by faulted jobs.
 
 ```bash
-uip insights machines top-errors --time-range 43200 --output json
+uip insights machines top-failures --time-range 43200 --output json
 ```
 
 `Data[]`: `MachineName`, `HostMachineName`, `FaultedJobs`. At most ten rows in the server's own ranking; equal counts have no stable order across pages. Serverless machines report `N/A` as the host.
