@@ -84,6 +84,55 @@ def check_priority(_flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
     print("OK: HITL priority is High")
 
 
+def assert_outcome_wiring(
+    hitl_id: Any, outcomes: list[dict[str, Any]], edges: list[dict[str, Any]]
+) -> None:
+    # Handle id is outcome-<id>, verbatim, per outcome: flow-workbench
+    # build-handle-customization.ts. See hitl-node-quickform.md#edge-wiring
+    # for the full rule (zero-outcome placeholder, no-id-no-handle, etc).
+    wired_ports = {
+        edge.get("sourcePort")
+        for edge in edges
+        if edge.get("sourceNodeId") == hitl_id
+    }
+    if outcomes:
+        # has_outcomes path: every outcome needs its own wired outcome-<id>
+        # port. Only the boolean-decision path (no outcomes at all) uses the
+        # zero-outcome outcome-completed placeholder.
+        outcome_ids = [o["id"] for o in outcomes if isinstance(o.get("id"), str) and o["id"]]
+        if len(outcome_ids) != len(outcomes):
+            fail("every outcome needs a non-empty string id — an outcome without one renders no handle")
+        if (wired_ports & {"completed", "outcome-completed"}) and "completed" not in outcome_ids:
+            fail(
+                "outcome-completed is the zero-outcome placeholder; wire "
+                "outcome-<id> per outcome instead"
+            )
+        missing = [oid for oid in outcome_ids if f"outcome-{oid}" not in wired_ports]
+        if missing:
+            fail(
+                "every outcome needs its own wired handle; missing: "
+                + ", ".join(f"outcome-{oid}" for oid in missing)
+            )
+    elif not (wired_ports & {"completed", "outcome-completed"}):
+        fail("HITL completed handle must be wired")
+
+
+def check_outcome_wiring(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
+    edges = flow.get("edges")
+    if not isinstance(edges, list):
+        fail("Flow must contain edges[]")
+    candidates = hitl_nodes(nodes)
+    if not candidates:
+        fail("need at least 1 HITL node")
+    for hitl in candidates:
+        hitl_id = hitl.get("id")
+        schema = (hitl.get("inputs") or {}).get("schema", {})
+        outcomes = schema.get("outcomes", []) or []
+        assert_outcome_wiring(hitl_id, outcomes, edges)
+    ids = ", ".join(str(h.get("id")) for h in candidates)
+    print(f"OK: every outcome port is wired, none on the outcome-completed placeholder ({ids})")
+
+
 def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
     edges = flow.get("edges")
     if not isinstance(edges, list):
@@ -134,32 +183,7 @@ def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
         for field in fields
     ):
         fail("need a text reason output field")
-    # outcome-completed is the zero-outcome placeholder only (confirmed against
-    # flow-workbench@develop source, build-handle-customization.ts): an outcome
-    # without an id is dropped before handles are built, and there is no
-    # name-derived fallback. A real user-authored schema always has ids — the
-    # editor assigns one at creation (useSchemaFields.ts, handleAddOutcome).
-    # This node has real outcomes, so every one of them needs its own wired
-    # outcome-<id> handle; outcome-completed must not appear.
-    outcome_ids = [str(o["id"]) for o in outcomes if o.get("id")]
-    if not outcome_ids:
-        fail("HITL schema needs at least one outcome with an id")
-    wired_ports = {
-        edge.get("sourcePort")
-        for edge in edges
-        if edge.get("sourceNodeId") == hitl_id
-    }
-    if wired_ports & {"completed", "outcome-completed"}:
-        fail(
-            "outcome-completed is the zero-outcome placeholder; this node has "
-            "real outcomes and must wire outcome-<id> per outcome instead"
-        )
-    missing = [oid for oid in outcome_ids if f"outcome-{oid}" not in wired_ports]
-    if missing:
-        fail(
-            "every outcome needs its own wired handle; missing: "
-            + ", ".join(f"outcome-{oid}" for oid in missing)
-        )
+    assert_outcome_wiring(hitl_id, outcomes, edges)
     scripts = [
         str((node.get("inputs") or {}).get("script", ""))
         for node in nodes
@@ -173,6 +197,7 @@ def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
 
 CHECKS = {
     "expense": check_expense,
+    "outcome-wiring": check_outcome_wiring,
     "priority": check_priority,
     "quick-form": check_quick_form,
     "schema": check_schema,

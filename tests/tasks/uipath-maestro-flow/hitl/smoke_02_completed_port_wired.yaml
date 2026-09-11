@@ -56,20 +56,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow wires a distinct outcome-<id> port for both Approve and Reject — not the generic outcome-completed placeholder"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\"sourcePort\":\\s*\"outcome-approve\"' --regex '\"sourcePort\":\\s*\"outcome-reject\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
+    description: "Every outcome on the HITL node has its own wired port — none on the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  # outcome-completed is the zero-outcome placeholder only (confirmed against
-  # flow-workbench source, 2026-09-10) — it disappears the instant the schema
-  # has any real outcome. This node's schema has two (Approve, Reject), so the
-  # correct wiring is one edge per outcome id, never a shared completed port.
-  # The skill's own worked example for this exact "Approve/Reject" business
-  # description assigns ids "approve"/"reject" (hitl-node-quickform.md
-  # Example 1), so those literals are pinned rather than guessed.
+  # Node-scoped (reads the HITL node's own schema.outcomes and edges,
+  # not a whole-file regex), so an unrelated node's legitimate completed
+  # port elsewhere in the flow can't false-fail this. See
+  # check_simulated_hitl.py's assert_outcome_wiring and
+  # hitl-node-quickform.md#edge-wiring for the underlying rule.
 
   - type: run_command
     description: "uip maestro flow validate passes"

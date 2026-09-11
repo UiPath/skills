@@ -117,21 +117,18 @@ def main() -> None:
             "or =js:$vars.<node>.output.<field>"
         )
 
-    # outcome-completed is the zero-outcome placeholder only (confirmed against
-    # flow-workbench@develop source, build-handle-customization.ts): an outcome
-    # without an id is dropped before handles are built, and there is no
-    # name-derived fallback. A real user-authored schema always has ids — the
-    # editor assigns one at creation (useSchemaFields.ts, handleAddOutcome).
-    # `outcomes` is already guaranteed non-empty above; every outcome needs
-    # its own wired outcome-<id> handle instead.
-    outcome_ids = [str(o["id"]) for o in outcomes if o.get("id")]
-    if not outcome_ids:
-        fail("HITL schema needs at least one outcome with an id")
+    # Handle id is outcome-<id>, verbatim, per outcome: flow-workbench
+    # build-handle-customization.ts. `outcomes` is already guaranteed
+    # non-empty above. See hitl-node-quickform.md#edge-wiring for the full
+    # rule (zero-outcome placeholder, no-id-no-handle, etc).
+    outcome_ids = [o["id"] for o in outcomes if isinstance(o.get("id"), str) and o["id"]]
+    if len(outcome_ids) != len(outcomes):
+        fail("every outcome needs a non-empty string id — an outcome without one renders no handle")
     wired_ports = {e.get("sourcePort") for e in edges if e.get("sourceNodeId") == hitl_id}
-    if wired_ports & {"completed", "outcome-completed"}:
+    if (wired_ports & {"completed", "outcome-completed"}) and "completed" not in outcome_ids:
         fail(
-            "outcome-completed is the zero-outcome placeholder; this node has "
-            "real outcomes and must wire outcome-<id> per outcome instead"
+            "outcome-completed is the zero-outcome placeholder; wire "
+            "outcome-<id> per outcome instead"
         )
     missing = [oid for oid in outcome_ids if f"outcome-{oid}" not in wired_ports]
     if missing:

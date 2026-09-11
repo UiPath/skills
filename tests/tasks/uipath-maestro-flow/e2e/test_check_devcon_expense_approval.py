@@ -289,7 +289,47 @@ def test_rejects_outcome_completed_with_real_outcomes(tmp_path: Path) -> None:
     result = _run_checker(tmp_path)
 
     assert result.returncode != 0
-    assert "must wire outcome-<id> per outcome instead" in result.stderr
+    assert "wire outcome-<id> per outcome instead" in result.stderr
+
+
+def test_accepts_mixed_case_outcome_id(tmp_path: Path) -> None:
+    """The handle id is the outcome's own id verbatim — never lowercased.
+    outcome-Approve must pass; outcome-approve must not be required."""
+    outcomes = [
+        {"id": "Approve", "name": "Approve"},
+        {"id": "reject", "name": "Reject"},
+    ]
+    _write_flow(
+        tmp_path,
+        _flow_doc(
+            fields=_approve_reject_fields("vars.fetchExpense.output.amount"),
+            outcomes=outcomes,
+            outcome_ports=["outcome-Approve", "outcome-reject"],
+        ),
+    )
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_rejects_outcome_without_id(tmp_path: Path) -> None:
+    """An outcome with only a name renders no handle at all — the checker
+    must fail loudly instead of silently dropping it from the required set."""
+    outcomes = [{"name": "Approve"}, {"id": "reject", "name": "Reject"}]
+    _write_flow(
+        tmp_path,
+        _flow_doc(
+            fields=_approve_reject_fields("vars.fetchExpense.output.amount"),
+            outcomes=outcomes,
+            outcome_ports=["outcome-reject"],
+        ),
+    )
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode != 0
+    assert "non-empty string id" in result.stderr
 
 
 def test_rejects_single_submit_outcome_without_decision_capture(tmp_path: Path) -> None:

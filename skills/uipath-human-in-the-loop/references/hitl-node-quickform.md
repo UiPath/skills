@@ -353,6 +353,7 @@ The agent translates the user's business description into the `fields[]` and `ou
 | `binding` | **Input / inOut fields only.** Format: `"vars.<nodeId>.output.<field>"` for node outputs; `"vars.<globalId>"` for flow globals. **No `=js:$` prefix** — HITL binding is a raw path, not an expression. |
 | `variable` | **Output / inOut fields only** — absent on input fields. Format: `"vars.<name>"` (always include the `vars.` prefix). Defaults to `"vars.<camelCase id>"` if not specified. |
 | `required` | omit if false; set `true` for mandatory outputs |
+| outcome `id` | Same conversion as field `id`: lowercase name, spaces→`-`, strip non-alphanumeric. `"Approve"` → `"approve"`, `"Needs Info"` → `"needs-info"`. Required and non-empty — an outcome with no `id` renders no wiring handle at all, so an edge drawn to a guessed port name is a no-op. This `id` is also the wiring port verbatim: `outcome-<id>` (see this file's Edge Wiring section below — never lowercase or otherwise transform it again after this conversion). |
 | `outcomes[0]` | `isPrimary: true`, `action: "Continue"` |
 | `outcomes[1+]` | `isPrimary: false`, `action: "End"` |
 | `schema.schemaId` | Generate a fresh UUID (e.g. `crypto.randomUUID()` or any UUID v4) |

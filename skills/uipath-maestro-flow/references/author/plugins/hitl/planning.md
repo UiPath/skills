@@ -48,11 +48,11 @@ With no user to ask, pick one that terminates unattended and record which you ch
 
 | Input port | Output port(s) |
 | --- | --- |
-| `input` | one per outcome — `outcome-<outcome.id>`, derived from `inputs.schema.outcomes[].id` |
+| `input` | one per outcome — `outcome-<outcome.id>`, derived verbatim from `inputs.schema.outcomes[].id` |
 
-**Every outcome gets its own port — wire one edge per outcome, not a single shared port.** A schema with `outcomes: [Approve, Reject]` (ids `approve`, `reject`) produces two ports, `outcome-approve` and `outcome-reject`; each needs its own edge. A node with any outcome port left unwired blocks the flow indefinitely on that branch.
+**Every outcome gets its own port — wire one edge per outcome, not a single shared port.** A schema with `outcomes: [Approve, Reject]` (ids `approve`, `reject`) produces two ports, `outcome-approve` and `outcome-reject`; each needs its own edge. Every outcome needs a non-empty string `id` — one without gets no handle at all, so an edge drawn to a guessed port name is a no-op, not a working branch. A node with any outcome port left unwired blocks the flow indefinitely on that branch.
 
-> **`outcome-completed` is not a real outcome port — it is the placeholder shown only before the schema has any outcome.** The instant `inputs.schema.outcomes` has one or more entries — including the shipped default `Submit` (id `submit`) — its port becomes `outcome-submit`, not `outcome-completed`. Never wire `outcome-completed` as a real branch once outcomes exist; it appears only transiently on a freshly-added, not-yet-configured node.
+> **`outcome-completed` is the port for a zero-outcome node, or for a real outcome whose `id` is literally `completed`.** It is an ordinary string, not a reserved one, so it can be a genuine outcome port. The instant `inputs.schema.outcomes` has one or more entries with a different `id` — including the shipped default `Submit` (id `submit`) — its port becomes `outcome-submit`, not `outcome-completed`. Never wire `outcome-completed` standing in for several different outcomes.
 
 ### Output Variables
 

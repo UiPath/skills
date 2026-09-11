@@ -63,7 +63,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node's outcome port is wired, not the outcome-completed placeholder"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval --regex '\"sourcePort\":\\s*\"outcome-(?!completed\")[a-z0-9_-]+\"' --absent-regex '\"sourcePort\":\\s*\"(outcome-)?completed\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
