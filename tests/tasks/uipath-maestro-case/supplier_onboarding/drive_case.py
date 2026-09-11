@@ -556,6 +556,9 @@ def fail_with_diagnosis(instance_id: str, msg: str):
     an incident that is readable now is unreadable by the time anyone opens the result. Whatever
     the case recorded has to be captured here or not at all.
     """
+    # The status separates a case that ended on its own from one the platform closed
+    # underneath the driver, and without it both read as "the case finished".
+    print(f"  run status {run_status(instance_id)!r}")
     raised = incidents(instance_id)
     for item in raised[:4]:
         print(f"  incident on {describe_incident(item)}")
@@ -730,7 +733,20 @@ def drive_sla(instance_id: str, watermark: int, who: str, done: set, answered: s
     while task is None and time.time() < deadline:
         task = pending_task(watermark, escalation, done, instance_id)
         if task is None:
-            if run_status(instance_id) in FINISHED:
+            status = run_status(instance_id)
+            if status == "Cancelled":
+                # This route's only idle stretch is the 16-minute wait for the intake
+                # deadline, which is longer than the window `uip maestro case debug`
+                # allows with no progress. An instance the platform closed there says
+                # nothing about the SLA, and calling it a plan defect sent the reader
+                # to look at a rule that had not been reached yet.
+                fail_with_diagnosis(
+                    instance_id,
+                    "the instance was cancelled while waiting for the intake deadline; "
+                    "the debug run gave up before the SLA could breach, so this route "
+                    "carries no verdict about the plan",
+                )
+            if status in FINISHED:
                 # Which stages it did reach says whether the SLA was never armed or
                 # the case left the intake phase by another route.
                 fail_with_diagnosis(
