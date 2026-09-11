@@ -474,7 +474,11 @@ def binding_defaults(plan: dict) -> set[str]:
 # --- expressions --------------------------------------------------------------
 
 _VARS_RE = re.compile(r"vars\.([A-Za-z_]\w*)")
-_LITERAL_RE = re.compile(r"([!=])==\s*\"([^\"]*)\"")
+# Either quote style. A build that writes `=== 'approve'` routes exactly as one that
+# writes `=== "approve"`, and a double-quote-only pattern read run 34613299132 as
+# having no literals at all: 19 guards, zero recognised, on a plan whose seven routes
+# had just completed.
+_LITERAL_RE = re.compile(r"([!=])==\s*(['\"])(.*?)\2")
 
 
 def expressions(plan: dict) -> list[tuple[str, str]]:
@@ -501,7 +505,7 @@ def vars_read(expression: str) -> set[str]:
 
 def comparison_literals(expression: str) -> set[tuple[str, str]]:
     """The `=== "x"` / `!== "x"` comparisons in an expression, as (operator, literal)."""
-    return {(op, lit) for op, lit in _LITERAL_RE.findall(expression)}
+    return {(op, lit) for op, _quote, lit in _LITERAL_RE.findall(expression)}
 
 
 def canonical_comparison(expression: str) -> set[tuple[str, str, str]]:
@@ -514,11 +518,11 @@ def canonical_comparison(expression: str) -> set[tuple[str, str, str]]:
     """
     out = set()
     for match in re.finditer(
-        r"vars\.(?:\$xref\([^)]*\)|[A-Za-z_]\w*)(?:\.[A-Za-z_]\w*)*\s*([!=])==\s*\"([^\"]*)\"",
+        r"vars\.(?:\$xref\([^)]*\)|[A-Za-z_]\w*)(?:\.[A-Za-z_]\w*)*\s*([!=])==\s*(['\"])(.*?)\2",
         expression,
     ):
         subject = expression[match.start(): match.start(1)].strip()
-        out.add((subject, match.group(1) + "==", match.group(2)))
+        out.add((subject, match.group(1) + "==", match.group(3)))
     return out
 
 

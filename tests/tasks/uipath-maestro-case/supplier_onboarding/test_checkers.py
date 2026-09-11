@@ -846,6 +846,29 @@ class TopologyTests(CheckerBase):
 class GuardTests(CheckerBase):
     checker = "guards"
 
+    def test_accepts_single_quoted_guard_literals(self):
+        """Run 34613299132 wrote every guard with single quotes and carried all seven
+        routes to completion. A double-quote-only reader saw 19 guards and no literals."""
+        plan = baseline_plan()
+        swapped = 0
+
+        def swap(node):
+            nonlocal swapped
+            if isinstance(node, dict):
+                expr = node.get("conditionExpression")
+                if isinstance(expr, str) and '"' in expr:
+                    node["conditionExpression"] = expr.replace('"', "'")
+                    swapped += 1
+                for value in node.values():
+                    swap(value)
+            elif isinstance(node, list):
+                for value in node:
+                    swap(value)
+
+        swap(plan)
+        self.assertGreater(swapped, 0, "the baseline has no double-quoted guard to swap")
+        self.accepts(plan)
+
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
 
