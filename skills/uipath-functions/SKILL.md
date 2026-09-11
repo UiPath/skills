@@ -131,6 +131,7 @@ uip function new <NAME> -l py|ts|js [--empty]   # scaffold (TypeScript default; 
 uip function init                    # Python only — entry-points.json, bindings.json, project.uiproj
 uip function serve [--port 7070] [--runtime node|deno]   # JS/TS only — local HTTP server, hot reload
 uip function run                     # both languages — one-shot local execution
+uip function run --function <NAME> --inspect-wait 127.0.0.1:9229   # JS/TS — hold for a debugger to attach
 uip function pack [--nolock]         # build the .nupkg
 uip function publish [--feed-id <FEED_ID>]      # upload package to a process feed
 uip function push --project-id <PROJECT_ID>     # sync sources to a Studio Web project

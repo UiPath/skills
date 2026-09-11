@@ -76,8 +76,33 @@ uip function run --entrypoint functions/<FILE>.ts --input-file <INPUT_JSON_PATH>
 | `--input '<JSON>'` \| `--input-file <PATH>` | Input payload (default `{}`; file takes priority) |
 | `--context '<JSON>'` \| `--context-file <PATH>` | Runtime-context JSON — simulate job identity/platform values (file takes priority) |
 | `--runtime node\|deno` | Runtime (default `node`) |
+| `--production` | Run under production context; skip the `.uipath/server-runner` install when it already exists |
+| `--inspect [ENDPOINT]` | Open the V8 inspector while the function runs (default `127.0.0.1:9229`) |
+| `--inspect-wait [ENDPOINT]` | Open the V8 inspector and wait for a debugger to attach **before** executing (default `127.0.0.1:9229`) |
+| `--trace-store` | Post the run's trace spans to the platform trace store (scope from `UIPATH_*` env vars + `UIPATH_ACCESS_TOKEN`) |
 
 Exit code mirrors the job outcome: non-zero when the run would Fault. Fault mapping and the runtime-context shape → [job-mode-guide.md](job-mode-guide.md).
+
+### Attach a debugger
+
+`--inspect-wait` holds the run before the handler executes and keeps the process
+alive until the debugger disconnects, so breakpoints bind instead of being missed
+while the runtime starts. This is what the VS Code extension runs on F5.
+
+```bash
+uip function run --function <NAME> --input '{}' --inspect-wait 127.0.0.1:9229
+```
+
+Attach with a VS Code `attach` configuration on the same port, or any CDP client.
+`--inspect` opens the inspector without holding the run — use it when you only
+want the process inspectable, not paused. Both take the endpoint as an optional
+value, so the bare flag means `127.0.0.1:9229`.
+
+Breakpoints map back to the original `.ts` through the inline source map, so set
+them in your source file, not in generated output.
+
+Requires a `uip` whose bundled `@uipath/coded-functions-js-cli` is >= 0.1.83.
+Older builds forward the flags and the runner rejects them.
 
 Sharp edge: the CLI help for `run` may describe an HTTP invoke against the serve endpoint — that text is stale. `run` is the job runner; the flags above are the real surface and are forwarded correctly.
 
