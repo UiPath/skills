@@ -117,12 +117,40 @@ def main() -> None:
             "or =js:$vars.<node>.output.<field>"
         )
 
-    if not any(
-        e.get("sourceNodeId") == hitl_id
-        and e.get("sourcePort") in ("completed", "outcome-completed")
+    # The task's own prompt asks for approve/reject review and a downstream log
+    # step; it does not prescribe HOW the task exits, and the SDK offers two
+    # shapes that are both correct:
+    #
+    #   * the base node's 1.0 definition (and every variant: quick-form,
+    #     action-app, document-validation) declares one source handle,
+    #     `completed`;
+    #   * `outcomePorts: true` / `exposeError: true` select the base node's
+    #     1.1/1.2 definition, whose ONLY source handle is `outcome-{item.id}`
+    #     repeated over the outcomes. There is no `completed` handle there, and
+    #     an edge to one is refused by `uip maestro flow validate` as an
+    #     undeclared source handle.
+    #
+    # This gate used to require `completed` (or the `outcome-completed` special
+    # case added in #1477, which only helps when an outcome is literally NAMED
+    # "Completed"). An agent that took the second shape therefore failed a task
+    # it had satisfied — flow-builder-sdk#718, where the same task scored 1.0 the
+    # run before because the agent happened to pick the first shape. What the
+    # gate means to assert is that the review CONTINUES somewhere, so assert
+    # that.
+    exit_ports = {
+        str(e.get("sourcePort") or "")
         for e in edges
+        if e.get("sourceNodeId") == hitl_id
+    }
+    if not (
+        "completed" in exit_ports
+        or any(port.startswith("outcome-") for port in exit_ports)
     ):
-        fail("HITL completed handle must be wired")
+        fail(
+            "HITL completion must be wired: an edge on the 'completed' handle, or "
+            "per-outcome edges ('outcome-<id>') when outcomePorts/exposeError is used. "
+            f"Found {sorted(exit_ports) or 'no outgoing edges'}"
+        )
 
     scripts = [
         str(n.get("inputs", {}).get("script", ""))
@@ -133,7 +161,10 @@ def main() -> None:
     if not any(expected_output_path in script for script in scripts):
         fail(f"Downstream script must read HITL output via {expected_output_path}")
 
-    print(f"OK: HITL node {hitl_id} uses v1.0 schema, captures approval + reason, wires completed, and uses .output paths")
+    print(
+        f"OK: HITL node {hitl_id} uses a v1.x schema, captures approval + reason, "
+        f"continues on {sorted(exit_ports)}, and uses .output paths"
+    )
 
 
 if __name__ == "__main__":

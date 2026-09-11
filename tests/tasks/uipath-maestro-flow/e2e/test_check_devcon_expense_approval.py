@@ -19,7 +19,18 @@ def _flow_doc(
     fields: list[dict[str, Any]],
     outcomes: list[dict[str, Any]],
     script_body: str = "return $vars.reviewExpense.output.rejectionreason;",
+    node_type: str = "uipath.human-in-the-loop.quick-form",
+    type_version: str = "1.0",
+    exit_ports: tuple[str, ...] = ("completed",),
 ) -> dict[str, Any]:
+    """One HITL flow document.
+
+    `node_type` / `type_version` / `exit_ports` default to the shape every
+    existing test used (a quick-form task exiting on `completed`). They are
+    parameters because the SDK has a second, equally correct shape: with
+    `outcomePorts: true` the base node's 1.1 definition declares only
+    `outcome-{item.id}` handles and no `completed` one.
+    """
     return {
         "nodes": [
             {
@@ -31,8 +42,8 @@ def _flow_doc(
             },
             {
                 "id": "reviewExpense",
-                "type": "uipath.human-in-the-loop.quick-form",
-                "typeVersion": "1.0",
+                "type": node_type,
+                "typeVersion": type_version,
                 "inputs": {
                     "schema": {
                         "fields": fields,
@@ -49,10 +60,11 @@ def _flow_doc(
         "edges": [
             {
                 "sourceNodeId": "reviewExpense",
-                "sourcePort": "completed",
+                "sourcePort": port,
                 "targetNodeId": "logOutcome",
                 "targetPort": "input",
             }
+            for port in exit_ports
         ],
     }
 
@@ -158,6 +170,44 @@ def test_accepts_checker_frozen_without_sibling_shared_directory(tmp_path: Path)
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_accepts_outcome_ports_instead_of_completed(tmp_path: Path) -> None:
+    """The base node with `outcomePorts: true` has no `completed` handle.
+
+    Its 1.1 definition declares one source handle, `outcome-{item.id}`, repeated
+    over the outcomes; an edge on `completed` there is refused by
+    `uip maestro flow validate` as an undeclared source handle. This shape is
+    what flow-builder-sdk#718 failed on, having passed the run before with the
+    other shape.
+    """
+    _write_flow(
+        tmp_path,
+        _flow_doc(
+            fields=_approve_reject_fields("vars.fetchExpense.output.amount"),
+            outcomes=_APPROVE_REJECT_OUTCOMES,
+            node_type="uipath.human-in-the-loop",
+            type_version="1.1",
+            exit_ports=("outcome-approve", "outcome-reject"),
+        ),
+    )
+    result = _run_checker(tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_rejects_hitl_with_no_continuation(tmp_path: Path) -> None:
+    """Neither shape wired is still a failure — that is what the gate is for."""
+    _write_flow(
+        tmp_path,
+        _flow_doc(
+            fields=_approve_reject_fields("vars.fetchExpense.output.amount"),
+            outcomes=_APPROVE_REJECT_OUTCOMES,
+            exit_ports=(),
+        ),
+    )
+    result = _run_checker(tmp_path)
+    assert result.returncode != 0
+    assert "HITL completion must be wired" in result.stdout + result.stderr
 
 
 def test_rejects_hardcoded_hitl_input_binding(tmp_path: Path) -> None:
