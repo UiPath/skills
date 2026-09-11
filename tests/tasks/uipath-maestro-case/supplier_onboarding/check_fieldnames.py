@@ -6,7 +6,7 @@ Task-output property names are case-sensitive at runtime and **invisible to
 publishes clean, and then dies in Studio Web with `Status not found, did you mean
 status`, taking every task that reads it.
 
-Four assertions:
+Six assertions:
 
  1. Each of the eight connector tasks reads its delivery status from the lowercase
     wire path `response.status`.
@@ -18,6 +18,9 @@ Four assertions:
  4. Every dotted dereference in an expression reads a property whose root the plan
     actually holds, and the four file inputs the SDD dereferences are named exactly
     as declared.
+ 5. A connector container's field names are nested. A dotted sibling key leaves the
+    real field absent and the send answers 400.
+ 6. A nested extract output names its leaf and keeps the full path in `source`.
 
 Read-only. Exit 0 clean, 1 on findings.
 """
@@ -190,6 +193,41 @@ def main() -> int:
                 problems.append(
                     f"{path}: expression dereferences vars.{root}.{prop}, but {root!r} is "
                     "not a variable the plan holds — the read yields undefined"
+                )
+
+    # ---- 6. a connector container's field names are nested, never dotted ----
+    # `bodyParameters` takes dotted keys and `case spec` nests them, so the dotted form
+    # is correct on the way in and wrong in the plan. Integration Services reads the
+    # container's top level: a sibling key named `message.subject` leaves `Message`
+    # absent and the send answers 400 with that name.
+    for _stage, task in connector_tasks:
+        for entry in P.task_inputs(task):
+            body = entry.get("body")
+            if not isinstance(body, dict):
+                continue
+            dotted = sorted(k for k in body if "." in str(k))
+            if dotted:
+                problems.append(
+                    f"{P.task_name(task)!r}: container {entry.get('name')!r} carries "
+                    f"dotted field names {dotted}; the request reads the container's top "
+                    "level, so these leave the real field absent"
+                )
+
+    # ---- 7. a nested extract names its leaf, not the path it came from ------
+    # `io-binding/impl-json.md` gives `name` the leaf display name for a nested path and
+    # keeps the full path in `source`. A row naming `response.status` still writes its
+    # variable, because `var` is the write target, so nothing at runtime reports it.
+    for _stage, task in connector_tasks:
+        for entry in P.task_outputs(task):
+            source = str(entry.get("source") or "")
+            name = str(entry.get("name") or "")
+            if "." not in source.lstrip("="):
+                continue
+            if "." in name:
+                problems.append(
+                    f"{P.task_name(task)!r}: extract output names {name!r}, the whole "
+                    f"path; a nested row names its leaf {source.lstrip('=').split('.')[-1]!r} "
+                    "and keeps the path in `source`"
                 )
 
     # The four supporting documents must still be read by the task that assesses them.

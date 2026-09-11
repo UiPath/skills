@@ -1209,6 +1209,42 @@ class FieldNameTests(CheckerBase):
         })
         self.rejects(plan, "not a variable the plan holds")
 
+    def _connector_task(self, plan):
+        """The same selector the checker uses, so a mutation lands where it looks."""
+        for node in plan["nodes"]:
+            for item in tasks_of(node):
+                if item.get("type") == "execute-connector-activity":
+                    return item, item.setdefault("data", {})
+        self.fail("the baseline has no connector task")
+
+    def test_rejects_a_container_whose_field_names_are_dotted(self):
+        """Run 34558832471 shipped four dotted sibling keys on all eight sends, and
+        Integration Services answered `The missing parameters are: Message.`"""
+        plan = baseline_plan()
+        _item, data = self._connector_task(plan)
+        for entry in data.get("inputs") or []:
+            if entry.get("name") == "body":
+                entry["body"] = {
+                    "message.toRecipients": "=js:(vars.contactEmail)",
+                    "message.subject": "subject",
+                }
+                break
+        else:
+            self.fail("the baseline connector task has no `body` container")
+        self.rejects(plan, "dotted field names")
+
+    def test_rejects_an_extract_output_named_by_its_whole_path(self):
+        """`io-binding/impl-json.md` gives `name` the leaf for a nested path. The row
+        still writes its variable through `var`, so nothing at runtime reports it."""
+        plan = baseline_plan()
+        _item, data = self._connector_task(plan)
+        (data.setdefault("outputs", [])).append({
+            "name": "response.status", "type": "string", "id": "status",
+            "var": "lastEmailStatus", "value": "lastEmailStatus",
+            "source": "=response.status", "target": "=status", "originalVar": "status",
+        })
+        self.rejects(plan, "the whole path")
+
     def test_accepts_pascal_case_output_labels(self):
         """A PascalCase `displayName` is a label, not the wire path."""
         plan = baseline_plan()
