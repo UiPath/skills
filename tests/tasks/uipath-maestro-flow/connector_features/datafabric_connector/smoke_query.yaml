@@ -19,6 +19,10 @@ pre_run:
     timeout: 120
 
 initial_prompt: |
+  Build this with the UiPath Data Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for every entity operation —
+  not the native `core.datafabric.*` nodes.
+
   Build a Flow against FlowCodeEvalEntity that runs read-only record queries —
   do NOT modify any records. Use exactly THREE Query Entity Records activities,
   not one activity per condition.
@@ -40,6 +44,10 @@ initial_prompt: |
   offset/start 0. Query 2 must reuse the same nine-condition FilterBuilder
   tree, sort, and limit, but use offset/start 2 for the next page. Query 3 must
   filter active equals true, sort by score descending, and use a limit of 4.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

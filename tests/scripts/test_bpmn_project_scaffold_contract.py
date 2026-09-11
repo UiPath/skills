@@ -4,38 +4,13 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
-from pathlib import Path
 from uuid import UUID
 
-
-ROOT = Path(__file__).resolve().parents[2]
-REFERENCE = (
-    ROOT
-    / "skills"
-    / "uipath-maestro-bpmn"
-    / "references"
-    / "structural-bpmn.md"
-)
-NS = {
-    "bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL",
-    "bpmndi": "http://www.omg.org/spec/BPMN/20100524/DI",
-    "di": "http://www.omg.org/spec/DD/20100524/DI",
-    "uipath": "http://uipath.org/schema/bpmn",
-}
-
-
-def _minimal_example() -> ET.Element:
-    section = REFERENCE.read_text(encoding="utf-8").split(
-        "## A complete minimal file",
-        maxsplit=1,
-    )[1]
-    match = re.search(r"```xml\n(?P<xml>.*?)\n```", section, re.DOTALL)
-    assert match, "structural-bpmn.md is missing its complete minimal XML example"
-    return ET.fromstring(match.group("xml"))
+from bpmn_doc_example import NS, REFERENCE, minimal_example
 
 
 def test_minimal_example_has_supported_root_contract() -> None:
-    root = _minimal_example()
+    root = minimal_example()
     process = root.find("bpmn:process", NS)
     assert process is not None
     assert process.attrib.get("isExecutable") in (None, "false")
@@ -62,7 +37,7 @@ def test_minimal_example_has_complete_di_coverage() -> None:
     (0x0 bounds and single-waypoint edges report Valid on uip 1.203.0).
     """
 
-    root = _minimal_example()
+    root = minimal_example()
     process = root.find("bpmn:process", NS)
     assert process is not None
 

@@ -19,7 +19,7 @@ Confirm:
 - `outputDefinition.output.schema`: top-level `id` (string) and `content` (object|null), with `content.Text` (string) and `content.Citations` (array|null) containing `{ Ordinal: integer, PageNumber: integer, Source: string, Reference: string }`.
 - `outputDefinition.error.schema.required`: `code`, `message`, `detail`, `category`, `status`.
 
-If the command returns **"Node type not found: uipath.pattern.deep-rag"**, run `uip tools update` and `uip maestro flow registry pull --force`. If it still fails, confirm with a UiPath admin that the tenant's `canvas.nodes.summarize` server flag is enabled.
+If the command returns **"Node type not found: uipath.pattern.deep-rag"**, run `uip tools update` and `uip maestro flow registry pull --force`. If it still fails, this CLI build does not carry the node — there is no tenant setting behind it and no admin to escalate to.
 
 ## Authoring and attachment wiring
 
@@ -170,7 +170,7 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | Run `uip tools update` and `uip maestro flow registry pull --force`; if still missing, check with an admin that `canvas.nodes.summarize` is enabled |
+| `Node type not found: uipath.pattern.deep-rag` | This CLI build predates Summarize support | Run `uip tools update` and `uip maestro flow registry pull --force`; no tenant setting governs this, so there is no admin to escalate to |
 | Runtime: synthesis returns empty `content.Text` | Prompt is vague, or attachment is unreadable, such as an image-only PDF with no OCR or a corrupted file | Tighten the prompt; confirm the attachment type is supported and has selectable text |
 | `content.Citations` missing despite `returnCitations: true` | A downstream consumer read `inputDefaults` before runtime output existed | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
 | Downstream `result.content.text` / `result.content.citations` is `undefined` | Lowercase field names were used | Use `result.content.Text` / `result.content.Citations` |

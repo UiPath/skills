@@ -12,8 +12,8 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-nod
 run_limits:
   expected_turns: 40
   max_turns: 100
-  turn_timeout: 1800
-  task_timeout: 2400
+  turn_timeout: 2700
+  task_timeout: 5400
 
 pre_run:
   - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-uipath-dataservice'
@@ -22,6 +22,10 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
+  Build this with the UiPath Data Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for every entity operation —
+  not the native `core.datafabric.*` nodes.
+
   Build a UiPath Flow against the `ContractRegistry` Data Fabric entity
   (fields: contractTitle STRING, status STRING, priority INTEGER,
   dueDate DATE, value DECIMAL, isUrgent BOOLEAN) that exercises the
@@ -47,6 +51,10 @@ initial_prompt: |
 
   5. Delete Entity Record — bind recordId to the create activity's
      output Id.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 
