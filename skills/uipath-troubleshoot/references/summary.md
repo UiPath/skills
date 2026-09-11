@@ -299,6 +299,28 @@ Namespaces: `UiPath.IPC.Activities`
 - [activity-packages/ipc-activities/summary.md](./activity-packages/ipc-activities/summary.md) — All playbooks for IPC Activities issues
 
 
+## Domains without a playbook corpus
+
+These products have no playbooks, no overview, and no investigation guide in this skill. Routing (SKILL.md §4) can never produce a grep hit for them, and escalation cannot recover — there are no candidate playbooks to probe. Classify the domain here, then delegate evidence-gathering to the owning skill, which supplies the documented commands invariant 3 requires.
+
+| Domain | CLI | Owning skill | Typical diagnostic ask |
+|---|---|---|---|
+| Insights | `uip insights --help` | `uipath-insights` | Alert did not fire or was not delivered; job-failure metrics; process performance regression |
+| Automation Ops | `uip aops --help` | `uipath-aops` | Pipeline run failed or produced no artifact; source-control binding not resolving |
+| Test Manager | `uip tm --help` | `uipath-test` | Test case or test set failing; results not reported back |
+| Governance | `uip gov --help` | `uipath-governance` | Policy not taking effect; a tool invocation blocked unexpectedly; deployment precedence |
+| Data Fabric | `uip df --help` | `uipath-platform` | Entity or record read/write returning wrong or empty data; choice-set mismatch |
+| IXP | `uip ixp --help` | `uipath-ixp` | Extraction returning wrong or missing fields; a deployment serving an unexpected model version |
+| Process Mining | `uip pm --help` | `uipath-process-mining` | Ingest or dbt transformation failing; dashboards not opening; a query returning nothing |
+| Solutions | `uip solution --help` | `uipath-solution` | Deploy failing or stuck; a package or binding not resolving at deploy time |
+| Identity & Admin | `uip admin --help` | `uipath-admin` | Access denied, login failure, role misconfiguration, IP lockout; org/tenant audit trail |
+| Actions / HITL | `uip tasks --help` | `uipath-tasks` | Action not appearing, not assignable, or not resuming its parent job |
+| Traces / LLMOps | `uip traces --help` | `uipath-platform` | Spans missing or truncated for a run |
+
+**Delegation protocol.** Spawn ONE read-only subagent, name the owning skill, and give it the anchored entity plus the signals recorded in §3. Ask it for evidence, not a diagnosis: the commands it ran, their verbatim output, and the `.local/investigations/raw/` paths it wrote them to. Adjudicate that evidence yourself against the §6 checklist — a subagent's conclusion is an input, never the verdict.
+
+**Degradation.** If no subagent-spawning tool is available, or the owning skill is not installed, name the product the problem belongs to and the evidence needed, then go to §7. Never guess commands for these domains — invariant 3 holds here exactly as it does everywhere else.
+
 ## Playbooks
 
 All playbooks use the same headers: `## Context`, `## Investigation` (optional), `## Resolution` (optional). They vary by confidence level:

@@ -32,7 +32,7 @@ ALL phases. Never override.
 
 ## 2. Anchor & primary evidence
 
-1. **Classify (system, entity) from the user's message.** Cross-check against `references/summary.md` domains.
+1. **Classify (system, entity) from the user's message.** Cross-check against `references/summary.md` domains — including its § Domains without a playbook corpus, which covers the products this skill carries no playbooks for.
 2. **Branch on anchor presence:**
    - **Anchored** — user named a concrete locator (id/key, process/package/queue/folder name, instance/incident id, specific error code/message), or the working directory contains a recognisable UiPath project at top level (`project.json`, `agent.json`, `caseplan.json`). Run the first locator command documented in the system's `investigation_guide.md`; if the system has no guide, proceed with the user-supplied signals to §3–§4 — the matched playbook's `## Investigation` supplies the commands.
    - **No anchor** — ask via `AskUserQuestion`, offering plausible anchor candidates. Do NOT broad-scan, do NOT fetch a placeholder entity, do NOT enumerate folders/queues hoping to find the right one. A bounded locate pass only if the user explicitly authorizes a scan — then confirm the candidate with them.
@@ -54,6 +54,7 @@ Grep the playbook corpus for each extracted signal — fixed-string, filenames o
 - **One dominant playbook** — most distinct signal hits; ties break by reading each hit's `## Context` and keeping the one whose preconditions fit the evidence; honor a playbook's explicit redirects to sibling playbooks. → Load ONLY that playbook + its domain's `investigation_guide.md` (if the domain has one). Go to §5.
 - **Cross-domain signal** — evidence carries a key/ID/exception belonging to another product (e.g., an Excel fault wrapping an Integration Service connection error, an Orchestrator job spawned by a Maestro instance). → Follow the chain **one hop**: fetch the linked entity's error surface, extract its signals, re-grep. The upstream playbook drives the resolution; the downstream domain contributes a propagation fix (`references/presenting.md`). Deeper than one hop → escalate.
 - **Fault signal but no grep hit** — map the faulting activity/exception namespace to its owning domain (`references/summary.md`) and check that domain's `summary.md` for a family playbook covering the activity. One dominant family playbook → proceed to §5 with it. Still nothing → escalate.
+- **Domain has no playbook corpus** — the classified domain is listed in `references/summary.md` § Domains without a playbook corpus (Insights, Automation Ops, Test Manager, Governance, Data Fabric, IXP, Process Mining, Solutions, Identity & Admin, Actions/HITL, Traces). A grep hit is impossible and escalation has nothing to probe. → Delegate evidence-gathering to the owning skill per that section's protocol, then resume at §5 with the returned evidence. Do NOT escalate first.
 - **No match, or an escalation trigger (§7) fires** → load `references/escalation.md`. For silent failures (no fault signal anywhere: job Successful but wrong output, hang, stuck state), enter via the no-signature routing table in `references/summary.md`.
 
 ## 5. Walk the playbook
@@ -90,7 +91,7 @@ Any check fails → ONE targeted re-fetch for the missing datum. Still failing �
 
 Load `references/escalation.md` when ANY of:
 
-1. **No playbook grep match** — silent failure, hang, wrong results, nothing greppable.
+1. **No playbook grep match** — silent failure, hang, wrong results, nothing greppable. A domain listed in `references/summary.md` § Domains without a playbook corpus does NOT fire this trigger — delegate per §4 first, and escalate only if that returns no usable evidence.
 2. **≥2 co-equal matches** with distinct, independent signatures (different activities/error codes, neither upstream of the other).
 3. **Cross-domain chain deeper than one hop**, or the one-hop follow contradicts the original match.
 4. **Decision tree exhausted** — every branch rejected, or a discriminator stays inconclusive after its named evidence is gathered.
