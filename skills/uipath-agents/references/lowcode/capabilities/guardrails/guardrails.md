@@ -10,6 +10,8 @@ Two types exist:
 
 > **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** the `agent.json` root `guardrails[]` is **authoritative** (source for the Studio Web UI and both runtimes); each Tool-scoped guardrail is also mirrored into the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` — see § Conversational Support below.
 
+> **This reference is the schema authority — do not inspect CLI internals.** The JSON shapes and examples in this file are authoritative and complete. Do NOT reverse-engineer guardrail schemas from the CLI installation: never grep `/usr/lib/node_modules/@uipath/**/dist/*.js`, read bundled/minified sources, or import-probe SDK packages to "confirm" a field. Copy the complete example for your guardrail type, adapt the values, then run `uip agent refresh "<AGENT_NAME>" --output json` and `uip agent validate "<AGENT_NAME>" --output json` — validate is the only schema check needed, and its errors name the offending field. Write the guardrail first and let validate correct you; do not spend turns pre-verifying a schema this file already gives you.
+
 ## Conversational Support
 
 **Status: Custom (deterministic) `Tool`-scoped guardrails ONLY. No built-in validators.** Built-in validators (any `$guardrailType: "builtInValidator"` — the validators returned by `uip agent guardrails list`; see the [Validators Quick Reference](#validators-quick-reference)) are autonomous-only — the conversational runtime never runs them, at any scope. The only guardrails that run are `$guardrailType: "custom"` deterministic rules (word/number/boolean/always) with `selector.scopes: ["Tool"]`. Write each as the **same object (same `id`) in two places** — the `agent.json` root `guardrails[]` is **authoritative** (source for the Studio Web UI and both runtimes); the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` is its **mirror**. Write both (the CLI doesn't auto-sync), but a guardrail present only in the tool resource is invisible in Studio Web and does not run on the Unified (Python) runtime. `"Agent"` and `"Llm"` scopes are not available. If asked for PII / harmful-content / injection detection, explain built-in validators are autonomous-only and offer a Custom Tool guardrail or an autonomous agent instead.
@@ -497,6 +499,31 @@ Numeric comparison against field values.
 
 **Operators:** `equals`, `doesNotEqual`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`
 
+Complete example — log a Warning when a tool's numeric `sum` output exceeds 100:
+
+```json
+{
+  "$guardrailType": "custom",
+  "id": "<uuid>",
+  "name": "Warn on high source count",
+  "description": "Logs a warning when the sum output exceeds the allowed limit",
+  "enabledForEvals": true,
+  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
+  "action": { "$actionType": "log", "severityLevel": "Warning" },
+  "rules": [
+    {
+      "$ruleType": "number",
+      "fieldSelector": {
+        "$selectorType": "specific",
+        "fields": [{ "path": "sum", "source": "output" }]
+      },
+      "operator": "greaterThan",
+      "value": 100
+    }
+  ]
+}
+```
+
 #### Boolean Rules (`$ruleType: "boolean"`)
 
 Boolean equality check.
@@ -507,6 +534,31 @@ Boolean equality check.
 | `fieldSelector` | object | Yes | Field selector |
 | `operator` | `"equals"` | Yes | Only `equals` is supported |
 | `value` | boolean | Yes | `true` or `false` |
+
+Complete example — block a tool call when its boolean `verified` input is `false`:
+
+```json
+{
+  "$guardrailType": "custom",
+  "id": "<uuid>",
+  "name": "Block unverified requests",
+  "description": "Blocks the tool call when the verified flag is false",
+  "enabledForEvals": true,
+  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
+  "action": { "$actionType": "block", "reason": "Request is not verified" },
+  "rules": [
+    {
+      "$ruleType": "boolean",
+      "fieldSelector": {
+        "$selectorType": "specific",
+        "fields": [{ "path": "verified", "source": "input" }]
+      },
+      "operator": "equals",
+      "value": false
+    }
+  ]
+}
+```
 
 #### Always / Universal Rules (`$ruleType: "always"`)
 
@@ -1045,6 +1097,8 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 19. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
 20. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
 21. **Do not assume `Validator` is unique** — a tenant can have both a built-in and one or more bring-your-own (BYOG) entries sharing the same `Validator` name. Always check `IsByo` before treating two same-named entries as a duplicate or conflict, and set `byoValidatorName` when targeting a specific BYO entry. See [BYO (bring-your-own) guardrails](#byo-bring-your-own-guardrails).
+22. **Do not leave a key in `harmfulContentEntityThresholds` (or any `map-enum` threshold parameter, e.g. `entityThresholds`) that is not in the corresponding entities list** — threshold keys must exactly match the selected entities: no extra keys, no missing keys. `uip agent validate` does NOT flag the mismatch, so a stale extra key passes validation and silently misconfigures the guardrail. When editing the entities list, prune the thresholds map in the same edit.
+23. **Do not reverse-engineer guardrail schemas from the CLI installation or SDK packages** — never grep `/usr/lib/node_modules/@uipath/**/dist/*.js`, read minified bundles, or import-probe packages to confirm a field. This reference is the schema authority (see [Overview](#overview)); write the guardrail from the complete examples here and let `uip agent validate` confirm the shape.
 
 ## Walkthrough
 
