@@ -26,9 +26,16 @@ can see:
    script that ignores the agent.
 5. **The draft is not written in.** No literal invoice number, credit amount, or
    canned email body anywhere in the flow.
+6. **The drafted resolution is POSTED to Slack.** `correlationId` is a declared
+   input; `caseKey`/`slackMessageId` are declared routed outputs; exactly one Slack
+   `send-message-to-channel` node sends as `user`; the message depends on the agent
+   step (so a canned template over the trigger inputs is refused offline); `caseKey`
+   routes the correlationId and `slackMessageId` comes from the executed send.
 
 Usage: advisory_billing_resolution_writer.py [<FlowName>.flow]
 """
+
+import json
 
 from advisory_flow_utils import (
     agent_prompt_text,
@@ -46,6 +53,14 @@ from advisory_flow_utils import (
 INLINE = "uipath.agent.autonomous"
 IN_CONTRACT = ["customerName", "invoiceNumber", "creditAmount"]
 OUT_CONTRACT = {"emailSubject": "string", "emailBody": "string"}
+# correlationId is a flow INPUT but not drafting material, so it is not in
+# IN_CONTRACT (which gates what the agent must be fed); it is required as a
+# declared in-global only. caseKey/slackMessageId are routed outputs, not
+# agent-drafted, so they are not in OUT_CONTRACT (which gates agent-dependency).
+ROUTED_IN = "correlationId"
+ROUTED_OUT = {"caseKey": "string", "slackMessageId": "string"}
+SLACK_KEY = "uipath-salesforce-slack"
+SLACK_OP = "send-message-to-channel"
 # The values the live rung asserts. None may be a literal in the flow.
 FORBIDDEN = ["MCS-2026-04872", "Northwind Traders"]
 FORBIDDEN_NUMBERS = ["1610", "1,610"]
@@ -138,6 +153,81 @@ def main():
     for bad in FORBIDDEN_NUMBERS:
         if carries_literal(f, bad):
             fail(f"the flow carries the credit amount {bad!r} as a literal; it arrives as a flow INPUT")
+
+    # ── 6. the drafted resolution is POSTED to Slack ──────────────────────────
+    # correlationId is a declared flow input; caseKey + slackMessageId are declared
+    # routed outputs.
+    if ROUTED_IN not in ins_g:
+        fail(f"the flow declares in-globals {sorted(ins_g)}; the contract asks for {ROUTED_IN}")
+    for name, want in ROUTED_OUT.items():
+        if name not in outs_g:
+            fail(f"the flow declares out-globals {sorted(outs_g)}; the contract asks for {name}")
+        if outs_g[name].get("type") != want:
+            fail(f"output {name} is declared {outs_g[name].get('type')!r}; the contract asks for {want}")
+
+    # Exactly one Slack SEND node (native connector node or connector-mode HTTP
+    # proxy to the send op) — a read/search activity is not a delivery.
+    def _bound(v):
+        return v is not None and (not isinstance(v, str) or v.strip() != "")
+
+    def is_slack_send(n: dict) -> bool:
+        t = str(n.get("type", ""))
+        if SLACK_KEY in t and SLACK_OP in t:
+            return True
+        detail = (n.get("inputs") or {}).get("detail") or {}
+        if not isinstance(detail, dict):
+            return False
+        body = detail.get("bodyParameters") or {}
+        body = body if isinstance(body, dict) else {}
+        target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
+        auth = str(body.get("authentication") or "").lower()
+        # Mirror the live gate (_connector_node_ids): a connector-mode HTTP proxy
+        # counts only with a real bound connection. Without connectionId +
+        # connectionFolderKey it would pass here but fail assert_slack_message_posted
+        # with "no connected send node found".
+        return (
+            t.lower().startswith("core.action.http")
+            and target == SLACK_KEY
+            and auth == "connector"
+            and _bound(detail.get("connectionId"))
+            and _bound(detail.get("connectionFolderKey"))
+            and SLACK_OP.replace("-", "") in json.dumps(detail).lower().replace("-", "").replace("_", "")
+        )
+
+    slack_nodes = [n for n in nodes if is_slack_send(n)]
+    if len(slack_nodes) != 1:
+        fail(f"expected exactly ONE Slack {SLACK_OP} node, found {len(slack_nodes)}; node types: {types_seen}")
+    slack = slack_nodes[0]
+
+    # Send as `user`, not the default bot.
+    send_as = str(((slack.get("inputs") or {}).get("detail") or {}).get("queryParameters", {}).get("send_as", "")).strip().lower()
+    if send_as != "user":
+        fail(f"the Slack send node sets send_as={send_as!r}; the prompt requires sending as 'user'")
+
+    # The posted message must depend on the agent's draft — a canned template over
+    # trigger inputs (correlationId, invoice, credit) would satisfy an ids-only gate
+    # without ever posting the resolution. This is the structural, offline-catchable
+    # form of the live checker's body[:80] assertion.
+    if not source_depends_on(slack.get("inputs") or {}, a["id"], dependencies):
+        fail(
+            f"the Slack node's inputs do not depend on $vars.{a['id']}.output — the message "
+            "must carry the agent's drafted resolution, not only the trigger inputs"
+        )
+
+    # caseKey routes the correlationId; slackMessageId comes from the Slack send.
+    case_bindings = end_bindings(nodes, success_ends, "caseKey")
+    if not case_bindings:
+        fail("no successful End node binds an output named 'caseKey'")
+    if not any(references_field(v, ROUTED_IN) for v in case_bindings):
+        fail(f"caseKey has bindings {[str(unwrap(v)) for v in case_bindings]!r}; it must route the {ROUTED_IN}")
+    ts_bindings = end_bindings(nodes, success_ends, "slackMessageId")
+    if not ts_bindings:
+        fail("no successful End node binds an output named 'slackMessageId'")
+    if not any(source_depends_on(v, slack["id"], dependencies) for v in ts_bindings):
+        fail(
+            f"slackMessageId has bindings {[str(unwrap(v)) for v in ts_bindings]!r}, none depending on "
+            f"$vars.{slack['id']}.output — the posted message's ts must come FROM the executed send"
+        )
 
     print(
         f"{len(nodes)} nodes; one {INLINE} ({a['id']}) fed {declared or 'via prompt refs'}, "
