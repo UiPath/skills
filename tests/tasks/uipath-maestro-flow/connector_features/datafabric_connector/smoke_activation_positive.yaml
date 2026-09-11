@@ -2,7 +2,7 @@ task_id: skill-flow-datafabric-smoke-activation-positive
 description: >
   Activation smoke: representative Data Fabric prompt routes to the
   uipath-maestro-flow skill.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, connector, uipath-uipath-dataservice]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover]
 
 run_limits:
   max_turns: 25
