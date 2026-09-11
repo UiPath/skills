@@ -13,23 +13,39 @@ description: >
   Covers the four history filters and the two paging flags that the existing
   alerts smoke leaves untouched: it asserts the verbs, this asserts the
   filters. `--since`/`--until` stay out because
-  `smoke_absolute_time_range.yaml` already owns absolute bounds.
+  `absolute_window_triage_smoke.yaml` owns absolute bounds.
+
+  The prompt hands over literal filter values (an alert name, two severities,
+  two folder names) instead of asking the agent to derive them from what
+  fired. An earlier revision said "for whichever alert has fired", which made
+  every filter conditional on the tenant holding trigger history; run
+  34651167282 had none in the window, so the agent correctly ran a bare
+  `alert-history list` and three filter criteria scored zero. Same
+  tenant-agnosticism rule the rbac smoke states: never gate a criterion on
+  data an empty tenant cannot supply.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 12
 
 initial_prompt: |
-  Something has been firing alerts and I need the shape of it. Find the alert
-  definitions on this tenant, then for whichever alert has fired take its
-  history over the last 30 days and narrow it down for me: only the ERROR and
-  WARN triggers, and only the folders those triggers landed in. Then give me
-  the trigger counts bucketed by day over the same window. Use the filters the
-  commands accept rather than filtering the output yourself, and get the
-  counts from the CLI rather than counting rows. If the output says more rows
-  exist, page through them before you summarize. If a category comes back
-  empty, say so plainly and say what that does and does not prove. Run each
-  command at most once per page; do not retry failures.
+  I need alert trigger history over the last 30 days, narrowed four different
+  ways. Run each of these as its own read, and run all four even when an
+  earlier one comes back empty, because an empty result is a real answer here
+  and I want to know which filters return nothing:
+
+  1. Only the alert named "Queue backlog".
+  2. Only the ERROR and WARN severities.
+  3. Only the folders named "Shared" and "Finance".
+  4. The first page and then the second page of the unfiltered history, 50
+     rows at a time.
+
+  Then give me the trigger counts bucketed by day over the same window, from
+  the CLI rather than by counting rows yourself.
+
+  Use the filters the commands accept rather than filtering output yourself.
+  For each read that returns nothing, say so plainly and say what that does
+  and does not prove. Run each command at most once; do not retry failures.
 
 success_criteria:
   - type: skill_triggered
