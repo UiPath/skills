@@ -101,3 +101,5 @@ Omit repeatCount segment for infinite (`R/...`). Omit datetime segment if no sta
 Confirm task exists in the correct stage with `type: "wait-for-timer"` and `data.timerType` + duration field set.
 
 <!-- END: impl-json.md -->
+
+<!-- control branch: no content change, forces the same task set -->
