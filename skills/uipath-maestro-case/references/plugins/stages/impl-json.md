@@ -35,7 +35,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
   "type": "case-management:Stage",
   "data": {
     "label": "<displayName>",
-    "description": "<stage Design Rationale from sdd.md, or its Description when the SDD has no rationale>",
+    "description": "<stage Design Rationale from sdd.md, copied verbatim; its Description when the SDD has no rationale>",
     "isRequired": <true|false from sdd.md; false if unspecified>,
     "parentElement": { "id": "root", "type": "case-management:root" },
     "isInvalidDropTarget": false,
@@ -64,7 +64,7 @@ Same as a primary Stage, with `data.stageType: "secondary"` and two additional `
   "data": {
     "stageType": "secondary",
     "label": "<displayName>",
-    "description": "<stage Design Rationale from sdd.md, or its Description when the SDD has no rationale>",
+    "description": "<stage Design Rationale from sdd.md, copied verbatim; its Description when the SDD has no rationale>",
     "isRequired": <true|false from sdd.md; false if unspecified>,
     "parentElement": { "id": "root", "type": "case-management:root" },
     "isInvalidDropTarget": false,
