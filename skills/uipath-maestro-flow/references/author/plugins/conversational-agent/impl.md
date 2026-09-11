@@ -233,7 +233,7 @@ So split the instructions by destination — *what to say* and *response instruc
 | system prompt | "Thank the user when they would like to end the conversation." |
 | `endConversation` (boolean) `description` | "Set to true when the user intends to end the conversation." |
 
-**Do not name the output field and how to set it in the system prompt.** Because the chat reply is generated from the system prompt alone, an instruction like "set `endConversation` to `true` when the user says goodbye" may make the LLM emit the structured value to the chat or look for a tool to set the output variables.
+**Do not name the output field and how to set it in the system prompt.** An instruction like "set `endConversation` to `true` when the user says goodbye" in the system prompt may make the LLM emit the structured value to the chat or look for a tool to set the output variables.
 
 ## Wire the Edges
 
