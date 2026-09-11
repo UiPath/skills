@@ -106,7 +106,7 @@
       "last_synced": null
     },
     "uipath-human-in-the-loop": {
-      "status": "in-development",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
