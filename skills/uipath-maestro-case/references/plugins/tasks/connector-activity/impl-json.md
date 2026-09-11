@@ -211,7 +211,7 @@ Generate the task skeleton:
   "elementId": "<stageId>-<taskId>",
   "isRequired": "<from sdd.md Required, default true>",
   "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
-  "description": "<task Design Rationale from sdd.md>",
+  "description": "<task Design Rationale from sdd.md, or its Description when the SDD has no rationale>",
   "data": {
     "serviceType": "Intsvc.ActivityExecution",
     "context": "<caseShape.context — placeholders substituted in Step 6>",
