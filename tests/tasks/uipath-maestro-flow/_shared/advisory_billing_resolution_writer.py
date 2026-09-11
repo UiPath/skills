@@ -35,6 +35,8 @@ can see:
 Usage: advisory_billing_resolution_writer.py [<FlowName>.flow]
 """
 
+import json
+
 from advisory_flow_utils import (
     agent_prompt_text,
     carries_literal,
