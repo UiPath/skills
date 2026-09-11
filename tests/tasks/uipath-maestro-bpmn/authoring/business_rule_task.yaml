@@ -2,7 +2,11 @@ task_id: skill-bpmn-business-rule-task
 description: >
   Author a Maestro BPMN process that uses a dedicated business rule task,
   proving the Orchestrator.BusinessRules row is covered by an eval and not
-  only by static fixtures.
+  only by static fixtures. The package-metadata assertions accept either
+  shape that ships today: `uip maestro bpmn refresh` output (operate.json
+  main as /content/<bpmn>#<start>, package-descriptor.json as a files map)
+  or hand-authored synthetic metadata using bare names and a content array
+  — this task does not mandate the CLI generators.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:business-rule", "feature:orchestrator"]
 
 run_limits:
