@@ -1245,6 +1245,19 @@ class FieldNameTests(CheckerBase):
         })
         self.rejects(plan, "the whole path")
 
+    def test_rejects_a_probe_value_left_in_a_container(self):
+        """Run 34613296008 shipped `message.body.content: "test"` on one of eight sends,
+        left over from asking the validator what shape it wanted."""
+        plan = baseline_plan()
+        _item, data = self._connector_task(plan)
+        for entry in data.get("inputs") or []:
+            if entry.get("name") == "body":
+                entry.setdefault("body", {})["message"] = {"body": {"content": "test"}}
+                break
+        else:
+            self.fail("the baseline connector task has no `body` container")
+        self.rejects(plan, "probe value")
+
     def test_accepts_pascal_case_output_labels(self):
         """A PascalCase `displayName` is a label, not the wire path."""
         plan = baseline_plan()

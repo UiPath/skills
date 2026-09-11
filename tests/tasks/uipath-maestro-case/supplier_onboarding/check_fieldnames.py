@@ -6,7 +6,7 @@ Task-output property names are case-sensitive at runtime and **invisible to
 publishes clean, and then dies in Studio Web with `Status not found, did you mean
 status`, taking every task that reads it.
 
-Six assertions:
+Seven assertions:
 
  1. Each of the eight connector tasks reads its delivery status from the lowercase
     wire path `response.status`.
@@ -21,6 +21,8 @@ Six assertions:
  5. A connector container's field names are nested. A dotted sibling key leaves the
     real field absent and the send answers 400.
  6. A nested extract output names its leaf and keeps the full path in `source`.
+ 7. No probe value a build used to interrogate the validator survives into a
+    container field.
 
 Read-only. Exit 0 clean, 1 on findings.
 """
@@ -35,8 +37,32 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import expected as E  # noqa: E402
 import caseplan_reader as P  # noqa: E402
 
+# Values a build leaves behind when it probes the validator. `string` is excluded on
+# purpose: it is a legitimate `bindings[].type`.
+_PROBE_VALUES = frozenset({
+    "test", "tests", "placeholder", "xxx", "todo", "tbd", "foo", "bar", "baz",
+    "dummy", "sample", "example", "changeme", "asdf", "lorem",
+})
+
 # `vars.<root>.<prop>` — a dereference off a case variable inside an expression.
 _DOTTED_RE = re.compile(r"vars\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)")
+
+
+def _leaf_values(node: object, prefix: str = "") -> list[tuple[str, str]]:
+    """Every string leaf under a container, addressed by its dotted path.
+
+    The real case sat at `body.message.body.content`, so a top-level scan misses it.
+    """
+    out: list[tuple[str, str]] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            out += _leaf_values(value, f"{prefix}.{key}" if prefix else str(key))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            out += _leaf_values(value, f"{prefix}[{index}]")
+    elif isinstance(node, str):
+        out.append((prefix, node))
+    return out
 
 
 def main() -> int:
@@ -229,6 +255,24 @@ def main() -> int:
                     f"path; a nested row names its leaf {source.lstrip('=').split('.')[-1]!r} "
                     "and keeps the path in `source`"
                 )
+
+    # ---- 8. no probe value survives into a container -----------------------
+    # A build that appends test entries to ask the validator what it wants can leave one
+    # behind: run 34613296008 shipped `message.body.content: "test"` on one of eight
+    # sends. `string` is deliberately absent from the list below, because 11883 legitimate
+    # `bindings[].type` values carry it; scoped to container field values, the remaining
+    # tokens matched exactly the one real case across 31 runs.
+    for _stage, task in connector_tasks:
+        for entry in P.task_inputs(task):
+            body = entry.get("body")
+            if not isinstance(body, dict):
+                continue
+            for path, value in _leaf_values(body):
+                if value.strip().lower() in _PROBE_VALUES:
+                    problems.append(
+                        f"{P.task_name(task)!r}: container {entry.get('name')!r} field "
+                        f"{path!r} carries the probe value {value.strip()!r}"
+                    )
 
     # The four supporting documents must still be read by the task that assesses them.
     # The fixture reads them through a guarded array walk, so assert the variables are
