@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -28,6 +29,67 @@ REFERENCE_CASES = {
 }
 
 
+# The native `core.datafabric.read` build of each scenario. Tenant availability
+# decides the shape, so a correct build comes in either one and every advisory
+# has to grade both — the 2026-09-11 dispute-resolution run scored 0.727 on a
+# flow that validated, debugged green, and returned the right answer, because
+# the advisory demanded a `connection` binding the native node never has.
+#
+# The dispute-resolution case IS that run's artifact, kept verbatim. The other
+# two are derived from their connector reference below, so the computed filter
+# under test stays the reference's and not the test's.
+NATIVE_REFERENCE_CASE = (
+    "advisory_billing_dispute_resolution.py",
+    "multi_node/billing_dispute_resolution/BillingDisputeResolution.native.reference.flow",
+)
+# Entity -> the column its filter matches on, for `_to_native_reads`.
+NATIVE_FILTER_FIELDS = {
+    "BillingDisputeERP": "invoiceNumber",
+    "BillingDisputeCRM": "accountNumber",
+}
+# The connector reference spells its filter as one CEQL template,
+# `=js:`<column> = '${<expression>}'`` — the interpolation is the value a native
+# filter row carries on its own.
+CEQL_TEMPLATE = re.compile(r"^=js:`(\w+) = '\$\{(.*)\}'`$", re.DOTALL)
+
+
+def _to_native_reads(flow: dict) -> dict:
+    """Rewrite a connector reference's entity reads as native ones, in place."""
+    for node in flow["nodes"]:
+        if "uipath-uipath-dataservice." not in str(node.get("type")):
+            continue
+        detail = node["inputs"]["detail"]
+        entity = detail["pathParameters"]["entityName"]
+        match = CEQL_TEMPLATE.match(str(detail["queryParameters"]["queryExpression"]))
+        assert match, detail["queryParameters"]["queryExpression"]
+        column, expression = match.group(1), match.group(2)
+        assert column == NATIVE_FILTER_FIELDS[entity], (entity, column)
+        node["type"] = "core.datafabric.read"
+        node["typeVersion"] = "1.4"
+        node["inputs"] = {
+            "entityConfig": {
+                "entityName": entity,
+                "resultMode": "multiple",
+                "_recordLimit": 100,
+                "_skip": 0,
+                "_filters": {
+                    "logicalOperator": "AND",
+                    "rows": [{"field": column, "operator": "=", "value": f"=js:{expression}"}],
+                    "groups": [],
+                },
+            }
+        }
+    return flow
+
+
+def native_build(script: str, tmp_path: Path) -> Path:
+    """Write and return a native-shaped build of ``script``'s scenario."""
+    source = FLOW_TASKS / REFERENCE_CASES[script]
+    target = tmp_path / source.name.replace(".reference", "")
+    target.write_text(json.dumps(_to_native_reads(json.loads(source.read_text()))))
+    return target
+
+
 def run_script(script: str, *args: Path | str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SHARED / script), *(str(arg) for arg in args)],
@@ -42,6 +104,227 @@ def run_script(script: str, *args: Path | str, cwd: Path | None = None) -> subpr
 def test_advisories_accept_repo_reference_flows(script: str, relative_flow: str) -> None:
     result = run_script(script, FLOW_TASKS / relative_flow)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_advisories_accept_the_native_dispute_resolution_build() -> None:
+    """Regression lock for the 2026-09-11 run: the flow this artifact came from
+    validated, debugged green, and returned the right answer, and the advisory
+    failed it for having no `connection` binding — which the native node never
+    has (data-fabric/planning.md — Native node vs Data Service connector)."""
+    script, relative_flow = NATIVE_REFERENCE_CASE
+    result = run_script(script, FLOW_TASKS / relative_flow)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "native entity read" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "script",
+    ["advisory_billing_invoice_lookup.py", "advisory_billing_discrepancy_detector.py"],
+)
+def test_advisories_accept_native_derived_builds(script: str, tmp_path: Path) -> None:
+    result = run_script(script, native_build(script, tmp_path))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "native read" in result.stdout
+
+
+def test_native_anti_hardcode_guard_survives(tmp_path: Path) -> None:
+    """The whole point of these gates: a filter that writes the answer in
+    satisfies every behaviour rung while querying nothing. Shape must not be a
+    way around it."""
+    target = native_build("advisory_billing_invoice_lookup.py", tmp_path)
+    flow = json.loads(target.read_text())
+    for node in flow["nodes"]:
+        rows = ((node.get("inputs") or {}).get("entityConfig") or {}).get("_filters", {}).get("rows")
+        for row in rows or []:
+            row["value"] = "MCS-2026-04872"
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_invoice_lookup.py", target)
+    assert result.returncode != 0
+    assert "$vars" in result.stdout + result.stderr
+
+
+def test_native_half_authored_folder_scope_fails(tmp_path: Path) -> None:
+    """`_folderKey` switches the emitted target to the folder-qualified form, so
+    without `_resourceKey` and both Entity binding rows the name and folder
+    serialize as source-org literals: it packages and breaks on deploy."""
+    target = native_build("advisory_billing_invoice_lookup.py", tmp_path)
+    flow = json.loads(target.read_text())
+    for node in flow["nodes"]:
+        config = (node.get("inputs") or {}).get("entityConfig")
+        if config:
+            config["_folderKey"] = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_invoice_lookup.py", target)
+    assert result.returncode != 0
+    assert "_resourceKey" in result.stdout + result.stderr
+
+
+def test_native_lowercase_entity_binding_row_fails(tmp_path: Path) -> None:
+    """`resource` is the capitalized "Entity"; packaging never turns a lowercase
+    row into a binding resource, so the deploy side gets no override at all."""
+    target = native_build("advisory_billing_invoice_lookup.py", tmp_path)
+    flow = json.loads(target.read_text())
+    key = "orders-resource-key"
+    for node in flow["nodes"]:
+        config = (node.get("inputs") or {}).get("entityConfig")
+        if config:
+            config["_folderKey"] = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+            config["_resourceKey"] = key
+    flow["bindings"] = [
+        {"resource": "entity", "resourceKey": key, "propertyAttribute": attribute}
+        for attribute in ("name", "folderKey")
+    ]
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_invoice_lookup.py", target)
+    assert result.returncode != 0
+    assert "Entity" in result.stdout + result.stderr
+
+
+def test_native_folder_scope_with_both_binding_rows_passes(tmp_path: Path) -> None:
+    target = native_build("advisory_billing_invoice_lookup.py", tmp_path)
+    flow = json.loads(target.read_text())
+    key = "erp-resource-key"
+    for node in flow["nodes"]:
+        config = (node.get("inputs") or {}).get("entityConfig")
+        if config:
+            config["_folderKey"] = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+            config["_resourceKey"] = key
+    flow["bindings"] = [
+        {"resource": "Entity", "resourceKey": key, "propertyAttribute": attribute}
+        for attribute in ("name", "folderKey")
+    ]
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_invoice_lookup.py", target)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "folder-scoped entity" in result.stdout
+
+
+def test_mixed_entity_read_shapes_fail(tmp_path: Path) -> None:
+    """One shape per flow. Two means a set of reads was left behind, and the
+    count assertions downstream would report something else."""
+    source = FLOW_TASKS / REFERENCE_CASES["advisory_billing_discrepancy_detector.py"]
+    flow = json.loads(source.read_text())
+    native = next(node for node in flow["nodes"] if "uipath-uipath-dataservice." in str(node.get("type")))
+    native["type"] = "core.datafabric.read"
+    target = tmp_path / "BillingDiscrepancyDetector.flow"
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_discrepancy_detector.py", target)
+    assert result.returncode != 0
+    assert "mixes both entity-read shapes" in result.stdout + result.stderr
+
+
+def _project(tmp_path: Path, flow: dict, bindings: dict) -> Path:
+    """A generated-solution tree as the two billing checkers walk it: one flow
+    and one bindings file under the cwd they are run from."""
+    project = tmp_path / "proj"
+    project.mkdir(parents=True, exist_ok=True)
+    (project / "BillingInvoiceLookup.flow").write_text(json.dumps(flow))
+    (project / "bindings_v2.json").write_text(json.dumps(bindings))
+    return tmp_path
+
+
+CONNECTION_BINDINGS = {
+    "version": "2.0",
+    "resources": [
+        {
+            "resource": "connection",
+            "key": "data-fabric",
+            "value": {
+                "ConnectionId": {"defaultValue": "d61e5d0e-04af-4f93-95cc-151d81fa08dc"},
+                "FolderKey": {"defaultValue": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"},
+            },
+        }
+    ],
+}
+# What a native build actually writes: resources for the IxP model, the API
+# workflow and the context index, and no `connection` row at all.
+NATIVE_BINDINGS = {
+    "version": "2.0",
+    "resources": [
+        {"resource": "process", "key": "p", "value": {"name": {"defaultValue": "FinancialPostingFunction"}}}
+    ],
+}
+
+
+def test_bindings_checker_accepts_a_native_build_with_no_connection(tmp_path: Path) -> None:
+    """A flow whose only external calls are native reads has no Integration
+    Service connection to bind, so `declares no bindings at all` is wrong there."""
+    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
+    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+
+    result = run_script("check_bindings_no_stubs.py", cwd=cwd)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "no connection to bind" in result.stdout
+
+
+def test_bindings_checker_still_requires_one_for_a_connector_build(tmp_path: Path) -> None:
+    """The regression the check exists for: a connector build that dropped its
+    connection row deploys and faults with [102010]."""
+    flow = json.loads((FLOW_TASKS / REFERENCE_CASES["advisory_billing_invoice_lookup.py"]).read_text())
+    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+
+    result = run_script("check_bindings_no_stubs.py", cwd=cwd)
+    assert result.returncode != 0
+    assert "declares no bindings at all" in result.stdout + result.stderr
+
+
+def test_bindings_checker_rejects_a_stub_connection_on_a_native_build(tmp_path: Path) -> None:
+    """Zero connection rows is fine; a row that is there and wrong is not."""
+    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
+    stub = json.loads(json.dumps(CONNECTION_BINDINGS))
+    stub["resources"][0]["value"]["ConnectionId"]["defaultValue"] = "00000000-0000-0000-0000-000000000001"
+    cwd = _project(tmp_path, flow, stub)
+
+    result = run_script("check_bindings_no_stubs.py", cwd=cwd)
+    assert result.returncode != 0
+    assert "stub or empty bindings" in result.stdout + result.stderr
+
+
+def test_server_side_filter_accepts_native_rows(tmp_path: Path) -> None:
+    checker = FLOW_TASKS / "multi_node/billing_invoice_lookup/check_server_side_filter.py"
+    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
+    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+
+    result = subprocess.run(
+        [sys.executable, str(checker)], cwd=cwd, capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_server_side_filter_rejects_an_empty_native_filter(tmp_path: Path) -> None:
+    """The `_filters` container is always present, so its emptiness is what
+    separates a server-side filter from fetching the entity whole."""
+    checker = FLOW_TASKS / "multi_node/billing_invoice_lookup/check_server_side_filter.py"
+    flow = json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
+    for node in flow["nodes"]:
+        config = (node.get("inputs") or {}).get("entityConfig")
+        if config:
+            config["_filters"] = {"logicalOperator": "AND", "rows": [], "groups": []}
+    cwd = _project(tmp_path, flow, NATIVE_BINDINGS)
+
+    result = subprocess.run(
+        [sys.executable, str(checker)], cwd=cwd, capture_output=True, text=True, check=False
+    )
+    assert result.returncode != 0
+    assert "no server-side filter" in result.stdout + result.stderr
+
+
+def test_billing_advisories_use_the_shared_entity_read_discriminator() -> None:
+    """The tests above exercise the helpers, not the call sites. Without this,
+    reverting any advisory to the connector-only prefix keeps the suite green on
+    its connector reference and silently restores the 2026-09-11 failure."""
+    for script in (
+        "advisory_billing_invoice_lookup.py",
+        "advisory_billing_discrepancy_detector.py",
+        "advisory_billing_dispute_resolution.py",
+    ):
+        source = (SHARED / script).read_text(encoding="utf-8")
+        assert "entity_reads(nodes)" in source, script
 
 
 def test_literal_scan_ignores_canvas_descriptions_and_uuid_segments(tmp_path: Path) -> None:
