@@ -78,6 +78,8 @@ uip … registry search slack --output json --output-filter "[?contains(NodeType
 uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
 ```
 
+> **Exception — a paginated `list`.** A filter is applied to one response, so a predicate that comes back `Data: []` has searched the current page and not the resource. On `is resources run list` and any other paginated `list`, read the full envelope, check `Data.Pagination.HasMore` yourself, and page with `--query "nextPage=<token>"` until it is `"false"` or the item is found. See [/uipath:uipath-platform — resources.md § Pagination](../../../uipath-platform/references/integration-service/resources.md#pagination).
+
 > **Exception — any command that fails.** The CLI applies `--output-filter` only on the success path; a `Result: "Failure"` envelope prints whole. This bites hardest on a faulted `flow debug` (200 KB and more) — redirect stdout to a file and extract from the file, see [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
 
 Treat `Data: []` with exit 0 as a valid but mismatched expression, not proof of absence. Only invalid syntax or type errors fail with exit 3.

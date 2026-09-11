@@ -142,7 +142,7 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 Use the global `--output-filter` flag with a JMESPath expression to extract specific fields from large responses if possible via JMESPath.
 
 ```bash
-# Extract only id, name, and email from a user list
+# Extraction, not search: returns fields from THIS page only
 uip is resources run list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
   --connection-id "<CONNECTION_ID>" \
   --output json \
@@ -159,6 +159,8 @@ Common JMESPath patterns:
 | `Data[?status=='active']` | Filter records by field value |
 | `Data[0]` | Return only the first record |
 
+A filter is applied to one response and replaces `Data` with the projection, so `Pagination` is gone unless the expression re-includes it: a predicate that comes back `Data: []` has searched the current page and not the resource. When you are searching for a specific item, read the full envelope and follow [Pagination](#pagination).
+
 ---
 
 ## Pagination
@@ -167,7 +169,7 @@ Common JMESPath patterns:
 
 ### Pagination rules
 
-1. **Always check `Data.Pagination`** — every `list` response may contain pagination state. Never assume a single page contains all results.
+1. **Always check `Data.Pagination`** — every `list` response may contain pagination state. Never assume a single page contains all results, and do not read it through `--output-filter`, which replaces `Data` with the projection and takes `Pagination` with it.
 2. **Complete the pagination loop** — when searching for a specific item, keep paginating until `Data.Pagination.HasMore` is `"false"` or the item is found. Do NOT abandon pagination mid-loop to try alternative APIs (e.g., search endpoints, admin endpoints, HTTP fallback).
 3. **Stop early on match** — if you find the target item in the current page, stop. No need to fetch remaining pages.
 4. **Report not-found only after exhausting all pages** — only conclude an item does not exist after `HasMore` is `"false"` and every page has been checked.
