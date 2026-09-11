@@ -144,7 +144,7 @@ When `filter` is also provided, the mandatory clause and user filter are AND-joi
 
 The same combined expression also lands at `caseShape.context[name="metadata"].body.activityPropertyConfiguration.filterExpression` so the design-time projection and runtime body don't drift.
 
-For Outlook 365 `EMAIL_RECEIVED`, `parentFolderId` is required. The connector contract is in `caseShape.inputs.eventParameters[?required]` — consult that array to know which event params your trigger needs.
+For Outlook 365 `EMAIL_RECEIVED`, `parentFolderId` is required. The connector contract is in `inputs.eventParameters[?required]`, a sibling of `caseShape` in the spec response — consult that array to know which event params your trigger needs.
 
 > **Note:** `body.parameters` is not emitted for triggers. The FE reserves that key for queryParameters/pathParameters, neither of which exists in the trigger input contract.
 
