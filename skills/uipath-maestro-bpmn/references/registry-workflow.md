@@ -95,11 +95,124 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
 
-The response adds an `ISEnrichment` block with the live field metadata. Write
+The response adds an enrichment block with the live field metadata. Match the
+key case-insensitively — the CLI's output formatter has changed key casing
+before, and pinning a spelling is what breaks on the next change. Write
 the activity's `body` input (`target="body"`) and `context` (`connectorKey`,
 `objectName`) from that enrichment — do not hand-author connector schemas. The
 connection is referenced through a connection binding, `=bindings.<bindingId>`
 (see §4).
+
+### Body shape: hand-authored files need ONE `target="body"` input
+
+This holds for every `Intsvc.*` type whose `inputTarget` is `body` —
+`ActivityExecution`, `AsyncExecution`, `SyncAgentExecution`,
+`AsyncAgentExecution`, `SyncWorkflowExecution`, `AsyncWorkflowExecution`. Each
+declares `inputPattern: separateInputs`, which reads as an instruction to add
+one `uipath:input` per request field. **The runtime does not consume that
+shape:** several `target="body"` inputs do not merge — each claims to
+be the entire body, the last one wins, and the provider receives that single
+value as a bare scalar. Integration Service answers `500 Internal failure`, or
+the provider reports the other fields missing (Slack:
+`missing required field: channel`). Measured on live Alpha against both the
+Atlassian Jira and Slack connectors.
+
+So when you hand-author the XML, emit exactly one `target="body"` input holding
+the complete request object as JSON element content, nested the way the
+provider's API nests it:
+
+```xml
+<uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_TargetProject"},"issuetype":{"id":"=vars.Var_IssueTypeId"},"summary":"=js:'Created from Maestro at ' + vars.Var_RunLabel}}]]></uipath:input>
+```
+
+Take every body field name from the operation's `RequestFields` in
+`uip is resources describe`, never from the provider's public API docs. A
+curated operation frequently renames the provider's fields, so a name copied
+from the vendor's REST reference is accepted by `validate` and by `pack` and
+then silently omitted from the request. What comes back names neither the
+field nor the cause: the provider validates the body it actually received and
+complains about whatever is now missing or empty downstream of your field.
+This is the same trap as taking `operation` from the catalogue's per-activity
+`Name` — the described contract wins over the provider's own vocabulary, and
+`describe` is the only place that contract is written down.
+
+`=vars.<id>` and `=js:` resolve inside that CDATA, so build the body from
+variables rather than literals. In an XML *attribute* a `=js:` expression must
+escape the XML metacharacters — `&amp;&amp;` for `&&`, and `&lt;` for `<` — or
+the file is not well-formed; `>` needs no escaping in an attribute value, and
+inside CDATA nothing does.
+
+This single-input form **is** the canonical shape, and it round-trips. Studio
+Web's own design schema for this type sets `isSplitInputs: false` with one
+`jsonBody` at `target="body"`
+(`origin/develop:src/services/serialization/design-schema/intsvc.activityExecution.beta.design-schema.json`),
+and the canvas's round-trip fixture for a Jira `curated_create_issue` node is
+exactly one nested `target="body"` CDATA asserted parse→serialize identical
+(`origin/develop:src/services/serialization/xml-serialization.test.ts:706`).
+The serializer *preserves* separate inputs if a file already has them rather
+than merging, but it never generates them. Copy that fixture's body shape, not
+its context inputs: being a parse→serialize identity test, it faithfully
+preserves an `operation="CreateIssue"` that the next section corrects.
+
+The outlier is the CLI manifest: `Intsvc.ActivityExecution` still declares
+`inputPattern: separateInputs` with `inputTarget: body`, and its `InputNotes`
+still tell authors to add one `uipath:input` per request field. That contradicts
+both the canvas and the runtime, so treat the manifest's InputNotes as stale
+here rather than as the contract.
+
+`target="bodyField"` is **not** an option here. It is the target of a merged
+*arguments* payload on specific types — `JobArguments` on the `Orchestrator.*`
+job and process starts, `HitlTaskArguments` on `Actions.HITL`, `args` on
+`BPMN.ScriptTask` — and no `Intsvc.*` type uses it. Read `inputTarget` from the
+manifest per type; it is not a property of `inputPattern`. Five of the fourteen
+`mergedBody` types use `body` (`Orchestrator.CreateQueueItem`,
+`Orchestrator.CreateAndWaitForQueueItem`, `A2A.AgentExecution`,
+`Maestro.CaseRulesEvaluator`, `Maestro.CaseManagerGuardrails`), so inferring
+`bodyField` from the pattern gets the target wrong on a third of them.
+
+**Local validation will not catch a wrong target or a wrong input name here.**
+`validateInputs` short-circuits for this type: `usesCanvasOwnedDynamicPayload`
+(`project-validator.ts:1602`) is true for anything `isDynamic` or for an
+`Intsvc.*` type requiring discovery, and it returns after
+`validateDynamicDirectInputs`, which checks only that each input has a `name`
+and that `type="json"` payloads parse. No allow-list, no `target` check, no
+count check — so several `target="body"` inputs, a `bodyField` input, and an
+unrecognized input name all pass `validate` and `pack`. The failure is a
+runtime one. This is why a clean `validate` is not evidence the body shape is
+right.
+
+Nest a dotted `RequestFields` name yourself: `fields.project.key` becomes
+`{"fields":{"project":{"key": …}}}`. A literal `"fields.project.key"` key is
+sent as-is, and the provider never sees `fields.project`.
+
+Take `operation` from the `Operation.Name` reported by
+`uip is resources describe` (for example `Create`); `path` and `objectName`
+come from the same described object. The template's `DiscoveryNotes` say "set
+operation from Name", which reads as the catalogue's per-activity `Name`
+(`CreateIssue`) — a value that can never resolve: `METHOD_TO_OPERATION`
+(`integrationservice-sdk/src/dap/validation/rules.ts:74`) defines a closed
+six-name lexicon — List, Retrieve, Create, Update, Delete, Replace — and the
+reverse map accepts only those plus raw HTTP verbs, which is also exactly what
+`uip is resources run` exposes as subcommands. `--operation` takes the same
+value, so pass `--operation Create`.
+
+### Required `Parameters` are separate from the body — emit every one
+
+`uip is resources describe` reports `Parameters` alongside `RequestFields`.
+Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
+`file`) — never folded into the body. Emit an input for every parameter marked
+`Required: true`, using its `DefaultValue` when the request has no better
+value:
+
+```xml
+<uipath:input target="query" name="send_as" type="string" value="bot" />
+```
+
+Omitting one is accepted by local validation and by `pack`, then fails only at
+runtime with `400` and `Value for required parameter '<name>' not found`. A
+`Parameters` list can be empty (Jira's `curated_create_issue`) or carry a
+required entry (Slack's `send_message_to_channel_v2` requires `send_as`), so
+check it per activity rather than assuming.
 
 ## 4. Bindings — from `bindingInfo`, never invented
 
@@ -125,8 +238,39 @@ discovery or the user.
   Integration Services invalid value in input` (the connection resolves to null).
 
 Declare all bindings in a single process-level `<uipath:bindings version="v1">`
-block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,
-and a `default` value (the resolved key/id).
+block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, and a
+`default` value (the resolved key or id). On a **connection** binding
+`resourceKey` is required too — omitting it fails `validate` with
+`Integration Service activity connection binding "<id>" is missing
+resourceKey`. Other binding kinds (`process`, `queue`, `businessRule`) carry
+no `resourceKey`; do not invent one.
+
+A folder-scoped connector activity needs TWO bindings that share one
+`resourceKey` (the connection id) and differ in `propertyAttribute`: the
+connection binding's `default` is the connection id, the folder binding's
+`default` is the folder key.
+
+```xml
+<uipath:bindings version="v1">
+  <uipath:binding id="Binding_JiraConn"   resource="Connection" propertyAttribute="ConnectionId" resourceKey="&lt;connection-id&gt;" default="&lt;connection-id&gt;" />
+  <uipath:binding id="Binding_JiraFolder" resource="Connection" propertyAttribute="folderKey"    resourceKey="&lt;connection-id&gt;" default="&lt;folder-key&gt;" />
+</uipath:bindings>
+```
+
+Only the `ConnectionId` binding becomes a `bindings_v2.json` resource — the
+folder binding exists for authoring and validation. `buildConnectionResources`
+(`connection-resources.ts`) keeps a binding only when `resource` is
+`Connection` **and** `propertyAttribute` is `ConnectionId`, so counting two
+bindings in and one resource out is expected, not a dropped binding.
+
+The folder binding is exempt from the missing-binding error because nothing
+resolves it through that map: `buildConnectionResources` looks up only the
+binding named by the activity's **`connection`** input. Point that input at a
+binding whose `propertyAttribute` is anything other than `ConnectionId` and the
+lookup misses, producing
+`Activity "<name>" references missing Connection binding "<id>"` — an error
+naming the activity when the defect is one attribute on the binding. The
+`folderKey` input is read separately and never goes through the lookup.
 
 ## Agent wrapper selection — pick by `processType`, not the label
 
