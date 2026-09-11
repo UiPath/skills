@@ -44,7 +44,7 @@ Use these nodes when the record lives in **Data Fabric** and the flow itself is 
 | Advance a status, stamp a result, write back an outcome | Yes — Update (native entity) |
 | Append a new row (case, audit entry, request) | Yes — Create (native entity) |
 | Remove a row the flow has finished with | Yes — Delete (native entity) |
-| Write to a federated entity | No — these nodes cannot; use [connector](../connector/planning.md) or [http](../http/planning.md) |
+| Write to a federated entity | No — and the connector is not a way round it; writing a federated entity is blocked. Write to the source system instead, via its own connector or [http](../http/planning.md) |
 | React to a record being created/updated **elsewhere** | No — that is a trigger; use [connector-trigger](../connector-trigger/planning.md) (`uipath.connector.trigger.uipath-uipath-dataservice.record-created` / `record-updated`) |
 | Aggregate, group, or reshape rows already in memory | No — use [Transform](../transform/planning.md) |
 | Bulk-load a CSV into an entity | No — that is a data-loading job, not a flow step; use `uip df records import` out of band |
@@ -58,7 +58,7 @@ The `uipath-uipath-dataservice` Integration Service connector also exposes entit
 2. **Record CRUD (read / create / update / delete) → default to the native node.** Confirm it with one `registry get core.datafabric.<op>`; on `NodeGetSuccess` build native. On "Node not found", follow [impl.md — Registry validation](impl.md#registry-validation) and take the connector at the end of it.
 3. **Any other entity operation → the connector.** Only those four operations have a native node. Attachments, file-field downloads, entity metadata and bulk operations do not, so the connector is the only path rather than a fallback.
 
-Go to the connector regardless when the entity is **federated**, since the native writes require a native entity.
+A **federated** entity is not a routing question: writing one is blocked, so the connector is not an alternative path for it. See [Writes require a native entity](#writes-require-a-native-entity).
 
 Where the native node applies and the probe succeeds, it is the better build, because it:
 

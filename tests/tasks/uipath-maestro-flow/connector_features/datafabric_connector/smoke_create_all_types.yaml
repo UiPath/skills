@@ -19,10 +19,6 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
-  Build this with the UiPath Data Service connector activities
-  (`uipath.connector.uipath-uipath-dataservice.*`) for every entity operation —
-  not the native `core.datafabric.*` nodes.
-
   I'm adding a record to the FlowCodeEvalEntity entity from my UiPath Flow and
   want to fill in all the different field types we support. Build a Flow with
   a single Data Fabric Create node that creates a record with these values:

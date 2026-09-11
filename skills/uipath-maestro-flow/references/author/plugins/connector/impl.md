@@ -270,8 +270,7 @@ Illustrative supported activities (confirm against `registry get` for the specif
 >
 > - the operation is **not** one of those four (attachments, file-field downloads, entity metadata, bulk work) — no native node exists, so these activities are the only path, not a fallback;
 > - the **user asked for the connector by name** — an explicit request outranks the native default, so build it here as long as the activity exists;
-> - `registry get` ends at "Node not found" after [data-fabric/impl.md — Registry validation](../data-fabric/impl.md#registry-validation);
-> - the entity is **federated**, since the native writes require a native entity.
+> - `registry get` ends at "Node not found" after [data-fabric/impl.md — Registry validation](../data-fabric/impl.md#registry-validation).
 
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 
