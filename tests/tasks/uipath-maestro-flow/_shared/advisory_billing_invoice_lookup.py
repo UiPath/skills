@@ -7,9 +7,10 @@ v1's own checker asserts one structural thing (`assert_flow_has_node_type
 ladder covers the behaviour half in its own rungs (`expect` ×3 offline, `live`
 ×1); this file asserts what neither can:
 
-1. **The query is a Data Service connector node**, exactly one of them, and its
-   `entityName` really went to the PATH slot (the `{entityName}` of
-   `/v2/{entityName}/qer`). A `body` placement compiles and 404s live on an
+1. **The read is one entity-read node**, in whichever of the two shapes the
+   tenant's flags left available, and its entity really went to the slot that
+   shape reads. On the connector that is the PATH slot (the `{entityName}` of
+   `/v2/{entityName}/qer`) — a `body` placement compiles and 404s live on an
    unsubstituted template.
 2. **The filter is COMPUTED, not constant.** This is the anti-hardcode gate, and
    it is the whole reason the three offline `expect` rungs mean anything: a flow
@@ -23,23 +24,27 @@ ladder covers the behaviour half in its own rungs (`expect` ×3 offline, `live`
    every behaviour rung and generalises to nothing.
 4. **The outputs are READ FROM the query step**, and declared with the contract's
    names and types (`matchedInvoiceNumber` string, `lineItemCount` number).
-5. **The connection bindings are a pair** (ConnectionId + FolderKey) and the
-   folder binding does not carry the CONNECTION id — measured while writing this
-   card: a bindings.json whose FolderKey entry pointed at the connection id
-   collapsed both entries into one at FIL emission and the live dispatch sent the
-   FOLDER key as `--connection-id`, answering 401.
+5. **The read resolves to the tenant it is pointed at.** On the connector that
+   is a ConnectionId + FolderKey pair where the folder binding does not carry the
+   CONNECTION id — measured while writing this card: a bindings.json whose
+   FolderKey entry pointed at the connection id collapsed both entries into one
+   at FIL emission and the live dispatch sent the FOLDER key as
+   `--connection-id`, answering 401. The native node has no connection to
+   resolve, so what is checkable there is its entity scope.
 
 Usage: advisory_billing_invoice_lookup.py [<FlowName>.flow]
 """
-import re
-
 from advisory_flow_utils import (
+    CONNECTOR_READ,
+    assert_read_filters_input,
+    assert_read_resolves,
     carries_literal,
     end_bindings,
+    entity_name,
+    entity_reads,
     fail,
     load_flow,
     node_dependencies,
-    query_references_input,
     source_depends_on,
     successful_end_ids,
     unwrap,
@@ -49,7 +54,6 @@ CANONICAL = "MCS-2026-04872"
 # The three malformed forms the offline rungs drive. A flow may not carry any of
 # them as a literal.
 RAW_INPUTS = ["2026-04872", "mcs-2026-04872"]
-DS_TYPE_PREFIX = "uipath.connector.uipath-uipath-dataservice."
 ENTITY = "BillingDisputeERP"
 
 
@@ -57,46 +61,25 @@ def main():
     _, f, nodes = load_flow("BillingInvoiceLookup.flow")
     types_seen = sorted({str(n.get("type")) for n in nodes})
 
-    # ── 1. exactly one Data Service query node ────────────────────────────────
-    ds = [n for n in nodes if str(n.get("type", "")).startswith(DS_TYPE_PREFIX)]
-    if len(ds) != 1:
-        fail(f"expected exactly ONE Data Service connector node, found {len(ds)}; node types: {types_seen}")
-    q = ds[0]
-    if not q["type"].endswith(".query-entity-records"):
+    # ── 1. exactly one entity-read node, in whichever shape the tenant left ───
+    shape, reads = entity_reads(nodes)
+    if len(reads) != 1:
+        fail(f"expected exactly ONE entity-read node, found {len(reads)}; node types: {types_seen}")
+    q = reads[0]
+    if shape == CONNECTOR_READ and not q["type"].endswith(".query-entity-records"):
         fail(f"the Data Service node is {q['type']!r}; the lookup is the query-entity-records operation")
     # A raw HTTP call would satisfy every behaviour rung, so name it out.
     http = [n for n in nodes if str(n.get("type", "")) in ("core.action.http", "uipath.connector.uipath-uipath-http.http-request")]
     if http:
         fail(f"the flow calls Data Service over raw HTTP ({[n['id'] for n in http]}); use the connector action")
 
-    detail = (q.get("inputs") or {}).get("detail") or {}
-    pathp = {k: unwrap(v) for k, v in (detail.get("pathParameters") or {}).items()}
-    queryp = {k: unwrap(v) for k, v in (detail.get("queryParameters") or {}).items()}
-
-    # ── 2. the entity is a PATH parameter, and it is the seeded entity ────────
-    if "entityName" not in pathp:
-        fail(
-            f"the query node's pathParameters are {sorted(pathp)}; `entityName` belongs there — "
-            f"it is the {{entityName}} of /v2/{{entityName}}/qer. queryParameters: {sorted(queryp)}"
-        )
-    if str(pathp["entityName"]).strip() != ENTITY:
-        fail(f"entityName is {pathp['entityName']!r}, not {ENTITY!r} — the entity the task names")
+    # ── 2. the entity slot carries the seeded entity ──────────────────────────
+    entity = entity_name(q, shape)
+    if entity != ENTITY:
+        fail(f"the read addresses {entity!r}, not {ENTITY!r} — the entity the task names")
 
     # ── 3. the FILTER is computed from the flow's input, not a constant ───────
-    if "queryExpression" not in queryp:
-        fail(f"the query node sets no queryExpression; queryParameters: {sorted(queryp)}")
-    expr = str(queryp["queryExpression"])
-    if not query_references_input(detail, "invoiceNumber"):
-        fail(
-            f"queryExpression is {expr!r}, likely a hand-authored =js: concat. filterVariables "
-            f"has no placeholder for invoiceNumber. Author the filter via --detail.filter so "
-            f"the CLI compiles it: dynamic operands become {{var_...}} placeholders in "
-            f"filterVariables"
-        )
-    # A CEQL string literal must be single-quoted; an unquoted RHS parses as
-    # subtraction server-side and 400s (the `sql-where` grammar fil-run enforces).
-    if "'" not in expr:
-        fail(f"queryExpression is {expr!r} — a CEQL string literal has to be single-quoted")
+    assert_read_filters_input(q, shape, "invoiceNumber", "invoice", nodes, column="invoiceNumber")
 
     # ── 4. the ANSWER is nowhere in the flow, and neither is a lookup table ───
     if carries_literal(f, CANONICAL):
@@ -144,40 +127,17 @@ def main():
                 f"depends on $vars.{q['id']}.output — the value has to come FROM the query step"
             )
 
-    # ── 7. the RESOLVED connection: two DISTINCT uuids on the node ────────────
-    # The compiler resolves `bindings.json`'s symbolic `connection`/`folder` into
-    # the node's own `detail`, so that is where the outcome is checkable (the
-    # emitted `.flow` carries no `bindings[]` of its own for a connector — the
-    # separate bindings-hygiene criterion covers the file the author wrote).
-    #
-    # The failure this catches is not hypothetical: measured while writing this
-    # card, a `bindings.json` whose FolderKey entry carried the CONNECTION id
-    # collapsed both entries into one at FIL emission, and the live dispatch sent
-    # the folder key as `--connection-id` → `401 Unauthorized … invalid Element
-    # token`. Two distinct uuids is the checkable form of "the pair is right".
-    conn_id = str(unwrap(detail.get("connectionId")) or "")
-    folder = str(unwrap(detail.get("connectionFolderKey")) or "")
-    UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-", re.ASCII)
-    for label, v in (("connectionId", conn_id), ("connectionFolderKey", folder)):
-        if not UUID.match(v):
-            fail(
-                f"the query node's detail.{label} is {v!r}, not a uuid — `bindings.json` has to name "
-                f"the real Data Fabric connection and its folder (uip is connections list --all-folders)"
-            )
-        if re.match(r"^0{8}-0{4}-", v):
-            fail(f"the query node's detail.{label} is the stub uuid {v!r}")
-    if conn_id == folder:
-        fail(
-            f"detail.connectionId and detail.connectionFolderKey are the SAME uuid ({conn_id}) — the "
-            f"folder binding needs the connection's FOLDER key, not its id. Measured: the two collapse "
-            f"into one binding at FIL emission and the live dispatch sends the folder key as "
-            f"--connection-id (401 Unauthorized)"
-        )
+    # ── 7. the read resolves to the tenant it is pointed at ───────────────────
+    # For the connector, the compiler resolves `bindings.json`'s symbolic
+    # `connection`/`folder` into the node's own `detail`, so that is where the
+    # outcome is checkable (the emitted `.flow` carries no `bindings[]` of its own
+    # for a connector — the separate bindings-hygiene criterion covers the file the
+    # author wrote). The native node resolves no connection at all.
+    resolution = assert_read_resolves(q, shape, "invoice", f)
 
     print(
-        f"{len(nodes)} nodes; DS query {q['id']} entityName={pathp['entityName']!r} (path) "
-        f"queryExpression computed from $vars; outputs read from {q['id']}; "
-        f"connection={conn_id[:8]}… folder={folder[:8]}…"
+        f"{len(nodes)} nodes; {shape} read {q['id']} on {entity!r}; filter computed from $vars; "
+        f"outputs read from {q['id']}; {resolution}"
     )
 
 

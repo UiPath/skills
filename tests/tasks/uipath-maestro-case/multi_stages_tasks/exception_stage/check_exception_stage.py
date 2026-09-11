@@ -80,7 +80,7 @@ def main():
         )
     if process["id"] not in selected_stage_ids(issues_rule):
         sys.exit(
-            f"FAIL: 'Issues' rule.selectedStageId should be Process id "
+            f"FAIL: 'Issues' rule.selectedStageIds should contain Process id "
             f"({process['id']}), got {selected_stage_ids(issues_rule)!r}"
         )
 
@@ -96,7 +96,7 @@ def main():
         )
     if process["id"] not in selected_stage_ids(critical_rule):
         sys.exit(
-            f"FAIL: 'Critical' rule.selectedStageId should be Process id "
+            f"FAIL: 'Critical' rule.selectedStageIds should contain Process id "
             f"({process['id']}), got {selected_stage_ids(critical_rule)!r}"
         )
 

@@ -39,8 +39,8 @@ Allowed `ruleType` values depend on `marks-case-complete`:
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
-| `selected-stage-completed` | Exit triggered by a specific stage completing. | `selectedStageId` |
-| `selected-stage-exited` | Exit triggered by a specific stage being exited (even without completing). | `selectedStageId` |
+| `selected-stage-completed` | Exit triggered by the named stage(s) completing. | `selectedStageIds` |
+| `selected-stage-exited` | Exit triggered by the named stage(s) being exited (even without completing). | `selectedStageIds` |
 | `wait-for-connector` | Wait for an external connector event (fills `uipath`). | connector fields; `conditionExpression` optional |
 
 ## Preferred Pattern
@@ -53,7 +53,7 @@ Add non-completing exit conditions only when the sdd.md explicitly describes an 
 
 ## Ordering
 
-Case exit conditions are created **after** all stages exist (so `selectedStageId` can resolve via the stage capture map). In execution order, place these between stage conditions and SLA.
+Case exit conditions are created **after** all stages exist (so `selectedStageIds` can resolve via the stage capture map). In execution order, place these between stage conditions and SLA.
 
 ## Fields to Resolve
 
