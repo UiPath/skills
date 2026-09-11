@@ -6,7 +6,7 @@
  *
  * Generic scenario: stop an aquarium maintenance round when oxygen is too low.
  */
-import { flow, script, input, out, js, types } from '@uipath/flow-sdk';
+import { flow, script, input, out, js, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('aquarium-safety-stop')
   .name('AquariumSafetyStop')

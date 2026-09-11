@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import flow_check  # noqa: E402
 from flow_check import (  # noqa: E402
+    ENTITY_QUERY_HINTS,
     assert_flow_has_any_node_type,
     assert_flow_has_api_node_targeting,
     assert_flow_has_exact_node_type,
@@ -181,6 +182,55 @@ def test_assert_flow_has_any_node_type_fails_when_none_present(tmp_path, monkeyp
 def test_assert_flow_has_any_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
     assert_flow_has_any_node_type([])
+
+
+# ── ENTITY_QUERY_HINTS (native Data Fabric node, 2026-09-10) ───────────────
+
+
+def test_entity_query_hints_accept_the_dataservice_connector(tmp_path, monkeypatch):
+    """The Integration Service activity remains acceptable wherever the native
+    tenant flag is off."""
+    root = _write_flow(
+        tmp_path, ["uipath.connector.uipath-uipath-dataservice.query-entity-records"]
+    )
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+
+
+def test_entity_query_hints_accept_the_native_node(tmp_path, monkeypatch):
+    """Regression lock for the 2026-09-10 billing failures: with
+    `canvas.nodes.read-entity` on, the skill steers the agent to the native node
+    (#3041), which the connector-only gate rejected before run_debug."""
+    root = _write_flow(tmp_path, ["core.datafabric.read"])
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+
+
+def test_entity_query_hints_reject_a_script_only_flow(tmp_path, monkeypatch):
+    """The anti-hardcode guard survives: a flow that queries nothing still fails,
+    and the message names both shapes."""
+    root = _write_flow(tmp_path, ["core.action.script"])
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit) as exc:
+        assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+    msg = str(exc.value)
+    assert "uipath-dataservice.query" in msg
+    assert "core.datafabric.read" in msg
+
+
+def test_billing_gates_use_the_shared_entity_hints():
+    """The tests above exercise the constant, not the call sites. Without this,
+    reverting either gate to the connector-only hint keeps the suite green and
+    silently restores the 2026-09-10 failure."""
+    suite = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    gates = (
+        "multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py",
+        "multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py",
+    )
+    for relative in gates:
+        with open(os.path.join(suite, relative), encoding="utf-8") as handle:
+            source = handle.read()
+        assert "assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)" in source, relative
 
 
 # ── assert_flow_has_api_node_targeting (slack-weather gate, PR #1301) ───────
@@ -604,7 +654,7 @@ def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypa
     solution = tmp_path / "Real"
     solution.mkdir()
     _make_proj(solution, "Real", "Flow")
-    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "flow-sdk" / "fixtures"
+    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "maestro-builder-sdk" / "fixtures"
     sdk.mkdir(parents=True)
     (sdk / "project.uiproj").write_text('{"ProjectType": "Flow"}')
     (sdk / "Fixture.flow").write_text("{}")
@@ -1396,22 +1446,74 @@ def test_run_debug_retry_floor_matches_the_cli_minimum():
     )
 
 
-def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
-    """A stall upstream of polling exits as a graded FAIL carrying the partial
-    output, not as an uncaught TimeoutExpired traceback."""
-    exc = subprocess.TimeoutExpired(
+def _subprocess_timeout(instance_id="abc-123"):
+    return subprocess.TimeoutExpired(
         cmd=["uip", "maestro", "flow", "debug"],
         timeout=240,
         output=b'{"partial": true}',
-        stderr=b"Debug instance created - instanceId: abc-123\n",
+        stderr=f"Debug instance created - instanceId: {instance_id}\n".encode(),
     )
-    calls = _stub_debug(monkeypatch, [exc])
+
+
+def test_run_debug_retries_subprocess_timeout_then_completes(monkeypatch):
+    """A SIGKILLed first attempt is flaky, not terminal: the second one grades."""
+    calls = _stub_debug(monkeypatch, [_subprocess_timeout(), _cp(0, _COMPLETED)])
+    payload = run_debug(timeout=240)
+    assert calls["n"] == 2
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_run_debug_keeps_the_richest_timeout_capture(monkeypatch):
+    """A later timeout that printed nothing must not erase the instanceId an
+    earlier one exposed — it is the only handle on the remote run."""
+    first = _subprocess_timeout("inst-from-attempt-1")
+    second = subprocess.TimeoutExpired(
+        cmd=["uip", "maestro", "flow", "debug"], timeout=240, output=b"", stderr=b""
+    )
+    _stub_debug(monkeypatch, [first, second])
     with pytest.raises(SystemExit) as excinfo:
         run_debug(timeout=240)
-    assert calls["n"] == 1
+    assert "inst-from-attempt-1" in str(excinfo.value)
+    assert flow_check._LAST_DEBUG_RAW == '{"partial": true}'
+
+
+def test_run_debug_timeout_message_counts_all_attempts(monkeypatch):
+    """The two counters are distinct: a transient failure ahead of the timeouts
+    raises the attempt total without spending the timeout allowance."""
+    calls = _stub_debug(
+        monkeypatch,
+        [_cp(1, _TRANSIENT_504), _subprocess_timeout(), _subprocess_timeout()],
+    )
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=240)
+    assert calls["n"] == 3
+    assert "2 subprocess timeout(s) across 3 attempt(s)" in str(excinfo.value)
+
+
+def test_run_debug_refuses_a_subprocess_timeout_retry_it_cannot_fund(monkeypatch):
+    """The allowance never outruns the deadline. Asserting the allowance has
+    room first is what makes the budget the thing under test."""
+    assert flow_check._SUBPROCESS_TIMEOUT_ATTEMPTS > 1
+    calls = _stub_debug(monkeypatch, [_subprocess_timeout()] * 2, attempt_seconds=180)
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=180, budget=240, backoff_seconds=5)
+    assert calls["n"] == 1  # 240 - 180 - 5 = 55, under the 90s retry floor
+    assert "could not fund another" in str(excinfo.value)
+
+
+def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
+    """A SIGKILLed run exits as a graded FAIL carrying the partial output, not
+    as an uncaught TimeoutExpired traceback — after its own allowance."""
+    calls = _stub_debug(monkeypatch, [_subprocess_timeout(), _subprocess_timeout()])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=240)
+    assert calls["n"] == flow_check._SUBPROCESS_TIMEOUT_ATTEMPTS
     message = str(excinfo.value)
     assert "240s subprocess cap" in message
+    assert "on 2 subprocess timeout(s) across 2 attempt(s)" in message
     assert "abc-123" in message  # without the instanceId the run is unrecoverable
+    # The stall phase is not knowable from a SIGKILL; the tail is the evidence.
+    assert "upstream of" not in message
     assert flow_check._LAST_DEBUG_RAW == '{"partial": true}'
 
 

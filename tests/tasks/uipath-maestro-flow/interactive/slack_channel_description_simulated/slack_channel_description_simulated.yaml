@@ -64,6 +64,10 @@ simulation:
   check_criteria: end_of_dialog
   n_trials: 1
 
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-salesforce-slack=uipath-maestro-flow'
+    timeout: 120
+
 success_criteria:
   # Name-agnostic: any unambiguous generated .flow must validate. The exact
   # project name is scored separately below.
@@ -74,6 +78,14 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: live-v1 agent ran flow debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
 
   # Runtime check (mirrors the retired non-simulated original, check_channel_description.py):
   # a node targets the Slack connector AND flow debug retrieves the channel

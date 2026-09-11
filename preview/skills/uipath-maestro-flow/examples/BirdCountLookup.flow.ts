@@ -6,7 +6,7 @@
  *
  * Generic scenario: look up the latest bird count for a nature reserve.
  */
-import { flow, apiWorkflow, input, out, types } from '@uipath/flow-sdk';
+import { flow, apiWorkflow, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('bird-count-lookup')
   .name('BirdCountLookup')

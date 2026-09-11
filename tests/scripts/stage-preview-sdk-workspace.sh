@@ -3,7 +3,14 @@ set -euo pipefail
 
 sdk_root=${PREVIEW_FLOW_SDK_ROOT:-/opt/preview-flow-sdk}
 assets_root=${PREVIEW_FLOW_SDK_ASSETS_ROOT:-/opt/preview-flow-sdk-assets}
-package_dir=$sdk_root/node_modules/@uipath/flow-sdk
+# The package name is a knob, because the rename split the published history:
+# `@uipath/maestro-builder-sdk` starts at 5.0.0 and everything at or below 4.0.0
+# exists only under `@uipath/flow-sdk`. Measuring a pre-rename published build —
+# which a baseline comparison legitimately wants — needs the old name, and the
+# image's own default must match whatever it installed. The CLI resolves either
+# (UiPath/cli#4009).
+sdk_package=${FLOW_SDK_PKG_NAME:-@uipath/maestro-builder-sdk}
+package_dir=$sdk_root/node_modules/$sdk_package
 library_json=${FLOW_SDK_LIBRARY_JSON:-$assets_root/library-json}
 registry_root=${UIP_MAESTRO_REGISTRY_HOME:-$assets_root/registry}
 registry_current=$registry_root/current.json
@@ -55,11 +62,12 @@ NODE
 )
 
 ln -s "$sdk_root/node_modules" node_modules
-node - "$sdk_version" "$sdk_gitref" "$registry_hash" <<'NODE'
+node - "$sdk_version" "$sdk_gitref" "$registry_hash" "$sdk_package" <<'NODE'
 const fs = require('node:fs');
 const version = process.argv[2];
 const gitref = process.argv[3];
 const connectorLibraryHash = process.argv[4];
+const sdkPackage = process.argv[5];
 let packageJson = {};
 if (fs.existsSync('package.json')) {
   packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -68,13 +76,13 @@ packageJson.private = true;
 packageJson.type = 'module';
 packageJson.devDependencies = {
   ...(packageJson.devDependencies || {}),
-  '@uipath/flow-sdk': version,
+  [sdkPackage]: version,
 };
 fs.writeFileSync('package.json', `${JSON.stringify(packageJson, null, 2)}\n`);
 fs.writeFileSync(
   'preview-sdk-provenance.json',
   `${JSON.stringify({
-    package: '@uipath/flow-sdk',
+    package: sdkPackage,
     version,
     gitref: gitref || null,
     connector_library: true,
@@ -83,7 +91,8 @@ fs.writeFileSync(
 );
 NODE
 
-node -e "import('@uipath/flow-sdk')"
+node -e "import('$sdk_package')"
 uip maestro flow compile --help >/dev/null
-printf 'stage-preview-sdk-workspace: @uipath/flow-sdk@%s, connector library %s\n' \
+printf 'stage-preview-sdk-workspace: %s@%s, connector library %s\n' \
+  "$sdk_package" \
   "$sdk_version" "$registry_hash"

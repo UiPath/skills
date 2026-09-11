@@ -20,14 +20,17 @@ Individual task / rule plugins write bindings to `caseplan.json` per-target as n
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+After writing bindings to top-level `bindings[]`, run:
 
-### Procedure
+```bash
+uip maestro case bindings sync "<SolutionDir>/<ProjectName>/caseplan.json" --output json
+```
 
-1. Read top-level `bindings[]` from `caseplan.json`
-2. Group bindings by `resourceKey` — entries sharing the same key belong to one resource
-3. For each group, produce one resource entry using the shapes below
-4. Write the full file (always overwrite, never append) to `<SolutionDir>/<ProjectName>/bindings_v2.json`
+It reads the root `bindings[]`, groups entries by `resourceKey`, and writes `bindings_v2.json` next to the plan (full overwrite). Response `Data`: `BindingsPath`, `ResourceCount`, `ConnectionCount`. **Never author or edit `bindings_v2.json` by hand** — a hand-written sidecar with the wrong field names is invisible to `solution resources refresh` and fails silently at deploy. If the installed CLI has no `bindings sync` command, derive the file from the shapes below as a last resort and say so in the completion report.
+
+### What the command emits
+
+`caseplan.json` stores two entries per resource (one per property); `bindings_v2.json` stores one entry per resource with properties nested under `value`. Reference only — the shapes are here so Check 7 can be understood, not so they can be typed.
 
 ### Non-connector resource entry
 

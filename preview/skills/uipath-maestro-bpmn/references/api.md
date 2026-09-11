@@ -5,7 +5,7 @@
 
 # BPMN SDK API
 
-Exact `@uipath/flow-sdk/bpmn` authoring signatures and option shapes, from the public
+Exact `@uipath/maestro-builder-sdk/bpmn` authoring signatures and option shapes, from the public
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
@@ -16,8 +16,8 @@ generated from the built types; longer tutorials stay in the node references.
 > names a type whose members or rules you need, read the declaration:
 >
 > ```bash
-> grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
-> #  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts
+> grep -rln "declare function err" node_modules/@uipath/maestro-builder-sdk/dist --include="*.d.ts"
+> #  -> node_modules/@uipath/maestro-builder-sdk/dist/core/expr.d.ts
 > ```
 >
 > Grep the **`.d.ts`**, never `dist/*.js` — the compiled JavaScript carries no

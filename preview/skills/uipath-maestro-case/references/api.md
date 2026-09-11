@@ -5,7 +5,7 @@
 
 # Case SDK API
 
-Exact `@uipath/flow-sdk/case` authoring signatures and option shapes, from the public
+Exact `@uipath/maestro-builder-sdk/case` authoring signatures and option shapes, from the public
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
@@ -16,8 +16,8 @@ generated from the built types; longer tutorials stay in the node references.
 > names a type whose members or rules you need, read the declaration:
 >
 > ```bash
-> grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
-> #  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts
+> grep -rln "declare function err" node_modules/@uipath/maestro-builder-sdk/dist --include="*.d.ts"
+> #  -> node_modules/@uipath/maestro-builder-sdk/dist/core/expr.d.ts
 > ```
 >
 > Grep the **`.d.ts`**, never `dist/*.js` — the compiled JavaScript carries no
@@ -29,7 +29,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [ResolvedEventTriggerOpts](#resolvedeventtriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [EventSubscription](#eventsubscription-interface) · [TriggerOptions](#triggeroptions-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ExternalTaskOptions](#externaltaskoptions-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-type) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [UnresolvedReferenceTaskKind](#unresolvedreferencetaskkind-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-type) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface) · [LookupSpec](#lookupspec-interface) · [LookupStrategy](#lookupstrategy-type)
+**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [LookupToken](#lookuptoken-interface) · [EventFilter](#eventfilter-type) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [UnresolvedReferenceTaskKind](#unresolvedreferencetaskkind-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-type) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface) · [LookupSpec](#lookupspec-interface) · [LookupStrategy](#lookupstrategy-type)
 
 ## rule (function)
 
@@ -497,7 +497,7 @@ export interface EventSubscription {
      * bound connection (`uip is triggers describe <key> <EVENT> <object>
      * --connection-id <id>`).
      */
-    where?: Record<string, string>;
+    where?: Record<string, string | LookupToken>;
     /**
      * The OBJECT a GENERIC event watches (a Data Fabric entity, a Salesforce or
      * ServiceNow object, a Jira record type). Required for such an event, refused
@@ -529,7 +529,9 @@ export interface TriggerOptions<W = Record<string, string>> {
      * registers. Loose offline; for Outlook `email-received` that is
      * `{ parentFolderId: '<mail folder id>' }`.
      */
-    where?: W;
+    where?: {
+            [K in keyof W]?: W[K] | LookupToken;
+        };
     /**
      * The OBJECT a GENERIC event watches — the one thing its node type does not
      * say. `record-created` / `record-updated` on Data Fabric, Salesforce,
@@ -831,6 +833,19 @@ export interface BuiltCase {
 export interface WaitConnectorPlaceholderSpec {
     connectorKey?: string;
     operation?: string;
+}
+````
+
+## LookupToken (interface)
+
+````ts
+export interface LookupToken {
+    readonly __lookup: {
+            readonly nodeType: string;
+            readonly field: string;
+            readonly by: string;
+            readonly value: unknown;
+        };
 }
 ````
 

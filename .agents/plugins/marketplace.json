@@ -12,10 +12,10 @@
       "name": "uipath",
       "source": {
         "source": "local",
-        "path": "./plugins/uipath"
+        "path": "./"
       },
       "description": "UiPath plugin for Codex - custom skills for UiPath workflows, UI automation, UI testing, and UiPath troubleshooting.",
-      "version": "0.0.36",
+      "version": "1.203.0",
       "author": {
         "name": "UiPath"
       },

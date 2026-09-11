@@ -18,7 +18,7 @@
  * Generic scenario: three independent pre-show checks at a concert. No `.input`:
  * the data is variable defaults so the example is self-contained.
  */
-import { flow, script, out, types } from '@uipath/flow-sdk';
+import { flow, script, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('concert-soundcheck')
   .name('ConcertSoundcheck')

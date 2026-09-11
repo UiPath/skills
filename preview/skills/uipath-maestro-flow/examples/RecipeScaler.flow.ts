@@ -15,7 +15,7 @@
  * child that phrases one line. No `.input`: variable defaults keep it
  * self-contained.
  */
-import { flow, script, subflow, v, out, input, types } from '@uipath/flow-sdk';
+import { flow, script, subflow, v, out, input, types } from '@uipath/maestro-builder-sdk';
 
 /** A leaf child: scale one quantity. Declared ABOVE the flows that run it. */
 const scaleIngredient = flow('scale-ingredient')

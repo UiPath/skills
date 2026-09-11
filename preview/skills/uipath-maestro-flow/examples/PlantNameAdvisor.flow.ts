@@ -6,7 +6,7 @@
  *
  * Generic scenario: ask a botany advisor for a plant's common name.
  */
-import { flow, agent, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, agent, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('plant-name-advisor')
   .name('PlantNameAdvisor')

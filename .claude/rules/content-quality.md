@@ -26,6 +26,9 @@ This repository's primary audience is AI coding agents, not humans. Write accord
 
 - Show the full command with all required flags
 - Use `<PLACEHOLDER>` for user-provided values (angle brackets, UPPER_SNAKE_CASE)
+- Use a placeholder for any example value that carries the shape of a date, an identifier, or personal data — customer content-inspection gates match on shape alone and block the whole published package. Write `--expiration "<EXPIRATION_DATE>"`, never `--expiration "2027-01-15"`; write `<STREET_ADDRESS>` and `<PHONE_NUMBER>`, never a sample address or phone number; mask digit positions as `NNN-NN-NNNN`. State the required format in prose instead: ``--expiration <date>``, ISO 8601 `YYYY-MM-DD`.
+- Give each value one placeholder covering the whole value. Never glue a placeholder to a literal fragment: write `--from-date <FROM_TIMESTAMP>`, not `--from-date <FROM_DATE>T00:00:00Z`.
+- Keep product identifiers the reader needs verbatim — error codes, support-forum thread IDs in URLs, vendor documentation URLs. Those are content, not examples.
 - Specify whether a flag is required or optional
 - Show expected output when it clarifies behavior
 - Group related commands together

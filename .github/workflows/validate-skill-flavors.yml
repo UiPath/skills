@@ -1,36 +1,20 @@
 name: Validate Skill Flavors
 
 on:
+  # No `paths:` filter on purpose, for the same two reasons as
+  # validate-version-sync.yml and validate-skills-sh.yml:
+  #
+  # 1. Required-check safety: this job is wired as a required status check. If
+  #    `paths:` excluded a PR the workflow wouldn't run, no check would be
+  #    reported, and merge would block forever.
+  # 2. A path list is not a reliable trigger for this drift. The 28-entry list
+  #    this replaced had to name every input to the package build — every tree
+  #    the composer reads, every script it calls, every root file that lands in
+  #    a tarball — and it went stale each time one was added. The build is what
+  #    ships to consumers; a silent skip is the one outcome worth paying ~50s
+  #    per PR to rule out.
   pull_request:
-    paths:
-      - 'skills/**'
-      - 'skill-flavors/**'
-      - 'agents/**'
-      - 'commands/**'
-      - 'hooks/**'
-      - 'assets/**'
-      - '.claude-plugin/**'
-      - 'scripts/compose-skill-flavor.mjs'
-      - 'scripts/npm-package-lifecycle.mjs'
-      - 'scripts/select-skill-package.mjs'
-      - 'tests/scripts/compose-skill-flavor.test.mjs'
-      - 'tests/scripts/manage-skill-flavors-skill.test.mjs'
-      - '.claude/skills/manage-skill-flavors/**'
-      - '.cursor/rules/skill-structure.mdc'
-      - '.gitignore'
-      - 'package.json'
-      - 'version-manifest.json'
-      - 'README.md'
-      - 'LICENSE'
-      - 'CODEOWNERS'
-      - 'CLAUDE.md'
-      - 'CONTRIBUTING.md'
-      - 'docs/RELEASE.md'
-      - '.github/workflows/publish.yml'
-      - '.github/workflows/publish-skill-flavor.yml'
-      - '.github/workflows/sprint-release-cut.yml'
-      - '.github/workflows/scripts/slack-sprint-cut-notify.mjs'
-      - '.github/workflows/validate-skill-flavors.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -40,9 +24,9 @@ jobs:
     name: Build and inspect every skill package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: '22.x'
 
@@ -92,7 +76,7 @@ jobs:
           fi
 
       - name: Upload package tarballs for inspection
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: skill-flavor-packages
           path: build/npm/*.tgz

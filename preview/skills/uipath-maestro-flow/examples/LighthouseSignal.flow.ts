@@ -7,7 +7,7 @@
  *
  * Generic scenario: read a lighthouse signal and pause before recording it.
  */
-import { flow, http, delay, script, input, out, tmpl, types } from '@uipath/flow-sdk';
+import { flow, http, delay, script, input, out, tmpl, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('lighthouse-signal')
   .name('LighthouseSignal')

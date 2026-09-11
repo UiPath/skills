@@ -6,7 +6,7 @@
  *
  * Generic scenario: add era and material labels to a fossil catalog export.
  */
-import { flow, batchTransform, out, types } from '@uipath/flow-sdk';
+import { flow, batchTransform, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('fossil-catalog-enrich')
   .name('FossilCatalogEnrich')

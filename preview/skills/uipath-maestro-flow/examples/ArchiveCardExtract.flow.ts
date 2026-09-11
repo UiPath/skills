@@ -6,7 +6,7 @@
  *
  * Generic scenario: read the catalog fields on a scanned archive card.
  */
-import { flow, ixpExtract, script, out, err, tmpl, types } from '@uipath/flow-sdk';
+import { flow, ixpExtract, script, out, err, tmpl, types } from '@uipath/maestro-builder-sdk';
 
 const PROJECT =
   'uipath.ixp.archive-cards.2f6e5c18-43ac-4d6a-91d5-c7b1240e8a36-74a4b14d-8ef5-4f24-a6aa-0d6f52a08c11';

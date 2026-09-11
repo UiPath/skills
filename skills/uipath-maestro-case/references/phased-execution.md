@@ -13,7 +13,7 @@ The skill emits the `27.0.0` top-level shape (`{ id, version, name, metadata, bi
 | Phase | Behavior |
 |---|---|
 | 2 — Prototyping | Informational validate, no halt on errors. |
-| 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure, 3-retry cap, hard stop on 3rd failure. |
+| 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure while each fix reduces the error count; hard stop only when two consecutive fix→validate rounds leave the count unchanged, or at 12 rounds. |
 | 5 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, re-run the upload once without `--output-filter` and dump that unfiltered response to `tasks/upload-response.json`, re-show Phase 5 prompt. |
 | 6 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
 | 7 — Publish to Orchestrator | Packs and publishes the whole solution, so the case's top-level shape is carried through unvalidated by this step. On `pack`/`publish` failure, report the CLI error verbatim, note it in build-issues.md, and re-show the Phase 7 prompt. |
@@ -35,13 +35,17 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | **4 — Validate** | Run authoritative `uip maestro case validate`, summarize `build-issues.md` (journal already on disk) | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Continue to publish`; a re-publish after a fix is confirmed separately |
+<!--skill-flavor:phase-table-seven-row:start-->
 | **7 — Publish to Orchestrator** | Optional `case pack` + `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Publish to Orchestrator` / `Done` |
+<!--skill-flavor:phase-table-seven-row:end-->
 
 ## Phase 2 — Prototyping
 
 ### Structural nodes (full detail)
 
+<!--skill-flavor:structural-scaffolding:start-->
 - Solution + project scaffolding (`uip solution init`, `uip solution projects add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
+<!--skill-flavor:structural-scaffolding:end-->
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
@@ -181,7 +185,7 @@ End of detail mutations. Run strict validate with the SDD audit:
 uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json
 ```
 
-`--strict` runs the default profile plus the case-wide and per-task checks that `full` cannot see: a stage with no tasks (`STRICT_STAGE_NO_TASKS`), a surviving `$xref(` marker (`STRICT_XREF_UNRESOLVED`), a `conditionExpression` hoisted onto the condition instead of a rule (`STRICT_CONDITION_EXPR_HOISTED`), a connector task whose `caseShape.context` is incomplete or lacks its Activity Type ID (`STRICT_CONNECTOR_*`), a task with `data: {}` (`TASK_NOT_CONFIGURED`, a warning; with `--sdd` it becomes the error `STRICT_SDD_PLACEHOLDER_RESOLVED` when the SDD resolved that resource), a malformed output shape or formal-argument slot (`STRICT_OUTPUT_*`), and a task input that is unbound or not in `=vars.<id>` form (`STRICT_INPUT_UNBOUND` / `STRICT_INPUT_REF_FORM`). `--sdd <path>` implies `--strict` and adds the completeness audit: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present (`STRICT_SDD_*`). Each failure carries its code in `Data.Issues[]` with the element path — fix the named element with a targeted Edit and re-run. `--strict` cannot be combined with `--skeleton` / `--skeleton-v2`. If the installed CLI rejects `--strict` as an unknown option, re-run without it and record `strict validate unavailable` in the completion report; a `Valid` without `--strict` is not evidence the strict checks passed. Both flags exist from CLI 1.202; an `invalid_argument` naming them as unknown options is the only reason to run plain `validate` — apply the SKILL.md Rule 14 version guard and log the fallback.
+`--strict` runs the default profile plus the case-wide and per-task checks that `full` cannot see: a stage with no tasks (`STRICT_STAGE_NO_TASKS`), a surviving `$xref(` marker or a `<-`/`->` planning-notation input value or a `vars.<x>` reference that resolves to nothing (`CASE_MGMT_XREF_UNRESOLVED`, `CASE_MGMT_PLANNING_NOTATION`, `CASE_MGMT_REFERENCE_UNBOUND`), a `conditionExpression` hoisted onto the condition instead of a rule (`CASE_MGMT_CONDITION_EXPR_HOISTED`) an output `id` shared by two tasks (`CASE_MGMT_OUTPUT_ID_DUPLICATE`) and an SLA rule `id` shared by two holders (`CASE_MGMT_SLA_ID_DUPLICATE`) — these six fail every profile, not only strict — a connector task whose `caseShape.context` is incomplete or lacks its Activity Type ID (`STRICT_CONNECTOR_*`), a task with `data: {}` (`TASK_NOT_CONFIGURED`, a warning; with `--sdd` it becomes the error `STRICT_SDD_PLACEHOLDER_RESOLVED` when the SDD resolved that resource), a malformed output shape or formal-argument slot (`STRICT_OUTPUT_*`), and a task input that is unbound or not in `=vars.<id>` form (`STRICT_INPUT_UNBOUND` / `STRICT_INPUT_REF_FORM`). `--sdd <path>` implies `--strict` and adds the completeness audit: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present (`STRICT_SDD_*`). Each failure carries its code in `Data.Issues[]` with the element path — fix the named element with a targeted Edit and re-run. `--strict` cannot be combined with `--skeleton` / `--skeleton-v2`. If the installed CLI rejects `--strict` as an unknown option, re-run without it and record `strict validate unavailable` in the completion report; a `Valid` without `--strict` is not evidence the strict checks passed. Both flags exist from CLI 1.202; an `invalid_argument` naming them as unknown options is the only reason to run plain `validate` — apply the SKILL.md Rule 14 version guard and log the fallback.
 
 On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid", Profile: "strict" } }` — proceed to the Phase 4 issue-log summary step.
 
@@ -193,7 +197,7 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-Up to **3 validation retries** per session — each retry MUST be preceded by a fix edit (validate-loop guard above). After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
+**Keep repairing while the errors are falling.** Each retry MUST be preceded by a fix edit (validate-loop guard above). Compare the error count of each `--strict --sdd` run to the previous one: while it falls, continue — a complete build has needed six to nine rounds in practice, and stopping at three leaves a plan that is honestly incomplete. Halt only when two consecutive fix→validate rounds leave the error count unchanged (the same findings are being routed around, not repaired), or after 12 rounds. Never drop `--strict --sdd` to make a run pass: a plain-profile `Valid` is not progress. On halt, ask the user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
@@ -263,6 +267,7 @@ After Phase 6 (whether debug ran or was skipped), prompt via **AskUserQuestion**
 
 > **Publish to Orchestrator ships the case to the tenant solution feed — a real, outward-facing publish. Only run when user explicitly selects it. Never auto-run** (Rule 12).
 
+<!--skill-flavor:phase-seven-commands:start-->
 Requires `uip login`.
 
 ### Publish commands
@@ -290,16 +295,21 @@ uip solution publish "<packagePath>" --wait --output json
 - `case pack` requires `package-descriptor.json` in the case project directory (written at scaffold, [plugins/case/impl-json.md](plugins/case/impl-json.md)). If it fails with `Missing package-descriptor.json`, restore that file — do not skip the step.
 
 > `uip maestro case pack` is **not** the publish artifact. It emits a single project `.nupkg`, which `solution publish` does not accept — `solution pack` produces its own project `.nupkg` internally and wraps it in the `.zip`. Run `case pack` for the BPMN recompile only; always publish the `solution pack` `.zip`.
+<!--skill-flavor:phase-seven-commands:end-->
 
 Phase 7 stops at publish. `uip solution deploy run` (the step that installs the solution into an Orchestrator folder) is out of scope — report the published package and tell the user to deploy it from Orchestrator.
 
 ### On failure
 
+<!--skill-flavor:phase-seven-on-failure:start-->
 If `case pack`, `solution pack`, or `publish` fails, print the CLI error verbatim, note it in `build-issues.md`, and re-show the Phase 7 prompt. Do not retry with a different pack command, and never work around a `case pack` failure by going straight to `solution pack` — that ships a package with a missing or stale `.bpmn`. A `processKey` collision on publish means the `name+version` pair already exists on the feed — re-run with a bumped `--version`.
+<!--skill-flavor:phase-seven-on-failure:end-->
 
 ### Suggested next steps
 
+<!--skill-flavor:phase-seven-next-steps:start-->
 Before the prompt: `Suggested next steps: publish to Orchestrator when you want the case on the tenant solution feed, or stop here if Studio Web and debug are enough.` After a successful publish: `Suggested next steps: verify the package with 'uip solution packages list', then deploy it to an Orchestrator folder.` On `Done`: `Suggested next steps: review caseplan.json locally, or update sdd.md and re-run when you want changes.`
+<!--skill-flavor:phase-seven-next-steps:end-->
 
 ### Publish-to-Orchestrator notes
 

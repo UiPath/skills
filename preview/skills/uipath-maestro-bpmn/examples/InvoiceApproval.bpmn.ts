@@ -38,7 +38,7 @@
  * `connectionId` added, which the source export omitted. It compiles, and that is what
  * it is for — reading, and rendering the canvas diagram on this page.
  */
-import { bpmn, errorSchema, errorSchemaWithResponse } from "@uipath/flow-sdk/bpmn";
+import { bpmn, errorSchema, errorSchemaWithResponse } from "@uipath/maestro-builder-sdk/bpmn";
 
 export default bpmn("Process_1")
   .name("Process")

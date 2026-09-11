@@ -13,7 +13,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 
 ## Debug — controlled end-to-end run
 
-> **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate. The mandate does not cover side effects that reach a third party (a real call, a message to someone who is not the user) — those need the run asked for explicitly. Never debug a solution this run did not scaffold: debug overwrites the Studio Web solution matching the local `.uipx` `SolutionId`. See rule #2 in [SKILL.md](../../SKILL.md).
+> **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate, and with nobody to ask report the flow as unverified rather than letting a passing validate stand as the result. Never debug a solution this run did not scaffold: debug overwrites the Studio Web solution matching the local `.uipx` `SolutionId`. See rule #2 in [SKILL.md](../../SKILL.md).
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
@@ -117,7 +117,7 @@ uip maestro flow job traces <job-key> --output json   # stream the verbose execu
 
 ## Anti-patterns
 
-- **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
+- **Never substitute `flow debug` for `flow validate` as the structural check.** Use `uip maestro flow validate` for schema and graph correctness; debug is the end-to-end run rule #2 mandates, and skipping it leaves the flow unverified.
 - **Never re-run a completed `flow debug` to re-read or reshape its output.** Each run re-uploads the solution and executes the flow again for real. Extract the report fields from the payload the completed run already returned — see [Reporting debug runs](#reporting-debug-runs-to-the-user). For a faulted run, read the cause first — see [When the run faults](#when-the-run-faults).
 - **Never skip `solution resources refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
 - **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.

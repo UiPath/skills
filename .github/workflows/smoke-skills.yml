@@ -2,7 +2,10 @@ name: Smoke Skill Tests
 
 concurrency:
   group: smoke-skills-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; `opened` and `reopened` can fire on a
+  # commit a run is already in flight for, and a cancelled run reports the
+  # required context as `cancelled`. See docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No `paths:` filter on purpose. This workflow is a required status
@@ -146,7 +149,11 @@ jobs:
           SKIP_INFRA_TRIGGER=false
           echo "$PR_LABELS" | grep -qw 'ci:skip-infra-trigger' && SKIP_INFRA_TRIGGER=true
 
-          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$|^\.github/workflows/smoke-skills\.yml$'; then
+          INFRA_PATTERN='^tests/docker/|^tests/fixtures/maestro-flow-sdk-smoke/'
+          INFRA_PATTERN+='|^tests/experiments/smoke\.yaml$|^tests/_shared/'
+          INFRA_PATTERN+='|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$'
+          INFRA_PATTERN+='|^\.github/workflows/smoke-skills\.yml$'
+          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE "$INFRA_PATTERN"; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -370,7 +377,7 @@ jobs:
 
       # Build custom smoke image extending coder-eval-agent with @uipath/cli,
       # every whitelisted tool plugin from GitHub Packages @dev, and the latest
-      # published @uipath/flow-sdk (see tests/docker/Dockerfile). Every push to
+      # published @uipath/maestro-builder-sdk (see tests/docker/Dockerfile). Every push to
       # `cli/main` publishes a `-dev.<run>` prerelease under the `dev` dist-tag
       # (cli PR #2650 renamed the old `alpha` tag → `dev` on 2026-06-26), so
       # smoke tracks main — not stale `latest` from public npm (which lags by ~2
@@ -379,11 +386,21 @@ jobs:
         env:
           DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+          FLOW_SDK_PKG_NAME: ${{ vars.FLOW_SDK_PKG_NAME }}
         run: |
+          # The image's ARG default is the post-rename package name; override it
+          # only when a repo var pins a different one. The pre-rename baseline
+          # needs BOTH this and FLOW_SDK_VERSION (see tests/docker/Dockerfile) —
+          # pinning the version alone asks for a version the new name never had.
+          pkg_name_arg=()
+          if [ -n "${FLOW_SDK_PKG_NAME:-}" ]; then
+            pkg_name_arg=(--build-arg "FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}")
+          fi
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }} \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             --build-arg FLOW_SDK_VERSION="${{ vars.FLOW_SDK_VERSION || 'latest' }}" \
+            ${pkg_name_arg[@]+"${pkg_name_arg[@]}"} \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .

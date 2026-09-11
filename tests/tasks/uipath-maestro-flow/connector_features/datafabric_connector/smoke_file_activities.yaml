@@ -15,6 +15,8 @@ run_limits:
   task_timeout: 5400
 
 pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
   - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
     timeout: 60
 
@@ -35,6 +37,10 @@ initial_prompt: |
      output Id (do NOT hard-code).
   4. DeleteFileFromRecordFieldV2 — bind recordId to the same create activity
      output Id used in step 3.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

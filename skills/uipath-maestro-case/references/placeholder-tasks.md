@@ -166,7 +166,7 @@ Wire each input per the `io-binding` plugin — see [`plugins/variables/io-bindi
 ### 6. Re-validate
 
 ```bash
-uip maestro case validate <file> --output json
+uip maestro case validate <file> --strict --sdd sdd.md --output json
 ```
 
 The "task with no configuration" warning disappears once `data` is populated.

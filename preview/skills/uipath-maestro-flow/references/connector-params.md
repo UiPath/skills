@@ -24,6 +24,26 @@ Signatures:
   { connection: 'jira', folder: 'shared' }))
 ```
 
+## Author first — `check` names every prepare you owe
+
+Authoring never waits on `prepare`, and no discovery command precedes the
+source. The loop is:
+
+1. **Search** the library and read the operation's page.
+2. **Author** the step from the task's own words — the fields you intend,
+   `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a
+   generic operation.
+3. **Check**: `uip maestro flow check <Name>.flow.ts --source`. It names each
+   gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
+   `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
+4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
+   invocation, and it finds the connection itself and writes `bindings.json`.
+   Switch to the generated descriptor import where it printed one.
+5. **Check again, then compile.**
+
+Every prepare command below is the one `check` prints at step 3 — shown here
+so its flags are documented, not as a step to run before the source exists.
+
 ## Three contracts to settle before authoring
 
 Check these before the first connector call; they are the common places where a
@@ -68,7 +88,7 @@ FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md)"
 
 The four library verbs are `pull`, `search`, `path` and `prepare`. Like the
 authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of
-their own — each one runs the `@uipath/flow-sdk` installed in this workspace. In
+their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace. In
 a workspace with no `uip`, `npx flow-sdk registry <verb>` is the same command
 with the same arguments.
 
@@ -88,10 +108,12 @@ jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path
 sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
 ```
 
-When a connection-specific field is absent, materialize the live schema rather
-than guessing or hand-editing the emitted Flow. This reads the schema through
-the tenant, so it needs a live Integration Service connection and a logged-in
-`uip`; without one, fall back to the curated operation in the markdown library.
+When `check` refuses a connection-specific field as unknown — or warns the
+schema is unprepared — materialize the live schema rather than guessing or
+hand-editing the emitted Flow; its diagnostic names this command. It reads the
+schema through the tenant, so it needs a live Integration Service connection
+and a logged-in `uip`; without one, fall back to the curated operation in the
+markdown library.
 
 ```bash
 npx flow-sdk registry prepare <connector-key> <action>
@@ -155,27 +177,29 @@ above unless you specifically want that.
 
 ### Finding the object id for a Generic operation
 
-`--object` takes the connection's **API** name (`acr_user`), not its display
-name. Filter the catalog server-side — a real tenant has tens of thousands of
-objects, and paging them client-side is what makes this expensive:
+Do not hunt for it, and do not resolve it before authoring: write the step
+with `{ object: '<name-as-the-task-said-it>' }` and let `check` name this
+command (`OBJECT_UNPREPARED`). `--object` matches, it does not equality-test —
+any casing, resolved against the connected catalog (exact, then
+case-insensitive on API name and display name, narrowed to objects that
+support the action's verb):
 
 ```bash
-# By API name, when the task names it outright.
-uip is resources list <connector-key> --connection-id <id> \
-  --output-filter "[?Name=='acr_user']" --output json
-# By human label, when the task only gives you that. `lower()` is available.
-uip is resources list <connector-key> --connection-id <id> \
-  --output-filter "[?contains(lower(DisplayName),'account recovery')]" --output json
+npx flow-sdk registry prepare <connector-key> <action> --object Company__C
+#   object: matched "Company__C" -> Company__c
 ```
 
-Each row is `{Name, DisplayName, Path, Type, SubType, Custom, ElementKey}` —
-`Name` is what `--object` wants. To see one object's parameters for a single
-operation without preparing it:
-
-```bash
-uip is resources describe <connector-key> <object> --connection-id <id> \
-  --operation List --output json
-```
+When the name matches **several** objects, the command refuses and prints the
+candidates (API name, display name, custom, operations). `Custom: yes` marks a
+tenant-only object, so a task that says "custom" means one of those rows. Pick
+by the task's wording, or present the candidates and let the user choose —
+never pick for them — then re-run with the chosen `Name`. When **nothing**
+matches, the command has already retried a refreshed catalog: the object is
+not on this connection, so surface that rather than inventing a name. Do not
+hand-filter the catalog with `uip is resources list` + `--output-filter` — the
+matching, the verb narrowing and the staleness retry are prepare's job now,
+and the match is recorded in `connectors-local/resolutions.json` (the
+`objects` section) beside the lookup resolutions.
 
 ## Structured filters (CEQL)
 
@@ -241,6 +265,20 @@ same connection has many different shapes. Measured on one live Jira tenant,
 
 Both dimensions matter independently, and `fields.summary` — *required* — appears
 in none of the snapshot's static inputs.
+
+**The parents are themselves lookups, and the id `--resolve` records is the
+very value `-f` wants.** Do not run one prepare to resolve them and retype the
+ids into a second command: pass both flags together —
+
+```bash
+npx flow-sdk registry prepare uipath-atlassian-jira create-issue \
+  --resolve fields.project.key:key=UIP --resolve fields.issuetype.id:name=Bug \
+  -f fields.project.key=UIP -f fields.issuetype.id=10732
+```
+
+— or run the resolve-only prepare and paste the re-run it prints: when every
+parent has a recorded resolution, its closing note carries the exact
+`-f NAME=VALUE` command with the resolved ids filled in.
 
 **Two ways to get this wrong, and only one of them is loud.**
 
@@ -391,13 +429,15 @@ debug are the evidence.
 Fields such as Slack channels and mailbox folders store ids, not display names.
 
 **If a field is marked LOOKUP, do not guess it and do not resolve it by hand.**
-Use the field's helper and record the value once with `prepare`. This one rule
-covers 1,071 fields across 104 connectors, so it is worth knowing before any
-particular connector is:
+Author the field's helper call and keep going:
 
 ```ts
 channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 ```
+
+When the flow is written, `check` reports each token still unresolved
+(`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
+and it is the only tenant call the whole loop needs:
 
 ```bash
 npx flow-sdk registry prepare uipath-salesforce-slack send-message-to-user \
@@ -428,6 +468,15 @@ SendGrid's `from`, takes one silently.) A required lookup field you have no
 value for is resolved with its helper, not filled from a look-alike input. Run
 `check` before compiling: it finds everything else that is wrong first, so the
 one expensive call is spent last.
+
+**When the task names nobody for a person-shaped required field** (`reporter`,
+`requester`, `owner`), the value is the connection's own user: take the account
+from `uip login status` and resolve by **display name**. Search only by the
+names the field's "matches on" list declares — do not improvise queries against
+raw collections. Jira in particular hides e-mail addresses from user search, so
+an `emailAddress=` query returns nothing for a user that plainly exists, while
+`displayName=` finds them; the field's spec (`matches on displayName |
+accountId`) already told you e-mail was not searchable.
 
 Each operation's markdown page lists its lookup fields, the helper for each, and
 what it can be searched by. The generated descriptor carries the same facts as a
