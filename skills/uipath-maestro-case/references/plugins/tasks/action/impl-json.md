@@ -96,3 +96,4 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - **CLI `validate` does NOT check `data.recipient`** — verify presence/shape explicitly (Post-Write Verification).
 
 <!-- END: impl-json.md -->
+
