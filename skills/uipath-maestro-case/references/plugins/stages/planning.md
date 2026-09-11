@@ -43,8 +43,8 @@ Do NOT create edges for any stage. If the sdd.md describes a stage "connected vi
 |-------|--------|-------|
 | `label` | sdd.md stage name | Shown in the UI. |
 | `type` | sdd.md intent | `stage` (default) or `secondary` — see above |
-| `rationale` | sdd.md Design Rationale | Required reviewer context explaining the stage-kind and routing choice. A global-event secondary stage states why one interrupting entry replaces per-stage duplication. Emitted as `data.description`. |
-| `description` | sdd.md stage Design Rationale | The rationale above, written into the stage element. An SDD with no rationale heads the same prose `Description`; use that. |
+| `rationale` | sdd.md Design Rationale | Required reviewer context explaining the stage-kind and routing choice. A global-event secondary stage states why one interrupting entry replaces per-stage duplication. Carried into `tasks/build-issues.md`, not into the element. |
+| `description` | sdd.md stage `**Description:**` | That line word for word, written into `data.description`. A block that writes no `**Description:**` puts its `**Design Rationale:**` here instead. |
 | `isRequired` | sdd.md (default `true` for regular, `false` for secondary) | **Planning-only metadata.** See note below. |
 
 ### Note on `isRequired`
