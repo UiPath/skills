@@ -315,6 +315,119 @@ def test_native_blank_folder_key_fails(tmp_path: Path) -> None:
     assert "leaves it blank" in result.stdout + result.stderr
 
 
+def test_native_filter_on_the_wrong_column_fails(tmp_path: Path) -> None:
+    """The right value on the wrong column queries nothing useful, and checking
+    only the value let it through."""
+
+    def mutate(flow):
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["field"] = "accountNumber"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "'invoiceNumber'" in result.stdout + result.stderr
+
+
+def test_native_filter_column_case_is_tolerated(tmp_path: Path) -> None:
+    """A column whose CASE is wrong is a different defect, caught live. Failing
+    it here is the over-strictness this file keeps paying for."""
+
+    def mutate(flow):
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["field"] = "InvoiceNumber"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_filter_legacy_in_operator_is_accepted(tmp_path: Path) -> None:
+    """`is any of` is the legacy spelling of `in` and the platform still reads
+    it, so rejecting it fails a filter the serializer accepts."""
+
+    def mutate(flow):
+        for node in flow["nodes"]:
+            config = (node.get("inputs") or {}).get("entityConfig")
+            if config:
+                config["resultMode"] = "multiple"
+                for row in config["_filters"]["rows"]:
+                    row["operator"] = "is any of"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_entity_binding_without_a_default_fails(tmp_path: Path) -> None:
+    """The row's whole purpose is to carry the value packaging overrides with, so
+    matching the metadata and skipping `default` reports success on a pair that
+    overrides nothing."""
+    key = "erp-resource-key"
+
+    def mutate(flow):
+        for node in flow["nodes"]:
+            config = (node.get("inputs") or {}).get("entityConfig")
+            if config:
+                config["_folderKey"] = FOLDER_KEY
+                config["_resourceKey"] = key
+        flow["bindings"] = [
+            _entity_row("Entity", key, attribute, default=None)
+            for attribute in ("name", "folderKey")
+        ]
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "carry no `default`" in result.stdout + result.stderr
+
+
+def test_native_non_uuid_folder_key_fails(tmp_path: Path) -> None:
+    """`_folderKey` is the entity's `folderId`, so the emitted folder-qualified
+    target cannot resolve a value of another shape."""
+
+    def mutate(flow):
+        for node in flow["nodes"]:
+            config = (node.get("inputs") or {}).get("entityConfig")
+            if config:
+                config["_folderKey"] = "Shared/uipath-maestro-flow/BillingDispute"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "not a folder id" in result.stdout + result.stderr
+
+
+def test_server_side_filter_rejects_a_row_with_no_predicate(tmp_path: Path) -> None:
+    """`rows: [{}]` is a non-empty list the serializer emits nothing from, so
+    list non-emptiness is not the question."""
+    checker = FLOW_TASKS / "multi_node/billing_invoice_lookup/check_server_side_filter.py"
+    flow = _native_flow()
+    for node in flow["nodes"]:
+        config = (node.get("inputs") or {}).get("entityConfig")
+        if config:
+            config["_filters"] = {"logicalOperator": "AND", "rows": [{}], "groups": []}
+    cwd = _project(tmp_path, flow, NON_CONNECTION_BINDINGS, "BillingDisputeResolution")
+
+    result = subprocess.run(
+        [sys.executable, str(checker)], cwd=cwd, capture_output=True, text=True, check=False
+    )
+    assert result.returncode != 0
+    assert "no server-side filter" in result.stdout + result.stderr
+
+
+def test_entity_read_shapes_match_the_structural_gates() -> None:
+    """Two discriminators describe the same two shapes: this module's for the
+    advisories, `flow_check.ENTITY_QUERY_HINTS` for the structural gates. A
+    comment asking to "keep the two in step" is not a guard."""
+    sys.path.insert(0, str(SHARED))
+    import advisory_flow_utils
+    import flow_check
+
+    hints = flow_check.ENTITY_QUERY_HINTS
+    assert len(hints) == 2, hints
+    assert advisory_flow_utils.NATIVE_READ_TYPE in hints
+    connector_type = advisory_flow_utils.CONNECTOR_READ_PREFIX + "query-entity-records"
+    assert any(hint in connector_type for hint in hints), (hints, connector_type)
+
+
 def test_bindings_checker_accepts_a_valid_connection_pair(tmp_path: Path) -> None:
     flow = json.loads((FLOW_TASKS / REFERENCE_CASES["advisory_billing_invoice_lookup.py"]).read_text())
     cwd = _project(tmp_path, flow, CONNECTION_BINDINGS, "BillingInvoiceLookup")
@@ -333,7 +446,7 @@ def test_native_half_authored_folder_scope_fails(tmp_path: Path) -> None:
     for node in flow["nodes"]:
         config = (node.get("inputs") or {}).get("entityConfig")
         if config:
-            config["_folderKey"] = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+            config["_folderKey"] = FOLDER_KEY
     target.write_text(json.dumps(flow))
 
     result = run_script("advisory_billing_invoice_lookup.py", target)
@@ -350,12 +463,9 @@ def test_native_lowercase_entity_binding_row_fails(tmp_path: Path) -> None:
     for node in flow["nodes"]:
         config = (node.get("inputs") or {}).get("entityConfig")
         if config:
-            config["_folderKey"] = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+            config["_folderKey"] = FOLDER_KEY
             config["_resourceKey"] = key
-    flow["bindings"] = [
-        {"resource": "entity", "resourceKey": key, "propertyAttribute": attribute}
-        for attribute in ("name", "folderKey")
-    ]
+    flow["bindings"] = [_entity_row("entity", key, attribute) for attribute in ("name", "folderKey")]
     target.write_text(json.dumps(flow))
 
     result = run_script("advisory_billing_invoice_lookup.py", target)
@@ -370,12 +480,9 @@ def test_native_folder_scope_with_both_binding_rows_passes(tmp_path: Path) -> No
     for node in flow["nodes"]:
         config = (node.get("inputs") or {}).get("entityConfig")
         if config:
-            config["_folderKey"] = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+            config["_folderKey"] = FOLDER_KEY
             config["_resourceKey"] = key
-    flow["bindings"] = [
-        {"resource": "Entity", "resourceKey": key, "propertyAttribute": attribute}
-        for attribute in ("name", "folderKey")
-    ]
+    flow["bindings"] = [_entity_row("Entity", key, attribute) for attribute in ("name", "folderKey")]
     target.write_text(json.dumps(flow))
 
     result = run_script("advisory_billing_invoice_lookup.py", target)
@@ -410,6 +517,18 @@ def _project(tmp_path: Path, flow: dict, bindings: dict, name: str) -> Path:
 
 def _native_flow() -> dict:
     return json.loads((FLOW_TASKS / NATIVE_REFERENCE_CASE[1]).read_text())
+
+
+FOLDER_KEY = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+
+
+def _entity_row(resource: str, key: str, attribute: str, default: str | None = "Orders") -> dict:
+    """A Data Fabric entity binding row. `default` is the value packaging
+    substitutes, so a row without one matches and overrides nothing."""
+    row = {"resource": resource, "resourceKey": key, "propertyAttribute": attribute}
+    if default is not None:
+        row["default"] = FOLDER_KEY if attribute == "folderKey" else default
+    return row
 
 
 CONNECTION_BINDINGS = {

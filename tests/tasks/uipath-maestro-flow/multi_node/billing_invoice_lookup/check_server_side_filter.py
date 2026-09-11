@@ -52,7 +52,13 @@ def has_filter(obj) -> bool:
 
 def filters_server_side(node) -> bool:
     if node.get("type") == NATIVE_READ_TYPE:
-        return bool(native_filter_rows(node))
+        # A row is a predicate only once it names a column and carries a value.
+        # `rows: [{}]` is a list the serializer emits nothing from, so list
+        # non-emptiness is not the question.
+        return any(
+            str(row.get("field") or "").strip() and str(row.get("value") or "").strip()
+            for row in native_filter_rows(node)
+        )
     return has_filter(node.get("inputs", {}))
 
 

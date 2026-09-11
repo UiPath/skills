@@ -144,8 +144,11 @@ def main():
             fail(f"query {n['id']!r} is not reachable from the trigger {start!r}")
 
     # ── 4. both filters computed, each from its own input ─────────────────────
-    for label, node, wanted_input in ((ERP, erp, "invoiceNumber"), (CRM, crm, "accountNumber")):
-        assert_read_filters_input(node, shape, wanted_input, label, nodes)
+    for label, node, wanted_input, column in (
+        (ERP, erp, "invoiceNumber", "invoiceNumber"),
+        (CRM, crm, "accountNumber", "accountNumber"),
+    ):
+        assert_read_filters_input(node, shape, wanted_input, label, nodes, column=column)
 
     # ── 5. no answer is written in ─────────────────────────────────────────────
     for bad in FORBIDDEN_LITERALS:

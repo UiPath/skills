@@ -183,6 +183,9 @@ NATIVE_FILTER_OPERATORS = {
     "starts with",
     "ends with",
     "in",
+    # The legacy spelling of `in`. The platform still reads it (impl.md —
+    # Filters), so rejecting it fails a filter the serializer accepts.
+    "is any of",
 }
 
 
@@ -204,12 +207,10 @@ def entity_reads(nodes: Iterable[dict[str, Any]]) -> tuple[str, list[dict[str, A
     connector = [
         node for node in nodes
         if str(node.get("type") or "").startswith(CONNECTOR_READ_PREFIX)
+        and str(node.get("type") or "").endswith(CONNECTOR_READ_OPS)
     ]
     native = [node for node in nodes if str(node.get("type") or "") == NATIVE_READ_TYPE]
-    connector_reads = [
-        node for node in connector
-        if str(node.get("type") or "").endswith(CONNECTOR_READ_OPS)
-    ]
+    connector_reads = connector
     if connector_reads and native:
         fail(
             f"the flow mixes both entity-read shapes — connector "
@@ -266,8 +267,17 @@ def assert_read_filters_input(
     field: str,
     label: str,
     nodes: Iterable[dict[str, Any]] = (),
+    *,
+    column: str,
 ) -> None:
     """Assert the read filters on ``field``, computed, in a form the server accepts.
+
+    ``field`` is the flow input the value must come from; ``column`` is the
+    entity column the filter has to sit on. They coincide in every current
+    scenario and are not the same thing, so ``column`` is passed explicitly:
+    inferring it from ``field`` would false-fail a scenario whose input and
+    column are spelled differently. Without it, a row on the WRONG column
+    carrying the right value passes while querying nothing useful.
 
     The computed half is the anti-hardcode gate: a filter that writes the answer
     in satisfies every behaviour rung while querying nothing. The accepted half
@@ -289,13 +299,13 @@ def assert_read_filters_input(
                 f"the {label} read sets no `entityConfig._filters` rows — an unfiltered "
                 f"`resultMode: {mode or 'multiple'!r}` read {consequence}"
             )
-        if not read_references_input(node, shape, field, nodes):
+        if not read_references_input(node, shape, field, nodes, column=column):
             fail(
-                f"no {label} filter row reaches $vars.…{field}, directly or through a node it "
-                f"reads — the rows are "
+                f"no {label} filter row on column {column!r} reaches $vars.…{field}, directly or "
+                f"through a node it reads — the rows are "
                 f"{[{'field': row.get('field'), 'value': unwrap(row.get('value'))} for row in rows]!r}. "
-                f"Each lookup must filter on its own flow input; a literal there is the answer "
-                f"written in"
+                f"Each lookup must filter its own column on its own flow input; a literal there is "
+                f"the answer written in, and the right value on the wrong column queries nothing"
             )
         for row in rows:
             operator = str(row.get("operator") or "")
@@ -323,7 +333,7 @@ def assert_read_filters_input(
     if "queryExpression" not in query:
         fail(f"the {label} query sets no queryExpression; queryParameters: {sorted(query)}")
     expression = str(query["queryExpression"])
-    if not read_references_input(node, shape, field, nodes):
+    if not read_references_input(node, shape, field, nodes, column=column):
         fail(
             f"the {label} queryExpression is {expression!r} and its filterVariables do not reference "
             f"{field!r} — each lookup must filter on its own flow input. Author the filter via "
@@ -342,6 +352,8 @@ def read_references_input(
     shape: str,
     field: str,
     nodes: Iterable[dict[str, Any]] = (),
+    *,
+    column: str | None = None,
 ) -> bool:
     """True when the read's filter reaches the named flow input.
 
@@ -361,7 +373,13 @@ def read_references_input(
         if other.get("id")
     }
     dependencies = node_dependencies(nodes)
+    wanted = (column or "").strip().lower()
     for row in native_filter_rows(node):
+        # Case-insensitive: a column whose CASE is wrong is a different defect,
+        # caught live, and failing it here is the over-strictness this file keeps
+        # paying for.
+        if wanted and str(row.get("field") or "").strip().lower() != wanted:
+            continue
         value = row.get("value")
         if "$vars." not in str(unwrap(value) or ""):
             continue
@@ -402,6 +420,12 @@ def assert_read_resolves(node: dict[str, Any], shape: str, label: str, flow: dic
                 f"It is the key's PRESENCE that switches the emitted target to the folder-qualified form, "
                 f"so a blank one emits that form with no folder. Omit the key to stay tenant-scoped"
             )
+        if not is_real_uuid(folder):
+            fail(
+                f"the {label} read's `_folderKey` is {folder!r}, which is not a folder id. It is the "
+                f"entity's `folderId` from `uip df entities list`, so the emitted folder-qualified "
+                f"target cannot resolve a value of this shape"
+            )
 
         key = str(unwrap(config.get("_resourceKey")) or unwrap(config.get("_entityKey")) or "").strip()
         if not key:
@@ -411,13 +435,14 @@ def assert_read_resolves(node: dict[str, Any], shape: str, label: str, flow: dic
                 f"worse than none — it packages and breaks on deploy. Keep the entity tenant-scoped, or "
                 f"let the canvas entity picker write all three"
             )
-        attributes = {
-            str(binding.get("propertyAttribute") or "")
+        rows = [
+            binding
             for binding in (flow.get("bindings") or [])
             if isinstance(binding, dict)
             and str(binding.get("resource") or "") == "Entity"
             and str(binding.get("resourceKey") or "") == key
-        }
+        ]
+        attributes = {str(binding.get("propertyAttribute") or "") for binding in rows}
         missing = sorted({"name", "folderKey"} - attributes)
         if missing:
             fail(
@@ -425,6 +450,21 @@ def assert_read_resolves(node: dict[str, Any], shape: str, label: str, flow: dic
                 f"`resource: \"Entity\"` binding row with propertyAttribute {missing} (it declares "
                 f"{sorted(attributes) or 'none'}). Both rows are required, `resource` is the capitalized "
                 f"\"Entity\" — packaging ignores a lowercase row, so the deploy side gets no override"
+            )
+        # The row's whole purpose is to carry the value packaging overrides with
+        # (impl.md — Folder-scoped entities and bindings). Matching the metadata
+        # and skipping `default` reports success on a pair that overrides nothing.
+        valueless = sorted(
+            str(binding.get("propertyAttribute") or "")
+            for binding in rows
+            if str(binding.get("propertyAttribute") or "") in {"name", "folderKey"}
+            and not str(unwrap(binding.get("default")) or "").strip()
+        )
+        if valueless:
+            fail(
+                f"the {label} read's `Entity` binding row(s) for propertyAttribute {valueless} carry no "
+                f"`default`. That field is the value packaging substitutes, so a row without one is "
+                f"matched and then overrides nothing — the deploy side still gets the source-org literal"
             )
         return f"folder-scoped entity, both Entity binding rows on {key[:8]}…"
 
