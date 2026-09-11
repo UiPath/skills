@@ -206,7 +206,7 @@ Reads recent exchanges without waiting. Rarely needed, and constrained — see [
 
 ## Structured Outputs
 
-In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Published and in-solution agents cannot.
+In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Published and in-solution agents do not have structured output fields.
 
 Declare each field in two places or it yields nothing at run time:
 
@@ -235,13 +235,7 @@ So split the instructions by destination — *what to say* in the system prompt,
 | system prompt | "Thank the user when they would like to end the conversation." |
 | `endConversation` (boolean) `description` | "Set to true when the user intends to end the conversation." |
 
-**Never name the output field, its values, or the flow's routing in the system prompt.** Because the chat reply is generated from the system prompt alone, an instruction like "set `route` to `end_conversation` when the user says goodbye" makes the agent emit the structured value inline, and the user sees a raw tag in the chat:
-
-```
-<uip:route>end_conversation</uip:route>
-```
-
-Nothing catches this. `agent refresh`, `agent validate` and `flow validate` all pass, the structured output may still route correctly, and the leak surfaces only in a live conversation. If you see a `<uip:…>` tag in the chat, move that field's instructions out of the system prompt and into its `description`.
+**Never name the output field, its values, or the flow's routing in the system prompt.** Because the chat reply is generated from the system prompt alone, an instruction like "set `route` to `end_conversation` when the user says goodbye" may make the LLM emit the structured value inline or look for a tool to set the output variables.
 
 ## Wire the Edges
 
