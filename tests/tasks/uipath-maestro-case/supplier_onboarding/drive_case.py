@@ -274,11 +274,25 @@ _TRANSIENT_MARKERS = (
     "gateway timeout",
     "temporarily",
     "too many requests",
+    # A 403 naming `authentication_required` is the tenant's session, never the plan:
+    # a build defect cannot produce it. It cost four route verdicts across two runs,
+    # on `instance get` and `instance variables` after the route had already driven
+    # its gates.
+    "authentication_required",
 )
+
+# The listing service answering with no reason at all. A refusal names one in
+# `Instructions`, so the pair of a generic code and a content-free message is the
+# signature of a service that could not answer rather than one that would not. It
+# ended a route on 34632357797 at the point where the buyer stage had been selected.
+_TRANSIENT_PAIR = ("unknown_error", "an error occurred")
 
 
 def _is_transient(detail: str) -> bool:
-    return any(marker in detail.lower() for marker in _TRANSIENT_MARKERS)
+    lowered = detail.lower()
+    if all(part in lowered for part in _TRANSIENT_PAIR):
+        return True
+    return any(marker in lowered for marker in _TRANSIENT_MARKERS)
 
 
 
@@ -308,10 +322,15 @@ def run_checked(args: list[str], *, timeout: int = 120) -> dict:
     when the lookup itself had failed, and that reads as a case defect rather than a
     lookup that never answered.
     """
-    reply = envelope(args, timeout=timeout)
-    if reply.get("Result") != "Success":
-        fail(f"`{' '.join(args[:6])}` failed: {envelope_detail(reply)}")
-    return reply.get("Data") or {}
+    for attempt in range(TRANSIENT_RETRIES + 1):
+        reply = envelope(args, timeout=timeout)
+        if reply.get("Result") == "Success":
+            return reply.get("Data") or {}
+        detail = envelope_detail(reply)
+        if attempt == TRANSIENT_RETRIES or not _is_transient(detail):
+            fail(f"`{' '.join(args[:6])}` failed: {detail}")
+        print(f"  `{' '.join(args[:6])}` came back {detail}; retrying in {TRANSIENT_PAUSE}s")
+        time.sleep(TRANSIENT_PAUSE)
 
 
 def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
