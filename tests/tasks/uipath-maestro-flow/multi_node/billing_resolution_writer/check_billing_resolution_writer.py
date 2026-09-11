@@ -10,8 +10,11 @@ drafts a resolution and then posts it to Slack. Three layers:
      mapped `emailBody` output — cites the invoice and the approved credit.
   3. Slack outcome: the `Send Message to channel` activity actually posted — the
      flow surfaces the posted message's ts as `slackMessageId`, verified against
-     the executed send node's own response, and the message carries the
-     correlationId and the invoice number.
+     the executed send node's own response, and the message carries the drafted
+     resolution (a slice of `emailBody`), not only the trigger echoes. Requiring
+     the draft in the post closes the same input-echo false pass warned about for
+     `emailBody`: correlationId + invoice are flow inputs, so a canned template
+     over them would satisfy an ids-only Slack gate one layer out.
 
 The behavior grade scopes to the `emailBody` output global, NOT the whole debug
 payload. Matching the whole payload is a false pass: the trigger echoes the
@@ -32,6 +35,7 @@ from _shared.flow_check import (  # noqa: E402
     assert_connector_send_identity,
     assert_flow_has_node_type,
     assert_flow_uses_connector_target,
+    assert_named_equals,
     assert_named_output_contains,
     assert_output_nonempty,
     assert_slack_message_posted,
@@ -41,7 +45,10 @@ from _shared.flow_check import (  # noqa: E402
 INVOICE = "MCS-2026-04872"
 SLACK_KEY = "uipath-salesforce-slack"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
-# Fresh correlationId per run isolates this run's Slack message from prior runs.
+# Fresh correlationId per run is anti-hardcode: a per-run random token cannot be
+# baked into the flow, so a passing Slack post must carry a value the flow read from
+# this run's trigger, not a literal. (assert_slack_message_posted reads the ts +
+# content off the executed send node's own response, so prior runs never interfere.)
 CORRELATION_ID = f"RESO-{uuid4().hex[:12]}"
 INPUTS = {
     "customerName": "Northwind Traders",
@@ -59,22 +66,33 @@ def main():
     )
     print("OK: flow contains an inline uipath.agent.autonomous node + a Slack send node")
 
-    payload = run_debug(inputs=INPUTS, timeout=540)
+    # retries=1: this flow POSTS to the shared Slack channel, so a whole-flow retry
+    # on a transient poll/5xx failure would re-post a duplicate message. One attempt
+    # only; a genuine transient failure fails the run cleanly.
+    payload = run_debug(inputs=INPUTS, timeout=540, retries=1)
     # Subject must be mapped + non-empty.
     assert_output_nonempty(payload, "emailSubject")
     # Body must be mapped, cite the invoice, and state the approved credit.
+    body = assert_output_nonempty(payload, "emailBody")
     assert_named_output_contains(payload, "emailBody", INVOICE)
     assert_named_output_contains(payload, "emailBody", ["1610", "1,610"], require_all=False)
     print(f"OK: emailBody drafted, cites invoice {INVOICE} and the approved credit")
 
-    # Slack outcome — verified against the executed send's own response.
+    # caseKey must echo the incoming correlationId (opaque id — exact case).
+    assert_named_equals(payload, "caseKey", CORRELATION_ID, case_sensitive=True)
+
+    # Slack outcome — verified against the executed send's own response. The posted
+    # message must carry the agent's DRAFT (a slice of emailBody), not only the
+    # trigger echoes: correlationId + invoice are flow inputs, so a canned template
+    # over them would pass on those alone. Requiring body[:80] ties the delivered
+    # side effect to the agent's work product (cf. check_escalation_slack_alert.py:107).
     assert_slack_message_posted(
         payload,
         "slackMessageId",
         expected_channel=SLACK_CHANNEL,
-        must_contain=[CORRELATION_ID, INVOICE],
+        must_contain=[CORRELATION_ID, INVOICE, str(body)[:80]],
     )
-    print("OK: Slack alert posted (real message ts) carrying the correlationId + invoice")
+    print("OK: Slack message posted (real ts) carrying the correlationId + the drafted resolution")
 
 
 if __name__ == "__main__":
