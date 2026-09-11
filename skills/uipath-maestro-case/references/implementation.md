@@ -184,7 +184,7 @@ Preserve each explicit `selected-tasks-completed` row and selector only after co
 
 **Pass `lane: <n>` on every task** only when required by the artifact contract. Default: increment per task within a stage starting at 0; lane is a `data.tasks` task-set index. A strict sequential chain is represented as consecutive single-task sets (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Reuse the same lane only for intentionally parallel siblings, including stage-start siblings (`[[A, B], [C]]`) and siblings after a predecessor (`[[A], [B, C], [D]]`). Sequencing comes from the task's `entryConditions` and the order of task sets in `data.tasks`, not from lane-sharing alone.
 
-**Task envelope fields.** Write `isRequired` and `shouldRunOnlyOnce` from the SDD's **Task envelope** table (`Required` / `Run Only Once`). If `runOnlyOnce` is omitted, default `shouldRunOnlyOnce` to `false` to match frontend new-task behavior. Do not infer `true` from task type; re-entry semantics from the SDD are the source of truth.
+**Task envelope fields.** Write `isRequired`, `shouldRunOnlyOnce` and `skipCondition` from the SDD's **Task envelope** table (`Required` / `Run Only Once` / `Skip Condition`). If `runOnlyOnce` is omitted, default `shouldRunOnlyOnce` to `false` to match frontend new-task behavior. Do not infer `true` from task type; re-entry semantics from the SDD are the source of truth. A `Skip Condition` cell holding an expression becomes `skipCondition`, top-level beside `data`; a dash or an empty cell means omit the key. Some SDDs write the same three fields as rows of a vertical `| Field | Value |` table.
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 
