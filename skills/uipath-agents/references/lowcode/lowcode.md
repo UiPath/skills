@@ -22,14 +22,13 @@ UiPath low-code agents come in **two variants**, both sharing this skill.
    
 2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses.
 
-> Currently, conversational agents are only standalone and not yet supported to be inline in a flow, so inline-in-flow use-cases should always use an autonomous agent.
 > After deployment, conversational agents are interacted with through the UiPath Conversation Service, which manages conversation history and exposes a CLI/SDK for client UIs. Each user-initiated exchange invokes the agent for a single turn, streaming events back to the client.
+> A low-code standalone conversational agent project is the simplest way to build a back-and-forth chat assistant, driven by a single system-prompt. To model more advanced chat assistants that have features such as routing between multiple single-prompt agents, deterministic replies, and behind-the-scenes automation branches while the chat continues, tell the user to use the `uipath-maestro-flow` skill.
 
 In summary:
 | Signal | Variant |
 |---|---|
 | User wants general input → output execution | **Autonomous** |
-| User wants inline-in-flow | **Autonomous** |
 | `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
 | User wants multi-turn chat / fast latency with real-time user-interaction / streamed responses | **Conversational** |
 | Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
