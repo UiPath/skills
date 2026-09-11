@@ -88,6 +88,7 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
   "elementId": "<stageId>-<taskId>",
   "isRequired": "<from sdd.md Required, default true>",
   "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
+  "description": "<task Design Rationale from sdd.md>",
   "data": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted in Step 5>",
