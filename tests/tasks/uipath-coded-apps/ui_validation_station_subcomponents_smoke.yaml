@@ -4,7 +4,7 @@ description: >
   review screen from the Validation Station **subcomponents** documented in
   `references/widgets/validation-station.md §Compose-your-own layout`
   (`DocumentViewer`, `CompactDocTypeField`, `CompactFieldsForm`,
-  `CompactTableEditor`, `CompactBusinessRules` + the `useBucketArtifacts`
+  `CompactTableEditor`, `CompactBusinessRules` + the `useDuDocumentArtifacts`
   hook) — NOT the all-in-one `<ValidationStation>`. Grades the four
   mistakes the skill flags as easy to get wrong:
   (1) fetch artifacts once and share them, not once per panel;
@@ -70,8 +70,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Must-know #1 — fetches artifacts once: exactly one useBucketArtifacts(...) call site (not one per panel)"
-    command: "test \"$(grep -oE 'useBucketArtifacts\\(' src/components/ReviewWorkspace.tsx | wc -l | tr -d ' ')\" = \"1\""
+    description: "Must-know #1 — fetches artifacts once: exactly one useDuDocumentArtifacts(...) call site (not one per panel)"
+    command: "test \"$(grep -oE 'useDuDocumentArtifacts\\(' src/components/ReviewWorkspace.tsx | wc -l | tr -d ' ')\" = \"1\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
@@ -110,8 +110,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Submit completion is wired (widget surfaces no error UI — host owns it)"
-    command: "grep -Eq 'onSubmitComplete' src/components/ReviewWorkspace.tsx"
+    description: "Submit is wired via the `onSubmit` callback (widget surfaces no error UI — host owns it). `\\b` so the pre-rename `onSubmitComplete` does not count."
+    command: "grep -Eq 'onSubmit\\b' src/components/ReviewWorkspace.tsx"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

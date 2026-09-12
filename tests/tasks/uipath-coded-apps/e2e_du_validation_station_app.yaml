@@ -6,7 +6,7 @@ description: >
   must scaffold an Action App, install the widget with the correct hard
   peer versions (`react >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.1`),
   wire `<ValidationStation>` with the required props, implement
-  `onSubmitComplete` and `onReportExceptionComplete` callbacks (the widget
+  the `onSubmit` and `onReportException` callbacks (the widget
   surfaces NO error UI — host owns all callbacks), copy `du-assets/`
   post-build via a Vite plugin (missing this silently breaks PDF rendering
   and translations in production), and exclude the web-component from Vite
@@ -148,8 +148,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Source code wires a submit-completion mechanism for the widget (any of: onSubmitComplete, save prop with onComplete, completeTask, codedActionAppService.complete) — the widget surfaces no error UI; host MUST own this"
-    command: "find . \\( -name '*.tsx' -o -name '*.ts' -o -name '*.jsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE 'onSubmitComplete|onConfirmComplete|onSaveAsDraftComplete|completeTask|codedActionAppService' {} + | grep -q ."
+    description: "Source code wires a submit-completion mechanism for the widget (any of: onSubmit, save prop with a completion handler, completeTask, codedActionAppService.complete) — the widget surfaces no error UI; host MUST own this"
+    command: "find . \\( -name '*.tsx' -o -name '*.ts' -o -name '*.jsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE 'onSubmit|onConfirm|onSaveAsDraft|completeTask|codedActionAppService' {} + | grep -q ."
     timeout: 15
     expected_exit_code: 0
     weight: 2.0
