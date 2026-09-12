@@ -38,6 +38,10 @@ initial_prompt: |
   4. DeleteFileFromRecordFieldV2 — bind recordId to the same create activity
      output Id used in step 3.
 
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
+
   The Flow is not complete until `uip maestro flow validate` passes.
 
   This run is headless. No user is present and nobody will answer a question or

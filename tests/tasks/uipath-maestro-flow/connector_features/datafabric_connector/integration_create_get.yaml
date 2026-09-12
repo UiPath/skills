@@ -20,6 +20,10 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
+  Build this with the UiPath Data Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for every entity operation —
+  not the native `core.datafabric.*` nodes.
+
   Build a UiPath Flow that exercises FlowCodeEvalEntity in two scenarios:
 
   C-01 — All eight fields round-trip:
@@ -38,6 +42,10 @@ initial_prompt: |
   Create a second record with title='ExpansionTest', score=5.5. Retrieve it
   at expansionLevel=1, expansionLevel=2, and expansionLevel=3. Delete when
   done.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

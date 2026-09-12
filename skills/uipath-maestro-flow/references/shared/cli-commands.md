@@ -266,7 +266,9 @@ The cache expires after 30 minutes. `registry search` returns a flat `Data` arra
 { "Data": [{ "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records", "Category": "connector.196536", "DisplayName": "List Records", "Description": "(Salesforce) List records in Salesforce", "Version": "1.0.0", "Tags": "connector, activity", "AvailableOnTenant": true }] }
 ```
 
-Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the node is not enabled or available for the tenant. Do not use unsupported flags such as `--include-unavailable`; choose an enabled alternative, use `--local` for in-solution resources, or report unavailability.
+Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the type is missing from the manifest this CLI pulled. Despite the name it is not a tenant entitlement — the CLI asks for a fixed set of node manifests decided by its own build, so `false` usually means this CLI does not carry the node rather than that an administrator withheld it.
+
+Do not use unsupported flags such as `--include-unavailable`, and do not loop on the upgrade: try `uip tools update` **once**, and if the type is still absent treat it as absent by design for this build — choose an available alternative, use `--local` for in-solution resources, or report it as unavailable. Around ten of the node families the manifest knows about are deliberately outside the set this CLI requests (`agent-memory`, `queue-operations`, `form-trigger`, `http-standalone`, `agent-tool-http-request`, `classify-document`, `do-while`, `hitl-document`, …), so no upgrade will ever surface them and each extra `tools update` + `registry pull` is wasted work.
 
 `registry get` returns `Data.Node` verbatim for the `.flow` `definitions` array. Preserve its manifest casing, predominantly camelCase (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`); filter with `--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`.
 

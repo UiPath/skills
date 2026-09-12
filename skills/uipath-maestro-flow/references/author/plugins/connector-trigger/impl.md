@@ -315,6 +315,7 @@ A no-op filter — used when the user wants all events to fire the trigger — i
 | `Contains` / `NotContains` | Substring match | string |
 | `StartsWith` / `NotStartsWith` / `EndsWith` / `NotEndsWith` | Prefix / suffix match | string |
 | `IsEmpty` / `IsNotEmpty` | Value is / is not empty string | string (no `value` needed) |
+| `IsNull` / `IsNotNull` | Value is / is not null | any type (no `value` needed) |
 | `Is` / `IsNot` | Boolean is true / false | boolean (no `value` needed) |
 | `In` / `NotIn` / `IsOneOf` / `IsNotOneOf` | Membership — pass comma-separated values in `value.value` | string, number |
 | `Before` / `BeforeOrEqual` / `After` / `AfterOrEqual` / `DateTimeEquals` / `DateTimeNotEqual` | Date-time comparison (ISO-8601 strings) | date-time |

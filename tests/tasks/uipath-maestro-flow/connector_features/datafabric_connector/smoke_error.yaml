@@ -16,6 +16,10 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
+  Build this with the UiPath Data Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for every entity operation —
+  not the native `core.datafabric.*` nodes.
+
   Build a Flow that:
 
   1. Attempts to create a record on entity 'NonExistentEntity' with
@@ -23,6 +27,10 @@ initial_prompt: |
   2. In a parallel branch (so it runs even after the failure), Query
      FlowCodeEvalEntity for title='ErrorTestRecord'.
   3. In the same parallel branch, Query FlowCodeEvalEntity with no filter.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

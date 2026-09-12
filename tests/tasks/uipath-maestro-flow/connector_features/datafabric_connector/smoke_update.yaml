@@ -19,12 +19,20 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
+  Build this with the UiPath Data Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for every entity operation —
+  not the native `core.datafabric.*` nodes.
+
   Build a Flow against FlowCodeEvalEntity that:
 
   1. Creates a record: title="SmokeUpdateTest", score=5.0, viewCount=100, active=false, releaseDate="2022-01-01".
   2. Updates only the score to 9.0 — the update body should carry score and nothing else.
   3. Retrieves the record by Id to confirm.
   4. Deletes the record.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
+  the native `core.datafabric.*` nodes.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

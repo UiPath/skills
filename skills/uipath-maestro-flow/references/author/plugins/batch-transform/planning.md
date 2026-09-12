@@ -6,7 +6,7 @@ The Batch Transform node runs an LLM over every row of an attached CSV (or simil
 
 `uipath.pattern.batch-transform`
 
-This is a fixed OOTB node type — no registry suffix, one version. It does not appear in `uip maestro flow registry list` unless the tenant has the platform-side `canvas.nodes.batch-transform` feature flag enabled. The uip CLI unconditionally requests this flag in its manifest fetch, so the node will appear once the server rolls the flag out to your tenant.
+This is a fixed OOTB node type — no registry suffix, one version. Whether it appears in `uip maestro flow registry list` is a property of the CLI build, not of the tenant: the CLI asks for a fixed set of OOTB node manifests, and the server only adds dynamic nodes on top — it never withholds an OOTB one. If the node is missing, upgrade the CLI.
 
 ## When to Use
 

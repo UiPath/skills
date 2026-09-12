@@ -6,7 +6,7 @@ The Summarize node comprehensively synthesizes one attached document (PDF, Word,
 
 `uipath.pattern.deep-rag`
 
-The wire type remains `deep-rag` although the canvas name is "Summarize"; this is contractual with the runtime serializer. This fixed OOTB type has no registry suffix and one version. It appears only when the platform-side `canvas.nodes.summarize` feature flag is enabled. The uip CLI requests this flag unconditionally in its manifest fetch, so the node appears after server rollout to the tenant. It does not appear in `uip maestro flow registry list` before then.
+The wire type remains `deep-rag` although the canvas name is "Summarize"; this is contractual with the runtime serializer. This fixed OOTB type has no registry suffix and one version. Whether it appears in `uip maestro flow registry list` is a property of the CLI build, not of the tenant: the CLI asks for a fixed set of OOTB node manifests, and the server only adds dynamic nodes on top — it never withholds an OOTB one. If the node is missing, upgrade the CLI.
 
 ## When to Use
 

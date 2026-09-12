@@ -236,6 +236,7 @@ Connector-bound rules in any condition scope require `rule.uipath` built from `c
 - Do not edit generated `caseplan.json.bpmn`; do not place `caseplan.json` under `content/`; do not fabricate conditional-SLA expression syntax; describe conditions naturally until execution resolves them.
 - Do not place `tasks/` in the solution/project; it stays beside `sdd.md`.
 - Do not invoke other skills automatically except Rule 15 design handoff and Rule 17’s gate-selected inline creation of agents/API workflows. Do not spawn subagents for design, draft finalization, or plan-only documents.
+- Do not read the installed CLI to interpret its own output. `validate` findings name the element path and the repair; the fix is in the caseplan or the reference that owns that shape, never in `node_modules/@uipath/**/dist`. Grepping a bundled chunk, or reimplementing a compare in `node -e` to predict it, spends the turn budget on the tool instead of the plan — one nightly task spent 56 of its 151 commands there and ran out of clock. If a finding is unclear after re-reading the named element and its reference, repair what the message names and move on; if it still fires, report it with `/uipath-feedback`.
 - Use `uipath-feedback` for trouble.
 
 > **Trouble?** Use `/uipath-feedback` to send a report.

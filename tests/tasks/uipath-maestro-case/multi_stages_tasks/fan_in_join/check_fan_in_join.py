@@ -49,12 +49,12 @@ def main():
     if not find_transitions(plan, source=triage["id"], target=validate["id"]):
         sys.exit(
             "FAIL: no Triage → Validate transition; Validate's entry must name "
-            "Triage (selected-stage-completed selectedStageId=Triage)"
+            "Triage (selected-stage-completed selectedStageIds=[Triage])"
         )
     if not find_transitions(plan, source=triage["id"], target=enrich["id"]):
         sys.exit(
             "FAIL: no Triage → Enrich transition; Enrich's entry must name "
-            "Triage (selected-stage-completed selectedStageId=Triage)"
+            "Triage (selected-stage-completed selectedStageIds=[Triage])"
         )
 
     join_entry = list(iter_stage_entry_conditions(join))

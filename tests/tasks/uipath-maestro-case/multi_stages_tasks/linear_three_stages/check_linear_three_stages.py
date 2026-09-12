@@ -41,12 +41,12 @@ def main():
     if not find_transitions(plan, source=intake["id"], target=review["id"]):
         sys.exit(
             "FAIL: no Intake → Review transition; Review's entry condition must "
-            "name Intake (selected-stage-completed/-exited selectedStageId=Intake)"
+            "name Intake (selected-stage-completed/-exited selectedStageIds=[Intake])"
         )
     if not find_transitions(plan, source=review["id"], target=decision["id"]):
         sys.exit(
             "FAIL: no Review → Decision transition; Decision's entry condition must "
-            "name Review (selected-stage-completed/-exited selectedStageId=Review)"
+            "name Review (selected-stage-completed/-exited selectedStageIds=[Review])"
         )
 
     intake_entry = list(iter_stage_entry_conditions(intake))

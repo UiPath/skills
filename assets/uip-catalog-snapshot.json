@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-10T04:08:50Z",
-  "cli_version": "1.203.0-dev.8609",
+  "generated_at": "2026-09-11T04:06:55Z",
+  "cli_version": "1.203.0-dev.8632",
   "verbs": [
     "admin",
     "admin audit",
@@ -780,6 +780,8 @@
     "maestro bpmn update-metadata",
     "maestro bpmn validate",
     "maestro case",
+    "maestro case bindings",
+    "maestro case bindings sync",
     "maestro case case-exit-conditions",
     "maestro case case-exit-conditions get",
     "maestro case cases",
@@ -790,6 +792,7 @@
     "maestro case decompile",
     "maestro case edges",
     "maestro case edges get",
+    "maestro case format",
     "maestro case incident",
     "maestro case incident get",
     "maestro case incident summary",
@@ -1081,6 +1084,7 @@
     "or machines unassign",
     "or machines update",
     "or packages",
+    "or packages delete",
     "or packages download",
     "or packages entry-points",
     "or packages get",

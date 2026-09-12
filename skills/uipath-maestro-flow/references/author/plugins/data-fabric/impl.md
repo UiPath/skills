@@ -29,18 +29,18 @@ Confirm on `Data.Node`:
 - `runtimeConstraints.exclude` — contains `api-function`.
 - `version` — copy it verbatim into the instance's `typeVersion`. The four are versioned independently; do not assume one version across the family.
 
-If `registry get` reports **"Node not found"**, the node is not available to you. Run `uip tools update`, then `uip maestro flow registry pull --force`, and retry. If it still fails, that node's tenant feature flag is off:
+If `registry get` reports **"Node not found"**, this CLI build does not carry the node. **This is the single recovery procedure for that error** — the planning docs defer here, so do not improvise a different one:
 
-| Node type | Flag to ask the admin about |
-| --- | --- |
-| `core.datafabric.read` | `canvas.nodes.read-entity` |
-| `core.datafabric.create` | `canvas.nodes.create-entity` |
-| `core.datafabric.update` | `canvas.nodes.update-entity` |
-| `core.datafabric.delete` | `canvas.nodes.delete-entity` |
+1. Run `uip tools update`.
+2. Run `uip maestro flow registry pull --force`.
+3. Retry `registry get` **once**.
+4. Still "Node not found" → build with the connector (see below). Do not loop.
 
-`registry search` is not a substitute for `registry get` here. A flag-gated node can still appear in search with `AvailableOnTenant: false` while `registry get` refuses it — and without `registry get` you cannot source the `definitions[]` entry, which must never be hand-written ([Author capability, rule 6](../../CAPABILITY.md#critical-rules)).
+No tenant setting governs **whether the registry serves this node**, so there is no administrator to escalate to for step 4: the CLI decides which node manifests it asks for, and older builds did not ask for these four. (That scoping matters — the *runtime* engine version is a separate axis, and it does have a platform-side failure mode. See the engine-fallback row in [Debug](#debug).)
 
-**When the node is unavailable, switch to the connector and stop.** `AvailableOnTenant: false` is a decision, not an obstacle: build the flow with the `uipath-uipath-dataservice` activities ([connector/impl.md](../connector/impl.md)) and say in the final report that the native nodes were unavailable. Do not retry `registry get`, do not run `uip tools update` hoping for a newer manifest, and above all **do not hand-author a `definitions[]` entry from this doc's field list to stand in for the missing one** — a hand-written definition carries the wrong port schema, passes `flow validate`, and fails at runtime.
+`registry search` is not a substitute for `registry get` here. A node can appear in search with `AvailableOnTenant: false` while `registry get` refuses it — and without `registry get` you cannot source the `definitions[]` entry, which must never be hand-written ([Author capability, rule 6](../../CAPABILITY.md#critical-rules)).
+
+**If the retry still fails, switch to the connector and stop.** Build the flow with the `uipath-uipath-dataservice` activities ([connector/impl.md](../connector/impl.md)) and say in the final report that this CLI could not serve the native nodes. Above all, **do not hand-author a `definitions[]` entry from this doc's field list to stand in for the missing one** — a hand-written definition carries the wrong port schema, passes `flow validate`, and fails at runtime.
 
 ## Add or edit the node
 
@@ -400,9 +400,10 @@ Use `uip df entities get` and `uip df records list` to close that gap before shi
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `Node not found: core.datafabric.*` on `registry get` | Tenant flag off, or CLI predates the node | `uip tools update`, then `uip maestro flow registry pull --force`; then confirm that node's flag with the admin (see the table above) |
+| `Node not found: core.datafabric.*` on `registry get` | This CLI build does not carry the node | `uip tools update`, then `uip maestro flow registry pull --force`; if it still fails, use the connector — no tenant setting governs this |
 | Node validates clean, runs green, nothing written | Most often a **selector** problem, not a binding one: `readEntityNodeId` names a missing node or a multi-record read, the read's filters do not compile, or the `fromRead` read matched more than one record at runtime | Check the Read node's `id` matches exactly and its `resultMode` is `single`; confirm the filter identifies exactly one record with `uip df records list` |
 | Write runs green, row unchanged | The body was rejected and the rejection swallowed — a federated entity, a system or attachment column, a choice-set label instead of its numeric id, an uncoercible value, or a null into a non-nullable column | Re-check the entity is native and each column against `uip df entities get` |
+| Create runs green, no row inserted | Platform-side, not authoring: the BPMN engine predates the create postprocessor, so `GetDataFabricAction()` falls back to `"update"`. The registry served the node correctly — the *runtime* is the older half | Confirm against a newer engine, or build the insert with the connector's Create Entity Record ([connector/impl.md](../connector/impl.md)) |
 | Downstream `$vars.<id>.output` is `undefined` | `variables.nodes[]` missing, or the read matched nothing | Run `uip maestro flow format`; if it persists, verify the filter matches a real record |
 | A Loop over a multi-record read iterates nothing | Wired `output` instead of `output.results` | Use `=js:$vars.<readId>.output.results` |
 | Multi-record read returns only some rows | The limit is always explicit and capped at 1000 | Page with `_skip`; raising `_recordLimit` past 1000 truncates silently |
@@ -412,14 +413,14 @@ Use `uip df entities get` and `uip df records list` to close that gap before shi
 
 ## What not to do
 
-- **Do not hand-write `definitions[]`** — copy verbatim from `registry get`. A flag-gated node you cannot `registry get` is a node you cannot author.
+- **Do not hand-write `definitions[]`** — copy verbatim from `registry get`. A node you cannot `registry get` is a node you cannot author.
 - **Do not put a `model` block on the instance.** `bpmn:Task` and the debug runtime live in the definition.
 - **Do not add an instance `outputs` block.** The canvas writes none for these nodes; the manifest `outputDefinition` plus `flow format`'s `variables.nodes[]` carry the contract.
 - **Do not wire an `error` edge or set `errorHandlingEnabled`** — these four nodes have no error port. See [No error port](#no-error-port).
 - **Do not write to a federated entity.** Create, Update and Delete require a native entity; the rejection is swallowed, so the run looks successful.
 - **Do not write a system column** (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) or an attachment column.
 - **Do not put a choice-set label in a value or a filter** — use the numeric `numberId`.
-- **Do not treat `AvailableOnTenant: false` as usable** because search returned the node.
+- **Do not treat a search hit as proof you can author the node** — only `registry get` returning `NodeGetSuccess` is.
 - **Do not use a Data Fabric node in an API workflow** — all four exclude the `api-function` runtime.
 - **Do not reference `$self` in a filter value,** and do not leave a filter expression blank — either refuses the whole query and strands every downstream reference.
 - **Do not add a placeholder value to satisfy Create's "at least one value" rule.** The rule exists because a blank-only insert writes nothing; a junk value writes junk.
