@@ -31,7 +31,11 @@ initial_prompt: |
        - false → Script node that logs "Supplier rejected"
   5. End nodes for both branches
 
-  Wire: Trigger → Script → HITL →|completed| Decision → both branches → End
+  Wire: Trigger → Script → HITL → Decision → both branches → End, with both
+  HITL outcomes (Approve and Reject) routed to the Decision node — every
+  outcome needs its own wired port. The branch itself is on the `approved`
+  field value, not on which outcome was clicked, so a Decision node is the
+  right choice here.
 
   Validate the flow after building.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
