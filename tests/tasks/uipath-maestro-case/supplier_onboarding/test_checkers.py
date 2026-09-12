@@ -1006,6 +1006,85 @@ class GuardTests(CheckerBase):
         self.rejects(plan, "never routes")
 
 
+    def test_rejects_a_plan_with_no_guarded_condition_at_all(self):
+        """Every routing decision in this case is guarded, so none is a dropped build."""
+        plan = baseline_plan()
+        for _path, node in _iter_dicts(plan):
+            for key in ("conditionExpression", "skipCondition"):
+                if isinstance(node.get(key), str):
+                    node.pop(key)
+        self.rejects(plan, "carries no guarded conditions at all")
+
+    def test_rejects_a_plan_that_routes_on_no_buyer_outcome(self):
+        """`approve`, `reject` and `sendback` each have their own destination."""
+        plan = baseline_plan()
+        for _path, node in _iter_dicts(plan):
+            expr = node.get("conditionExpression")
+            if isinstance(expr, str) and "sendback" in expr:
+                node["conditionExpression"] = expr.replace("sendback", "approve")
+        self.rejects(plan, "routes on the buyer outcome")
+
+    def test_rejects_a_plan_where_nothing_compares_against_verified(self):
+        """Bank verification is what decides whether setup can continue."""
+        plan = baseline_plan()
+        for _path, node in _iter_dicts(plan):
+            expr = node.get("conditionExpression")
+            if isinstance(expr, str) and "verified" in expr:
+                node["conditionExpression"] = expr.replace("verified", "confirmed")
+        self.rejects(plan, "no guard compares against")
+
+    def test_rejects_a_buyer_stage_whose_completing_exit_carries_no_guard(self):
+        """Approval must be the only route that completes the buyer phase."""
+        plan = baseline_plan()
+        stripped = 0
+        for _path, node in _iter_dicts(stage_node(plan, E.BUYER)):
+            if node.get("marksStageComplete") is True:
+                for _p2, rule in _iter_dicts(node):
+                    if isinstance(rule.get("conditionExpression"), str):
+                        rule.pop("conditionExpression")
+                        stripped += 1
+        self.assertTrue(stripped, "the baseline buyer stage has no guarded completing exit")
+        self.rejects(plan, "has no completing exit carrying a guard")
+
+    def test_rejects_a_buyer_completing_exit_that_routes_on_more_than_approve(self):
+        """Only `approve` completes the phase; anything else forks the decision."""
+        plan = baseline_plan()
+        changed = 0
+        for _path, node in _iter_dicts(stage_node(plan, E.BUYER)):
+            if node.get("marksStageComplete") is not True:
+                continue
+            for _p2, rule in _iter_dicts(node):
+                expr = rule.get("conditionExpression")
+                if isinstance(expr, str) and '"approve"' in expr:
+                    rule["conditionExpression"] = expr.replace(
+                        '=== "approve"', '=== "approve" || vars.buyerDecision === "reject"')
+                    changed += 1
+        self.assertTrue(changed, "the baseline buyer stage has no approving completing exit")
+        self.rejects(plan, "completing exit routes on")
+
+    def test_rejects_an_unguarded_compliance_exit(self):
+        """Compliance advances only on a decision, so no exit may be unguarded."""
+        plan = baseline_plan()
+        stripped = 0
+        for _path, node in _iter_dicts(stage_node(plan, E.COMPLIANCE)):
+            if "marksStageComplete" not in node:
+                continue
+            for _p2, rule in _iter_dicts(node):
+                if isinstance(rule.get("conditionExpression"), str):
+                    rule.pop("conditionExpression")
+                    stripped += 1
+        self.assertTrue(stripped, "the baseline compliance stage has no guarded exit")
+        self.rejects(plan, "has unguarded exit(s)")
+
+
+def stage_node(plan: dict, label: str) -> dict:
+    """The stage node the SDD calls `label`, for a test that mutates one stage."""
+    for node in plan.get("nodes", []):
+        if (node.get("data") or {}).get("label") == label:
+            return node
+    raise AssertionError(f"the baseline has no stage labelled {label!r}")
+
+
 class SlaTests(CheckerBase):
     checker = "sla"
 
