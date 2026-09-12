@@ -120,7 +120,7 @@ The `variable` property creates a separate workflow-global variable (`$vars.appr
 
 | Status | File | Task ID | What it tests | Type |
 |---|---|---|---|---|
-| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | SharePoint → HITL → SAP; full Discover→Plan→Build→Verify; wires both outcome ports, captures `$vars.output` | 🟤 Brown |
+| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | Mocked extract → HITL → mocked SAP post; wires both outcome ports, captures `$vars.output` | 🟤 Brown |
 | ✅ Present | [e2e_02_ai_escalation_brownfield.yaml](e2e_02_ai_escalation_brownfield.yaml) | `skill-hitl-e2e-ai-escalation-brownfield` | Inserts HITL escalation node into existing `ComplaintTriage` flow on low-confidence path; wires outcome port(s) | 🟤 Brown |
 | ✅ Present | [e2e_03_gdpr_compliance_greenfield.yaml](e2e_03_gdpr_compliance_greenfield.yaml) | `skill-hitl-e2e-gdpr-compliance-greenfield` | GDPR deletion flow from scratch; P7D timeout duration (ISO 8601); wires both outcome ports | 🟢 Green |
 | ✅ Present | [e2e_04_multi_hitl_brownfield.yaml](e2e_04_multi_hitl_brownfield.yaml) | `skill-hitl-e2e-multi-hitl-brownfield` | Inserts **two** HITL nodes into `HROnboarding` flow (doc review + IT access); every outcome port on both wired | 🟤 Brown |
@@ -157,6 +157,7 @@ Each quality test targets a specific failure pattern observed in agent behavior:
 | Variable binding: input vs output direction | — | ✅ [quality_10](quality_10_dev_mistake_binding_direction.yaml) | — |
 | inOut pre-fill + downstream access | ✅ [smoke_06](smoke_06_data_enrichment.yaml) | ✅ [quality_11](quality_11_inout_field_access.yaml) | — |
 | Negative: invalid flow path | ❌ **no smoke test** | — | — |
+| Live connector discovery (registry search, IXP taxonomy) in an e2e authoring flow | — | — | ❌ **no e2e test** — e2e_01 mocked its SharePoint/SAP integration points to fix a turn-budget timeout; no e2e in this suite currently exercises live connector discovery |
 
 ---
 

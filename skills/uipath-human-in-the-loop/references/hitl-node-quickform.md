@@ -185,7 +185,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 
 ## Definition Entry
 
-Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.quick-form` in `workflow.definitions`. Add it exactly once — deduplicate by `nodeType`.
+Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.quick-form` in `workflow.definitions`, copied verbatim from the manifest below. Add it exactly once — deduplicate by `nodeType`. Its `handleConfiguration` (the `completed` handle) is fixed registration metadata, not something you wire — the actual per-outcome ports you connect edges to are covered in Edge Wiring below, derived from `inputs.schema.outcomes` at render time and never written back into `handleConfiguration`.
 
 ```json
 {
@@ -250,7 +250,7 @@ Wire one output handle per outcome to its downstream node — port `outcome-<out
 { "id": "invoiceReview1-outcome-reject-end1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-reject", "targetNodeId": "end1", "targetPort": "input" }
 ```
 
-**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is a placeholder that exists only on a schema with zero outcomes — it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit` (id `submit`, port `outcome-submit`). Never wire it once outcomes exist.
+**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is the port for a zero-outcome node, or for a real outcome whose `id` is literally `completed` — never a shared exit for several outcomes. The shipped default outcome (`id` `submit`) uses port `outcome-submit`, not `outcome-completed`.
 
 ---
 
