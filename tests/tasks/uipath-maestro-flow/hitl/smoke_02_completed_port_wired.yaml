@@ -3,9 +3,11 @@
 # arm-agnostic artifact discovery.
 task_id: skill-flow-hitl-smoke-completed-port
 description: >
-  Smoke test: agent wires the HITL node's `outcome-completed` output port
-  (the current registry handle labelled Completed). Verifies correct edge structure in
-  a three-node approval flow.
+  Smoke test: agent wires a per-outcome output port for each of the HITL
+  node's two named outcomes (Approve, Reject) — not the generic
+  `outcome-completed` placeholder, which only exists on a schema with zero
+  outcomes. Verifies correct edge structure in a small approval flow with
+  both outcome branches wired.
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
@@ -19,13 +21,16 @@ run_limits:
 
 initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
-    Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End
+    Manual Trigger -> HITL (manager approves purchase) ->
+      Approve: Script (log approval) -> End
+      Reject: End
 
   The reviewer's form should be inline — rendered by Action Center.
   The HITL node shows the reviewer: purchase amount and vendor name.
   Outcomes: Approve and Reject.
 
-  Wire the output of the HITL step to the Script node.
+  Wire both outcomes: Approve goes to the Script node, Reject goes straight
+  to End. Every outcome needs its own wired edge — none left dangling.
   The Script node logs: "Approval recorded."
 
   Validate the flow after building.
@@ -51,17 +56,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow wires the HITL completed output port"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'completed'"
+    description: "Every outcome on the HITL node has its own wired port — none on the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  # Bare 'completed', not '"completed"': the port handle serializes by node
-  # version — v1.0 wires `"sourcePort": "completed"`, v1.1 `"outcome-completed"`.
-  # Version pick is non-deterministic (#1088 removed hardcoded versions), and the
-  # unquoted substring matches both. The validate step below catches malformed edges.
+  # Node-scoped (reads the HITL node's own schema.outcomes and edges,
+  # not a whole-file regex), so an unrelated node's legitimate completed
+  # port elsewhere in the flow can't false-fail this. See
+  # check_simulated_hitl.py's assert_outcome_wiring and
+  # hitl-node-quickform.md#edge-wiring for the underlying rule.
 
   - type: run_command
     description: "uip maestro flow validate passes"
