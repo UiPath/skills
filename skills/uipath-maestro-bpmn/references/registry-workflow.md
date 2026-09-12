@@ -25,6 +25,36 @@ found via `registry search`, is a **false negative** — never conclude "no
 connection exists" or ask the user to create one until you have searched the
 registry for the real connector key and listed across all folders.
 
+**With no tenant reachable, do not discover live instances that do not exist.**
+The exhaustive-discovery rule above assumes a connected tenant. When you are
+authoring offline — no `uip login`, no reachable tenant, no deployed resources
+(every synthetic eval, and any draft done before a tenant is connected) — do NOT
+run `uip or processes list`, `uip is connections list`, or `uip login` looking
+for a live process, agent, or connection to bind: there are none, and their
+absence is expected, not a false negative. Pick the extension type by intent,
+`registry get` its `xmlTemplate`, and author the node as a **draft** — paste the
+template and leave its binding placeholders (release keys, folder ids,
+connection ids, `<uipath:bindings>` `default`s) unresolved.
+
+**When a tenant IS connected, the exhaustive-discovery rule above and the
+`processType` selection below fully apply** — this includes a real greenfield
+first draft against a live tenant: discover and bind the actually-deployed
+processes, agents, and connections, and treat an empty result as the false
+negative described above. The distinction is whether a tenant is reachable, not
+whether the work is greenfield or brownfield.
+
+**A node's output mapping is enrichment too — do not resolve it while drafting.**
+When a downstream gateway or node reads a value a job / agent / activity
+produces (`=vars.aiConfidence`, `=vars.routeCategory`, a batch summary), the
+authoring job is to **declare that variable** (`BPMN.Variables`) and reference
+it in the condition or mapping. Leave the node's `<uipath:output>` → variable
+wiring — the exact output field path, `OutputArguments`, `result.*`, the job
+response shape — unresolved: it comes from the deployed resource's real output
+schema, which an offline / no-tenant pass does not have (resolve it once a tenant
+is connected). Do not grep the references or
+registry templates trying to pin the output path before authoring; declare the
+variable, write the condition, and move on.
+
 `registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
 `uip login`). Each extension-type row carries `ExtensionType`, `Label`,
@@ -127,6 +157,15 @@ Gotcha: `A2A.AgentExecution` renders as an external A2A node and **disables the
 Action dropdown** in Studio Web. Do not use it for a folder-deployed agent — the
 canvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for
 folder-deployed resources.
+
+`processType` selection requires a deployed process to read, so it applies only
+when a tenant is reachable — including a real greenfield draft against a live
+tenant, where you read `processType` and bind the deployed process. With no
+tenant reachable (offline authoring), do not
+page `uip or processes list` for a resource that is not deployed: default to
+`Orchestrator.StartAgentJob`, `registry get` its template, and author the node
+as a draft with the process binding unresolved (per the no-tenant exception in
+§1).
 
 ## API workflow — wait vs fire-and-forget
 
