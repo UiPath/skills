@@ -1532,6 +1532,44 @@ class FieldNameTests(CheckerBase):
 class VariableTests(CheckerBase):
     checker = "variables"
 
+    def _row(self, plan, group, category):
+        """One variable of this SDD category, in this plan group, for a mutation."""
+        # The formal `inputs` and `outputs` slots carry a minted id and the SDD name in
+        # `name`; only the `inputOutputs` companion is keyed by the name in both.
+        facts = E.sdd_facts()["variables"]
+        for entry in (plan.get("variables") or {}).get(group) or []:
+            declared = facts.get(entry.get("name"))
+            if declared and declared[0] == category:
+                return entry
+        raise AssertionError(f"the baseline has no Category {category} row in {group!r}")
+
+    def test_rejects_an_input_slot_whose_default_was_dropped(self):
+        """An `In` row's `inputs` slot carries the SDD's default; the case starts without
+        it otherwise."""
+        plan = baseline_plan()
+        self._row(plan, "inputs", "In").pop("default", None)
+        self.rejects(plan, "carries no `default`")
+
+    def test_rejects_an_input_companion_that_carries_a_default(self):
+        """The `In` companion in `inputOutputs` holds no default; the formal slot does."""
+        plan = baseline_plan()
+        self._row(plan, "inputOutputs", "In")["default"] = "anything"
+        self.rejects(plan, "carries a `default`")
+
+    def test_rejects_a_non_string_default(self):
+        """A non-string default is dropped silently on the way to BPMN, so the case
+        starts with the slot empty and nothing reports it."""
+        plan = baseline_plan()
+        self._row(plan, "inputs", "In")["default"] = 750000
+        self.rejects(plan, "and a non-string one is dropped")
+
+    def test_rejects_a_trigger_argument_marked_as_case_state(self):
+        """`custom: true` on an `In` row reads it as case state, so the trigger's value
+        never arrives."""
+        plan = baseline_plan()
+        self._row(plan, "inputOutputs", "In")["custom"] = True
+        self.rejects(plan, "is a trigger argument and is marked")
+
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
 
@@ -1582,6 +1620,12 @@ class VariableTests(CheckerBase):
 
 class MetadataTests(CheckerBase):
     checker = "metadata"
+
+    def test_rejects_a_case_named_something_else(self):
+        """The case name is what the tenant lists it under."""
+        plan = baseline_plan()
+        plan["name"] = "Not The Supplier Case"
+        self.rejects(plan, "the case is named")
 
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
