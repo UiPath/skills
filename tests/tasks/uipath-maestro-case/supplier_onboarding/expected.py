@@ -260,14 +260,19 @@ CONNECTOR_OUTPUT_ROOT = "response"
 CONNECTOR_OUTPUT_TARGET = "lastEmailStatus"
 CONNECTOR_TASK_COUNT = 8
 
-# The four supporting documents the category-match agent reads. The fixture reads them
+# The supporting documents the category-match agent reads. The fixture reads them
 # through a guarded array walk rather than a bare `vars.X.FullName`, so the names are
 # pinned here instead of parsed back out of an expression whose shape is free.
+#
+# Three, not four. The bank details are collected in `Setting up the supplier`, stages
+# after this task runs, and `bankDetailsDocument` is not a case variable at all: it is
+# the ERP workflow's own input name, assembled at that task from `bankDetailsFileName`,
+# `bankDetailsDocumentType` and `bankDetailsContent`. Expecting it here failed all nine
+# runs of the seven-route SDD on a plan that carried the SDD's row byte for byte.
 SUPPORTING_DOCUMENT_VARIABLES = {
     "registrationCertificate",
     "insuranceDocument",
     "taxFormsDocument",
-    "bankDetailsDocument",
 }
 DOCUMENT_READER_TASK = "Confirm offering category match"
 
