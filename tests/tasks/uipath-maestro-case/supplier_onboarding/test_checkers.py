@@ -22,6 +22,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -728,6 +729,17 @@ def task(plan: dict, name: str) -> dict:
     raise AssertionError(f"task {name!r} not in the baseline plan")
 
 
+def _iter_dicts(node, path="$"):
+    """Every dict in a plan, with a path, for tests that need to find one by content."""
+    if isinstance(node, dict):
+        yield path, node
+        for key, value in node.items():
+            yield from _iter_dicts(value, f"{path}.{key}")
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            yield from _iter_dicts(value, f"{path}[{index}]")
+
+
 class CheckerBase(unittest.TestCase):
     checker = ""
 
@@ -846,6 +858,36 @@ class TopologyTests(CheckerBase):
 
 class GuardTests(CheckerBase):
     checker = "guards"
+
+    def test_rejects_a_guarded_equal_name_extract_whose_id_was_suffixed(self):
+        """Run 34670963139 suffixed two names a guard reads and lost three routes.
+
+        `io-binding/impl-json.md:90` keeps `X -> X` on its own name when nothing
+        collides. The allocator suffixes in 30 of 41 runs, almost always on `supplierId`,
+        which no condition reads; narrowed to guard subjects it fires on that one run.
+        """
+        plan = baseline_plan()
+        subject = None
+        for _path, node in _iter_dicts(plan):
+            expr = node.get("conditionExpression")
+            if isinstance(expr, str):
+                found = re.findall(r"vars\.([A-Za-z_]\w*)", expr)
+                if found:
+                    subject = found[0]
+                    break
+        self.assertIsNotNone(subject, "the baseline has no guard to borrow a subject from")
+        task(plan, "Record buyer review decision")["data"].setdefault("outputs", []).append({
+            "name": subject, "id": subject + "1", "var": subject, "value": subject,
+            "source": "=" + subject, "target": "=" + subject + "1",
+            "originalVar": subject + "1", "type": "string",
+        })
+        self.rejects(plan, "keeps its own name")
+
+    def test_accepts_a_reassign_whose_id_names_the_source_field(self):
+        """`Action -> buyerDecision` is not an equal-name row: its id names the field the
+        value came from, and every run that routes correctly carries it that way."""
+        self.accepts(baseline_plan())
+
 
     def test_accepts_single_quoted_guard_literals(self):
         """Run 34613299132 wrote every guard with single quotes and carried all seven

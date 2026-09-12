@@ -223,6 +223,28 @@ def main() -> int:
                     "routes"
                 )
 
+    # ---- 7. an equal-name extract a guard reads keeps its own name as the id -
+    # `io-binding/impl-json.md:90`: with no unrelated collision, `X -> X` emits `id`,
+    # `var`, `originalVar` and `value` all as X. The allocator suffixes anyway in 30 of
+    # the 41 runs on hand, almost always on `supplierId`, which no condition reads and
+    # which costs nothing. Narrowed to the names a guard reads it fires on one run,
+    # 34670963139, where it landed on two at once and three routes stalled at a gate
+    # that never opened. A `Action -> buyerDecision` reassign is a different shape and
+    # is deliberately out of scope: its id names the source field, not the variable.
+    guard_subjects = {name for _where, expr in guards for name in P.vars_read(expr)}
+    for _stage, task in P.all_tasks(caseplan):
+        for entry in P.task_outputs(task):
+            name = str(entry.get("name") or "")
+            oid = str(entry.get("id") or "")
+            if not name or name != str(entry.get("var") or "") or not oid or oid == name:
+                continue
+            if name in guard_subjects:
+                problems.append(
+                    f"{P.task_name(task)!r}: the SDD's {name!r} -> {name!r} row carries id "
+                    f"{oid!r}. An equal-name extract with nothing to collide with keeps "
+                    f"its own name, and a guard reads vars.{name}"
+                )
+
     # ---- 6. every =js: expression parses -----------------------------------
     problems.extend(_js_syntax_findings(caseplan))
 
