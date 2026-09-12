@@ -4,34 +4,46 @@ task_id: skill-hitl-e2e-invoice-approval-greenfield
 # .flow file JSON and the skill's ability to design and wire HITL nodes.
 description: >
   Authoring E2E golden scenario (green field): agent builds a complete invoice
-  approval flow from scratch — detecting write-back + approval gate signals,
-  designing schema, adding HITL node, wiring all handles, and validating the
-  authored .flow file. Real business use case. Full Discover -> Plan -> Build -> Verify loop.
-  Does not deploy or run the flow.
+  approval flow from scratch — detecting a write-back + approval gate signal,
+  designing the HITL schema, wiring every outcome port, and wiring downstream
+  access to the HITL output. Extraction and posting are mocked as Script nodes
+  so the test exercises HITL authoring and wiring, not live connector
+  discovery. Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga]
 
 run_limits:
-  expected_turns: 19
-  max_turns: 60
+  expected_turns: 34
+  max_turns: 50
   # task_timeout must be >= turn_timeout or it silently becomes the binding
   # cap regardless of the larger per-turn budget below — nightly experiment
   # default is task_timeout 1200 / turn_timeout 900 (tests/experiments/
-  # nightly.yaml). This test declared turn_timeout 2400 without also raising
-  # task_timeout (previously fixed in 34aa3c773, since lost) so it kept
-  # inheriting the 1200s default and dying mid-first-turn at exactly that
-  # mark, as re-confirmed on 2026-09-10 run 2026-09-10_04-18-49
-  # ("Task timed out after 1200s", iteration_count 1).
-  task_timeout: 2400
-  turn_timeout: 2400
+  # nightly.yaml). This test previously extracted via a real SharePoint
+  # connector and posted via a real SAP connector, which drove the agent
+  # into live connector/registry/IXP-taxonomy discovery and blew through
+  # 1200s (#3196), then 2400s (2026-09-11 run 2026-09-11_04-17-20, "Agent
+  # turn timed out after 2400s", 119 assistant turns of real but tangential
+  # discovery work). Scaled the scenario down to mock both integration
+  # points as Script nodes instead of raising the timeout again — the test
+  # exists to exercise HITL schema design and outcome-port wiring, not
+  # connector discovery. 1200/1200 matches the sibling e2e brownfield tasks
+  # (e2e_02, e2e_04, e2e_05), which mock their upstream/downstream the same
+  # way. Confirmed locally (coder-eval 0.12.0, claude-sonnet-4-6): SUCCESS,
+  # score 1.000, 7/7 criteria, 482.7s, 34 assistant turns.
+  task_timeout: 1200
+  turn_timeout: 1200
 
 initial_prompt: |
-  Build a UiPath Flow named "InvoiceApproval" that extracts invoice data
-  from a SharePoint folder and posts the approved invoices to SAP. Finance
-  needs to review and approve each invoice before it is posted — we cannot
-  write to SAP without human sign-off.
+  Build a UiPath Flow named "InvoiceApproval" that extracts invoice data and
+  posts approved invoices to SAP. Finance needs to review and approve each
+  invoice before it is posted — we cannot write to SAP without human sign-off.
+
+  Mock the invoice extraction and the SAP posting as Script nodes — no real
+  connector needed for either. The fields matter, not the transport.
 
   Show the finance manager the relevant invoice fields, give them Approve and
-  Reject outcomes, and wire the review step to the downstream SAP posting step.
+  Reject outcomes, and wire both outcomes onward — Approve to the downstream
+  SAP posting step, Reject to wherever the flow should end. Every outcome
+  needs its own wired port.
 
   Validate the flow when you're done.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
@@ -62,8 +74,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow wires the completed handle"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval 'completed'"
+    description: "Every outcome on the HITL node has its own wired port, none on the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
