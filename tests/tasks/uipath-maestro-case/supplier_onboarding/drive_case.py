@@ -531,6 +531,20 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
                 detail.append(f"  {key}: {str(reply[key])[:600]}")
         fail("\n".join(detail))
 
+    # Read it back, for the same reason the assign above is read back: the envelope says
+    # the SDK call did not throw, not that the task moved. Two routes ended with the gate
+    # answered in this log, the decision variable still `None` and the case never
+    # advancing: 34664083574's sendback and 34661773724's compliance-reject. A completion
+    # that reported Success without landing produces exactly that.
+    after = (envelope(["uip", "tasks", "get", task_id, "--output", "json"]).get("Data")
+             or {})
+    status = str(after.get("Status") or "")
+    if status != "Completed":
+        fail(f"`tasks complete` reported Success for task {task_id} with action "
+             f"{action!r}, and reading it back shows Status {status!r}. The case is "
+             "still waiting on this gate, so the route stalls with the decision "
+             "variable unwritten.")
+
 
 def incidents(instance_id: str) -> list:
     data = run(["uip", "maestro", "case", "instance", "incidents", instance_id,
