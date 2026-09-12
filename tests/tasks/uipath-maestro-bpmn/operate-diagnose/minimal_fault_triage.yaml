@@ -77,14 +77,16 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Diagnosis captures the fault element and root cause ownership"
-    path: "diagnosis.md"
-    includes:
-      - "Task_InvokeLegacyRpa"
-      - "folderPath"
-      - "Cloud configuration"
-      - "Integration Service enrichment"
+  - type: run_command
+    description: "Diagnosis captures the fault element and root cause ownership (tolerates markdown line wrapping)"
+    command: >-
+      python3 -c "import re,sys;
+      s=re.sub(r'\s+',' ',open('diagnosis.md',encoding='utf-8').read());
+      missing=[t for t in ('Task_InvokeLegacyRpa','folderPath','Cloud configuration','Integration Service enrichment') if t not in s];
+      print('missing:',missing) if missing else None;
+      sys.exit(1 if missing else 0)"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
