@@ -206,44 +206,63 @@ def main() -> int:
             "only inside the workflow that computes the tier, so the case cannot enforce it"
         )
 
-    # ---- 5. every guard subject resolves ------------------------------------
+    # ---- 5. every guard subject names something a task actually writes ------
+    # `vars.X` resolves against what the output rows write, and each row shape writes a
+    # different name. Read off four runs and confirmed on all 28: a custom output (no `id`,
+    # `value` holding an expression) writes its own `name`; an extract writes its `id`, not
+    # its `var`. So an equal-name extract whose id was suffixed writes only the suffixed
+    # name, and a guard reading the bare one reads nothing.
+    #
+    # 34686998522 is what proves it: its guards read `vars.directorSignOffRequired2` and
+    # `vars.bankVerificationStatus2`, which no variable declares, and all six of its routes
+    # completed with the right outcome. 34694676530 has the same two rows suffixed the same
+    # way and its guards read the bare names; it lost three routes to a gate that never
+    # opened, and so did 34670963139.
+    #
+    # Accepting a reassign's `var` as well is a margin, not a detection: removing that one
+    # line changes nothing across the 28 runs, because no guard in this SDD reads a
+    # reassign's variable. It stays because the runtime's behaviour for that shape has not
+    # been observed either way.
     known = P.variable_names(caseplan) | P.variable_ids(caseplan)
-    for _stage, task in P.all_tasks(caseplan):
-        for entry in P.task_outputs(task):
-            for key in ("id", "name", "var", "originalVar"):
-                value = entry.get(key)
-                if isinstance(value, str) and value:
-                    known.add(value)
-    for where, expr in guards:
-        for name in P.vars_read(expr):
-            if name not in known:
-                problems.append(
-                    f"{where}: guard reads vars.{name}, which is neither a declared case "
-                    "variable nor any task's output — it evaluates to undefined and never "
-                    "routes"
-                )
-
-    # ---- 7. an equal-name extract a guard reads keeps its own name as the id -
-    # `io-binding/impl-json.md:90`: with no unrelated collision, `X -> X` emits `id`,
-    # `var`, `originalVar` and `value` all as X. The allocator suffixes anyway in 30 of
-    # the 41 runs on hand, almost always on `supplierId`, which no condition reads and
-    # which costs nothing. Narrowed to the names a guard reads it fires on one run,
-    # 34670963139, where it landed on two at once and three routes stalled at a gate
-    # that never opened. A `Action -> buyerDecision` reassign is a different shape and
-    # is deliberately out of scope: its id names the source field, not the variable.
-    guard_subjects = {name for _where, expr in guards for name in P.vars_read(expr)}
+    writable = set()
     for _stage, task in P.all_tasks(caseplan):
         for entry in P.task_outputs(task):
             name = str(entry.get("name") or "")
             oid = str(entry.get("id") or "")
-            if not name or name != str(entry.get("var") or "") or not oid or oid == name:
+            var = str(entry.get("var") or "")
+            if not oid:
+                writable |= {n for n in (name, var) if n}
                 continue
-            if name in guard_subjects:
+            writable.add(oid)
+            if name != var and var:
+                writable.add(var)
+    for where, expr in guards:
+        for name in P.vars_read(expr):
+            if name not in known and name not in writable:
                 problems.append(
-                    f"{P.task_name(task)!r}: the SDD's {name!r} -> {name!r} row carries id "
-                    f"{oid!r}. An equal-name extract with nothing to collide with keeps "
-                    f"its own name, and a guard reads vars.{name}"
+                    f"{where}: guard reads vars.{name}, which is neither a declared case "
+                    "variable nor any task's output, so it evaluates to undefined and never "
+                    "routes"
                 )
+            elif name not in writable:
+                # A declared variable no task claims is an input, and a guard may read it:
+                # `vars.expectedAnnualSpend` does exactly that on 27 of the 28 runs and
+                # routes. The finding is the narrower case, an extract that claims this
+                # name and then writes under a suffixed id.
+                owner = next(
+                    (f"{P.task_name(task)!r} writes it as {str(entry.get('id'))!r}"
+                     for _s, task in P.all_tasks(caseplan)
+                     for entry in P.task_outputs(task)
+                     if str(entry.get("var") or "") == name
+                     and str(entry.get("name") or "") == name
+                     and str(entry.get("id") or "") not in ("", name)),
+                    "",
+                )
+                if owner:
+                    problems.append(
+                        f"{where}: guard reads vars.{name}, and {owner}. An extract is "
+                        f"readable by its id, so this guard never sees the value"
+                    )
 
     # ---- 6. every =js: expression parses -----------------------------------
     problems.extend(_js_syntax_findings(caseplan))

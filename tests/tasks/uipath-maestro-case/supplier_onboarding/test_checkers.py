@@ -881,28 +881,56 @@ class GuardTests(CheckerBase):
     checker = "guards"
 
     def test_rejects_a_guarded_equal_name_extract_whose_id_was_suffixed(self):
-        """Run 34670963139 suffixed two names a guard reads and lost three routes.
+        """An extract is readable by its id, so suffixing the id hides it from the guard.
 
-        `io-binding/impl-json.md:90` keeps `X -> X` on its own name when nothing
-        collides. The allocator suffixes in 30 of 41 runs, almost always on `supplierId`,
-        which no condition reads; narrowed to guard subjects it fires on that one run.
+        34670963139 and 34694676530 did this to two names each and lost three routes apiece
+        to a gate that never opened. 34686998522 suffixed the same two names and routed
+        correctly, because its guards read the suffixed spelling.
         """
         plan = baseline_plan()
-        subject = None
+        guarded = set()
         for _path, node in _iter_dicts(plan):
             expr = node.get("conditionExpression")
             if isinstance(expr, str):
-                found = re.findall(r"vars\.([A-Za-z_]\w*)", expr)
-                if found:
-                    subject = found[0]
-                    break
-        self.assertIsNotNone(subject, "the baseline has no guard to borrow a subject from")
-        task(plan, "Record buyer review decision")["data"].setdefault("outputs", []).append({
-            "name": subject, "id": subject + "1", "var": subject, "value": subject,
-            "source": "=" + subject, "target": "=" + subject + "1",
-            "originalVar": subject + "1", "type": "string",
-        })
-        self.rejects(plan, "keeps its own name")
+                guarded.update(re.findall(r"vars\.([A-Za-z_]\w*)", expr))
+        for _path, node in _iter_dicts(plan):
+            name = node.get("name")
+            if (name and name in guarded and node.get("var") == name
+                    and node.get("id") == name):
+                node["id"] = name + "1"
+                node["originalVar"] = name + "1"
+                node["target"] = "=" + name + "1"
+                self.rejects(plan, "An extract is readable by its id")
+                return
+        self.fail("the baseline has no guarded equal-name extract to suffix")
+
+    def test_accepts_a_guard_reading_the_suffixed_spelling(self):
+        """The suffix alone is not the defect. 34686998522 carries it on
+        `directorSignOffRequired` and `bankVerificationStatus` and completed six routes,
+        because every guard reading them reads the suffixed name."""
+        plan = baseline_plan()
+        guarded = set()
+        for _path, node in _iter_dicts(plan):
+            expr = node.get("conditionExpression")
+            if isinstance(expr, str):
+                guarded.update(re.findall(r"vars\.([A-Za-z_]\w*)", expr))
+        renamed = None
+        for _path, node in _iter_dicts(plan):
+            name = node.get("name")
+            if (name and name in guarded and node.get("var") == name
+                    and node.get("id") == name):
+                renamed = name
+                node["id"] = name + "1"
+                node["originalVar"] = name + "1"
+                node["target"] = "=" + name + "1"
+                break
+        self.assertIsNotNone(renamed, "the baseline has no guarded equal-name extract")
+        for _path, node in _iter_dicts(plan):
+            expr = node.get("conditionExpression")
+            if isinstance(expr, str) and f"vars.{renamed}" in expr:
+                node["conditionExpression"] = expr.replace(
+                    f"vars.{renamed}", f"vars.{renamed}1")
+        self.accepts(plan)
 
     def test_accepts_a_reassign_whose_id_names_the_source_field(self):
         """`Action -> buyerDecision` is not an equal-name row: its id names the field the
