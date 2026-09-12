@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Selective `uip` shim for the CODED BYOG guardrail tasks.
+"""Selective `uip` shim for the BYOG guardrail tasks.
 
-Shared by `byog_middleware` and `byog_decorator`. Serves the two read-only
-discovery paths a coded agent walks before it can pin a bring-your-own
-guardrail, both answering with the configuration the prompts name
-(`byog-smoke-agent-pin`, pii_detection):
+Shared by `coded/guardrails/byog_middleware`, `coded/guardrails/byog_decorator`
+and `lowcode/guardrails/byog_pinning` -- one payload, so a CLI field rename is a
+one-file edit and the three tasks cannot drift apart. Serves the two read-only
+discovery paths an agent walks before it can pin a bring-your-own guardrail,
+both answering with the configuration the prompts name (`byog-smoke-agent-pin`,
+pii_detection):
 
   * `uip agent guardrails list [--byo]`      -> GuardrailDefinitionsList
   * `uip guardrails byo-configurations list` -> ByoGuardrailConfigurationsList
@@ -35,8 +37,8 @@ name and changed nothing, scoring 0.00 -- a fixture outage rendered as a
 skill regression.
 
 `mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
-sandbox. Linux smoke only (no `windows` tag on either task), hence no
-`uip.cmd` twin -- same as the ixp, byog_pinning and platform guardrails mocks.
+sandbox. Linux smoke only (no `windows` tag on any of the three tasks), hence no
+`uip.cmd` twin -- same as the ixp and platform guardrails mocks.
 """
 
 import json

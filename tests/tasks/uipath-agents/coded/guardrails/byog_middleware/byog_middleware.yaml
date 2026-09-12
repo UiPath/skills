@@ -28,7 +28,7 @@ sandbox:
   mock_path_dirs: [mocks]
   template_sources:
     - type: template_dir
-      path: ../_fixtures/ByogMockCli
+      path: ../../../_fixtures/ByogMockCli
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
@@ -46,6 +46,14 @@ initial_prompt: |
   end-to-end in a single pass.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent discovered the BYO configuration from the CLI rather than copying the name out of the prompt"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(agent\s+guardrails\s+list|guardrails\s+byo-configurations\s+list)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "BYOG middleware guardrail correctly added to graph.py"
     command: "python3 $TASK_DIR/check_byog_middleware.py"

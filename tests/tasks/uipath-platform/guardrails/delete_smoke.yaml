@@ -93,7 +93,8 @@ success_criteria:
       to do about it, so naming a remediation (remove, repoint, re-create under
       the same ValidatorName) is a bonus and its absence is NOT a deduction.
 
-      Return exactly 1.0 or 0.0. This rubric has no partial credit, and the
-      criterion's pass_threshold is 1.0 — an intermediate score fails the task.
+      Score EXACTLY 1.0 or EXACTLY 0.0 — there is no partial credit and no
+      intermediate value. If the case feels borderline, decide which of the two
+      descriptions above fits better and return that score.
     weight: 1.5
     pass_threshold: 1.0
