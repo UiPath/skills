@@ -759,6 +759,132 @@ class CheckerBase(unittest.TestCase):
 class TopologyTests(CheckerBase):
     checker = "topology"
 
+    def test_rejects_a_stage_the_sdd_does_not_declare(self):
+        plan = baseline_plan()
+        plan["nodes"].append({
+            "id": "Stage_Extra1", "type": "case-management:Stage",
+            "data": {"label": "Invented phase", "tasks": [],
+                     "entryConditions": [], "exitConditions": []},
+        })
+        self.rejects(plan, "unexpected stage(s)")
+
+    def test_rejects_a_primary_stage_turned_secondary(self):
+        """A primary stage is what case completion waits on."""
+        plan = baseline_plan()
+        stage_node(plan, E.CHECKING)["data"]["stageType"] = "secondary"
+        self.rejects(plan, "the SDD makes it primary")
+
+    def test_rejects_an_oversight_lane_with_no_entry_condition(self):
+        plan = baseline_plan()
+        stage_node(plan, E.SLA_REVIEW)["data"]["entryConditions"] = []
+        self.rejects(plan, "has no entry condition")
+
+    def test_rejects_a_secondary_stage_whose_entry_does_not_interrupt(self):
+        """Rejection and withdrawal take the application over, so they must interrupt."""
+        plan = baseline_plan()
+        label = sorted(E.INTERRUPTING_SECONDARY)[0]
+        for cond in stage_node(plan, label)["data"]["entryConditions"]:
+            cond["isInterrupting"] = False
+        self.rejects(plan, "has no interrupting entry")
+
+    def test_rejects_a_rejection_lane_reachable_from_too_few_phases(self):
+        """Three phases produce one rejection; dropping an origin strands one of them."""
+        plan = baseline_plan()
+        node = stage_node(plan, E.REJECTED)
+        node["data"]["entryConditions"] = node["data"]["entryConditions"][:1]
+        self.rejects(plan, "entry origins are")
+
+    def test_rejects_a_plan_with_no_corrections_loop(self):
+        """Send-back has to return the application to the checks."""
+        plan = baseline_plan()
+        buyer_id = stage_node(plan, E.BUYER)["id"]
+        node = stage_node(plan, E.CHECKING)
+        node["data"]["entryConditions"] = [
+            c for c in node["data"]["entryConditions"]
+            if buyer_id not in json.dumps(c)
+        ]
+        self.rejects(plan, f"has no entry from {E.BUYER!r}")
+
+    def test_rejects_an_unguarded_corrections_loop(self):
+        """Without a guard on the loop entry, every buyer decision sends the application
+        back to the checks, approvals included."""
+        plan = baseline_plan()
+        buyer_id = stage_node(plan, E.BUYER)["id"]
+        stripped = 0
+        for cond in stage_node(plan, E.CHECKING)["data"]["entryConditions"]:
+            if buyer_id not in json.dumps(cond):
+                continue
+            for _path, rule in _iter_dicts(cond):
+                if isinstance(rule.get("conditionExpression"), str):
+                    rule.pop("conditionExpression")
+                    stripped += 1
+        self.assertTrue(stripped, "the baseline corrections loop carries no guard")
+        self.rejects(plan, "corrections-loop entry carries no guard")
+
+    def test_rejects_a_first_phase_with_no_case_entered_rule(self):
+        plan = baseline_plan()
+        for _path, node in _iter_dicts(stage_node(plan, E.CHECKING)["data"]["entryConditions"]):
+            if node.get("rule") == "case-entered":
+                node["rule"] = "selected-stage-completed"
+        self.rejects(plan, "has no `case-entered` entry")
+
+    def test_rejects_a_withdrawal_lane_not_reached_from_the_stage_picker(self):
+        """Nothing in the source signals a withdrawal, so a person has to pick it."""
+        plan = baseline_plan()
+        for _path, node in _iter_dicts(stage_node(plan, E.WITHDRAWN)["data"]["entryConditions"]):
+            if node.get("rule") == "user-selected-stage":
+                node["rule"] = "case-entered"
+        self.rejects(plan, "is not entered by `user-selected-stage`")
+
+    def test_rejects_a_plan_missing_a_case_exit(self):
+        plan = baseline_plan()
+        plan["metadata"]["caseExitRules"] = plan["metadata"]["caseExitRules"][:-1]
+        self.rejects(plan, "case exit condition(s); the SDD declares")
+
+    def test_rejects_two_case_exits_marking_the_case_complete(self):
+        """Rejection and withdrawal close the case without completing it."""
+        plan = baseline_plan()
+        for rule in plan["metadata"]["caseExitRules"]:
+            rule["marksCaseComplete"] = True
+        self.rejects(plan, "mark the case complete; exactly one should")
+
+    def test_rejects_a_completing_exit_keyed_on_a_single_stage(self):
+        """Completion waits on every required stage, not on one of them."""
+        plan = baseline_plan()
+        for rule in plan["metadata"]["caseExitRules"]:
+            if not rule.get("marksCaseComplete"):
+                continue
+            for group in rule.get("rules") or []:
+                for inner in group:
+                    inner["rule"] = "selected-stage-completed"
+                    inner["selectedStageIds"] = [stage_node(plan, E.ONBOARDED)["id"]]
+        self.rejects(plan, "the completing case exit is keyed on")
+
+    def test_rejects_a_stage_entered_from_a_terminal_stage(self):
+        """A closed application must not move anywhere."""
+        plan = baseline_plan()
+        terminal = sorted(E.TERMINAL_STAGES)[0]
+        stage_node(plan, E.BUYER)["data"]["entryConditions"].append({
+            "id": "Condition_fromTerminal", "displayName": "Reopened",
+            "rules": [[{"id": "Condition_fromTerminal_r0",
+                        "rule": "selected-stage-completed",
+                        "selectedStageIds": [stage_node(plan, terminal)["id"]]}]],
+            "isInterrupting": False,
+        })
+        self.rejects(plan, "are entered from the terminal stage")
+
+    def test_rejects_a_terminal_stage_whose_exit_is_not_exit_only(self):
+        plan = baseline_plan()
+        terminal = sorted(E.TERMINAL_STAGES)[0]
+        node = stage_node(plan, terminal)
+        node["data"].setdefault("exitConditions", []).append({
+            "id": "Condition_leak", "displayName": "Leaks onward",
+            "rules": [[{"id": "Condition_leak_r0", "rule": "selected-tasks-completed",
+                        "selectedTasksIds": []}]],
+            "type": "diverting", "marksStageComplete": False,
+        })
+        self.rejects(plan, "is not `exit-only`")
+
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
 
@@ -1365,6 +1491,92 @@ class SlaLaneTargetTests(CheckerBase):
 
 class FieldNameTests(CheckerBase):
     checker = "fieldnames"
+
+    def _connector(self, plan):
+        """The first connector task in the plan, for a mutation that breaks one wire."""
+        for _path, node in _iter_dicts(plan):
+            if node.get("type") == "execute-connector-activity":
+                return node
+        raise AssertionError("the baseline has no connector task")
+
+    def _escalation(self, plan):
+        """One escalation task and the phase literal its `stageName` must carry."""
+        name, literal = sorted(E.STAGE_NAME_LITERAL.items())[0]
+        return task(plan, name), literal
+
+    def test_rejects_a_plan_with_the_wrong_connector_count(self):
+        plan = baseline_plan()
+        node = self._connector(plan)
+        node["type"] = "process"
+        self.rejects(plan, "connector task(s) in the plan")
+
+    def test_rejects_a_connector_that_reads_no_delivery_status(self):
+        """Without the status extract nothing knows whether the mail went out."""
+        plan = baseline_plan()
+        node = self._connector(plan)
+        node["data"]["outputs"] = [
+            o for o in (node["data"].get("outputs") or [])
+            if "status" not in json.dumps(o).lower()
+        ]
+        self.rejects(plan, "no output reads a delivery status")
+
+    def test_rejects_a_re_cased_status_wire(self):
+        """`Status not found, did you mean status` is a runtime death `validate` cannot
+        see, so the casing is checked here."""
+        plan = baseline_plan()
+        for o in self._connector(plan)["data"].get("outputs") or []:
+            if str(o.get("source") or "").endswith(E.CONNECTOR_OUTPUT_PATH):
+                o["source"] = "=response.Status"
+        self.rejects(plan, "the status wire path is")
+
+    def test_rejects_an_escalation_with_no_stage_name_input(self):
+        """The escalation form has to be told which phase missed its deadline."""
+        plan = baseline_plan()
+        node, _literal = self._escalation(plan)
+        node["data"]["inputs"] = [
+            i for i in (node["data"].get("inputs") or [])
+            if i.get("name") != E.STAGE_NAME_INPUT
+        ]
+        self.rejects(plan, f"has no {E.STAGE_NAME_INPUT!r} input")
+
+    def test_rejects_an_escalation_naming_the_wrong_phase(self):
+        plan = baseline_plan()
+        node, _literal = self._escalation(plan)
+        for i in node["data"].get("inputs") or []:
+            if i.get("name") == E.STAGE_NAME_INPUT:
+                i["value"] = "Some other phase"
+        self.rejects(plan, f"sets {E.STAGE_NAME_INPUT}=")
+
+    def test_rejects_an_escalation_carrying_a_sibling_phase_name(self):
+        """One phase's escalation must never carry another's name; the supplier would be
+        told the wrong phase ran late."""
+        plan = baseline_plan()
+        node, _literal = self._escalation(plan)
+        other = sorted(set(E.STAGE_NAME_LITERAL.values()) - {_literal})[0]
+        for i in node["data"].get("inputs") or []:
+            if i.get("name") == E.STAGE_NAME_INPUT:
+                i["value"] = other
+        self.rejects(plan, "name another phase")
+
+    def test_rejects_a_plan_missing_an_escalation_task(self):
+        plan = baseline_plan()
+        name = sorted(E.STAGE_NAME_LITERAL)[0]
+        for node in plan["nodes"]:
+            lanes = (node.get("data") or {}).get("tasks") or []
+            for lane in lanes:
+                for item in list(lane):
+                    if item.get("displayName") == name:
+                        lane.remove(item)
+        self.rejects(plan, f"task {name!r} is missing")
+
+    def test_rejects_a_plan_missing_the_document_reader(self):
+        plan = baseline_plan()
+        for node in plan["nodes"]:
+            for lane in (node.get("data") or {}).get("tasks") or []:
+                for item in list(lane):
+                    if item.get("displayName") == E.DOCUMENT_READER_TASK:
+                        lane.remove(item)
+        self.rejects(plan, f"task {E.DOCUMENT_READER_TASK!r} is missing")
 
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
