@@ -153,10 +153,10 @@ def condition_expression(cond: dict) -> str:
 def selected_stage_ids(cond: dict) -> set[str]:
     """Stage ids a `selected-stage-completed` / `-exited` rule points at.
 
-    Deliberately reads both spellings. The emitted key is the singular `selectedStageId`
-    holding a bare string, but a build that writes the plural array instead would otherwise
-    blank every routing assertion at once and report a topology that looks empty rather than
-    wrong. `stage_selector_spellings` is what actually judges the spelling.
+    Deliberately reads both spellings. Schema v30 emits `selectedStageIds`, an array even
+    for a single stage; a plan built before it carries the singular. Reading one spelling
+    blanks every routing assertion at once and reports a topology that looks empty rather
+    than wrong. `stage_selector_spellings` is what actually judges the spelling.
     """
     out = set()
     for rule in rules(cond):
@@ -217,7 +217,7 @@ def sla_ids_referenced(cond: dict) -> set[str]:
 
     The rule names the SLA directly via `slaId` — it carries no stage reference at
     all (verified against a built plan: 5 rules, all `{id, rule, slaId}`). An
-    assertion written against `selectedStageId` here can never fire.
+    assertion written against a stage selector here can never fire.
     """
     out = set()
     for rule in sla_status_change_rules(cond):

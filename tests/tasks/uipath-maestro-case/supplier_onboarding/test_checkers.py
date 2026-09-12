@@ -83,7 +83,7 @@ import expected as E  # noqa: E402
 
 CASE_ID = "case_SupplierOnboarding"
 CASE_NAME = "SupplierOnboarding"
-CASE_VERSION = "27.0.0"
+CASE_VERSION = "30.0.0"
 
 
 def T(
