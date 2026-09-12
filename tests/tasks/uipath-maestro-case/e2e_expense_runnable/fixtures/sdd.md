@@ -39,7 +39,7 @@
 | Case Name | ExpenseReimbursementRunnable |
 | Case Description | Handles an employee-submitted expense from submission through manager and finance approval to payment and close-out, ending in Approved, Rejected, or Withdrawn. Fully-automated runnable variant bound to generic tenant resources. |
 | Case Identifier | Type: constant. Prefix: EXP |
-| Case-Level SLA | 15 m |
+| Case-Level SLA | 350 min |
 | SLA Type | time-based |
 | Case App | Disabled |
 | Task-output passing | Direct |
@@ -70,7 +70,7 @@
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| caseRef | In | string | | | `""` (empty string) | External reference supplied by the caller at case start. |
+| caseRef | In | string | | | `""` | External reference supplied by the caller at case start. |
 | employeeName | Variable | string | | | "Jane Smith" | Submitting employee's name. |
 | employeeEmail | Variable | string | | | "jane.smith@acme.com" | Submitting employee's email. |
 | amount | Variable | float | | | 1250.00 | Expense amount. |
@@ -111,7 +111,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 3 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 45 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -214,7 +214,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: Manager | Notify: Manager |
+| 75 | min | 70% | Notify: Manager | Notify: Manager |
 
 #### Tasks
 
@@ -302,7 +302,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 75 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -438,7 +438,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 4 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 60 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -576,7 +576,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 2 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 30 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -678,7 +678,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 2 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 30 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -780,7 +780,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 2 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 30 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 

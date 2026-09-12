@@ -116,6 +116,36 @@
       }
     },
     {
+      "id": "postResolution",
+      "type": "uipath.connector.uipath-salesforce-slack.send-message-to-channel",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Send Message to Channel"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-salesforce-slack",
+          "connectionId": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "connectionResourceId": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "method": "POST",
+          "endpoint": "/send_message_to_channel_v2",
+          "bodyParameters": {
+            "channel": "C0B2FDZD1M3",
+            "messageToSend": "=js:`${$vars.start.output.correlationId}: ${$vars.resolutionWriter.output.body}`"
+          },
+          "queryParameters": {
+            "send_as": "user"
+          },
+          "uiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"send_message_to_channel_v2\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/send_message_to_channel_v2\",\"unifiedTypesCompatible\":true}}"
+        }
+      }
+    },
+    {
       "id": "doneSuccess",
       "type": "core.control.end",
       "typeVersion": "1.0",
@@ -137,6 +167,20 @@
             "expression": "$vars.resolutionWriter.output.body",
             "fieldType": "string"
           }
+        },
+        "caseKey": {
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.start.output.correlationId",
+            "fieldType": "string"
+          }
+        },
+        "slackMessageId": {
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.postResolution.output.ts",
+            "fieldType": "string"
+          }
         }
       }
     }
@@ -152,6 +196,13 @@
     {
       "id": "e2",
       "sourceNodeId": "resolutionWriter",
+      "sourcePort": "success",
+      "targetNodeId": "postResolution",
+      "targetPort": "input"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "postResolution",
       "sourcePort": "success",
       "targetNodeId": "doneSuccess",
       "targetPort": "input"
@@ -939,12 +990,30 @@
         "triggerNodeId": "start"
       },
       {
+        "id": "correlationId",
+        "direction": "in",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Per-run correlation id (routing key)",
+        "triggerNodeId": "start"
+      },
+      {
         "id": "emailSubject",
         "direction": "out",
         "type": "string"
       },
       {
         "id": "emailBody",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "caseKey",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "slackMessageId",
         "direction": "out",
         "type": "string"
       }

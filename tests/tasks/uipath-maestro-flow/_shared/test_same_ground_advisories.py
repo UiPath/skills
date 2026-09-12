@@ -920,3 +920,63 @@ def test_reachability_excludes_the_loop_break_edge() -> None:
     ]
 
     assert successful_end_ids(nodes, edges, "body") == set()
+
+
+def test_resolution_writer_advisory_accepts_connector_mode_http_proxy(tmp_path: Path) -> None:
+    """The Slack contract also accepts a connector-mode HTTP proxy send node, not
+    only the native connector node. Exercises the previously-unexercised proxy
+    branch of ``is_slack_send`` — where an unimported ``json`` once hid — because
+    the parametrized reference case feeds only the native-node flow."""
+    source = FLOW_TASKS / REFERENCE_CASES["advisory_billing_resolution_writer.py"]
+    flow = json.loads(source.read_text())
+    slack = next(n for n in flow["nodes"] if n["id"] == "postResolution")
+    slack["type"] = "core.action.http.v2"
+    slack["inputs"] = {
+        "detail": {
+            "connectionId": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+            "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+            "method": "POST",
+            "endpoint": "/send_message_to_channel_v2",
+            "queryParameters": {"send_as": "user"},
+            "bodyParameters": {
+                "authentication": "connector",
+                "targetConnector": "uipath-salesforce-slack",
+                "channel": "C0B2FDZD1M3",
+                "messageToSend": "=js:`${$vars.start.output.correlationId}: ${$vars.resolutionWriter.output.body}`",
+            },
+        }
+    }
+    target = tmp_path / "BillingResolutionWriter.flow"
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_resolution_writer.py", target)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_resolution_writer_advisory_rejects_proxy_send_without_bound_connection(tmp_path: Path) -> None:
+    """A connector-mode HTTP proxy with no bound connection must be refused — it
+    passes an ids-only shape check but the live rung's assert_slack_message_posted
+    rejects it ("no connected send node found")."""
+    source = FLOW_TASKS / REFERENCE_CASES["advisory_billing_resolution_writer.py"]
+    flow = json.loads(source.read_text())
+    slack = next(n for n in flow["nodes"] if n["id"] == "postResolution")
+    slack["type"] = "core.action.http.v2"
+    slack["inputs"] = {
+        "detail": {
+            "method": "POST",
+            "endpoint": "/send_message_to_channel_v2",
+            "queryParameters": {"send_as": "user"},
+            "bodyParameters": {
+                "authentication": "connector",
+                "targetConnector": "uipath-salesforce-slack",
+                "channel": "C0B2FDZD1M3",
+                "messageToSend": "=js:`${$vars.start.output.correlationId}: ${$vars.resolutionWriter.output.body}`",
+            },
+        }
+    }
+    target = tmp_path / "BillingResolutionWriter.flow"
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_resolution_writer.py", target)
+    assert result.returncode != 0
+    assert "Slack" in (result.stdout + result.stderr)
