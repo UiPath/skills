@@ -38,12 +38,22 @@ def _rule_names(condition: dict) -> list[str]:
 
 
 def _selected_stage_ids(condition: dict) -> list[str]:
-    return [
-        str(rule.get("selectedStageId") or "")
-        for row in condition.get("rules") or []
-        for rule in row or []
-        if rule.get("selectedStageId")
-    ]
+    """The stages a condition's rules select, under either spelling.
+
+    Schema v30 moved the key to `selectedStageIds`, an array even for one stage. Reading
+    only the singular reported the two disposition exits as selecting `None` and then as
+    missing, on a plan that carried them correctly.
+    """
+    found: list[str] = []
+    for row in condition.get("rules") or []:
+        for rule in row or []:
+            one = rule.get("selectedStageId")
+            if one:
+                found.append(str(one))
+            for many in rule.get("selectedStageIds") or []:
+                if many:
+                    found.append(str(many))
+    return found
 
 
 def main() -> int:

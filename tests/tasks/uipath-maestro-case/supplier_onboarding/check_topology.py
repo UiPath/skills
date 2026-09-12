@@ -214,16 +214,16 @@ def main() -> int:
                     f"{terminal!r} exit {P.exit_type(cond)!r} is not `exit-only`"
                 )
 
-    # A stage selector is `selectedStageId`, singular, holding a bare string. Written as the
-    # plural array the case faults on its first rules evaluation, before any task opens, and
-    # `uip maestro case validate` reports Valid either way.
-    plural = sorted(rid for rid, key in P.stage_selector_spellings(caseplan)
-                    if key == "selectedStageIds")
-    if plural:
+    # A stage selector is `selectedStageIds`, an array, even for one stage. Schema v30
+    # rejects the singular: `selectedStageId is deprecated, it should be a stage in
+    # selectedStageIds instead` (`case-schema.md:366`, all four rule scopes).
+    singular = sorted(rid for rid, key in P.stage_selector_spellings(caseplan)
+                      if key == "selectedStageId")
+    if singular:
         problems.append(
-            f"{len(plural)} stage selector(s) use `selectedStageIds`: {plural}. The key is "
-            f"`selectedStageId`, singular, holding a bare string; the plural array stops the "
-            f"rules evaluator dead and the case faults before its first task opens"
+            f"{len(singular)} stage selector(s) use `selectedStageId`: {singular}. Schema "
+            f"v30 takes `selectedStageIds`, an array, even for a single stage, and rejects "
+            f"the singular spelling"
         )
 
     # `$xref('Stage','Task','output')` is a build-time placeholder that has to be resolved to a
