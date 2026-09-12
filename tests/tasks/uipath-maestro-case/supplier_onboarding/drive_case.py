@@ -452,7 +452,7 @@ def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str
         tid = int(row.get("Id") or 0)
         # Every filter it fails, not the first one. Reporting only the first read a task
         # as `already Completed` and stopped, so whether it even belonged to this instance
-        # stayed unknown — which is the difference between a gate something else answered
+        # stayed unknown. That is the difference between a gate something else answered
         # and another run's task that was never ours.
         why = []
         if tid <= watermark:
@@ -570,7 +570,7 @@ def describe_incident(item: dict) -> str:
 
 # Incidents the case records that the plan cannot cause. Both are content-free service
 # errors raised while invoking an agent, with every input on the task correctly bound.
-# Measured across 17 runs: 27 incidents in all, and only these two carry no plan input —
+# Measured across 17 runs: 27 incidents in all, and only these two carry no plan input.
 # `Input validation failed`, the expression errors and the Integration Services 400s each
 # name something the build wrote.
 _PLATFORM_INCIDENTS = (
