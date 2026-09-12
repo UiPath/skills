@@ -214,17 +214,32 @@ def main() -> int:
                     f"{terminal!r} exit {P.exit_type(cond)!r} is not `exit-only`"
                 )
 
-    # A stage selector is `selectedStageIds`, an array, even for one stage. Schema v30
-    # rejects the singular: `selectedStageId is deprecated, it should be a stage in
-    # selectedStageIds instead` (`case-schema.md:366`, all four rule scopes).
-    singular = sorted(rid for rid, key in P.stage_selector_spellings(caseplan)
-                      if key == "selectedStageId")
-    if singular:
+    # The plan says which schema it was built to, and the selector spelling follows from it.
+    # Checked in that order: a v27 plan spells the selector singular correctly, so demanding
+    # the plural of one reports seven selector findings for one wrong number. Eight of the 28
+    # runs measured are v27 builds and every one of them collected those seven.
+    major = 0
+    declared = str(caseplan.get("version") or "")
+    head = declared.split(".")[0]
+    if head.isdigit():
+        major = int(head)
+    if major < 30:
         problems.append(
-            f"{len(singular)} stage selector(s) use `selectedStageId`: {singular}. Schema "
-            f"v30 takes `selectedStageIds`, an array, even for a single stage, and rejects "
-            f"the singular spelling"
+            f"the plan declares schema version {declared!r}; the skill builds v30, and the "
+            f"shapes below it are read differently"
         )
+    else:
+        # A stage selector is `selectedStageIds`, an array, even for one stage. Schema v30
+        # rejects the singular: `selectedStageId is deprecated, it should be a stage in
+        # selectedStageIds instead` (`case-schema.md:366`, all four rule scopes).
+        singular = sorted(rid for rid, key in P.stage_selector_spellings(caseplan)
+                          if key == "selectedStageId")
+        if singular:
+            problems.append(
+                f"{len(singular)} stage selector(s) use `selectedStageId`: {singular}. Schema "
+                f"v30 takes `selectedStageIds`, an array, even for a single stage, and rejects "
+                f"the singular spelling"
+            )
 
     # `$xref('Stage','Task','output')` is a build-time placeholder that has to be resolved to a
     # bare `vars.<outputReferenceId>` before the artifact ships. A survivor throws the moment the

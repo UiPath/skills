@@ -844,6 +844,27 @@ class TopologyTests(CheckerBase):
                             return
         self.fail("no guarded exit condition to mutate")
 
+    def test_rejects_a_plan_built_to_the_superseded_schema(self):
+        # The version is checked before the selector spelling, because the spelling follows
+        # from it. Eight of the 28 runs measured are v27 builds, and each collected seven
+        # selector findings for what is one wrong number.
+        plan = baseline_plan()
+        plan["version"] = "27.0.0"
+        self.rejects(plan, "declares schema version")
+
+    def test_a_superseded_schema_does_not_also_report_its_selectors(self):
+        plan = baseline_plan()
+        plan["version"] = "27.0.0"
+        for cond in plan["metadata"]["caseExitRules"]:
+            for group in cond["rules"]:
+                for rule in group:
+                    if "selectedStageIds" in rule:
+                        ids = rule.pop("selectedStageIds")
+                        rule["selectedStageId"] = ids[0] if ids else ""
+        blob = self.rejects(plan, "declares schema version").stdout
+        self.assertNotIn("stage selector(s) use", blob,
+                         f"a v27 plan spells the selector singular correctly:\n{blob}")
+
     def test_rejects_a_plural_stage_selector(self):
         # validate accepts the plural array; the case then faults on CaseRulesEvaluatorNode
         # before any task opens, so no other assertion here ever gets to run.
