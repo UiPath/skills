@@ -235,7 +235,7 @@ For **conversational agents**, each agent run handles one conversational exchang
 
 For **autonomous agents**, the `outputSchema` defines the output properties of the agent.
 
-For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. See [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 1.
+For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. The exception is a conversational agent scaffolded inline in a Maestro Flow, which does support structured outputs and is authored under the `uipath-maestro-flow` skill. See [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 1.
 
 
 ## Messages

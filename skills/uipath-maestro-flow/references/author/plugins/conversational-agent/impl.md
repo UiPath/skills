@@ -206,7 +206,7 @@ Reads recent exchanges without waiting. Rarely needed, and constrained — see [
 
 ## Structured Outputs
 
-In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Published and in-solution agents cannot.
+In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Imported standalone conversational agents (published or in-solution) do not support structured output fields.
 
 Declare each field in two places or it yields nothing at run time:
 
@@ -216,6 +216,24 @@ Declare each field in two places or it yields nothing at run time:
 | the inline `agent.json` | the same field under `outputSchema.properties` |
 
 Bind it downstream as `$vars.<agentNodeId>.output.shouldHandoff`. Writing one side without the other passes `agent validate` and `flow validate` — nothing checks the pair.
+
+### Prompting: what goes where
+
+The prompts that drive the agent's chat replies and structured output differ:
+
+| Generated | Driven by |
+| --- | --- |
+| the chat reply | the system prompt **only** |
+| the structured outputs | the system prompt **plus** each field's `description` |
+
+So split the instructions by destination — *what to say* and *response instructions* in the system prompt, *how to fill the field* in that field's `description` (write the same description in both `agentOutputVariables[]` and `outputSchema.properties`):
+
+| Where | Example |
+| --- | --- |
+| system prompt | "Thank the user when they would like to end the conversation." |
+| `endConversation` (boolean) `description` | "Set to true when the user intends to end the conversation." |
+
+**Do not name the output field and how to set it in the system prompt.** An instruction like "set `endConversation` to `true` when the user says goodbye" in the system prompt may make the LLM emit the structured value to the chat or look for a tool to set the output variables.
 
 ## Wire the Edges
 
