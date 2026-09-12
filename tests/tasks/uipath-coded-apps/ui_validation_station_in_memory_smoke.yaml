@@ -1,0 +1,100 @@
+task_id: skill-coded-apps-ui-validation-station-in-memory-smoke
+description: >
+  Smoke test (mode:build): the host already holds every document artifact in
+  memory and owns persistence, so there is no storage bucket to read from.
+  The agent must reach the standalone web component documented in
+  `references/widgets/validation-station.md §Integration: in-memory data`
+  (`<ui-du-validation-station-standalone-wc-element>` from
+  `@uipath/du-validation-station-wc`) rather than the bucket-backed React
+  `<ValidationStation>`, whose props require an `sdk` plus a
+  `ContentValidationData` descriptor and therefore cannot render in-memory
+  data at all. Grades what breaks at runtime if the wrong path is taken:
+  (1) the custom elements are registered, or nothing renders;
+  (2) `documentId` and the viewer data inputs are supplied as properties;
+  (3) the save request is handled by the host, since the element issues no
+  HTTP call of its own;
+  (4) no bucket download is attempted.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Action App, build the human-review screen for a
+  Document Understanding validation task.
+
+  Our own backend already put everything the reviewer needs on the Action
+  Center task payload: the taxonomy, the extraction result, the digitized
+  document, its plain text, and the original document as a base64 data URL.
+  Nothing has to be downloaded. Show the reviewer the standard Validation
+  Station layout — the document and the extraction fields side by side in one
+  panel.
+
+  When the reviewer saves, our app owns persistence: POST the validated
+  extraction result to `/api/validated-documents` and complete the task.
+
+  Author a single component at `src/components/DocumentReview.tsx` at the
+  sandbox root. Author the source only — do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/components/DocumentReview.tsx was created"
+    path: "src/components/DocumentReview.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Uses the web-component package directly (the React wrapper cannot render in-memory data)"
+    command: 'grep -q "@uipath/du-validation-station-wc" src/components/DocumentReview.tsx'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Registers the custom elements via the package side-effect entry point — without it the tag never upgrades and the panel renders empty"
+    command: 'grep -rq "du-validation-station-wc/main" src/'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Mounts the standalone validation-station element (fields + document in one panel, no HTTP calls of its own)"
+    command: 'grep -q "ui-du-validation-station-standalone-wc-element" src/components/DocumentReview.tsx'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Supplies documentId plus the viewer data inputs — the element has no other way to receive the document"
+    command: 'for n in documentId dom text original; do grep -q "$n" src/components/DocumentReview.tsx || exit 1; done'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Handles the save request — the element persists nothing, so an unhandled request makes Save a no-op"
+    command: 'grep -q "saveValidatedDataRequest" src/components/DocumentReview.tsx'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Attempts no bucket download — the artifacts were already handed over, and a bucket read would need a scope this app has no reason to hold"
+    command: 'grep -rEq "BucketService|useBucketArtifacts|getReadUri|buckets\." src/'
+    timeout: 15
+    expected_exit_code: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Does NOT mount the bucket-backed <ValidationStation> component, whose props require sdk + ContentValidationData. Comments are stripped first — naming it to explain why it was rejected is fine; mounting it is not."
+    command: 'sed "s://.*::" src/components/DocumentReview.tsx | grep -Ev "^[[:space:]]*(\*|/\*)" | grep -Eq "<ValidationStation[[:space:]/>]"'
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
