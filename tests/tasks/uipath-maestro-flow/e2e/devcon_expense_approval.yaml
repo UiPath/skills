@@ -6,7 +6,7 @@ description: >
   DevCon end-to-end scenario: developer gives a vague expense approval requirement.
   Agent must detect the HITL need, design a sensible schema with correct field types,
   build the full flow (trigger → script → HITL → script → end), wire edges correctly
-  including the completed handle, and validate. Tests that both the maestro-flow and
+  including every outcome's own port, and validate. Tests that both the maestro-flow and
   human-in-the-loop skills work together across the full authoring lifecycle.
   Validate-only: inline HITL nodes block on human review and cannot be `flow debug`-ged
   headlessly, so correctness is enforced via the semantic checker rather than runtime.
@@ -73,7 +73,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has semantically correct inline HITL schema, decision capture, completed wiring, and .output access paths"
+    description: "Flow has semantically correct inline HITL schema, decision capture, outcome-port wiring, and .output access paths"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/check_devcon_expense_approval.py"
     timeout: 30
     expected_exit_code: 0

@@ -33,8 +33,8 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 ## Critical Rules
 
 1. **Never block on schema confirmation.** Design the schema from the prompt and any upstream `.flow`/`caseplan.json` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Asking the user is never a precondition for proceeding — if the user is present and offers input, use it, but do not wait for it. Only stop and report the open decision when the request is genuinely too ambiguous to make any reasonable inference. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
-2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle — **not** `output`, `success`, or any other name. This is true even when inserting into an existing flow whose other nodes use `"sourcePort": "output"`.
-3. **Always add the definition entry when inserting into an existing flow.** Before writing the node, check `workflow.definitions[]` for the correct `nodeType` for the selected path (`"uipath.human-in-the-loop.quick-form"` for QuickForm, `"uipath.human-in-the-loop.coded-action-app"` for app-based). If absent, append the full definition entry (with `handleConfiguration` including the `completed` handle). Skipping the definition means the `completed` handle is invisible to the runtime and the wiring check fails.
+2. **Wire every QuickForm outcome's own port.** A QuickForm node has one output handle per outcome, named `outcome-<outcome.id>` — never a single `completed` handle. `outcome-completed` is a placeholder that exists only on a schema with zero outcomes; it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit`. A HITL node with any outcome port left unwired blocks the flow forever on that branch. App-based (`coded-action-app`) nodes are different: their port stays a static `completed` regardless of the app's own outcomes — do not add an `inputs.schema` block to an app-based node, which would wrongly flip it onto an outcome-derived port. Neither node type ever uses `output`, `success`, or any other name.
+3. **Always add the definition entry when inserting into an existing flow.** Before writing the node, check `workflow.definitions[]` for the correct `nodeType` for the selected path (`"uipath.human-in-the-loop.quick-form"` for QuickForm, `"uipath.human-in-the-loop.coded-action-app"` for app-based). If absent, append the full definition entry with its `handleConfiguration` block. Skipping the definition means the node's handles are invisible to the runtime and the wiring check fails.
 4. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
 5. **Validate after every change.** Run `uip maestro flow validate <file> --output json` after writing the node and edges. The `uip` CLI does not accept `--format`; using it produces `error: unknown option '--format'` and exit code 3.
 6. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
@@ -271,7 +271,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --output json
 ```
 
-The CLI writes the node, adds the definition entry, and updates `variables.nodes` automatically. Wire the `completed` port after it returns.
+The CLI writes the node, adds the definition entry, and updates `variables.nodes` automatically. Wire one `outcome-<outcome.id>` port per outcome after it returns.
 
 After writing, validate:
 

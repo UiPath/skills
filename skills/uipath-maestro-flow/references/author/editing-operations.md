@@ -28,7 +28,7 @@ Use Edit / Write for all non-carve-out `.flow` edits. Flow CLI is not an opt-in 
 
 | Operation | Default | Notes |
 |---|---|---|
-| Add a node | **Edit / Write** | Includes HITL QuickForm; wire `completed` after adding. |
+| Add a node | **Edit / Write** | Includes HITL QuickForm; wire one `outcome-<outcome.id>` port per outcome after adding — see [hitl/impl.md](plugins/hitl/impl.md). |
 | Add a managed HTTP node | **CLI** (carve-out) `node add`, then CLI `node configure` | Run `uip maestro flow node add <file>.flow core.action.http.v2 ...`; do not hand-author `definitions[]`. See [http/impl.md — Step 1](plugins/http/impl.md#add-the-node). |
 | Delete a node; add/delete an edge; update non-carve-out inputs; add/edit a workflow variable; add a variable update; map End-node outputs | **Edit** | In-place input edits preserve node ID and `$vars`; variable updates are Edit-only. Every edge needs `targetPort` (Rule #6). |
 | Create a subflow | **Edit / Write** | Edit-only, or `Write` for a fresh template. |
