@@ -1,0 +1,23 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "reviewer-decision-app",
+    "kind": "app",
+    "apiVersion": "apps.uipath.com/v1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "reviewer-decision-app",
+      "version": "",
+      "appVersionRef": ""
+    },
+    "locks": [],
+    "key": "2597e3fb-43a7-4f1d-8efd-e6454061ad2f",
+    "files": []
+  }
+}
