@@ -2,7 +2,7 @@ task_id: skill-agent-guardrail-byog-pinning
 description: >
   BYO guardrail pinning on an existing agent. The sandbox is pre-seeded
   with the Web Research Briefing solution (shared _fixtures copy,
-  guardrails empty), and a selective `uip` shim (mock_template/mocks/uip)
+  guardrails empty), and a selective `uip` shim (../../../_fixtures/ByogMockCli/mocks/uip)
   serves the discovery call — `uip agent guardrails list` returns a BYO
   pii_detection entry named byog-smoke-agent-pin alongside the built-in
   entry sharing the same Validator name — while every other uip command
@@ -23,7 +23,7 @@ run_limits:
 sandbox:
   mock_path_dirs: [mocks]
   template_sources:
-    - {type: template_dir, path: mock_template}
+    - {type: template_dir, path: ../../../_fixtures/ByogMockCli}
     - {type: template_dir, path: ../_fixtures/WebResearchBriefingSolution}
 
 initial_prompt: |
