@@ -595,6 +595,12 @@ _PLATFORM_INCIDENTS = (
     # exception. Run 34679634976 lost its sendback route to it after the loop-back had
     # already landed `BuyerDecision='sendback'`.
     "httpclient.timeout",
+    # `AppTasks request failed with status GatewayTimeout. Response body could not be
+    # parsed: ...` on run 34712368518, and `upstream connect error or disconnect/reset
+    # before headers` on 34694445000. A gateway that timed out and a connection the
+    # proxy reset are the service's, and a plan has no way to produce either.
+    "gatewaytimeout",
+    "upstream connect error",
 )
 
 

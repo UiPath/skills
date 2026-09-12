@@ -92,6 +92,19 @@ class PlatformIncidentTests(unittest.TestCase):
             "Failed to create app task in debug mode using deployed app X in folder Y"
         )]))
 
+    def test_a_gateway_timeout_and_a_reset_connection_judge_nothing(self):
+        """Both arrived on runs that had already driven their gates: 34712368518 lost
+        `no-withdraw-in-setup` to the first, 34694445000 the same route to the second."""
+        for message in (
+            "AppTasks request failed with status GatewayTimeout. Response body could "
+            "not be parsed: Unexpected character encountered",
+            "upstream connect error or disconnect/reset before headers. retried and the "
+            "latest reset reason: connection failure",
+        ):
+            self.assertTrue(
+                drive_case.incidents_are_all_platform([self._incident(message)]), message
+            )
+
     def test_a_service_fault_alone_judges_nothing(self):
         for message in ("HTTP Request Failed", "LLM model not available"):
             self.assertTrue(
