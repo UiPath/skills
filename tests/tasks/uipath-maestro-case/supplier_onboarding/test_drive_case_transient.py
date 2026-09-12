@@ -77,6 +77,21 @@ class PlatformIncidentTests(unittest.TestCase):
     def _incident(message: str) -> dict:
         return {"ElementId": "t1", "Code": 170002, "Message": message}
 
+    def test_a_debug_task_creation_timeout_judges_nothing(self):
+        """The outer sentence can also name a real defect, an app the folder does not
+        hold, so the marker is the inner exception. Run 34679634976 lost its sendback
+        route to it after the loop-back had already landed `BuyerDecision='sendback'`."""
+        timed_out = (
+            "Failed to create app task in debug mode using deployed app Supplier "
+            "Application Validation in folder Shared/uipath-maestro-case/Supplier "
+            "Application Validation, Inner exception: The request was canceled due to "
+            "the configured HttpClient.Timeout of 30 seconds elapsing."
+        )
+        self.assertTrue(drive_case.incidents_are_all_platform([self._incident(timed_out)]))
+        self.assertFalse(drive_case.incidents_are_all_platform([self._incident(
+            "Failed to create app task in debug mode using deployed app X in folder Y"
+        )]))
+
     def test_a_service_fault_alone_judges_nothing(self):
         for message in ("HTTP Request Failed", "LLM model not available"):
             self.assertTrue(

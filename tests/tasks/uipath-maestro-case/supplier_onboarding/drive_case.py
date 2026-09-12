@@ -588,6 +588,13 @@ def describe_incident(item: dict) -> str:
 _PLATFORM_INCIDENTS = (
     "llm model not available",
     "http request failed",
+    # `Failed to create app task in debug mode using deployed app <name> in folder
+    # <path>, Inner exception: The request was canceled due to the configured
+    # HttpClient.Timeout of 30 seconds elapsing.` The outer sentence can also name a
+    # real defect, an app the folder does not hold, so the marker is the inner
+    # exception. Run 34679634976 lost its sendback route to it after the loop-back had
+    # already landed `BuyerDecision='sendback'`.
+    "httpclient.timeout",
 )
 
 
