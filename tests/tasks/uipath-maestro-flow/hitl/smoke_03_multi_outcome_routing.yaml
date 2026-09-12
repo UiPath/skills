@@ -26,7 +26,11 @@ initial_prompt: |
   5. false branch → Script node that logs "Leave rejected" → End
 
   Use the inline quickform HITL node (uipath.human-in-the-loop.quick-form).
-  Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
+  Wire: Trigger → HITL → Decision → both branches → Script → End, with both
+  HITL outcomes (Approve and Reject) routed to the Decision node — every
+  outcome needs its own wired port. The branch itself is on the `approved`
+  field value, not on which outcome was clicked, so a Decision node is the
+  right choice here.
 
   The Decision node condition must reference the HITL output using the
   correct runtime variable path ($vars.<nodeId>.output.<fieldName>).
