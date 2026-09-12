@@ -4,9 +4,9 @@
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
     python3 .../flow_contains.py '"uipath.human-in-the-loop.quick-form"' '"end"'
-    python3 .../flow_contains.py --flow-name VendorApproval '"boolean"'
+    python3 .../flow_contains.py '"boolean"'
     python3 .../flow_contains.py --regex '\\$vars\\.[A-Za-z0-9_-]+\\.output'
-    python3 .../flow_contains.py --flow-name ContractReview --absent-regex '\\.output\\.legalNotes'
+    python3 .../flow_contains.py --absent-regex '\\.output\\.legalNotes'
 
 Arguments:
     plain args           substrings that must ALL appear in ONE discovered
@@ -16,8 +16,11 @@ Arguments:
                          replacement for ``file_matches_regex``
     --flow-name NAME     restrict assertions to files named ``NAME.flow``;
                          fails when no discovered file has that basename.
-                         Restores the name enforcement the literal paths had,
-                         while staying wrapper-agnostic
+                         Opt-in and deliberately unused by the task suite: a
+                         correct build may emit a flow file whose name does not
+                         echo the project (``new.flow``), so grading a basename
+                         scores 0.0 on a flow that validates. Pass it only when
+                         the file name is itself under test
     --absent-regex PAT   negative assertion: exits 0 only when discovery
                          succeeded, every target file was read, and NO target
                          file matches PAT (repeatable). Use this (with

@@ -57,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file was created in a supported authoring layout"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EmailTriage"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -65,7 +65,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the inline agent node type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EmailTriage 'uipath.agent.autonomous'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'uipath.agent.autonomous'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

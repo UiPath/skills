@@ -34,7 +34,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SearchableJoinsTest '\"nodes\"' '\"edges\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -42,7 +42,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has a connector node referencing uipath-salesforce-sfdc"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SearchableJoinsTest 'uipath-salesforce-sfdc'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'uipath-salesforce-sfdc'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
