@@ -450,17 +450,22 @@ def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str
     print(f"  watermark {watermark}, instance {instance_id}, {len(rows)} task(s) carry this title")
     for row in sorted(rows, key=lambda r: int(r.get("Id") or 0))[-6:]:
         tid = int(row.get("Id") or 0)
+        # Every filter it fails, not the first one. Reporting only the first read a task
+        # as `already Completed` and stopped, so whether it even belonged to this instance
+        # stayed unknown — which is the difference between a gate something else answered
+        # and another run's task that was never ours.
+        why = []
         if tid <= watermark:
-            why = f"id <= watermark {watermark}, so it predates this run"
-        elif str(tid) in done:
-            why = "already driven by this run"
-        elif row.get("Status") == "Completed":
-            why = "already Completed"
-        elif row.get("CreatorJobKey") != instance_id:
-            why = f"raised by instance {row.get('CreatorJobKey')}, not this one"
-        else:
-            why = "PASSES every filter, so the lookup should have taken it"
-        print(f"    {tid} {row.get('Status')} created {row.get('CreatedTime')}: {why}")
+            why.append(f"id <= watermark {watermark}, predates this run")
+        if str(tid) in done:
+            why.append("already driven by this run")
+        if row.get("Status") == "Completed":
+            why.append("already Completed")
+        mine = row.get("CreatorJobKey") == instance_id
+        why.append("this instance" if mine else f"raised by instance {row.get('CreatorJobKey')}")
+        if not why[:-1] and mine:
+            why = ["PASSES every filter, so the lookup should have taken it"]
+        print(f"    {tid} {row.get('Status')} created {row.get('CreatedTime')}: {'; '.join(why)}")
 
 
 def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -> None:
