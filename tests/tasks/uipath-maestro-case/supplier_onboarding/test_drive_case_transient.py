@@ -65,5 +65,45 @@ class TransientMarkerTests(unittest.TestCase):
         )
 
 
+class PlatformIncidentTests(unittest.TestCase):
+    """Which case incidents mean the route judges nothing.
+
+    Across 17 runs the case recorded 27 incidents. Twenty-five name something the build
+    wrote: empty inputs, an expression that dereferenced undefined, an Integration
+    Services 400, a catalog the folder does not hold. Two do not.
+    """
+
+    @staticmethod
+    def _incident(message: str) -> dict:
+        return {"ElementId": "t1", "Code": 170002, "Message": message}
+
+    def test_a_service_fault_alone_judges_nothing(self):
+        for message in ("HTTP Request Failed", "LLM model not available"):
+            self.assertTrue(
+                drive_case.incidents_are_all_platform([self._incident(message)]), message
+            )
+
+    def test_a_plan_defect_still_counts(self):
+        for message in (
+            "Input validation failed",
+            "Error evaluating data expression: Worker operation failed",
+            "Request to Integration Services failed with status code '400'",
+            "No task catalog exists with name phase-escalation",
+        ):
+            self.assertFalse(
+                drive_case.incidents_are_all_platform([self._incident(message)]), message
+            )
+
+    def test_one_plan_defect_among_service_faults_still_counts(self):
+        self.assertFalse(drive_case.incidents_are_all_platform([
+            self._incident("HTTP Request Failed"),
+            self._incident("Input validation failed"),
+        ]))
+
+    def test_no_incident_is_not_a_service_fault(self):
+        """A case that faulted with nothing recorded still has to fail on its own terms."""
+        self.assertFalse(drive_case.incidents_are_all_platform([]))
+
+
 if __name__ == "__main__":
     unittest.main()

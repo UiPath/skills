@@ -554,6 +554,27 @@ def describe_incident(item: dict) -> str:
     return f"{item.get('ElementId')!r} ({item.get('ErrorCode')}): {detail}"
 
 
+# Incidents the case records that the plan cannot cause. Both are content-free service
+# errors raised while invoking an agent, with every input on the task correctly bound.
+# Measured across 17 runs: 27 incidents in all, and only these two carry no plan input —
+# `Input validation failed`, the expression errors and the Integration Services 400s each
+# name something the build wrote.
+_PLATFORM_INCIDENTS = (
+    "llm model not available",
+    "http request failed",
+)
+
+
+def incidents_are_all_platform(raised: list) -> bool:
+    """True when every incident is a service fault, so the route judges nothing."""
+    if not raised:
+        return False
+    for item in raised:
+        if not any(m in describe_incident(item).lower() for m in _PLATFORM_INCIDENTS):
+            return False
+    return True
+
+
 def fail_with_diagnosis(instance_id: str, msg: str):
     """Fail, but first print what the case itself says about why.
 
@@ -567,6 +588,9 @@ def fail_with_diagnosis(instance_id: str, msg: str):
     raised = incidents(instance_id)
     for item in raised[:4]:
         print(f"  incident on {describe_incident(item)}")
+    if incidents_are_all_platform(raised):
+        msg = (f"{msg}. Every incident on this instance is a service fault, so the route "
+               "carries no verdict about the plan")
     if not raised:
         stages = [r.get("ElementId") for r in executions(instance_id)
                   if r.get("ElementType") == "CaseStage"]
