@@ -468,6 +468,14 @@ def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str
         print(f"    {tid} {row.get('Status')} created {row.get('CreatedTime')}: {'; '.join(why)}")
 
 
+# Orchestrator's answer when the action already landed. `envelope_retrying` retries a
+# write on a transient marker, so a completion that reached the server and then answered
+# with one gets sent again, and the second attempt is refused. Run 34672482504's
+# compliance-reject lost its first gate exactly there, on a task the same identity had
+# already completed. The state the caller wanted is the state the task is in.
+_ALREADY_COMPLETED = "already completed by the same user"
+
+
 def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -> None:
     task_id = str(task["Id"])
     folder_id = str(task.get("FolderId") or "")
@@ -523,6 +531,10 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
         "--data", json.dumps(data or {"Comment": f"Driven by the SupplierOnboarding e2e check ({action})."}),
         "--output", "json",
     ])
+    if reply.get("Result") != "Success" and _ALREADY_COMPLETED in envelope_detail(reply).lower():
+        print(f"  task {task_id} was already completed with this identity; the retry "
+              "answered for a write that had landed")
+        reply = {"Result": "Success"}
     if reply.get("Result") != "Success":
         detail = [f"completing task {task_id} with action {action!r} failed: "
                   f"{reply.get('Message') or reply.get('Code') or reply}"]

@@ -105,5 +105,28 @@ class PlatformIncidentTests(unittest.TestCase):
         self.assertFalse(drive_case.incidents_are_all_platform([]))
 
 
+class AlreadyCompletedTests(unittest.TestCase):
+    """A write that landed and then answered with a transient marker.
+
+    `envelope_retrying` sends a refused write again, and Orchestrator refuses the second
+    attempt of a completion with `This Action is already completed by the same user`. Run
+    34672482504's compliance-reject lost its first gate there.
+    """
+
+    def test_the_marker_is_recognised_whatever_the_casing(self):
+        for detail in (
+            "Error completing task '101524657' | This Action is already completed by the same user",
+            "error completing task | this action is ALREADY COMPLETED BY THE SAME USER",
+        ):
+            self.assertIn(drive_case._ALREADY_COMPLETED, detail.lower(), detail)
+
+    def test_a_real_completion_refusal_is_not_it(self):
+        for detail in (
+            "Error completing task | This action is no longer assigned to you",
+            "Error completing task | The task is not in a state that allows completion",
+        ):
+            self.assertNotIn(drive_case._ALREADY_COMPLETED, detail.lower(), detail)
+
+
 if __name__ == "__main__":
     unittest.main()
