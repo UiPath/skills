@@ -239,6 +239,8 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
 }
 ```
 
+The static `completed` handle above mirrors the manifest's `handleConfiguration`. It is not what you wire: per-outcome handles are derived from `inputs.schema.outcomes` at render time and never appear in `handleConfiguration`. See Edge Wiring below.
+
 ---
 
 ## Edge Wiring
@@ -250,7 +252,7 @@ Wire one output handle per outcome to its downstream node — port `outcome-<out
 { "id": "invoiceReview1-outcome-reject-end1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-reject", "targetNodeId": "end1", "targetPort": "input" }
 ```
 
-**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is a placeholder that exists only on a schema with zero outcomes — it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit` (id `submit`, port `outcome-submit`). Never wire it once outcomes exist.
+**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is the port for a zero-outcome node, or for a real outcome whose `id` is literally `completed` — never a shared exit for several outcomes. The shipped default outcome (`id` `submit`) uses port `outcome-submit`, not `outcome-completed`.
 
 ---
 
