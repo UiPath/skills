@@ -210,3 +210,41 @@ class InstanceAdoptionTests(unittest.TestCase):
     def test_an_instance_present_before_debug_is_not_a_candidate(self):
         self.arrange({"ours": "folder-a"}, {"ours": self.MINE})
         self.assertEqual(drive_case.appeared_since({"ours": "folder-a"}), "")
+
+
+class AttemptCountTests(unittest.TestCase):
+    """`drive_case.envelope_retrying` records how many attempts a write took.
+
+    `complete_gate` needs it to read "already completed by the same user". Our own resent
+    write and another driver's completion carry the same message, because every suite drives
+    as one bot identity. Only the attempt count separates them.
+    """
+
+    def setUp(self):
+        self.real_envelope = drive_case.envelope
+        self.real_sleep = drive_case.time.sleep
+        drive_case.time.sleep = lambda _s: None
+        self.addCleanup(setattr, drive_case, "envelope", self.real_envelope)
+        self.addCleanup(setattr, drive_case.time, "sleep", self.real_sleep)
+
+    def replies(self, *seq):
+        it = iter(seq)
+        drive_case.envelope = lambda args, timeout=120: next(it)
+
+    def test_a_write_that_lands_first_time_counts_one(self):
+        self.replies({"Result": "Success"})
+        self.assertEqual(drive_case.envelope_retrying(["uip", "tasks", "complete"])["_Attempts"], 1)
+
+    def test_a_refusal_on_the_first_attempt_counts_one(self):
+        self.replies({"Result": "Failure", "Message": "already completed by the same user"})
+        self.assertEqual(drive_case.envelope_retrying(["uip", "tasks", "complete"])["_Attempts"], 1)
+
+    def test_a_transient_then_success_counts_two(self):
+        self.replies({"Result": "Failure", "Message": "Gateway Timeout"},
+                     {"Result": "Success"})
+        self.assertEqual(drive_case.envelope_retrying(["uip", "tasks", "complete"])["_Attempts"], 2)
+
+    def test_a_resent_write_refused_as_already_completed_counts_two(self):
+        self.replies({"Result": "Failure", "Message": "Gateway Timeout"},
+                     {"Result": "Failure", "Message": "already completed by the same user"})
+        self.assertEqual(drive_case.envelope_retrying(["uip", "tasks", "complete"])["_Attempts"], 2)

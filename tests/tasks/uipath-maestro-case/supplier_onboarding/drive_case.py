@@ -305,6 +305,9 @@ def envelope_retrying(args: list[str], *, timeout: int = 120) -> dict:
     """
     for attempt in range(TRANSIENT_RETRIES + 1):
         reply = envelope(args, timeout=timeout)
+        # How many attempts this call took, so a caller can tell a refusal that answers its
+        # own landed write from one that answers somebody else's.
+        reply["_Attempts"] = attempt + 1
         if reply.get("Result") == "Success":
             return reply
         detail = envelope_detail(reply)
@@ -502,11 +505,19 @@ def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str
         print(f"    {tid} {row.get('Status')} created {row.get('CreatedTime')}: {'; '.join(why)}")
 
 
-# Orchestrator's answer when the action already landed. `envelope_retrying` retries a
-# write on a transient marker, so a completion that reached the server and then answered
-# with one gets sent again, and the second attempt is refused. Run 34672482504's
-# compliance-reject lost its first gate exactly there, on a task the same identity had
-# already completed. The state the caller wanted is the state the task is in.
+# Orchestrator's answer when the action already landed. It has two causes and they need
+# opposite handling, which is why the swallow below is gated on the attempt count.
+#
+# Ours: `envelope_retrying` resends a write on a transient marker, so a completion that
+# reached the server and then answered with one gets sent twice and the second attempt is
+# refused. The state the caller wanted is the state the task is in, so it may proceed.
+#
+# Somebody else's: every suite drives as the same bot identity, so a task another driver
+# answered reports "the same user" too. Run 34672482504 lost its first gate that way, on
+# task 101524657 of instance 19cb8dbc-edae-4246-9ef3-8ab5e2048481, which run 34670963139
+# was driving at the same moment and had already completed with `approve`. The action on
+# the task is then whatever that driver chose, which this route cannot read and must not
+# assume, so it fails instead.
 _ALREADY_COMPLETED = "already completed by the same user"
 
 
@@ -566,9 +577,14 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
         "--output", "json",
     ])
     if reply.get("Result") != "Success" and _ALREADY_COMPLETED in envelope_detail(reply).lower():
-        print(f"  task {task_id} was already completed with this identity; the retry "
-              "answered for a write that had landed")
-        reply = {"Result": "Success"}
+        if reply.get("_Attempts", 1) > 1:
+            print(f"  task {task_id} was already completed with this identity; the retry "
+                  "answered for a write that had landed")
+            reply = {"Result": "Success"}
+        else:
+            fail(f"task {task_id} was already completed with this identity, and this route "
+                 f"never retried the completion, so the action on it is not {action!r} and "
+                 "is not known. Another driver answered this gate.")
     if reply.get("Result") != "Success":
         detail = [f"completing task {task_id} with action {action!r} failed: "
                   f"{reply.get('Message') or reply.get('Code') or reply}"]
