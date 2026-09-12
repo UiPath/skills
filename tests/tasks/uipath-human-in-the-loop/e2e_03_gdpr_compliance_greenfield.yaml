@@ -52,8 +52,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow wires the completed handle"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval 'completed'"
+    description: "Flow wires both Approve and Reject outcome ports, not the outcome-completed placeholder"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
