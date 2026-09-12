@@ -42,6 +42,19 @@ FORBIDDEN_PROMPT_EXCEPTIONS = {
 
 DEBUG_SOLUTION_ALLOWLIST = set()
 
+# The two billing lookups name only a "Data Service entity", which since #3041
+# denotes two node families. Their prompts pin the connector so the graded
+# structure is deterministic; the sibling dispute-resolution task pins it in the
+# same way. Native Data Fabric authoring is covered by its own task, not these.
+CONNECTOR_PINNED_LOOKUPS = {
+    "multi_node/billing_invoice_lookup/billing_invoice_lookup.yaml",
+    "multi_node/billing_discrepancy_detector/billing_discrepancy_detector.yaml",
+}
+CONNECTOR_PIN = (
+    "on the data service `query-entity-records` activity, "
+    "not the native data fabric nodes"
+)
+
 # F1 freezes the #2557 task even though its prompt predates the exact phrase.
 DEBUG_PROJECT_LAYOUT_EXCEPTIONS = {"single_node/coded_agent/coded_agent.yaml"}
 
@@ -190,6 +203,15 @@ def test_debug_graded_prompts_name_a_same_name_solution() -> None:
         if not re.search(r"\b(?:in|inside) a solution of the same name\b", prompt):
             offenders.add(relative)
     assert offenders == DEBUG_SOLUTION_ALLOWLIST | DEBUG_PROJECT_LAYOUT_EXCEPTIONS
+
+
+def test_billing_lookup_prompts_pin_the_data_service_connector() -> None:
+    offenders = {
+        relative
+        for relative in CONNECTOR_PINNED_LOOKUPS
+        if CONNECTOR_PIN not in " ".join(_prompt_text(_task_text(relative)).lower().split())
+    }
+    assert offenders == set()
 
 
 def test_external_graders_use_package_qualified_shared_imports() -> None:
