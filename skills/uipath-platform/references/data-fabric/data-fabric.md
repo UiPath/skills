@@ -146,6 +146,7 @@ Entities and choice sets are either tenant-level or folder-scoped. Records and f
 | Read / filter / paginate / sort records | [`records-query.md`](records-query.md) + [`filter-platform-contract.md`](filter-platform-contract.md) |
 | Insert / update / delete records | [`records-query.md`](records-query.md) |
 | Aggregates / group-by | [`records-query.md` → Aggregates](records-query.md#aggregates-server-side) |
+| Post-aggregation filter (HAVING on aggregate aliases) | [`records-query.md` → havingFilter](records-query.md#post-aggregation-filter-havingfilter) |
 | Bulk CSV import | [`bulk-import.md`](bulk-import.md) |
 | File attachments (upload / download / delete) | [`file-attachments.md`](file-attachments.md) |
 
