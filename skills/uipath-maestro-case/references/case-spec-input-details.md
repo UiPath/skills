@@ -497,3 +497,4 @@ For reference. See `packages/flow-tool/src/services/connector-service.ts:286-433
 The case version is a strict subset — the static identity fields are removed because they're derived from the spec call's other inputs (`--type`, `--activity-type-id`, `--connection-id`).
 
 <!-- END: case-spec-input-details.md -->
+
