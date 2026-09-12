@@ -390,27 +390,61 @@ def instance_ids() -> dict:
     }
 
 
-def appeared_since(before: dict) -> str:
-    """The instance that exists now and did not before `case debug` was started.
+# Instances proven to belong to another suite, so a later poll does not re-test them.
+_FOREIGN_INSTANCES: set = set()
 
-    A set difference against a snapshot, rather than anything read off an instance's own
-    fields. A debug instance carries nothing that says which case it is: the create call
-    writes `PackageKey`, `ProcessKey` and `PackageVersion` as `Guid.Empty`, an empty display
-    name, and `PackageId` as the Studio Web project's guid. `case debug` prints nothing
-    before the instance exists either. Two suites debugging at the same moment is the one
-    case this cannot resolve, and it says so rather than driving whichever came first.
+
+def own_stage_ids() -> set:
+    """The stage element ids this run's own caseplan defines."""
+    return {n["id"] for n in plan_nodes()
+            if n.get("type") == "case-management:Stage" and n.get("id")}
+
+
+def appeared_since(before: dict) -> str:
+    """The instance that exists now, did not before `case debug` was started, and runs this
+    build's plan.
+
+    A debug instance carries nothing that says which case it is: the create call writes
+    `PackageKey`, `ProcessKey` and `PackageVersion` as `Guid.Empty`, an empty display name, and
+    `PackageId` as the Studio Web project's guid. So a set difference against a snapshot picks the
+    candidates, and the candidate's own stage ids decide whether it is ours.
+
+    The set difference alone is not enough. `instance list` is tenant-wide, every suite imports a
+    solution of the same name into the same tenant, and a brand new solution can take over five
+    minutes to surface its instance. In that window a sibling suite's instance is the only new one,
+    which passes any count-based guard. Two runs then drove one instance: 34712367241 and
+    34712365629 both printed `instance 2db00be8-20c0-4672-a099-1b7f5bd44591`, and the first failed
+    with `the case is asking which stage follows 'Stage_kR3nQ7'`, a stage that exists only in the
+    second's plan.
+
+    An empty execution list is undecided, not foreign: the instance may simply be too young to have
+    entered a stage. Waiting one more poll costs ten seconds; adopting the wrong instance costs the
+    route its verdict and reads like a routing defect.
     """
-    fresh = {k: v for k, v in instance_ids().items() if k not in before}
-    if not fresh:
+    mine = own_stage_ids()
+    candidates = {k: v for k, v in instance_ids().items()
+                  if k not in before and k not in _FOREIGN_INSTANCES}
+    claimed = {}
+    for instance_id, folder in candidates.items():
+        stages = {r.get("ElementId") for r in executions(instance_id, folder)
+                  if r.get("ElementType") == "CaseStage"}
+        if not stages:
+            continue
+        if stages & mine:
+            claimed[instance_id] = folder
+        else:
+            _FOREIGN_INSTANCES.add(instance_id)
+            print(f"  instance {instance_id} is running a plan this build does not define "
+                  f"({sorted(stages)[:3]}); another suite is debugging into this tenant, skipping it")
+    if not claimed:
         return ""
     global CASE_FOLDER_KEY
-    if len(fresh) > 1:
+    if len(claimed) > 1:
         fail(
-            f"{len(fresh)} case instances appeared while this route was starting "
-            f"({sorted(fresh)}); another suite is debugging into this tenant at the same "
-            "moment and no field says which one is ours"
+            f"{len(claimed)} case instances appeared running this build's own stages "
+            f"({sorted(claimed)}); no field says which one is ours"
         )
-    instance_id, folder = next(iter(fresh.items()))
+    instance_id, folder = next(iter(claimed.items()))
     CASE_FOLDER_KEY = folder
     return instance_id
 
@@ -637,10 +671,10 @@ def fail_with_diagnosis(instance_id: str, msg: str):
     fail(msg)
 
 
-def executions(instance_id: str) -> list:
+def executions(instance_id: str, folder: str = "") -> list:
     return run_list([
         "uip", "maestro", "case", "instance", "element-executions", instance_id,
-        "-f", CASE_FOLDER_KEY, "--output", "json",
+        "-f", folder or CASE_FOLDER_KEY, "--output", "json",
     ])
 
 

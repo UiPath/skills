@@ -158,3 +158,55 @@ class AlreadyCompletedTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InstanceAdoptionTests(unittest.TestCase):
+    """`drive_case.appeared_since`: which new instance this route agrees to drive.
+
+    Every suite imports a solution of the same name into one tenant, and `instance list` is
+    tenant-wide. A sibling's instance can be the only new one in the window, so a count-based
+    guard passes it through. That happened: 34712367241 and 34712365629 both drove
+    2db00be8-20c0-4672-a099-1b7f5bd44591.
+    """
+
+    MINE = ["Stage_ERNFO3", "Stage_Q2YFKc"]
+    THEIRS = ["Stage_kR3nQ7", "Stage_pL8xM2"]
+
+    def setUp(self):
+        drive_case._FOREIGN_INSTANCES.clear()
+        drive_case.CASE_FOLDER_KEY = ""
+        self.addCleanup(drive_case._FOREIGN_INSTANCES.clear)
+
+    def arrange(self, listing: dict, stages_by_instance: dict):
+        drive_case.plan_nodes = lambda: [
+            {"id": sid, "type": "case-management:Stage"} for sid in self.MINE
+        ]
+        drive_case.instance_ids = lambda: listing
+        drive_case.executions = lambda iid, folder="": [
+            {"ElementId": sid, "ElementType": "CaseStage"}
+            for sid in stages_by_instance.get(iid, [])
+        ]
+
+    def test_adopts_the_instance_running_this_build(self):
+        self.arrange({"ours": "folder-a"}, {"ours": self.MINE})
+        self.assertEqual(drive_case.appeared_since({}), "ours")
+        self.assertEqual(drive_case.CASE_FOLDER_KEY, "folder-a")
+
+    def test_skips_a_sibling_suites_instance_even_when_it_is_the_only_new_one(self):
+        self.arrange({"theirs": "folder-b"}, {"theirs": self.THEIRS})
+        self.assertEqual(drive_case.appeared_since({}), "")
+        self.assertIn("theirs", drive_case._FOREIGN_INSTANCES)
+
+    def test_an_instance_with_no_stage_rows_yet_is_undecided(self):
+        self.arrange({"young": "folder-c"}, {})
+        self.assertEqual(drive_case.appeared_since({}), "")
+        self.assertNotIn("young", drive_case._FOREIGN_INSTANCES)
+
+    def test_picks_ours_out_of_a_pair_that_appeared_together(self):
+        self.arrange({"theirs": "folder-b", "ours": "folder-a"},
+                     {"theirs": self.THEIRS, "ours": self.MINE})
+        self.assertEqual(drive_case.appeared_since({}), "ours")
+
+    def test_an_instance_present_before_debug_is_not_a_candidate(self):
+        self.arrange({"ours": "folder-a"}, {"ours": self.MINE})
+        self.assertEqual(drive_case.appeared_since({"ours": "folder-a"}), "")
