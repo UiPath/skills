@@ -9,7 +9,9 @@ plan defect into a pass.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import unittest
 from pathlib import Path
 
@@ -248,3 +250,52 @@ class AttemptCountTests(unittest.TestCase):
         self.replies({"Result": "Failure", "Message": "Gateway Timeout"},
                      {"Result": "Failure", "Message": "already completed by the same user"})
         self.assertEqual(drive_case.envelope_retrying(["uip", "tasks", "complete"])["_Attempts"], 2)
+
+
+class CancellationDiagnosisTests(unittest.TestCase):
+    """`drive_case.fail_with_diagnosis` on a case that ended with no incident.
+
+    Sixteen routes have died that way and the artifact never said where. This is the last
+    moment the instance can be asked: post_run deletes it with the solution. The path only
+    runs when a route fails, so nothing else exercises it.
+    """
+
+    def setUp(self):
+        self.saved = {name: getattr(drive_case, name)
+                      for name in ("run_status", "incidents", "executions", "run")}
+        self.addCleanup(
+            lambda: [setattr(drive_case, k, v) for k, v in self.saved.items()])
+        drive_case.run_status = lambda instance: "Cancelled"
+        drive_case.incidents = lambda instance: []
+        drive_case.executions = lambda instance, folder="": [
+            {"ElementType": "CaseStage", "ElementId": "Stage_A",
+             "ElementRuns": [{"Status": "InProgress"}, {"Status": "Completed"}]},
+            {"ElementType": "CaseTask", "ElementId": "tBuyer1",
+             "ElementRuns": [{"Status": "Completed"}]},
+        ]
+        drive_case.run = lambda args, timeout=120: {
+            "BuyerDecision": "reject", "ComplianceDecision": None, "caseOutcome": ""}
+
+    def diagnose(self) -> str:
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            with self.assertRaises(SystemExit):
+                drive_case.fail_with_diagnosis("abc-123", "the case ended 'Cancelled'")
+        return out.getvalue()
+
+    def test_names_the_last_elements_and_how_often_each_ran(self):
+        printed = self.diagnose()
+        self.assertIn("CaseStage Stage_A 2 run(s), last 'Completed'", printed)
+        self.assertIn("CaseTask tBuyer1 1 run(s), last 'Completed'", printed)
+
+    def test_prints_the_decision_variables_the_case_held(self):
+        """`BuyerDecision` is what the rejection lane's guard reads, so whether it landed
+        is the first thing to know about a case that died at the buyer stage."""
+        printed = self.diagnose()
+        self.assertIn("decision variables at the end:", printed)
+        self.assertIn("'BuyerDecision': 'reject'", printed)
+
+    def test_still_reports_the_stages_and_the_run_status(self):
+        printed = self.diagnose()
+        self.assertIn("run status 'Cancelled'", printed)
+        self.assertIn("no incident; the case reached stages ['Stage_A']", printed)
