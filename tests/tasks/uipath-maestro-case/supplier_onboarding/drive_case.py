@@ -1111,8 +1111,18 @@ def main() -> int:
                              f"{sdd_name!r}; it is stalled, so the gate will never open")
                     time.sleep(POLL_SLEEP)
             if task is None:
-                if run_status(instance_id) in FINISHED:
-                    print(f"  the case finished before {sdd_name!r} opened; its guard closed that route")
+                # `FINISHED` holds `Cancelled` and `Faulted` as well as the two that mean
+                # the case ran to an end. Saying "its guard closed that route" for all four
+                # asserted a cause the driver never checked, and it was printed on 15
+                # cancellations that a guard had nothing to do with. Say the status.
+                status = run_status(instance_id)
+                if status in {"Completed", "Successful"}:
+                    print(f"  the case reached {status!r} before {sdd_name!r} opened; "
+                          "a guard sent it past that task")
+                    break
+                if status in FINISHED:
+                    print(f"  the case reached {status!r} while waiting for {sdd_name!r}; "
+                          "nothing here says why")
                     break
                 explain_missing_gate(watermark, title, done, instance_id)
                 fail_with_diagnosis(instance_id,
