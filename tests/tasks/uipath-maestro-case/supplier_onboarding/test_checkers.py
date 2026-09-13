@@ -1214,6 +1214,120 @@ def stage_node(plan: dict, label: str) -> dict:
 class SlaTests(CheckerBase):
     checker = "sla"
 
+    def _phase(self):
+        """One phase with an SLA, its escalation task and its revised-date slot."""
+        phase = sorted(E.PHASE_REVISED_DATE)[0]
+        return phase, E.ESCALATION_OF_PHASE[phase], E.PHASE_REVISED_DATE[phase]
+
+    def test_rejects_a_root_sla_of_the_wrong_length(self):
+        plan = baseline_plan()
+        for rule in plan["metadata"]["slaRules"]:
+            rule["count"] = 999
+        self.rejects(plan, "no root SLA of")
+
+    def test_rejects_a_case_sla_with_no_at_risk_escalation(self):
+        """Without it the overall target passes with no warning before the breach."""
+        plan = baseline_plan()
+        for rule in plan["metadata"]["slaRules"]:
+            # The trigger lives in `triggerInfo.type`, beside the percentage it fires at.
+            rule["escalationRule"] = [
+                e for e in (rule.get("escalationRule") or [])
+                if (e.get("triggerInfo") or {}).get("type") != "at-risk"
+            ]
+        self.rejects(plan, "no at-risk escalation")
+
+    def test_rejects_a_stage_at_risk_band_at_the_case_percentage(self):
+        """70% for a phase and 75% for the overall target are not interchangeable."""
+        plan = baseline_plan()
+        phase = sorted(E.STAGE_SLA)[0]
+        changed = 0
+        for _path, node in _iter_dicts(stage_node(plan, phase)):
+            if node.get("atRiskPercentage") == E.STAGE_AT_RISK_PERCENT:
+                node["atRiskPercentage"] = E.CASE_AT_RISK_PERCENT
+                changed += 1
+        self.assertTrue(changed, "the baseline phase carries no at-risk band")
+        self.rejects(plan, "at-risk band is")
+
+    def test_rejects_an_escalation_with_no_sla_status_change_rule(self):
+        """It never activates when the phase misses its deadline."""
+        plan = baseline_plan()
+        name = sorted(E.START_TASK_ON_BREACH)[0]
+        task(plan, name)["entryConditions"] = []
+        self.rejects(plan, "has no `sla-status-change` entry rule")
+
+    def test_rejects_an_escalation_listening_to_another_phases_sla(self):
+        """A phase's escalation must fire on its own breach, or the note names a phase
+        that did not run late."""
+        plan = baseline_plan()
+        name, (own_phase, _title) = sorted(E.START_TASK_ON_BREACH.items())[0]
+        other = sorted(set(E.STAGE_SLA) - {own_phase})[0]
+        foreign = None
+        for _path, node in _iter_dicts(stage_node(plan, other)):
+            if node.get("id") and "sla" in str(node.get("id")).lower():
+                foreign = node["id"]
+                break
+        self.assertIsNotNone(foreign, f"stage {other!r} declares no SLA id")
+        for _path, node in _iter_dicts(task(plan, name)):
+            if node.get("slaId"):
+                node["slaId"] = foreign
+        self.rejects(plan, "listens to SLA(s)")
+
+    def test_rejects_an_oversight_lane_that_interrupts(self):
+        """The review runs alongside the application, which must still reach its own
+        disposition."""
+        plan = baseline_plan()
+        for cond in stage_node(plan, E.SLA_REVIEW)["data"]["entryConditions"]:
+            cond["isInterrupting"] = True
+        self.rejects(plan, "entry interrupts")
+
+    def test_rejects_a_wrap_up_phase_holding_a_phase_escalation(self):
+        plan = baseline_plan()
+        label = sorted(E.NOTIFY_ONLY_BREACH_STAGES)[0]
+        name = sorted(E.START_TASK_ON_BREACH)[0]
+        stage_node(plan, label)["data"].setdefault("tasks", [[]])[0].append(
+            {"id": "tEscDup01", "displayName": name, "type": "action", "data": {}})
+        self.rejects(plan, "appears in wrap-up stage")
+
+    def test_rejects_a_buyer_at_risk_warning_that_skips_category_management(self):
+        """The SDD bumps a stalled review up before the deadline passes."""
+        plan = baseline_plan()
+        for _path, node in _iter_dicts(stage_node(plan, E.BUYER)):
+            for key in ("value", "target"):
+                if E.BUYER_AT_RISK_GROUP.lower() in str(node.get(key, "")).lower():
+                    node[key] = "Somebody Else"
+        self.rejects(plan, "at-risk notifies")
+
+    def test_rejects_a_missing_revised_date_slot(self):
+        """The delay note has nowhere to read the new expected date from."""
+        plan = baseline_plan()
+        _phase, _escalation, slot = self._phase()
+        for group in ("inputs", "outputs", "inputOutputs"):
+            plan["variables"][group] = [
+                v for v in plan["variables"][group]
+                if v.get("id") != slot and v.get("name") != slot
+            ]
+        self.rejects(plan, "has no revised-date slot named")
+
+    def test_rejects_an_escalation_writing_to_another_phases_slot(self):
+        plan = baseline_plan()
+        phase, escalation, slot = self._phase()
+        other = sorted(set(E.PHASE_REVISED_DATE.values()) - {slot})[0]
+        for o in task(plan, escalation)["data"].get("outputs") or []:
+            if o.get("var") == slot:
+                o["var"] = other
+        self.rejects(plan, "escalation writes into another phase's slot(s)")
+
+    def test_rejects_a_phase_with_no_delay_note_task(self):
+        plan = baseline_plan()
+        phase, _escalation, _slot = self._phase()
+        name = E.DELAY_NOTE_OF_PHASE[phase]
+        for node in plan["nodes"]:
+            for lane in (node.get("data") or {}).get("tasks") or []:
+                for item in list(lane):
+                    if item.get("displayName") == name:
+                        lane.remove(item)
+        self.rejects(plan, "has no delay note task")
+
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
 
@@ -1269,6 +1383,162 @@ class SlaTests(CheckerBase):
 
 class TasksIoTests(CheckerBase):
     checker = "tasks_io"
+
+    def _first_stage_task(self, plan):
+        """The first task the SDD declares, with the stage it lives in."""
+        label, rows = sorted(E.STAGE_TASKS.items())[0]
+        return stage_node(plan, label), rows[0][0]
+
+    def test_rejects_a_stage_missing_a_task_the_sdd_declares(self):
+        plan = baseline_plan()
+        node, name = self._first_stage_task(plan)
+        for lane in node["data"]["tasks"]:
+            for item in list(lane):
+                if item.get("displayName") == name:
+                    lane.remove(item)
+        self.rejects(plan, f"is missing task {name!r}")
+
+    def test_rejects_a_task_whose_required_flag_is_flipped(self):
+        """A required escalation stops the stage completing unless the phase breached."""
+        plan = baseline_plan()
+        node, name = self._first_stage_task(plan)
+        item = task(plan, name)
+        item["isRequired"] = not bool(item.get("isRequired"))
+        self.rejects(plan, "isRequired=")
+
+    def test_rejects_a_task_whose_run_once_flag_is_flipped(self):
+        """A re-entered stage runs a task that is not run-once a second time."""
+        plan = baseline_plan()
+        _node, name = self._first_stage_task(plan)
+        item = task(plan, name)
+        item["shouldRunOnlyOnce"] = not bool(item.get("shouldRunOnlyOnce"))
+        self.rejects(plan, "shouldRunOnlyOnce=")
+
+    def test_rejects_a_plan_with_the_wrong_task_count(self):
+        plan = baseline_plan()
+        node, _name = self._first_stage_task(plan)
+        node["data"]["tasks"][0].append({
+            "id": "tExtra001", "displayName": "An extra task",
+            "type": "action", "data": {},
+        })
+        self.rejects(plan, f"tasks in the plan; the SDD declares {E.TOTAL_TASKS}")
+
+    def test_rejects_a_plan_whose_task_type_mix_is_wrong(self):
+        """A different class runs on a different runtime, so the mix is counted as well
+        as checked task by task."""
+        plan = baseline_plan()
+        _node, name = self._first_stage_task(plan)
+        item = task(plan, name)
+        item["type"] = "api-workflow" if item.get("type") != "api-workflow" else "action"
+        self.rejects(plan, "task-type counts are")
+
+    def test_rejects_a_plan_that_binds_a_resource_the_sdd_does_not_name(self):
+        """A task binds through `<folderPath>.<name>` on its binding, not on the task."""
+        plan = baseline_plan()
+        for _path, node in _iter_dicts(plan):
+            if node.get("resourceKey"):
+                node["resourceKey"] = "Shared/invented/Nothing.Nothing"
+                break
+        else:
+            self.fail("the baseline carries no binding to repoint")
+        self.rejects(plan, "binds resource(s) the SDD does not name")
+
+    def test_rejects_a_skeleton_task(self):
+        """Every resource in this SDD is deployed, so none should be left unresolved."""
+        plan = baseline_plan()
+        _node, name = self._first_stage_task(plan)
+        task(plan, name)["data"] = {}
+        self.rejects(plan, "task(s) are skeletons")
+
+    def test_rejects_an_output_target_no_task_writes(self):
+        plan = baseline_plan()
+        target, writers = sorted(E.OUTPUT_TARGETS.items())[0]
+        for writer in writers:
+            item = task(plan, writer)
+            item["data"]["outputs"] = [
+                o for o in (item["data"].get("outputs") or [])
+                if o.get("var") != target
+            ]
+        self.rejects(plan, f"nothing in the plan writes {target!r}")
+
+    def test_rejects_an_output_target_the_plan_never_declares(self):
+        """A route that reads an undeclared variable gets nothing."""
+        plan = baseline_plan()
+        target = sorted(E.OUTPUT_TARGETS)[0]
+        for group in ("inputs", "outputs", "inputOutputs"):
+            plan["variables"][group] = [
+                v for v in plan["variables"][group]
+                if v.get("id") != target and v.get("name") != target
+            ]
+        self.rejects(plan, f"variable {target!r} is not declared in the plan")
+
+    def test_rejects_one_writer_dropping_a_shared_output_target(self):
+        """Where the SDD gives two tasks the same reassign, one dropping it is the
+        failure the whole-target check cannot see."""
+        plan = baseline_plan()
+        target, writers = next(
+            ((k, v) for k, v in sorted(E.OUTPUT_TARGETS.items()) if len(v) > 1), (None, None))
+        if target is None:
+            self.skipTest("this SDD gives no target more than one writer")
+        item = task(plan, writers[0])
+        item["data"]["outputs"] = [
+            o for o in (item["data"].get("outputs") or []) if o.get("var") != target
+        ]
+        self.rejects(plan, f"do not write {target!r}")
+
+    def test_rejects_an_on_demand_task_with_no_adhoc_rule(self):
+        """A manually launched task needs its own `adhoc` rule, or nothing can start it."""
+        plan = baseline_plan()
+        name = sorted(E.ADHOC_TASKS)[0]
+        for _path, node in _iter_dicts(task(plan, name)):
+            if node.get("rule") == "adhoc":
+                node["rule"] = "case-entered"
+        self.rejects(plan, "entry rules are")
+
+    def test_rejects_an_expression_recipient_with_the_wrong_type(self):
+        """An expression recipient is Type 3; another type sends it to nobody."""
+        plan = baseline_plan()
+        name = sorted(E.EXPRESSION_RECIPIENT_TASKS)[0]
+        task(plan, name)["data"]["recipient"] = {
+            "Type": 2, "Value": E.EXPRESSION_RECIPIENT_VALUE}
+        self.rejects(plan, "recipient Type is")
+
+    def test_rejects_an_expression_recipient_with_the_wrong_value(self):
+        plan = baseline_plan()
+        name = sorted(E.EXPRESSION_RECIPIENT_TASKS)[0]
+        task(plan, name)["data"]["recipient"] = {
+            "Type": E.EXPRESSION_RECIPIENT_TYPE, "Value": "someone@example.com"}
+        self.rejects(plan, "recipient Value is")
+
+    def test_rejects_a_missing_child_case_task(self):
+        plan = baseline_plan()
+        for node in plan["nodes"]:
+            for lane in (node.get("data") or {}).get("tasks") or []:
+                for item in list(lane):
+                    if item.get("displayName") == E.CHILD_CASE_TASK:
+                        lane.remove(item)
+        self.rejects(plan, f"task {E.CHILD_CASE_TASK!r} is missing")
+
+    def test_rejects_a_child_case_the_parent_waits_on(self):
+        """The negotiation runs on its own; waiting holds the setup phase open."""
+        plan = baseline_plan()
+        task(plan, E.CHILD_CASE_TASK)["data"]["waitForCompletion"] = True
+        self.rejects(plan, "waitForCompletion=")
+
+    def test_rejects_a_task_carrying_only_part_of_its_design_rationale(self):
+        """A fragment drops the reason the task is shaped the way it is."""
+        plan = baseline_plan()
+        # `description` sits on the task node, beside `displayName`, not inside `data`.
+        cut = 0
+        for _stage, rows in sorted(E.STAGE_TASKS.items()):
+            for row in rows:
+                item = task(plan, row[0])
+                desc = item.get("description")
+                if isinstance(desc, str) and len(desc) > 30:
+                    item["description"] = desc[:20]
+                    cut += 1
+        self.assertTrue(cut, "the baseline carries no task description to truncate")
+        self.rejects(plan, "is not their whole")
 
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
