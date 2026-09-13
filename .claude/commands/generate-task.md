@@ -176,18 +176,33 @@ Field order: `task_id`, `description`, `tags`, top-level overrides (`max_iterati
 
 For e2e tasks that need to verify execution output beyond what the built-in criteria cover:
 
-1. Create `tests/tasks/<skill>/<capability>/check_<name>.py` next to the YAML.
+1. Create `tests/tasks/<skill>/<capability>/check_<name>.py` next to the YAML, OR — if a second e2e test will reuse the logic, or the skill already has one — `tests/tasks/<skill>/_shared/check_<name>.py`.
 2. Follow the pattern from existing check scripts (e.g. `check_calculator_flow.py`):
    - `#!/usr/bin/env python3` + module docstring
    - `sys.exit("FAIL: ...")` on failure, `print("OK: ...")` on success
-   - If importing from `tests/tasks/<skill>/_shared/`, use the `sys.path.insert(...)` bootstrap that existing scripts use (the script is invoked as `python3 $TASK_DIR/check_<name>.py`).
-3. Wire it into the YAML via `run_command`:
+   - Task sandboxes don't have a full host repo checkout: a check script reached only from grading is invoked via `$REFERENCE_DIR` (mirrors `reference.directory` on disk, never staged into the agent's sandbox); a check script that needs fixtures or a shared helper file colocated with it gets those via `reference.directory` widened to cover them, never `$TASK_DIR`.
+   - If importing from `tests/tasks/<skill>/_shared/`, use the `sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))` bootstrap that existing scripts use.
+3. Add a `reference:` block (if the task doesn't already have one) and wire the script in via `run_command`:
    ```yaml
-   - type: run_command
-     command: "python3 $TASK_DIR/check_<name>.py"
+   reference:
+     directory: .   # or ".." / "../.." to also cover a _shared/ or fixtures/ dir the script needs
+   success_criteria:
+     - type: run_command
+       command: "python3 $REFERENCE_DIR/check_<name>.py"
    ```
 
 Only create a `_shared/` helper if the skill already has one or a second e2e test will reuse the logic. Otherwise keep the check script self-contained.
+
+If the task also needs pre_run/post_run tooling (seed/cleanup/scaffold scripts, or fixtures the agent must see), stage it separately via `sandbox.template_sources` into a `_setup/` directory — `_setup/` is agent-visible, `_shared/` is not, and grading logic must never live in a directory that's mounted via `template_sources`:
+```yaml
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+pre_run:
+  - command: "python3 _setup/seed.py"
+```
 
 ## Phase 4 — Validation and Summary
 

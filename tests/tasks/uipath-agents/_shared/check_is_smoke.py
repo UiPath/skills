@@ -256,8 +256,18 @@ def _resolve_param_info(
 
 def _expected_from_fixture() -> dict:
     """Derive the ActivityMetadata shape the agent should have mapped from the
-    pre-recorded `uip is resources describe` fixture (staged in the task dir)."""
-    fixture = Path(__file__).resolve().parent / "fixtures" / "slack_send_message_describe.json"
+    pre-recorded `uip is resources describe` fixture.
+
+    Resolved against the REFERENCE mirror (this file's own family root:
+    $REFERENCE_DIR == .../uipath-agents, per is_smoke.yaml's
+    `reference.directory: ../..`), not any sandbox copy — the fixture is not
+    staged into the agent's sandbox at all for this task, so this is simply
+    where it lives on disk.
+    """
+    fixture = (
+        Path(__file__).resolve().parent.parent
+        / "coded" / "is_smoke" / "fixtures" / "slack_send_message_describe.json"
+    )
     doc = _load_json(fixture)
     body_fields: list[str] = []
     for f in doc.get("requestFields", []):

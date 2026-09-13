@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a lowcode agent and inject LC_GUARDRAIL_MISAPPLIED.
+"""Scaffold a lowcode agent and inject lc guardrail misapplied.
 
 The agent is a synthetic-test-data generator: it takes a non-PII `topic` and
 produces fake sample records. Its LLM never receives real personal data. It

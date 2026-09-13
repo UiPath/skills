@@ -13,7 +13,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_setup"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "_setup"))
 from eval_fixtures import PROJECT_NAME, build_evaluator, evaluator_path  # noqa: E402
 from eval_scoring import deep_equal, exact_match, load_eval_sets, load_evaluators, parse_expected, run_row, wrap_output  # noqa: E402

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a lowcode agent and set up the PII flavor of LC_GUARDRAIL_RECOMMENDED.
+"""Scaffold a lowcode agent and set up the PII flavor of lc guardrail recommended.
 
 Rewrites the input schema so the agent clearly processes personal data
 (customer_email, full_name, ssn) and leaves the guardrails array absent.

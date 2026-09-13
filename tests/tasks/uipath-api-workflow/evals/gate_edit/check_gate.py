@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_setup"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "_setup"))
 from eval_fixtures import PROJECT_NAME, build_eval_set, build_evaluator, build_workflow, eval_set_path, evaluator_path  # noqa: E402
 from seed import ROWS  # noqa: E402

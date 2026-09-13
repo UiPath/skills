@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Scaffold a coded FUNCTION agent and inject
-CODED_OUTPUT_ENUM_MISSING_ON_CLASSIFIER.
+coded output enum missing on classifier.
 
 Overwrites main.py with a classifier whose output field `classification` is
 a bare `str` (no Literal / Enum / pattern) even though the agent maps to a

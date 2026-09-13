@@ -4,7 +4,7 @@
 Adds a `$guardrailType: "builtInValidator"` guardrail whose `validatorType` is a
 made-up name not in any tenant's guardrail catalog. `uip agent review` (Step 2.5a)
 fetches the live catalog (`uip agent guardrails list`) and must emit
-GUARDRAIL_UNKNOWN_VALIDATOR. A deliberately bogus name (rather than a real
+guardrail unknown validator. A deliberately bogus name (rather than a real
 validator) makes the finding fire for *any* authed tenant, independent of which
 validators that tenant actually exposes.
 """

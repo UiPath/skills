@@ -33,9 +33,11 @@ defaults:
         # uip login state. Same destination nightly.yaml uses; do not "fix" it.
         - ~/.uipath:/.uipath:rw
         # Repo root. Narrowing plugins.path to preview/ drops the automatic
-        # repo-root mount, and criteria shell out to
-        # $SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py. Destination must be the
-        # host path, which the framework only expands from 0.11.2 on
+        # repo-root mount this experiment otherwise relies on for plugin
+        # discovery. (No criterion shells out to $SKILLS_REPO_PATH any more —
+        # that addressing was replaced by sandbox.template_sources +
+        # $REFERENCE_DIR; this mount is unrelated to grading.) Destination must
+        # be the host path, which the framework only expands from 0.11.2 on
         # (UiPath/coder_eval#128); earlier versions reject it at load.
         - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
 

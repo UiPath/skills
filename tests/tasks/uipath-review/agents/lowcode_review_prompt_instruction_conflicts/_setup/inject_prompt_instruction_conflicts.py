@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a lowcode agent and inject LC_PROMPT_INSTRUCTION_CONFLICTS.
+"""Scaffold a lowcode agent and inject lc prompt instruction conflicts.
 
 Rewrites the system message to contain two mutually exclusive output
 instructions (JSON-only vs. plain-text-paragraph-never-JSON). The judgment

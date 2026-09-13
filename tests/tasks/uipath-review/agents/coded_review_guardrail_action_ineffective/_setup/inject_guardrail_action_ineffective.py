@@ -6,7 +6,7 @@ guardrail on the LLM factory — but with `LogAction`, which only records the
 violation and does not stop the PII from reaching the LLM. `uip codedagent review`
 returns it guardrail-clean (the action is a real SDK class, well-formed), so the
 reviewer must fetch the live catalog (Audit Mode → Actionability) and emit
-`CODED_GUARDRAIL_ACTION_INEFFECTIVE` — PII protection at this scope needs a
+coded guardrail action ineffective — PII protection at this scope needs a
 blocking action, not log.
 """
 

@@ -7,7 +7,7 @@ wires a `pii_detection` guardrail — which matches the catalog's `when_not_to_u
 (the LLM never receives real PII; the generated PII is the intended product). `uip
 codedagent review` returns it guardrail-clean, so the reviewer must fetch the live
 catalog (Audit Mode → Relevance), read `pii_detection`'s `when_not_to_use`, and
-cite `CODED_GUARDRAIL_MISAPPLIED`.
+cite coded guardrail misapplied.
 """
 
 from pathlib import Path

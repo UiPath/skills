@@ -63,29 +63,21 @@ def parse_json(text: str) -> dict:
 
 def seed_choice_set() -> str | None:
     """Seed the choice set and return its ID."""
-    # Use the platform helper if available, otherwise do it inline
-    platform_seeder = (
-        Path(__file__).resolve().parents[3]
-        / "uipath-platform" / "data-fabric" / "_setup" / "seed_choice_set.py"
+    # Both this task's own _setup/ and uipath-platform/data-fabric/_setup/ are
+    # staged onto the same sandbox mount_point (_setup), so seed_choice_set.py
+    # always sits right next to this script — no host-repo fallback needed.
+    platform_seeder = Path(__file__).resolve().parent / "seed_choice_set.py"
+    if not platform_seeder.is_file():
+        print(f"FAIL: seed_choice_set.py not staged at {platform_seeder}", file=sys.stderr)
+        return None
+    r = subprocess.run(
+        [sys.executable, str(platform_seeder), "--spec", str(CHOICE_SET_SPEC)],  # uses same python
+        capture_output=True, text=True, timeout=180,
     )
-    if platform_seeder.is_file():
-        r = subprocess.run(
-            [sys.executable, str(platform_seeder), "--spec", str(CHOICE_SET_SPEC)],  # uses same python
-            capture_output=True, text=True, timeout=180,
-        )
-        if r.returncode != 0:
-            print(f"FAIL: seed_choice_set.py failed: {r.stderr.strip()}", file=sys.stderr)
-            return None
-        print(r.stdout.strip())
-    else:
-        # Inline fallback: create choice set directly
-        spec = json.loads(CHOICE_SET_SPEC.read_text())
-        code, out, err = run_uip("df", "choice-sets", "create", spec["name"],
-                                  "--display-name", spec.get("displayName", spec["name"]))
-        if code != 0 and "already exists" not in (out + err).lower():
-            print(f"WARN: choice-sets create: {err.strip()}", file=sys.stderr)
-        for val in spec.get("values", []):
-            run_uip("df", "choice-sets", "add-value", spec["name"], "--value", val)
+    if r.returncode != 0:
+        print(f"FAIL: seed_choice_set.py failed: {r.stderr.strip()}", file=sys.stderr)
+        return None
+    print(r.stdout.strip())
 
     # Look up ID (with retry for parallel pre_run races)
     for attempt in range(1, LIST_RETRY_ATTEMPTS + 1):

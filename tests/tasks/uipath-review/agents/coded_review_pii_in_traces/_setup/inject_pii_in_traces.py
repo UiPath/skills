@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a coded FUNCTION agent and inject CODED_PII_IN_TRACES.
+"""Scaffold a coded FUNCTION agent and inject coded pii in traces.
 
 Overwrites main.py with a `@traced()` helper whose parameters clearly carry
 PII (email_body, customer_email) and that lacks `hide_input=` /

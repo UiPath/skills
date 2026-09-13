@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Scaffold a lowcode agent and set up the audit-logging flavor of
-LC_GUARDRAIL_RECOMMENDED.
+lc guardrail recommended.
 
 The agent has a `SendCustomerEmail` tool whose required argument is the
 recipient email (the tool legitimately handles PII) and configures NO
 guardrails. Blocking PII on this tool would break it, so the right
 recommendation is a Tool-scope **log** guardrail for an audit trail (not
-block). The reviewer should emit `LC_GUARDRAIL_RECOMMENDED` naming the tool and
+block). The reviewer should emit lc guardrail recommended naming the tool and
 recommending a log/audit action.
 """
 

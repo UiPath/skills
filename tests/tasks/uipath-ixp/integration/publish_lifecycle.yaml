@@ -31,7 +31,8 @@ sandbox:
     - type: template_dir
       path: ../_shared/live_calls_template
     - type: template_dir
-      path: ../_shared/fixtures
+      path: ../_setup/fixtures
+      mount_point: fixtures
 
     - type: template_dir
       path: ../_setup

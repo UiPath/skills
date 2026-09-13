@@ -6,7 +6,7 @@ Flips the baseline's `from uipath_langchain.guardrails import …` to
 `uipath_langchain.guardrails` import — so the LangChain adapter never registers as
 an import side effect and the `@guardrail`-decorated factory returns the LLM
 unwrapped (silent no-op). `uip codedagent review` (Step 2.5a) emits
-`CODED_GUARDRAIL_WRONG_IMPORT` for this deterministically and **offline** (no
+coded guardrail wrong import for this deterministically and **offline** (no
 catalog / auth needed), which the reviewer must carry into the report.
 """
 

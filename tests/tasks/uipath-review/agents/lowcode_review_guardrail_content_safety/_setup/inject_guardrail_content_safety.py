@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Scaffold a lowcode agent and set up the content-safety flavor of
-LC_GUARDRAIL_RECOMMENDED.
+lc guardrail recommended.
 
 The agent is a marketing copywriter that generates open-ended promotional text
 from a user-supplied topic, and configures NO guardrails. Per the catalog's
 content-safety use cases, an open-ended content generator should have a
-content-safety guardrail. The reviewer should emit `LC_GUARDRAIL_RECOMMENDED`
+content-safety guardrail. The reviewer should emit lc guardrail recommended
 naming the content-safety case (generic phrasing — do not name a
 platform-documented validator unless already present).
 """

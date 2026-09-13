@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a lowcode agent and inject VAGUE_TOOL_DESCRIPTION.
+"""Scaffold a lowcode agent and inject vague tool description.
 
 Creates a tool resource.json with an empty `description`. The catalog
 rule fires when description is missing, empty after strip, or shorter

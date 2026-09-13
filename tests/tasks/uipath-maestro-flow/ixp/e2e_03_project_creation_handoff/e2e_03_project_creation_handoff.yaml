@@ -36,10 +36,11 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/falconry
       mount_point: documents
-    # handoff.py + flow_project_finder.py (a standalone copy of _shared/
-    # flow_check.py's find_project_dir, carrying no scoring logic — see its
-    # docstring). Shared with e2e_04_build_mechanics.yaml, which mounts this
-    # same _setup at the same mount_point.
+    # handoff.py + handoff_tenant.py (pre_run/post_run tooling + shared tenant
+    # plumbing; no scoring logic — the primary gate lives in
+    # _shared/check_ixp_handoff.py, never staged here). Shared with
+    # e2e_04_build_mechanics.yaml, which mounts this same _setup at the same
+    # mount_point.
     - type: template_dir
       path: _setup
       mount_point: _setup

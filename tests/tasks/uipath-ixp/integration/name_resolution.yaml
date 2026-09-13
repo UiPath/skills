@@ -22,8 +22,8 @@ sandbox:
     - type: template_dir
       path: ../_shared/live_calls_template
 
-# Creates the project the agent must find; writes seed.json with its title only.
-# fail_on_error defaults on: a rejected seed ends the run as an environment error.
+    # Creates the project the agent must find; writes seed.json with its title only.
+    # fail_on_error defaults on: a rejected seed ends the run as an environment error.
     - type: template_dir
       path: ../_setup
       mount_point: _setup

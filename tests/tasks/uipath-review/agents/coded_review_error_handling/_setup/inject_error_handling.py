@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a coded FUNCTION agent and inject CODED_ERROR_HANDLING.
+"""Scaffold a coded FUNCTION agent and inject coded error handling.
 
 Overwrites main.py so the entry point makes an external LLM call
 (`await llm.ainvoke(...)`) with no try/except, fallback, retry, or

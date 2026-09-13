@@ -37,7 +37,15 @@ from _shared.case_check import (  # noqa: E402
 )
 
 EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.json")
-FIXTURE_SDD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "sdd.md")
+# Resolved against the REFERENCE mirror (this file's own family root:
+# $REFERENCE_DIR == .../uipath-maestro-case, per cm_golden_expense.yaml's
+# `reference.directory: ../..`), never the sandbox copy staged by
+# sandbox.template_sources at the agent's cwd — that copy is agent-writable,
+# so grading against it would let a tampered SDD satisfy the checker.
+FIXTURE_SDD = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "golden_rebuild", "cm_golden_expense", "fixtures", "sdd.md",
+)
 
 GUID = r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
 

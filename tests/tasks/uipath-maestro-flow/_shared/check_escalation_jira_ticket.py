@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)  # local jira_is
+sys.path.insert(0, HERE)  # jira_is now lives here too
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # …/uipath-maestro-flow (for _shared)
 from _shared.flow_check import (  # noqa: E402
     assert_named_equals,

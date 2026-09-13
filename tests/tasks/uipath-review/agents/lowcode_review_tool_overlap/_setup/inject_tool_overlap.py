@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a lowcode agent and inject LC_TOOL_OVERLAP.
+"""Scaffold a lowcode agent and inject lc tool overlap.
 
 Writes two tool resources whose descriptions a user could plausibly apply
 to the same request (both "look up a customer by email and return their

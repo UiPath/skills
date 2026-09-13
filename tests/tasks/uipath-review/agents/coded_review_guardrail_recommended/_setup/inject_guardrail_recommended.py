@@ -5,7 +5,7 @@ The input schema carries `customer_email` and `ssn` and the agent takes free-tex
 user input, so the catalog's `pii_detection` (and `prompt_injection`) use cases
 match — but no guardrail is wired. `uip codedagent review` returns the agent
 guardrail-clean (nothing to flag deterministically), so the reviewer must fetch
-the live catalog (Recommend Mode) and emit `CODED_GUARDRAIL_RECOMMENDED`.
+the live catalog (Recommend Mode) and emit coded guardrail recommended.
 """
 
 from pathlib import Path

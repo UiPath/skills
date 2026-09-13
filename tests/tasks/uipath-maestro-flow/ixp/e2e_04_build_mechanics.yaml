@@ -34,13 +34,14 @@ sandbox:
       path: _fixtures/falconry
       mount_point: documents
 
+    - type: template_dir
+      path: e2e_03_project_creation_handoff/_setup
+      mount_point: _setup
+
 # The whole chain runs in ONE agent turn; its long poles are `projects create`
 # (~50s) and registry propagation after deploy — handoff.py's module docstring
 # holds the measured distribution; the ~8-minute observed case is what 1500
 # budgets for, leaving room to build the flow after a slow propagation.
-    - type: template_dir
-      path: e2e_03_project_creation_handoff/_setup
-      mount_point: _setup
 run_limits:
   max_turns: 100
   turn_timeout: 1500
@@ -135,10 +136,10 @@ success_criteria:
 
   # Primary gate: project created + folder-deployed this run, then the .flow
   # wires the real node — or, only while the registry is not serving it, the
-  # documented degraded shape. handoff.py's `check` section has both.
+  # documented degraded shape. check_ixp_handoff.py's check_main has both.
   - type: run_command
     description: "This run's deployment is wired in the .flow, or (registry not serving it) mock-landed with the DeploymentName recorded"
-    command: "python3 $REFERENCE_DIR/ixp/e2e_03_project_creation_handoff/_setup/handoff.py check"
+    command: "python3 $REFERENCE_DIR/_shared/check_ixp_handoff.py"
     timeout: 300
     expected_exit_code: 0
     weight: 6.0

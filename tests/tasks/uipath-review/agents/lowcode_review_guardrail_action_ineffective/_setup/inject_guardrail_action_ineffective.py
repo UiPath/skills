@@ -12,7 +12,7 @@ The defect is purely semantic and lives ONLY in the live catalog: the
 Block or Filter action if the tool requires PII to function (e.g., a SendEmail
 tool needs the recipient email address)"* — blocking PII on the email tool
 breaks the tool. A naive eyeball of `agent.json` reads "PII blocking = good", so
-the reviewer must fetch the catalog to flag `LC_GUARDRAIL_ACTION_INEFFECTIVE`.
+the reviewer must fetch the catalog to flag lc guardrail action ineffective.
 This is the same un-eyeball-able property that makes the unknown_validator task
 reliable single-shot.
 """
