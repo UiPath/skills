@@ -1214,6 +1214,84 @@ def stage_node(plan: dict, label: str) -> dict:
 class SlaTests(CheckerBase):
     checker = "sla"
 
+    def test_rejects_a_plan_whose_root_carries_no_sla(self):
+        """The overall target is dropped, and with it every overall-target response."""
+        plan = baseline_plan()
+        plan["metadata"]["slaRules"] = []
+        self.rejects(plan, "carries no slaRules")
+
+    def test_rejects_a_phase_sla_of_the_wrong_length(self):
+        plan = baseline_plan()
+        phase = sorted(E.STAGE_SLA)[0]
+        for rule in stage_node(plan, phase)["data"].get("slaRules") or []:
+            rule["count"] = 999
+        self.rejects(plan, "SLA is")
+
+    def test_rejects_an_sla_on_a_stage_the_sdd_gives_none(self):
+        """A wrap-up lane is the response to a breach, not a thing that can breach."""
+        plan = baseline_plan()
+        label = sorted(E.NO_SLA_STAGES)[0]
+        donor = sorted(E.STAGE_SLA)[0]
+        rules = stage_node(plan, donor)["data"].get("slaRules") or []
+        self.assertTrue(rules, f"stage {donor!r} declares no SLA to copy")
+        stage_node(plan, label)["data"]["slaRules"] = copy.deepcopy(rules)
+        self.rejects(plan, "declares an SLA; the SDD gives it none")
+
+    def test_rejects_an_escalation_living_outside_its_own_phase(self):
+        """The SDD owns each phase's escalation in the phase that can breach."""
+        plan = baseline_plan()
+        name, (home, _title) = sorted(E.START_TASK_ON_BREACH.items())[0]
+        other = sorted(set(E.STAGE_SLA) - {home})[0]
+        moved = None
+        for lane in stage_node(plan, home)["data"]["tasks"]:
+            for item in list(lane):
+                if item.get("displayName") == name:
+                    moved = item
+                    lane.remove(item)
+        self.assertIsNotNone(moved, f"stage {home!r} does not hold {name!r}")
+        stage_node(plan, other)["data"]["tasks"][0].append(moved)
+        self.rejects(plan, "is not inside")
+
+    def test_rejects_an_sla_rule_that_names_no_sla(self):
+        """Without a `slaId` it does not say which deadline it listens to."""
+        plan = baseline_plan()
+        name = sorted(E.START_TASK_ON_BREACH)[0]
+        for _path, node in _iter_dicts(task(plan, name)):
+            if node.get("slaId"):
+                node.pop("slaId")
+        self.rejects(plan, "with no `slaId`")
+
+    def test_rejects_an_oversight_lane_keyed_on_two_sla_rules(self):
+        """The SDD keys the lane on exactly one, against the root SLA."""
+        plan = baseline_plan()
+        conds = stage_node(plan, E.SLA_REVIEW)["data"]["entryConditions"]
+        self.assertTrue(conds, "the oversight lane has no entry condition")
+        conds.append(copy.deepcopy(conds[0]))
+        self.rejects(plan, "`sla-status-change` entry rule(s)")
+
+    def test_rejects_a_wrap_up_breach_that_acts_rather_than_notifies(self):
+        """A delay apology promising a new expected date is wrong for an application
+        that is already closed."""
+        plan = baseline_plan()
+        label = sorted(E.NOTIFY_ONLY_BREACH_STAGES)[0]
+        touched = 0
+        for _path, node in _iter_dicts(stage_node(plan, label)):
+            action = node.get("action")
+            if isinstance(action, dict) and action.get("type"):
+                action["type"] = "start-task"
+                touched += 1
+        self.assertTrue(touched, f"stage {label!r} carries no breach escalation action")
+        self.rejects(plan, "breach escalation acts by")
+
+    def test_rejects_an_escalation_writing_its_date_nowhere(self):
+        plan = baseline_plan()
+        phase, escalation, slot = self._phase()
+        item = task(plan, escalation)
+        item["data"]["outputs"] = [
+            o for o in (item["data"].get("outputs") or []) if o.get("var") != slot
+        ]
+        self.rejects(plan, "writes its new")
+
     def _phase(self):
         """One phase with an SLA, its escalation task and its revised-date slot."""
         phase = sorted(E.PHASE_REVISED_DATE)[0]
