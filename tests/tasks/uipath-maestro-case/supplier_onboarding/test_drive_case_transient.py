@@ -262,7 +262,7 @@ class CancellationDiagnosisTests(unittest.TestCase):
 
     def setUp(self):
         self.saved = {name: getattr(drive_case, name)
-                      for name in ("run_status", "incidents", "executions", "run")}
+                      for name in ("run_status", "incidents", "executions", "run_checked")}
         self.addCleanup(
             lambda: [setattr(drive_case, k, v) for k, v in self.saved.items()])
         drive_case.run_status = lambda instance: "Cancelled"
@@ -273,8 +273,14 @@ class CancellationDiagnosisTests(unittest.TestCase):
             {"ElementType": "CaseTask", "ElementId": "tBuyer1",
              "ElementRuns": [{"Status": "Completed"}]},
         ]
-        drive_case.run = lambda args, timeout=120: {
-            "BuyerDecision": "reject", "ComplianceDecision": None, "caseOutcome": ""}
+        # Stubbed at the CLI boundary, in the shape `instance variables` actually answers:
+        # the values sit under `Globals`. Stubbing the driver's own reader instead is how
+        # the first version of this test passed while the code read the top level and
+        # printed an empty dict on the first real cancellation it ran on.
+        drive_case.run_checked = lambda args, timeout=120: {
+            "InstanceId": "abc-123",
+            "Globals": {"BuyerDecision": "reject", "ComplianceDecision": None,
+                        "CaseOutcome": ""}}
 
     def diagnose(self) -> str:
         out = io.StringIO()

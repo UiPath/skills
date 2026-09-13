@@ -695,11 +695,24 @@ def fail_with_diagnosis(instance_id: str, msg: str):
             last = (runs[-1] or {}).get("Status") if runs else None
             print(f"    {row.get('ElementType')} {row.get('ElementId')} "
                   f"{len(runs)} run(s), last {last!r}")
-        variables = run(["uip", "maestro", "case", "instance", "variables", instance_id,
-                         "-f", CASE_FOLDER_KEY, "--output", "json"])
-        decisions = {k: v for k, v in (variables or {}).items()
-                     if isinstance(k, str) and ("ction" in k or "ecision" in k)}
-        print(f"    decision variables at the end: {decisions}")
+        # Through `globals_of`, not the raw call: the variables sit under `Globals`, and
+        # reading the top level printed an empty dict on the first cancellation this ran
+        # on while the line above it showed BuyerDecision='approve'. Guarded because this
+        # is a failure path and a raise here would bury the failure being reported.
+        try:
+            variables = globals_of(instance_id)
+        except (RuntimeError, OSError) as exc:
+            print(f"    could not read the case variables: {exc}")
+        else:
+            decisions = {k: v for k, v in variables.items()
+                         if isinstance(k, str) and ("ction" in k or "ecision" in k
+                                                    or "tatus" in k or "utcome" in k)}
+            if decisions:
+                print(f"    decision variables at the end: {decisions}")
+            else:
+                # Never fall back to printing the whole payload: it reads as a result and
+                # hides that the filter matched nothing, which is the more useful fact.
+                print(f"    no decision variable among {sorted(variables)}")
     fail(msg)
 
 
