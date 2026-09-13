@@ -18,7 +18,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-decommissioned-office" APMS_RANGE_COUNT="1" python3 _setup/setup_apms_ip_range.py'
@@ -41,7 +41,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded allowlist entry is gone from the organization"
-    command: 'APMS_CHECK="absent" APMS_SEED_KEY="range" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_apms_ip_range.py''))"'
+    command: 'APMS_CHECK="absent" APMS_SEED_KEY="range" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''apms'',''verify_apms_ip_range.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

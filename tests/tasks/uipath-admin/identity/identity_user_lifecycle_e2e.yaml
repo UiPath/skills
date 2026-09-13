@@ -18,7 +18,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'python3 _setup/setup_lifecycle_user.py'
@@ -42,7 +42,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The pre-seeded user's surname was changed to UpdatedUser on the tenant (proves a real update)"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_user_updated.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_user_updated.py''))"'
     timeout: 40
     expected_exit_code: 0
     weight: 5.0

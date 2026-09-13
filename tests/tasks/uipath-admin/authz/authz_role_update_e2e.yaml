@@ -15,7 +15,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-update-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Provisional - pending review" python3 _setup/setup_authz_role.py'
@@ -39,7 +39,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded role now carries the new description and kept its granted permission"
-    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_DESCRIPTION="Reviewed and approved by security" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_role_updated.py''))"'
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_DESCRIPTION="Reviewed and approved by security" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_role_updated.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

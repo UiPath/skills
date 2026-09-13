@@ -18,7 +18,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-create-tenant-role" python3 _setup/cleanup_authz_marker.py'
@@ -46,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The role exists on the organization with the Tenant shape, the granted permission and the description"
-    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Tenant" AUTHZ_EXPECT_PERMISSION="CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW" AUTHZ_EXPECT_DESCRIPTION="Admin page readers on this tenant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_role_created.py''))"'
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Tenant" AUTHZ_EXPECT_PERMISSION="CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW" AUTHZ_EXPECT_DESCRIPTION="Admin page readers on this tenant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_role_created.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

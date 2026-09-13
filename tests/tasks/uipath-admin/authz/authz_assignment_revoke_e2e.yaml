@@ -17,7 +17,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-revoke-role" python3 _setup/cleanup_authz_marker.py'
@@ -46,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded grant is gone from the organization scope for the caller"
-    command: 'AUTHZ_SEED_KEY="grant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_assignment_deleted.py''))"'
+    command: 'AUTHZ_SEED_KEY="grant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_assignment_deleted.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
@@ -54,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "The role definition itself still exists — only the grant was removed"
-    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Organization" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_role_created.py''))"'
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Organization" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_role_created.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 2.0

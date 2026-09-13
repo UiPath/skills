@@ -14,7 +14,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'python3 _setup/setup_revoke_pat.py'
@@ -36,7 +36,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The compromised marker PAT is gone from the tenant after revocation"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_pat_revoked.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_pat_revoked.py''))"'
     timeout: 40
     expected_exit_code: 0
     weight: 3.0

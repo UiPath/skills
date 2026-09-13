@@ -15,7 +15,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-delete-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Obsolete role scheduled for removal" python3 _setup/setup_authz_role.py'
@@ -37,7 +37,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded role is gone from the organization"
-    command: 'AUTHZ_SEED_KEY="role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_role_deleted.py''))"'
+    command: 'AUTHZ_SEED_KEY="role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_role_deleted.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

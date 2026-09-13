@@ -11,7 +11,7 @@ run_limits:
   turn_timeout: 600
 
 reference:
-  directory: .
+  directory: ..
 
 initial_prompt: |
   Configure SMTP email settings for my organization: host
@@ -39,7 +39,7 @@ success_criteria:
 
   - type: run_command
     description: "SMTP settings were applied (host is non-empty)"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''check_smtp_settings.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''check_smtp_settings.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

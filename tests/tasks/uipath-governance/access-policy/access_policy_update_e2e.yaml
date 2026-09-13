@@ -17,7 +17,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'GOV_SEED_KEY="draft" GOV_POLICY_BASE="ce-gov-update" GOV_POLICY_DESCRIPTION="Provisional - pending review" GOV_RESOURCE_TYPE="Agent" GOV_ACTOR_PROCESS_TYPE="Flow" python3 _setup/setup_access_policy.py'
@@ -46,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "the seeded policy now carries the new description, with its rules and Simulated status intact"
-    command: 'GOV_SEED_KEY="draft" GOV_CHECK="updated" GOV_EXPECT_STATUS="Simulated" GOV_EXPECT_DESCRIPTION="Approved - owner signed off" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_access_policy.py''))"'
+    command: 'GOV_SEED_KEY="draft" GOV_CHECK="updated" GOV_EXPECT_STATUS="Simulated" GOV_EXPECT_DESCRIPTION="Approved - owner signed off" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''access-policy'',''verify_access_policy.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

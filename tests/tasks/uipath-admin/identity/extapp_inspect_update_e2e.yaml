@@ -36,7 +36,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'python3 _setup/setup_extapp_maintain.py'
@@ -69,7 +69,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant read-back: app renamed in place (same ClientId) with application scopes exactly Folders+Jobs, stale secret revoked leaving exactly one fewer than at seed, retired app id absent"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_extapp_maintained.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_extapp_maintained.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

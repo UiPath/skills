@@ -20,7 +20,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-datatypes" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Data-type round-trip for the E2E product" AOPS_PLAN_ONLY="1" python3 _setup/setup_aops_policy.py'
@@ -54,7 +54,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "every field round-tripped with its JSON type intact and the distinctive values landed"
-    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="payload" AOPS_EXPECT_JSON="{\"number\": 42, \"checkbox\": false, \"textField\": \"e2e-roundtrip\"}" AOPS_EXPECT_MIN_ROWS="{\"dataGrid\": 2}" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_aops_policy.py''))"'
+    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="payload" AOPS_EXPECT_JSON="{\"number\": 42, \"checkbox\": false, \"textField\": \"e2e-roundtrip\"}" AOPS_EXPECT_MIN_ROWS="{\"dataGrid\": 2}" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''aops-policy'',''verify_aops_policy.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

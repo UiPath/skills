@@ -13,7 +13,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'python3 _setup/cleanup_ext_app_create.py'
@@ -35,7 +35,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "An external app with the marker name exists on the tenant"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_external_app_created.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_external_app_created.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

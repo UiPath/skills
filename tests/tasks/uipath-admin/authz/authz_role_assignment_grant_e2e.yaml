@@ -19,7 +19,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-grantsmoke-role" python3 _setup/cleanup_authz_marker.py'
@@ -43,7 +43,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The role is assigned to the login identity at the organization scope on the tenant"
-    command: 'AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_assignment_created.py''))"'
+    command: 'AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_assignment_created.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

@@ -16,7 +16,7 @@ description: >
   lags the live `events` endpoint by up to ~48h.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export, scope-org]
 reference:
-  directory: .
+  directory: ..
 
 run_limits:
   expected_turns: 6
@@ -35,7 +35,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-org-yesterday holds exactly one CLI-generated .csv with the LTS header, aligned rows, and ORG-scope records"
-    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=csv AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=csv AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_export.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

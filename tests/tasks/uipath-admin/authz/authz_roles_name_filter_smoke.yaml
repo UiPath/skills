@@ -15,7 +15,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-namefilter" python3 _setup/cleanup_authz_marker.py'
@@ -42,7 +42,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "payroll-roles.json holds only roles matching the search term, including the seeded one"
-    command: 'AUTHZ_ROLE_FILE="payroll-roles.json" AUTHZ_EXPECT_CONTAINS="payroll" AUTHZ_REQUIRE_SEED_KEY="match" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_role_listing.py''))"'
+    command: 'AUTHZ_ROLE_FILE="payroll-roles.json" AUTHZ_EXPECT_CONTAINS="payroll" AUTHZ_REQUIRE_SEED_KEY="match" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_role_listing.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

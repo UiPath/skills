@@ -16,7 +16,7 @@ description: >
   against an unfiltered read and fail.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, status]
 reference:
-  directory: .
+  directory: ..
 
 run_limits:
   expected_turns: 6
@@ -33,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Every event in events.json is a failure inside the 7d window (an empty result passes only if the same filtered query is empty for the harness too)"
-    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=7 AUDIT_STATUS=Failure AUDIT_LIVE_ARGS=--status=Failure python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_events.py''))"'
+    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=7 AUDIT_STATUS=Failure AUDIT_LIVE_ARGS=--status=Failure python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_events.py''))"'
     timeout: 320
     expected_exit_code: 0
     weight: 3.0

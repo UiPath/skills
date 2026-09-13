@@ -50,14 +50,14 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-window holds one CLI-generated .csv with LTS columns, aligned rows, neutralized formula cells, and tenant-scope records"
-    command: 'AUDIT_BASE_DIR=audit-window AUDIT_FORMAT=csv AUDIT_DEEP=1 AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-window AUDIT_FORMAT=csv AUDIT_DEEP=1 AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_export.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
 
 reference:
-  directory: .
+  directory: ..
 run_limits:
   expected_turns: 10
   max_turns: 40

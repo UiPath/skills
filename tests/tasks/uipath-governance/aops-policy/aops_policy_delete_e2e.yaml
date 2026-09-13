@@ -14,7 +14,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'AOPS_SEED_KEY="retired" AOPS_POLICY_BASE="ce-gov-aops-retire" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Obsolete - scheduled for removal" python3 _setup/setup_aops_policy.py'
@@ -43,7 +43,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "the seeded policy is gone — get reports it missing, the name search is empty, and the bystander policy survived"
-    command: 'AOPS_SEED_KEY="retired" AOPS_CHECK="absent" AOPS_BYSTANDER_KEY="bystander" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_aops_policy.py''))"'
+    command: 'AOPS_SEED_KEY="retired" AOPS_CHECK="absent" AOPS_BYSTANDER_KEY="bystander" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''aops-policy'',''verify_aops_policy.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

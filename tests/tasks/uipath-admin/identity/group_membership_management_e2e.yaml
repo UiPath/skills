@@ -61,7 +61,7 @@ success_criteria:
   # command rather than whether the end state was correct.
   - type: run_command
     description: "Group ends with exactly one member (first user retained, second revoked), read back from the tenant"
-    command: 'GROUP_NAME="Invoice Processing Team" EXPECT_MEMBERS=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_group_member.py''))"'
+    command: 'GROUP_NAME="Invoice Processing Team" EXPECT_MEMBERS=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_group_member.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
@@ -87,7 +87,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 post_run:
   - command: 'python3 _setup/cleanup_group.py'
     timeout: 30

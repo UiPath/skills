@@ -16,7 +16,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'python3 _setup/setup_delete_user.py'
@@ -37,7 +37,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded marker user is gone from the tenant after deletion"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_user_deleted.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_user_deleted.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

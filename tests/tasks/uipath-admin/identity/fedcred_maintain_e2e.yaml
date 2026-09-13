@@ -44,7 +44,7 @@ sandbox:
       path: ../_setup
       mount_point: _setup
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: 'python3 _setup/setup_fedcred_maintain.py'
@@ -74,7 +74,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant read-back: ce-fedcred-main (seeded id) now targets refs/heads/release with issuer and audience byte-identical to seed, legacy credential id absent, exactly one credential remaining"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_fedcred_maintained.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_fedcred_maintained.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

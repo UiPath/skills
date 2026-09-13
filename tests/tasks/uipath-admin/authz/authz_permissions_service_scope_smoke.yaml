@@ -9,7 +9,7 @@ description: >
   Read-only, no tenant state is touched.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, permissions]
 reference:
-  directory: .
+  directory: ..
 
 run_limits:
   expected_turns: 5
@@ -24,7 +24,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "orchestrator-permissions.json holds the Orchestrator slice of the catalog"
-    command: 'AUTHZ_PERM_FILE="orchestrator-permissions.json" AUTHZ_EXPECT_SCOPE="TENANT" AUTHZ_EXPECT_NAMESPACE="ORCHESTRATOR" AUTHZ_MIN_ROWS="30" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_permission_listing.py''))"'
+    command: 'AUTHZ_PERM_FILE="orchestrator-permissions.json" AUTHZ_EXPECT_SCOPE="TENANT" AUTHZ_EXPECT_NAMESPACE="ORCHESTRATOR" AUTHZ_MIN_ROWS="30" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_permission_listing.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
