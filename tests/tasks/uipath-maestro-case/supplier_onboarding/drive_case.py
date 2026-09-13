@@ -681,9 +681,25 @@ def fail_with_diagnosis(instance_id: str, msg: str):
         msg = (f"{msg}. Every incident on this instance is a service fault, so the route "
                "carries no verdict about the plan")
     if not raised:
-        stages = [r.get("ElementId") for r in executions(instance_id)
-                  if r.get("ElementType") == "CaseStage"]
+        rows = executions(instance_id)
+        stages = [r.get("ElementId") for r in rows if r.get("ElementType") == "CaseStage"]
         print(f"  no incident; the case reached stages {stages}")
+        # Where it stopped, not only how far it got. Sixteen routes have ended
+        # `Cancelled` with no incident, five of them with every concurrent run's artifact
+        # on hand and no shared instance, so the cause is not another driver and is not
+        # anything the caseplan shows. The last elements to run, and which of them are
+        # still open, is the one thing the instance can still be asked before post_run
+        # deletes it.
+        for row in rows[-8:]:
+            runs = row.get("ElementRuns") or []
+            last = (runs[-1] or {}).get("Status") if runs else None
+            print(f"    {row.get('ElementType')} {row.get('ElementId')} "
+                  f"{len(runs)} run(s), last {last!r}")
+        variables = run(["uip", "maestro", "case", "instance", "variables", instance_id,
+                         "-f", CASE_FOLDER_KEY, "--output", "json"])
+        decisions = {k: v for k, v in (variables or {}).items()
+                     if isinstance(k, str) and ("ction" in k or "ecision" in k)}
+        print(f"    decision variables at the end: {decisions}")
     fail(msg)
 
 
