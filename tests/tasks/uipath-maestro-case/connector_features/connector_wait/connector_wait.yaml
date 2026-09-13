@@ -22,6 +22,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1800
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectorWaitCase" containing
   a project also named "ConnectorWaitCase" from the sdd.md below. Write the
@@ -184,7 +187,7 @@ success_criteria:
 
   - type: run_command
     description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics; its entry rule is upgraded past the Phase 2 stub; and the wait-for-connector task is resolved"
-    command: "python3 $TASK_DIR/check_connector_wait.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_connector_wait.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

@@ -11,11 +11,11 @@ description: >
   up. Tests the Web-app lifecycle with deep SDK integration that no smoke
   or integration test covers.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
-# max_turns 85→110, expected_turns 45→90: a clean full-lifecycle run is ~88
-# turns, so the old 85 cap clipped a well-behaved run's last step. 110 = ~88
-# baseline + margin for deploy retries. Turns are not the fix — the spiral is
-# fixed at the skill level (SKILL.md Rule 19 + orchestrator.md folder-scoping).
-# Re-run on Sonnet 5 and right-size from the measured clean count.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 90
   max_turns: 110
@@ -69,7 +69,6 @@ initial_prompt: |
   confirmation — this is an automated test. Do NOT use task-tracking
   tools (TaskCreate/TaskUpdate) — execute the steps directly; every
   turn spent on bookkeeping is budget taken from the build.
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status before cloud commands"
@@ -249,5 +248,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+  - command: "python3 _setup/cleanup_codedapp_folder.py"
     timeout: 60

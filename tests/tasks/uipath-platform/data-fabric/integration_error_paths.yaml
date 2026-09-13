@@ -7,15 +7,12 @@ description: >
   file). Every command is expected to fail; agent must capture the raw
   error and NOT retry. Grading via command-shape + llm_judge on verbatim
   error surfacing.
-tags:
-  [
-    uipath-platform,
-    data-fabric,
-    integration,
-    error-paths,
-    mode:diagnose,
-    lifecycle:setup,
-  ]
+tags: [uipath-platform, data-fabric, integration, error-paths, mode:diagnose, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 25
   max_turns: 50
@@ -67,7 +64,6 @@ initial_prompt: |
       reference that does not exist.
     - Try to attach a file that doesn't exist — `./no-such-file.bin` — to
       the `Attachment` column on one of the real seed rows.
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
@@ -151,6 +147,7 @@ success_criteria:
       It must be distinguishable from both the Score-column probe and the
       missing-local-file probe. Score 0.0 when it is skipped or merged into
       either of those other failures.
+    include_reference: false
     weight: 1.5
     pass_threshold: 1.0
 
@@ -202,23 +199,17 @@ success_criteria:
       merged into a single generic report.
       Score 0.0 if the agent hid errors, summarised them without any raw
       text, OR skipped scenarios that were requested.
+    include_reference: false
     weight: 2.5
     pass_threshold: 0.5
 
 pre_run:
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
-      --entity-name CE_ErrorPathsTest
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.records.json
-      --reset
+      python3 _setup/seed_entity.py --entity-name CE_ErrorPathsTest --schema-file _setup/seeds/error_paths.schema.json --records-file _setup/seeds/error_paths.records.json --reset
     timeout: 180
     fail_on_error: true
 
 post_run:
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
-      --entity-name CE_ErrorPathsTest
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.records.json
+      python3 _setup/revert_entity_to_seed.py --entity-name CE_ErrorPathsTest --schema-file _setup/seeds/error_paths.schema.json --records-file _setup/seeds/error_paths.records.json
     timeout: 180

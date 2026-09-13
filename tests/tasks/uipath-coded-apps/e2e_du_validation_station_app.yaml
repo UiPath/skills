@@ -14,6 +14,11 @@ description: >
   `post_run` can clean it up. Tests the most complex coded-apps surface:
   widget integration, not just CLI flow.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 50
   max_turns: 100
@@ -59,7 +64,6 @@ initial_prompt: |
 
   Use `--output json` on every `uip` command. Do not prompt for
   confirmation — this is an automated test.
-
 success_criteria:
   # Advisory (pass_threshold: 0): records the login-status convention without
   # gating. The cloud deploy/validate criteria below already require working
@@ -226,5 +230,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+  - command: "python3 _setup/cleanup_codedapp_folder.py"
     timeout: 60

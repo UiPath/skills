@@ -38,6 +38,9 @@ sandbox:
 # (~50s) and registry propagation after deploy — handoff.py's module docstring
 # holds the measured distribution; the ~8-minute observed case is what 1500
 # budgets for, leaving room to build the flow after a slow propagation.
+    - type: template_dir
+      path: e2e_03_project_creation_handoff/_setup
+      mount_point: _setup
 run_limits:
   max_turns: 100
   turn_timeout: 1500
@@ -47,18 +50,25 @@ run_limits:
   # about iteration extension, not this cap.
   task_timeout: 3000
 
-# Absolute paths, not $TASK_DIR: coder_eval 0.11 isolates $TASK_DIR to the leaf
-# task folder, and this flat yaml shares the grader with e2e_03's directory.
+# Not $TASK_DIR: coder_eval 0.11 isolates $TASK_DIR to the leaf task folder,
+# and this flat yaml shares its grader with e2e_03's directory. success_criteria
+# below reach both e2e_03_project_creation_handoff/_setup/ and _shared/ via
+# $REFERENCE_DIR, pointed at their common ancestor. pre_run/post_run instead
+# reach e2e_03's handoff.py via the _setup template_dir source mounted above
+# (sandbox-relative, not a host path).
 # Hook timeout rationale: e2e_03's copy.
+reference:
+  directory: ..
+
 pre_run:
   # --name-extractor adds the extractor name to seed.json. e2e_03's seed is
   # run WITHOUT it: a key called "extractor" in a file its agent reads would
   # leak the very prerequisite it is graded on working out for itself.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py seed --name-extractor"
+  - command: "python3 _setup/handoff.py seed --name-extractor"
     timeout: 300
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py teardown"
+  - command: "python3 _setup/handoff.py teardown"
     timeout: 300
 
 # Unlike e2e_03, this prompt is ALLOWED to say what is missing — and must, or
@@ -128,7 +138,7 @@ success_criteria:
   # documented degraded shape. handoff.py's `check` section has both.
   - type: run_command
     description: "This run's deployment is wired in the .flow, or (registry not serving it) mock-landed with the DeploymentName recorded"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py check"
+    command: "python3 $REFERENCE_DIR/ixp/e2e_03_project_creation_handoff/_setup/handoff.py check"
     timeout: 300
     expected_exit_code: 0
     weight: 6.0
@@ -136,7 +146,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on the generated flow"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

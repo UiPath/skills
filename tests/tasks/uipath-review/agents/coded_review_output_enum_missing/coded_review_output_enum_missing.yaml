@@ -17,9 +17,19 @@ run_limits:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/coded_review_output_enum_missing/inject_output_enum_missing.py"
+  - command: "python3 _setup/inject_output_enum_missing.py"
     timeout: 30
 
 initial_prompt: |
@@ -62,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "Review report applies the judgment catalog: cites CODED_OUTPUT_ENUM_MISSING_ON_CLASSIFIER for the classification field"
-    command: "python3 $TASK_DIR/check_coded_review_output_enum_missing.py"
+    command: "python3 $REFERENCE_DIR/check_coded_review_output_enum_missing.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

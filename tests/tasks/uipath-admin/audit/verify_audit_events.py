@@ -57,7 +57,7 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_shared"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_setup"))
 from audit_helpers import (  # noqa: E402  (path set above)
     EVENT_SIGNATURE,
     env_flag,

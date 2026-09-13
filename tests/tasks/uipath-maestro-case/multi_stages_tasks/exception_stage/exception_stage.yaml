@@ -26,6 +26,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "ExceptionStage" containing
   a project also named "ExceptionStage" from the sdd.md below.
@@ -217,7 +220,7 @@ success_criteria:
 
   - type: run_command
     description: "Process is a regular Stage with an explicit exit-only exit condition (required-tasks-completed, marks stage complete); two secondary stages (Issues + Critical) reached via interrupting entries (edges retired); Issues carries interrupting selected-stage-exited entry + return-to-origin exit + 2h stage SLA with sla-breached UserGroup escalation + a wait-for-timer task using timeDate (specific datetime 2026-05-01) with current-stage-entered task-entry; Critical carries a second interrupting selected-stage-exited entry (on Process exit) + terminal exit-only exit plus a root case-exit row"
-    command: "python3 $TASK_DIR/check_exception_stage.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_exception_stage.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0

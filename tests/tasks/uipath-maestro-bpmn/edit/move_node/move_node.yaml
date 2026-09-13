@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -52,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Tasks reordered by rewiring flows, payloads preserved, file still structurally sound"
-    command: "python3 $TASK_DIR/check_move_node.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_move_node.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

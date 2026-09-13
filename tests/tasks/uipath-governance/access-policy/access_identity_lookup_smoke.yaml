@@ -6,13 +6,23 @@ description: >
   the check re-resolves them live. UUIDs are unguessable, so their presence in
   the agent's output proves a real directory query whatever shape it saved.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy, identity-lookup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: 'GOV_GROUP_BASE="ce-gov-lookup-group" GOV_ROBOT_BASE="ce-gov-lookup-bot" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''setup_lookup_subjects.py''))"'
+  - command: 'GOV_GROUP_BASE="ce-gov-lookup-group" GOV_ROBOT_BASE="ce-gov-lookup-bot" python3 _setup/setup_lookup_subjects.py'
     timeout: 120
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''cleanup_lookup_subjects.py''))"'
+  - command: 'python3 _setup/cleanup_lookup_subjects.py'
     timeout: 120
 
 run_limits:
@@ -33,7 +43,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "identities.json holds the real directory UUIDs for all three subjects"
-    command: 'GOV_LOOKUP_FILE="identities.json" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''verify_identity_lookup.py''))"'
+    command: 'GOV_LOOKUP_FILE="identities.json" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_identity_lookup.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

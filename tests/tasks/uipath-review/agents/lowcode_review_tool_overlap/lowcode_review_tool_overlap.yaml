@@ -16,10 +16,20 @@ run_limits:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_tool_overlap/inject_tool_overlap.py"
+  - command: "python3 _setup/inject_tool_overlap.py"
     timeout: 30
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
@@ -58,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Review report applies the judgment catalog: cites LC_TOOL_OVERLAP for find_customer"
-    command: "python3 $TASK_DIR/check_lowcode_review_tool_overlap.py"
+    command: "python3 $REFERENCE_DIR/agents/lowcode_review_tool_overlap/check_lowcode_review_tool_overlap.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
@@ -66,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "Step 6 recorded the final grade in CLI-owned review-history.json"
-    command: 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_review_history.py --project ReviewSol/SampleAgent --report _review_report.md'
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_history.py --project ReviewSol/SampleAgent --report _review_report.md'
     timeout: 120
     expected_exit_code: 0
     weight: 2.0

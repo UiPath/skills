@@ -15,6 +15,9 @@ run_limits:
   max_turns: 90
   turn_timeout: 3600
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Design an "OrderExceptionReview" Maestro case and write the design document to `sdd.md`.
   Design only: stop before creating caseplan.json, and do not scaffold a solution.
@@ -50,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "The SLA Response Map is present, closed both ways, consistent with the Stage Entry Conditions Interrupting cells, and assigns notify-only / start-task (targets the follow-up task, Interrupting —) / enter-stage (interrupting) to the three stated SLAs"
-    command: "python3 $TASK_DIR/check_sdd_response_map.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_sdd_response_map.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

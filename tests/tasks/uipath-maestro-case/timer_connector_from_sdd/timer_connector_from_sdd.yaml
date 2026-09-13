@@ -37,6 +37,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build the Case Management project described by sdd.md in this directory. It is the
   sole source of truth — trust it as written.
@@ -75,7 +78,7 @@ success_criteria:
       the SDD's verbatim timeCycle, all seven declared task types, both ordered chains on
       runs-sequentially, shouldRunOnlyOnce on the hold (top-level, not nested in data where
       validate ignores it), an adhoc optional task, and a completable case.
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/timer_connector_from_sdd/check_timer_connector.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_timer_connector.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

@@ -5,17 +5,27 @@ description: >
   report the policy missing and a name search must return nothing. A do-nothing
   agent cannot make a seeded identifier vanish.
 tags: [uipath-governance, e2e, mode:build, lifecycle:setup, aops-policy, delete]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: 'AOPS_SEED_KEY="retired" AOPS_POLICY_BASE="ce-gov-aops-retire" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Obsolete - scheduled for removal" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+  - command: 'AOPS_SEED_KEY="retired" AOPS_POLICY_BASE="ce-gov-aops-retire" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Obsolete - scheduled for removal" python3 _setup/setup_aops_policy.py'
     timeout: 120
   # A second policy the agent is told to leave alone. Without it the check only
   # reads the target back, so an agent that wipes the E2E registry scores full marks.
-  - command: 'AOPS_SEED_KEY="bystander" AOPS_POLICY_BASE="ce-gov-aops-keep" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Active - must survive the retirement" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+  - command: 'AOPS_SEED_KEY="bystander" AOPS_POLICY_BASE="ce-gov-aops-keep" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Active - must survive the retirement" python3 _setup/setup_aops_policy.py'
     timeout: 120
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+  - command: 'python3 _setup/cleanup_aops_policy.py'
     timeout: 120
 
 run_limits:
@@ -33,7 +43,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "the seeded policy is gone — get reports it missing, the name search is empty, and the bystander policy survived"
-    command: 'AOPS_SEED_KEY="retired" AOPS_CHECK="absent" AOPS_BYSTANDER_KEY="bystander" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy.py''))"'
+    command: 'AOPS_SEED_KEY="retired" AOPS_CHECK="absent" AOPS_BYSTANDER_KEY="bystander" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_aops_policy.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

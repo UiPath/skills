@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 
-SCRIPT = Path(__file__).with_name("cleanup_solutions.py")
+SCRIPT = Path(__file__).resolve().parent.parent / "_setup" / "cleanup_solutions.py"
 SPEC = importlib.util.spec_from_file_location("case_cleanup_solutions", SCRIPT)
 assert SPEC and SPEC.loader
 cleanup_solutions = importlib.util.module_from_spec(SPEC)

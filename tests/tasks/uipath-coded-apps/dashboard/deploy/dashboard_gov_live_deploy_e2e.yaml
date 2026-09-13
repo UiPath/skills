@@ -17,6 +17,10 @@ run_limits:
 
 sandbox:
   node: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 
 pre_run:
   # App name + routingName carry a per-run EPOCH suffix so repeated runs never
@@ -171,7 +175,7 @@ success_criteria:
 # graded via the setup-admin-folder.mjs check above, and grading a self-written
 # file is a self-report anti-pattern. post_run reads it as cleanup infra only.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+  - command: "python3 _setup/cleanup_codedapp_folder.py"
     timeout: 60
 # No external-app cleanup here: this is a DEPLOY-only test (pre-seeded dist/, no
 # build flow), so it never mints an OAuth external app — nothing records a Client

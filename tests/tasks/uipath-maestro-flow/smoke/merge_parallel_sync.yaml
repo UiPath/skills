@@ -16,6 +16,9 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-n
 run_limits:
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a UiPath Flow project named "ParallelSync" that runs two branches in
   parallel and synchronizes them with a Merge node before finishing.
@@ -63,7 +66,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -72,7 +75,7 @@ success_criteria:
   # ── Structural checks (merge present; two distinct branches converge) ────
   - type: run_command
     description: "Exactly one core.logic.merge with >=2 distinct branches converging, a fork upstream, and a downstream continuation"
-    command: "python3 $TASK_DIR/check_merge_parallel_sync_flow.py"
+    command: "python3 $REFERENCE_DIR/smoke/check_merge_parallel_sync_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

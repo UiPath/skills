@@ -15,6 +15,8 @@ description: >
   standing in for: that the query was actually time-bounded and actually capped,
   rather than that those flag names appeared somewhere in the command.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit]
+reference:
+  directory: .
 
 run_limits:
   expected_turns: 5
@@ -32,7 +34,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "events.json holds real tenant-scope events, all inside the 24h window and capped at 25"
-    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=1 AUDIT_MAX_COUNT=25 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_events.py''))"'
+    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=1 AUDIT_MAX_COUNT=25 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_events.py''))"'
     timeout: 320
     expected_exit_code: 0
     weight: 3.0

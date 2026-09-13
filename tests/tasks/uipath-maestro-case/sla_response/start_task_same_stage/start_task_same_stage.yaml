@@ -24,6 +24,9 @@ sandbox:
     - type: template_dir
       path: ../templates
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
   definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
@@ -54,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "The Manager Check action task lives in Review and carries the sla-status-change rule on its own task entry, against Review's own SLA with no escalationId (breach shape); no Review stage-entry row was added and no extra stage was minted"
-    command: "python3 $TASK_DIR/check_start_task_same_stage.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_start_task_same_stage.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

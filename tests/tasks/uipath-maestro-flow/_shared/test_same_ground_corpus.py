@@ -84,13 +84,24 @@ def _task_text(relative: str) -> str:
     return (FLOW_TASKS / relative).read_text()
 
 
+_REFERENCE_BLOCK = re.compile(r"^reference:\s*\n\s*directory:\s*(\S+)", re.M)
+
+
 def _referenced_python_files(task_path: Path, criterion: str) -> list[Path]:
     paths = []
+    reference_root: Path | None = None
     for token in re.findall(
-        r"(?:\$TASK_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
+        r"(?:\$TASK_DIR/|\$REFERENCE_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
     ):
         if token.startswith("$TASK_DIR/"):
             path = task_path.parent / token.removeprefix("$TASK_DIR/")
+        elif token.startswith("$REFERENCE_DIR/"):
+            if reference_root is None:
+                match = _REFERENCE_BLOCK.search(task_path.read_text())
+                if not match:
+                    continue
+                reference_root = task_path.parent / match.group(1)
+            path = reference_root / token.removeprefix("$REFERENCE_DIR/")
         elif token.startswith("$SKILLS_REPO_PATH/"):
             path = FLOW_TASKS.parents[2] / token.removeprefix("$SKILLS_REPO_PATH/")
         else:

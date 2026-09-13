@@ -6,17 +6,27 @@ description: >
   ignores the filter fails the check. Graded on the rows the service returned —
   every name matches the term and the intended role is present.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, role]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-namefilter" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-namefilter" python3 _setup/cleanup_authz_marker.py'
     timeout: 60
-  - command: 'AUTHZ_SEED_KEY="match" AUTHZ_ROLE_BASE="ce-authz-namefilter-payroll-viewer" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded match for the name-filter smoke" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="match" AUTHZ_ROLE_BASE="ce-authz-namefilter-payroll-viewer" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded match for the name-filter smoke" python3 _setup/setup_authz_role.py'
     timeout: 60
-  - command: 'AUTHZ_SEED_KEY="decoy" AUTHZ_ROLE_BASE="ce-authz-namefilter-warehouse-viewer" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded non-match for the name-filter smoke" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="decoy" AUTHZ_ROLE_BASE="ce-authz-namefilter-warehouse-viewer" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded non-match for the name-filter smoke" python3 _setup/setup_authz_role.py'
     timeout: 60
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-namefilter" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-namefilter" python3 _setup/cleanup_authz_marker.py'
     timeout: 60
 
 run_limits:
@@ -32,7 +42,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "payroll-roles.json holds only roles matching the search term, including the seeded one"
-    command: 'AUTHZ_ROLE_FILE="payroll-roles.json" AUTHZ_EXPECT_CONTAINS="payroll" AUTHZ_REQUIRE_SEED_KEY="match" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_listing.py''))"'
+    command: 'AUTHZ_ROLE_FILE="payroll-roles.json" AUTHZ_EXPECT_CONTAINS="payroll" AUTHZ_REQUIRE_SEED_KEY="match" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_role_listing.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

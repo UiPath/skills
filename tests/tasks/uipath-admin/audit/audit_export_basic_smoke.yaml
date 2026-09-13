@@ -21,6 +21,8 @@ description: >
   `events` endpoint by up to ~48h, so yesterday may genuinely hold no rows. All
   assertions are structural.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export]
+reference:
+  directory: .
 
 run_limits:
   expected_turns: 5
@@ -37,7 +39,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-yesterday holds a CLI-generated day-wise JSON export of tenant-scope events"
-    command: 'AUDIT_BASE_DIR=audit-yesterday AUDIT_FORMAT=json AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-yesterday AUDIT_FORMAT=json AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_export.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

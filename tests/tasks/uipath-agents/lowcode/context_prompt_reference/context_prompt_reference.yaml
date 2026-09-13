@@ -17,6 +17,9 @@ run_limits:
   max_turns: 50
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "DocAssistant" inside a solution named
   "DocSol". The agent processes files the caller uploads at runtime and
@@ -76,7 +79,7 @@ success_criteria:
 
   - type: run_command
     description: "A prompt message (system or user) references @{contexts.Knowledge} with a matching expression contentToken, content<->contentTokens stay in sync, context is NOT an inputSchema field, and the resource is an attachments context"
-    command: "python3 $TASK_DIR/check_context_prompt_reference.py"
+    command: "python3 $REFERENCE_DIR/check_context_prompt_reference.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

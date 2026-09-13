@@ -20,6 +20,9 @@ run_limits:
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+reference:
+  directory: .
+
 initial_prompt: |
   Create a new Flow project called "DriveToSlackTest" with a manual trigger.
   It should download a file from Google Drive and then post that file into a 
@@ -52,7 +55,7 @@ success_criteria:
     pass_threshold: 1.0
   - type: run_command
     description: 'Drive→Slack flow checks: structure and connector wiring'
-    command: python3 $TASK_DIR/check_drive_to_slack.py
+    command: python3 $REFERENCE_DIR/check_drive_to_slack.py
     timeout: 600
     expected_exit_code: 0
     weight: 5.0

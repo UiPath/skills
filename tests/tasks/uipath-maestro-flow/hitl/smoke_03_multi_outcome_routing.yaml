@@ -13,6 +13,9 @@ run_limits:
   max_turns: 80
   turn_timeout: 900
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Flow named "LeaveRequest" with this structure:
 
@@ -51,7 +54,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -59,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains inline HITL node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py quick-form"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py quick-form"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains a Decision node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"core.logic.decision\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '\"core.logic.decision\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -75,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Decision node references HITL output variable"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.' '.output'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '$vars.' '.output'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -83,7 +86,7 @@ success_criteria:
 
   - type: run_command
     description: "Both Decision branches are wired (true and false handles present)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"true\"' '\"false\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '\"true\"' '\"false\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

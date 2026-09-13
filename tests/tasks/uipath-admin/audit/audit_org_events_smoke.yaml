@@ -15,6 +15,8 @@ description: >
   quiet org, so an empty window is accepted — but only after the harness confirms
   the same org-scope query is empty for it too.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, scope-org]
+reference:
+  directory: .
 
 run_limits:
   expected_turns: 8
@@ -33,7 +35,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "events-org.json holds real ORG-scope events (no TenantId) inside the 7d window, capped at 50"
-    command: 'AUDIT_FILE=events-org.json AUDIT_SCOPE=org AUDIT_WINDOW_DAYS=7 AUDIT_MAX_COUNT=50 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_events.py''))"'
+    command: 'AUDIT_FILE=events-org.json AUDIT_SCOPE=org AUDIT_WINDOW_DAYS=7 AUDIT_MAX_COUNT=50 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_events.py''))"'
     timeout: 320
     expected_exit_code: 0
     weight: 3.0

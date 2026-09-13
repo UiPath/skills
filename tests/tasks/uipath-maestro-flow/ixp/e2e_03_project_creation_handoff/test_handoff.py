@@ -21,7 +21,8 @@ from typing import Any
 import pytest
 
 TASK_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, TASK_DIR)
+SETUP_DIR = os.path.join(TASK_DIR, "_setup")
+sys.path.insert(0, SETUP_DIR)
 
 from handoff import BUILD_PROJECT_PREFIX, RUN_FOLDER_PREFIX  # noqa: E402
 from handoff import RUN_HANDOFF_FILE, SNAPSHOT, project_digest  # noqa: E402
@@ -244,8 +245,8 @@ def ixp_node_type(deployment_name: str, folder_key: str = FOLDER_KEY) -> str:
 def write_flow(sandbox: pathlib.Path, nodes: list[dict[str, Any]]) -> None:
     """A .flow in the double-nested layout, with a Flow-typed project manifest.
 
-    The manifest is required: check_handoff locates the flow via
-    _shared/flow_check.find_project_dir, which filters on ProjectType="Flow".
+    The manifest is required: handoff.py locates the flow via
+    flow_project_finder.find_project_dir, which filters on ProjectType="Flow".
     """
     project_dir = sandbox / "Sol" / "Proj"
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -292,7 +293,7 @@ def run_script(
     *flags: str,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, os.path.join(TASK_DIR, "handoff.py"), subcommand, *flags],
+        [sys.executable, os.path.join(SETUP_DIR, "handoff.py"), subcommand, *flags],
         cwd=str(sandbox),
         env=env,
         capture_output=True,

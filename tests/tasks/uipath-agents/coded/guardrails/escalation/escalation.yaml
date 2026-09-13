@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
+reference:
+  directory: ../../..
+
 initial_prompt: |
   I have a coded LangGraph agent in graph.py with a lookup_account_info tool.
   Add a deterministic guardrail that, whenever the customer_id input contains
@@ -72,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Escalation Action App declared as a well-formed app binding"
-    command: "python3 $TASK_DIR/check_escalation.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_escalation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

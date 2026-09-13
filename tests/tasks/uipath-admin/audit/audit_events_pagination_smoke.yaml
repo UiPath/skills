@@ -13,6 +13,8 @@ description: >
   org's activity level, and the pagination assertion only applies when the tenant
   really can return more than one page.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, pagination]
+reference:
+  directory: .
 
 run_limits:
   expected_turns: 4
@@ -31,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "events.json holds real tenant events inside the 30d window, capped at 500, and reaching the volume the tenant actually returns (crossing the 200-record page cap when available)"
-    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=30 AUDIT_MAX_COUNT=500 AUDIT_MIN_COUNT=500 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_events.py''))"'
+    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=30 AUDIT_MAX_COUNT=500 AUDIT_MIN_COUNT=500 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_events.py''))"'
     timeout: 360
     expected_exit_code: 0
     weight: 3.0

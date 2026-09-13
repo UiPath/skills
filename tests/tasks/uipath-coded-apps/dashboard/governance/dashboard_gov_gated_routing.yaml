@@ -11,6 +11,9 @@ tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:build
 sandbox:
   node: {}
 
+reference:
+  directory: ..
+
 # Reclaim the build's node_modules before artifact preservation. The build
 # installs a full ~200MB node_modules; the experiment-default prune (30s) can
 # time out on it, bloating the preserved artifact. This task-level prune runs
@@ -43,7 +46,7 @@ success_criteria:
   - type: run_command
     description: "Metric module calls an AgentTraces governance method (getGovernanceDecisions/getGovernanceSummary); no span-scan parsing"
     command: >
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      python3 $REFERENCE_DIR/_shared/check_dashboard.py
       --min-metrics 1 --require-substr "getGovernance"
       --forbid-substr "parseGovernanceSpans" --forbid-substr "governance-scan"
     timeout: 30

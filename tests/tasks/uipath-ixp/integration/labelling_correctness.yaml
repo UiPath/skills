@@ -25,6 +25,9 @@ sandbox:
     - type: template_dir
       path: ../_shared/fixtures
 
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 initial_prompt: |
   Set up a trained invoice project. Use the tenant I'm already signed into
   (check I'm logged in; don't re-authenticate): create a blank project (give it a unique title
@@ -174,5 +177,5 @@ success_criteria:
 # (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
 # always exits 0 so it never fails the test.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+  - command: "python3 _setup/cleanup_project.py"
     timeout: 60

@@ -21,6 +21,8 @@ description: >
   Org-level activity is sparse and the long-term store lags by up to ~48h, so an
   empty export is a real outcome; all assertions are structural.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export, scope-org]
+reference:
+  directory: .
 
 run_limits:
   expected_turns: 6
@@ -40,7 +42,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-org-yesterday holds a CLI-generated day-wise JSON export whose records are ORG-scope (no TenantId)"
-    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=json AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=json AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_audit_export.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

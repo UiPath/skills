@@ -17,6 +17,12 @@ sandbox:
     - type: template_dir
       path: ../templates/initial_flow
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+reference:
+  directory: ../..
+
 initial_prompt: |
   Add a script node called "convertToCelsius" between getWeather and formatSummary that converts the temp from F to C. Return both values. Also update formatSummary to include the Celsius value in its summary string.
 
@@ -39,7 +45,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -48,12 +54,12 @@ success_criteria:
   # ── Execution checks ──────────────────────────────────────────────────
   - type: run_command
     description: "Flow debug runs and output contains Celsius conversion"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/add_node/check_add_node.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_add_node.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

@@ -6,18 +6,28 @@ description: >
   + descending sort, then revert. Verifier diffs final vs snapshot to prove
   the revert was clean.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:edit, connector, uipath-uipath-dataservice]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   max_turns: 100
   turn_timeout: 1500
   task_timeout: 2400
 
+reference:
+  directory: .
+
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-uipath-dataservice'
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
     timeout: 120
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
     timeout: 60
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/scaffold_movie_report_flow.py"'
+  - command: 'python3 "_setup/scaffold_movie_report_flow.py"'
     timeout: 120
 
 initial_prompt: |
@@ -58,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Revert restored the exact initial flow state"
-    command: "python3 $TASK_DIR/check_smoke_update_existing_flow.py"
+    command: "python3 $REFERENCE_DIR/check_smoke_update_existing_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -1,6 +1,3 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-outlook-waitfor-email
 description: >
   Build-and-validate: a Flow with a manual start trigger, a mid-flow
@@ -16,23 +13,18 @@ description: >
   is intentionally omitted; the task only requires the flow to build and
   validate. Distinct from `outlook_trigger_inbox`, which uses the same event as
   the flow's START trigger; this one uses it as a mid-flow wait.
-tags:
-  [
-    uipath-maestro-flow,
-    integration,
-    mode:build,
-    lifecycle:generate,
-    shape:single-node,
-    feature:trigger,
-    connector,
-    uipath-microsoft-outlook365,
-    filter,
-    ipe,
-    wait-for-event,
-  ]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, feature:trigger, connector, uipath-microsoft-outlook365, filter, ipe, wait-for-event]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 55
   turn_timeout: 600
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a UiPath Flow named "OutlookWaitForEmail".
@@ -59,7 +51,7 @@ success_criteria:
   # ── Structural: flow builds and validates ──────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -68,12 +60,12 @@ success_criteria:
   # ── Composite: event node mid-flow + subject-contains-"TestWaitFor" filter ─
   - type: run_command
     description: "Mid-flow Outlook email-received node filters subject contains 'TestWaitFor'"
-    command: "python3 $TASK_DIR/check_outlook_waitfor_email.py"
+    command: "python3 $REFERENCE_DIR/single_node/outlook_waitfor_email/check_outlook_waitfor_email.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

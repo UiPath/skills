@@ -9,13 +9,23 @@ description: >
   read-back cannot grade both the updated state and a subsequent delete (the delete
   erases the evidence), so this e2e grades the update tail deterministically.
 tags: [uipath-admin, e2e, mode:build, lifecycle:setup, identity, user-lifecycle]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''setup_lifecycle_user.py''))"'
+  - command: 'python3 _setup/setup_lifecycle_user.py'
     timeout: 30
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_lifecycle_user.py''))"'
+  - command: 'python3 _setup/cleanup_lifecycle_user.py'
     timeout: 30
 
 run_limits:
@@ -32,7 +42,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The pre-seeded user's surname was changed to UpdatedUser on the tenant (proves a real update)"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''verify_user_updated.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_user_updated.py''))"'
     timeout: 40
     expected_exit_code: 0
     weight: 5.0

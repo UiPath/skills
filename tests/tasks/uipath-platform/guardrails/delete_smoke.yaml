@@ -89,5 +89,6 @@ success_criteria:
       Score 0.0 if it claims nothing breaks, that the guardrails silently fall
       back to the UiPath built-in check, that they keep working, or if it says
       nothing at all about the effect on referencing agents.
+    include_reference: false
     weight: 1.5
     pass_threshold: 1.0

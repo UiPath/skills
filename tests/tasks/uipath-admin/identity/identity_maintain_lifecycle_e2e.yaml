@@ -36,13 +36,23 @@ description: >
 
   The fixture member is a dedicated invited user, never a real org account.
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, identity, groups, robot-account]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''setup_identity_maintain.py''))"'
+  - command: 'python3 _setup/setup_identity_maintain.py'
     timeout: 120
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_identity_maintain.py''))"'
+  - command: 'python3 _setup/cleanup_identity_maintain.py'
     timeout: 90
 
 run_limits:
@@ -69,7 +79,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant read-back: group renamed in place (seeded id), stale group id absent, robot display name updated, retired robot not fetchable by id, no built-in deleted, and no non-fixture group removed"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''verify_identity_maintained.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_identity_maintained.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

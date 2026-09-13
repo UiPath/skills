@@ -54,6 +54,9 @@ simulation:
     - "Never tell the agent to stop, skip validation, or reuse an existing solution."
   max_turns: 6
 
+reference:
+  directory: ..
+
 success_criteria:
   # ── Selection honored: Flow landed in the user-chosen new solution ─────
   # WeatherSelection-7K4M has an unguessable suffix, so landing here proves the
@@ -74,7 +77,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file created inside the user-selected solution"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/check_solution_select.py flow"
+    command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py flow"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -83,7 +86,7 @@ success_criteria:
   # ── Did NOT silently adopt an existing solution ────────────────────────
   - type: run_command
     description: "Agent did not init the Flow project inside a pre-existing solution"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/check_solution_select.py existing-untouched"
+    command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py existing-untouched"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -112,7 +115,7 @@ success_criteria:
   # ── Build is valid in the selected solution ────────────────────────────
   - type: run_command
     description: "Flow validates in the selected solution"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/check_solution_select.py validate"
+    command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py validate"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -120,7 +123,7 @@ success_criteria:
 
   - type: run_command
     description: "Selected solution contains an initialized Flow project"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/check_solution_select.py project"
+    command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py project"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -129,7 +132,7 @@ success_criteria:
   # ── Advisory: recorded in the report, never gates the run ──────────────
   - type: run_command
     description: "Agent created the selected solution artifact"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/check_solution_select.py solution"
+    command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py solution"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -137,7 +140,7 @@ success_criteria:
 
   - type: run_command
     description: "Advisory: no default WeatherAlert solution before the name was given — records the default-then-repair inefficiency; nondeterministic on simulator name-timing, so non-gating"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/check_solution_select.py no-extra-solution"
+    command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py no-extra-solution"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

@@ -9,6 +9,9 @@ tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:inspect", conn
 run_limits:
   expected_turns: 28
   max_turns: 60
+reference:
+  directory: .
+
 initial_prompt: |
   Use the installed `uip` CLI's Maestro BPMN registry surface to discover the
   documented wrapper surface for agent, queue, and connector resource types.
@@ -59,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "Registry evidence covers documented agent, queue, and connector wrapper types"
-    command: "python3 $TASK_DIR/check_registry_discovery.py"
+    command: "python3 $REFERENCE_DIR/check_registry_discovery.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -9,15 +9,25 @@ description: >
   pre_run clears any leftover marker role so the check cannot pass on stale
   state, and post_run deletes whatever the run created.
 tags: [uipath-admin, e2e, mode:build, lifecycle:setup, authz, role, scope:organization]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-create-org-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-create-org-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-create-org-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-create-org-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_PLAN_ONLY="1" python3 _setup/setup_authz_role.py'
     timeout: 90
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-create-org-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-create-org-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
 
 run_limits:
@@ -36,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The role exists on the organization with the Organization shape, the granted permission and the description"
-    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Organization" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_EXPECT_DESCRIPTION="Access policy auditors" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_created.py''))"'
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Organization" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_EXPECT_DESCRIPTION="Access policy auditors" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''verify_authz_role_created.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

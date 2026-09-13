@@ -26,6 +26,12 @@ sandbox:
     - type: template_dir
       path: ../_shared/fixtures
 
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
+
 initial_prompt: |
   I want to set up an invoice project, reshape its taxonomy, then undo the reshaping.
   Use the tenant I'm already signed into (check I'm logged in; don't re-authenticate).
@@ -177,7 +183,7 @@ success_criteria:
   # subsumes "Adjustments is gone" (the initial never had it).
   - type: run_command
     description: "Round-trip: taxonomy_final structurally matches the initial auto-suggested taxonomy"
-    command: "python3 $TASK_DIR/check_taxonomy_roundtrip.py"
+    command: "python3 $REFERENCE_DIR/check_taxonomy_roundtrip.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -187,5 +193,5 @@ success_criteria:
 # (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
 # always exits 0 so it never fails the test.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+  - command: "python3 _setup/cleanup_project.py"
     timeout: 60

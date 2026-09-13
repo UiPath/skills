@@ -113,5 +113,6 @@ success_criteria:
       (auth, permissions, the feature flag, a transient error) rather than the
       connection not serving the validator; or if it never says whether the
       configuration exists.
+    include_reference: false
     weight: 2.0
     pass_threshold: 1.0

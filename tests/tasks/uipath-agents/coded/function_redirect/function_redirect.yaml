@@ -18,6 +18,9 @@ run_limits:
   expected_turns: 34
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I need a UiPath coded agent called `calc-agent`, written in Python, in this
   directory. It's a
@@ -85,7 +88,7 @@ success_criteria:
 
   - type: run_command
     description: "Coded Function project shape: uipath.json functions map, matching entry-points.json, @traced() on the entry function, and no framework config"
-    command: "python3 $TASK_DIR/check_function_shape.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_function_shape.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

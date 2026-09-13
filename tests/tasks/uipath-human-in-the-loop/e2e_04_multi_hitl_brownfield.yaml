@@ -14,6 +14,9 @@ run_limits:
   max_turns: 50
   turn_timeout: 1200
 
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
   I have an HR onboarding flow. Create it by writing to
   HROnboarding/HROnboarding/HROnboarding.flow:
@@ -55,7 +58,7 @@ success_criteria:
 
   - type: run_command
     description: "Both HITL nodes' outcome ports are wired, not the outcome-completed placeholder"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

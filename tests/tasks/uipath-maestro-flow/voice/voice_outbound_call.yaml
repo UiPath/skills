@@ -26,6 +26,9 @@ run_limits:
   # four-piece input contract.
   turn_timeout: 900
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Flow project named "PaymentReminderPersonalized" that places an
   outbound phone call, has an AI agent hold the conversation, and hangs up when
@@ -63,7 +66,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the generated flow"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -74,7 +77,7 @@ success_criteria:
   # count the second value ships ungraded.
   - type: run_command
     description: "Both prompt inputs are wired end to end: node binding -> inputSchema -> {{input.<key>}} -> declared global"
-    command: "python3 $TASK_DIR/check_voice_flow.py prompt-inputs --min-inputs 2"
+    command: "python3 $REFERENCE_DIR/voice/check_voice_flow.py prompt-inputs --min-inputs 2"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -83,7 +86,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains the three outbound voice node types"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+      python3 $REFERENCE_DIR/_shared/flow_contains.py
       '"uipath.conversational.voice.create-outgoing-call"'
       '"uipath.agent.voice"'
       '"uipath.conversational.voice.end-call"'
@@ -94,7 +97,7 @@ success_criteria:
 
   - type: run_command
     description: "callContext from the create-outgoing-call node is bound into BOTH the voice agent and the end-call node as a jsExpression object, and the dial node carries a plain-string from and a literal to"
-    command: "python3 $TASK_DIR/check_voice_flow.py call-context"
+    command: "python3 $REFERENCE_DIR/voice/check_voice_flow.py call-context"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -102,7 +105,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline agent.json carries settings.voice, keeps settings.engine and metadata.isConversational, and holds a real system prompt"
-    command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
+    command: "python3 $REFERENCE_DIR/voice/check_voice_flow.py agent-voice"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

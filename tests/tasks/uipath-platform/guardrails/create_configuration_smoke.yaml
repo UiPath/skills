@@ -110,5 +110,6 @@ success_criteria:
       saved WITHOUT server-side validation (for example telling the user
       to go and verify the connection themselves, or calling the saved
       configuration unverified), or says nothing about validation at all.
+    include_reference: false
     weight: 2.0
     pass_threshold: 1.0
