@@ -299,3 +299,86 @@ class CancellationDiagnosisTests(unittest.TestCase):
         printed = self.diagnose()
         self.assertIn("run status 'Cancelled'", printed)
         self.assertIn("no incident; the case reached stages ['Stage_A']", printed)
+
+
+class ElementRunReadingTests(unittest.TestCase):
+    """Two readings of `element-executions` that have each been wrong once."""
+
+    def setUp(self):
+        self.saved = {n: getattr(drive_case, n) for n in ("executions", "plan_nodes")}
+        self.addCleanup(
+            lambda: [setattr(drive_case, k, v) for k, v in self.saved.items()])
+
+    def test_a_single_visit_writes_two_element_runs(self):
+        """One visit writes `InProgress` then `Completed`, so 2 is one visit and 4 is a
+        return. Reading the count as visits is how the sendback assertion passed on a case
+        that was never sent back."""
+        drive_case.plan_nodes = lambda: [
+            {"id": "Stage_A", "type": "case-management:Stage", "data": {"label": "Buyer review"}}]
+        drive_case.executions = lambda instance, folder="": [
+            {"ElementId": "Stage_A", "ElementType": "CaseStage",
+             "ElementRuns": [{"Status": "InProgress"}, {"Status": "Completed"}]}]
+        self.assertEqual(drive_case.stage_runs("i", "Buyer review"), 2)
+
+    def test_a_second_visit_adds_two_more(self):
+        drive_case.plan_nodes = lambda: [
+            {"id": "Stage_A", "type": "case-management:Stage", "data": {"label": "Buyer review"}}]
+        drive_case.executions = lambda instance, folder="": [
+            {"ElementId": "Stage_A", "ElementType": "CaseStage",
+             "ElementRuns": [{"Status": "InProgress"}, {"Status": "Completed"},
+                             {"Status": "InProgress"}, {"Status": "Completed"}]}]
+        self.assertEqual(drive_case.stage_runs("i", "Buyer review"), 4)
+
+    def test_a_stage_never_reached_reads_zero(self):
+        drive_case.plan_nodes = lambda: [
+            {"id": "Stage_A", "type": "case-management:Stage", "data": {"label": "Buyer review"}}]
+        drive_case.executions = lambda instance, folder="": []
+        self.assertEqual(drive_case.stage_runs("i", "Buyer review"), 0)
+
+    def test_a_second_selection_is_answered_as_well_as_the_first(self):
+        """A sendback's second visit carries its own `ElementRunId`. Without keying on it
+        the second looks like the first, is skipped, and the case waits forever."""
+        drive_case.executions = lambda instance, folder="": [
+            {"ElementId": "CaseWaitForUser_StageSelection_Stage_A",
+             "ElementRuns": [{"Status": "Completed", "ElementRunId": "r1"},
+                             {"Status": "InProgress", "ElementRunId": "r2"}]}]
+        answered = set()
+        self.assertEqual(drive_case.waiting_selection("i", answered), "Stage_A")
+        self.assertIn("r2", answered)
+        self.assertIsNone(drive_case.waiting_selection("i", answered))
+
+    def test_an_element_not_waiting_is_not_offered(self):
+        drive_case.executions = lambda instance, folder="": [
+            {"ElementId": "CaseWaitForUser_StageSelection_Stage_A",
+             "ElementRuns": [{"Status": "Completed", "ElementRunId": "r1"}]}]
+        self.assertIsNone(drive_case.waiting_selection("i", set()))
+
+
+class IncidentDescriptionTests(unittest.TestCase):
+    """`drive_case.describe_incident` keeps both ends of a long message.
+
+    A rules-evaluation failure reads `Failed to evaluate expression <the whole rule>:
+    <the reason>`, so the reason sits at the end. Printing only the head shows the rule
+    and cuts off the sentence that says what went wrong.
+    """
+
+    def test_a_long_message_keeps_its_tail(self):
+        tail = "the reason it actually failed"
+        item = {"ElementId": "tX", "ErrorCode": 102003,
+                "ErrorDetails": "head " + ("x" * 900) + " " + tail}
+        described = drive_case.describe_incident(item)
+        self.assertIn("head", described)
+        self.assertIn(tail, described)
+        self.assertIn("chars]...", described)
+
+    def test_a_short_message_is_untouched(self):
+        item = {"ElementId": "tX", "ErrorCode": 1, "ErrorMessage": "Input validation failed"}
+        self.assertEqual(drive_case.describe_incident(item),
+                         "'tX' (1): Input validation failed")
+
+    def test_it_reads_whichever_field_carries_the_text(self):
+        for field in ("ErrorDetails", "ErrorMessage", "Message"):
+            with self.subTest(field=field):
+                described = drive_case.describe_incident(
+                    {"ElementId": "tX", "ErrorCode": 7, field: "something went wrong"})
+                self.assertIn("something went wrong", described)
