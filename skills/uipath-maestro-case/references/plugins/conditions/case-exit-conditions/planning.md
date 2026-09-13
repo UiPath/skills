@@ -16,7 +16,7 @@ Every case-exit condition declared in sdd.md gets its own caseplan element — *
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Case resolved", "Closed — escalation path". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Complete Rule {N}` (marks-case-complete `true`) / `Exit Rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Case resolved", "Closed — escalation path". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Completion rule {N}` (marks-case-complete `true`) / `Exit rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
 | `marks-case-complete` | sdd.md | `true` for normal completion, `false` for non-completing exits |
 | `rule-type` | From catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | Resolved from stage capture map |
@@ -61,7 +61,7 @@ A condition produces **no `tasks/registry-resolved.json` entry** unless its `rul
 
 ```text
 case-exit condition — <summary>
-- display-name: "<name>"                 # optional — omit when blank; impl defaults to "Complete Rule {N}"/"Exit Rule {N}" per marks-case-complete
+- display-name: "<name>"                 # optional — omit when blank; impl defaults to "Completion rule {N}"/"Exit rule {N}" per marks-case-complete
 - marks-case-complete: true
 - rule-type: required-stages-completed
 - selected-stage: "<stage-name>"        # only for selected-stage-* rule-types
