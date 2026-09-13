@@ -382,3 +382,48 @@ class IncidentDescriptionTests(unittest.TestCase):
                 described = drive_case.describe_incident(
                     {"ElementId": "tX", "ErrorCode": 7, field: "something went wrong"})
                 self.assertIn("something went wrong", described)
+
+
+class ImportRetryTests(unittest.TestCase):
+    """`drive_case._import_is_retryable`: which refused import gets a second `case debug`.
+
+    Run 34729813548's `onboard` route died at the import and carried no verdict. The CLI's
+    own answer named the remedy and nothing was reading it:
+
+        "Message": "Failed during import-solution: HTTP 503 on POST .../Solution/Import"
+        "ErrorCode": "server_error"
+        "Retry": "RetryLater"
+    """
+
+    REAL = """{
+      "Result": "Failure",
+      "Message": "Failed during import-solution: HTTP 503 on POST /codereval/studio_/backend/api/Solution/Import",
+      "Context": { "HttpStatus": 503, "Stage": "import-solution", "Method": "POST" },
+      "ErrorCode": "server_error",
+      "Retry": "RetryLater"
+    }"""
+
+    def test_the_run_that_lost_a_route_retries(self):
+        self.assertTrue(drive_case._import_is_retryable(self.REAL))
+
+    def test_retrylater_alone_is_enough(self):
+        self.assertTrue(drive_case._import_is_retryable('{"Retry": "RetryLater"}'))
+
+    def test_a_five_hundred_at_import_retries_without_the_hint(self):
+        for code in (500, 502, 503, 504):
+            with self.subTest(code=code):
+                self.assertTrue(drive_case._import_is_retryable(
+                    '{"Context": {"HttpStatus": %d, "Stage": "import-solution"}}' % code))
+
+    def test_a_four_hundred_at_import_does_not(self):
+        """A refused package is the build's, and retrying it hides a real defect."""
+        self.assertFalse(drive_case._import_is_retryable(
+            '{"Context": {"HttpStatus": 400, "Stage": "import-solution"}}'))
+
+    def test_a_five_hundred_somewhere_else_does_not(self):
+        self.assertFalse(drive_case._import_is_retryable(
+            '{"Context": {"HttpStatus": 503, "Stage": "publish-process"}}'))
+
+    def test_ordinary_debug_output_does_not(self):
+        self.assertFalse(drive_case._import_is_retryable(
+            "Starting Studio Web debug session for: SupplierOnboarding/SupplierOnboarding"))

@@ -945,6 +945,78 @@ def clear_solution_id(solution_dir: str) -> None:
     print(f"cleared SolutionId {stale} from {manifest.name}; debug will import a fresh copy")
 
 
+DEBUG_IMPORT_RETRIES = 1
+
+
+def _import_is_retryable(output: str) -> bool:
+    """Whether Studio Web refused the import in a way it asked us to retry.
+
+    Run 34729813548's `onboard` route died at `HTTP 503 on POST .../Solution/Import` with
+    `"Retry": "RetryLater"` in the CLI's own answer, and the route carried no verdict. The
+    CLI names the remedy; nothing was reading it.
+    """
+    lowered = output.lower()
+    return '"retry": "retrylater"' in lowered or (
+        '"stage": "import-solution"' in lowered
+        and any(f'"httpstatus": {code}' in lowered for code in (500, 502, 503, 504))
+    )
+
+
+def _debug_once(project_dir: str, before_debug: dict, attempt: int) -> str:
+    """One `case debug` session, returning the instance it created or "" to try again."""
+    started = time.time()
+    # stderr folded into stdout: two pipes with one reader leaves the other to fill, and
+    # a 64 KB buffer is enough for `case debug` to block before it ever creates the
+    # instance. Two routes waited out the full 600s timeout that way while the first,
+    # quieter one succeeded.
+    debug = subprocess.Popen(
+        # `--log-level debug` because three guesses at why a second route gets no instance
+        # were all wrong, and the command says nothing at default level: the failure message
+        # quoted an empty stream every time.
+        with_profile(["uip", "maestro", "case", "debug", project_dir,
+                      "--output", "json", "--log-level", "debug"]),
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    _DEBUG_SESSION.append(debug)
+
+    # Drained on a thread so a full pipe cannot block the debug process, and so its output
+    # is available to quote when no instance appears.
+    def drain_debug(sink: list) -> None:
+        for line in iter(debug.stdout.readline, ""):
+            sink.append(line)
+
+    debug_lines: list = []
+    threading.Thread(target=drain_debug, args=(debug_lines,), daemon=True).start()
+
+    instance_id = ""
+    while not instance_id and time.time() - started < INSTANCE_TIMEOUT:
+        time.sleep(POLL_SLEEP)
+        instance_id = appeared_since(before_debug)
+        if instance_id:
+            return instance_id
+        # `case debug` exits 1 the moment its upload or import fails, and it says why on the
+        # stream this thread is draining. Waiting the full timeout out anyway turned a
+        # one-line error into `no case instance appeared`, three times per run.
+        if debug.poll() is not None:
+            output = "".join(debug_lines)
+            if _import_is_retryable(output) and attempt < DEBUG_IMPORT_RETRIES:
+                print(f"  Studio Web refused the import and asked for a retry; "
+                      f"restarting `case debug` in {TRANSIENT_PAUSE}s")
+                time.sleep(TRANSIENT_PAUSE)
+                break
+            fail(
+                f"`case debug` exited {debug.returncode} before any instance appeared, after "
+                f"{time.time() - started:.0f}s:\n{output[-4000:]}"
+            )
+    debug.kill()
+    if attempt < DEBUG_IMPORT_RETRIES and _import_is_retryable("".join(debug_lines)):
+        return ""
+    fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug\n"
+         f"debug output so far ({len(debug_lines)} line(s)), exit="
+         f"{debug.poll()}:\n{''.join(debug_lines)[-4000:]}")
+    return ""
+
+
 def main() -> int:
     global CASE_FOLDER_KEY
     parser = argparse.ArgumentParser()
@@ -986,50 +1058,12 @@ def main() -> int:
     # Snapshot before starting debug: the instance this route drives is the one that was
     # not here a moment ago.
     before_debug = instance_ids()
-    started = time.time()
-
-    # stderr folded into stdout: two pipes with one reader leaves the other to fill, and
-    # a 64 KB buffer is enough for `case debug` to block before it ever creates the
-    # instance. Two routes waited out the full 600s timeout that way while the first,
-    # quieter one succeeded.
-    debug = subprocess.Popen(
-        # `--log-level debug` because three guesses at why a second route gets no instance
-        # were all wrong, and the command says nothing at default level: the failure message
-        # quoted an empty stream every time.
-        with_profile(["uip", "maestro", "case", "debug", project_dir,
-                      "--output", "json", "--log-level", "debug"]),
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-    )
-    _DEBUG_SESSION.append(debug)
-
-    # Drained on a thread so a full pipe cannot block the debug process, and so its output
-    # is available to quote when no instance appears.
-    def drain_debug(sink: list) -> None:
-        for line in iter(debug.stdout.readline, ""):
-            sink.append(line)
-
-    debug_lines: list = []
-    threading.Thread(target=drain_debug, args=(debug_lines,), daemon=True).start()
 
     instance_id = ""
-    while not instance_id and time.time() - started < INSTANCE_TIMEOUT:
-        time.sleep(POLL_SLEEP)
-        instance_id = appeared_since(before_debug)
+    for attempt in range(DEBUG_IMPORT_RETRIES + 1):
+        instance_id = _debug_once(project_dir, before_debug, attempt)
         if instance_id:
             break
-        # `case debug` exits 1 the moment its upload or import fails, and it says why on the
-        # stream this thread is draining. Waiting the full timeout out anyway turned a
-        # one-line error into `no case instance appeared`, three times per run.
-        if debug.poll() is not None:
-            fail(
-                f"`case debug` exited {debug.returncode} before any instance appeared, after "
-                f"{time.time() - started:.0f}s:\n{''.join(debug_lines)[-4000:]}"
-            )
-    if not instance_id:
-        debug.kill()
-        fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug\n"
-             f"debug output so far ({len(debug_lines)} line(s)), exit="
-             f"{debug.poll()}:\n{''.join(debug_lines)[-4000:]}")
     print(f"instance {instance_id}")
     _OWN_INSTANCE.append((instance_id, CASE_FOLDER_KEY))
     # The outcome probe grades the mailbox for this instance and runs as its own criterion in a
