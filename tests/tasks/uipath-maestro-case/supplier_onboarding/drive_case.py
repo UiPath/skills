@@ -1078,6 +1078,11 @@ def main() -> int:
         instance_id = _debug_once(project_dir, before_debug, attempt)
         if instance_id:
             break
+    if not instance_id:
+        # The helper fails on its last attempt rather than returning empty, so this is
+        # unreachable today. It stays because an empty id here reads as a working route:
+        # everything downstream would query the instance `''` and report nothing found.
+        fail(f"no case instance after {DEBUG_IMPORT_RETRIES + 1} attempt(s) at `case debug`")
     print(f"instance {instance_id}")
     _OWN_INSTANCE.append((instance_id, CASE_FOLDER_KEY))
     # The outcome probe grades the mailbox for this instance and runs as its own criterion in a
