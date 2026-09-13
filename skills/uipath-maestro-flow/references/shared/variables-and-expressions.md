@@ -566,6 +566,7 @@ The production runtime uses **Jint** (a .NET JavaScript interpreter, ES2020 subs
 - Destructuring: `const { a, b } = obj` (in script bodies)
 - Spread operator: `[...arr1, ...arr2]` (in script bodies)
 - Arrow functions: `items.filter(x => x.active)` (inline callbacks)
+- Optional chaining / nullish coalescing: `a?.b?.[0]`, `x ?? fallback`
 
 ### Not Supported
 
