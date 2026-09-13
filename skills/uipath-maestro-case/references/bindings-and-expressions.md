@@ -112,7 +112,7 @@ Cross-task references wire the output of an earlier task into an input of a late
 input_name <- "Stage Name"."Task Name".output_name
 ```
 
-- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task)
+- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task). An SDD may also name a stage by the ordinal its heading carries — `### Stage 2: Underwriting` is referenceable as `"Stage 2"`. **Resolve the display name first; accept the ordinal only when no stage claims that name.** A stage actually titled "Stage 2" therefore wins over the second stage's ordinal, whatever order they appear in. The ordinal is positional, so a reordered SDD silently re-points it, while the name is what the author wrote — never rewrite a reference from one spelling to the other.
 - `Task Name` — the `display-name` of the source task (exactly as written in an `Add <type> task "<name>"` task)
 - `output_name` — a named output field from the source task
 
