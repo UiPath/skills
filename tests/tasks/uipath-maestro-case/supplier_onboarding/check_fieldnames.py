@@ -295,6 +295,32 @@ def main() -> int:
                 "all four supporting documents to assess"
             )
 
+    # ---- 9. a request body's own field names keep the connector's casing ----
+    # The response side of this contract is section 1; the request side fails the same way
+    # and costs more. Run 34728302533 wrote `Message.ToRecipients` where the other 32 runs
+    # write `message.toRecipients`, and Outlook answered every send with
+    # `Property ToRecipients in payload has a value that does not match schema`. All seven
+    # routes faulted and the run scored 0.420. `validate` reports none of it: the shape is
+    # well formed, only the spelling is wrong.
+    for _stage, task in connector_tasks:
+        name = P.task_name(task)
+        for entry in P.task_inputs(task):
+            body = entry.get("body")
+            if not isinstance(body, dict):
+                continue
+            capitalised = sorted(
+                path
+                for path, _value in _body_paths(body)
+                for head in (path.split(".")[-1],)
+                if head[:1].isupper()
+            )
+            if capitalised:
+                problems.append(
+                    f"{name!r}: request body field(s) {capitalised} start with a capital; "
+                    f"the connector's contract is camelCase and the provider answers "
+                    f"`Property ... in payload has a value that does not match schema`"
+                )
+
     print(f"checked {P.find_caseplan()}")
     print(
         f"connector tasks: {len(connector_tasks)}   fixture extracts: "
@@ -313,6 +339,16 @@ def main() -> int:
     for item in problems:
         print(f"  - {item}", file=sys.stderr)
     return 1
+
+
+def _body_paths(node, prefix=""):
+    """Every dotted path inside a request body, so a nested key is checked as well."""
+    if not isinstance(node, dict):
+        return
+    for key, value in node.items():
+        path = f"{prefix}.{key}" if prefix else str(key)
+        yield path, value
+        yield from _body_paths(value, path)
 
 
 if __name__ == "__main__":

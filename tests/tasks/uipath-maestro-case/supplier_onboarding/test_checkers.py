@@ -1852,6 +1852,22 @@ class FieldNameTests(CheckerBase):
         name, literal = sorted(E.STAGE_NAME_LITERAL.items())[0]
         return task(plan, name), literal
 
+    def test_rejects_a_capitalised_request_body_field(self):
+        """34728302533 wrote `Message.ToRecipients` and Outlook answered every send with
+        `Property ToRecipients in payload has a value that does not match schema`. All
+        seven routes faulted; `validate` reported nothing, because only the spelling is
+        wrong."""
+        plan = baseline_plan()
+        renamed = 0
+        for entry in (self._connector(plan)["data"].get("inputs") or []):
+            body = entry.get("body")
+            if isinstance(body, dict):
+                for key in list(body):
+                    body[key[:1].upper() + key[1:]] = body.pop(key)
+                    renamed += 1
+        self.assertTrue(renamed, "the baseline connector carries no request body")
+        self.rejects(plan, "start with a capital")
+
     def test_rejects_a_plan_with_the_wrong_connector_count(self):
         plan = baseline_plan()
         node = self._connector(plan)
