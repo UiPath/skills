@@ -9,6 +9,8 @@ plan defect into a pass.
 
 from __future__ import annotations
 
+import ast
+import builtins
 import contextlib
 import importlib.util
 import io
@@ -433,3 +435,56 @@ class ImportRetryTests(unittest.TestCase):
     def test_ordinary_debug_output_does_not(self):
         self.assertFalse(drive_case._import_is_retryable(
             "Starting Studio Web debug session for: SupplierOnboarding/SupplierOnboarding"))
+
+
+class UndefinedNameTests(unittest.TestCase):
+    """No function loads a name nothing in its scope or the module defines.
+
+    `main` is never executed by this suite, and `ast.parse` accepts a file that reads an
+    undefined name, so a refactor can ship a `NameError` with every test green. Extracting
+    the `case debug` session into a helper left `main` still referring to its local
+    `debug`, and run 34771121384 lost all seven routes to
+    `NameError: name 'debug' is not defined` after each had driven its case to the end.
+    """
+
+    def loaded_but_undefined(self, path) -> dict:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        module = {n.name for n in tree.body if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                module |= {t.id for t in node.targets if isinstance(t, ast.Name)}
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                module.add(node.target.id)
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                module |= {a.asname or a.name.split(".")[0] for a in node.names}
+        out = {}
+        for fn in [n for n in tree.body if isinstance(n, ast.FunctionDef)]:
+            local = {a.arg for a in fn.args.args} | {a.arg for a in fn.args.kwonlyargs}
+            for node in ast.walk(fn):
+                if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                    local.add(node.id)
+                elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    local.add(node.name)
+                elif isinstance(node, ast.ExceptHandler) and node.name:
+                    local.add(node.name)
+                elif isinstance(node, ast.arg):
+                    local.add(node.arg)
+                elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                    local |= {a.asname or a.name.split(".")[0] for a in node.names}
+            used = {n.id for n in ast.walk(fn)
+                    if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+            missing = sorted(used - local - module - set(dir(builtins)))
+            if missing:
+                out[fn.name] = missing
+        return out
+
+    def test_every_task_module_resolves_its_names(self):
+        here = Path(__file__).parent
+        checked = 0
+        for path in sorted(here.glob("*.py")):
+            if path.name.startswith("test_"):
+                continue
+            checked += 1
+            with self.subTest(module=path.name):
+                self.assertEqual(self.loaded_but_undefined(path), {})
+        self.assertGreater(checked, 5, "expected the task's own modules to be found")

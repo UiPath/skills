@@ -1068,6 +1068,7 @@ def main() -> int:
         fail(f"solution resources refresh exit {refresh.returncode}\n{refresh.stdout}\n{refresh.stderr}")
 
     watermark = task_watermark()
+    route_started = time.time()
     # Snapshot before starting debug: the instance this route drives is the one that was
     # not here a moment ago.
     before_debug = instance_ids()
@@ -1153,10 +1154,15 @@ def main() -> int:
         # in its own right rather than as an empty result the caller mistakes for "not yet".
         fail(str(exc))
     finally:
-        try:
-            debug.wait(timeout=max(30, DEBUG_TIMEOUT - int(time.time() - started)))
-        except subprocess.TimeoutExpired:
-            debug.kill()
+        # Through `_DEBUG_SESSION`, not a local handle: the session is started inside
+        # `_debug_once` and a retried import starts a second one. Naming a local here is
+        # what broke every route on 34771121384 with `NameError: name 'debug' is not
+        # defined`, after each of them had driven its case to the end.
+        for session in _DEBUG_SESSION:
+            try:
+                session.wait(timeout=max(30, DEBUG_TIMEOUT - int(time.time() - route_started)))
+            except subprocess.TimeoutExpired:
+                session.kill()
 
     status = run_status(instance_id)
     g = globals_of(instance_id)
