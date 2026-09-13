@@ -663,13 +663,23 @@ def baseline_plan() -> dict:
     return build()
 
 
-def run_checker(name: str, plan: dict) -> subprocess.CompletedProcess:
-    """Run one grader against `plan` in a scratch directory."""
+def run_checker(name: str, plan: dict, extra: dict | None = None) -> subprocess.CompletedProcess:
+    """Run one grader against `plan` in a scratch directory.
+
+    `extra` maps a relative path to its text, for a checker that reads more of the build
+    than the caseplan. `check_fieldnames.py` § 9 reads `tasks/spec-cache/` for the
+    connector's own field names, and without it that section has nothing to compare
+    against and silently passes.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         nested = Path(tmp) / "Case" / "Case"
         nested.mkdir(parents=True)
         with open(nested / "caseplan.json", "w", encoding="utf-8") as stream:
             json.dump(plan, stream)
+        for relative, text in (extra or {}).items():
+            target = Path(tmp) / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
         return subprocess.run(
             [sys.executable, str(CHECKERS[name])],
             cwd=tmp,
@@ -743,13 +753,13 @@ def _iter_dicts(node, path="$"):
 class CheckerBase(unittest.TestCase):
     checker = ""
 
-    def accepts(self, plan: dict):
-        result = run_checker(self.checker, plan)
+    def accepts(self, plan: dict, extra: dict | None = None):
+        result = run_checker(self.checker, plan, extra)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result
 
-    def rejects(self, plan: dict, needle: str):
-        result = run_checker(self.checker, plan)
+    def rejects(self, plan: dict, needle: str, extra: dict | None = None):
+        result = run_checker(self.checker, plan, extra)
         blob = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0, f"mutation was accepted:\n{blob}")
         self.assertIn(needle, blob, f"caught, but not by the assertion under test:\n{blob}")
@@ -1858,15 +1868,28 @@ class FieldNameTests(CheckerBase):
         seven routes faulted; `validate` reported nothing, because only the spelling is
         wrong."""
         plan = baseline_plan()
-        renamed = 0
+        renamed = []
+
+        def recase(node, prefix=""):
+            for key in list(node):
+                value = node.pop(key)
+                upper = key[:1].upper() + key[1:]
+                if isinstance(value, dict):
+                    recase(value, f"{prefix}{key}.")
+                renamed.append(f"{prefix}{key}")
+                node[upper] = value
+
         for entry in (self._connector(plan)["data"].get("inputs") or []):
             body = entry.get("body")
-            if isinstance(body, dict):
-                for key in list(body):
-                    body[key[:1].upper() + key[1:]] = body.pop(key)
-                    renamed += 1
+            if isinstance(body, dict) and body:
+                recase(body)
         self.assertTrue(renamed, "the baseline connector carries no request body")
-        self.rejects(plan, "start with a capital")
+        # § 9 compares against the connector's own catalogue, so the scratch directory has
+        # to carry one. Without it the section has nothing to match and passes silently.
+        catalogue = json.dumps(
+            {"Fields": [{"Name": name} for name in sorted(set(renamed))]})
+        self.rejects(plan, "differ from the connector's own name by letter case",
+                     extra={"tasks/spec-cache/spec.tTest0001.json": catalogue})
 
     def test_rejects_a_plan_with_the_wrong_connector_count(self):
         plan = baseline_plan()

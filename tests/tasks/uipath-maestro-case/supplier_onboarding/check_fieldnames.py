@@ -30,6 +30,7 @@ Read-only. Exit 0 clean, 1 on findings.
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import sys
 
@@ -302,23 +303,31 @@ def main() -> int:
     # `Property ToRecipients in payload has a value that does not match schema`. All seven
     # routes faulted and the run scored 0.420. `validate` reports none of it: the shape is
     # well formed, only the spelling is wrong.
+    #
+    # Judged against the connector's own field catalogue rather than a casing convention.
+    # The cached spec carries both spellings: the catalogue names the contract
+    # (`"Name": "message.toRecipients"`), and the CLI's echo of the payload serializes it
+    # PascalCase (`"Body": {"Message": {"ToRecipients": ...}}`). A build that copies the
+    # echo takes the wrong one. Every artifact on hand carries a usable spec cache, so
+    # there is no reason to guess at camelCase instead of reading what the connector said.
+    contract = _contract_field_names()
+    folded = {name.lower(): name for name in contract}
     for _stage, task in connector_tasks:
         name = P.task_name(task)
         for entry in P.task_inputs(task):
             body = entry.get("body")
             if not isinstance(body, dict):
                 continue
-            capitalised = sorted(
-                path
-                for path, _value in _body_paths(body)
-                for head in (path.split(".")[-1],)
-                if head[:1].isupper()
+            wrong = sorted(
+                f"{path} (the connector calls it {folded[path.lower()]!r})"
+                for path in _body_paths(body)
+                if path not in contract and path.lower() in folded
             )
-            if capitalised:
+            if wrong:
                 problems.append(
-                    f"{name!r}: request body field(s) {capitalised} start with a capital; "
-                    f"the connector's contract is camelCase and the provider answers "
-                    f"`Property ... in payload has a value that does not match schema`"
+                    f"{name!r}: request body field(s) {wrong} differ from the connector's "
+                    f"own name by letter case; the provider answers `Property ... in "
+                    f"payload has a value that does not match schema`"
                 )
 
     print(f"checked {P.find_caseplan()}")
@@ -347,8 +356,26 @@ def _body_paths(node, prefix=""):
         return
     for key, value in node.items():
         path = f"{prefix}.{key}" if prefix else str(key)
-        yield path, value
+        yield path
         yield from _body_paths(value, path)
+
+
+def _contract_field_names() -> set:
+    """The connector's own input field names, out of the spec responses the build cached.
+
+    `tasks/spec-cache/` holds what `uip maestro case tasks describe` answered, and its
+    field catalogue carries each input's contract name. Reading it beats assuming a
+    convention: a connector is free to name a field however it likes, and the plan has to
+    match that name, not a house style.
+    """
+    names = set()
+    for path in pathlib.Path(".").glob("**/spec-cache*/*.json"):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        names |= set(re.findall(r'"Name":\s*"([A-Za-z][A-Za-z0-9.]*)"', text))
+    return names
 
 
 if __name__ == "__main__":
