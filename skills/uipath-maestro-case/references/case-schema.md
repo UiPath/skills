@@ -290,7 +290,7 @@ Every condition `displayName` must be unique across the **whole case**, with one
 
 > Copy those spellings exactly. `Entry Rule 1` and `Complete rule 1` are NOT the defaults — a capital `R`, or `Complete` for `Completion`, leaves the exemption and a repeat becomes an error. Measured on 17 grader-passing plans: 26 carry `Entry rule 1` and 20 carry `Completion rule 1`, several of them five times over, and all validate clean.
 
-Any name you write yourself shares one pool and must be unique — two stages cannot both call an exit `Approved`. **Number authored names with a case-wide counter per label kind — highest
+Any name you write yourself shares one pool and must be unique — two stages cannot both call an exit `Approved`. **Number authored names with a case-wide counter per label kind — the highest number already authored for that kind, plus 1 — never a per-array counter.** A per-array counter restarts at `1` in every stage and on every task, which is the usual cause of a collision. Count only authored names when picking the next number: the exempt defaults above repeat freely, so counting them inflates every counter without preventing a single collision.
 
 An SDD `Display Name` cell holding the default pattern (`Entry rule <n>` etc.) is the SDD echoing the default: renumber it case-wide, which is not a divergence from the SDD. Only a **semantic** name repeated across stages is a planning defect — rename it in the SDD and re-emit.
 
