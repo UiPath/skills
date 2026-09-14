@@ -7,10 +7,11 @@ description: >
   peer versions (`react >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.1`),
   wire `<ValidationStation>` with the required props, implement
   `onSubmitComplete` and `onReportExceptionComplete` callbacks (the widget
-  surfaces NO error UI — host owns all callbacks), copy `du-assets/`
-  post-build via a Vite plugin (missing this silently breaks PDF rendering
-  and translations in production), and exclude the web-component from Vite
-  `optimizeDeps`. Deploys into a fresh per-run Orchestrator folder so
+  surfaces NO error UI — host owns all callbacks), and ship the web
+  component's `du-assets/` in the build output (missing this silently breaks
+  PDF rendering and translations in production) — via the 1.0.x Vite copy
+  plugin or the >= 1.1.0 `du-vs-wc/` staging, whichever the installed widget
+  version requires. Deploys into a fresh per-run Orchestrator folder so
   `post_run` can clean it up. Tests the most complex coded-apps surface:
   widget integration, not just CLI flow.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
@@ -59,7 +60,9 @@ initial_prompt: |
   The `folder` field is REQUIRED — `post_run` reads it to clean up.
 
   Use `--output json` on every `uip` command. Do not prompt for
-  confirmation — this is an automated test.
+  confirmation — this is an automated test. Do NOT use task-tracking
+  tools (TaskCreate/TaskUpdate) — execute the steps directly; every
+  turn spent on bookkeeping is budget taken from the build.
 
 success_criteria:
   # Advisory (pass_threshold: 0): records the login-status convention without
@@ -165,8 +168,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "vite.config.{ts,js} copies the du-assets/ folder post-build (missing this silently breaks PDF + translations)"
-    command: "find . \\( -name 'vite.config.ts' -o -name 'vite.config.js' \\) -not -path '*/node_modules/*' -exec grep -lE '(du-assets|du_assets)' {} + | grep -q ."
+    description: "Build output ships the web component's du-assets/ (missing this silently breaks PDF + translations). Outcome check, mechanism-neutral: 1.0.x copy plugin -> dist/assets/du-assets, widget >= 1.1.0 staging -> dist/du-vs-wc/du-assets"
+    command: "find . -path '*/dist/*' -type d -name du-assets -not -path '*/node_modules/*' | grep -q ."
     timeout: 15
     expected_exit_code: 0
     weight: 2.5

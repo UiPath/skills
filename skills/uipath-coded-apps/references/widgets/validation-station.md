@@ -17,8 +17,8 @@ If the user just wants a generic form (no DU document), use the standard Action 
 ## Critical Rules
 
 1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.1`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
-2. **The widget's web component loads its CSS, fonts, and assets at runtime, not at build time.** So `vite.config.ts` must *copy* those files next to the build output (for prod) and *serve them as raw CSS* in dev — use the config under "Static Assets" below. Skip it and most of prod degrades *quietly*: PDF rendering, translations, and styling 404 in the background, and fonts are silently absent even when `fonts.css` itself loads (the font files it references live in `media/`). **Business-rules validation is the exception — it errors outright** (its executor is dynamically `import()`ed from `du-assets/`), so a business-rules error in an app that otherwise renders fine usually means `du-assets/` is missing from the deployment. In dev the tell is icons rendering as their names (`warning`, `error`, `circle`). A green `npm run build` hides all of this — run the app to confirm.
-3. **Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
+2. **Asset loading depends on the installed widget version — read `node_modules/@uipath/ui-widgets-validation-station/package.json` before touching `vite.config.ts`.** **≥ 1.1.0 (published 2026-09-09):** the web component loads at runtime from a URL, so there is no bundler setup. Stage `node_modules/@uipath/du-validation-station-wc` verbatim at `public/du-vs-wc/` (a `prebuild`/`predev` copy script) so Vite ships it as `dist/du-vs-wc/`, and call `configureValidationStationWc({ includeFonts: true }).catch(console.error)` once at startup, before rendering any widget — miss it and nothing renders. Delete any 1.0.x copy plugin, `optimizeDeps.exclude`, and dev-server CSS middleware: 1.1.0 no longer reads what they produce. Save callbacks were also unified in 1.1.0. The installed README (§ *Hosting the web component*, § *Migrating from 1.0.x*) is authoritative for that version. **1.0.x only — the rest of this rule and Rule 3:** the web component loads its CSS, fonts, and assets at runtime, not at build time. So `vite.config.ts` must *copy* those files next to the build output (for prod) and *serve them as raw CSS* in dev — use the config under "Static Assets" below. Skip it and most of prod degrades *quietly*: PDF rendering, translations, and styling 404 in the background, and fonts are silently absent even when `fonts.css` itself loads (the font files it references live in `media/`). **Business-rules validation is the exception — it errors outright** (its executor is dynamically `import()`ed from `du-assets/`), so a business-rules error in an app that otherwise renders fine usually means `du-assets/` is missing from the deployment. In dev the tell is icons rendering as their names (`warning`, `error`, `circle`). A green `npm run build` hides all of this — run the app to confirm.
+3. **(1.0.x only) Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
 4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
 5. **`sdk` must already be initialized.** Pass the same `UiPath` instance produced by `useAuth()` (web app) or constructed in `src/uipath.ts` (action app). Do not construct a second SDK just for the widget — auth state will diverge.
 6. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
@@ -36,6 +36,8 @@ npm install @uipath/ui-widgets-validation-station --@uipath:registry=https://reg
 Registry flag forces the public npm registry (skill default — users may have `@uipath` scoped to GitHub Packages).
 
 ## Static Assets — Vite Plugin
+
+> **Widget ≥ 1.1.0: skip this whole section.** It is the 1.0.x bundler setup that the 1.1.0 README tells you to delete. For ≥ 1.1.0 do the `public/du-vs-wc/` staging + `configureValidationStationWc()` call from Critical Rule 2 instead, then verify `dist/du-vs-wc/` contains `main.js`, `polyfills.js`, `styles.css`, `fonts.css`, `media/`, and `du-assets/`.
 
 The widget (both the all-in-one `ValidationStation` and the subcomponents) wraps a web component — `@uipath/du-validation-station-wc` — that fetches its own stylesheets and fonts at runtime, so `vite.config.ts` must do two things (plus `optimizeDeps.exclude` — the WC's `import.meta.url` breaks under pre-bundling):
 
@@ -130,7 +132,7 @@ export default defineConfig({
 > Mirrors the widget's own `README.md` "Vite" section — re-check it if the widget version changes.
 
 **Verify (a green build isn't enough):**
-- **Build:** `dist/assets/` contains `du-assets/`, `media/`, `styles.css`, and `fonts.css`.
+- **Build (1.0.x):** `dist/assets/` contains `du-assets/`, `media/`, `styles.css`, and `fonts.css`. **(≥ 1.1.0):** `dist/du-vs-wc/` contains them instead, plus `main.js` and `polyfills.js`.
 - **Dev:** run the app — icons render as glyphs, not the words `warning`/`error`/`circle`.
 
 ## Key Props
@@ -445,7 +447,7 @@ Runnable end-to-end example (task list + selection + all five subcomponents wire
 
 ## Anti-patterns
 
-- **Do the full static-asset setup and verify by running the app.** Both plugins (copy `du-assets/` + `media/` + raw CSS; serve raw CSS in dev) are required — a green `npm run build` hides a broken result because the WC loads its styles at runtime, not at build.
+- **Do the full static-asset setup for the installed version and verify by running the app.** 1.0.x: both plugins (copy `du-assets/` + `media/` + raw CSS; serve raw CSS in dev). ≥ 1.1.0: the `public/du-vs-wc/` staging plus the `configureValidationStationWc()` call. A green `npm run build` hides a broken result either way — the WC loads its styles at runtime, not at build, and a missing `du-assets/` 404s PDFs and translations quietly.
 - **Pick one source of action buttons — built-in or custom — never both.** The monolithic `ValidationStation` renders its own action bar (Submit, Save-draft, Discard, Report). Either rely on those built-ins (drop the controlled `save`/`discardChanges` props — the callbacks still fire), **or** drive the flows from your own toolbar via the controlled props. If you build a custom toolbar, hide the built-in buttons so they don't show twice — but note `IValidationStationOptions` only exposes `hideSubmitButton` and `hideReportAsExceptionButton`, with **no** flag for the built-in Discard or Save-draft, so a fully custom bar isn't achievable with the all-in-one widget.
 - **Do not construct a second `UiPath` SDK** for the widget. Reuse the app's authenticated instance.
 - **Do not call `setTaskData` and try to drive a custom form alongside the widget.** The widget owns the data contract end-to-end; mixing produces stale state and double saves.
