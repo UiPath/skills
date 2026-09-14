@@ -203,4 +203,4 @@ A flag used against its own `-file` twin is reported before the stdin clash, and
 ## Related
 
 - [Traces — Spans](traces.md) — `uip traces spans get` for span-level observability
-- [Run Jobs](../orchestrator/run-jobs.md) — `uip or jobs traces` for trace discovery
+- [Run Jobs](../orchestrator/run-jobs.md) — the job lifecycle these traces come from
