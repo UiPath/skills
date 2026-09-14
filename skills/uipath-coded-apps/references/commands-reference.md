@@ -250,7 +250,12 @@ uip codedapp deploy -n my-webapp
 
 # Deploy with folder key
 uip codedapp deploy -n my-webapp --folder-key my-folder-key
+
+# Same deploy, key via env var — skips the --folder-key pre-check (first-page-only folder lookup)
+UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
 ```
+
+> `--folder-key` pre-checks the key against only the first page of the account's folders. If it reports an existing folder as `not found among folders accessible to your account`, use the env-var form — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
 
 **Fresh deploy output:**
 ```
