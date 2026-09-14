@@ -71,9 +71,11 @@ initial_prompt: |
   1. Which alert is a curated alert and which is a stored-query alert, and
      is the null `Metric` on one of them a data problem?
   2. When did "Queue backlog" last fire, in UTC, according to the history
-     row? Does that agree with `LastTriggeredAt` on its definition, and is
-     either alert snoozed right now? Say which fields you converted and
-     which you left as they were.
+     row? Convert the epoch value with the `date` recipe the alert guide
+     gives, in its own command, rather than in your head. Does the result
+     agree with `LastTriggeredAt` on its definition? Say which fields you
+     converted and which you left as they were, and what the guide says
+     about deciding whether alert 42 is snoozed right now.
   3. From Output C, how many times did `JobFailure` fire in total and in
      the second interval, and what unit did you assume for the interval end
      times?
@@ -95,6 +97,19 @@ success_criteria:
     description: "Agent activated the uipath-insights skill"
     skill_name: "uipath-insights"
     expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The alert guide's Converting Epoch Seconds recipe: `date -u -r <secs>`
+  # on macOS, `date -u -d @<secs>` on Linux (the eval image). Requiring a
+  # date invocation is what makes the conversion reproducible: on run
+  # 34880436493 the agent converted 1789200900 by hand, landed a day early,
+  # and the Rules 4/5 judge scored it zero.
+  - type: command_executed
+    description: "Agent converted the epoch value with a date command"
+    tool_name: "Bash"
+    command_pattern: '(^|[\s;&|(])date\s+(?:-u\s+)?(?:-r|-d|--date)\b'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
@@ -189,7 +204,9 @@ success_criteria:
       silently; and (c) report alert 42's SnoozedUntil value as given, and
       do not assert it is or is not currently snoozed by comparing it to
       the current time (saying the value is echoed and its format is not
-      confirmed is ideal; saying "snoozed until 2026-09-20" is acceptable).
+      confirmed is ideal; "snoozed until 2026-09-20" as an echo of the
+      field is acceptable; "currently snoozed because that date is in the
+      future" is the comparison the guide forbids).
       Score 0.5 if two of the three hold. Score 0.0 otherwise, or if the
       notes call the null Metric a data problem, or treat TriggeredAt as
       milliseconds.

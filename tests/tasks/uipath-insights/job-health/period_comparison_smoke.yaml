@@ -16,14 +16,23 @@ description: >
   no-unit rule, and the local rejection of a half-specified absolute pair,
   none of which any other task grades. `smoke_absolute_time_range.yaml`
   asserts the 13-digit literals; this asserts what the two windows are for.
+
+  The prompt names `uip insights` and spells out the relative window. On
+  eval run 34880436493 a prompt that only said "are my automations doing
+  better or worse" did not trigger the skill, and the agent used absolute
+  bounds for both windows, so skill_triggered and the --time-range 10080
+  criterion both scored zero. Every other task in this directory names the
+  surface.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 12
 
 initial_prompt: |
-  Are my automations doing better or worse than last week? Compare the last
-  seven days against last calendar week, Monday 00:00 UTC through Sunday
+  Using UiPath Insights job metrics (`uip insights`), are my automations
+  doing better or worse than last week? Compare the last seven days as one
+  relative window (the last 10080 minutes, ending now) against last
+  calendar week as an absolute window, Monday 00:00 UTC through Sunday
   inclusive, and write the answer to `comparison.md` in the working
   directory.
 
