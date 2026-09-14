@@ -72,10 +72,12 @@ initial_prompt: |
      is the null `Metric` on one of them a data problem?
   2. When did "Queue backlog" last fire, in UTC, according to the history
      row? Convert the epoch value with the `date` recipe the alert guide
-     gives, in its own command, rather than in your head. Does the result
-     agree with `LastTriggeredAt` on its definition? Say which fields you
-     converted and which you left as they were, and what the guide says
-     about deciding whether alert 42 is snoozed right now.
+     gives, in its own command, rather than in your head. Write that
+     converted value and the definition's own `LastTriggeredAt` next to
+     each other in the notes, then say plainly whether the two are the same
+     instant or different ones, and if they differ give the gap. Say which
+     fields you converted and which you left as they were, and what the
+     guide says about deciding whether alert 42 is snoozed right now.
   3. From Output C, how many times did `JobFailure` fire in total and in
      the second interval, and what unit did you assume for the interval end
      times?
