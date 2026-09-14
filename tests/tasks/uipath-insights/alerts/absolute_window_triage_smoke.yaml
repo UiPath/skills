@@ -15,6 +15,13 @@ description: >
   bounds, the agentic pair, Shared Workflow step 1, and Critical Rule 13.
   `alert-deliveries get` stays out for the reason the alerts smoke gives: it
   needs a DeliveryId that an empty tenant cannot supply.
+
+  The closing ask says delivery is unknown when no delivery metadata was
+  read. The earlier wording, "what was actually delivered to anyone", drew
+  "nothing was delivered" from an empty trigger window on eval runs
+  34883268804 and 34883651011, which the Rule 13 judge correctly scored
+  down; the same task had passed three runs before that. The rubric is
+  unchanged.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -29,11 +36,13 @@ initial_prompt: |
   fired inside it. Separately, list the alert definitions that belong to the
   agentic process with key 00000000-0000-0000-0000-000000000000.
 
-  Finish with two clearly separate statements: what fired, and what was
-  actually delivered to anyone. Do not let one stand in for the other. Report
-  deliveries as a type and a count, never as recipients. If the window or the
-  process key matches nothing, say so plainly and say what that does and does
-  not prove.
+  Finish with two clearly separate statements: what fired, and what you can
+  and cannot say about delivery. Delivery is known only from delivery
+  metadata you actually read; if you read none, say delivery is unknown
+  rather than zero. Do not let one statement stand in for the other. Report
+  any delivery you did read as a type and a count, never as recipients. If
+  the window or the process key matches nothing, say so plainly and say what
+  that does and does not prove.
 
 success_criteria:
   - type: skill_triggered
