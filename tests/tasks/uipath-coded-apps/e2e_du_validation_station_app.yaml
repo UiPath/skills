@@ -17,7 +17,11 @@ description: >
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 50
-  max_turns: 100
+  # 100 -> 120: two verification runs on #3275 finished build + publish + deploy
+  # (or were one step short) at 109-116 tool calls once the widget's >= 1.1.0
+  # README has to be read and the 403 external-app fallback resolved. The
+  # orchestrator-dashboard task, a simpler app, already runs at 110.
+  max_turns: 120
   turn_timeout: 1200
 
 initial_prompt: |
@@ -113,7 +117,7 @@ success_criteria:
 
   - type: run_command
     description: "package.json was created (anywhere in the project tree)"
-    command: "find . -name 'package.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    command: "find . -name 'package.json' -not -path '*/node_modules/*' -not -path '*/public/*' -not -path '*/dist/*' -print -quit | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -121,7 +125,7 @@ success_criteria:
 
   - type: run_command
     description: "package.json declares the DU Validation Station widget as a dependency"
-    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; p=json.load(open('$F')); deps={**p.get('dependencies',{}), **p.get('devDependencies',{})}; sys.exit(0 if any(('validation' in k.lower() and 'station' in k.lower()) or '@uipath/du-' in k.lower() or 'document-understanding' in k.lower() for k in deps.keys()) else 1)\""
+    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -not -path '*/public/*' -not -path '*/dist/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; p=json.load(open('$F')); deps={**p.get('dependencies',{}), **p.get('devDependencies',{})}; sys.exit(0 if any(('validation' in k.lower() and 'station' in k.lower()) or '@uipath/du-' in k.lower() or 'document-understanding' in k.lower() for k in deps.keys()) else 1)\""
     timeout: 15
     expected_exit_code: 0
     weight: 2.5
@@ -129,7 +133,7 @@ success_criteria:
 
   - type: run_command
     description: "package.json declares @uipath/uipath-typescript >= 1.4.1 (hard peer requirement of the widget)"
-    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; p=json.load(open('$F')); deps={**p.get('dependencies',{}), **p.get('devDependencies',{})}; v=deps.get('@uipath/uipath-typescript',''); m=re.search(r'(\\d+)\\.(\\d+)\\.(\\d+)', v); ok = m and (int(m.group(1)) > 1 or (int(m.group(1)) == 1 and int(m.group(2)) >= 4)); sys.exit(0 if ok else 1)\""
+    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -not -path '*/public/*' -not -path '*/dist/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; p=json.load(open('$F')); deps={**p.get('dependencies',{}), **p.get('devDependencies',{})}; v=deps.get('@uipath/uipath-typescript',''); m=re.search(r'(\\d+)\\.(\\d+)\\.(\\d+)', v); ok = m and (int(m.group(1)) > 1 or (int(m.group(1)) == 1 and int(m.group(2)) >= 4)); sys.exit(0 if ok else 1)\""
     timeout: 15
     expected_exit_code: 0
     weight: 2.0
@@ -137,7 +141,7 @@ success_criteria:
 
   - type: run_command
     description: "package.json declares react >= 19.2.0 (hard peer requirement of the widget)"
-    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; p=json.load(open('$F')); deps={**p.get('dependencies',{}), **p.get('devDependencies',{})}; v=deps.get('react',''); m=re.search(r'(\\d+)\\.(\\d+)', v); ok = m and (int(m.group(1)) > 19 or (int(m.group(1)) == 19 and int(m.group(2)) >= 2)); sys.exit(0 if ok else 1)\""
+    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -not -path '*/public/*' -not -path '*/dist/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; p=json.load(open('$F')); deps={**p.get('dependencies',{}), **p.get('devDependencies',{})}; v=deps.get('react',''); m=re.search(r'(\\d+)\\.(\\d+)', v); ok = m and (int(m.group(1)) > 19 or (int(m.group(1)) == 19 and int(m.group(2)) >= 2)); sys.exit(0 if ok else 1)\""
     timeout: 15
     expected_exit_code: 0
     weight: 2.0
