@@ -48,10 +48,10 @@ Single CLI call replaces the legacy `get-connection` + `case tasks describe --ty
 
 ### Step 3 — Required-event-param validation (HARD GATE)
 
-This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
+This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="body"].body.queryParams`.
 
 1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
-2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
+2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="body"].body.queryParams` and verify every required event parameter has a value.
 3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
 4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 8 if user declines to provide a value.
 
