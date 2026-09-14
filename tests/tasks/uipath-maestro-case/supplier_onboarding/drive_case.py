@@ -988,6 +988,33 @@ def _import_is_retryable(output: str) -> bool:
     )
 
 
+
+_INSTANCE_LINE = re.compile(r"Debug instance created\s*[^\n]*instanceId:\s*([0-9a-f-]{36})")
+
+
+def _instance_named_in(output: str) -> str:
+    """The instance id `case debug` said it created, or "" if it never got that far."""
+    found = _INSTANCE_LINE.search(output)
+    return found.group(1) if found else ""
+
+
+def _claims_this_build(instance_id: str) -> bool:
+    """Whether that instance is running this build's plan, by the same test as adoption.
+
+    An id the CLI printed is this session's own, but the folder it lives in still has to
+    be found before anything can be asked of it, and a case that has not entered a stage
+    yet cannot be told apart from a stranger's.
+    """
+    global CASE_FOLDER_KEY
+    for candidate_folder in {CASE_FOLDER_KEY, ""} | set(instance_ids().values()):
+        stages = {r.get("ElementId") for r in executions(instance_id, candidate_folder)
+                  if r.get("ElementType") == "CaseStage"}
+        if stages & own_stage_ids():
+            CASE_FOLDER_KEY = candidate_folder
+            return True
+    return False
+
+
 def _debug_once(project_dir: str, before_debug: dict, attempt: int) -> str:
     """One `case debug` session, returning the instance it created or "" to try again."""
     started = time.time()
@@ -1025,6 +1052,18 @@ def _debug_once(project_dir: str, before_debug: dict, attempt: int) -> str:
         # one-line error into `no case instance appeared`, three times per run.
         if debug.poll() is not None:
             output = "".join(debug_lines)
+            # `case debug` prints the id when it creates the instance, and the instance
+            # outlives the session. A session that dies after that point leaves a live
+            # case the set difference has not seen yet: 34790823717 lost its `onboard`
+            # route to `504 Gateway Timeout on GET .../element-executions` three lines
+            # below `Debug instance created — instanceId: 85159614-...`.
+            named = _instance_named_in(output)
+            if named and named not in before_debug:
+                owned = _claims_this_build(named)
+                if owned:
+                    print(f"  `case debug` exited {debug.returncode}, and the instance it "
+                          f"created is still running; driving {named}")
+                    return named
             if _import_is_retryable(output) and attempt < DEBUG_IMPORT_RETRIES:
                 print(f"  Studio Web refused the import and asked for a retry; "
                       f"restarting `case debug` in {TRANSIENT_PAUSE}s")

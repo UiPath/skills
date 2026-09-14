@@ -499,3 +499,54 @@ class UndefinedNameTests(unittest.TestCase):
             with self.subTest(module=path.name):
                 self.assertEqual(self.loaded_but_undefined(path), {})
         self.assertGreater(checked, 5, "expected the task's own modules to be found")
+
+
+class DebugInstanceTakeoverTests(unittest.TestCase):
+    """`drive_case._instance_named_in` and `_claims_this_build`.
+
+    `case debug` prints the id when it creates the instance, and the instance outlives the
+    session. 34790823717 lost its `onboard` route to
+    `504 Gateway Timeout on GET .../element-executions` three lines below
+    `Debug instance created — instanceId: 85159614-4421-4a21-b2a7-2c145ddfebfc`.
+    """
+
+    REAL = (
+        "Debug session started — jobKey: 85159614-4421-4a21-b2a7-2c145ddfebfc\n"
+        "Creating debug instance in PIMS...\n"
+        "Debug instance created — instanceId: 85159614-4421-4a21-b2a7-2c145ddfebfc\n"
+        "Polling for completion...\n"
+        '{ "Message": "Failed during poll-instance-status: 504 Gateway Timeout" }\n')
+
+    def test_reads_the_id_the_session_printed(self):
+        self.assertEqual(drive_case._instance_named_in(self.REAL),
+                         "85159614-4421-4a21-b2a7-2c145ddfebfc")
+
+    def test_an_import_that_never_got_that_far_names_nothing(self):
+        self.assertEqual(drive_case._instance_named_in(
+            "Importing new solution to Studio Web...\n"
+            '{ "Message": "Failed during import-solution: HTTP 503" }'), "")
+
+    def test_it_claims_an_instance_running_this_builds_stages(self):
+        saved = (drive_case.executions, drive_case.plan_nodes, drive_case.instance_ids)
+        self.addCleanup(lambda: (setattr(drive_case, "executions", saved[0]),
+                                 setattr(drive_case, "plan_nodes", saved[1]),
+                                 setattr(drive_case, "instance_ids", saved[2])))
+        drive_case.plan_nodes = lambda: [
+            {"id": "Stage_A", "type": "case-management:Stage"}]
+        drive_case.instance_ids = lambda: {"other": "folder-b"}
+        drive_case.executions = lambda instance, folder="": (
+            [{"ElementId": "Stage_A", "ElementType": "CaseStage"}] if folder == "folder-b" else [])
+        self.assertTrue(drive_case._claims_this_build("any-id"))
+        self.assertEqual(drive_case.CASE_FOLDER_KEY, "folder-b")
+
+    def test_it_refuses_an_instance_running_another_plan(self):
+        saved = (drive_case.executions, drive_case.plan_nodes, drive_case.instance_ids)
+        self.addCleanup(lambda: (setattr(drive_case, "executions", saved[0]),
+                                 setattr(drive_case, "plan_nodes", saved[1]),
+                                 setattr(drive_case, "instance_ids", saved[2])))
+        drive_case.plan_nodes = lambda: [
+            {"id": "Stage_A", "type": "case-management:Stage"}]
+        drive_case.instance_ids = lambda: {"other": "folder-b"}
+        drive_case.executions = lambda instance, folder="": [
+            {"ElementId": "Stage_ZZ", "ElementType": "CaseStage"}]
+        self.assertFalse(drive_case._claims_this_build("any-id"))
