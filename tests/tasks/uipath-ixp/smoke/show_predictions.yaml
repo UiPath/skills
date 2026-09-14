@@ -28,9 +28,8 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The project is named because positionals are ordered: doc-abc-123 can only be
-  # asserted as the DOCUMENT argument by pinning the slot before it. The regex this
-  # replaced matched the id anywhere, so a get-predictions on another project counted.
+  # Positionals are ordered: doc-abc-123 only means the document argument
+  # if the slot before it is pinned.
   - type: cli_called
     description: "Agent fetched predictions via `labellings get-predictions my_invoices-f1afa9ef-ixp doc-abc-123`"
     verb: "ixp labellings get-predictions"

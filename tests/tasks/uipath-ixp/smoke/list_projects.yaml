@@ -29,8 +29,7 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # No positional facet: `projects list` takes none. The verb is matched token-wise,
-  # so it does not credit the near-name `projects list-models`.
+  # Token-wise verb match, so `projects list-models` does not credit this.
   - type: cli_called
     description: "Agent invoked `uip ixp projects list`"
     verb: "ixp projects list"
