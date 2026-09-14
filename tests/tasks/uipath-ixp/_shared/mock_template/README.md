@@ -86,18 +86,21 @@ Tasks graded with `cli_called` declare `sandbox.record_cli` instead, and the
 framework generates the recorders, seeds the log and PATH-prepends `cli_mocks/`
 itself — no `mock_path_dirs`, no `template_sources`, no `log:` on the criterion.
 Prefer that for a new structured task. Since coder-eval 0.12.1 a `record_cli`
-entry also carries `responses:` — per-invocation canned answers matched by the
+entry can also carry `responses:` — per-invocation canned answers matched by the
 same facets `cli_called` grades with — so serving a read before the graded write
-no longer needs this template either (the smoke tasks under `../../smoke/` that
-declare `record_cli` do exactly that). This template remains the answer whenever
-a recorder is still not enough: `file_matches_regex` over the flat `calls.log`,
-or a served read that must be STATEFUL, where the answer depends on what the
-agent already wrote (`mock_template_taxonomy`) — `select_rule` is stateless by
-design. `calls.jsonl` here has no consumer today — it is the structured sink for
-tasks that need this template's other behavior too.
+no longer requires this template. No task uses that yet: a shape-only smoke task
+grades the invocation, not the answer, so the blanket failure below is enough for
+it. Reach for `responses:` when a criterion asserts a value the agent could only
+have CARRIED from a read. This template remains the answer whenever a recorder is
+still not enough: `file_matches_regex` over the flat `calls.log`, or a served read
+that must be STATEFUL, where the answer depends on what the agent already wrote
+(`mock_template_taxonomy`) — `select_rule` is stateless by design. `calls.jsonl`
+here has no consumer today — it is the structured sink for tasks that need this
+template's other behavior too.
 
 A task whose correct path reads before it writes cannot be graded on this mock
 alone — the read fails, so there is nothing to carry into the graded write, and
 an agent that declines to invent the values correctly stops. Overlay
 `mock_template_taxonomy` (listed second) to serve that read, or — for a task on
-`record_cli` — declare the read as a `responses:` rule on the entry itself.
+`record_cli` whose grading needs the carried value — declare the read as a
+`responses:` rule on the entry itself.

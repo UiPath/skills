@@ -2,8 +2,8 @@ task_id: skill-ixp-list-documents-smoke
 description: >
   Smoke: agent lists the documents in a project.
 
-  Offline: `uip` is a generated stub that answers this task's calls from
-  canned responses. Grades command shape, not wire effect.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
 
 run_limits:
@@ -12,21 +12,18 @@ run_limits:
 sandbox:
   record_cli:
     - tool: uip
-      # Every call the correct path makes is answered below. Anything else
-      # falls through to this fallback and fails, so an off-path invocation
-      # still looks like a CLI that refused rather than one that agreed.
-      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
-      responses:
-        - when: {verb: "ixp documents list", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"Documents":[{"DocumentId":"doc-abc-123","AttachmentRef":"att-9f31c7","Filename":"hp_tax_invoice.png"},{"DocumentId":"doc-def-456","AttachmentRef":"att-40b2ae","Filename":"york_solutions_invoice.png"},{"DocumentId":"doc-ghi-789","AttachmentRef":null,"Filename":"csi_tower_invoice.png"}],"Total":3,"Offset":0,"Limit":50}}
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
     - tool: curl
       stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, list all documents.
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: cli_called

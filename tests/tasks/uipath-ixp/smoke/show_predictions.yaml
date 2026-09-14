@@ -3,8 +3,8 @@ description: >
   Smoke: agent reads the model's predicted values for one document (the
   prediction layer, via get-predictions — not by reading the file itself).
 
-  Offline: `uip` is a generated stub that answers this task's calls from
-  canned responses. Grades command shape, not wire effect.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
 
 run_limits:
@@ -13,14 +13,7 @@ run_limits:
 sandbox:
   record_cli:
     - tool: uip
-      # Every call the correct path makes is answered below. Anything else
-      # falls through to this fallback and fails, so an off-path invocation
-      # still looks like a CLI that refused rather than one that agreed.
-      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
-      responses:
-        - when: {verb: "ixp labellings get-predictions", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"ProjectName":"my_invoices-f1afa9ef-ixp","TotalDocuments":1,"DocumentsWithPredictions":1,"Predictions":[{"DocumentId":"doc-abc-123","ModelVersion":7,"Labels":[{"Name":"Invoice Header","Occurrence":0,"Fields":[{"FieldId":"9a3f5d2c81b7e604","FieldName":"Invoice Number","FormattedValue":"INV-2025-0042"},{"FieldId":"1d8e42b7c3a95f60","FieldName":"Invoice Date","FormattedValue":"2025-11-04"},{"FieldId":"6e0b74a1f83c2d95","FieldName":"Total Amount","FormattedValue":"1200.00"}]},{"Name":"Line Items","Occurrence":0,"Fields":[{"FieldId":"c47a91e05d2b3f68","FieldName":"Description","FormattedValue":"Annual support subscription"}]}]}]}}
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
     - tool: curl
       stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
@@ -28,7 +21,11 @@ initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, show the values the model
   predicted for document doc-abc-123.
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   # The project is named because positionals are ordered: doc-abc-123 can only be
