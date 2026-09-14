@@ -649,6 +649,14 @@ def _sdd_task_envelopes(sdd: str) -> tuple[dict[str, str], dict[str, str]]:
         if head:
             name = head.group(1).strip()
             continue
+        # Any other heading ends the task's own section. Without this the last task
+        # heading of a stage keeps owning every later `**Design Rationale:**`, and the
+        # one under `#### Stage SLA` overwrites the task's own: seven of the SDD's 33
+        # tasks were credited with an SLA paragraph and then reported as having written
+        # a fragment of it.
+        if re.match(r"^#{1,6} ", line):
+            name = None
+            continue
         if not name:
             continue
         hit = _RATIONALE_RE.match(line)

@@ -2365,5 +2365,40 @@ class RuleNameUniquenessTests(CheckerBase):
         self.rejects(plan, "unique inside a stage")
 
 
+class RationaleAttributionTests(unittest.TestCase):
+    """A task owns only the rationale inside its own section.
+
+    The fixture puts a `**Design Rationale:**` under `#### Stage SLA` too, after the last
+    task heading of the stage. A scanner that keeps the last task name across headings
+    credits that paragraph to the task and then reports the task's own, correct text as a
+    fragment of it: seven of the SDD's 33 tasks, on every build that writes the field.
+    """
+
+    def test_a_stage_sla_rationale_is_not_credited_to_the_last_task(self):
+        sdd = (
+            "##### Task 1.6: Send delay note\n"
+            "**Design Rationale:** One push operation against a SaaS mail system.\n"
+            "\n"
+            "#### Stage SLA\n"
+            "**Design Rationale:** The source gives buyer review a 4-minute target.\n"
+        )
+        rationale, _skips = E._sdd_task_envelopes(sdd)
+        self.assertEqual(
+            rationale["Send delay note"],
+            "One push operation against a SaaS mail system.",
+        )
+
+    def test_the_fixture_attributes_every_task_inside_its_own_section(self):
+        sdd = open(E.FIXTURE_SDD).read()
+        rationale, _skips = E._sdd_task_envelopes(sdd)
+        self.assertEqual(len(rationale), 33)
+        for name, text in rationale.items():
+            self.assertNotIn(
+                "keeps the source's proportions multiplied by",
+                text,
+                f"{name!r} was credited with an SLA rationale",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
