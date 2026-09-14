@@ -3,40 +3,32 @@ description: >
   Smoke: agent creates a blank IXP project with `--skip-taxonomy` — no
   taxonomy, no docs, so it doesn't stall waiting for files or a suggestion.
 
-  Offline: `uip` is a generated stub that answers this task's calls from
-  canned responses. Grades command shape, not wire effect.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 5
 
 sandbox:
-  record_cli:
-    - tool: uip
-      # Every call the correct path makes is answered below. Anything else
-      # falls through to this fallback and fails, so an off-path invocation
-      # still looks like a CLI that refused rather than one that agreed.
-      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
-      responses:
-        - when: {verb: "ixp projects create", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"ProjectName":"test_project-3d91c4a2-ixp","Title":"test project","TaxonomyImported":false}}
-    - tool: curl
-      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
   Create a blank IXP project named "test project".
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: cli_called
+  - type: file_matches_regex
     description: "Agent created a blank project via `projects create \"test project\" … --skip-taxonomy`"
-    verb: "ixp projects create"
-    tool: "uip"
-    positional: ["test project"]
-    flags:
-      skip-taxonomy: {present: true}
-    value_flags: ["description", "d", "output"]
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+create\b(?=.*test project)(?=.*--skip-taxonomy).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

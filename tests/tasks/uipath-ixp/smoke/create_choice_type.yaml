@@ -3,29 +3,17 @@ description: >
   Smoke: agent creates a custom Choice data type with three options and
   instructions.
 
-  Offline: `uip` is a generated stub that answers this task's calls from
-  canned responses. Grades command shape, not wire effect.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 5
 
 sandbox:
-  record_cli:
-    - tool: uip
-      # Every call the correct path makes is answered below. Anything else
-      # falls through to this fallback and fails, so an off-path invocation
-      # still looks like a CLI that refused rather than one that agreed.
-      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
-      responses:
-        - when: {verb: "ixp projects get-taxonomy", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[{"id":"566c42e2ae1d7c21","name":"Boolean","title":"Boolean","inherits_from":["0000000000000046"],"trainable":true,"color":0,"instructions":"Use to represent boolean values in text."},{"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""},{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"59483fee51fcb287","name":"Inferred Text","title":"Inferred Text","inherits_from":[],"trainable":true,"color":3,"instructions":"Use for text that might not appear verbatim in the text."},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}],"label_groups":[{"name":"default","label_defs":[{"name":"Invoice Header","id":"5f21c88ab90d4e17","instructions":"Header-level fields of the supplier invoice.","moon_form":[{"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The unique invoice identifier printed in the document header.","rule_set":null},{"field_id":"1d8e42b7c3a95f60","id":"c128ad65bd8af3f8","field_type_id":"c128ad65bd8af3f8","kind":"Date","name":"Invoice Date","instructions":"The issue date of the invoice.","rule_set":null},{"field_id":"6e0b74a1f83c2d95","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Total Amount","instructions":"The grand total payable on the invoice, including tax.","rule_set":null}]},{"name":"Line Items","id":"7be409c2d15fa833","instructions":"One entry per line item row on the invoice.","moon_form":[{"field_id":"c47a91e05d2b3f68","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Description","instructions":"The line item description as printed on the row.","rule_set":null}]}]}]}}}
-        - when: {verb: "ixp data-types add", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"Name":"clause presence","Kind":"choice"}}
-    - tool: curl
-      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, create a new Field Type named
@@ -35,26 +23,17 @@ initial_prompt: |
   obliges the parties to auto-renew; "False" if it is present but does not
   oblige auto-renewal.
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The three display values are asserted against --choices, not the whole line:
-  # the prompt's own instructions text contains "not present", "True" and "False",
-  # so the regex this replaced was satisfied by --instructions alone.
-  - type: cli_called
+  - type: file_matches_regex
     description: "Agent created the choice type via `data-types add … --kind choice … --choices`"
-    verb: "ixp data-types add"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp"]
-    flags:
-      name: "clause presence"
-      kind: "choice"
-      choices:
-        matches_regex: '(?=[\s\S]*[Tt]rue)(?=[\s\S]*[Ff]alse)(?=[\s\S]*[Nn]ot[ _-]?[Pp]resent)'
-      instructions: {present: true}
-    # `present` deliberately does not make a flag value-bearing, so --instructions
-    # and the kind-choice-mandatory --input-value are declared here to keep their
-    # values out of the positionals.
-    value_flags: ["instructions", "input-value", "output"]
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+data-types\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*clause presence)(?=.*--kind\s+choice)(?=.*--choices)(?=.*[Tt]rue)(?=.*[Ff]alse)(?=.*[Nn]ot[ _-]?[Pp]resent)(?=.*--instructions).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

@@ -4,81 +4,44 @@ description: >
   the documents. Trap: don't pass --skip-taxonomy or hand-author/import a
   taxonomy — IXP suggests it.
 
-  Offline: `uip` is a generated stub that answers this task's calls from
-  canned responses. Grades command shape, not wire effect.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 5
 
 sandbox:
-  record_cli:
-    - tool: uip
-      # Every call the correct path makes is answered below. Anything else
-      # falls through to this fallback and fails, so an off-path invocation
-      # still looks like a CLI that refused rather than one that agreed.
-      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
-      responses:
-        - when: {verb: "ixp projects create", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"ProjectName":"ap_invoices-8c52f7b0-ixp","Title":"ap-invoices","DocumentsUploaded":3,"TaxonomyImported":true,"TaxonomySource":"suggested"}}
-    - tool: curl
-      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
-
-  # ./invoices/ is the folder the prompt names and `projects create` takes as
-  # its second positional. Nothing lived there while every call failed; now
-  # that create succeeds, an agent that checks the folder must find it.
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: starter_files
-      files:
-        - path: invoices/hp_tax_invoice.png
-          content: |
-            offline-smoke placeholder - the generated `uip` stub never reads this file
-        - path: invoices/york_solutions_invoice.png
-          content: |
-            offline-smoke placeholder - the generated `uip` stub never reads this file
-        - path: invoices/csi_tower_invoice.png
-          content: |
-            offline-smoke placeholder - the generated `uip` stub never reads this file
+    - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
   Create an IXP project named ap-invoices from the invoices in ./invoices/,
   and let IXP suggest the taxonomy.
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: cli_called
+  - type: file_matches_regex
     description: "Agent created ap-invoices via `projects create` from ./invoices/"
-    verb: "ixp projects create"
-    tool: "uip"
-    positional: ["ap-invoices"]
-    value_flags: ["description", "d", "output"]
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+create\b(?=.*ap-invoices).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # Autopilot path: let IXP suggest the taxonomy. --skip-taxonomy or a manual
-  # import would defeat the test. One regex alternation became two guards, since
-  # cli_called cannot OR across facet sets; 0.5 each keeps the old 1.0 total.
-  #
-  # `present` is load-bearing on the first: a value-bearing --skip-taxonomy would
-  # swallow the folder path, and the guard would pass on the call it forbids.
-  - type: cli_called
-    description: "Agent did NOT skip the taxonomy on create (autopilot suggests it)"
-    verb: "ixp projects create"
-    tool: "uip"
-    flags:
-      skip-taxonomy: {present: true}
-    min_count: 0
-    max_count: 0
-    weight: 0.5
-    pass_threshold: 1.0
-
-  - type: cli_called
-    description: "Agent did NOT hand-import a taxonomy (autopilot suggests it)"
-    verb: "ixp projects import-taxonomy"
-    tool: "uip"
-    min_count: 0
-    max_count: 0
-    weight: 0.5
+  # import would defeat the test.
+  - type: file_matches_regex
+    description: "Agent did NOT skip or hand-import the taxonomy (autopilot suggests it)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+(create\b.*--skip-taxonomy|import-taxonomy)\b)[^\r\n]*$
+    must_match: false
+    weight: 1.0
     pass_threshold: 1.0

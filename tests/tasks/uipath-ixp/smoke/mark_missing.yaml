@@ -2,44 +2,34 @@ task_id: skill-ixp-mark-missing-smoke
 description: >
   Smoke: agent records a field as missing with `labellings mark-missing`.
 
-  Offline: `uip` is a generated stub that answers this task's calls from
-  canned responses. Grades command shape, not wire effect.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
 
 run_limits:
   expected_turns: 6
 
 sandbox:
-  record_cli:
-    - tool: uip
-      # Every call the correct path makes is answered below. Anything else
-      # falls through to this fallback and fails, so an off-path invocation
-      # still looks like a CLI that refused rather than one that agreed.
-      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
-      responses:
-        - when: {verb: "ixp labellings get-predictions", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"ProjectName":"my_invoices-f1afa9ef-ixp","TotalDocuments":1,"DocumentsWithPredictions":1,"Predictions":[{"DocumentId":"doc-abc-123","ModelVersion":7,"Labels":[{"Name":"Invoice Header","Occurrence":0,"Fields":[{"FieldId":"9a3f5d2c81b7e604","FieldName":"Invoice Number","FormattedValue":"INV-2025-0042"},{"FieldId":"6e0b74a1f83c2d95","FieldName":"Total Amount","FormattedValue":"1200.00"},{"FieldId":"a7c3e9105f2b4d86","FieldName":"Discount Code","FormattedValue":""}]}]}]}}
-        - when: {verb: "ixp labellings mark-missing", value_flags: ["output"]}
-          stdout: |
-            {"Result":"Success","Data":{"Unmatched":[]}}
-    - tool: curl
-      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, document doc-abc-123, the field
   "Discount Code" (field id a7c3e9105f2b4d86) is genuinely absent from the
   document and the model predicted no value for it. Record it as missing.
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: cli_called
+  - type: file_matches_regex
     description: "Agent marked the field missing via `labellings mark-missing` on the right project + document + field id"
-    verb: "ixp labellings mark-missing"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
-    flags:
-      fields: {contains: "a7c3e9105f2b4d86", aliases: ["f"]}
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+mark-missing\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*a7c3e9105f2b4d86).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
