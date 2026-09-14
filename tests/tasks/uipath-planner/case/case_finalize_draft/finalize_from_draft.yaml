@@ -61,6 +61,49 @@ initial_prompt: |
   run tenant discovery, or derive implementation tasks.
 
 success_criteria:
+  # audit_sdd.py is RUN, never read — its findings are the interface
+  # (case-design-lane-guide.md line 14 + § Resumption step 4). Reading the validator's
+  # source instead of running it is the archaeology that burned three full turn walls in
+  # run 2026-09-08_05-15-45 with zero bytes written. Graded so the next regression fails
+  # in minutes instead of timing out silently.
+  #
+  # One criterion per file-reading tool: `tool_name` is a per-criterion filter, and run
+  # 34310755247 measured each escape route separately. Coverage gaps that run proved:
+  # `wc -l audit_sdd.py` scored clean on reject-route — now in the verb list, because it is
+  # the FIRST rung of the ladder and not a harmless line count: in both the loan and sla
+  # runs that same `wc` is immediately followed by `sed` range reads of the whole file.
+  # The Grep and Glob rows close the tool surface rather than a measured escape: no run has
+  # yet reached audit_sdd.py through them, but nothing stopped it, and Grep is this lane's
+  # heaviest reader (10 calls in the original skill-case-phase-0-finalize-draft failure,
+  # all aimed at the guides and template rather than the validator).
+  - type: command_not_executed
+    description: "Advisory: audit_sdd.py is RUN, never read — no validator archaeology before the write"
+    tool_name: "Read"
+    command_pattern: 'audit_sdd\.py'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: audit_sdd.py source is never paged, counted, or hunted for from the shell"
+    tool_name: "Bash"
+    command_pattern: '(grep|rg|sed|awk|cat|head|tail|less|wc|find)\b[^\n]*audit_sdd\.py'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: audit_sdd.py source is never searched with the Grep tool"
+    tool_name: "Grep"
+    command_pattern: 'audit_sdd\.py'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: audit_sdd.py is never located with the Glob tool — reference paths resolve against the skill base dir"
+    tool_name: "Glob"
+    command_pattern: 'audit_sdd\.py'
+    weight: 0.25
+    pass_threshold: 0.0
+
   - type: file_exists
     description: "sdd.draft.md is still in place — finalization renders beside the draft, never consumes it"
     path: "sdd.draft.md"

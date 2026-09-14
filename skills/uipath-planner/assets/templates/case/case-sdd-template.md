@@ -4,6 +4,14 @@
 
 <!-- Template instruction: render the case body in the downstream uipath-maestro-case `sdd.md` shape. Do not emit the legacy planner-only case architecture table format. -->
 
+<!-- CELL RULES ARE COMPLETE WHERE THEY STAND. Every cell's whole rule is the angle-bracket hint
+at that cell plus the comment in its own section. Nothing outside this template adds, overrides or
+extends a cell value, so a cell named ONCE is fully specified by that one mention — a second source
+does not exist and searching the guides or the validator's source for one is the archaeology that
+burns a turn budget (§ Validation footer: RUN the validator, never read it). If a value still looks
+unstated after reading its own section, it IS unstated: take the default recorded there, or `—` where
+the cell is optional, note the provenance, and move on. -->
+
 ---
 
 ## Document History
@@ -21,7 +29,7 @@
 | Field | Value |
 |---|---|
 | **Status** | <draft \| ready — Lane A derives tasks only from ready> |
-| **Execution autonomy** | <autonomous \| interactive> |
+| **Execution autonomy** | <autonomous \| interactive — carry the draft's value when finalizing; absent, `autonomous`> |
 | **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Solution root SDD** | <PATH_TO_SOLUTION_ROOT_SDD — solution scope only; omit all four solution rows for single-product> |
@@ -107,7 +115,7 @@ Case App Disabled, Task-output passing Direct, SLA Type time-based, SLA Title `S
 | Case Name | <PascalCase name> |
 | Case Description | <2-3 sentence description of what the case manages> |
 | Case Identifier | Type: <constant \| external>. Constant → Prefix: <2-4 char UPPER prefix>. External → Source: <=vars.<In/InOut variable> \| =js:`expression`> |
-| Priority | Choiceset: <comma-separated values> — Default: <value> |
+| Priority | Choiceset: <comma-separated values> — Default: <value> · `—` when the source names no priority scheme (optional cell, no platform default; unrelated to a task's `**Priority:**`, which is the closed set Low\|Medium\|High\|Critical) |
 | Case-Level SLA | <count> <unit: min/h/d/w/m — minutes bounded 15-1000> |
 | SLA Title | <non-empty root-unique SLA rule title, no `:` — omit this row when Case-Level SLA is —> |
 | SLA Type | <time-based \| condition-based> |
@@ -138,10 +146,11 @@ duration and points here; nothing restates a response.
 
 <!-- Section required whenever ANY SLA exists (case, stage, or action task); omit only in a case with no
 SLA at all. The case-level Scope cell is the bare word `case` — not `case: root` and not the case
-name; only the stage and task scopes take a `: <name>` qualifier. One row per (Scope, SLA, Status),
-at-risk and breached separately. Source states no response
--> both statuses notify-only with Target and Interrupting `—`; never invent a stage, task, or routing
-change to carry a notification. Legal Response values and the Interrupting value each implies:
+name; only the stage and task scopes take a `: <name>` qualifier. EXACTLY two rows per (Scope, SLA) —
+one `At-Risk`, one `Breached` — always. A status the source says nothing about
+is still authored: `notify-only` with Target and Interrupting `—`. An omitted row is never how "nothing
+was asked for" gets expressed, and a stated response for one status never removes the other status's row;
+never invent a stage, task, or routing change to carry a notification. Legal Response values and the Interrupting value each implies:
 case-design-layers-guide.md § Choosing the response. Two-way closure against the SDD's
 `sla-status-change` rows is § Validation checklist item 13 — check it there, not row by row here. -->
 
@@ -312,7 +321,7 @@ the exact stage display name — never the case name. -->
 
 ###### Action Task Detail (type: `action`)
 
-**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>>
+**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
@@ -619,8 +628,11 @@ ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## S
 build-mode/path narration) even if a later caseplan.json would validate — rewrite from the model and
 this template.
 
-CONFORMANCE CHECKLIST — 33 items in 9 families. Items 30–33 apply only when finalizing a draft. Each item
-names what to look at; the rule behind it lives at the cells above and in case-design-layers-guide.md.
+CONFORMANCE CHECKLIST — 35 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
+names only what to LOOK AT; the enforcement detail behind it is the cell rules above, and for the render
+contract those cells are COMPLETE — there is no third location, and nothing outside this template states a
+shape rule they do not. (Design semantics — which response, which gate, which default — stay
+case-design-layers-guide.md's; the cells own the shape.)
 
  Skeleton
   1. The first non-empty line is `# SDD — <Case Name>`.
