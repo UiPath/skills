@@ -13,7 +13,14 @@ tags: [uipath-coded-apps, integration, mode:operate, lifecycle:generate]
 # run, silently costing 25% of the intended budget.
 run_limits:
   expected_turns: 10
-  turn_timeout: 1200
+  # 1200 -> 1800 (task_timeout 2100 so the single iteration owns the budget):
+  # this is an offline authoring task with ~3s of tool time; the rest is the
+  # model reading three services' .d.ts and reasoning about the required folder
+  # positionals. Claude passes took 356s, 798s and 1165s; four nightlies timed out
+  # at 1200s while the agent was about to write the files (97-111k output
+  # tokens). No criterion was loosened.
+  turn_timeout: 1800
+  task_timeout: 2100
 
 # Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
 sandbox:
@@ -114,10 +121,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/ops.ts does NOT import SERVICE CLASSES from the package root (Anti-pattern #1). Root-level `{ UiPath }` import is allowed — it's the SDK class itself."
-    command: "sed 's|//.*||' src/ops.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    description: "src/ops.ts imports no SERVICE CLASS from the package root (Anti-pattern #1). Graded by _shared/check_root_imports.py against the installed SDK's own root export list: `UiPath`, helpers such as `getAppBase`/`loadFromMetaTags`, enums and `import type { ... }` are legitimate root imports; a specifier the root does not export (Jobs, Entities, Assets, ...) is the build-breaking service-class import this guards against"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/check_root_imports.py src/ops.ts"
     timeout: 10
-    expected_exit_code: 1
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

@@ -73,6 +73,25 @@ jobs:
       - name: Run pytest
         run: pytest tests/tasks/uipath-admin/_shared/ -v
 
+  pytest-coded-apps-check:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-coded-apps shared checkers
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Unit tests for the helpers that coded-apps task criteria and post_run
+      # call: check_root_imports.py (Anti-pattern #1 grader shared by nine
+      # tasks) and cleanup_codedapp_folder.py (folder-delete allowlist).
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-coded-apps/_shared/ -v
+
   pytest-case-check:
     runs-on: uipath-ubuntu-latest
     name: maestro-case checker unit tests

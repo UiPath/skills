@@ -70,10 +70,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/api.ts does NOT import SERVICE CLASSES from the package root (Anti-pattern #1: `from '@uipath/uipath-typescript'` with no subpath). Root-level `{ UiPath }` / `import type { UiPath }` is allowed — the SDK class itself lives at the package root; only service classes are subpath-only."
-    command: "sed 's|//.*||' src/api.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    description: "src/api.ts imports no SERVICE CLASS from the package root (Anti-pattern #1). Graded by _shared/check_root_imports.py against the installed SDK's own root export list: `UiPath`, helpers such as `getAppBase`/`loadFromMetaTags`, enums and `import type { ... }` are legitimate root imports; a specifier the root does not export (Jobs, Entities, Assets, ...) is the build-breaking service-class import this guards against"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/check_root_imports.py src/api.ts"
     timeout: 10
-    expected_exit_code: 1
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
