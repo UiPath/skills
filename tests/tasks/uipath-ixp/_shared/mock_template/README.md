@@ -85,14 +85,19 @@ sinks in the same format, then delegates unchanged to the real CLI.
 Tasks graded with `cli_called` declare `sandbox.record_cli` instead, and the
 framework generates the recorders, seeds the log and PATH-prepends `cli_mocks/`
 itself — no `mock_path_dirs`, no `template_sources`, no `log:` on the criterion.
-Prefer that for a new structured task. This template remains the answer whenever
-a recorder is not enough: `file_matches_regex` over the flat `calls.log`, a read
-that must return fixture data (`mock_template_taxonomy`), or per-invocation
-responses, none of which `record_cli` serves. `calls.jsonl` here has no consumer
-today for that reason — it is the structured sink for tasks that need this
-template's other behavior too.
+Prefer that for a new structured task. Since coder-eval 0.12.1 a `record_cli`
+entry also carries `responses:` — per-invocation canned answers matched by the
+same facets `cli_called` grades with — so serving a read before the graded write
+no longer needs this template either (the smoke tasks under `../../smoke/` that
+declare `record_cli` do exactly that). This template remains the answer whenever
+a recorder is still not enough: `file_matches_regex` over the flat `calls.log`,
+or a served read that must be STATEFUL, where the answer depends on what the
+agent already wrote (`mock_template_taxonomy`) — `select_rule` is stateless by
+design. `calls.jsonl` here has no consumer today — it is the structured sink for
+tasks that need this template's other behavior too.
 
 A task whose correct path reads before it writes cannot be graded on this mock
 alone — the read fails, so there is nothing to carry into the graded write, and
 an agent that declines to invent the values correctly stops. Overlay
-`mock_template_taxonomy` (listed second) to serve that read.
+`mock_template_taxonomy` (listed second) to serve that read, or — for a task on
+`record_cli` — declare the read as a `responses:` rule on the entry itself.

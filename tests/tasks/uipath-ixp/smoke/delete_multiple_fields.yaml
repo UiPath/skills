@@ -4,8 +4,8 @@ description: >
   `fields delete` removes one field per call, so the agent must issue both.
   Trap: deleting only one and reporting done.
 
-  Harness is unauthenticated; CLI calls fail with auth errors.
-  Grades command shape, not wire effect.
+  Offline: `uip` is a generated stub that answers this task's calls from
+  canned responses. Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -14,7 +14,17 @@ run_limits:
 sandbox:
   record_cli:
     - tool: uip
-      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      # Every call the correct path makes is answered below. Anything else
+      # falls through to this fallback and fails, so an off-path invocation
+      # still looks like a CLI that refused rather than one that agreed.
+      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
+      responses:
+        - when: {verb: "ixp projects get-taxonomy", value_flags: ["output"]}
+          stdout: |
+            {"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}],"label_groups":[{"name":"default","label_defs":[{"name":"Invoice Header","id":"5f21c88ab90d4e17","instructions":"Header-level fields of the supplier invoice.","moon_form":[{"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The unique invoice identifier printed in the document header.","rule_set":null},{"field_id":"3c7e91a5d284b06f","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"field1","instructions":"Placeholder field carried over from an earlier import.","rule_set":null},{"field_id":"8b05d3f7c1927ae4","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"field2","instructions":"Placeholder field carried over from an earlier import.","rule_set":null},{"field_id":"d692af41b7350e8c","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"field12","instructions":"Placeholder field carried over from an earlier import.","rule_set":null}]},{"name":"Line Items","id":"7be409c2d15fa833","instructions":"One entry per line item row on the invoice.","moon_form":[{"field_id":"c47a91e05d2b3f68","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Description","instructions":"The line item description as printed on the row.","rule_set":null}]}]}]}}}
+        - when: {verb: "ixp fields delete", value_flags: ["output"]}
+          stdout: |
+            {"Result":"Success"}
     - tool: curl
       stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
@@ -22,11 +32,7 @@ initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, delete the fields "field1" and
   "field2" from the "Invoice Header" group.
 
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
-    this environment. Commands will fail with auth errors — that is expected.
-    Run each command once and move on. Do NOT retry or attempt to login.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   # `equals` on --field, not the old line-wide substring: `(?=.*field1)` was also

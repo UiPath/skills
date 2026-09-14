@@ -4,8 +4,8 @@ description: >
   the documents. Trap: don't pass --skip-taxonomy or hand-author/import a
   taxonomy — IXP suggests it.
 
-  Harness is unauthenticated; CLI calls fail with auth errors.
-  Grades command shape, not wire effect.
+  Offline: `uip` is a generated stub that answers this task's calls from
+  canned responses. Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -14,19 +14,38 @@ run_limits:
 sandbox:
   record_cli:
     - tool: uip
-      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      # Every call the correct path makes is answered below. Anything else
+      # falls through to this fallback and fails, so an off-path invocation
+      # still looks like a CLI that refused rather than one that agreed.
+      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
+      responses:
+        - when: {verb: "ixp projects create", value_flags: ["output"]}
+          stdout: |
+            {"Result":"Success","Data":{"ProjectName":"ap_invoices-8c52f7b0-ixp","Title":"ap-invoices","DocumentsUploaded":3,"TaxonomyImported":true,"TaxonomySource":"suggested"}}
     - tool: curl
       stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+  # ./invoices/ is the folder the prompt names and `projects create` takes as
+  # its second positional. Nothing lived there while every call failed; now
+  # that create succeeds, an agent that checks the folder must find it.
+  template_sources:
+    - type: starter_files
+      files:
+        - path: invoices/hp_tax_invoice.png
+          content: |
+            offline-smoke placeholder - the generated `uip` stub never reads this file
+        - path: invoices/york_solutions_invoice.png
+          content: |
+            offline-smoke placeholder - the generated `uip` stub never reads this file
+        - path: invoices/csi_tower_invoice.png
+          content: |
+            offline-smoke placeholder - the generated `uip` stub never reads this file
 
 initial_prompt: |
   Create an IXP project named ap-invoices from the invoices in ./invoices/,
   and let IXP suggest the taxonomy.
 
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
-    this environment. Commands will fail with auth errors — that is expected.
-    Run each command once and move on. Do NOT retry or attempt to login.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: cli_called

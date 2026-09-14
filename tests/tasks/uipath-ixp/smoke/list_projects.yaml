@@ -3,8 +3,8 @@ description: >
   Smoke: agent picks `uip ixp projects list --output json` to
   enumerate IXP projects on the tenant.
 
-  Harness is unauthenticated; CLI calls fail with auth errors.
-  Grades command shape, not wire effect.
+  Offline: `uip` is a generated stub that answers this task's calls from
+  canned responses. Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
 
 run_limits:
@@ -13,7 +13,14 @@ run_limits:
 sandbox:
   record_cli:
     - tool: uip
-      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      # Every call the correct path makes is answered below. Anything else
+      # falls through to this fallback and fails, so an off-path invocation
+      # still looks like a CLI that refused rather than one that agreed.
+      stderr: "uip (mock): offline sandbox - this call is not one the task stubs. Continue with the task; do not retry or log in.\n"
+      responses:
+        - when: {verb: "ixp projects list", value_flags: ["output"]}
+          stdout: |
+            {"Result":"Success","Data":{"Projects":[{"Id":"f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-06-11T08:42:19Z"},{"Id":"7b2c5d19-8e34-4a61-b0f7-2c9d4e6a1b83","Name":"quarterly_reports-7b2c-ixp","Title":"Quarterly Reports","CreatedAt":"2026-07-02T14:05:40Z"}],"Total":2,"Offset":0,"Limit":50}}
     - tool: curl
       stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
@@ -21,12 +28,7 @@ initial_prompt: |
   A document automation engineer wants to see every IXP project on the
   tenant before deciding which one to iterate on.
 
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live IXP tenant
-    in this environment. Commands will fail with auth errors — that is
-    expected. Run each command once and move on. Do NOT retry or attempt
-    to login.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   # No positional facet: `projects list` takes none. The verb is matched token-wise,
