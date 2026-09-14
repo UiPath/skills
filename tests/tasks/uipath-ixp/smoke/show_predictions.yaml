@@ -28,8 +28,6 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Positionals are ordered: doc-abc-123 only means the document argument
-  # if the slot before it is pinned.
   - type: cli_called
     description: "Agent fetched predictions via `labellings get-predictions my_invoices-f1afa9ef-ixp doc-abc-123`"
     verb: "ixp labellings get-predictions"
