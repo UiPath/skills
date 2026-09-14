@@ -17,6 +17,13 @@ description: >
   the `get` on the all-zero GUID and reporting the 404. Same
   tenant-agnosticism rule as the rest of this directory: no criterion
   depends on data an empty tenant cannot supply.
+
+  The second users page is asked for unconditionally. The eval tenant has
+  no Insights Portal service, so every RBAC list answers 404, and on smoke
+  run 34880442971 the agent read Critical Rule 8 as "do not run page two
+  after page one failed", which scored the --offset criterion zero. The
+  prompt now says page two is a distinct read to run either way, the same
+  fix the alert-history filters task needed on run 34651167282.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -27,8 +34,11 @@ initial_prompt: |
   up in a file called access-report.md in the working directory.
 
   1. Page the Insights users five at a time: run the first page and then the
-     second page as two separate reads, and tell me from the pagination
-     fields whether more pages remain after those two.
+     second page (offset 5) as two separate reads. Run the second page even
+     when the first came back empty or failed; that is a different read,
+     not a retry, and I want to know whether the second page answers the
+     same way. Then tell me from the pagination fields, or from the
+     failures, whether more pages remain after those two.
   2. List the Insights roles. Find the role named "Admin" and look up that
      one role by its ID to see the actions it permits. If no role is named
      "Admin", use the first role the list returned instead.
