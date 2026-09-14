@@ -50,3 +50,21 @@ Confirm the job's process is the one the user means, and that the folder matches
 ## 6. Suspect the designer if "runs locally, breaks after Studio Web"
 
 If the workflow ran under `uip api-workflow run` and only broke after being opened/saved in Studio Web, the on-disk file was rewritten by the designer's normalization passes (literal wrapping, multi-key Assign collapse, Response object corruption, dropped connector fields). Treat the file on disk as authoritative and diff it against the last-known-good version.
+
+## 7. Before blaming the workflow, check that it ran and was allowed to finish
+
+Three kinds of failure leave no trace in the workflow file. `validate` passes, `run --no-auth` reproduces nothing, so an investigation that stays local decides the workflow is healthy and stops. Check all three before you report no fault found:
+
+1. **Did a job exist at all?** If the user says it didn't run, find out whether a job record exists before you go looking for a fault. No job means something failed to start it, not that the workflow is broken — [never-ran-no-job.md](./playbooks/never-ran-no-job.md).
+2. **Did the run finish on its own, or get cut off?** A run that stops with nothing to explain it, and that depends on the size of the input, hit a platform limit — a Script's 10-second budget, a loop's `limit`, or the 15-minute serverless ceiling — [platform-limits.md](./playbooks/platform-limits.md).
+3. **Did the outbound call reach the target?** A healthy connection plus a call that times out against a firewalled host is a network problem, not an auth one. Which of the two IP ranges applies depends on how the activity authenticates — [outbound-call-blocked.md](./playbooks/outbound-call-blocked.md).
+
+## 8. Read whatever the workflow logged about itself
+
+A `Log Message` activity becomes a `run.script` task carrying `metadata.activityType: "LogMessage"` and a `console.<level>` call. Its output — and any `console.*` inside a Script activity — is collected and written to Orchestrator Logs as Info, Warning or Error:
+
+```bash
+uip or jobs logs <JOB_KEY> --level Error --output json
+```
+
+Finding none is also worth saying. A workflow with no `Log Message` activities and no `console.*` in its Scripts says nothing about its own progress, so the per-activity output of a local `run` is all you will get. Say that, rather than reporting the logs as empty.
