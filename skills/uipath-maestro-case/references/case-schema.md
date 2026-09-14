@@ -272,13 +272,31 @@ All conditions share the same shape but attach at different levels. Per-level fi
 
 ### Condition name uniqueness
 
-Every condition `displayName` must be unique across the **whole case**. One flat pool of literal strings spans all four scopes at once — stage `data.entryConditions[]`, stage `data.exitConditions[]`, task `entryConditions[]`, `metadata.caseExitRules[]` — so conditions in different stages, or different scopes, collide exactly like two in one array.
+Every condition `displayName` must be unique across the **whole case**, with one exemption. One flat pool of literal strings spans all four scopes at once — stage `data.entryConditions[]`, stage `data.exitConditions[]`, task `entryConditions[]`, and `metadata.caseExitRules[]`.
 
-`validate` enforces it as a hard **error**: `Rule name '<displayName>' is not unique`, reported once per node holding the name (`nodes[<stageId>]`, or `nodes[root]` for a case-exit rule). A name repeated in two stages errors on each, so a stage holding only one instance is still reported.
+`validate` enforces it as a hard **error**: `Rule name '<displayName>' is not unique`, reported once per node holding the name (`nodes[<stageId>]`, or `nodes[root]` for a case-exit rule).
 
-The plugin defaults `Entry Rule {N}` / `Complete Rule {N}` / `Exit Rule {N}` share this pool with SDD-authored names. **Number them with a case-wide counter per label kind — highest existing number in the pool + 1 — never a per-array counter.** A per-array counter restarts at `1` in every stage and on every task, which is the usual cause of a collision.
+**The exemption is the frontend's own default names, matched exactly and case-sensitively after trimming.** These may repeat freely:
 
-An SDD `Display Name` cell holding the default pattern (`Entry Rule <n>` etc.) is the SDD echoing the default: renumber it case-wide, which is not a divergence from the SDD. Only a **semantic** name repeated across stages is a planning defect — rename it in the SDD and re-emit.
+| Default name | Where it comes from |
+|---|---|
+| `Entry rule <N>` | stage-entry and task-entry defaults |
+| `Exit rule <N>` | stage-exit default |
+| `Completion rule <N>` | stage-complete default |
+| `Stage complete` | stage-complete default, unnumbered |
+| `Stage exit` | stage-exit default, unnumbered |
+| `Tasks completed rule` | default stage-exit condition |
+| `Previous task completed` | default task-entry condition |
+
+> Copy those spellings exactly. `Entry Rule 1` and `Complete rule 1` are NOT the defaults — a capital `R`, or `Complete` for `Completion`, leaves the exemption and a repeat becomes an error. Measured on 17 grader-passing plans: 26 carry `Entry rule 1` and 20 carry `Completion rule 1`, several of them five times over, and all validate clean.
+
+Any name you write yourself shares one pool and must be unique — two stages cannot both call an exit `Approved`. **Number authored names with a case-wide counter per label kind — the highest number already authored for that kind, plus 1 — never a per-array counter.** A per-array counter restarts at `1` in every stage and on every task, which is the usual cause of a collision. Count only authored names when picking the next number: the exempt defaults above repeat freely, so counting them inflates every counter without preventing a single collision.
+
+An SDD `Display Name` cell holding the default pattern (`Entry rule <n>` etc.) is the SDD echoing the default: renumber it case-wide, which is not a divergence from the SDD.
+
+**Normalize a near-miss of a default to the exact default spelling.** A cell that matches a default pattern case-insensitively — `Entry Rule 1`, `Complete Rule 1`, `EXIT RULE 2` — is the SDD echoing the default with the wrong capitalization, not a name its author chose. Write the exempt spelling from the table above. This is the same move as renumbering and is not a divergence from the SDD: the defaults carry no meaning to diverge from. Left alone, every repeat of a near-miss is a uniqueness error — SDDs written before this spelling was documented repeat `Entry Rule 1` freely, because our own guidance said to.
+
+The boundary is the default patterns and nothing else. A cell that is *not* a near-miss of one — `Approved`, `Order Second Opinion`, `Case complete rule` — is the author's name: it must be unique, and it is never rewritten to fix a collision. Repair those in the SDD and re-emit. Only a **semantic** name repeated across stages is a planning defect — rename it in the SDD and re-emit.
 
 > **Never repair a collision by deleting a condition.** `validate` downgrades a task left with no entry rules to a warning (`CASE_MGMT_STAGE_TASK_ENTRY_CONDITION_MISSING`), so emptying `entryConditions[]` turns the build green while destroying authored behaviour — an `adhoc` task becomes unreachable, a gated task ungated. Always rename; never remove.
 

@@ -112,7 +112,9 @@ Cross-task references wire the output of an earlier task into an input of a late
 input_name <- "Stage Name"."Task Name".output_name
 ```
 
-- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task)
+- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task). A heading like `### Stage 2: Underwriting (`stage-underwriting`)` makes that stage referenceable three ways: by its **name** (`"Underwriting"`), by its **slug** (`"stage-underwriting"`), and by its **ordinal** (`"Stage 2"`). A WHEN cell may carry both halves — `selected-stage-completed("Underwriting" (`stage-underwriting`))` — and is read name half first.
+  **Resolve in that order: display name, then slug, then ordinal — each accepted only where nothing stronger already claims the reference, whatever order the stages appear in.** A stage actually titled "Stage 2" therefore beats the second stage's ordinal either way round, and a stage named `Alpha` beats another stage's slug `alpha`. Comparison is case-insensitive and trimmed, nothing more: `stage-1` and `stage 1` are different keys, so a hyphenated slug can never collide with an ordinal and only the name-versus-slug collision is reachable in a normal document.
+  The ordinal and the slug are positional or generated, so a reordered or re-slugged SDD silently re-points them, while the name is what the author wrote — resolve any of the three, and never rewrite a reference from one spelling to another.
 - `Task Name` — the `display-name` of the source task (exactly as written in an `Add <type> task "<name>"` task)
 - `output_name` — a named output field from the source task
 

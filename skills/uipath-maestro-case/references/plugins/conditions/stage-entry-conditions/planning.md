@@ -17,7 +17,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
-| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Pre-check", "Interrupt on Fraud". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Pre-check", "Interrupt on Fraud". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage. Required for every secondary-stage entry row, except an `sla-status-change` parallel-oversight row; otherwise `false` is for regular-stage entry only. Carry the sdd.md value — never override it from the rule type or the SLA's scope. |
 | `rationale` | sdd.md Design Rationale | Required reviewer context for why this rule/interrupt is used. Not emitted into caseplan JSON. |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
@@ -60,7 +60,7 @@ A condition produces **no `tasks/registry-resolved.json` entry** unless its `rul
 stage-entry condition on "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - rationale: "<why this entry rule belongs on this stage>"
-- display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
+- display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry rule {N}"
 - is-interrupting: false
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"

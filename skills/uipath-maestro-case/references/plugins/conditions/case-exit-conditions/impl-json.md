@@ -31,7 +31,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Read `caseplan.json`. Locate top-level `metadata` object (initialize `metadata: {}` if missing — should already exist from T01). Initialize `metadata.caseExitRules = []` if absent.
 4. Read the rule type and marks-case-complete flag from the SDD's Case Exit Conditions row; pick the recipe below
-5. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-case-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. FE keeps the two kinds on independent counters, but each counts **case-wide**, not within `metadata.caseExitRules[]` alone: scan the whole `caseplan.json` for that kind's pattern across `metadata.caseExitRules[]` and every stage's `data.exitConditions[]`, then `N` = highest + 1 (`1` when none). Case-exit rules share the pool with stage exits; `validate` reports a collision here as `[nodes[root]]` — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness). Never emit a blank or omitted `displayName`.
+5. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-case-complete`: `true` → `Completion rule {N}`, `false` → `Exit rule {N}`. FE keeps the two kinds on independent counters, but each counts **case-wide**, not within `metadata.caseExitRules[]` alone: scan the whole `caseplan.json` for that kind's pattern across `metadata.caseExitRules[]` and every stage's `data.exitConditions[]`, then `N` = highest + 1 (`1` when none). Case-exit rules share the pool with stage exits; `validate` reports a collision here as `[nodes[root]]` — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness). Never emit a blank or omitted `displayName`.
 6. Append the condition object to `metadata.caseExitRules[]`
 
 ## Rule Types
@@ -78,7 +78,7 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 
 ## Post-Write Verification
 
-Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
+Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Completion rule {N}` / `Exit rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
 
 For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, a resolved rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist; a remaining stub must map to a reported unresolved connector.
 
