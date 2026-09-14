@@ -24,7 +24,7 @@ Primary configuration file for autonomous agent. Edit directly.
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "settings": {
     "model": "<MODEL_IDENTIFIER>",
     "maxTokens": 128000,
@@ -85,12 +85,13 @@ Primary configuration file for conversational agent. Edit directly.
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "settings": {
     "model": "<MODEL_IDENTIFIER>",
     "maxTokens": 64000,
     "temperature": 0,
     "engine": "conversational-v1",
+    "maxIterations": 8,
     "mode": "standard"
   },
   "inputSchema": {
@@ -142,7 +143,7 @@ Primary configuration file for conversational agent. Edit directly.
 | `maxTokens` | Max output tokens. Must not exceed the chosen model's `MaxTokens` cap (from `uip agent model list`). |
 | `temperature` | 0 = deterministic, higher = creative |
 | `engine` | Keep `"basic-v2"` for autonomous, `"conversational-v1"` for conversational |
-| `maxIterations` | Max autonomous agent loop iterations. Default 25. Keep as omitted for conversational. |
+| `maxIterations` | Max autonomous agent loop iterations. Default 25. Default 8 for conversational. |
 | `mode` | Use `"standard"` |
 
 > Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
@@ -208,7 +209,7 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 
 | Field | Value |
 |-------|-------|
-| `version` | `"1.1.0"` — always scaffolded at this version |
+| `version` | `"1.2.0"` — always scaffolded at this version |
 | `type` | `"lowCode"` |
 | `projectId` | Auto-generated UUID — do not edit |
 
@@ -219,7 +220,7 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 | `storageVersion` | Managed by `uip agent refresh` — do not edit |
 | `isConversational` | `false` for autonomous agents, `true` for conversational agents. Do not edit. |
 | `showProjectCreationExperience` | `false` |
-| `targetRuntime` | `"pythonAgent"` for autonomous. **`null` for conversational** — conversational agents are not yet in PROD, so the field is intentionally left null until the runtime value is finalized. |
+| `targetRuntime` | `"pythonAgent"` for standalone agents, autonomous and conversational alike. **Absent for `--inline-in-flow` scaffolds** of either flavor — see [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md). |
 
 ### Input Schema
 

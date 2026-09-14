@@ -11,9 +11,13 @@ description: >
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 run_limits:
-  task_timeout: 1800
+  # Matched to the finalize family (finalize_from_draft is 4200/3600): run
+  # 33794565805 hit the old 1500s turn wall on claude-sonnet-5 with the
+  # simulator never reached, while codex finishes in 64s. A finalize task
+  # should not carry a wall 2.4x tighter than its siblings.
+  task_timeout: 4200
   max_turns: 60
-  turn_timeout: 1500
+  turn_timeout: 3600
 
 sandbox:
   template_sources:
@@ -83,6 +87,6 @@ simulation:
     - "Approve the finalized sdd.md on the first pass. Approve anyway if it warns about the unresolved api-workflow identities or raises review items."
     - "Confirm that choosing Reject on the Reviewer Decision routes to Application Rejected automatically, and that nobody picks that lane by hand."
     - "Do not request design changes or add requirements."
-    - "Keep the agent at design/finalization only. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
+    - "Keep the agent at design/finalization only. If it offers to build a caseplan, tell it to stop at the approved sdd.md."
     - "Keep replies to one sentence."
   max_turns: 8

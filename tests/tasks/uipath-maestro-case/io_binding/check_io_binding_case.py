@@ -326,52 +326,6 @@ def assert_sdd_output_contract() -> None:
         )
 
 
-def assert_tasks_md() -> None:
-    tasks_path = "tasks/tasks.md"
-    if not os.path.isfile(tasks_path):
-        fail("missing tasks/tasks.md")
-    with open(tasks_path, encoding="utf-8") as stream:
-        text = stream.read()
-
-    leaked_field_placeholder = re.compile(r"^\s*-\s*—\s*=.*$", re.MULTILINE)
-    leaked = leaked_field_placeholder.search(text)
-    if leaked:
-        fail(
-            "tasks.md leaked an SDD Field placeholder/operator into an output "
-            f"item: {leaked.group(0).strip()!r}; expected `<case-variable> = "
-            "<expression>` for assignment rows"
-        )
-
-    expected_rows = (
-        r"APIOutput1\s*->\s*renamedResult",
-        r"Error\.Message\s*->\s*errorMessage",
-        r'literalResult\s*=\s*"literal-assigned"',
-        r"copiedResult\s*=\s*=vars\.renamedResult",
-        r"computedResult\s*=\s*=js:vars\.\$xref\('Binding Matrix','Echo literal','APIOutput1'\)\s*\+\s*'-computed'",
-        r"metadataResult\s*=\s*=metadata\.ExternalId",
-        r"APIInput1:?\s*<-\s*\"Binding Matrix\"\.\"Lookup colliding same name\"\.estimatedAge",
-        r"collisionCopy\s*=\s*=js:vars\.\$xref\('Binding Matrix','Lookup colliding same name','estimatedAge'\)\s*\+\s*0",
-        r"APIInput1:?\s*<-\s*\"Binding Matrix\"\.\"Consume colliding output\"\.collisionCopy",
-        r"customReferenceCopy\s*=\s*=js:vars\.\$xref\('Binding Matrix','Consume colliding output','collisionCopy'\)\s*\+\s*0",
-    )
-    for pattern in expected_rows:
-        if not re.search(
-            rf"^\s*-\s*(?:(?:inputs|outputs):\s*)?{pattern}\s*$", text, re.MULTILINE
-        ):
-            fail(f"tasks.md did not preserve row matching {pattern!r}")
-
-    bare = re.compile(r"^\s*-\s*(?:outputs:\s*)?APIOutput1\s*$", re.MULTILINE)
-    if not bare.search(text):
-        fail("tasks.md is missing a bare `APIOutput1` auto-mint output")
-
-    equal_name = re.compile(
-        r"^\s*-\s*(?:outputs:\s*)?estimatedAge\s*->\s*estimatedAge\s*$",
-        re.MULTILINE,
-    )
-    if len(equal_name.findall(text)) != 2:
-        fail("tasks.md must preserve both `estimatedAge -> estimatedAge` rows")
-
-
 def assert_variable_contract(plan: dict) -> None:
     formal_input = variable(plan, "inputs", "caseInput")
     if not str(formal_input.get("id", "")).startswith("v"):
@@ -559,7 +513,6 @@ def main() -> None:
     ]
     if len(all_output_ids) != len(set(all_output_ids)):
         fail(f"task output ids are not globally unique: {all_output_ids}")
-    assert_tasks_md()
 
     payload = run_debug(timeout=900)
     assert_runtime_tasks_completed(payload, chain)

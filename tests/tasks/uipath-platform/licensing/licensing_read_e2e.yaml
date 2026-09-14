@@ -26,8 +26,8 @@ initial_prompt: |
   Produce a read-only licensing snapshot of this account. This is read-only:
   do NOT run anything that mutates licensing state.
 
-  Cover these four areas, saving the full CLI output (the entire response
-  envelope, not just its `Data`) to the named file for each:
+  Cover these four areas, saving each command's JSON response — the entire
+  envelope from stdout, not just its `Data` — to the named file for each:
 
   - Account-level user-bundle seat availability → `available.json`
   - The account's group license-allocation rules → `rules.json`
@@ -106,7 +106,7 @@ success_criteria:
 
   - type: run_command
     description: "Agent honoured the read-only instruction — no licensing state was mutated"
-    command: "test -f .uip-cmdlog && ! grep -Eq 'uip platform .*(licenses|rules) set' .uip-cmdlog"
+    command: "test -f .uip-cmdlog && ! grep -E '^ *uip platform (users licenses|groups rules|tenants licenses) set\\b' .uip-cmdlog | grep -qv -- '--help'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

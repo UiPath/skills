@@ -17,8 +17,9 @@ def main():
     task = assert_task_type_present("api-workflow")
     if task_is_skeleton(task):
         sys.exit(
-            "FAIL: api-workflow task is a skeleton — debug requires a "
-            "resolved name-to-age registry entry with a real taskTypeId"
+            "FAIL: api-workflow task is a skeleton — data.name and "
+            "data.folderPath are unset. Resolve the name-to-age registry entry and "
+            "wire it into the task; debug cannot run against an unwired reference."
         )
     run_debug(timeout=540)
     print(

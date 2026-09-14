@@ -21,6 +21,9 @@ Auth:
 Exit 0 always.
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess

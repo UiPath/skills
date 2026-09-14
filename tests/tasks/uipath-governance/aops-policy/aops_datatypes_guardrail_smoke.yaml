@@ -1,0 +1,78 @@
+task_id: skill-gov-aops-policy-datatypes-guardrail
+description: >
+  Smoke test (refusal / negative-guard): the product template carries four
+  unsupported Form.io data types (file, signature, address, datamap) alongside
+  ordinary supported fields. The skill must ABORT — surface a "data type not
+  supported" warning and neither serialize the unsupported values nor call
+  create — rather than round-tripping them. Runs fully offline: the template is
+  pre-staged, so no governance service or login is involved. A naive agent that
+  ignores the skill would happily serialize every field, including the four
+  unsupported ones, and register the policy.
+tags: [uipath-governance, smoke, mode:build, lifecycle:discover, aops-policy, data-types]
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-governance/aops-policy/stage_unsupported_fixture.py"'
+    timeout: 30
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  The product template for `UnsupportedTypes` has already been fetched to
+  `./products/UnsupportedTypes/` (form-template.json, form-data.json,
+  form-template-locale-resource.json). Do NOT call the governance service and do
+  NOT re-fetch — work only from those local files.
+
+  Author the governance policy data for this product and save it.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-governance skill to make the call"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "no policy was registered or updated — the flow aborted on the unsupported types"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+(create|update)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no unsupported-type field (file/signature/address/datamap) was serialized into policy data"
+    command: |
+      python3 -c "
+      import json, os
+      bad = {'uploadedFile', 'signature', 'address', 'dataMap'}
+      offenders = []
+      for root, dirs, files in os.walk('.'):
+          parts = set(root.split(os.sep))
+          if parts & {'products', '.git', 'node_modules'}:
+              dirs[:] = []
+              continue
+          for fn in files:
+              if not fn.endswith('.json'):
+                  continue
+              p = os.path.join(root, fn)
+              try:
+                  with open(p, encoding='utf-8-sig') as f:
+                      obj = json.load(f)
+              except Exception:
+                  continue
+              node = obj
+              while isinstance(node, dict) and isinstance(node.get('data'), dict):
+                  node = node['data']
+              if isinstance(node, dict) and (set(node) & bad):
+                  offenders.append(p)
+      assert not offenders, f'policy data serialized unsupported types: {offenders}'
+      print('OK: no unsupported-type keys were serialized into policy data')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

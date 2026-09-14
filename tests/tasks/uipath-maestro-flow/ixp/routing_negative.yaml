@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-ixp-routing-negative
 description: >
   Negative IxP routing — verifies the agent does NOT add a uipath.ixp.*
@@ -55,23 +58,31 @@ dataset:
 initial_prompt: |
   ${row.prompt}
 
-  Important:
-  - The `uip` CLI is already available.
-  - Use `--output json` on all uip commands.
-  - Work inside the stated working directory — do NOT `cd` to a parent.
-  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
-  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
-  - Do NOT iterate on validation errors or rewrite the flow to fix them. A broken flow is acceptable.
-  - You do not need a working flow — a skeleton whose nodes cover the steps of the request is enough. Leave a node unconfigured rather than leaving a step out.
+  Scope: this is a routing check, not a build-to-run task. The deliverable is
+  the flow artifact itself — the `.flow` file. A skeleton whose nodes cover the
+  steps of the request is enough: leave a node unconfigured rather than
+  leaving a step out or stopping to ask; pick a sensible default for any
+  missing detail and state it in your final report. Do not iterate on validation errors to make the flow
+  runnable — a broken skeleton is acceptable, as long as the `.flow` file has
+  been produced. Work inside the current working directory: create the
+  solution and project here, never in a parent directory.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
-  # Inverted twin of the positive routing.yaml grep.
-  # `shell=True` in coder_eval Sandbox.run_command means `!` works as a bash
-  # negator: grep -q exits 0 on match → ! flips to 1 (FAIL); exits 1 on
-  # no-match → ! flips to 0 (PASS).
+  # Inverted twin of the positive routing.yaml artifact check.
   - type: run_command
     description: "No uipath.ixp.* node landed in any .flow file (negative IxP routing)"
-    command: '! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp" --include="*.flow" .'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"uipath\\.ixp'"
     expected_exit_code: 0
     suite_thresholds: {mean: 0.85}
 

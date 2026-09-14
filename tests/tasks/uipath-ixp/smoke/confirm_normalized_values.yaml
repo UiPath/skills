@@ -38,6 +38,8 @@ initial_prompt: |
   - Invoice Date (field id `f-102`): `2022-06-21T00:00:00Z`
   - Total Amount (field id `f-103`): `114.91 AUD`
 
+  `get-predictions` reports these predictions are from ModelVersion 7.
+
   Compare each prediction to the document and record your verdict.
 
   Important:
@@ -49,26 +51,26 @@ initial_prompt: |
 
 success_criteria:
   - type: file_matches_regex
-    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields"
+    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields and the reviewed -m/--model-version (Critical Rule 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-inv-778["']?\s+.*--fields)[^\r\n]*$
-    weight: 1.5
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-inv-778["']?(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))\s+.*--fields)[^\r\n]*$
+    weight: 3.5
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "--fields includes f-102 (normalized Date confirmed as-is)"
+    description: "f-102 (normalized Date) confirmed as-is on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-102).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-102).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "--fields includes f-103 (normalized Monetary Quantity confirmed as-is)"
+    description: "f-103 (normalized Monetary Quantity) confirmed as-is on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-103).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-103).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 

@@ -2,7 +2,7 @@
 
 The read-only **review** counterpart of the `uipath-agents` coded guardrail recommend/validate capability. It
 powers the coded guardrail judgment rules in [`../agents-coded-rules.md`](../agents-coded-rules.md)
-§GuardrailsChecker. Run it during a **coded** agent review (SKILL.md Step 2.5b) **after** `uip codedagent review` <!-- uip-check-skip -->
+§GuardrailsChecker. Run it during a **coded** agent review (agent-review-guide.md Step 2.5b) **after** `uip codedagent review` <!-- uip-check-skip -->
 (Step 2.5a). Two modes:
 
 - **Audit Mode** — the agent already wires guardrails → are they *effective, appropriate, and actually wired*?
@@ -306,7 +306,7 @@ recommended action with the protection-vs-audit signal. Examples:
 
 ## Report
 
-Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
+Merge findings into the Step 5 Critical / Warning / Info findings tables (agent-review-guide.md Step 2.5b), one row per finding:
 
 ```
 | <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |

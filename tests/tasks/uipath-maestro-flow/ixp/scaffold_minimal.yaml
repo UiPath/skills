@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-ixp-scaffold-minimal
 description: >
   Integration: minimal scaffold — manual trigger → IxP extract → script (logs "ok")
@@ -25,38 +28,43 @@ initial_prompt: |
   Script node: contains a JavaScript that logs OK when it receives the
   extraction result.
 
-  Important:
-  - The `uip` CLI is already available.
-  - Use `--output json` on all uip commands.
-  - Work inside the stated working directory — do NOT `cd` to a parent.
-  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
-  - Run `uip maestro flow validate` at most 3 times. If it reports errors, fix
-    the `.flow` and re-run it. Do not exceed 3 validation runs.
+  Validate the completed flow.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: skill_triggered
     skill_name: "uipath-maestro-flow"
     expected_skill: "uipath-maestro-flow"
-    description: "Agent invoked the uipath-maestro-flow Skill"
+    description: "Advisory: agent invoked the uipath-maestro-flow skill"
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   # IxP registry-search check — see routing.yaml for the pattern breakdown.
   - type: command_executed
-    description: "Agent searched the registry for IxP node types"
+    description: "Advisory: live-v1 agent searched the registry for IxP node types"
     tool_name: "Bash"
     command_pattern: '(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list|get)\b[^\n]*\b(ixp|document|extract))'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent validated the .flow file"
+    description: "Advisory: live-v1 agent invoked flow validation"
     tool_name: "Bash"
     command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "uip maestro flow validate passes on Smoke.flow"
@@ -68,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "Generated flow contains an IxP extraction node or core.logic.mock fallback (per references/plugins/ixp/impl.md)"
-    command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -77,10 +85,7 @@ success_criteria:
   # integration_handle_routing.yaml for the `<Name>Solution/` wrapper rationale.
   - type: run_command
     description: "Script node consumes the extraction output via $vars expression"
-    command: |
-      set -e
-      flow=$(find . -name '*.flow' -print -quit)
-      grep -qF '$vars.' "$flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.'"
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

@@ -22,9 +22,11 @@ initial_prompt: |
   - Do not upload, publish, deploy, debug, or run the process.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was created"
-    path: "EmployeeAccessBpmn/EmployeeAccessBpmn.bpmn"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('EmployeeAccessBpmn.bpmn')) else 'EmployeeAccessBpmn.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

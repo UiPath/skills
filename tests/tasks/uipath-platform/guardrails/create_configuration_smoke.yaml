@@ -110,5 +110,8 @@ success_criteria:
       saved WITHOUT server-side validation (for example telling the user
       to go and verify the connection themselves, or calling the saved
       configuration unverified), or says nothing about validation at all.
+      Score EXACTLY 1.0 or EXACTLY 0.0 — there is no partial credit and no
+      intermediate value. If the case feels borderline, decide which of the two
+      descriptions above fits better and return that score.
     weight: 2.0
     pass_threshold: 1.0

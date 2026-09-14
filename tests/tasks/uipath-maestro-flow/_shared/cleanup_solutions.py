@@ -4,7 +4,9 @@
 Wired in via ``post_run`` in flow e2e task YAMLs. Runs from the sandbox CWD
 after evaluation completes; finds every ``.uipx`` file under it, reads
 ``SolutionId``, and best-effort deletes each via ``uip solution delete``.
-``.uipx`` files without a ``SolutionId`` are skipped.
+``.uipx`` files without a ``SolutionId`` are skipped. Ids that the INTERIM
+Overwrite rotation in ``flow_check.py`` moved away from are read from the
+``.rotated-solution-ids`` sidecar beside each ``.uipx`` and deleted too.
 
 Cleanup policy is controlled by the ``FLOW_E2E_CLEANUP`` env var:
 
@@ -27,6 +29,29 @@ import sys
 
 logging.basicConfig(level=logging.INFO, format="cleanup_solutions: %(message)s")
 logger = logging.getLogger(__name__)
+
+ROTATED_SOLUTION_IDS_SIDECAR = ".rotated-solution-ids"  # written by flow_check.py
+
+
+def _solution_ids(uipx_path: str) -> list[tuple[str, str]]:
+    """``(solution_id, source)`` pairs for one ``.uipx``: its current id plus any
+    ids the Overwrite rotation left on the tenant (sidecar, one per line)."""
+    ids: list[tuple[str, str]] = []
+    with open(uipx_path) as f:
+        data = json.load(f)
+    sid = data.get("SolutionId")
+    if sid:
+        ids.append((sid, uipx_path))
+    else:
+        logger.info("no SolutionId in %s", uipx_path)
+    sidecar = os.path.join(os.path.dirname(uipx_path), ROTATED_SOLUTION_IDS_SIDECAR)
+    if os.path.isfile(sidecar):
+        with open(sidecar) as f:
+            for line in f:
+                rotated = line.strip()
+                if rotated and all(rotated != known for known, _ in ids):
+                    ids.append((rotated, sidecar))
+    return ids
 
 
 def _resolve_policy() -> str:
@@ -53,21 +78,19 @@ def main() -> int:
     not_uploaded: list[str] = []
     failed: list[str] = []
 
-    for path in paths:
+    targets: list[tuple[str, str]] = []
+    for uipx_path in paths:
         try:
-            with open(path) as f:
-                data = json.load(f)
+            ids = _solution_ids(uipx_path)
         except (OSError, json.JSONDecodeError) as e:
-            logger.warning("could not read %s: %s", path, e)
-            skipped.append(path)
+            logger.warning("could not read %s: %s", uipx_path, e)
+            skipped.append(uipx_path)
             continue
+        if not ids:
+            skipped.append(uipx_path)
+        targets.extend(ids)
 
-        sid = data.get("SolutionId")
-        if not sid:
-            logger.info("no SolutionId in %s, skipping", path)
-            skipped.append(path)
-            continue
-
+    for sid, path in targets:
         if policy == "never":
             logger.info(
                 "FLOW_E2E_CLEANUP=never; preserving %s (delete later with: uip solution delete %s)",

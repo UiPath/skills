@@ -46,7 +46,12 @@ def root_variables_by_name(root: ET.Element) -> dict[str, str]:
         name = variable.attrib.get("name")
         variable_id = variable.attrib.get("id")
         if name and variable_id:
-            variables[name] = variable_id
+            # Public input/output declarations may intentionally share a
+            # business name with their mutable runtime bridge. Script mappings
+            # must target the inputOutput id, regardless of declaration order.
+            is_mutable = variable.tag == f"{{{NS['uipath']}}}inputOutput"
+            if name not in variables or is_mutable:
+                variables[name] = variable_id
     return variables
 
 

@@ -15,6 +15,7 @@ from _shared.case_check import (  # noqa: E402
     first_rule_of_condition,
     iter_stage_entry_conditions,
     read_caseplan,
+    selected_stage_ids,
     start_debug,
     task_is_skeleton,
 )
@@ -48,12 +49,12 @@ def main():
     if not find_transitions(plan, source=triage["id"], target=validate["id"]):
         sys.exit(
             "FAIL: no Triage → Validate transition; Validate's entry must name "
-            "Triage (selected-stage-completed selectedStageId=Triage)"
+            "Triage (selected-stage-completed selectedStageIds=[Triage])"
         )
     if not find_transitions(plan, source=triage["id"], target=enrich["id"]):
         sys.exit(
             "FAIL: no Triage → Enrich transition; Enrich's entry must name "
-            "Triage (selected-stage-completed selectedStageId=Triage)"
+            "Triage (selected-stage-completed selectedStageIds=[Triage])"
         )
 
     join_entry = list(iter_stage_entry_conditions(join))
@@ -71,9 +72,7 @@ def main():
             sys.exit(
                 f"FAIL: Join entry rule must be 'selected-stage-completed'; got {rule.get('rule')!r}"
             )
-        sid = rule.get("selectedStageId")
-        if sid:
-            referenced_stage_ids.add(sid)
+        referenced_stage_ids.update(selected_stage_ids(rule))
 
     if not {validate["id"], enrich["id"]}.issubset(referenced_stage_ids):
         sys.exit(

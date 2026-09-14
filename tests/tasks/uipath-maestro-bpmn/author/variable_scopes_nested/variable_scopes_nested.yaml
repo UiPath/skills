@@ -1,0 +1,49 @@
+task_id: skill-bpmn-author-variable-scopes-nested
+description: >
+  Authoring eval for the variable scopes the single-entry case cannot reach: two
+  start events each owning their own caller-supplied input (with no input
+  leaking onto the other entry point), a variable owned by a subprocess and
+  declared in that subprocess's own `<uipath:variables>` block, and a published
+  output keyed to a root end event. The prompt never mentions `elementId` or
+  scoping, so the task fails if the skill stops teaching the contract.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", lifecycle:generate, shape:multi-node, node:script, node:subprocess]
+
+run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
+  expected_turns: 22
+  max_turns: 80
+
+initial_prompt: |
+  Create a local BPMN project named "OrderEnrich" for this process:
+  - It can be started two ways: a manual start where the caller supplies an
+    `orderId`, and a separate API start where the caller supplies a `reference`.
+  - Both starts lead into a subprocess named "Enrich" that derives an enriched
+    value from the order id. That enriched value belongs to the subprocess — it
+    is not used outside it.
+  - The process finishes at a single end event that publishes a `result` the
+    caller can read back.
+
+  Requirements:
+  - Use synthetic placeholder resource names only. Do not include tenant URLs,
+    folder keys, connection IDs, or user names.
+  - Do not upload, publish, deploy, debug, or run the process.
+
+  Each start event must accept only the argument its own caller supplies.
+
+success_criteria:
+  - type: run_command
+    description: "BPMN source was created"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('OrderEnrich.bpmn')) else 'OrderEnrich.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Nested, multi-entry and published-output variable scopes are correct"
+    command: "python3 $TASK_DIR/check_variable_scopes_nested.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

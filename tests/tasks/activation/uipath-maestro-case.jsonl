@@ -1,6 +1,6 @@
 {"id": "uipath-maestro-case-001", "prompt": "Create a new UiPath Case Management project from this sdd.md", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-002", "prompt": "I have an sdd.md for a personal injury claim \u2014 build the caseplan.json", "expected_skill": "uipath-maestro-case"}
-{"id": "uipath-maestro-case-003", "prompt": "Generate tasks.md from my sdd.md", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-003", "prompt": "Generate caseplan.json from my sdd.md", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-004", "prompt": "Build a case management project for a freedom of information request workflow", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-005", "prompt": "I don't have an sdd.md yet \u2014 can you interview me and generate one for a loan application case?", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-006", "prompt": "Convert this spec into a Case Management plan with stages and tasks", "expected_skill": "uipath-maestro-case"}

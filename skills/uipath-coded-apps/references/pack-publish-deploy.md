@@ -260,6 +260,23 @@ If the exact name is ambiguous (multiple exact matches) or not found, surface an
 
 Each folder JSON object includes: `Key` (GUID — pass this to `--folder-key`), `Name`, `Path`, `Type` (`Personal` / `Solution` / `Standard`), `ParentKey`.
 
+#### A freshly created folder is not immediately deployable
+
+`uip or folders create` returns `Data.Key` as soon as the folder exists, but `deploy` validates that key against a folder lookup that lags creation by **one to three minutes**. Deploying too soon fails with a misleading error naming a key that is perfectly valid:
+
+```
+"Instructions": "Folder key '<GUID>' was not found among folders accessible to
+your account. Re-check the key with 'uip or folders list --output json'."
+```
+
+**This is propagation lag, not a bad key, and not a permissions problem.** `Retry: RetryWillNotFix` in that payload is wrong for this case — retrying the *same* key does fix it.
+
+- **Retry the same key on a backoff**, ~30s apart for up to about five minutes.
+- **Do not create another folder or switch keys.** A new folder restarts the same wait, and the retry budget resets with it.
+- **Do not chase it as permissions** — `--permission-model`, `uip or users assign`, and role grants do not affect this lookup and cost minutes.
+- **Do not re-`publish` between attempts.** Publishing again to work around a folder error yields `Package not found` on the next deploy.
+- **Prefer an existing folder when the scenario allows it.** An already-propagated folder (a resolved `Shared`, `AdminDashboards`, …) deploys immediately; only a folder created in this same session carries the lag.
+
 #### Storing the resolved key
 
 ```bash
@@ -360,6 +377,7 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `App not found` on deploy | App genuinely not published | Run `uip codedapp publish` first |
 | `has not been published yet` / `still being indexed` right after a successful publish | Catalog **indexing lag** — not a missing package | CLI auto-retries ~15s (1/2/4/8s backoff). If it still fails, **wait a few seconds and rerun `deploy`**. If you passed `-v <version>`, drop it — deploy defaults to Latest. |
 | `Folder key required` / deploy hangs on prompt | Missing folder key | Resolve via `uip or folders list --output json`, then run `uip codedapp deploy --folder-key <key> ...` (or `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
+| `Folder key '<GUID>' was not found among folders accessible to your account` | Two causes, told apart by whether `uip or folders list` returns rows. **Rows returned:** propagation lag on a just-created folder. **Zero rows** (with `Result: Success`): session scope is missing `OR.Default` | Lag → [A freshly created folder is not immediately deployable](#a-freshly-created-folder-is-not-immediately-deployable). Scope → [debug.md](debug.md). |
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `dist/ not found` | App not built | Run `npm run build` |
 | Pack shows wrong clientId | Stale `uipath.json` | `pack` copies `uipath.json` verbatim — fix `clientId` there. |

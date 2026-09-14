@@ -10,7 +10,7 @@
 > giving a deterministic linear happy path) so `uip maestro case debug` can run
 > the case to completion without human input; escalation timers use seconds; a manual
 > trigger starts the case so `uip maestro case debug` can run it headlessly. Task payloads are generic (bound to
-> `WeatherAPI`, `CountLetters`, `ProcurementProcess`, `ProjectEuler`,
+> `WeatherAPI`, `CountLetters`, `ProcurementProcess`, `HelpDeskLookup`,
 > `CaseTest`). The 7-stage topology, stage chaining, child case, and the
 > Rejected / Withdrawn terminal lanes are preserved; the reject / withdraw lanes
 > stay dormant at runtime (gated off by the default-`Approve` decision vars) but
@@ -39,7 +39,7 @@
 | Case Name | ExpenseReimbursementRunnable |
 | Case Description | Handles an employee-submitted expense from submission through manager and finance approval to payment and close-out, ending in Approved, Rejected, or Withdrawn. Fully-automated runnable variant bound to generic tenant resources. |
 | Case Identifier | Type: constant. Prefix: EXP |
-| Case-Level SLA | 15 m |
+| Case-Level SLA | 350 min |
 | SLA Type | time-based |
 | Case App | Disabled |
 | Task-output passing | Direct |
@@ -70,7 +70,7 @@
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| caseRef | In | string | | | `""` (empty string) | External reference supplied by the caller at case start. |
+| caseRef | In | string | | | `""` | External reference supplied by the caller at case start. |
 | employeeName | Variable | string | | | "Jane Smith" | Submitting employee's name. |
 | employeeEmail | Variable | string | | | "jane.smith@acme.com" | Submitting employee's email. |
 | amount | Variable | float | | | 1250.00 | Expense amount. |
@@ -111,7 +111,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 3 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 45 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -214,7 +214,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: Manager | Notify: Manager |
+| 75 | min | 70% | Notify: Manager | Notify: Manager |
 
 #### Tasks
 
@@ -302,7 +302,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 75 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -438,7 +438,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 4 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 60 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -465,9 +465,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** ProjectEuler
-**Folder Path:** Shared/uipath-maestro-flow/ProjectEuler RPA
-**Resource Identity:** 486edc26-0658-4ac1-92c9-1ef953927151
+**Resolved Resource:** HelpDeskLookup
+**Folder Path:** Shared/uipath-maestro-flow/HelpDeskLookup RPA
+**Resource Identity:** 4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8
 **Binding Sub-Type:** —
 **Dispatch / Operation:** —
 
@@ -475,7 +475,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| problemId | integer | 1 |
+| ticketId | integer | 123 |
 
 **Outputs:**
 
@@ -576,7 +576,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 2 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 30 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -678,7 +678,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 2 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 30 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -704,9 +704,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** ProjectEuler
-**Folder Path:** Shared/uipath-maestro-flow/ProjectEuler RPA
-**Resource Identity:** 486edc26-0658-4ac1-92c9-1ef953927151
+**Resolved Resource:** HelpDeskLookup
+**Folder Path:** Shared/uipath-maestro-flow/HelpDeskLookup RPA
+**Resource Identity:** 4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8
 **Binding Sub-Type:** —
 **Dispatch / Operation:** —
 
@@ -714,7 +714,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| problemId | integer | 1 |
+| ticketId | integer | 123 |
 
 **Outputs:**
 
@@ -780,7 +780,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 2 | m | 70% | Notify: Finance Ops | Notify: Finance Ops |
+| 30 | min | 70% | Notify: Finance Ops | Notify: Finance Ops |
 
 #### Tasks
 
@@ -862,7 +862,7 @@
 | Resource | Type | Folder | Resource ID (+version) | Used By Tasks |
 |----------|------|--------|------------------------|---------------|
 | ProcurementProcess | process | Shared/uipath-agents/ProcurementProcess | 4fc450ab-89be-4462-8fc8-21ac4c1d6fb9 | Budget & GL Reconciliation, Update GL Records |
-| ProjectEuler | rpa | Shared/uipath-maestro-flow/ProjectEuler RPA | 486edc26-0658-4ac1-92c9-1ef953927151 | Process Reimbursement, Send Rejection Notification |
+| HelpDeskLookup | rpa | Shared/uipath-maestro-flow/HelpDeskLookup RPA | 4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8 | Process Reimbursement, Send Rejection Notification |
 
 ### Child Cases
 

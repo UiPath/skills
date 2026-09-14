@@ -16,11 +16,15 @@ trigger and carries a valid recurring schedule:
      `edges[]` must contain no entry whose `targetNodeId` is the trigger id).
   4. Valid schedule config on the node `inputs`:
        - `timerType == "timeCycle"`;
-       - `timerPreset` present and non-empty;
-       - the effective cycle expression — `timerValue` when
-         `timerPreset == "custom"`, otherwise `timerPreset` — is a valid ISO
-         8601 repeating interval (`R/...`), matching the registry's own
-         pattern. `custom` without a non-empty `timerValue` fails.
+       - `timerValue` present, non-empty, and matching the registry's own
+         `timerValue` pattern — an ISO 8601 repeating interval (`R/PT1H`) or a
+         Quartz cron expression (`0 0 9 ? * MON-FRI`);
+       - `timerValue == REQUESTED_CYCLE`. The grammar check alone would award
+         full credit to a daily flow when the task asked for an hourly one, so
+         the cadence the prompt names is graded too. CYCLE_RE still runs first
+         so a malformed value reports as bad syntax rather than wrong cadence.
+     `core.trigger.scheduled` has no `timerPreset` input; a cycle expression
+     written there fails `validate` with `REQUIRED_FIELD timerValue`.
   5. `typeVersion` present and non-empty (the agent-under-test copies the
      `version` field from the registry, so we do NOT pin a specific value —
      this node has already advanced past 1.0).
@@ -34,24 +38,42 @@ trigger and carries a valid recurring schedule:
        - zero `definitions[]` entries with `nodeType == "core.trigger.manual"`.
 """
 
-import glob
 import json
 import re
 import sys
+from pathlib import Path
 from typing import NoReturn
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 SCHEDULED = "core.trigger.scheduled"
 MANUAL = "core.trigger.manual"
 TRIGGER_PREFIX = "core.trigger."
 
-# ISO 8601 repeating-interval pattern, copied verbatim from the
-# `core.trigger.scheduled` registry definition (inputDefinition.then for
-# timerValue). Accepts R/PT1H, R/P1D, R/P1W, R/PT45M, R/2026-05-14T09:00:00Z/P1W, ...
+# The cadence scheduled_trigger.yaml asks for ("every hour, expressed as
+# R/PT1H"). Grammar validity is necessary but not sufficient: R/P1D is a
+# well-formed cycle expression and the wrong answer to this task.
+REQUESTED_CYCLE = "R/PT1H"
+
+# `timerValue` pattern, copied verbatim from the `core.trigger.scheduled`
+# registry definition (inputDefinition.properties.timerValue.pattern) so this
+# checker accepts exactly what `uip maestro flow validate` accepts. Two shapes:
+# an ISO 8601 repeating interval with exactly ONE non-zero duration unit
+# (R/PT1H, R/P1D, R/2026-05-14T09:00:00Z/P1W — but NOT R/PT2H30M or R/PT24H),
+# or a 6-7 field Quartz cron (0 0 */1 * * ? *). Refresh with:
+#   uip maestro flow registry get core.trigger.scheduled --output json
 CYCLE_RE = re.compile(
-    r"^R\d*\/(P(?=\d|T)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?"
-    r"(\/\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?)?"
-    r"|\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?"
-    r"\/P(?=\d|T)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?)$"
+    r"^(?:R\d*\/(?:P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M|(?:[1-9]|[1-4][0-9]|5[0-2])W"
+    r"|(?:[1-9]|[12][0-9]|3[01])D|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M"
+    r"|(?:[1-9]|[1-5][0-9])S))(?:\/\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?"
+    r"(?:Z|[+-]\d{2}:\d{2})?)?)?|\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?"
+    r"(?:Z|[+-]\d{2}:\d{2})?)?\/P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M"
+    r"|(?:[1-9]|[1-4][0-9]|5[0-2])W|(?:[1-9]|[12][0-9]|3[01])D"
+    r"|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M|(?:[1-9]|[1-5][0-9])S)))"
+    r"|(?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*)(?:[,/#-](?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*))*"
+    r"(?:\s+(?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*)"
+    r"(?:[,/#-](?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*))*){5,6})$"
 )
 
 
@@ -60,10 +82,7 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/ScheduledReport*.flow", recursive=True)
-    if not flows:
-        _fail("no ScheduledReport*.flow found under cwd")
-    with open(flows[0]) as f:
+    with open(find_flow_file(flow_glob="ScheduledReport*.flow")) as f:
         return json.load(f)
 
 
@@ -110,34 +129,25 @@ def _check_schedule_config(inputs: dict) -> None:
             '"timeCycle".'
         )
 
-    timer_preset = inputs.get("timerPreset")
-    if not isinstance(timer_preset, str) or not timer_preset.strip():
-        _fail("inputs.timerPreset missing or empty — required for a scheduled trigger.")
-
-    if timer_preset == "custom":
-        cycle = inputs.get("timerValue")
-        if not isinstance(cycle, str) or not cycle.strip():
-            _fail(
-                "inputs.timerPreset is 'custom' but inputs.timerValue is missing or "
-                "empty — add an ISO 8601 repeating interval (e.g. R/PT45M)."
-            )
-        label = "inputs.timerValue"
-    else:
-        cycle = timer_preset
-        label = "inputs.timerPreset"
-
-    if not CYCLE_RE.match(cycle):
+    cycle = inputs.get("timerValue")
+    if not isinstance(cycle, str) or not cycle.strip():
         _fail(
-            f"{label}={cycle!r} is not a valid ISO 8601 repeating interval "
-            "(e.g. R/PT1H, R/P1D, R/PT45M)."
+            "inputs.timerValue missing or empty — it carries the cycle expression. "
+            "`core.trigger.scheduled` has no `timerPreset`; a cycle expression "
+            'written there fails validate with REQUIRED_FIELD "timerValue".'
         )
-    # A grammatically-valid but all-zero duration (e.g. R/PT0H) is a
-    # never-firing schedule. Every real recurring interval has a non-zero
-    # component, so require at least one.
-    if not re.search(r"[1-9]", cycle):
+
+    if not CYCLE_RE.fullmatch(cycle):
         _fail(
-            f"{label}={cycle!r} is an all-zero, never-firing schedule — "
-            "use a non-zero recurring interval such as R/PT1H."
+            f"inputs.timerValue={cycle!r} is neither an ISO 8601 repeating interval "
+            "with a single non-zero duration unit (e.g. R/PT1H, R/P1D) nor a Quartz "
+            "cron expression (e.g. 0 0 9 ? * MON-FRI)."
+        )
+
+    if cycle != REQUESTED_CYCLE:
+        _fail(
+            f"inputs.timerValue={cycle!r} is a valid cycle expression but not the "
+            f"one the task asked for ({REQUESTED_CYCLE!r}, every hour)."
         )
 
 
@@ -190,7 +200,7 @@ def main():
 
     print(
         f"OK: start node is {SCHEDULED} (manual trigger replaced); "
-        f"timerType={inputs.get('timerType')!r}, timerPreset={inputs.get('timerPreset')!r}; "
+        f"timerType={inputs.get('timerType')!r}, timerValue={inputs.get('timerValue')!r}; "
         f"typeVersion set; definition carries bpmn:StartEvent + bpmn:TimerEventDefinition"
     )
 

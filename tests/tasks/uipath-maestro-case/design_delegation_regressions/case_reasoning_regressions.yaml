@@ -1,9 +1,8 @@
 task_id: skill-case-phase-0-case-reasoning-regressions
 description: >
-  Phase 0 through compact no-build planning for a case that combines the known
-  task-sequencing regressions: parallel tasks after a predecessor, payment
-  obligation racing, invalid selected adhoc dependencies, and deterministic
-  rejection routing.
+  Design-only run for a case that combines the known task-sequencing
+  regressions: parallel tasks after a predecessor, payment obligation racing,
+  invalid selected adhoc dependencies, and deterministic rejection routing.
 tags:
   - uipath-maestro-case
   - integration
@@ -19,14 +18,12 @@ run_limits:
   turn_timeout: 2700
 
 initial_prompt: |
-  Design a "CaseReasoningRegression" Maestro case and produce `sdd.md` plus
-  the implementation plan at `tasks/tasks.md`. Stop before creating
-  caseplan.json. This is a plan-only/no-build design exercise: do not query
-  tenant registry, connections, schemas, or users. Use concrete intended
-  resource and system names, mark identities `resolve at build`, and defer
-  authoritative tenant resolution to the later build run. After approval, use
-  the compact no-build planning shape for `tasks/tasks.md`; do not inspect
-  plugin planning docs.
+  Design a "CaseReasoningRegression" Maestro case and produce `sdd.md`. Stop
+  after the SDD — do not create caseplan.json. This is a design-only exercise:
+  do not query tenant registry, connections, schemas, or users. Use concrete
+  intended resource and system names, leave identities unresolved, and defer
+  authoritative tenant resolution to the later build run. Do not inspect plugin
+  planning docs.
 
   Primary stages are Intake, Issuing Permit, and Close.
 
@@ -47,38 +44,29 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "SDD and implementation plan were produced without building the case"
-    command: "test -f sdd.md && test -f tasks/tasks.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    description: "The SDD was produced without building the case"
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Known case-reasoning invariants are represented in sdd.md and tasks/tasks.md"
+    description: "Known case-reasoning invariants are represented in sdd.md"
     command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/design_delegation_regressions/check_case_reasoning_regressions.py\""
     timeout: 10
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "(advisory, non-gating) tasks/tasks.md follows the compact no-build T-entry shape per planning.md: `## T{N}: task \"{Name}\"` headings and numeric `lane` task-set indices"
-    command: "python3 $TASK_DIR/check_tasksmd_shape.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0
-
   - type: llm_judge
     description: "The design reasons from case semantics instead of phrase-to-rule translation"
     files:
       - sdd.md
-      - tasks/tasks.md
     max_file_chars: 180000
     include_agent_output: false
     prompt: |
-      Review the CaseReasoningRegression SDD and implementation plan.
+      Review the CaseReasoningRegression SDD.
 
       Score 1.0 only when:
       - Payment Deadline and Wait for Payment Confirmation start while payment
@@ -104,9 +92,9 @@ simulation:
     You are the operations owner who supplied the complete requirements in the
     opening message.
   goal: |
-    Get an approved sdd.md and tasks/tasks.md, then stop before implementation.
+    Get an approved sdd.md, then stop before implementation.
   constraints:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, routes, or deadlines."
-    - "When shown the design confirmation, approve it and ask the assistant to continue through implementation planning only."
+    - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
     - "Do not authorize creating caseplan.json, running, publishing, or deploying."
   max_turns: 35

@@ -34,13 +34,16 @@ so a working-but-misnamed flow keeps most of its credit.
 
 from __future__ import annotations
 
-import glob
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, NoReturn
 
-FLOW_GLOB = "**/*.flow"
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 
 def fail(msg: str) -> NoReturn:
@@ -48,10 +51,7 @@ def fail(msg: str) -> NoReturn:
 
 
 def load_flow() -> dict[str, Any]:
-    matches = [m for m in glob.glob(FLOW_GLOB, recursive=True) if "/." not in "/" + m]
-    if not matches:
-        fail(f"No .flow file found (searched {FLOW_GLOB})")
-    path = Path(sorted(matches)[0])
+    path = Path(find_flow_file())
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError as exc:
@@ -75,9 +75,12 @@ def node_refs(node: dict, *needles: str) -> bool:
     return any(needle in blob for needle in needles)
 
 
-def any_node_refs(nodes: list[dict], *needles: str, exclude_triggers: bool = False) -> bool:
+def any_node_refs(
+    nodes: list[dict], *needles: str, exclude_triggers: bool = False
+) -> bool:
     return any(
-        (not exclude_triggers or not is_trigger(n)) and node_refs(n, *needles) for n in nodes
+        (not exclude_triggers or not is_trigger(n)) and node_refs(n, *needles)
+        for n in nodes
     )
 
 
@@ -102,17 +105,27 @@ def main() -> None:
         or "agent" in node_type(n)
     ]
     if not routing_nodes:
-        fail("No routing construct found (need a decision / switch / if / agent-based classifier)")
+        fail(
+            "No routing construct found (need a decision / switch / if / agent-based classifier)"
+        )
 
     def out_edge_count(node_id: Any) -> int:
         return sum(
             1
             for e in edges
-            if node_id in (e.get("sourceNodeId"), e.get("source"), e.get("from"), e.get("sourceId"))
+            if node_id
+            in (
+                e.get("sourceNodeId"),
+                e.get("source"),
+                e.get("from"),
+                e.get("sourceId"),
+            )
         )
 
     max_branches = max((out_edge_count(n.get("id")) for n in routing_nodes), default=0)
-    terminals = [n for n in nodes if "end" in node_type(n) or "terminate" in node_type(n)]
+    terminals = [
+        n for n in nodes if "end" in node_type(n) or "terminate" in node_type(n)
+    ]
     if max_branches < 2 and len(terminals) < 2:
         fail("Routing does not fan out into >=2 branches (VIP-urgent vs standard)")
 
@@ -120,18 +133,26 @@ def main() -> None:
     if not any_node_refs(nodes, "urgent", "urgen"):
         fail("No 'urgency' signal on any node (flow should classify emails by urgency)")
     if not any_node_refs(nodes, "vip"):
-        fail("No 'VIP' signal on any node (flow should classify the sender as VIP or not)")
+        fail(
+            "No 'VIP' signal on any node (flow should classify the sender as VIP or not)"
+        )
 
     # 4. Slack notification (VIP+urgent branch)
     if not any_node_refs(nodes, "slack"):
         fail("No Slack node (the high-touch branch should notify on Slack)")
 
     # 5. Reply to sender by email on a non-trigger node
-    if not any_node_refs(nodes, "outlook", "office365", "graph.microsoft.com", exclude_triggers=True):
-        fail("No non-trigger Outlook/Graph email-reply node (flow should reply to the sender)")
+    if not any_node_refs(
+        nodes, "outlook", "office365", "graph.microsoft.com", exclude_triggers=True
+    ):
+        fail(
+            "No non-trigger Outlook/Graph email-reply node (flow should reply to the sender)"
+        )
 
     # 6. Support ticket on the standard branch (connector or a script that builds one)
-    if not any_node_refs(nodes, "jira", "servicenow", "create-issue", "createissue", "ticket"):
+    if not any_node_refs(
+        nodes, "jira", "servicenow", "create-issue", "createissue", "ticket"
+    ):
         fail("No support-ticket node (standard branch should create a ticket)")
 
     print(

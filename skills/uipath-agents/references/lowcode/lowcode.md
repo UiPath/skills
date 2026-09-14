@@ -53,7 +53,9 @@ Although most of the lifecycle and capabilities are shared between both autonomo
 
 Standard workflow for any low-code agent task:
 
+<!--skill-flavor:scaffold-step:start-->
 1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
+<!--skill-flavor:scaffold-step:end-->
 2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
 4. **Refresh** — `uip agent refresh --output json`. Applies pending migrations and regenerates `entry-points.json` and `bindings_v2.json`. Confirm `MigrationApplied`, `StorageVersion`.

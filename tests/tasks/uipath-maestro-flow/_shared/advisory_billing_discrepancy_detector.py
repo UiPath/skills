@@ -8,8 +8,9 @@ the trigger and rejoin at a merge — do not chain them"* — because
 `start → ERP → CRM → merge` satisfies it exactly while being a chain with a merge
 bolted on. So this gate asserts the SHAPE:
 
-1. **Two Data Service query nodes**, one on `BillingDisputeERP` and one on
-   `BillingDisputeCRM`, each with its entity in the PATH slot.
+1. **Two entity-read nodes**, in whichever of the two shapes the tenant's flags
+   left available, one on `BillingDisputeERP` and one on `BillingDisputeCRM`,
+   each with its entity in the slot that shape reads.
 2. **Exactly one `core.logic.merge`**, carrying the `bpmn:ParallelGateway`
    definition that makes it a join once deployed, fed by ≥2 distinct sources, and
    continuing downstream.
@@ -23,29 +24,32 @@ bolted on. So this gate asserts the SHAPE:
 6. **The outputs are declared with the contract's names and types**, and each is
    read from the side it belongs to (the tier from the CRM query, the matched
    invoice from the ERP query, the two numbers computed downstream of ERP).
-7. **The connection resolves to a connection/folder PAIR of distinct uuids** on
-   both query nodes.
+7. **Each read resolves to the tenant it is pointed at** — a connection/folder
+   PAIR of distinct uuids on the connector, and a whole entity scope on the
+   native node, which has no connection to resolve.
 
 Usage: advisory_billing_discrepancy_detector.py [<FlowName>.flow]
 """
-import re
 from collections import Counter, defaultdict
 
 from advisory_flow_utils import (
+    CONNECTOR_READ,
     LOOP_BACK_PORTS,
+    assert_read_filters_input,
+    assert_read_resolves,
     carries_literal,
     end_bindings,
+    entity_name,
+    entity_reads,
     fail,
     load_flow,
     node_dependencies,
-    query_references_input,
     source_depends_on,
     successful_end_ids,
     unwrap,
 )
 
 MERGE = "core.logic.merge"
-DS_PREFIX = "uipath.connector.uipath-uipath-dataservice."
 ERP, CRM = "BillingDisputeERP", "BillingDisputeCRM"
 # The measured answers (live 2026-07-31). A flow may not carry any of them.
 FORBIDDEN_LITERALS = ["1610", "2590", "4200", "Enterprise"]
@@ -64,32 +68,20 @@ def main():
     edges = f.get("edges") or []
     types_seen = sorted({str(n.get("type")) for n in nodes})
 
-    # ── 1. two Data Service query nodes, one per entity ───────────────────────
-    ds = [n for n in nodes if str(n.get("type", "")).startswith(DS_PREFIX)]
+    # ── 1. two entity-read nodes, one per entity ──────────────────────────────
+    shape, ds = entity_reads(nodes)
     if len(ds) != 2:
-        fail(f"expected exactly TWO Data Service query nodes (ERP + CRM), found {len(ds)}; node types: {types_seen}")
-    for n in ds:
-        if not n["type"].endswith(".query-entity-records"):
-            fail(f"Data Service node {n['id']!r} is {n['type']!r}; the lookup is query-entity-records")
-
-    def detail(n):
-        return (n.get("inputs") or {}).get("detail") or {}
-
-    def entity_of(n):
-        p = {k: unwrap(v) for k, v in (detail(n).get("pathParameters") or {}).items()}
-        if "entityName" not in p:
-            q = {k: unwrap(v) for k, v in (detail(n).get("queryParameters") or {}).items()}
-            fail(
-                f"query node {n['id']!r} has pathParameters {sorted(p)}; `entityName` belongs in the PATH "
-                f"slot — it is the {{entityName}} of /v2/{{entityName}}/qer. queryParameters: {sorted(q)}"
-            )
-        return str(p["entityName"]).strip()
+        fail(f"expected exactly TWO entity-read nodes (ERP + CRM), found {len(ds)}; node types: {types_seen}")
+    if shape == CONNECTOR_READ:
+        for n in ds:
+            if not n["type"].endswith(".query-entity-records"):
+                fail(f"Data Service node {n['id']!r} is {n['type']!r}; the lookup is query-entity-records")
 
     by_entity = {}
     for n in ds:
-        e = entity_of(n)
+        e = entity_name(n, shape)
         if e in by_entity:
-            fail(f"both query nodes address {e!r}; the scenario needs one {ERP} and one {CRM}")
+            fail(f"both reads address {e!r}; the scenario needs one {ERP} and one {CRM}")
         by_entity[e] = n
     missing = [e for e in (ERP, CRM) if e not in by_entity]
     if missing:
@@ -152,18 +144,11 @@ def main():
             fail(f"query {n['id']!r} is not reachable from the trigger {start!r}")
 
     # ── 4. both filters computed, each from its own input ─────────────────────
-    for label, node, wanted_input in ((ERP, erp, "invoiceNumber"), (CRM, crm, "accountNumber")):
-        q = {k: unwrap(v) for k, v in (detail(node).get("queryParameters") or {}).items()}
-        if "queryExpression" not in q:
-            fail(f"the {label} query sets no queryExpression; queryParameters: {sorted(q)}")
-        expr = str(q["queryExpression"])
-        if not query_references_input(detail(node), wanted_input):
-            fail(
-                f"the {label} queryExpression is {expr!r} and its filterVariables do not reference "
-                f"{wanted_input!r} — each lookup must filter on its own flow input"
-            )
-        if "'" not in expr:
-            fail(f"the {label} queryExpression is {expr!r} — a CEQL string literal has to be single-quoted")
+    for label, node, wanted_input, column in (
+        (ERP, erp, "invoiceNumber", "invoiceNumber"),
+        (CRM, crm, "accountNumber", "accountNumber"),
+    ):
+        assert_read_filters_input(node, shape, wanted_input, label, nodes, column=column)
 
     # ── 5. no answer is written in ─────────────────────────────────────────────
     for bad in FORBIDDEN_LITERALS:
@@ -209,26 +194,15 @@ def main():
     for name in ("totalOvercharge", "discrepancyCount"):
         sourced_from(name, erp["id"], f"the contracted amount it is computed from lives in the {ERP} rows")
 
-    # ── 7. the resolved connection: two DISTINCT uuids, on BOTH query nodes ───
-    UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-", re.ASCII)
-    for label, node in ((ERP, erp), (CRM, crm)):
-        conn = str(unwrap(detail(node).get("connectionId")) or "")
-        folder = str(unwrap(detail(node).get("connectionFolderKey")) or "")
-        for attr, v in (("connectionId", conn), ("connectionFolderKey", folder)):
-            if not UUID.match(v) or re.match(r"^0{8}-0{4}-", v):
-                fail(f"the {label} query's detail.{attr} is {v!r}, not a real uuid")
-        if conn == folder:
-            fail(
-                f"the {label} query's detail.connectionId and detail.connectionFolderKey are the SAME uuid "
-                f"({conn}) — the folder binding needs the connection's FOLDER key, not its id (measured: the "
-                f"live dispatch then sends the folder key as --connection-id and answers 401)"
-            )
+    # ── 7. each read resolves to the tenant it is pointed at ──────────────────
+    resolutions = [assert_read_resolves(node, shape, label, f) for label, node in ((ERP, erp), (CRM, crm))]
 
     print(
-        f"{len(nodes)} nodes; {ERP}={erp['id']!r} and {CRM}={crm['id']!r} on mutually unreachable branches "
-        f"from {start!r}, converging on {MERGE} {mid!r} (bpmn:ParallelGateway, {len(sources)} sources, "
-        f"continues downstream); both filters computed from their own inputs; no answer literals; "
-        f"outputs {sorted(OUT_CONTRACT)} each read from its own side"
+        f"{len(nodes)} nodes; {shape} reads {ERP}={erp['id']!r} and {CRM}={crm['id']!r} on mutually "
+        f"unreachable branches from {start!r}, converging on {MERGE} {mid!r} (bpmn:ParallelGateway, "
+        f"{len(sources)} sources, continues downstream); both filters computed from their own inputs; "
+        f"no answer literals; outputs {sorted(OUT_CONTRACT)} each read from its own side; "
+        f"{'; '.join(resolutions)}"
     )
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ProjectEulerTitle: an RPA-workflow node executes; output holds the title."""
+"""HelpDeskTicketTitle: an RPA-workflow node executes; output holds the title."""
 
 import os
 import sys
@@ -14,11 +14,11 @@ from _shared.flow_check import (  # noqa: E402
 
 def main():
     assert_flow_has_node_type(["uipath.core.rpa-workflow"])
-    # RPA workflows are slow: spin up robot, launch Chrome, scrape. 4 min
-    # is routinely not enough on this tenant.
+    # The workflow itself is a fixed in-process lookup, but the run still has
+    # to provision and start a robot, so keep a generous budget.
     payload = run_debug(timeout=540)
-    assert_outputs_contain(payload, "prime square remainders")
-    print("OK: RPA node present; output contains 'prime square remainders'")
+    assert_outputs_contain(payload, "password reset loop")
+    print("OK: RPA node present; output contains 'password reset loop'")
 
 
 if __name__ == "__main__":

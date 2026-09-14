@@ -10,6 +10,13 @@ description: >
   sdk/governance.md.
 tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:build, lifecycle:generate]
 
+# turn_timeout is the agent's real budget — a larger task_timeout cannot extend a
+# single iteration. Without it this task inherited the experiment's 900s turn cap
+# under a 1200s task_timeout and the harness warned about the mismatch on every
+# run, silently costing 25% of the intended budget.
+run_limits:
+  turn_timeout: 1200
+
 sandbox:
   node: {}
 
@@ -26,8 +33,8 @@ initial_prompt: |
   Build me a governance dashboard: policy denials this week and an allow vs
   deny enforcement verdict breakdown.
 
-  This is a non-interactive automated test — there is NO user to approve the plan.
-  Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
+  This is a non-interactive automated test — there is NO user to approve the build plan.
+  Treat the build plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the build plan, do
   NOT wait for confirmation, and do NOT ask any question.
 
 success_criteria:

@@ -23,13 +23,21 @@ import pytest
 TASK_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TASK_DIR)
 
-from handoff import RUN_FOLDER_NAME, SNAPSHOT, STAMP_MARKER, project_digest  # noqa: E402
+from handoff import BUILD_PROJECT_PREFIX, RUN_FOLDER_PREFIX  # noqa: E402
+from handoff import RUN_HANDOFF_FILE, SNAPSHOT, project_digest  # noqa: E402
 from handoff import DOMAIN_MARKERS  # noqa: E402
 
-# Built from the guard's own first marker, so rotating the fixture domain
-# (documents/README.md) re-points these tests automatically.
-COVERED_NAME = f"{DOMAIN_MARKERS[0]}-inspection-abc123-ixp"
-STALE_RESIDUE_NAME = f"{DOMAIN_MARKERS[0]}-inspection-e0b615cf-ixp"
+# A domain-covering project left behind by a previous run's teardown, which
+# could not attribute it (created, never deployed, never wired). Named after
+# the real one observed on the CI tenant, and built from the sweep's own first
+# marker so rotating the fixture domain re-points these tests automatically.
+LEAKED_DOMAIN_PROJECT = f"{DOMAIN_MARKERS[0]}_licences-7607b890-ixp"
+
+
+def iso_ago(seconds: float) -> str:
+    """A UTC ISO-8601 instant `seconds` in the past."""
+    return (datetime.now(timezone.utc) - timedelta(seconds=seconds)).isoformat()
+
 
 PRE_EXISTING = ["dtf-contract-aaaa1111-ixp", "trained-bbbb2222-ixp"]
 CREATED_PROJECT = "invoices-cccc3333-ixp"
@@ -41,9 +49,6 @@ FOLDER_KEY = "5f31a6b2-fa5a-46a5-aac2-7eef48457811"
 # folder teardown deletes.
 RUN_FOLDER_KEY = "8c1d2e3f-0a1b-4c2d-9e3f-aabbccddee00"
 CONCURRENT_FOLDER_KEY = "9d2e3f4a-1b2c-4d3e-8f4a-bbccddeeff11"
-# A leftover folder named RUN_FOLDER_NAME from a previous run's failed
-# teardown — the only folder seed's self-heal deletes.
-LEFTOVER_FOLDER_KEY = "7a0b1c2d-3e4f-4a5b-8c6d-99aabbccdd22"
 MODEL_ID = "aae28538-450f-80f9-9f27-5e803b4ea473"
 
 # Stands in for the real CLI, reading canned answers from payload.json beside it.
@@ -87,8 +92,21 @@ if argv[:3] == ["ixp", "projects", "list"]:
         print("boom: tenant unreachable", file=sys.stderr)
         sys.exit(payload["list_exit"])
     names = [name for name in payload["projects"] if name not in deleted_projects()]
+    # The real record carries Name/Title/CreatedAt (verified on the CI tenant);
+    # CreatedAt is what seed's residue sweep ages projects by. Default old, as
+    # a pre-existing project is. project_created_at overrides per name; a None
+    # there omits the field, which the sweep must treat as "too young to touch".
+    created_at = payload.get("project_created_at", {})
+    titles = payload.get("project_titles", {})
+    records = []
+    for name in names:
+        record = {"Name": name, "Title": titles.get(name, name)}
+        stamp = created_at.get(name, "2020-01-01T00:00:00+00:00")
+        if stamp is not None:
+            record["CreatedAt"] = stamp
+        records.append(record)
     print(json.dumps({"Data": {
-        "Projects": [{"Name": name} for name in names],
+        "Projects": records,
         "Total": payload.get("total_override", len(names)),
     }}))
 elif argv[:4] == ["ixp", "deployments", "create", "--help"]:
@@ -100,17 +118,10 @@ elif argv[:4] == ["ixp", "deployments", "create", "--help"]:
 elif argv[:4] == ["maestro", "flow", "registry", "pull"]:
     print(json.dumps({"Data": {"NodesCount": 1}}))
 elif argv[:4] == ["maestro", "flow", "registry", "get"]:
-    # seed.py probes each domain-matching node: a node listed in
-    # unresolvable_nodes stands for this task's own deployment residue, whose
-    # project has been deleted. Exit 1 is what the real CLI does for a node it
-    # cannot resolve.
-    if argv[4] in payload.get("unresolvable_nodes", []):
-        print("node type not found", file=sys.stderr)
-        sys.exit(1)
-    # Deleting a deployment's folder removes its registry node (the trailing
-    # 36 chars of an IxP NodeType are the folder key). sticky_nodes models
-    # registry-indexing lag: the node keeps resolving after the folder is gone.
-    if argv[4] not in payload.get("sticky_nodes", []) and argv[4][-36:] in deleted_folders():
+    # Reached only from check's served-node probe. Deleting a deployment's
+    # folder removes its registry node (an IxP NodeType's trailing 36 chars are
+    # the folder key).
+    if argv[4][-36:] in deleted_folders():
         print("node type not found", file=sys.stderr)
         sys.exit(1)
     print(json.dumps({"Data": {"Node": {"type": argv[4]}}}))
@@ -118,45 +129,36 @@ elif argv[:4] == ["maestro", "flow", "registry", "search"]:
     print(json.dumps({"Data": payload.get("registry_nodes", [])}))
 elif argv[:3] == ["ixp", "deployments", "list"]:
     # Mirrors the real 404 once the project is gone, so the read-before-delete
-    # ordering in teardown.py is actually exercised.
+    # ordering in delete_this_runs_projects is actually exercised. vanished_projects models
+    # the narrower race: still in `projects list`, deleted by a concurrent run
+    # before this call.
+    if argv[3] in payload.get("vanished_projects", []):
+        print("Project with name %r was not found." % argv[3], file=sys.stderr)
+        sys.exit(1)
+    # An infra fault, not a 404 — the grader must NOT read this as "gone".
+    if argv[3] in payload.get("deployments_list_broken", []):
+        print("upstream unavailable (503)", file=sys.stderr)
+        sys.exit(1)
     if argv[3] in deleted_projects():
         print("Project with name %r was not found." % argv[3], file=sys.stderr)
         sys.exit(1)
     print(json.dumps({"Data": payload["deployments"].get(argv[3], [])}))
 elif argv[:3] == ["or", "folders", "create"]:
     # Seed's run folder: returns the Key teardown will read back as "scope".
-    # A `-d` description is persisted so a later `folders get` serves it back,
-    # as the real API does.
     key = payload.get("created_folder_key", "created-" + argv[3])
-    if "-d" in argv:
-        with open(os.path.join(here, "description_" + key + ".txt"), "w") as handle:
-            handle.write(argv[argv.index("-d") + 1])
     print(json.dumps({"Data": {"Key": key, "Name": argv[3]}}))
 elif argv[:3] == ["or", "folders", "get"]:
-    # The real verb resolves either a folder key or a folder name.
-    match = None
-    for entry in payload.get("folders", []):
-        if argv[3] in (entry.get("Key"), entry.get("DisplayName")):
-            match = dict(entry)
-            break
-    if match is None:
-        folder_ids = payload.get("folder_ids", {})
-        if argv[3] in folder_ids:
-            match = {"Key": argv[3], "Id": folder_ids[argv[3]]}
-    if match is None or match["Key"] in deleted_folders():
-        if payload.get("not_found_exits_zero"):
-            # A CLI line that reports not-found as a zero-exit failure envelope
-            # (no Data key) must still read as absent to the grader.
-            print(json.dumps({"Result": "Failure", "Message": "Error resolving folder"}))
-            sys.exit(0)
+    folder_ids = payload.get("folder_ids", {})
+    if argv[3] not in folder_ids or argv[3] in deleted_folders():
         print("folder not found", file=sys.stderr)
         sys.exit(1)
-    stored = os.path.join(here, "description_" + match["Key"] + ".txt")
-    if os.path.exists(stored):
-        with open(stored) as handle:
-            match["Description"] = handle.read()
-    match.setdefault("Description", "No description")
-    print(json.dumps({"Data": match}))
+    # folder_names is how a test marks a folder as a concurrent RUN's, which
+    # teardown reads to disown a project wired from a sibling's registry node.
+    data = {"Key": argv[3], "Id": folder_ids[argv[3]]}
+    name = payload.get("folder_names", {}).get(argv[3])
+    if name:
+        data["Name"] = name
+    print(json.dumps({"Data": data}))
 elif argv[:3] == ["or", "folders", "delete"]:
     # Mirrors the real CLI: refuses without --yes, since the operation is
     # irreversible and the CLI never prompts.
@@ -178,9 +180,7 @@ elif argv[:3] == ["or", "folders", "delete"]:
         sys.exit(1)
     # Deleting something that does not resolve fails, as the real verb does —
     # teardown must never read a failed delete as a successful one.
-    known = [entry.get("Key") for entry in payload.get("folders", [])]
-    known += list(payload.get("folder_ids", {}))
-    if argv[3] not in known or argv[3] in deleted_folders():
+    if argv[3] not in payload.get("folder_ids", {}) or argv[3] in deleted_folders():
         print("folder not found", file=sys.stderr)
         sys.exit(1)
     with open(deleted_folders_log, "a") as handle:
@@ -203,11 +203,8 @@ def install_fake_uip(sandbox: pathlib.Path, **payload: Any) -> dict[str, str]:
     """Install the fake `uip` on a copy of PATH and return the env to run with."""
     payload.setdefault("projects", PRE_EXISTING)
     payload.setdefault("deployments", {})
-    # `folders` are resolvable by name or key (seed's leftover lookup);
-    # `folder_ids` are resolvable by key only (teardown's already-gone check).
     # Seed's `folders create` returns RUN_FOLDER_KEY so the snapshot's "scope"
-    # is deterministic.
-    payload.setdefault("folders", [])
+    # is deterministic; folder_ids is what `folders get` resolves against.
     payload.setdefault("created_folder_key", RUN_FOLDER_KEY)
     payload.setdefault(
         "folder_ids",
@@ -242,18 +239,6 @@ def deployment(
 def ixp_node_type(deployment_name: str, folder_key: str = FOLDER_KEY) -> str:
     """The real registry shape: uipath.ixp.{deploymentName}.{modelId}-{folderKey}."""
     return f"uipath.ixp.{deployment_name}.{MODEL_ID}-{folder_key}"
-
-
-def leftover_run_folder(stamped_at: str | None = None) -> dict[str, str]:
-    """A previous run's leaked run folder, resolvable by RUN_FOLDER_NAME.
-
-    Without stamped_at the Description is the API default — the unstamped
-    case, which the guard treats as an old leftover (deletable).
-    """
-    entry = {"Key": LEFTOVER_FOLDER_KEY, "DisplayName": RUN_FOLDER_NAME}
-    if stamped_at:
-        entry["Description"] = f"e2e run folder | {STAMP_MARKER}{stamped_at} | disposable"
-    return entry
 
 
 def write_flow(sandbox: pathlib.Path, nodes: list[dict[str, Any]]) -> None:
@@ -301,10 +286,13 @@ def write_snapshot(
 
 
 def run_script(
-    subcommand: str, sandbox: pathlib.Path, env: dict[str, str]
+    subcommand: str,
+    sandbox: pathlib.Path,
+    env: dict[str, str],
+    *flags: str,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, os.path.join(TASK_DIR, "handoff.py"), subcommand],
+        [sys.executable, os.path.join(TASK_DIR, "handoff.py"), subcommand, *flags],
         cwd=str(sandbox),
         env=env,
         capture_output=True,
@@ -695,6 +683,107 @@ def test_teardown_never_deletes_a_pre_existing_folder(
     assert FOLDER_KEY in completed.stdout
 
 
+def test_teardown_disowns_a_project_deployed_into_a_siblings_run_folder(
+    sandbox: pathlib.Path,
+) -> None:
+    """Wired here, but deployed into another run's folder — not ours to delete.
+
+    Both tasks build extractors over the same documents and search the same
+    registry, so an agent whose own node has not propagated can wire a
+    sibling's. Deleting on "wired" alone would take out a live run's project.
+    """
+    siblings_folder = "1f2e3d4c-5b6a-4079-8e1f-0a1b2c3d4e5f"
+    wired_flow(sandbox, deployment_name=OTHER_DEPLOYMENT)
+    env = tenant(
+        sandbox,
+        projects=PRE_EXISTING + [OTHER_PROJECT],
+        deployments={OTHER_PROJECT: [deployment(OTHER_DEPLOYMENT, folder_key=siblings_folder)]},
+        folder_ids={RUN_FOLDER_KEY: 100010, siblings_folder: 100030},
+        folder_names={siblings_folder: f"{RUN_FOLDER_PREFIX}deadbeef"},
+    )
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "deleted IXP project" not in completed.stdout
+    assert "NOT DELETED" in completed.stdout
+    assert not (sandbox.parent / "bin" / "deleted.txt").exists()
+
+
+def test_a_broken_deployments_list_is_not_read_as_a_deleted_project(
+    sandbox: pathlib.Path,
+) -> None:
+    """Only the 404 race is absorbed; an infra fault must not read as "gone".
+
+    Swallowing it would silently skip a real project in teardown's attribution
+    and leave its deployment on the tenant. It still must not cost the folder
+    delete, so cleanup reports it and carries on — teardown always exits 0.
+    """
+    write_snapshot(sandbox, PRE_EXISTING)
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [CREATED_PROJECT],
+        deployments={CREATED_PROJECT: [deployment()]},
+        deployments_list_broken=[CREATED_PROJECT],
+        folder_ids={RUN_FOLDER_KEY: 100010},
+    )
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "vanished mid-run" not in completed.stdout
+    assert "WARN: project cleanup failed" in completed.stdout
+    assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
+
+
+def test_an_unresolvable_folder_does_not_authorise_a_delete(
+    sandbox: pathlib.Path,
+) -> None:
+    """Fail safe when `folders get` fails: the project might be a sibling's.
+
+    The same rule cleanup() applies to deletes — a failing lookup is not proof.
+    Reading it as "not a sibling's folder" would delete a live run's project on
+    nothing more than a transient error.
+    """
+    unreadable = "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f"
+    wired_flow(sandbox, deployment_name=OTHER_DEPLOYMENT)
+    env = tenant(
+        sandbox,
+        projects=PRE_EXISTING + [OTHER_PROJECT],
+        deployments={OTHER_PROJECT: [deployment(OTHER_DEPLOYMENT, folder_key=unreadable)]},
+        folder_ids={RUN_FOLDER_KEY: 100010},
+    )
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"folder {unreadable} did not resolve" in completed.stdout
+    assert "deleted IXP project" not in completed.stdout
+    assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
+
+
+def test_teardown_survives_a_project_deleted_by_a_concurrent_run(
+    sandbox: pathlib.Path,
+) -> None:
+    """A sibling's teardown can delete its project mid-cleanup.
+
+    `deployments list` 404s on it, and the project set is a tenant-wide diff so
+    it contains siblings. If that raise escaped, cleanup would abort BEFORE
+    deleting the run folder — stranding this run's deployment and its registry
+    node, which is exactly what burns the fixture domain.
+    """
+    write_snapshot(sandbox, PRE_EXISTING)
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [CREATED_PROJECT, OTHER_PROJECT],
+        deployments={CREATED_PROJECT: [deployment()]},
+        vanished_projects=[OTHER_PROJECT],
+        folder_ids={RUN_FOLDER_KEY: 100010},
+    )
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"'{OTHER_PROJECT}' vanished mid-run" in completed.stdout
+    assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
+
+
 def test_teardown_leaves_a_new_folder_owned_by_a_concurrent_run(
     sandbox: pathlib.Path,
 ) -> None:
@@ -774,45 +863,12 @@ def test_seed_snapshots_existing_projects_and_records_the_run_folder(
     env = install_fake_uip(sandbox)
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert f"created run folder '{RUN_FOLDER_NAME}'" in completed.stdout
+    assert f"created run folder '{RUN_FOLDER_PREFIX}" in completed.stdout
     expected = {
         "names": sorted(project_digest(name) for name in PRE_EXISTING),
         "scope": RUN_FOLDER_KEY,
     }
     assert json.loads((sandbox / SNAPSHOT).read_text()) == expected
-
-
-def test_seed_retries_a_transiently_failing_leftover_delete(
-    sandbox: pathlib.Path,
-) -> None:
-    """Folder deletes can fail transiently (GH 32967816894, 32968685992) —
-    a couple of transient failures must not abort the run."""
-    env = install_fake_uip(
-        sandbox,
-        folders=[leftover_run_folder()],
-        folder_delete_failures={LEFTOVER_FOLDER_KEY: 2},
-    )
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert "retrying in" in completed.stdout
-    assert (sandbox / SNAPSHOT).exists()
-
-
-def test_seed_fails_when_the_leftover_delete_never_succeeds(
-    sandbox: pathlib.Path,
-) -> None:
-    """A persistent delete failure means teardown could not clean up either —
-    and the same name is about to be recreated, so the run must not start."""
-    env = install_fake_uip(
-        sandbox,
-        folders=[leftover_run_folder()],
-        undeletable_folders=[LEFTOVER_FOLDER_KEY],
-    )
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode != 0
-    assert "could not delete leftover run folder" in completed.stderr
-    assert "folder-delete" in completed.stderr
-    assert not (sandbox / SNAPSHOT).exists()
 
 
 def test_seed_fails_loudly_when_the_tenant_is_unreachable(
@@ -967,165 +1023,10 @@ def test_explicit_null_model_name_is_not_the_string_none(
     assert completed.returncode == 1
 
 
-def test_seed_fails_when_the_fixture_domain_is_already_covered(
-    sandbox: pathlib.Path,
-) -> None:
-    """A resolvable matching extractor makes reuse correct, so the test can't measure.
-
-    Resolvable is the operative word — see the unresolvable-residue case below.
-    With no leftover run folder to heal, seed deletes NOTHING: a foreign
-    extractor's folder is a hand-delete, never this script's.
-    """
-    env = install_fake_uip(
-        sandbox,
-        registry_nodes=[
-            {
-                "NodeType": f"uipath.ixp.{COVERED_NAME}.g-f",
-                "DisplayName": COVERED_NAME,
-            }
-        ],
-    )
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode != 0
-    assert "already covered" in completed.stderr
-    assert "foreign extractor" in completed.stderr
-    assert "deleted leftover run folder" not in completed.stdout
-    assert not (sandbox / SNAPSHOT).exists()
-
-
-def test_seed_ignores_a_domain_match_that_no_longer_resolves(
-    sandbox: pathlib.Path,
-) -> None:
-    """This task's own residue matches the markers but is not a usable extractor.
-
-    teardown.py deletes the project and cannot delete the folder deployment, so
-    the node keeps appearing in `registry search` forever. Blocking on it would
-    make the task single-shot per tenant — GH runs 32704589689 / 32704597551 /
-    32704606313 all died this way. An unresolvable match must be reported and
-    stepped over, and the snapshot must still be written.
-    """
-    stale = f"uipath.ixp.{STALE_RESIDUE_NAME}.g-f"
-    env = install_fake_uip(
-        sandbox,
-        registry_nodes=[{"NodeType": stale, "DisplayName": STALE_RESIDUE_NAME}],
-        unresolvable_nodes=[stale],
-    )
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert "IGNORING unresolvable match" in completed.stdout
-    assert (sandbox / SNAPSHOT).exists()
-
-
-def test_seed_blocks_when_one_of_several_matches_still_resolves(
-    sandbox: pathlib.Path,
-) -> None:
-    """Residue must not mask a live extractor that genuinely covers the domain."""
-    stale = f"uipath.ixp.{STALE_RESIDUE_NAME}.g-f"
-    live = f"uipath.ixp.{DOMAIN_MARKERS[1]}-abc123-ixp.g-f"
-    env = install_fake_uip(
-        sandbox,
-        registry_nodes=[
-            {"NodeType": stale, "DisplayName": STALE_RESIDUE_NAME},
-            {"NodeType": live, "DisplayName": f"{DOMAIN_MARKERS[1]}-abc123-ixp"},
-        ],
-        unresolvable_nodes=[stale],
-    )
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode != 0
-    assert live in completed.stderr
-    assert stale not in completed.stderr
-
-
-def test_seed_self_heals_a_leaked_run_folder(sandbox: pathlib.Path) -> None:
-    """A resolvable covering node is usually this task's own leaked residue —
-    a previous run's failed teardown left the run folder behind (GH run
-    32968685992 leaked exactly this shape). Seed deletes the folder it finds
-    under its own RUN_FOLDER_NAME — never one inferred from the node — which
-    removes the deployment, and the probe then finds the domain clear.
-    """
-    leaked = ixp_node_type(COVERED_NAME, folder_key=LEFTOVER_FOLDER_KEY)
-    env = install_fake_uip(
-        sandbox,
-        folders=[leftover_run_folder()],
-        registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
-    )
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert (
-        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
-        in completed.stdout
-    )
-    assert (sandbox / SNAPSHOT).exists()
-
-
-def test_seed_refuses_to_delete_a_live_concurrent_runs_folder(
-    sandbox: pathlib.Path,
-) -> None:
-    """The fixed folder name makes the task single-flight: a same-named folder
-    younger than one task budget is presumed a LIVE concurrent instance's, not
-    a failed teardown's, and seed must fail without deleting it."""
-    fresh = (datetime.now(timezone.utc) - timedelta(seconds=120)).isoformat()
-    env = install_fake_uip(sandbox, folders=[leftover_run_folder(stamped_at=fresh)])
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode != 0
-    assert "LIVE concurrent instance" in completed.stderr
-    assert "deleted leftover run folder" not in completed.stdout
-    assert not (sandbox.parent / "bin" / "deleted_folders.txt").exists()
-    assert not (sandbox / SNAPSHOT).exists()
-
-
-def test_seed_heals_an_old_leftover_with_a_parseable_stamp(
-    sandbox: pathlib.Path,
-) -> None:
-    """Age guard, delete direction: a folder older than the live window is a
-    failed teardown's leftover and is healed. (The self-heal test above covers
-    the unstamped degradation — age unknown reads as old.)"""
-    stale = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
-    env = install_fake_uip(sandbox, folders=[leftover_run_folder(stamped_at=stale)])
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert (
-        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
-        in completed.stdout
-    )
-    assert (sandbox / SNAPSHOT).exists()
-
-
-def test_seed_stamps_the_run_folder_it_creates(sandbox: pathlib.Path) -> None:
-    """The folder API has no creation time, so seed writes its own into the
-    Description at create time — the stamp the concurrency guard reads back."""
-    env = install_fake_uip(sandbox)
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert "stamped" in completed.stdout
-    stored = (sandbox.parent / "bin" / f"description_{RUN_FOLDER_KEY}.txt").read_text()
-    assert STAMP_MARKER in stored
-    stamp = stored.split(STAMP_MARKER, 1)[1].split()[0]
-    age = (datetime.now(timezone.utc) - datetime.fromisoformat(stamp)).total_seconds()
-    assert 0 <= age < 120
-
-
-def test_seed_treats_a_zero_exit_failure_envelope_as_absent(
-    sandbox: pathlib.Path,
-) -> None:
-    """The CLI's not-found envelope carries no Data key. It exits 1 today; a
-    line that ever exits 0 with it must read as 'no leftover', not KeyError."""
-    env = install_fake_uip(sandbox, not_found_exits_zero=True)
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert (sandbox / SNAPSHOT).exists()
-
-
 def test_a_hung_uip_call_is_named_not_a_traceback(sandbox: pathlib.Path) -> None:
-    """`registry pull --force` is environment weather; a call outliving the cap
-    must fail naming the command and the cap, not as a bare TimeoutExpired."""
-    env = install_fake_uip(sandbox, slow_commands=["registry pull"], slow_seconds=3)
+    """A `uip` call outliving the cap must fail naming the command and the cap,
+    not as a bare TimeoutExpired."""
+    env = install_fake_uip(sandbox, slow_commands=["projects list"], slow_seconds=3)
     env["HANDOFF_UIP_TIMEOUT_SECONDS"] = "1"
     completed = run_script("seed", sandbox, env)
     assert completed.returncode != 0
@@ -1134,71 +1035,298 @@ def test_a_hung_uip_call_is_named_not_a_traceback(sandbox: pathlib.Path) -> None
     assert "TimeoutExpired" not in completed.stderr.strip().splitlines()[-1]
 
 
-def test_seed_blocks_when_a_covering_node_is_not_the_run_folders(
-    sandbox: pathlib.Path,
-) -> None:
-    """A covering node backed by some OTHER folder is not residue seed may
-    touch: heal the leftover, but the still-covered domain fails the run
-    without deleting the foreign folder."""
-    foreign = ixp_node_type(COVERED_NAME, folder_key=CONCURRENT_FOLDER_KEY)
-    env = install_fake_uip(
-        sandbox,
-        folders=[leftover_run_folder()],
-        registry_nodes=[{"NodeType": foreign, "DisplayName": COVERED_NAME}],
-    )
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode != 0
-    assert (
-        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
-        in completed.stdout
-    )
-    assert "already covered" in completed.stderr
-    # The survivor is NOT the healed leftover's node, so "re-run" would be the
-    # wrong remedy — triage must be pointed at the foreign folder.
-    assert "foreign extractor" in completed.stderr
-    assert "re-run the task" not in completed.stderr
-    assert not (sandbox / SNAPSHOT).exists()
+# ── seed: fixture-domain residue sweep ──────────────────────────────────────
 
 
-def test_seed_blocks_this_run_when_the_registry_lags_the_self_heal(
-    sandbox: pathlib.Path,
-) -> None:
-    """Folder deleted, but the registry keeps serving the node (indexing lag).
+def test_seed_sweeps_a_stale_leaked_domain_project(sandbox: pathlib.Path) -> None:
+    """The leak that teardown cannot collect is healed by the next run's seed.
 
-    The agent could still wire the stale node, so THIS run must not proceed —
-    but the folder is gone, so the next run starts clean. The error must say
-    a re-run is the remedy.
+    A project created but never deployed nor wired is unattributable, so
+    teardown reports it as NOT DELETED and leaves it. The agent then finds it
+    with `ixp projects list` and reuses its trained model instead of creating
+    one — the RE-13543 failure this sweep exists to prevent.
     """
-    leaked = ixp_node_type(COVERED_NAME, folder_key=LEFTOVER_FOLDER_KEY)
     env = install_fake_uip(
         sandbox,
-        folders=[leftover_run_folder()],
-        registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
-        sticky_nodes=[leaked],
-    )
-
-    completed = run_script("seed", sandbox, env)
-    assert completed.returncode != 0
-    assert (
-        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
-        in completed.stdout
-    )
-    assert "re-run the task" in completed.stderr
-    assert not (sandbox / SNAPSHOT).exists()
-
-
-def test_seed_accepts_an_uncovered_fixture_domain(sandbox: pathlib.Path) -> None:
-    env = install_fake_uip(
-        sandbox,
-        registry_nodes=[
-            {
-                "NodeType": "uipath.ixp.idp-benchmark-invoices-c735405a-ixp.g-f",
-                "DisplayName": "idp-benchmark---invoices-c735405a-ixp",
-            }
-        ],
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(7200)},
     )
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert "do not cover" in completed.stdout or "cover the fixture domain" in completed.stdout
+    assert f"swept leaked fixture project '{LEAKED_DOMAIN_PROJECT}'" in completed.stdout
+    assert LEAKED_DOMAIN_PROJECT in (sandbox.parent / "bin" / "deleted.txt").read_text()
+
+
+def test_swept_project_is_not_recorded_as_pre_existing(sandbox: pathlib.Path) -> None:
+    """A swept name must leave the baseline, or recreating it reads as no-op.
+
+    The agent may legitimately create a project with the same slug; if the
+    swept name stayed in the snapshot, new_project_names would not see it and
+    check would report "no project was created" — the very failure the sweep
+    exists to prevent.
+    """
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(7200)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    recorded = set(json.loads((sandbox / SNAPSHOT).read_text())["names"])
+    assert project_digest(LEAKED_DOMAIN_PROJECT) not in recorded
+    assert {project_digest(name) for name in PRE_EXISTING} <= recorded
+    assert "Snapshotted %d " % len(PRE_EXISTING) in completed.stdout
+
+
+def test_seed_sweeps_on_the_title_when_the_slug_is_clean(sandbox: pathlib.Path) -> None:
+    """Residue is matched on Title too — the agent names either from the domain."""
+    disguised = "extraction-9c1f22ab-ixp"
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [disguised],
+        project_titles={disguised: f"{DOMAIN_MARKERS[0]} licences"},
+        project_created_at={disguised: iso_ago(7200)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"swept leaked fixture project '{disguised}'" in completed.stdout
+
+
+def test_seed_never_sweeps_a_project_outside_the_fixture_domain(
+    sandbox: pathlib.Path,
+) -> None:
+    """Parallel safety: the sweep is certain only because the domain is owned.
+
+    A sibling task's project — old, but carrying no domain marker — is not
+    this fixture's to delete, however tempting the age.
+    """
+    sibling = "vendor-invoices-5a097334-ixp"
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [sibling],
+        project_created_at={sibling: iso_ago(86400)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "swept" not in completed.stdout
+    assert not (sandbox.parent / "bin" / "deleted.txt").exists()
+
+
+# ── seed: concurrency properties (RE-13543) ─────────────────────────────────
+
+
+def test_seed_names_a_per_run_folder_in_the_handoff_file(sandbox: pathlib.Path) -> None:
+    """The prompt reads the folder name from seed.json, so seed must write it.
+
+    A fixed literal in the prompt is the other thing two concurrent runs
+    cannot share; the file is what lets the prompt stay static while the name
+    varies per run.
+    """
+    env = install_fake_uip(sandbox)
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    handoff = json.loads((sandbox / RUN_HANDOFF_FILE).read_text())
+    assert handoff["folder"].startswith(RUN_FOLDER_PREFIX)
+    assert f"created run folder '{handoff['folder']}'" in completed.stdout
+    # Nothing about projects or extractors — that would leak the answer.
+    assert set(handoff) == {"folder"}
+
+
+def test_only_the_build_task_is_told_the_extractor_name(
+    sandbox: pathlib.Path,
+) -> None:
+    """`--name-extractor` is what separates the two tasks' seed.json.
+
+    e2e_04 needs the name so its extractor is not domain-named. e2e_03 must
+    NOT get it: its agent reads this file, and a key called "extractor" hands
+    it the prerequisite it is graded on working out for itself.
+    """
+    plain = run_script("seed", sandbox, install_fake_uip(sandbox))
+    assert plain.returncode == 0, plain.stdout + plain.stderr
+    assert set(json.loads((sandbox / RUN_HANDOFF_FILE).read_text())) == {"folder"}
+
+    other = sandbox.parent / "sandbox-build"
+    other.mkdir()
+    named = run_script("seed", other, install_fake_uip(other), "--name-extractor")
+    assert named.returncode == 0, named.stdout + named.stderr
+    handoff = json.loads((other / RUN_HANDOFF_FILE).read_text())
+    assert set(handoff) == {"folder", "extractor"}
+    assert handoff["extractor"].startswith(BUILD_PROJECT_PREFIX)
+
+
+def test_the_extractor_name_carries_no_domain_marker(sandbox: pathlib.Path) -> None:
+    """The whole point: e2e_04's extractor must not read as domain coverage.
+
+    A domain-named extractor is what a concurrent e2e_03 would find and
+    correctly reuse, and it is also what seed's own sweep hunts for.
+    """
+    completed = run_script(
+        "seed", sandbox, install_fake_uip(sandbox), "--name-extractor"
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    name = json.loads((sandbox / RUN_HANDOFF_FILE).read_text())["extractor"].lower()
+    assert not any(marker in name for marker in DOMAIN_MARKERS)
+
+
+def test_seed_sweeps_a_leaked_build_project(sandbox: pathlib.Path) -> None:
+    """Unmarked by design, so the sweep has to collect it by prefix instead.
+
+    Without this it is the one leak nothing reclaims: teardown could not
+    attribute it, and the domain markers deliberately do not match it.
+    """
+    leaked = f"{BUILD_PROJECT_PREFIX}9c1f22ab-0a1b2c3d-ixp"
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [leaked],
+        project_created_at={leaked: iso_ago(7200)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"swept leaked fixture project '{leaked}'" in completed.stdout
+    assert leaked in (sandbox.parent / "bin" / "deleted.txt").read_text()
+
+
+def test_a_live_runs_build_project_is_not_swept(sandbox: pathlib.Path) -> None:
+    """The age guard covers prefix matches too — a sibling mid-build keeps its
+    project."""
+    live = f"{BUILD_PROJECT_PREFIX}9c1f22ab-0a1b2c3d-ixp"
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [live],
+        project_created_at={live: iso_ago(240)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "KEEPING fixture project" in completed.stdout
+    assert not (sandbox.parent / "bin" / "deleted.txt").exists()
+
+
+def test_two_seeds_claim_different_run_folders(sandbox: pathlib.Path) -> None:
+    """Two concurrent runs must not name the same folder."""
+    first = run_script("seed", sandbox, install_fake_uip(sandbox))
+    assert first.returncode == 0, first.stdout + first.stderr
+    one = json.loads((sandbox / RUN_HANDOFF_FILE).read_text())["folder"]
+
+    other = sandbox.parent / "sandbox-b"
+    other.mkdir()
+    second = run_script("seed", other, install_fake_uip(other))
+    assert second.returncode == 0, second.stdout + second.stderr
+    two = json.loads((other / RUN_HANDOFF_FILE).read_text())["folder"]
+
+    assert one != two
+
+
+def test_seed_proceeds_while_a_published_extractor_covers_the_domain(
+    sandbox: pathlib.Path,
+) -> None:
+    """The RE-13543 fix, stated as a test.
+
+    A resolvable published extractor for the fixture domain used to abort seed.
+    Seed no longer probes the registry at all, so a covering node cannot stop
+    it (`check` still probes, for its served-node fallback). Whether that is
+    right for the task consuming this grader is the task's business, not the
+    grader's.
+    """
+    siblings_node = ixp_node_type(LEAKED_DOMAIN_PROJECT, folder_key=CONCURRENT_FOLDER_KEY)
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[{"NodeType": siblings_node, "DisplayName": LEAKED_DOMAIN_PROJECT}],
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_leaves_a_live_siblings_domain_project_alone(
+    sandbox: pathlib.Path,
+) -> None:
+    """A young domain project belongs to a live sibling: not swept, not fatal.
+
+    Both halves matter. Deleting it would break the sibling mid-run; failing on
+    it would recreate the single-flight behaviour this task just shed.
+    """
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(240)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "KEEPING fixture project" in completed.stdout
+    assert not (sandbox.parent / "bin" / "deleted.txt").exists()
+    # Still recorded as pre-existing, so the sibling's project can never be
+    # mistaken for this run's creation.
+    recorded = set(json.loads((sandbox / SNAPSHOT).read_text())["names"])
+    assert project_digest(LEAKED_DOMAIN_PROJECT) in recorded
+
+
+def test_an_undateable_domain_project_is_never_swept(sandbox: pathlib.Path) -> None:
+    """No CreatedAt must never authorise a delete.
+
+    The sweep's safe default: a project it cannot age might belong to a live
+    concurrent run, so it is reported and left. Untested, this guard is one
+    typo away from deleting a sibling's project mid-run.
+    """
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: None},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "undateable" in completed.stdout
+    assert not (sandbox.parent / "bin" / "deleted.txt").exists()
+
+
+def test_an_undeletable_stale_project_does_not_fail_the_run(
+    sandbox: pathlib.Path,
+) -> None:
+    """A refused sweep is reported, never fatal — it blocks nothing now."""
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(7200)},
+        undeletable=[LEAKED_DOMAIN_PROJECT],
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"WARN: could not delete '{LEAKED_DOMAIN_PROJECT}'" in completed.stdout
+    assert "swept leaked fixture project" not in completed.stdout
+
+
+def test_teardown_retries_a_transiently_failing_folder_delete(
+    sandbox: pathlib.Path,
+) -> None:
+    """Folder deletes fail transiently; teardown must not leak on the first miss.
+
+    Provisioning race on a just-created folder (GH run 32967816894) and an
+    "Error resolving folder" on a half-hour-old one (GH run 32968685992) — the
+    CLI's RetryWillNotFix hint was wrong both times. Deleting the run folder is
+    what removes this run's deployment and its registry node, so giving up on
+    attempt one is what leaves a published extractor behind.
+    """
+    write_snapshot(sandbox, PRE_EXISTING)
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [CREATED_PROJECT],
+        deployments={CREATED_PROJECT: [deployment()]},
+        folder_ids={RUN_FOLDER_KEY: 100010},
+        folder_delete_failures={RUN_FOLDER_KEY: 2},
+    )
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "folder delete attempt 1" in completed.stdout
+    assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
+    assert "LEAKED" not in completed.stdout

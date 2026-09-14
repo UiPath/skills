@@ -36,6 +36,7 @@ from _shared.case_check import (  # noqa: E402
     get_sla_rules,
     iter_tasks,
     read_caseplan,
+    selected_stage_ids,
 )
 
 EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.json")
@@ -186,7 +187,7 @@ def main():
             happy = True
         if (
             name in ("selected-stage-completed", "selected-stage-exited")
-            and rule.get("selectedStageId") == stage4_id
+            and stage4_id in selected_stage_ids(rule)
             and case_exit.get("marksCaseComplete") is not True
         ):
             expression = rule.get("conditionExpression")

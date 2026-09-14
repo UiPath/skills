@@ -12,9 +12,9 @@
       <uipath:migrationVersion version="11.5" />
       <uipath:caseManagement version="v1"><![CDATA[{"owner":"risk-team","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
-        <uipath:inputOutput id="Var_Tier" name="Tier" type="string" />
-        <uipath:inputOutput id="Var_Message" name="Message" type="string" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" elementId="Process_RiskScoring" />
+        <uipath:inputOutput id="Var_Tier" name="Tier" type="string" elementId="Process_RiskScoring" />
+        <uipath:inputOutput id="Var_Message" name="Message" type="string" elementId="Process_RiskScoring" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SS</bpmn:outgoing></bpmn:startEvent>
@@ -22,25 +22,25 @@
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
           <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_SS</bpmn:incoming><bpmn:outgoing>Flow_SF</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: amount > 500 ? "high" : "low" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return amount > 500 ? "high" : "low";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Format" name="Format Message" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"tier":"=vars.Var_Tier"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"tier":"=vars.Var_Tier"}]]></uipath:input>
           <uipath:output name="message" type="string" var="Var_Message" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_SF</bpmn:incoming><bpmn:outgoing>Flow_FE</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: "risk tier is " + tier };]]></bpmn:script>
+      <bpmn:script><![CDATA[return "risk tier is " + tier;]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_FE</bpmn:incoming></bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_SS" sourceRef="Start_1" targetRef="Task_Score" />

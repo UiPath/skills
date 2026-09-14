@@ -45,6 +45,24 @@ _TOP_LEVEL_KEY = re.compile(r"^[A-Za-z_][\w-]*:", re.M)
 _COMMAND = re.compile(r"command:\s*(.*)", re.S)
 _TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
+# The same-ground campaign addresses checkers through the mounted repo instead of
+# the task dir (`python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/<rel>/check_x.py`);
+# both forms name one script under this suite, and both are priced.
+_SUITE_SCRIPT = re.compile(r"\$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/(\S+\.py)")
+
+
+def _script_path(root: str, command_text: str) -> str | None:
+    """The checker script a run_command criterion executes, resolved on disk, or
+    None when the command is not one of the two forms this guard prices."""
+    m = _TASK_DIR_SCRIPT.search(command_text)
+    if m:
+        resolved = os.path.join(root, m.group(1))
+    else:
+        m = _SUITE_SCRIPT.search(command_text)
+        if not m:
+            return None
+        resolved = os.path.join(_SUITE_ROOT, m.group(1))
+    return resolved if os.path.exists(resolved) else None
 _TASK_TIMEOUT = re.compile(r"^\s*task_timeout:\s*(\d+)", re.M)
 # Only these timeouts run inside the watchdog.
 _SUCCESS_CRITERIA = re.compile(
@@ -562,13 +580,10 @@ def _criteria():
                 command = _COMMAND.search(block)
                 if not command:
                     continue
-                script = _TASK_DIR_SCRIPT.search(command.group(1))
-                if not script:
+                resolved = _script_path(root, command.group(1))
+                if not resolved:
                     continue
                 first_line = command.group(1).split("\n")[0].strip().strip("'\"")
-                resolved = os.path.join(root, script.group(1))
-                if not os.path.exists(resolved):
-                    continue
                 timeout_line = next(
                     (ln for ln in block.split("\n") if _TIMEOUT.search(ln)), ""
                 )
@@ -654,8 +669,7 @@ def _eligible():
                 tasks += 1
             for block in _criterion_blocks(text, "run_command"):
                 command = _COMMAND.search(block)
-                script = _TASK_DIR_SCRIPT.search(command.group(1)) if command else None
-                if script and os.path.exists(os.path.join(root, script.group(1))):
+                if command and _script_path(root, command.group(1)):
                     criteria += 1
     return criteria, tasks
 

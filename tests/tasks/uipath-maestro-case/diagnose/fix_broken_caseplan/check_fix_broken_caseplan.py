@@ -5,7 +5,7 @@ The fixture stages a LinearThreeStages case (Intake → Review → Decision)
 with two deliberate defects that `uip maestro case validate` reports:
 
   A. Decision's stage-entry condition references a non-existent stage
-     (`selectedStageId: "Stage_Ghost404"`) — Decision is unreachable / orphaned
+     (`selectedStageIds: ["Stage_Ghost404"]`) — Decision is unreachable / orphaned
      and the reference dangles.
   B. Intake's task carries `type: "wait-for-event"` — not one of the 9 closed
      task-type enum values (Critical Rule 16).
@@ -19,7 +19,7 @@ deleting stages/tasks to silence the validator:
   3. Bug B fixed: no `wait-for-event` anywhere and every task `type` is one of
      the 9 closed enum values.
   4. Bug A fixed: the `Stage_Ghost404` dangling reference is gone, every
-     stage-entry `selectedStageId` resolves to an existing node, and Decision
+     stage-entry `selectedStageIds` resolve to an existing node, and Decision
      is reachable from Intake through condition-derived transitions.
   5. The manual trigger and the case-exit rule are preserved.
 
@@ -43,6 +43,7 @@ from _shared.case_check import (  # noqa: E402
     find_triggers,
     get_case_exit_conditions,
     iter_tasks,
+    selected_stage_ids,
     read_caseplan,
 )
 
@@ -137,7 +138,7 @@ def main():
             f"replaced with a valid type"
         )
 
-    # 4. Bug A — dangling reference gone, all selectedStageId resolve, Decision reachable.
+    # 4. Bug A — dangling reference gone, all selectedStageIds resolve, Decision reachable.
     if GHOST_ID in repr(plan):
         _fail(
             f"the dangling reference {GHOST_ID!r} is still present — Decision's "
@@ -147,12 +148,12 @@ def main():
         for cond in (stage.get("data") or {}).get("entryConditions") or []:
             for group in cond.get("rules") or []:
                 for rule in group or []:
-                    sid = (rule or {}).get("selectedStageId")
-                    if sid and sid not in node_ids:
-                        _fail(
-                            f"stage {_label(stage)!r} entry condition references "
-                            f"non-existent stage id {sid!r}"
-                        )
+                    for sid in selected_stage_ids(rule or {}):
+                        if sid not in node_ids:
+                            _fail(
+                                f"stage {_label(stage)!r} entry condition references "
+                                f"non-existent stage id {sid!r}"
+                            )
     if not _has_path(plan, primary["Intake"]["id"], primary["Decision"]["id"]):
         _fail(
             "Decision is not reachable from Intake through condition-derived "

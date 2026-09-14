@@ -17,6 +17,7 @@ from _shared.case_check import (  # noqa: E402
     get_case_exit_conditions,
     get_variables,
     read_caseplan,
+    selected_stage_ids,
 )
 
 
@@ -91,9 +92,14 @@ def iter_rules(conditions: Iterable[dict]) -> Iterable[dict]:
 
 
 def has_rule(conditions: Iterable[dict], rule_name: str, **expected: object) -> bool:
+    def matches(rule: dict, field: str, value: object) -> bool:
+        if field == "selectedStageId":
+            return value in selected_stage_ids(rule)
+        return rule.get(field) == value
+
     return any(
         rule.get("rule") == rule_name
-        and all(rule.get(field) == value for field, value in expected.items())
+        and all(matches(rule, field, value) for field, value in expected.items())
         for rule in iter_rules(conditions)
     )
 

@@ -32,7 +32,8 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  Create a UiPath Maestro Flow named "EscalationJiraTicket" with a MANUAL trigger.
+  Create a UiPath Maestro Flow named "EscalationJiraTicket" with a MANUAL trigger
+  inside a solution of the same name.
   It triages a customer escalation and creates a Jira ticket for it.
 
   Read `seed.json` in the current directory. Declare flow inputs matching the keys
@@ -45,7 +46,8 @@ initial_prompt: |
      productionDown AND NOT workaroundAvailable; Sev2 = productionDown AND
      workaroundAvailable; Sev3 otherwise) plus engineeringNeeded.
   2. Create a Jira issue using the Atlassian Jira "Create Issue" connector activity.
-     Use the `project_key` and `issuetype_id` from `seed.json`. The issue summary
+     Use the `project_key`, `issuetype_id`, and `reporter_id` from `seed.json`
+     (`reporter_id` is the issue's reporter field). The issue summary
      MUST include the `correlationId` verbatim (e.g. "[<severity>] <correlationId>
      <subject>"). Use the Atlassian Jira connection in the `Shared/uipath-maestro-flow`
      folder. If the Atlassian Jira connector isn't in your registry, STOP rather than
@@ -54,10 +56,20 @@ initial_prompt: |
      correlationId), and jiraIssueKey (the created issue's key).
 
   Validate the flow. Do NOT run or debug the flow — the grader executes it with the
-  seeded inputs. Do NOT ask for approval and do NOT pause; build end-to-end in a
-  single pass. Before starting, load the uipath-maestro-flow skill and follow its
+  seeded inputs. Before starting, load the uipath-maestro-flow skill and follow its
   workflow.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
     description: "Agent validated the generated Flow"

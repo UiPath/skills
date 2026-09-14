@@ -1,0 +1,108 @@
+{
+    "id": "case-HuBt1LqApp",
+    "version": "30.0.0",
+    "name": "HITL Case Fixture",
+    "description": "Bare case (no HITL task yet, no deployed Action Center app) for HITL case-surface tests: one stage, two case variables.",
+    "metadata": {
+        "caseIdentifier": "HITL",
+        "caseIdentifierType": "constant",
+        "caseAppEnabled": false,
+        "publishVersion": 2,
+        "caseExitRules": [
+            {
+                "id": "Condition_xC1XyX",
+                "displayName": "Case Resolved",
+                "marksCaseComplete": true,
+                "rules": [
+                    [
+                        {
+                            "id": "Rule_jdBFrJ",
+                            "rule": "required-stages-completed"
+                        }
+                    ]
+                ]
+            }
+        ]
+    },
+    "bindings": [],
+    "variables": {
+        "inputOutputs": [
+            {
+                "id": "var_invoiceId",
+                "name": "invoiceId",
+                "type": "string",
+                "custom": true,
+                "elementId": "root"
+            },
+            {
+                "id": "var_amount",
+                "name": "amount",
+                "type": "number",
+                "custom": true,
+                "elementId": "root"
+            }
+        ]
+    },
+    "nodes": [
+        {
+            "id": "trigger_1",
+            "type": "uipath.case.trigger",
+            "data": {
+                "typeVersion": "1.0.0",
+                "display": {
+                    "label": "Trigger 1"
+                },
+                "inputs": {
+                    "serviceType": "None"
+                }
+            }
+        },
+        {
+            "id": "Stage_aB3kL9",
+            "type": "case-management:Stage",
+            "data": {
+                "label": "Review",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "isRequired": true,
+                "entryConditions": [
+                    {
+                        "id": "Condition_uqCYDc",
+                        "displayName": "Case Entered",
+                        "isInterrupting": false,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_GGCJC6",
+                                    "rule": "case-entered"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "exitConditions": [
+                    {
+                        "id": "Condition_FSPwx7",
+                        "displayName": "Stage Done",
+                        "type": "exit-only",
+                        "marksStageComplete": true,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_M3P1RF",
+                                    "rule": "required-tasks-completed"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "tasks": []
+            }
+        }
+    ],
+    "edges": []
+}

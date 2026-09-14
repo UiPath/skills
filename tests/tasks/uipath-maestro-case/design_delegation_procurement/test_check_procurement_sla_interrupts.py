@@ -8,44 +8,44 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from check_procurement_sla_interrupts import (
     check_canonical_stage_sla,
     declared_sla_titles,
+    sdd_task_activation,
     sections_by_target,
     sla_references,
     stage_section,
-    task_lane,
-    task_section,
 )
 
 
 def test_duplicate_task_names_are_resolved_by_stage():
-    plan = """
-## T01: task "Review"
+    """Same task name in two stages keys on (stage, task), never on name alone."""
+    sdd = """
+### Stage 1: Intake
 
-- stage: Intake
-- activation-mode: parallel
+##### Task 1.1: Review
 
-## T02: task "Review"
+**Activation Mode:** parallel
 
-- stage: Decision
-- activation-mode: sequential
+**Entry Condition:**
+
+| WHEN | IF |
+|---|---|
+| current-stage-entered | — |
+
+### Stage 2: Decision
+
+##### Task 2.1: Review
+
+**Activation Mode:** sequential
+
+**Entry Condition:**
+
+| WHEN | IF |
+|---|---|
+| runs-sequentially | — |
 """
 
-    assert "activation-mode: parallel" in task_section(plan, "Review", "Intake")
-    assert "activation-mode: sequential" in task_section(plan, "Review", "Decision")
-    with pytest.raises(SystemExit, match="ambiguous tasks.md T-entry"):
-        task_section(plan, "Review")
-
-
-def test_plain_compact_fields_are_resolved_by_stage():
-    plan = """
-## T01: task "Review"
-
-stage: Intake
-activation-mode: parallel
-lane: 1
-"""
-
-    assert "stage: Intake" in task_section(plan, "Review", "Intake")
-    assert task_lane(plan, "Review") == 1
+    contracts = sdd_task_activation(sdd)
+    assert contracts[("Intake", "Review")] == ("parallel", "current-stage-entered")
+    assert contracts[("Decision", "Review")] == ("sequential", "runs-sequentially")
 
 
 def test_sla_table_title_does_not_replace_canonical_stage_sla_field():

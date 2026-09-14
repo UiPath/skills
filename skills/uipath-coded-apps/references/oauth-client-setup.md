@@ -96,6 +96,8 @@ A missing scope name (`scope not found` / `Not all scopes=<list> are present in 
 
 ## Manual portal fallback
 
+> **Portal picker labels vs scope names.** In the portal, scopes are grouped under **resource labels** that differ from the CLI scope names. Pick the scopes per resource from [oauth-scopes.md](oauth-scopes.md). Some services require more than one resource.
+
 ### Create a new External Application
 
 1. Go to `https://{cloudHost}/{orgName}/portal_/admin/external-apps/oauth`

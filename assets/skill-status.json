@@ -66,7 +66,7 @@
       "last_synced": null
     },
     "uipath-coded-apps": {
-      "status": "preview",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
@@ -146,7 +146,7 @@
       "last_synced": null
     },
     "uipath-maestro-flow": {
-      "status": "in-development",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null

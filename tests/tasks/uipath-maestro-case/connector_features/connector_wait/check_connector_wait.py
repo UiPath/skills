@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from _shared.case_check import (  # noqa: E402
     assert_task_type_present,
     first_rule_of_condition,
+    is_non_required,
     iter_tasks,
     read_caseplan,
     task_is_skeleton,
@@ -94,7 +95,7 @@ def main():
                     f"FAIL: entry rule {slot}[{entry.get('name')!r}].elementId "
                     f"must be {expected_element_id!r}; got {entry.get('elementId')!r}"
                 )
-    if event_task.get("isRequired") is not False:
+    if not is_non_required(event_task):
         sys.exit(
             "FAIL: event-triggered placeholder process should stay non-required; "
             f"got isRequired={event_task.get('isRequired')!r}"

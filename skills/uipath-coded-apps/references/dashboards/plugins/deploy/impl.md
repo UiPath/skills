@@ -364,6 +364,7 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 | Publish 5xx / HTML | Wait 10s and retry (up to 4 times) |
 | Deploy "indexing" / "not been published" (with NO `--version` passed) | Propagation delay — show retry ticker, wait 10s, retry up to 3 times |
 | Deploy "not been published" but you passed `--version` | Remove `--version` from the deploy call — deploy resolves the latest version itself |
+| Deploy "not found among folders accessible to your account" | Folder propagation lag on a just-created folder, or a session missing `OR.Default` — see [pack-publish-deploy.md](../../../pack-publish-deploy.md#a-freshly-created-folder-is-not-immediately-deployable). Retry the **same** key; do not create another folder or chase it as permissions |
 | Deploy "routing name must be unique" on an upgrade | You passed `--path-name` on an upgrade — omit it; routing already exists |
 | Deploy path-name conflict (fresh deploy) | Generate new suffix, retry deploy only (pack/publish already done) |
 | "Agentic Governance is a preview feature and is not enabled for your organization" (on a pinned/governance deploy) | Not a deploy failure — the app IS deployed and reachable at its URL. Governance pinning is preview-gated: the pin just won't surface in the Governance section until the org is enrolled. Report success with the URL, add the preview note (Step 11), and tell the user to contact their UiPath representative for preview access. Do NOT retry or bump the version. |

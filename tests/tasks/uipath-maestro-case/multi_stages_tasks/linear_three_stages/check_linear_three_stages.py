@@ -16,6 +16,7 @@ from _shared.case_check import (  # noqa: E402
     get_variables,
     iter_stage_entry_conditions,
     iter_tasks,
+    is_non_required,
     read_caseplan,
     start_debug,
 )
@@ -40,12 +41,12 @@ def main():
     if not find_transitions(plan, source=intake["id"], target=review["id"]):
         sys.exit(
             "FAIL: no Intake → Review transition; Review's entry condition must "
-            "name Intake (selected-stage-completed/-exited selectedStageId=Intake)"
+            "name Intake (selected-stage-completed/-exited selectedStageIds=[Intake])"
         )
     if not find_transitions(plan, source=review["id"], target=decision["id"]):
         sys.exit(
             "FAIL: no Review → Decision transition; Decision's entry condition must "
-            "name Review (selected-stage-completed/-exited selectedStageId=Review)"
+            "name Review (selected-stage-completed/-exited selectedStageIds=[Review])"
         )
 
     intake_entry = list(iter_stage_entry_conditions(intake))
@@ -110,7 +111,7 @@ def main():
             f"FAIL: 'Hold For 1 Hour' skipCondition should reference skipReview; "
             f"got {skip!r}"
         )
-    if notify.get("isRequired") is not False:
+    if not is_non_required(notify):
         sys.exit(
             f"FAIL: 'Notify Reviewer' should have isRequired=false (task-level "
             f"flag explicitly set); got {notify.get('isRequired')!r}"

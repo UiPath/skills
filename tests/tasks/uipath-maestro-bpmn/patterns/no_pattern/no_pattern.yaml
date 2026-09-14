@@ -10,7 +10,10 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1800
   expected_turns: 24
-  max_turns: 40
+  # Nightly 2026-09-08_04-17-10 (claude-sonnet-5) hit max_turns at 41 turns
+  # (old cap 40; expected 24). Raise to 60 for margin. Re-verified SUCCESS at
+  # 638s on run 34374073086.
+  max_turns: 60
 
 sandbox:
   template_sources:

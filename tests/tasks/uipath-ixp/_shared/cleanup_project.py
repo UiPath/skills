@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""
-Post-run cleanup for IXP e2e/integration tasks: delete THIS run's project.
+"""Post-run cleanup for IXP tasks: delete THIS run's project.
 
-Reads report.json (CWD), written by the agent right after creation:
-  {"project_name": "<ProjectName from `uip ixp projects create` output>"}
+Two sources, read from CWD, whichever are present:
 
-and deletes that one project via `uip ixp projects delete <name> -y --output json`.
-It only ever removes the project the current run created — it does NOT sweep or
-touch any other (older / leftover) project.
+  report.json  {"project_name": "<ProjectName>"} — the agent created the project
+  seed.json    {"uuid8": "<run id>", ...} — pre_run created it; the slug is
+               withheld from the sandbox, so it is recovered from `projects
+               list` by the run id the backend carried into the ProjectName
 
-Best-effort and ALWAYS exits 0 (a delete failure is logged as WARN, never fails
-the test). Locally without a tenant this is a no-op.
+Only projects this run recorded are deleted — never a sweep. Best-effort and
+ALWAYS exits 0; without a tenant this is a no-op.
 """
 
 import json
@@ -33,33 +32,32 @@ def delete_project(name):
     if proc is None:
         return
     out = (proc.stdout or proc.stderr or "").strip()
-    # Only rc==0 is success. Do NOT treat any error — including 404 — as benign:
-    # `uip ixp projects delete <name>` 404s on a dataset-less project shell (the
-    # delete resolves the dataset first), so a 404 does NOT mean the project is
-    # gone. Surface every non-zero exit as WARN rather than masking it.
+    # Only rc==0 is success. A 404 does NOT mean the project is gone — delete
+    # resolves the dataset first and 404s on a dataset-less shell.
     if proc.returncode == 0:
         print(f"OK: deleted IXP project '{name}'")
     else:
         print(f"WARN: could not delete '{name}' (exit {proc.returncode}): {out[:200]}")
 
 
-def load_report():
-    path = os.path.join(os.getcwd(), "report.json")
+def load_json(filename):
+    path = os.path.join(os.getcwd(), filename)
     if not os.path.exists(path):
-        print(f"SKIP: no report.json at {path}")
+        print(f"SKIP: no {filename} at {path}")
         return None
     try:
         with open(path) as f:
             return json.load(f)
     except Exception as e:
-        print(f"SKIP: could not parse report.json: {e}")
+        print(f"SKIP: could not parse {filename}: {e}")
         return None
 
 
-def cleanup_own_project():
-    report = load_report()
+def name_from_report():
+    """The project the agent created, as it recorded it."""
+    report = load_json("report.json")
     if not report:
-        return
+        return None
     name = (
         report.get("project_name")
         or report.get("name")
@@ -67,12 +65,43 @@ def cleanup_own_project():
     )
     if not name:
         print("SKIP: no 'project_name' key in report.json")
-        return
-    delete_project(name)
+    return name
+
+
+def name_from_seed():
+    """The project pre_run created, found in `projects list` by this run's uuid8.
+
+    The ProjectName survives an `update-title`, so the uuid8 finds the project
+    even if the agent renamed it. Matching Title would not.
+    """
+    seed = load_json("seed.json")
+    if not seed:
+        return None
+    run_id = seed.get("uuid8")
+    if not run_id:
+        print("SKIP: no 'uuid8' key in seed.json")
+        return None
+
+    proc = run(["uip", "ixp", "projects", "list", "-l", "10000", "--output", "json"])
+    if proc is None or proc.returncode != 0:
+        print(f"WARN: could not list projects to find the project seeded for run {run_id}")
+        return None
+    try:
+        projects = (json.loads(proc.stdout).get("Data") or {}).get("Projects") or []
+    except Exception as e:
+        print(f"WARN: could not parse projects list: {e}")
+        return None
+
+    matches = [p["Name"] for p in projects if run_id in (p.get("Name") or "")]
+    if len(matches) != 1:
+        print(f"WARN: {len(matches)} projects carry run id {run_id}; deleting none")
+        return None
+    return matches[0]
 
 
 def main():
-    cleanup_own_project()
+    for name in dict.fromkeys(filter(None, [name_from_seed(), name_from_report()])):
+        delete_project(name)
     sys.exit(0)
 
 

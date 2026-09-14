@@ -18,8 +18,8 @@ sandbox:
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
-  Author a local Maestro BPMN project with main file
-  `InvoiceApproval/InvoiceApproval.bpmn` for this process:
+  Author a local Maestro BPMN project whose main file is named
+  `InvoiceApproval.bpmn`, inside the generated project, for this process:
     - a blank start event,
     - an exclusive gateway "Amount check" with two outgoing branches:
         - a conditioned branch (e.g. amount over a threshold),
@@ -28,15 +28,15 @@ initial_prompt: |
 
   Requirements:
   - Discover extension types via the registry first if you add any UiPath
-    extension node; declare any variables with the registry's BPMN.Variables
-    template. Do not hand-author uipath:* XML from prose.
+    extension node; declare any variables in `<uipath:variables>`, each with an
+    `elementId`. Do not hand-author uipath:* XML from prose.
   - Author the structural BPMN (definitions/process scaffold, sequence flows,
     gateway conditions + default) per the skill's structural reference.
   - The file MUST include a bpmndi:BPMNDiagram with a BPMNShape for every node
     and a BPMNEdge for every sequence flow.
   - Validate the file with an explicit Bash command before finishing: run a
     well-formed-XML parse, e.g.:
-    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('InvoiceApproval/InvoiceApproval.bpmn')"`.
+    `python3 -c "import xml.etree.ElementTree as ET, pathlib; ET.parse(next(pathlib.Path('.').rglob('InvoiceApproval.bpmn')))"`.
   - Do not upload, publish, deploy, debug, run, or pack anything.
 
 success_criteria:
@@ -48,19 +48,19 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was authored"
-    path: "InvoiceApproval/InvoiceApproval.bpmn"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('InvoiceApproval.bpmn')) else 'InvoiceApproval.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN file contains a diagram for Studio Web import"
-    path: "InvoiceApproval/InvoiceApproval.bpmn"
-    includes:
-      - "bpmndi:BPMNDiagram"
-      - "bpmndi:BPMNPlane"
-      - "exclusiveGateway"
+    command: "python3 -c \"from pathlib import Path; import sys; t=next(Path('.').rglob('InvoiceApproval.bpmn')).read_text(); sys.exit(0 if all(s in t for s in ('bpmndi:BPMNDiagram','bpmndi:BPMNPlane','exclusiveGateway')) else 'diagram or gateway missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

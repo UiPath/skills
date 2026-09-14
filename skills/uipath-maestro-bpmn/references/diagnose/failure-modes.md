@@ -23,6 +23,19 @@ Entry point inputs reference a start event through `elementId`, but the start ev
 `uipath:entryPointId` or the ID is duplicated.
 Fix root start event extensions and variable scoping.
 
+## Start or end variable mapping is missing
+
+An `input` variable scoped to a root StartEvent must map to the root
+`inputOutput` variable used by gateways and activities. Before completion, the
+result `inputOutput` variable must map on each returning root EndEvent to its
+scoped `output` variable. Without these mappings, conditions can evaluate
+against null values and a completed process can return null outputs.
+
+Inspect the StartEvent and EndEvent `BPMN.Variables` mappings and the process
+instance variables. Add the missing `input` → `inputOutput` or `inputOutput` →
+`output` mapping. Converge routes that return the same result before the
+returning EndEvent.
+
 ## Binding reference missing
 
 A node context value refers to `=bindings.<id>` but no matching root binding or generated binding resource exists.
@@ -48,7 +61,9 @@ The model may adjust BPMN structure around the connector but must not invent con
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.
-Run `uip maestro bpmn update-metadata <file.bpmn> --dry-run` to identify drift, then `uip maestro bpmn update-metadata <file.bpmn>` to regenerate before upload or deploy.
+Run `uip maestro bpmn refresh <project-path> --output json` before upload or deploy: it regenerates the four
+derived files and reports the stale ones in `Data.WrittenFiles`. The deprecated `update-metadata` skips
+`Intsvc.*` connection bindings, so use `refresh` even when only a drift answer is wanted.
 
 Signs:
 

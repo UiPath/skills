@@ -10,7 +10,7 @@ Case knowledge is split three ways. Read all three to begin, in parallel, **at m
 | [case-design-layers-guide.md](case-design-layers-guide.md) | the case model and every design **Default** — skeleton, gates, data, SLAs, naming, the closure checklist |
 | [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) | the render contract — skeleton, cell rules inline, validation footer |
 
-That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (tasks.md, caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
+That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
 
 **Draft finalization reads less (hard):** this file's §Resumption + §Terminal step, `sdd.draft.md`, and the template (its validation footer is the gate) — once each. NOT the layers guide: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists.
 
@@ -206,7 +206,9 @@ On the accept answer: write the SDD to disk in batches, gate it, flip it. The mo
 
 | Mode | File | After the write |
 |---|---|---|
+<!--skill-flavor:build-handoff-row:start-->
 | Build handoff (`uipath-maestro-case` asked for a build, no `sdd.md`) | `sdd.md` at the working root — NEVER overwrite an existing one; abort and surface it | Do NOT stop. The Build answer already carried consent: the build's phases start immediately in this conversation (`uip solution init` + its Phase 1, verifying the resolved identities instead of re-discovering them) |
+<!--skill-flavor:build-handoff-row:end-->
 | Direct design (design/generate a case SDD, greenfield, no PDD) | `<CASE_NAME_KEBAB>-sdd.md` | STOP — the write is a turn boundary; `## Next Steps` points at Lane A or `uipath-maestro-case` for a later, opt-in turn |
 | Draft request (user asked for a reviewable draft and to stop) | `sdd.draft.md`, or `<name>-sdd.draft.md` when the request names the file | STOP. Never promote a draft |
 | Draft finalization (a `sdd.draft.md` exists, user asks to finalize) | the draft's basename minus `.draft` | STOP. §Resumption owns the procedure; the draft stays on disk beside the final |
@@ -243,7 +245,7 @@ user-facing** (Resources and Integrations carries every user-relevant outcome).
 
 ## HTML preview
 
-Optional, **on-request only** — never offered proactively. Self-contained local HTML review of the case design (Case Definition, collapsible Stages & Tasks, Personas, Integrations; filters and search). Generation: Read [`assets/templates/case/sdd-viewer.html`](../../assets/templates/case/sdd-viewer.html), replace the `__SDD_DATA__` token in its `<script id="sdd-data">` block with JSON serialized from the in-memory model (schema in the template's header comment — do NOT re-parse the SDD when the model is live), Write `./sdd-viewer.html`, tell the user: `Generated ./sdd-viewer.html — open it in a browser to review.` Failure → one-line notice, continue. Downstream build phases ignore this file.
+Optional, **on-request only** — never offered proactively. Self-contained local HTML review of the case design (Case Definition, collapsible Stages & Tasks, Personas, Integrations; filters and search). Generation: Read [`assets/templates/case/sdd-viewer.html`](../../assets/templates/case/sdd-viewer.html), replace the `__SDD_DATA__` token inside the element with `id="sdd-data"` — the file carries a second copy of that token in an error string further down, which stays as it is — with JSON serialized from the in-memory model (schema in the template's header comment — do NOT re-parse the SDD when the model is live), Write `./sdd-viewer.html`, tell the user: `Generated ./sdd-viewer.html — open it in a browser to review.` Failure → one-line notice, continue. Downstream build phases ignore this file.
 
 ## Resumption
 

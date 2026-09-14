@@ -43,26 +43,28 @@ initial_prompt: |
       exactly `product`,
     - an end event.
 
-  Declare `product` as a ROOT-scoped output variable:
-  `<uipath:output id="product" name="product" ... />`. Do not use
-  `uipath:inputOutput` for this computed result, do not add an `elementId`, and
-  do not rename the variable id to `Product`, `Var_Product`, or any other case
-  variant. The script-task `uipath:output` mapping must target `var="product"`
-  so the runtime value is readable via `variables-all`.
+  Declare `product` as a process-level variable:
+  `<uipath:inputOutput id="product" name="product" ... elementId="<process id>" />`.
+  Do not rename the variable id to `Product`, `Var_Product`, or any other case
+  variant. The script-task `uipath:output` mapping must target `var="product"`.
+  A root `<uipath:output>` is not the right shape here: keyed to the process it
+  fails `uip maestro bpmn refresh` ("Process output must target a root end
+  event"), and keyed to an end event it is a published output, not a
+  process-level variable.
 
   For the script output contract, use this exact runtime shape:
     - script-task input mapping:
       `<uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>`
-    - script body: `return { response: 6 * 7 };`
+    - script body: `return 6 * 7;` (the runtime wraps it as `result.response`)
     - script-task output mapping:
       `<uipath:output name="product" type="integer" var="product" source="=result.response" />`
 
-  Do NOT return a bare scalar such as `return 6 * 7;`, and do NOT map
-  `source="=result"`. Studio Web may complete the debug run with that shape,
-  but the `product` variable reads back empty in `variables-all`. Do NOT omit
-  the `args` input mapping, even when there are no inputs; it is part of the
-  `BPMN.ScriptTask` registry template and routes the script through the runtime
-  body field.
+  Do NOT map `source="=result"` — that reads the runtime's wrapper object
+  rather than the returned value. Do NOT wrap the return yourself
+  (`return { response: 6 * 7 };` double-wraps to `result.response.response`).
+  Do NOT omit the `args` input mapping, even when there are no inputs; it is
+  part of the `BPMN.ScriptTask` registry template and routes the script through
+  the runtime body field.
 
   Build exactly one project — do not scaffold extra projects, boilerplate
   copies, or duplicate .bpmn files.

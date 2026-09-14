@@ -1,0 +1,58 @@
+task_id: skill-gov-aops-policy-datatypes-roundtrip
+description: >
+  End-to-end (outcome-graded): the agent authors a governance policy for the E2E
+  product from its own form template, setting distinctive non-default values
+  across data types, and registers it. The check reads the policy back and
+  asserts every field round-tripped with its JSON type intact — booleans stay
+  booleans, numbers stay numbers (not "42"), grids stay arrays of row objects —
+  no key was dropped, no unsupported type was serialized, and the distinctive
+  values (number 42, checkbox false, a renamed text field) landed exactly. A
+  create that stringifies values or flattens a grid fails here even though a bare
+  presence check would pass. Left undeployed: registering changes nothing about
+  which policy governs a subject.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, aops-policy, data-types, outcome-graded]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-datatypes" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Data-type round-trip for the E2E product" AOPS_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 24
+
+initial_prompt: |
+  Register a new AOps governance policy for the `E2E` product:
+
+  - Name: exactly the `policy.name` value from `seed.json`.
+  - Description: exactly the `policy.description` value from `seed.json`.
+  - Fill it from the product's own form template, then set these values:
+    - the `Number` field to `42`
+    - the `Checkbox` field to unchecked (false)
+    - the `Text Field` to `e2e-roundtrip`
+    - add a second row to the `Data Grid`
+  - Leave every other field at its template default.
+
+  Register it only - do NOT deploy it to any tenant, user or group.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "every field round-tripped with its JSON type intact and the distinctive values landed"
+    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="payload" AOPS_EXPECT_JSON="{\"number\": 42, \"checkbox\": false, \"textField\": \"e2e-roundtrip\"}" AOPS_EXPECT_MIN_ROWS="{\"dataGrid\": 2}" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

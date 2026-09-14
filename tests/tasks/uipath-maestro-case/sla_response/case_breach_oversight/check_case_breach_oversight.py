@@ -10,6 +10,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import is_non_required  # noqa: E402
 from _shared.sla_response_check import (  # noqa: E402
     assert_breach_shape,
     assert_interrupting,
@@ -46,7 +47,7 @@ def main() -> None:
             "non-interrupting SLA oversight lane still stays `secondary` — promoting it to a "
             "regular stage would make it required for case completion"
         )
-    if lane["data"].get("isRequired") is not False:
+    if not is_non_required(lane["data"]):
         fail(
             f"lane {label_of(lane)!r} has isRequired={lane['data'].get('isRequired')!r}; an "
             "oversight lane must stay out of the required-stages-completed set"

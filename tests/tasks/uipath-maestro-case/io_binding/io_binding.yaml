@@ -27,13 +27,13 @@ initial_prompt: |
   workspace. Use that file as the sole source of truth: do not rewrite,
   summarize, simplify, or redesign it.
 
-  Treat the generated tasks.md plan and all continuation gates as pre-approved.
+  Treat all build and continuation gates as pre-approved.
   Build end-to-end in one pass and finish with `uip maestro case validate`
   passing. Bind the exact existing resources and folders written in the SDD;
   do not create an inline API workflow or add an API project to the solution.
-  Preserve every SDD Outputs row as its own tasks.md list item, including both
+  Bind every SDD Outputs row into caseplan.json, including both
   `estimatedAge -> estimatedAge` rows. Discover the undeclared top-level
-  `APIOutput1` resource output and auto-mint it as a bare tasks.md item; do not
+  `APIOutput1` resource output and auto-mint it as a bare output; do not
   invent an operator-free Outputs row in sdd.md.
 
   Do not run `uip maestro case debug` yourself; the test harness runs it

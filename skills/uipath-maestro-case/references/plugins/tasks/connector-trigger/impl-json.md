@@ -4,13 +4,13 @@
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --type trigger --input-details` once, reads the populated `caseShape`, substitutes placeholders, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
+Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **task-specific** parts.
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides:
+The SDD row provides:
 
 | Field | Example |
 |---|---|
@@ -27,16 +27,16 @@ The `tasks.md` entry provides:
 
 ## Configuration Workflow
 
-### Step 1 — Build `--input-details` JSON from tasks.md
+### Step 1 — Build `--input-details` JSON from the resolved entry
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object literally from `registry-resolved.json`:
 
 ```jsonc
 {
-    // eventParameters from tasks.md input-values.eventParameters (or omit when absent)
+    // eventParameters from the resolved entry's input-values.eventParameters (or omit when absent)
     "eventParameters": "<input-values.eventParameters or omit>",
-    // filter — FilterTree object from tasks.md (or omit when not authored)
-    "filter": "<filter from tasks.md or omit>"
+    // filter — FilterTree object from registry-resolved.json (or omit when not authored)
+    "filter": "<filter from registry-resolved.json or omit>"
 }
 ```
 
@@ -84,10 +84,10 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 {
   "id": "<taskId>",
   "type": "wait-for-connector",
-  "displayName": "<display-name from tasks.md>",
+  "displayName": "<display name from sdd.md>",
   "elementId": "<stageId>-<taskId>",
-  "isRequired": "<from tasks.md, default true>",
-  "shouldRunOnlyOnce": "<from tasks.md runOnlyOnce, default false>",
+  "isRequired": "<from sdd.md Required, default true>",
+  "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
   "data": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted in Step 5>",

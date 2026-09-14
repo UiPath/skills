@@ -22,7 +22,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
-- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
+- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Procedure
@@ -33,7 +33,7 @@
 uip maestro case tasks describe --type api-workflow --id "<entityKey>" --output json
 ```
 
-Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
+Fallback: planning-captured schema from `registry-resolved.json`. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 > **Built-inline sibling.** An API workflow built inline at the Rule 17 gate ([planning.md § Creating an API workflow inline](planning.md#creating-an-api-workflow-inline)) is already a **fully resolved task** by Phase 2 — bound during planning. Its I/O was read during planning from the sibling's raw `entry-points.json` (`entryPoints[0].input.properties` / `.output.properties` — case-preserving; fallbacks, warn when used: the `input.schema.document.properties` wrapper variant, then the `Workflow.json` root schemas when the entry-point I/O is `null`), located/confirmed via `uip maestro case registry search "<Name>" --type api --local --output json` (`search`, not `get` — `get --local` matches only the opaque `entityKey`, never the name). Do **not** read field names from the `--output json` `Resource.{Inputs,Outputs}` — its keys are PascalCased. NOT tenant `tasks describe` (the sibling isn't in the tenant). Skip Step 0's `tasks describe` for it; the binding shape below is identical, only the `folderPath` default differs: it is **empty `""`** (co-located — see [planning.md § Step 3 Binding](planning.md#creating-an-api-workflow-inline)), NOT the `solution_folder` sentinel (`resourceKey` keeps the sentinel; `folderPath` does not).
 
@@ -43,7 +43,7 @@ Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../..
 
 - `resource`: `"process"`
 - `resourceSubType`: `"Api"`
-- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime. **Built-inline sibling:** `folderPath` default is **empty `""`** (co-located — the case starts the workflow in its own deployed folder) while `resourceKey="solution_folder.<name>"` keeps the sentinel. Do NOT set `folderPath` to `solution_folder` — it passes `validate` but fails invocation with `folder not exist`. See [planning.md § Creating an API workflow inline](planning.md#creating-an-api-workflow-inline).
+- `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime. **Built-inline sibling:** `folderPath` default is **empty `""`** (co-located — the case starts the workflow in its own deployed folder) while `resourceKey="solution_folder.<name>"` keeps the sentinel. Do NOT set `folderPath` to `solution_folder` — it passes `validate` but fails invocation with `folder not exist`. See [planning.md § Creating an API workflow inline](planning.md#creating-an-api-workflow-inline).
 
 Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 

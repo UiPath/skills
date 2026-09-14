@@ -19,9 +19,9 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  Show me only the built-in authorization roles that ship with the platform in my
-  UiPath organization — leave out any custom roles we created ourselves. Save the
-  complete JSON result to ./builtin-roles.json.
+  Show me every built-in authorization role that ships with the platform — leave
+  out any custom roles we created ourselves. Save the raw JSON output of that
+  listing verbatim to ./builtin-roles.json — do not summarize or reformat it.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 

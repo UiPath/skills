@@ -82,6 +82,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the golden"
+    command: >-
+      uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "caseplan preserves the golden topology: 8 stages, secondary rework lane, condition-derived transitions, case exits, 15 tasks across all 9 types, run-once timer, runtime flags, SLA escalation"
     command: "python3 $TASK_DIR/check_cm_golden_case.py"
     timeout: 120
@@ -121,8 +131,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
+    description: "Agent did not edit caseplan.json in place with a script (Rule 13: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
+    tool_name: "Bash"
+    command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.json|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.json'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
     description: "Agent did not run case debug or publish (case suspends; publish is out of scope)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b'
+    command_pattern: '(^|[;&|]\s*)(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b(?![^;&|\n]*--help)'
     weight: 1.0
     pass_threshold: 1.0

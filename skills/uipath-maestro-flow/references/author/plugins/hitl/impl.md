@@ -1,25 +1,16 @@
 # HITL Node — Implementation
 
-Two node types implement human-in-the-loop checkpoints. Choose based on whether you need an inline form or an existing deployed app.
-
----
+Choose one checkpoint: an inline QuickForm or an existing deployed Action Center app.
 
 ## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
 
-This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
+Preferred: no registry pull, app publishing, or tenant dependency. Write the node directly into the `.flow` file as JSON.
 
-**Full implementation guide, JSON examples, and schema conversion rules:**
-→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
+For schema design, node writing, JSON examples, and schema conversion rules, see [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md). Skills are self-contained: this cross-skill reference is for documentation context only — per Critical Rule 4, offer the handoff and let the user choose. This guide covers implementation-phase topology resolution only, not schema design or node writing.
 
-> **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire one output edge per outcome — port `outcome-<outcome.id>` for each entry in `inputs.schema.outcomes[]` — never a single shared port.
 
-### Adding / Editing
-
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `outcome-completed` port after adding the node.
-
-### Quick Reference
-
-**Node JSON (minimum viable):**
+### Quick reference
 
 ```json
 {
@@ -31,13 +22,13 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
     "schema": {
       "schemaId": "<uuid>",
       "fields": [
-        { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "vars.fetchInvoice.output.invoiceId" },
-        { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "vars.fetchInvoice.output.amount" },
-        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "vars.decision" }
+        { "id": "invoiceid", "label": "Invoice ID", "type": "text", "direction": "input", "binding": "vars.fetchInvoice.output.invoiceId" },
+        { "id": "amount", "label": "Amount", "type": "number", "direction": "input", "binding": "vars.fetchInvoice.output.amount" },
+        { "id": "decision", "label": "Decision", "type": "text", "direction": "output", "variable": "vars.decision" }
       ],
       "outcomes": [
-        { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
-        { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "action": "End" }
+        { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true, "action": "Continue" },
+        { "id": "reject", "name": "Reject", "type": "string", "isPrimary": false, "action": "End" }
       ]
     },
     "recipient": { "channels": ["Email", "ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
@@ -51,7 +42,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
       "var": "output",
       "properties": {
         "decision": { "type": "string" },
-        "Action":   { "type": "string", "enum": ["Approve", "Reject"], "default": "Approve" }
+        "Action": { "type": "string", "enum": ["Approve", "Reject"], "default": "Approve" }
       }
     },
     "status": {
@@ -66,45 +57,37 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 }
 ```
 
-**Field format rules:**
-- **Input fields**: `binding: "vars.<nodeId>.output.<field>"` (raw path, no `=js:$` prefix). No `variable` property on input fields.
-- **Output fields**: `variable: "vars.<globalName>"` (`vars.` prefix required). No `binding`.
-- **InOut fields**: both `binding` and `variable`, same formats as above.
-- `schemaId` (not `id`) at the schema level — generate a fresh UUID.
-- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop.quick-form`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
-- No `model` block on node instances — only the definition carries it.
-
-**outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.
-
-**Ports:** `input` (target) → `outcome-completed` (source, label: Completed)
-
-**Output variables:**
-- `$vars.{nodeId}.output` — object with all `output` / `inOut` field values, keyed by **field `id`**
-- `$vars.{nodeId}.output.{fieldId}` — individual field value (e.g. `$vars.hitlReview1.output.decision`)
-- `$vars.{nodeId}.status` — selected outcome name (e.g. `"Approve"`, `"Reject"`)
-- `$vars.{globalId}` — workflow-global alias; `globalId` is `field.variable` with `vars.` stripped. **Do not use this in scripts — always use `$vars.{nodeId}.output.{fieldId}` instead.**
-
----
+Rules:
+- Input fields use `binding: "vars.<nodeId>.output.<field>"` (raw path; no `=js:$` prefix) and no `variable`.
+- Output fields use `variable: "vars.<globalName>"` (`vars.` required) and no `binding`.
+- InOut fields use both properties in those formats.
+- Use `schemaId` (not `id`) at schema level and generate a fresh UUID.
+- `priority` is `"Low"` | `"Medium"` | `"High"`, default `Low`. No `Critical` on this node, unlike an Action Center case task. Take the value from the request, not from the literal in either option's example: explicit high-urgency language — "urgent", "high priority", "critical", "ASAP", a named or breached SLA — selects `High`; reserve `Medium` for mild or unquantified urgency, `Low` when none is expressed. The value must land in the node; acknowledging the urgency in conversation is not enough.
+- `typeVersion` — always `"1.0"` for this node. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
+- Do not include a `model` block on node instances; only the definition carries it.
+- `outputs` contains only `output` (with `properties` for output/inOut fields plus `Action`) and `status` (with outcome `enum`/`default`). Do not add per-field `custom: true` entries.
+- Ports: `input` (target) → one `outcome-<outcome.id>` port per outcome (source), derived from `inputs.schema.outcomes[].id` verbatim — never lowercase it, never hardcode a port name. Every outcome needs a non-empty string `id`; one without gets no handle at all and any edge drawn to it is a no-op. `outcome-completed` is the port for a zero-outcome node, or for a real outcome whose `id` is literally `completed` — it is not a reserved string, so it is never a shared exit standing in for several outcomes. Wire every outcome port — an unwired one blocks that branch indefinitely.
+- Outputs are `$vars.{nodeId}.output` (object keyed by field `id`), `$vars.{nodeId}.output.{fieldId}`, `$vars.{nodeId}.status` (selected outcome name), and `$vars.{globalId}` (workflow-global alias from `field.variable` with `vars.` stripped). **Do not use the alias in scripts; use `$vars.{nodeId}.output.{fieldId}`.**
 
 ## Option 2 — App-Based HITL (`uipath.human-in-the-loop.coded-action-app`)
 
-Use when there is an existing deployed Action Center app that should serve as the task form.
+Use an existing deployed Action Center app as the task form.
 
 ### Discovery
 
-**CLI (primary path):**
+**Run:**
 
 ```bash
 uip solution resources list --kind App --output json
 ```
 
-Returns all Action Center app types (`vB Action`, `workflow Action`, `Coded Action`, `JS Action`). Filter by app name. Then retrieve the configuration:
+Filter returned Action Center app types (`vB Action`, `workflow Action`, `Coded Action`, `JS Action`) by app name. **Run:**
 
 ```bash
 uip solution resources get <key> --output json
 ```
 
-**Direct API fallback (if CLI unavailable):**
+If the CLI is unavailable, use:
 
 ```
 GET {BASE_URL}/{ORG}/studio_/backend/api/resourcebuilder/solutions/{SOLUTION_ID}/resources/search
@@ -112,9 +95,9 @@ GET {BASE_URL}/{ORG}/studio_/backend/api/resourcebuilder/solutions/{SOLUTION_ID}
   &types=VB%20Action&types=Workflow%20Action&types=Coded%20Action&types=CodedAction&types=JS%20Action
 ```
 
-Full step-by-step (app search → retrieve-configuration → resource files → reference registration → debug overwrites) → **[hitl-node-apptask.md](../../../../../uipath-human-in-the-loop/references/hitl-node-apptask.md)**
+For app search → retrieve-configuration → resource files → reference registration → debug overwrites, see **[hitl-node-apptask.md](../../../../../uipath-human-in-the-loop/references/hitl-node-apptask.md)**.
 
-### Node JSON (Quick Reference)
+### Quick reference
 
 ```json
 {
@@ -131,24 +114,16 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
       "folderPath": "Shared",
       "inputSchema": {
         "type": "object",
-        "properties": {
-          "<paramName>": { "type": "string" }
-        }
+        "properties": { "<paramName>": { "type": "string" } }
       },
       "outputSchema": {
         "type": "object",
-        "properties": {
-          "<outputName>": { "type": "string" }
-        }
+        "properties": { "<outputName>": { "type": "string" } }
       }
     },
     "appInputBindings": {
       "<inputParamName>": "=vars.<nodeId>.output.<field>",
       "<inputParamName2>": "=metadata.InstanceId"
-    },
-    "schema": {
-      "fields": [],
-      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
     },
     "priority": "Medium"
   },
@@ -158,9 +133,7 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
       "description": "Task result data",
       "source": "=result",
       "var": "output",
-      "properties": {
-        "Action": { "type": "string", "enum": ["Submit"], "default": "Submit" }
-      }
+      "properties": { "Action": { "type": "string", "enum": ["Submit"], "default": "Submit" } }
     },
     "status": {
       "type": "string",
@@ -174,31 +147,35 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
 }
 ```
 
-**`typeVersion`** — fill in the version returned by `uip maestro flow registry get <appKey>` for the specific deployed app. Unlike QuickForm (always `"1.0"`), AppTask version varies per app definition.
+Rules:
+- Fill `typeVersion` with the version returned by `uip maestro flow registry get <appKey>` for the specific deployed app. Unlike QuickForm, AppTask versions vary by app definition.
+- `inputs.app.inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), not arrays.
+- `inputs.appInputBindings` maps names from `inputSchema.properties` to `"=vars.<path>"` expressions (with `=` and no `js:`). Without these bindings, input fields are blank.
+- `priority` follows Option 1's rule above — derived from the request, not the `"Medium"` literal in the example.
+- Do not add `inputs.schema` to this node — its outcomes come from the deployed app (`inputs.app`), not a schema block. Adding one flips the port from the static `completed` handle this node type actually uses to a schema-derived `outcome-<id>` handle, which does not match what the app produces.
+- Ports: `input` (target) → `completed` (source). Unlike QuickForm, this port stays static regardless of the app's own outcomes.
 
-**`inputs.app`**: `inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), **not arrays**.
+### If the app does not exist
 
-**`inputs.appInputBindings`** — maps app input parameter names to binding expressions. Format: `"=vars.<path>"` (with `=` prefix, no `js:`). Key = parameter name from `inputSchema.properties`. Without this, all input fields appear blank.
+Record `[CREATE NEW] <description>` in the node table and use `core.logic.mock` as a placeholder. The app is out of scope; use the `uipath-coded-apps` skill to build it.
 
-### If the app does not exist yet
-
-Note as `[CREATE NEW] <description>` in the node table and use `core.logic.mock` as a placeholder. The app itself is out of scope for this skill — use the `uipath-coded-apps` skill to build it.
-
----
-
-## Common Pattern — Human-in-the-Loop
+## Common pattern
 
 ```text
-Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?) ->
-  true: Script (submit) -> End
-  false: End
+Manual Trigger -> RPA Process (extract) -> HITL (review, outcomes: Approve/Reject) ->
+  outcome-approve: Script (submit) -> End
+  outcome-reject: End
 ```
+
+Branch directly off each outcome's own handle. Do not insert a Decision node after a HITL node to re-derive the branch from `$vars.{nodeId}.status` — the outcome handles already are the branch points.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip maestro flow registry list --local`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
-| Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
-| Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
-| `outcome-completed` port unwired (Option 1) | Missing edge on output handle | Wire the `outcome-completed` output handle — an unwired `outcome-completed` blocks the flow indefinitely |
+| Task never completes | Human has not submitted the form | Check task assignment in Orchestrator |
+| Output missing expected fields | App form does not match expected schema | Verify app form fields match what the flow expects |
+| An outcome port unwired (Option 1) | Missing edge on one of the `outcome-<outcome.id>` handles | Wire every outcome's own port; an unwired outcome port blocks the flow indefinitely on that branch |
+| Wired `outcome-completed` as if it were a shared exit for several outcomes (Option 1) | Confused the zero-outcome placeholder for a real port | Check `inputs.schema.outcomes` — if any entry's `id` isn't literally `completed`, rewire to `outcome-<outcome.id>` per outcome instead |
+| Run never finishes; instance stays `Running` until the timeout, ports all wired | A HITL node sits in a flow nothing will attend — no assignee, or an unattended run (schedule, `flow debug`, eval) | Confirm a human will open the task. If the run is unattended, use a mechanism that completes on its own — see [planning.md](planning.md#when-to-select) |

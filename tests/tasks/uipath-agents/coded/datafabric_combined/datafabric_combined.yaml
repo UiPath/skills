@@ -1,0 +1,61 @@
+task_id: skill-agent-coded-datafabric-combined
+description: >
+  Coded-agent Data Fabric integration combining both paths. Agent
+  discovers entities, selects the right one, then wires both an
+  NL-to-SQL tool for freeform queries and an SDK write tool for a
+  fixed operation — with prompt forwarding and lazy init.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+
+run_limits:
+  expected_turns: 65
+  turn_timeout: 1200
+
+pre_run:
+  # Clean up leftover state from prior crashed runs
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrderCombined --include-folders"
+    timeout: 60
+    fail_on_error: false
+  # Seed choice set + entity (two-phase: choice set → get ID → create entity with bound Status field)
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_shared/seed_coded_order.py --entity-name CE_CodedOrderCombined"
+    timeout: 300
+    fail_on_error: true
+
+initial_prompt: |
+  Build me a coded agent called `order-manager` that works with our
+  order data in Data Fabric — the entity is named exactly `Order`;
+  find it by listing what's available. It needs to handle two things:
+  1. Users asking freeform questions about orders — anything from
+     totals to customer lookups. I can't predict these ahead of time.
+  2. Marking a specific order as delivered by setting its Status to
+     "Delivered" — this is always the same operation.
+
+  The agent's instructions should apply consistently everywhere.
+  Scaffold and init only — don't run or deploy.
+
+post_run:
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrderCombined --include-folders"
+    timeout: 60
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both integration paths present, correct imports, lazy init, bindings"
+    command: "python3 $TASK_DIR/check_datafabric_combined.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

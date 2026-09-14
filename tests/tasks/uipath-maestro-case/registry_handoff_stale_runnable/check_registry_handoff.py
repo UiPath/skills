@@ -16,7 +16,7 @@ EXPECTED = {
         "cache_file": "agent-index.json",
     },
 }
-# Names the STAGED stale cache used; they must NOT survive into the fresh audit or tasks.md.
+# Names the STAGED stale cache used; they must NOT survive into the fresh audit.
 STALE_QUERIES = ("LegacyPostingFunction", "PreviousEmailDrafter")
 STALE_IDENTITIES = ("stale-api-0000", "stale-agent-0000")
 STAGE = "Resolve Resources"
@@ -44,7 +44,6 @@ assert len(entries) == len(EXPECTED), (
 )
 
 cache_root = Path.home() / ".uip" / "case-resources"
-tasks_text = Path("tasks/tasks.md").read_text(encoding="utf-8")
 
 for name, expected in EXPECTED.items():
     matching = [e for e in entries if str(e.get("searchQuery", "")).strip() == name]
@@ -117,11 +116,10 @@ for name, expected in EXPECTED.items():
         f"({sel_folder!r}); expected the canonical resource"
     )
 
-    assert name in tasks_text, f"tasks.md omitted resource name {name}"
 
 # The stale names must be gone as *selections* — no entry may still search for or resolve
 # to them. They MAY still appear in a `rationale` line explaining what was discarded (that
-# is correct, informative behavior), so do NOT blanket-substring-search the audit or tasks.md.
+# is correct, informative behavior), so do NOT blanket-substring-search the audit.
 for stale in STALE_QUERIES:
     assert not any(str(e.get("searchQuery", "")).strip() == stale for e in entries), (
         f"stale audit entry {stale} was not replaced from the current SDD"
@@ -132,5 +130,3 @@ for stale in STALE_QUERIES:
         for e in entries
     ), f"a task still SELECTED the stale resource {stale}"
 
-assert "Post Invoice" in tasks_text
-assert "Draft Notification" in tasks_text

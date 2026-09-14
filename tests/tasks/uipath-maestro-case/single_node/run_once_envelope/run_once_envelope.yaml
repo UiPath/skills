@@ -119,8 +119,8 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step (Phase 0, post-tasks.md, or Phase 2a→2b).
+  - Treat every build gate as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step (Phase 0, Phase 1, or Phase 2a→2b).
   - Do NOT run `uip maestro case debug`.
   - The task is NOT complete until `uip maestro case validate` has passed.
 

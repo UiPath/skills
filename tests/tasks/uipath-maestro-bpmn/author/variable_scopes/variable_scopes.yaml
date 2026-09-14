@@ -1,0 +1,45 @@
+task_id: skill-bpmn-author-variable-scopes
+description: >
+  Authoring eval for variable scoping: every `<uipath:variables>` declaration
+  must carry an `elementId` that resolves to a real element, keyed to the
+  element that owns the variable — the start event for a caller-supplied input
+  (so it reaches the generated entry point's input schema), the process id for
+  a working variable read by a gateway. The prompt never mentions `elementId`,
+  so the task fails if the skill stops teaching the contract.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", lifecycle:generate, shape:multi-node, node:gateway, node:script]
+
+run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
+  expected_turns: 16
+  max_turns: 60
+
+initial_prompt: |
+  Create a local BPMN project named "TierRouting" for this process:
+  - The caller supplies an order `amount` when starting the process.
+  - A `bpmn:scriptTask` derives a `tier` of `high` (`amount >= 1000`) or `low`.
+  - An exclusive gateway routes on the tier to one of two end events.
+
+  Requirements:
+  - Use synthetic placeholder resource names only. Do not include tenant URLs,
+    folder keys, connection IDs, or user names.
+  - Do not upload, publish, deploy, debug, or run the process.
+
+  The caller must be able to supply the amount when starting the process.
+
+success_criteria:
+  - type: run_command
+    description: "BPMN source was created"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('TierRouting.bpmn')) else 'TierRouting.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every variable declaration is scoped to the element that owns it"
+    command: "python3 $TASK_DIR/check_variable_scopes.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
