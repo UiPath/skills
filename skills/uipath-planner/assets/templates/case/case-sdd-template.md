@@ -338,6 +338,30 @@ the exact stage display name — never the case name. -->
 |----------|---------------|----------------|
 | <Yes \| No> | <Yes \| No> | <=js: expression or —> |
 
+<!-- FINALIZING A DRAFT — the draft's block is NOT this block. Side by side, on a real draft task:
+
+  IN sdd.draft.md                        IN the final sdd.md
+  ---------------------------------      ---------------------------------
+  ##### Task 1.1: Screen Resume (`t02`)   ##### Task 1.1: Screen Resume (`t02`)
+  **Type:** agent                         **Type:** agent
+                                          **Activation Mode:** sequential      <- ADD
+                                          **Design Rationale:** Resume triage   <- ADD
+                                            is model work with no human in
+                                            the loop, and it runs before the
+                                            recruiter sees the file.
+  **Description:** ...                    **Description:** ...
+  **Entry Condition:** | WHEN | IF |      **Entry Condition:** | WHEN | IF |
+                                          **Task envelope**                     <- ADD
+                                          | Required | Run Only Once | Skip |
+                                          | Yes | No | — |
+  **Resolved Resource:** ...              **Resolved Resource:** ...
+
+The draft block looks finished — that is why the three ADD lines get missed. Copying the
+draft's block verbatim fails checklist item 6 on EVERY task. Activation Mode comes from the
+draft's Starts When column (`sequential` when it says nothing); Design Rationale from the
+draft's own reasoning, one concrete sentence; Task envelope from the Required / Run Only Once
+columns of the draft's stage Tasks table. Stage blocks take `**Design Rationale:**` too. -->
+
 ###### Action Task Detail (type: `action`)
 
 **HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. -->
