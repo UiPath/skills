@@ -232,7 +232,7 @@ success_criteria:
   # empty or denied tenant.
   - type: llm_judge
     description: "Report states page completeness from the pagination fields"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["access-report.md"]
     prompt: |
@@ -240,7 +240,7 @@ success_criteria:
       groups. The uipath-insights skill requires the answer to say, for a
       list, whether every page was retrieved, read from the CLI's
       Pagination fields (Total, HasMore) rather than assumed. Read
-      access-report.md and the agent's response.
+      access-report.md.
 
       Score 1.0 if, for the users list, the report says whether rows remain
       after the pages it fetched (or that the list was empty or denied, so
@@ -265,14 +265,14 @@ success_criteria:
   # compliant runs. The prompt carries the no-retry instruction instead.
   - type: llm_judge
     description: "A not-found lookup is reported as not visible in this tenant, not as nonexistent"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["access-report.md"]
     prompt: |
       The uipath-insights skill says an HTTP 404 on a by-ID RBAC lookup means
       the ID is not in the active tenant or is not visible to the caller, and
       is not proof that the user, role, or group exists nowhere. Read
-      access-report.md and the agent's response.
+      access-report.md.
 
       Score 1.0 if either: (a) no by-ID lookup returned not-found, and the
       report does not invent one; or (b) at least one lookup returned
@@ -299,8 +299,8 @@ success_criteria:
       everything the agent writes: users and groups are summarized by name
       and count, and email addresses, nested role identifiers, and role
       resource strings are never quoted. Passing a GUID as a command argument
-      is not disclosure; this rule is about the written report. Read
-      access-report.md and the agent's response.
+      is not disclosure; this rule is about the written report. Read both
+      access-report.md and the agent's reply: a leak in either one is a leak.
 
       Judge only third-party data, meaning the tenant's own users and groups.
       The agent's own authenticated account, as shown by `uip login status`,

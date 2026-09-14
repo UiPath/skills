@@ -182,7 +182,7 @@ success_criteria:
   # to uipath-platform rather than declaring the folder absent.
   - type: llm_judge
     description: "Report states discovery completeness and routes the full inventory to uipath-platform"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["folder-report.md"]
     prompt: |
@@ -191,8 +191,7 @@ success_criteria:
       say whether every page of a list was retrieved, and that the full
       inventory of folders (including idle ones) comes from Orchestrator via
       the uipath-platform skill (`uip or folders list`), which the agent
-      describes rather than runs here. Read folder-report.md and the agent's
-      response.
+      describes rather than runs here. Read folder-report.md.
 
       Score 1.0 if the report (a) says whether the discovery list was
       complete, from the pagination fields or from having fetched the whole

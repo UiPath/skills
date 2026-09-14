@@ -181,7 +181,7 @@ success_criteria:
   # Alert guide Rules 4 and 5.
   - type: llm_judge
     description: "Rules 4 and 5: Engine decides the typed fields, and each time field keeps its own format"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["alert-notes.md"]
     prompt: |
@@ -218,7 +218,7 @@ success_criteria:
   # Alert guide get-metrics pairing and Rule 12.
   - type: llm_judge
     description: "get-metrics arrays are paired by index and a 1,000-row history is read as truncated"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["alert-notes.md"]
     prompt: |
@@ -246,7 +246,7 @@ success_criteria:
   # Critical Rules 13 and 14, and alert guide Rule 10.
   - type: llm_judge
     description: "Rules 13, 14 and 10: delivery as type and count, trigger and delivery kept apart, folder scope forms per route"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["alert-notes.md"]
     prompt: |

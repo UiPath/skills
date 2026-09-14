@@ -266,7 +266,7 @@ success_criteria:
   # (RetryWillNotFix), 429 is the one branch with RetryLater.
   - type: llm_judge
     description: "Rule 8: the retry verdicts for 403, 404, and 429 match the guides"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["errors.md"]
     prompt: |

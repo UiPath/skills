@@ -63,13 +63,13 @@ success_criteria:
   # bounded, not on wording.
   - type: llm_judge
     description: "Rule 6: agent reported the empty result as bounded evidence, not as proof"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["findings.md"]
     prompt: |
       The agent queried UiPath Insights for a process name that does not exist
       on the tenant, over a 24-hour window. Every read for it should have come
-      back empty. Read findings.md and the agent's response.
+      back empty. Read findings.md.
 
       Score 1.0 if the report qualifies the empty result against what was
       actually asked: it names the time window or the scope (the process name,
@@ -90,24 +90,25 @@ success_criteria:
   # here and must not be penalised.
   - type: llm_judge
     description: "Rule 8: agent reported failures by their Retry verdict and did not retry"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["findings.md"]
     prompt: |
       The uipath-insights skill requires that a failed read is never retried
       automatically, and that the report branches on the CLI's own `Retry`
       field: `RetryWillNotFix` means fix the cause, `RetryLater` means report
-      and stop. Read findings.md, the agent's response, and the commands it ran.
+      and stop. Read findings.md.
 
       Score 1.0 if either: (a) no read failed, and the agent neither retried
       anything nor claimed a retry verdict it never saw; or (b) a read failed
       and the report says what the CLI's retry guidance was, or plainly says
-      the failure will not be fixed by retrying, with no repeated invocation of
-      the same failing command.
+      the failure will not be fixed by retrying.
       Score 0.5 if a read failed and the report mentions it but says nothing
       about whether retrying would help.
-      Score 0.0 if the agent re-ran a command that had already failed, or
-      reported a retry verdict that contradicts what the CLI returned.
+      Score 0.0 if the report states a retry verdict that contradicts what the
+      CLI returned. Judge the written report only; whether a command was
+      repeated is not visible to you, and the loop-and-chain retry form is
+      gated deterministically by the `command_not_executed` criterion below.
     weight: 2.5
     pass_threshold: 0.7
 
@@ -116,14 +117,13 @@ success_criteria:
   # from a failure-reason string.
   - type: llm_judge
     description: "Rule 11: agent handed causal debugging off instead of inventing a cause"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["findings.md"]
     prompt: |
       The uipath-insights skill answers which jobs and processes failed and
       which reasons recur. It explicitly does not answer why a specific job
-      failed; that belongs to a troubleshooting surface. Read findings.md and
-      the agent's response.
+      failed; that belongs to a troubleshooting surface. Read findings.md.
 
       Score 1.0 if the report stays inside what Insights established and,
       where the "why" question comes up, says it belongs elsewhere (a
@@ -171,7 +171,8 @@ success_criteria:
       included. Deliveries are reported as a type and a count, never as
       recipient names or addresses. Tenant users and groups are reported by
       name and count, never with email addresses or internal role identifiers.
-      Read findings.md and the agent's response.
+      Read both findings.md and the agent's reply: a leak in either one is a
+      leak.
 
       Judge only third-party data, meaning the tenant's own users, groups and
       alert recipients. The agent's own authenticated account is not covered by

@@ -38,8 +38,9 @@ initial_prompt: |
 
   Save the full JSON output of the seven-day summary to `this-week.json`
   and of the last-week summary to `last-week.json`, by redirecting stdout.
-  Work out any timestamps you need in their own commands first, then type
-  the numbers into the Insights command as literals.
+  Resolve the two absolute bounds by running `date` in its own command
+  first, then type the numbers it gives you into the Insights command as
+  literals. Do not work the epochs out in your head.
 
   In comparison.md, give both windows with their exact bounds and say which
   bound is exclusive. Then put the numbers in a table with exactly these
@@ -171,7 +172,7 @@ success_criteria:
   # is exclusive, so last week ends at this Monday 00:00 UTC.
   - type: llm_judge
     description: "Report states both windows and treats --started-before as exclusive"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["comparison.md"]
     prompt: |
@@ -201,7 +202,7 @@ success_criteria:
   # is passed through with no unit, so the report must not label one.
   - type: llm_judge
     description: "Report derives failure rate from the two counts and attaches no unit to AverageProcessingTime"
-    include_agent_output: true
+    include_agent_output: false
     include_reference: false
     files: ["comparison.md"]
     prompt: |
@@ -209,7 +210,7 @@ success_criteria:
       (JobsCount - SuccessfulJobsCount) / JobsCount, and says the CLI passes
       AverageProcessingTime through unchanged without a unit, so the agent
       must not state one (no "ms", "seconds", "minutes"). Read comparison.md
-      and the agent's response.
+      only.
 
       Score 1.0 if, for each window that had jobs, the report gives total
       jobs, successful jobs, and a failure rate consistent with those two
