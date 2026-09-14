@@ -175,12 +175,18 @@ success_criteria:
       last week, the end bound is this Monday 00:00:00 UTC, not Sunday
       23:59:59. Read comparison.md.
 
-      Score 1.0 if the report names both windows with their bounds and
-      identifies the end bound of the absolute window as exclusive (or
-      equivalently states the window as "Monday 00:00 UTC up to but not
-      including this Monday 00:00 UTC"). Score 0.0 if the absolute window is
-      described with an inclusive Sunday end, if only one window is
-      described, or if the bounds are missing.
+      Score 1.0 if the report describes both windows and says that the
+      absolute window's --started-before value is this Monday 00:00 UTC and
+      is exclusive (or equivalently that the window runs up to but not
+      including this Monday 00:00 UTC). The prompt itself describes last
+      week as "Monday 00:00 UTC through Sunday inclusive", so a report that
+      says both "through Sunday inclusive" and "the upper bound passed is
+      Monday 00:00 UTC, exclusive" is correct; those are the same window.
+      The relative window is described adequately as the last 10080 minutes
+      or seven days ending at the query time; the CLI does not surface its
+      exact bounds. Score 0.0 only if the report passes or describes Sunday
+      23:59:59 as the --started-before value, describes only one window, or
+      never says the upper bound is exclusive.
     weight: 2.0
     pass_threshold: 1.0
 

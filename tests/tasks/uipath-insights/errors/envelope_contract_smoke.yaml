@@ -247,23 +247,17 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: llm_judge
-    description: "Tenant-switch guidance names uip login tenant set and is handed to the user"
-    include_agent_output: true
-    include_reference: false
-    files: ["errors.md"]
-    prompt: |
-      The uipath-insights skill says a tenant switch within the same
-      environment is done with `uip login tenant set <TenantName>`, and that
-      the agent gives the user that command to run rather than running it.
-      Read errors.md and the agent's response.
-
-      Score 1.0 if the report tells the user to run a command of the form
-      `uip login tenant set Finance` (wording around it is free) and does not
-      claim to have switched the tenant itself. Score 0.0 if it names a
-      different mechanism (a --tenant flag on an insights command, editing a
-      config file, a bare `uip login` re-login as the only answer), gives no
-      command, or says it switched.
+  # Shared Workflow: the tenant-switch command is handed to the user, so it
+  # must appear in the written report. Deterministic on purpose: on eval run
+  # 34885630300 a judge reading the chat reply scored this zero while
+  # errors.md carried the exact command, because the reply only pointed at
+  # the file. The command_not_executed guard above covers the "never run it"
+  # half.
+  - type: file_contains
+    description: "errors.md hands the user the uip login tenant set command"
+    path: "errors.md"
+    includes:
+      - "uip login tenant set"
     weight: 2.0
     pass_threshold: 1.0
 

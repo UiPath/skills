@@ -255,7 +255,14 @@ success_criteria:
   # rbac guide Failure Branches: a 404 on a get "is not proof the resource
   # exists nowhere". The interpretation is the thing under test, and it is
   # the same sentence whether the ID came from a list or was the all-zero
-  # fallback.
+  # fallback. The rubric judges wording only: on eval run 34885630300 a judge
+  # scored this zero for a retry it inferred from the agent's own phrase "all
+  # six by-ID lookups", when that run's turn records hold exactly three get
+  # calls, one per family. Judges never see tool calls, so the retry clause
+  # was removed rather than reworded. Repetition is not gated deterministically
+  # either: the prompt's step-4 fallback can legitimately produce a second get
+  # on a family whose list partly answered, so a max_count would fail
+  # compliant runs. The prompt carries the no-retry instruction instead.
   - type: llm_judge
     description: "A not-found lookup is reported as not visible in this tenant, not as nonexistent"
     include_agent_output: true
@@ -273,7 +280,9 @@ success_criteria:
       this tenant for this caller, with some statement that this does not
       prove the resource does not exist at all. Score 0.0 if a not-found
       result is reported as "the role/user/group does not exist" with no
-      such qualification, or if the agent retried the lookup.
+      such qualification. Judge the wording of the not-found reporting only.
+      You cannot see which commands ran, so do not infer a retry from the
+      report's own phrasing or from any count it gives.
     weight: 2.0
     pass_threshold: 1.0
 
