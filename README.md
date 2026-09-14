@@ -126,7 +126,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-review` | Preview |
 | `uipath-rpa` | Stable |
 | `uipath-solution` | Preview |
-| `uipath-tasks` | Preview |
+| `uipath-tasks` | Stable |
 | `uipath-test` | In-development |
 | `uipath-troubleshoot` | Preview |
 
