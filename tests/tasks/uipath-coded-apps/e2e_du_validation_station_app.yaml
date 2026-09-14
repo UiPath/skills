@@ -43,8 +43,9 @@ initial_prompt: |
     1. Create a new folder named `codedapp-e2e-du-<EPOCH>` via
        `uip or folders create <name> --output json`. Capture the `Key`
        from the response.
-    2. Pass that key to `uip codedapp deploy --folder-key <key>` — do NOT
-       let deploy go interactive.
+    2. Pass that key to `uip codedapp deploy` non-interactively — as
+       `--folder-key <key>`, or as a `UIPATH_FOLDER_KEY=<key>` env-var prefix —
+       do NOT let deploy go interactive.
   This isolates the deployment so `post_run` cleanup can delete the
   folder afterwards (folder delete cascades to the coded-app deployment).
 
@@ -100,9 +101,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip codedapp deploy` with --folder-key"
+    description: "Agent ran `uip codedapp deploy` with the folder key passed non-interactively — `--folder-key`, or the `UIPATH_FOLDER_KEY=<key>` env-var prefix that skips the flag's first-page-only folder pre-check (Rule #11)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+codedapp\s+deploy\b.*--folder-key'
+    command_pattern: '(?s)(UIPATH_FOLDER_KEY=\S+.*\buip\s+codedapp\s+deploy\b|uip\s+codedapp\s+deploy\b.*--folder-key)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
