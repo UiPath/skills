@@ -6,11 +6,15 @@ low-code agent project after the report:
 
     uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <N> --warnings <N> --output json
 
-which appends `{grade, runAt, errors, warnings}` to
-`<PROJECT_DIR>/review-history.json`. This checker grades the OUTCOME (the file
-the CLI wrote) rather than command telemetry, for the reasons documented in
-`check_review_cli_provenance.py`: batched shell scripts make `command_executed`
-criteria blind to both the call and its exit code.
+which writes `{grade, runAt, errors, warnings}` to
+`<PROJECT_DIR>/review-history.json`. Per the CLI's own help -- "Keeps the newest
+25 entries, most recent first" -- the array is ordered NEWEST FIRST, so the entry
+to grade is `history[0]`, not `history[-1]`. That distinction is invisible while
+a project has a single entry and bites the moment a reviewer records twice (e.g.
+recording a provisional grade, then correcting it). This checker grades the
+OUTCOME (the file the CLI wrote) rather than command telemetry, for the reasons
+documented in `check_review_cli_provenance.py`: batched shell scripts make
+`command_executed` criteria blind to both the call and its exit code.
 
 The recorded grade must equal the report's `**Final grade: <A-F>**` footer --
 Step 6 persists the Step 4.5 final grade, not some other letter.
@@ -107,13 +111,14 @@ def main() -> None:
         sys.exit(f"FAIL: {history_path} is not valid JSON: {error}")
     if not isinstance(history, list) or not history:
         sys.exit(f"FAIL: {history_path} must be a non-empty JSON array of review entries")
-    entry = history[-1]
+    # Newest first, per the CLI's help text -- NOT append order.
+    entry = history[0]
     if not isinstance(entry, dict):
-        sys.exit(f"FAIL: last review-history entry must be a JSON object, got {entry!r}")
+        sys.exit(f"FAIL: newest review-history entry must be a JSON object, got {entry!r}")
 
     grade = entry.get("grade")
     if grade not in GRADES:
-        sys.exit(f"FAIL: last review-history entry has invalid grade {grade!r}")
+        sys.exit(f"FAIL: newest review-history entry has invalid grade {grade!r}")
     if grade != final_grade:
         sys.exit(
             f"FAIL: recorded grade {grade} does not match the report's final grade "
@@ -123,7 +128,7 @@ def main() -> None:
     warnings = _int_field(entry, "warnings")
     run_at = entry.get("runAt")
     if not isinstance(run_at, str) or not run_at.strip():
-        sys.exit(f"FAIL: last review-history entry has no `runAt` timestamp, got {run_at!r}")
+        sys.exit(f"FAIL: newest review-history entry has no `runAt` timestamp, got {run_at!r}")
 
     print(
         f"OK: {history_path} records grade {grade} (errors={errors}, warnings={warnings}, "

@@ -2,9 +2,10 @@ task_id: skill-agent-guardrail-coded-byog-decorator
 description: >
   Decorator-style bring-your-own guardrail (BYOG) for a coded agent. A simple
   LangGraph customer support agent is seeded with no guardrails; it already has a
-  create_support_agent() factory. The tenant has a BYOG configuration registered
-  (admin-side); the user asks to route the agent's PII checks through it using the
-  decorator style. Verifies the agent stacks @guardrail with ByoValidator — pinned
+  create_support_agent() factory. A mocked `uip` serves the BYOG configuration the
+  prompt names, so discovery answers the same way on every run; the user asks to
+  route the agent's PII checks through it using the decorator style.
+  Verifies the agent stacks @guardrail with ByoValidator — pinned
   to the configuration by its validator name, blocking on violations — over a real
   factory function rather than reaching for the built-in PII validator.
 tags: [uipath-agents, e2e, coded, mode:build, lifecycle:edit, guardrail]
@@ -21,7 +22,13 @@ agent:
   disallowed_tools: ["Task"]
 
 sandbox:
+  # Discovery is mocked, so the task no longer depends on a fixture living on the
+  # shared smoke tenant. See _fixtures/ByogMockCli/mocks/uip for why that
+  # dependency was untenable and what the shim serves.
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../../../_fixtures/ByogMockCli
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
@@ -45,6 +52,14 @@ success_criteria:
     skill_name: "uipath-agents"
     expected_skill: "uipath-agents"
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the BYO configuration from the CLI rather than copying the name out of the prompt"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(agent\s+guardrails\s+list|guardrails\s+byo-configurations\s+list)'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

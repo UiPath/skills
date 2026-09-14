@@ -113,5 +113,8 @@ success_criteria:
       (auth, permissions, the feature flag, a transient error) rather than the
       connection not serving the validator; or if it never says whether the
       configuration exists.
+      Score EXACTLY 1.0 or EXACTLY 0.0 — there is no partial credit and no
+      intermediate value. If the case feels borderline, decide which of the two
+      descriptions above fits better and return that score.
     weight: 2.0
     pass_threshold: 1.0
