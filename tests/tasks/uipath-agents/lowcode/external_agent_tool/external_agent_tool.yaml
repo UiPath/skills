@@ -18,6 +18,9 @@ run_limits:
   expected_turns: 22
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "OutreachAgent" that takes a required
   `subject` (string) and returns a string `content`. OutreachAgent shouldn't
@@ -113,7 +116,7 @@ success_criteria:
 
   - type: run_command
     description: "External agent tool resource shape, deployed folderPath/referenceKey, and bindings sync"
-    command: "python3 $TASK_DIR/check_external_agent_tool.py"
+    command: "python3 $REFERENCE_DIR/check_external_agent_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

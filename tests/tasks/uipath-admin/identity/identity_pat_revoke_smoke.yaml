@@ -5,13 +5,23 @@ description: >
   gone from the tenant after the agent revokes it (list -> identify -> revoke),
   not the command string.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, identity, pat, revoke]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''setup_revoke_pat.py''))"'
+  - command: 'python3 _setup/setup_revoke_pat.py'
     timeout: 60
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_pat_marker.py''))"'
+  - command: 'python3 _setup/cleanup_pat_marker.py'
     timeout: 30
 
 run_limits:
@@ -26,7 +36,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The compromised marker PAT is gone from the tenant after revocation"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''verify_pat_revoked.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_pat_revoked.py''))"'
     timeout: 40
     expected_exit_code: 0
     weight: 3.0

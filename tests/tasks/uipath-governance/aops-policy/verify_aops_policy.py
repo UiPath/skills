@@ -43,7 +43,7 @@ import re
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
 from gov_helpers import aops_form_data, aops_get, aops_search, fail, ok, poll, seed_entry
 
 logging.basicConfig(level=logging.INFO, format="verify_aops_policy: %(message)s")

@@ -17,9 +17,14 @@ run_limits:
   expected_turns: 63
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/inline_solution_rpa_tool/_fixtures/PayrollFlowSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/PayrollFlowSol
+      mount_point: PayrollFlowSol
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a new UiPath Flow project named "PayrollFlow" inside the existing
@@ -118,7 +123,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline solution RPA tool: resource.json shape + flow node + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_solution_rpa_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_solution_rpa_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

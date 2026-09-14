@@ -10,6 +10,9 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, connector-tri
 run_limits:
   expected_turns: 7
 
+reference:
+  directory: .
+
 initial_prompt: |
   You are authoring a UiPath Flow triggered by an Outlook email whose subject contains "good day" and sent from
   abc@xyz.com.
@@ -42,7 +45,7 @@ success_criteria:
   # wrapped under detail/inputs fails — that is not the --detail object.
   - type: run_command
     description: "trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_trigger/check_trigger_filter.py"
+    command: "python3 $REFERENCE_DIR/check_trigger_filter.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

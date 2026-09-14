@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 46
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project "OutreachFlow" that runs an inline low-code
   agent which takes a required `subject` (string) and returns a string
@@ -118,7 +121,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline external agent tool: resource.json shape (location=external) + flow node (tool.agent.*) + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_external_agent_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_external_agent_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

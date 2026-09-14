@@ -16,6 +16,9 @@ run_limits:
   task_timeout: 1800
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build me a UiPath coded agent (LangGraph) called `InputProcessor` that
   takes some user input and returns a short summary. Once the coded agent
@@ -109,7 +112,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow wires the coded agent as a `uipath.core.agent.<resourceKey>` node; bindings[] is deduplicated per (resourceKey, propertyAttribute); coded agent uses lazy LLM init"
-    command: "python3 $TASK_DIR/check_coded_in_flow_e2e.py"
+    command: "python3 $REFERENCE_DIR/coded/coded_in_flow_e2e/check_coded_in_flow_e2e.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -16,6 +16,9 @@ tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:s
 run_limits:
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project named "TransformFilterDemo" that filters a small
   static collection using a dedicated Transform Filter node.
@@ -57,7 +60,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -66,7 +69,7 @@ success_criteria:
   # ── Structural checks (exact node type, collection path, filter config) ─
   - type: run_command
     description: "Flow has exactly one core.action.transform.filter node with a plain $vars collection and a literal greater_equal filter"
-    command: "python3 $TASK_DIR/check_transform_filter_flow.py"
+    command: "python3 $REFERENCE_DIR/single_node/transform_filter/check_transform_filter_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

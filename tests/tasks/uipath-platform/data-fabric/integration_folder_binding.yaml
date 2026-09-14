@@ -7,10 +7,18 @@ description: >
   in the same folder. Exercises the negative + positive paths the agent
   must learn to surface rather than swallow.
 tags: [uipath-platform, data-fabric, integration, entity-scope, complex-fields, mode:diagnose, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 30
   max_turns: 60
   turn_timeout: 600
+
+reference:
+  directory: .
 
 initial_prompt: |
   I'm setting up two linked UiPath Data Fabric entities for a folder-scoped test.
@@ -48,7 +56,6 @@ initial_prompt: |
   two scenarios — did it succeed or fail, and if it failed, what
   did the platform say? Then read the Expense schema back and confirm
   the `manager` column ended up correctly bound to Employee.
-
 success_criteria:
   - type: command_executed
     description: "Agent listed folders to pick folder A"
@@ -85,6 +92,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent correctly reported both same-folder binding outcomes and confirmed the manager field is correctly bound at the end"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The agent ran two scope-binding scenarios and then re-read the
       Expense schema:
@@ -107,7 +115,7 @@ success_criteria:
 
   - type: run_command
     description: "End state (deterministic): the `manager` field on CE_FolderBindExpense ended up correctly bound to CE_FolderBindEmployee (scenario 2 succeeded and left the correct schema behind)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_FolderBindExpense --field-name manager --target-entity-name CE_FolderBindEmployee"
+    command: "python3 $REFERENCE_DIR/_shared/verify_field_binding.py --entity-name CE_FolderBindExpense --field-name manager --target-entity-name CE_FolderBindEmployee"
     timeout: 240
     expected_exit_code: 0
     weight: 2.5
@@ -115,7 +123,7 @@ success_criteria:
 
   - type: run_command
     description: "End state (deterministic): 2 Employee rows landed in CE_FolderBindEmployee"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderBindEmployee --expected 2"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_FolderBindEmployee --expected 2"
     timeout: 240
     expected_exit_code: 0
     weight: 2.0
@@ -123,7 +131,7 @@ success_criteria:
 
   - type: run_command
     description: "End state (deterministic): 1 Expense row landed in CE_FolderBindExpense"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderBindExpense --expected 1"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_FolderBindExpense --expected 1"
     timeout: 240
     expected_exit_code: 0
     weight: 2.0
@@ -140,15 +148,15 @@ success_criteria:
 
 pre_run:
   # Child first so its relationship does not block deleting the target.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
     timeout: 120
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
     timeout: 120
     fail_on_error: false
 post_run:
   # Child (Expense) first so any relationship references are dropped before targets.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
     timeout: 120
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
     timeout: 120

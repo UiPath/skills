@@ -65,10 +65,18 @@ pre_run:
     timeout: 300
     fail_on_error: false
 
-  # 2) Resolve the validator script through SKILLS_REPO_PATH — coder-eval
-  # does NOT inject TASK_DIR into pre_run env (TASK_DIR is criterion-only).
-  # SKILLS_REPO_PATH is already the repo's convention for locating the
-  # plugin source (see smoke-skills.yml and tests/experiments/default.yaml).
+  # 2) Resolve the validator script through SKILLS_REPO_PATH — a deliberate,
+  # documented exception to this repo's general sandbox.template_sources +
+  # $REFERENCE_DIR convention (see commit d61fa9d52's "tasks needing
+  # genuinely broader host-repo access"). This validator globs
+  # `**/data/m/r/manifest.json` across the WHOLE uipath-troubleshoot tree
+  # (298 tasks, resolved from its own `Path(__file__).resolve().parents[2]`),
+  # not just this one task's directory — staging that much of the family via
+  # template_sources would mean re-staging nearly the entire subtree per run
+  # for no benefit (this script's own logic, not the CLI or tenant, is what's
+  # under test). coder-eval does NOT inject TASK_DIR into pre_run env
+  # (TASK_DIR is criterion-only), so SKILLS_REPO_PATH is what's used instead
+  # (see smoke-skills.yml and tests/experiments/default.yaml).
   - command: >-
       python -c "import os,subprocess,sys;
       script=os.path.join(os.environ['SKILLS_REPO_PATH'], 'tests', 'tasks', 'uipath-troubleshoot', '_shared', 'scripts', 'verify_manifest_commands.py');

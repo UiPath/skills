@@ -19,6 +19,12 @@ sandbox:
     - type: template_dir
       path: ../templates/initial_flow
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+reference:
+  directory: ../..
+
 initial_prompt: |
   Move getWeather and formatSummary into a subflow called "fetchAndFormat". The subflow should output the temperatureF value. The rest of the main flow (decision + end nodes) stays but reads from the subflow output.
 
@@ -41,7 +47,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -50,12 +56,12 @@ success_criteria:
   # ── Execution checks ──────────────────────────────────────────────────
   - type: run_command
     description: "Flow debug runs with subflow, output contains branch message"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/group_to_subflow/check_group_to_subflow.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_group_to_subflow.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

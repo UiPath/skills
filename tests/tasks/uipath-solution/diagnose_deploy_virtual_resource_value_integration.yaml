@@ -50,5 +50,6 @@ success_criteria:
 
       Score 0.0 if it blames a CLI bug, a malformed package, or auth, or
       fails to point at the unset resource value / deploy config as the fix.
+    include_reference: false
     weight: 3.0
     pass_threshold: 0.7

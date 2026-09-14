@@ -23,6 +23,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: .
+
 initial_prompt: |
   The LinearThreeStages case solution already exists on disk under
   LinearThreeStages/. It chains three stages linearly: Intake → Review →
@@ -62,7 +65,7 @@ success_criteria:
 
   - type: run_command
     description: "Bound task removed end-to-end (caseplan + bindings + bindings_v2 + solution declarations), timer task added, case project declarations intact"
-    command: "python3 $TASK_DIR/check_bound_task_add_remove.py"
+    command: "python3 $REFERENCE_DIR/check_bound_task_add_remove.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

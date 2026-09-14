@@ -9,6 +9,9 @@ tags: [uipath-human-in-the-loop, integration, schema-design, inout, variable-bin
 run_limits:
   expected_turns: 17
   max_turns: 90
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
   Build a UiPath Flow named "RCAReview" for AI-generated root cause analysis review:
 
@@ -35,7 +38,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -43,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "RCA text field has inOut direction"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name RCAReview '\"direction\": \"inOut\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name RCAReview '\"direction\": \"inOut\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -51,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "inOut field is pre-filled with upstream binding"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name RCAReview '\"direction\": \"inOut\"' 'generateRCA' '.output.rcaDraft'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name RCAReview '\"direction\": \"inOut\"' 'generateRCA' '.output.rcaDraft'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -59,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "Downstream script accesses RCA via output object (inOut fields appear in output)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name RCAReview '$vars.' '.output.'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name RCAReview '$vars.' '.output.'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

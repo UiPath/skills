@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -55,7 +58,7 @@ success_criteria:
 
   - type: run_command
     description: "Receive-message wait is a mid-flow intermediate catch event with the start preserved"
-    command: "python3 $TASK_DIR/check_message_catch.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_message_catch.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

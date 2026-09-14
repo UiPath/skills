@@ -7,6 +7,9 @@ tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:single-
 run_limits:
   expected_turns: 15
   max_turns: 60
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a local BPMN project named "RiskScoreScriptBpmn".
   The process should manually start with `amount` and `daysOverdue` inputs,
@@ -47,7 +50,7 @@ success_criteria:
 
   - type: run_command
     description: "Script task follows Jint-compatible BPMN guidance"
-    command: "python3 $TASK_DIR/check_script_jint_guidance.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_script_jint_guidance.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

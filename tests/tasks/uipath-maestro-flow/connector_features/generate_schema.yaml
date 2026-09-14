@@ -12,6 +12,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new Flow project called "GenerateSchemaTest" with a manual trigger
   that runs the Atlassian Jira "Create Issue" connector activity
@@ -36,7 +39,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow is valid JSON with Jira Create Issue node, customFieldsRequestDetails has both parent-field tuples under GenerateSchema, and bodyParameters carries a non-empty fields.summary"
-    command: "python3 $TASK_DIR/check_generate_schema.py"
+    command: "python3 $REFERENCE_DIR/connector_features/check_generate_schema.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0
@@ -52,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Persisted Flow artifact passes CLI validation"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

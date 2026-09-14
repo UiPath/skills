@@ -17,6 +17,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 900
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "InArgTriggerBind" containing a
   project also named "InArgTriggerBind" from the sdd.md below. Write the sdd.md
@@ -122,7 +125,7 @@ success_criteria:
 
   - type: run_command
     description: "In-args bind per sourceTriggers — 'approverId' (T03) → timer; 'caseId' (blank) and 'caseId2' (explicit T02) → the primary manual trigger; each one's formal slot + companion elementId + trigger-output bridge land on the correct node, each bridge on its own trigger only"
-    command: "python3 $TASK_DIR/check_in_arg_trigger_bind.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_in_arg_trigger_bind.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

@@ -58,7 +58,7 @@ success_criteria:
 
   # The name must be the field's exact taxonomy name — `update-prompts` matches
   # by name and reports an unmatched one WITHOUT failing, so a reworded name is
-  # a silent no-op. `Invoice Number` is the name in _shared/fixtures/taxonomy.json
+  # a silent no-op. `Invoice Number` is the name in _setup/fixtures/taxonomy.json
   # and in the skill's own examples; keep the prompt and this pattern on it.
   - type: file_matches_regex
     description: "CLI received the structured `Invoice Number` update with the requested instruction"

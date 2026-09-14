@@ -9,7 +9,11 @@ description: >
   an existing app's redirect URI) is exercised by no other test — the dashboard
   e2e only *creates* apps, it never fixes one.
 tags: [uipath-coded-apps, smoke, mode:diagnose]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 12
 
@@ -87,7 +91,6 @@ initial_prompt: |
   This is a non-interactive automated test — do NOT ask for confirmation or
   pause for input. Before starting, load the uipath-coded-apps skill and follow
   its guidance.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-coded-apps skill"
@@ -165,5 +168,5 @@ post_run:
           json.dump({"clientId": cid}, open("report.json", "w"))
       PY
     timeout: 15
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_external_app.py"
+  - command: "python3 _setup/cleanup_external_app.py"
     timeout: 60

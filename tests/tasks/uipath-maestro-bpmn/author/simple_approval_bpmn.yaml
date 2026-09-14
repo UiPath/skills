@@ -18,6 +18,9 @@ run_limits:
   # tracks the middle of observed, cap keeps ~1.5x margin over the worst.
   expected_turns: 60
   max_turns: 120
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
   - Manual start with caller inputs `expenseId` (string) and `amount` (number),
@@ -64,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "Simple approval BPMN has the requested nodes, supported local scaffold, public input/output bridges, migration metadata, and complete DI"
-    command: "python3 $TASK_DIR/check_simple_approval_bpmn.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_simple_approval_bpmn.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

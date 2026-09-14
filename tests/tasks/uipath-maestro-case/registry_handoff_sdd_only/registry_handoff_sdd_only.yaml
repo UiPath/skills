@@ -40,6 +40,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   This approved `sdd.md` was copied from another machine. Only the SDD was
   transferred; there is deliberately no Phase 0 `tasks/registry-resolved.json`.
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "Selected names and identities match the live API and agent registry caches"
-    command: "python3 $TASK_DIR/check_registry_handoff.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_registry_handoff.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -84,13 +84,24 @@ def _task_text(relative: str) -> str:
     return (FLOW_TASKS / relative).read_text()
 
 
+_REFERENCE_BLOCK = re.compile(r"^reference:\s*\n\s*directory:\s*(\S+)", re.M)
+
+
 def _referenced_python_files(task_path: Path, criterion: str) -> list[Path]:
     paths = []
+    reference_root: Path | None = None
     for token in re.findall(
-        r"(?:\$TASK_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
+        r"(?:\$TASK_DIR/|\$REFERENCE_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
     ):
         if token.startswith("$TASK_DIR/"):
             path = task_path.parent / token.removeprefix("$TASK_DIR/")
+        elif token.startswith("$REFERENCE_DIR/"):
+            if reference_root is None:
+                match = _REFERENCE_BLOCK.search(task_path.read_text())
+                if not match:
+                    continue
+                reference_root = task_path.parent / match.group(1)
+            path = reference_root / token.removeprefix("$REFERENCE_DIR/")
         elif token.startswith("$SKILLS_REPO_PATH/"):
             path = FLOW_TASKS.parents[2] / token.removeprefix("$SKILLS_REPO_PATH/")
         else:
@@ -193,13 +204,21 @@ def test_debug_graded_prompts_name_a_same_name_solution() -> None:
 
 
 def test_external_graders_use_package_qualified_shared_imports() -> None:
+    """Outside `_shared/`, no grader may resolve a same-named `_shared/` module
+    via a bare/ambiguous import. `_setup/` is exempt by design: it is staged
+    into the agent's sandbox (never reaches `_shared/`, which is not staged),
+    and a `_setup/<name>.py` legitimately shares a stem with a `_shared/<name>.py`
+    when pre_run/post_run tooling and its grader need their own separate copies
+    of the same helper (see jira_is.py: `_setup/jira_is.py` per Jira task,
+    `_shared/jira_is.py` for the graders — intentionally two copies, never one
+    importing the other)."""
     shared_modules = {
         path.stem for path in (FLOW_TASKS / "_shared").glob("*.py")
     }
     offenders = set()
     for path in FLOW_TASKS.rglob("*.py"):
         relative = path.relative_to(FLOW_TASKS)
-        if relative.parts[0] == "_shared":
+        if relative.parts[0] == "_shared" or "_setup" in relative.parts:
             continue
         for module in re.findall(
             r"(?m)^(?:from|import)\s+([A-Za-z_][A-Za-z0-9_]*)", path.read_text()

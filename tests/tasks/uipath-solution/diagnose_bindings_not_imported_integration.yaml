@@ -104,5 +104,6 @@ success_criteria:
       Score 0.0 if it blames a CLI bug, auth, project registration (the
       project IS registered here), an empty solution, or fails to point at
       the bindings_v2.json location as the cause.
+    include_reference: false
     weight: 3.0
     pass_threshold: 0.7

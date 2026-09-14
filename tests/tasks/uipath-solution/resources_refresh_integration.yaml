@@ -72,5 +72,6 @@ success_criteria:
       Score 0.0 if the reply skips the refresh, claims readiness without
       having synced, reports an unresolved error, or only dumps raw output
       with no interpretation.
+    include_reference: false
     weight: 1.5
     pass_threshold: 1.0

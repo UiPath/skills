@@ -19,6 +19,9 @@ run_limits:
   # smoke_03_multi_outcome_routing and the experiment default.
   turn_timeout: 900
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
     Manual Trigger -> HITL (manager approves purchase) ->
@@ -49,7 +52,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file was created"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -57,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "Every outcome on the HITL node has its own wired port — none on the outcome-completed placeholder"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
