@@ -216,7 +216,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    For an Integration Service draft or boundary handoff (author locally, hand
    enrichment to the CLI, no pack/upload/operate asked for), emit **only** the
    `.bpmn` plus the notes file — do NOT create the four generated package files
-   (Rule 16); authoring them fails the boundary the task tests.
+   (Rule 16); authoring them fails the boundary the task tests. Do NOT run `uip
+   maestro bpmn init` here: it scaffolds those four files. Hand-author the
+   `.bpmn` directly, or delete `bindings_v2.json`, `entry-points.json`,
+   `operate.json`, and `package-descriptor.json` after init.
    For Integration Service draft notes, name every CLI-owned blocker literally,
    including the exact phrase `connection binding`, plus dynamic schemas,
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
@@ -376,7 +379,9 @@ and honestly surfaced to the user as gaps when asked.
    `package-descriptor.json`. Run `uip maestro bpmn refresh <project-path>` to
    generate them — never the deprecated `update-metadata`. An
    Integration Service draft or boundary handoff asks for none of those — emit
-   only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
+   only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers, and do
+   NOT run `uip maestro bpmn init` for it (init scaffolds all four): hand-author
+   the `.bpmn`, or delete the four files after init.
 
 ## References
 
