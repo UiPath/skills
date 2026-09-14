@@ -177,13 +177,13 @@ success_criteria:
       not converted or compared against now. In the fixture, alert 41
       "Queue backlog" is curated and alert 42 "Nightly reconciliation
       drift" is query; the history row's TriggeredAt 1789200900 is
-      2026-09-11 (UTC), which is later than the definition's
+      2026-09-12 08:15:00 UTC, which is later than the definition's
       LastTriggeredAt of 2026-09-10T08:15:00Z; alert 42 has SnoozedUntil
       "2026-09-20T00:00:00Z". Read alert-notes.md.
 
       Score 1.0 if the notes (a) name 41 as curated and 42 as query and say
       the null Metric on 42 is expected for a query alert; (b) convert
-      TriggeredAt from epoch seconds to a UTC date on 2026-09-11 and note
+      TriggeredAt from epoch seconds to 2026-09-12 08:15 UTC and note
       that it does not match the definition's LastTriggeredAt (which is a
       different format), without converting one into the other's format
       silently; and (c) report alert 42's SnoozedUntil value as given, and
