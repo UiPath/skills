@@ -7,8 +7,9 @@
 <!-- CELL RULES ARE COMPLETE WHERE THEY STAND. Every cell's whole rule is the angle-bracket hint
 at that cell plus the comment in its own section. Nothing outside this template adds, overrides or
 extends a cell value, so a cell named ONCE is fully specified by that one mention — a second source
-does not exist and searching the guides or the validator's source for one is the archaeology that
-burns a turn budget (§ Validation footer: RUN the validator, never read it). If a value still looks
+does not exist, and searching the guides for one, or hunting for a script or validator to consult, is
+the archaeology that burns a turn budget. There is no script: the § Validation gate is a checklist you
+ANSWER in the transcript, so nothing needs locating, installing or running. If a value still looks
 unstated after reading its own section, it IS unstated: take the default recorded there, or `—` where
 the cell is optional, note the provenance, and move on. -->
 
@@ -232,10 +233,28 @@ Template-local rules:
   Completion: No`, and every secondary-stage ENTRY ROW carries `Interrupting: Yes` — including
   decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`). The only `Interrupting: No` entry row
   on a secondary stage is a parallel-oversight `sla-status-change` row.
-- Stage-picker repair is a replacement, never a duplicate: when `user-selected-stage` requires picker
-  exposure from an origin, replace that origin's `required-tasks-completed | exit-only | Yes` completion
-  row with `required-tasks-completed | wait-for-user | Yes`. Keep exactly one `required-tasks-completed`
-  row; never add a second `Marks Stage Complete: No` row.
+- Stage-picker repair is a replacement, never a duplicate. Which repair depends on what launches the
+  lane, and the two are opposites — read the source before choosing.
+  - **A person launches it** (pulled aside by hand, chosen from the stage picker, nothing triggers it
+    automatically): the `user-selected-stage` entry is CORRECT and its other half is missing. Replace the
+    origin's `required-tasks-completed | exit-only | Yes` completion row with
+    `required-tasks-completed | wait-for-user | Yes`. Keep exactly one `required-tasks-completed` row;
+    never add a second `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+  - **A decision, event, or SLA routes it** (entry is automatic, the decision itself does the routing,
+    nobody picks the lane by hand): the `user-selected-stage` row IS the defect. All four edits, or the
+    branch dual-fires or deadlocks: (1) REPLACE that row — never keep it alongside — with
+    `selected-stage-completed("<origin stage>")` (or `selected-stage-exited(...)`), `IF` the affirmative
+    guard `=js:(vars.<decisionVar> === "<Value>")`, `Interrupting: Yes`; (2) ADD a diverting exit on the
+    origin carrying that same affirmative guard with `Marks Stage Complete: No`, its WHEN
+    `selected-tasks-completed("<deciding task>")` or `wait-for-connector` — exit evaluates before
+    completion, so an unguarded diverting row would fire first and the stage would never complete;
+    (3) the origin's completion exit takes the COMPLEMENT guard `=js:(vars.<decisionVar> !== "<Value>")`
+    — unguarded it fires on the diverted case too, and repeating the affirmative guard fires both;
+    (4) once no `user-selected-stage` entry remains anywhere, DROP any upstream `wait-for-user` exit that
+    existed only to expose this lane. A sibling outcome of the same decision already keyed this way —
+    usually the approve branch — is the shape to copy verbatim.
+  - Source silent on who launches the lane ⟹ treat it as person-launched and keep what is authored;
+    re-keying on an unstated fact invents a business rule.
 
 ---
 
@@ -712,6 +731,17 @@ case-design-layers-guide.md's; the cells own the shape.)
      (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, on the same side of the
      comparison — prose in Design Rationale or Description does not count.
  33. The draft file still exists beside the final, unrenamed.
+ Modelling completeness
+ 34. Every task's `Persona` cell names exactly ONE role — never an either/or (`Underwriter or Credit
+     Analyst`, `Recruiter / Hiring Manager`). An either/or persona is a routing rule the source stated and
+     the design never modelled: no guard picks between the roles at run time. Repair by naming the owning
+     role, and where the split was genuinely conditional, author the condition as a guarded row on the
+     deciding variable rather than as prose in the persona cell. `system` and `—` are single roles.
+ 35. No `user-selected-stage` entry sits on a lane that a decision, event, or SLA routes to.
+     `user-selected-stage` is picker exposure — a person choosing the next stage by hand — never
+     deterministic routing, so when the source says entry is automatic the picker row IS the defect:
+     repair it per § Section 2 Authoring rules, stage-picker bullet, decision-routed branch (all four
+     edits). Source silent on who launches the lane ⟹ keep what is authored.
 
 ===================================================================================== -->
 
