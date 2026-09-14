@@ -82,16 +82,21 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  # The jobs guide's Absolute Time Ranges recipe resolves the bound in its
-  # own command. Any date invocation counts; the discipline being graded is
-  # that it is separate from the uip call, which the next guard enforces.
+  # The jobs guide's Absolute Time Ranges recipe resolves the bound in its own
+  # command. Advisory, per .claude/rules/test-writing.md: this is a convention
+  # that is invisible in the outcome, and gating it docks an agent that reaches
+  # the correct bounds without typing `date`. Runs 34898270949 and 34901646509
+  # both computed 1788739200000 and 1789344000000 in-model, correctly, and this
+  # criterion was the only thing they failed. What still gates the outcome: the
+  # 13-digit literal pair above, the no-substitution guard below, and the window
+  # judge, which reads the stated bounds and so catches arithmetic that is wrong.
   - type: command_executed
-    description: "Agent resolved a boundary with a separate date command"
+    description: "Advisory: agent resolved a boundary with a separate date command"
     tool_name: "Bash"
     command_pattern: '(^|[\s;&|(])date\s'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   # Critical Rule 2: no $(date ...), backtick, or $VAR inside a jobs flag
   # value. Flag branch names only the flags summary takes, because the

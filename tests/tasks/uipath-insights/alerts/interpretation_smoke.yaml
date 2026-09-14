@@ -76,8 +76,10 @@ initial_prompt: |
      converted value and the definition's own `LastTriggeredAt` next to
      each other in the notes, then say plainly whether the two are the same
      instant or different ones, and if they differ give the gap. Say which
-     fields you converted and which you left as they were, and what the
-     guide says about deciding whether alert 42 is snoozed right now.
+     fields you converted and which you left as they were. Then, for alert
+     42, quote its `SnoozedUntil` value exactly as the paste gives it and
+     say what the guide says about deciding whether that alert is snoozed
+     right now.
   3. From Output C, how many times did `JobFailure` fire in total and in
      the second interval, and what unit did you assume for the interval end
      times?
