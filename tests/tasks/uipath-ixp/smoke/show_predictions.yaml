@@ -32,7 +32,7 @@ success_criteria:
   # asserted as the DOCUMENT argument by pinning the slot before it. The regex this
   # replaced matched the id anywhere, so a get-predictions on another project counted.
   - type: cli_called
-    description: "Agent fetched predictions via `labellings get-predictions … doc-abc-123`"
+    description: "Agent fetched predictions via `labellings get-predictions <Name> doc-abc-123`"
     verb: "ixp labellings get-predictions"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
