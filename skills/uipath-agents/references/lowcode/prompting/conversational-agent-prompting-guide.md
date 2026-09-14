@@ -103,7 +103,7 @@ User message: `""` — left blank. The Conversational Service injects the user t
 | Field | Default | Change when |
 |-------|---------|-------------|
 | `inputSchema` | `{ "properties": {} }` | Add fields only when per-exchange, variable-based context beyond conversation history is genuinely needed. Reserved names: `messages`, `uipath__*` ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-patterns 4 and 5). |
-| `outputSchema` | `{ "type": "object", "properties": {} }` | **Never populate** — runtime streams events, does not fill output ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1). |
+| `outputSchema` | `{ "type": "object", "properties": {} }` | **Never populate** — runtime streams events, does not fill output. Exception: inline-in-flow conversational agents, authored under the `uipath-maestro-flow` skill ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1). |
 | `messages[1].content` | `""` | **Keep blank** — Conversational Service injects the user turn at runtime ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 3). |
 | `settings.temperature` | `0` | Raise for open-ended brainstorming or casual chats. Keep `0` for factual support flows. |
 | `settings.maxTokens` | `64000` | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
@@ -115,7 +115,7 @@ User message: `""` — left blank. The Conversational Service injects the user t
 - **Vague role** — "You are a helpful agentic assistant." Name the role and bound the scope.
 - **No tool-call criteria** — agent over-calls or under-calls tools.
 - **Long tool-call loops** - agent runtime may stop and require the user to confirm continuation after a single agent run (turn) consists of a series of over 8 steps that each involve tool-call(s). Note that this is not a limitation on total parallel tool-calls on any individual step, so aim to parallelize tool-calls when possible and/or ask for user-confirmation to break up long loops of sequential steps.
-- **Populating `outputSchema`** — runtime streams events; populated schemas never get filled and confuse the agent ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1).
+- **Populating `outputSchema`** — runtime streams events; populated schemas never get filled and confuse the agent. Exception: inline-in-flow conversational agents ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1).
 - **Templating data into the user message** — the user message content stays blank; per-exchange context goes into the **system prompt** via `inputSchema` templating.
 - **Adding `messages` or `uipath__*` to `inputSchema`** — reserved names; runtime injects ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-patterns 4 and 5).
 - **Using built-in validator guardrails (PII, harmful content, etc.) or `Agent`/`Llm` scopes** — built-in validators are autonomous-only and silently ignored; conversational agents support only Custom deterministic `Tool`-scoped guardrails ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1).
