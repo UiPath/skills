@@ -690,6 +690,19 @@ def fail_with_diagnosis(instance_id: str, msg: str):
         # anything the caseplan shows. The last elements to run, and which of them are
         # still open, is the one thing the instance can still be asked before post_run
         # deletes it.
+        # The whole instance record, once, on the failure path. Eighteen routes have ended
+        # `Cancelled` with no incident and nothing on hand says who cancelled them; the
+        # record may carry a field that does, and it is deleted with the solution at
+        # post_run. Printing every key beats guessing which one to ask for.
+        try:
+            record = run_checked(["uip", "maestro", "case", "instance", "get", instance_id,
+                                  "-f", CASE_FOLDER_KEY, "--output", "json"])
+        except (RuntimeError, OSError) as exc:
+            print(f"    could not read the instance record: {exc}")
+        else:
+            terse = {k: v for k, v in record.items()
+                     if not isinstance(v, (dict, list)) and v not in (None, "")}
+            print(f"    instance record: {terse}")
         for row in rows[-8:]:
             runs = row.get("ElementRuns") or []
             last = (runs[-1] or {}).get("Status") if runs else None

@@ -280,7 +280,8 @@ class CancellationDiagnosisTests(unittest.TestCase):
         # the first version of this test passed while the code read the top level and
         # printed an empty dict on the first real cancellation it ran on.
         drive_case.run_checked = lambda args, timeout=120: {
-            "InstanceId": "abc-123",
+            "InstanceId": "abc-123", "LatestRunStatus": "Cancelled",
+            "CancelledBy": "someone", "Nested": {"ignored": 1}, "Empty": "",
             "Globals": {"BuyerDecision": "reject", "ComplianceDecision": None,
                         "CaseOutcome": ""}}
 
@@ -302,6 +303,16 @@ class CancellationDiagnosisTests(unittest.TestCase):
         printed = self.diagnose()
         self.assertIn("decision variables at the end:", printed)
         self.assertIn("'BuyerDecision': 'reject'", printed)
+
+    def test_prints_the_instance_record_it_can_still_read(self):
+        """Eighteen routes have ended `Cancelled` with no incident and nothing says who
+        cancelled them. The record may carry a field that does, and post_run deletes it
+        with the solution, so every scalar key is printed rather than a chosen few."""
+        printed = self.diagnose()
+        self.assertIn("instance record:", printed)
+        self.assertIn("'CancelledBy': 'someone'", printed)
+        self.assertNotIn("Nested", printed)
+        self.assertNotIn("'Empty'", printed)
 
     def test_still_reports_the_stages_and_the_run_status(self):
         printed = self.diagnose()
