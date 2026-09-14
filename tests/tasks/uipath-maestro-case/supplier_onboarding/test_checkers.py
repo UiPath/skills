@@ -2388,8 +2388,55 @@ class RationaleAttributionTests(unittest.TestCase):
             "One push operation against a SaaS mail system.",
         )
 
+    @staticmethod
+    def _task_sections() -> dict[str, str]:
+        """Each task name mapped to the fixture text of its own section.
+
+        A section runs from its `##### Task N:` heading to the next heading at the same
+        depth or shallower, so a `###### Action Task Detail` sub-heading stays inside it.
+        """
+        with open(E.FIXTURE_SDD) as handle:
+            lines = handle.read().split("\n")
+        spans: dict[str, list[int]] = {}
+        current, depth = None, 0
+        for index, line in enumerate(lines):
+            head = re.match(r"^(#{4,5}) Task [\d.A-Z]+: (.+)$", line)
+            if head:
+                if current:
+                    spans[current][1] = index
+                current, depth = head.group(2).strip(), len(head.group(1))
+                spans[current] = [index, len(lines)]
+                continue
+            other = re.match(r"^(#{1,6}) ", line)
+            if other and current and len(other.group(1)) <= depth:
+                spans[current][1] = index
+                current = None
+        return {name: "\n".join(lines[a:b]) for name, (a, b) in spans.items()}
+
+    def test_every_task_keyed_fact_comes_from_that_task_s_own_section(self):
+        """A fact read from somewhere else grades a correct build as wrong.
+
+        The closed list is every `sdd_facts()` group keyed by task name. Seven rationales
+        were read out of a `#### Stage SLA` paragraph before this existed, so the axis is
+        checked mechanically rather than by reading the scanners.
+        """
+        sections = self._task_sections()
+        facts = E.sdd_facts()
+        for group in ("rationale_tasks", "skip_conditions", "recipients",
+                      "bound_inputs", "custom_outputs"):
+            for name, value in (facts.get(group) or {}).items():
+                body = sections.get(name)
+                self.assertIsNotNone(body, f"{group}: {name!r} has no task section")
+                wanted = value if isinstance(value, (list, set, tuple)) else [value]
+                for item in wanted:
+                    self.assertIn(
+                        str(item)[:50], body,
+                        f"{group}: {name!r} was given text from outside its own section",
+                    )
+
     def test_the_fixture_attributes_every_task_inside_its_own_section(self):
-        sdd = open(E.FIXTURE_SDD).read()
+        with open(E.FIXTURE_SDD) as handle:
+            sdd = handle.read()
         rationale, _skips = E._sdd_task_envelopes(sdd)
         self.assertEqual(len(rationale), 33)
         for name, text in rationale.items():
