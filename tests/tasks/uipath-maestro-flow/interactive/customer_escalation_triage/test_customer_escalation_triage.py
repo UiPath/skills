@@ -19,7 +19,7 @@ def _load(name: str, filename: str):
 
 
 checker = _load("customer_escalation_checker", "check_customer_escalation_triage.py")
-seed = _load("customer_escalation_seed", "seed.py")
+seed = _load("customer_escalation_seed", "_setup/seed.py")
 
 
 def _payload(**outputs):

@@ -21,6 +21,9 @@ run_limits:
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 
+reference:
+  directory: ../..
+
 simulation:
   enabled: true
 
@@ -75,7 +78,7 @@ success_criteria:
   # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -87,7 +90,7 @@ success_criteria:
   # below so a missing priority does not zero out an otherwise-correct schema.
   - type: run_command
     description: "HITL quickform has input + output fields and Approve/Reject outcomes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py schema"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py schema"
     timeout: 15
     expected_exit_code: 0
     weight: 4.0
@@ -99,7 +102,7 @@ success_criteria:
   # expected to elicit urgency when the persona flags the review as time-sensitive).
   - type: run_command
     description: "HITL review priority is set to High (elicited from the user)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py priority"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py priority"
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -112,7 +115,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named VendorPOReview (elicited from the user)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorPOReview"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

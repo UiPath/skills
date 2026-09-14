@@ -18,9 +18,14 @@ run_limits:
   expected_turns: 40
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_escalation/_fixtures/ReviewSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/ReviewSol
+      mount_point: ReviewSol
+
+reference:
+  directory: .
 
 initial_prompt: |
   Create a new UiPath low-code agent named "ModerationAgent" inside the existing
@@ -114,7 +119,7 @@ success_criteria:
   # file_exists on resources/HumanReviewEscalation/resource.json.
   - type: run_command
     description: "Solution escalation resource shape: ActionCenter channel wired to solution-internal HumanReviewEscalation app"
-    command: "python3 $TASK_DIR/check_solution_escalation.py"
+    command: "python3 $REFERENCE_DIR/check_solution_escalation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

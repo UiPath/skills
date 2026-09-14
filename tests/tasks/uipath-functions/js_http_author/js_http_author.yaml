@@ -12,14 +12,19 @@ description: >
   criterion enforces it.
 tags: [uipath-functions, e2e, mode:build, lifecycle:generate, feature:js]
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-functions/js_http_author/_fixtures/quote-fns ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/quote-fns
+      mount_point: quote-fns
 
 run_limits:
   expected_turns: 15
   max_turns: 30
   turn_timeout: 1200
+
+reference:
+  directory: .
 
 initial_prompt: |
   I have a UiPath JS/TS coded-functions project at `quote-fns/`. Add a new
@@ -56,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "defineFunction shape, schema-first contracts, FunctionError 422, uipath.json map, dependency placement"
-    command: "python3 $TASK_DIR/check_js_http_author.py"
+    command: "python3 $REFERENCE_DIR/check_js_http_author.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

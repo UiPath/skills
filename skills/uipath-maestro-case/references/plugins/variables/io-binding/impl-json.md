@@ -46,7 +46,7 @@ For each top-level Step 0 entry, check whether the SDD references it either as a
 
 A `$xref('Stage','Task','output')` marker is not one of those two reference forms: the output it names is still auto-minted, and the `=` row is an additional row that reads it. Collapsing the two into one leaves the `=` row reading the variable it writes, which nothing produces.
 
-- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape. Let `baseId = camelCase(leaf segment)` and allocate `id` per the global [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule), including its controlled equal-name alias. Emit `{name: <resolved name>, type: <resolved descriptor's type>, id: <allocated id>, var: "<sdd-name>", originalVar: <allocated id>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<allocated id>", elementId: "<stage-task>"}`. `<resolved name>` is the top-level schema display name for a top-level path; for a nested path it is the leaf display name when present, otherwise the exact final path segment. **`source` is the SDD's left-side string with `=` prefix, verbatim.** **`type` is required on every emitted output.** The parser keeps an output only when `name`, `type`, `source` and `var` are all present, so a row without one is dropped before anything evaluates it and the variable it names is never written. Packaging does not object: an undefined `type` simply omits the attribute. **`originalVar` is load-bearing and mirrors the allocated `id`** — it records the output slot before reassignment and tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits. Example: if another task already owns `id: "aPIOutput1"`, `APIOutput1 -> renamedResult` emits `id: "aPIOutput12"`, `target: "=aPIOutput12"`, `var: "renamedResult"`, and `originalVar: "aPIOutput12"`.
+- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape. Let `baseId = camelCase(leaf segment)` and allocate `id` per the global [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule), including its controlled equal-name alias. Emit `{name: <resolved name>, type: <resolved descriptor's type>, id: <allocated id>, var: "<sdd-name>", originalVar: <allocated id>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<allocated id>", elementId: "<stage-task>"}`. `<resolved name>` is the top-level schema display name for a top-level path; for a nested path it is the leaf display name when present, otherwise the exact final path segment. **`source` is the SDD's left-side string with `=` prefix, verbatim.** **`type` is required on every emitted output.** The parser keeps an output only when `name`, `type`, `source` and `var` are all present, so a row without one is dropped before anything evaluates it and the variable it names is never written. Packaging does not object: an undefined `type` simply omits the attribute. **`originalVar` is load-bearing and mirrors the allocated `id`** — it records the output slot before reassignment and tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits. See **Reassign collision** below for the shape a name clash produces.
 - **Bare `<name>`** (no operator) → auto-mint shape: `{name, type: <Step 0 entry's type>, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
 - **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. **On this shape only, `target` and `body` are present-but-blank: emit `"target": ""` and `"body": ""` literally rather than dropping the keys.** An omitted key is not the same as a blank one — the FE reads a missing `target` as unset rather than deliberately-empty. Blank values belong to Scenario E and nowhere else:
 
@@ -86,6 +86,24 @@ Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the 
   }
 ]
 ```
+
+**Reassign collision.** The allocated `id` is derived from the field name, never the `v` + 8 form task inputs and formal slots use, so `id` is the field that can clash and the field that takes the suffix. `target` and `originalVar` follow it; `var` and `value` keep pointing at the case variable. Given another task already owns `id: "aPIOutput1"`, the row `APIOutput1 -> renamedResult` emits:
+
+```json
+{
+  "name": "APIOutput1",
+  "type": "string",
+  "id": "aPIOutput12",
+  "var": "renamedResult",
+  "originalVar": "aPIOutput12",
+  "value": "renamedResult",
+  "source": "=APIOutput1",
+  "target": "=aPIOutput12",
+  "elementId": "Stage_verify-tCallApi01"
+}
+```
+
+Eight tasks extracting the same field into one case variable produce this eight times: eight distinct `id` values, one shared `var`. Minting `id` randomly leaves nothing that can clash, the suffix lands on `var` instead, and seven of the eight then name a case variable that was never declared.
 
 **Equal-name extract dispatch.** Dispatch by the explicit operator before comparing names; equal operands select the reassign shape, never the bare auto-mint branch. Apply the global [controlled-alias rule](../global-vars/impl-json.md#uniqueness-rule). With no unrelated collision, `greeting -> greeting` emits `id`, `var`, `originalVar`, and `value` as `"greeting"`, with `source: "=greeting"` and `target: "=greeting"`. `originalVar` distinguishes reassignment from a bare output and keeps the predeclared root companion intact during frontend synchronization; the linked allocator owns any required suffixing.
 

@@ -15,6 +15,9 @@ run_limits:
   expected_turns: 25
   max_turns: 90
 
+reference:
+  directory: .
+
 initial_prompt: |
   Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a Flow
   project, build an eval set with one data point, then add **child tool
@@ -156,7 +159,7 @@ success_criteria:
 
   - type: run_command
     description: "Eval-set JSON shows the auto-created parent with child simulations persisted correctly"
-    command: "python3 $TASK_DIR/check_child_simulation_crud.py"
+    command: "python3 $REFERENCE_DIR/check_child_simulation_crud.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

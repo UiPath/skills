@@ -4,8 +4,11 @@ description: >
   DeepWiki MCP endpoint, refresh its tools (sync), verify the server resolved, then the harness
   deletes it.
 tags: [uipath-mcp-servers, e2e, mode:build]
-
-# Inherits experiments/nightly.yaml (docker + live tenant auth).
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 run_limits:
   max_turns: 40
   turn_timeout: 600
@@ -20,7 +23,6 @@ initial_prompt: |
 
   When it's done, leave a report.json in the working dir for cleanup:
   {"slug": "<slug>", "folder_path": "Shared"}
-
 success_criteria:
   - type: skill_triggered
     description: "uipath-mcp-servers skill auto-loaded (inferred from the task, not named in the prompt)"
@@ -60,5 +62,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-mcp-servers/_shared/cleanup_mcp_server.py"
+  - command: "python3 _setup/cleanup_mcp_server.py"
     timeout: 120

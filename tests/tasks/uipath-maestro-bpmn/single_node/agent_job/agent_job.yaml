@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -61,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Agent invocation uses Orchestrator.StartAgentJob with input and a declared output variable"
-    command: "python3 $TASK_DIR/check_agent_job.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_agent_job.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

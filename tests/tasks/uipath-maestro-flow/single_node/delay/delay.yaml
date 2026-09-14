@@ -15,6 +15,9 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-
 run_limits:
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project named "DelayDemo" with the shape
   Trigger -> Delay -> End. The middle node must be an OOTB Delay node of
@@ -47,7 +50,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -56,7 +59,7 @@ success_criteria:
   # ── Structural checks (node type, timer inputs, edge wiring) ───────────
   - type: run_command
     description: "Flow has exactly one core.logic.delay node with valid timer inputs and incoming/outgoing edges"
-    command: "python3 $TASK_DIR/check_delay_flow.py"
+    command: "python3 $REFERENCE_DIR/single_node/delay/check_delay_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

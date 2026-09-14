@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -65,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Connector event-trigger start is a public-safe draft with valid structure"
-    command: "python3 $TASK_DIR/check_event_trigger_start.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_event_trigger_start.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
@@ -77,6 +80,7 @@ success_criteria:
     pass_threshold: 0.7
     include_agent_output: true
     include_tool_calls: true
+    include_reference: false
     prompt: >
       Pass if the agent only authored a local BPMN draft and read-only registry
       output, and did not run or request approval for any cloud-side mutation

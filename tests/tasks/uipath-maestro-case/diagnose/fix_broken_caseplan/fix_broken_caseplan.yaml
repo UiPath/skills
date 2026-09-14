@@ -21,6 +21,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   The LinearThreeStages case solution already exists on disk under
   LinearThreeStages/. Its case definition
@@ -72,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Both root causes fixed (valid task type + rewired Decision entry, no dangling ref), all 3 stages preserved and Decision reachable — not silenced by deletion"
-    command: "python3 $TASK_DIR/check_fix_broken_caseplan.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_fix_broken_caseplan.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5

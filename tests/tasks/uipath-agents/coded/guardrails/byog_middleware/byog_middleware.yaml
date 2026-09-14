@@ -32,6 +32,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
+reference:
+  directory: ../../..
+
 initial_prompt: |
   I have a coded LangGraph agent in graph.py that handles customer support questions.
 
@@ -56,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "BYOG middleware guardrail correctly added to graph.py"
-    command: "python3 $TASK_DIR/check_byog_middleware.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_byog_middleware.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

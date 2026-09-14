@@ -26,6 +26,9 @@ sandbox:
     - {type: template_dir, path: ../../../_fixtures/ByogMockCli}
     - {type: template_dir, path: ../_fixtures/WebResearchBriefingSolution}
 
+reference:
+  directory: .
+
 initial_prompt: |
   Our admin registered a bring-your-own guardrail configuration named
   `byog-smoke-agent-pin` — PII detection served by our external guardrail
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "Guardrail added to the fixture agent and pinned to the BYO configuration (byoValidatorName == byog-smoke-agent-pin; block action; PascalCase entities)"
-    command: "python3 $TASK_DIR/check_byog_pinning.py"
+    command: "python3 $REFERENCE_DIR/check_byog_pinning.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

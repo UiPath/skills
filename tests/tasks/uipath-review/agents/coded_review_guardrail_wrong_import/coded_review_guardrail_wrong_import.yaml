@@ -16,10 +16,20 @@ run_limits:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/coded_review_guardrail_wrong_import/inject_guardrail_wrong_import.py"
+  - command: "python3 _setup/inject_guardrail_wrong_import.py"
     timeout: 30
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   A coded UiPath agent project (LangChain) exists at `CodedAgent`. Review it for
@@ -59,7 +69,7 @@ success_criteria:
   # checker's module docstring.
   - type: run_command
     description: "Report carries the review CLI's deterministic findings (Step 2.5a ran)"
-    command: 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_review_cli_provenance.py --project CodedAgent --verb "codedagent review"'
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_cli_provenance.py --project CodedAgent --verb "codedagent review"'
     timeout: 240
     expected_exit_code: 0
     weight: 2.0
@@ -67,7 +77,7 @@ success_criteria:
 
   - type: run_command
     description: "Review report surfaces the CLI finding (CODED_GUARDRAIL_WRONG_IMPORT, or describes the wrong-import / silent-no-op problem)"
-    command: "python3 $TASK_DIR/check_coded_review_guardrail_wrong_import.py"
+    command: "python3 $REFERENCE_DIR/agents/coded_review_guardrail_wrong_import/check_coded_review_guardrail_wrong_import.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

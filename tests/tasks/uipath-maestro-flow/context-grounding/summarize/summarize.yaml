@@ -16,6 +16,9 @@ run_limits:
   expected_turns: 47
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project named "SummarizeDemo" that uses a Summarize
   pattern node to synthesize a response over an attached document. The flow
@@ -65,7 +68,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -74,7 +77,7 @@ success_criteria:
   # ── Structural checks (node type, inputs, returnCitations boolean) ─────
   - type: run_command
     description: "Flow has a Summarize (deep-rag) node with prompt, attachment wired, and returnCitations=true"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/context-grounding/summarize/check_summarize_flow.py"
+    command: "python3 $REFERENCE_DIR/context-grounding/summarize/check_summarize_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

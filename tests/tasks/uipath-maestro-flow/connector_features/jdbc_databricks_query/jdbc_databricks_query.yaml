@@ -1,21 +1,3 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
-# Tenant-gated. Requires the Databricks-backed Database Hub (JDBC)
-# connection in the runner tenant, reaching the sandbox.globalmart schema whose
-# `employees` table is seeded with the fixture rows this task asserts on (Alice
-# Johnson / Bob Smith / Carol Davis in Engineering+Marketing). Ground truth is
-# owned by the spartacus connector-sanity fixture, NOT this repo.
-#
-# The "Special SDK case" (ENGCE-58640): Databricks SQL has NO native connector
-# path — `uipath-databricks-databricks` exposes only AI serving endpoints, so a
-# SQL intent against Databricks MUST resolve to the JDBC gateway
-# (`uipath-uipath-jdbc.execute-query-synchronously`). Getting that disambiguation
-# right is the point of the test. Per ENGCE-58640: one database, one complex
-# scenario, Flow surface — not the full activity matrix.
-#
-# skip:false — the Databricks-backed JDBC connection + seeded employees table are
-# confirmed on the codereval tenant. Runs under the authed (nightly) experiment.
 task_id: skill-flow-jdbc-databricks-query
 description: >
   Databricks-via-JDBC coverage (Maestro Flow connector, special SDK case): builds
@@ -33,12 +15,19 @@ description: >
   connector-sanity fixture). REQUIRES cloud auth AND that connection.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-jdbc, ipe]
 skip: false
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 40
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 900
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a new Flow project called "DatabricksQuery" inside a solution of the
@@ -70,7 +59,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -86,12 +75,12 @@ success_criteria:
 
   - type: run_command
     description: "DatabricksQuery checks: valid flow wires the JDBC Execute-Query node with a bound connection, not the native Databricks connector or an HTTP fallback"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/jdbc_databricks_query/check_databricks_query.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_databricks_query.py"
     timeout: 600
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

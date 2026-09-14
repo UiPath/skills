@@ -38,6 +38,12 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
+
 initial_prompt: |
   I have an approved SDD for our ExpenseReimbursementRunnable case-management
   solution — it's saved as `sdd.md` in this folder. Build a UiPath Case
@@ -103,7 +109,7 @@ success_criteria:
 
   - type: run_command
     description: "caseplan encodes the 7-stage expense topology: Submission -> Manager Approval -> Finance Approval -> Payment -> Approved happy path, Rejected/Withdrawn terminal lanes, expense_requests event trigger, the automated task-type mix (api-workflow/agent/process/rpa/wait-for-timer), and the Payment Tracking child case"
-    command: "python3 $TASK_DIR/check_expense_runnable_structure.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_expense_runnable_structure.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
@@ -111,12 +117,12 @@ success_criteria:
 
   - type: run_command
     description: "case executes end-to-end: uip solution resources refresh then uip maestro case debug reaches finalStatus=Completed across the automated happy path"
-    command: "python3 $TASK_DIR/check_expense_runnable_debug.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_expense_runnable_debug.py"
     timeout: 900
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

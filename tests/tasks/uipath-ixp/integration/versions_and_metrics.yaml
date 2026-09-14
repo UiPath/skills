@@ -24,8 +24,12 @@ sandbox:
     - type: template_dir
       path: ../_shared/live_calls_template
     - type: template_dir
-      path: ../_shared/fixtures
+      path: ../_setup/fixtures
+      mount_point: fixtures
 
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 initial_prompt: |
   I want to improve an invoice extraction model and end up with two trained
   versions to compare. Use the tenant I'm already signed into (check I'm logged
@@ -128,5 +132,5 @@ success_criteria:
 # (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
 # always exits 0 so it never fails the test.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+  - command: "python3 _setup/cleanup_project.py"
     timeout: 60

@@ -22,6 +22,9 @@ run_limits:
   max_turns: 60
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a Maestro Flow (inside a solution of the same name) that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
@@ -54,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "The flow contains Test Manager connector nodes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'uipath-uipath-testmanager.'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py 'uipath-uipath-testmanager.'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -62,7 +65,7 @@ success_criteria:
 
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -70,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "Produced .flow references every attachment connector node type (4 nodes)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'uipath-uipath-testmanager.upload-attachment' 'uipath-uipath-testmanager.get-attachments' 'uipath-uipath-testmanager.download-attachment' 'uipath-uipath-testmanager.delete-attachment'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py 'uipath-uipath-testmanager.upload-attachment' 'uipath-uipath-testmanager.get-attachments' 'uipath-uipath-testmanager.download-attachment' 'uipath-uipath-testmanager.delete-attachment'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

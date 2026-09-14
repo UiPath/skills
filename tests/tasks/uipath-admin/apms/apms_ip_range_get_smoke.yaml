@@ -9,13 +9,21 @@ description: >
   Read-only apart from the seed, which post_run removes. Enforcement is never
   enabled, and the seeded network is an RFC 5737 documentation range.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, apms, ip-ranges]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-get-entry" APMS_RANGE_COUNT="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-get-entry" APMS_RANGE_COUNT="1" python3 _setup/setup_apms_ip_range.py'
     timeout: 90
 
 post_run:
-  - command: 'APMS_CLEANUP_MARKER="ce-apms-get-entry" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-get-entry" python3 _setup/cleanup_apms_marker.py'
     timeout: 90
 
 run_limits:

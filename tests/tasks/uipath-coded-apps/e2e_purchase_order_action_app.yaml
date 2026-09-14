@@ -11,10 +11,18 @@ description: >
   Deploys into an isolated `codedapp-e2e-*` folder so `post_run` can delete
   it cleanly.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 40
   max_turns: 60
   turn_timeout: 1200
+
+reference:
+  directory: ../../../skills/uipath-coded-apps/scripts
 
 initial_prompt: |
   Build a UiPath Coded Action App that finance reviewers will use to
@@ -54,7 +62,6 @@ initial_prompt: |
 
   Use `--output json` on every `uip` command. Do not prompt for
   confirmation — this is an automated test.
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status before cloud commands (Rule #2)"
@@ -114,7 +121,7 @@ success_criteria:
 
   - type: run_command
     description: "action-schema.json passes the skill's validator"
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && node $SKILLS_REPO_PATH/skills/uipath-coded-apps/scripts/validate-action-schema.js \"$F\""
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && node $REFERENCE_DIR/validate-action-schema.js \"$F\""
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -207,5 +214,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+  - command: "python3 _setup/cleanup_codedapp_folder.py"
     timeout: 60

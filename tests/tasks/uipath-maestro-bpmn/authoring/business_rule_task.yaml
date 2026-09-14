@@ -9,6 +9,9 @@ run_limits:
   expected_turns: 28
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project at:
     BusinessRuleDecision/BusinessRuleDecision
@@ -43,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "Business rule task uses bpmn:businessRuleTask with Orchestrator.BusinessRules"
-    command: "python3 $TASK_DIR/check_business_rule_task.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_business_rule_task.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
