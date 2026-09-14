@@ -26,7 +26,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 
 ## Binding Creation
 
-Create **two** binding entries in top-level `bindings[]` per **resource**, not per task — a name entry and a folderPath entry sharing one `resourceKey`, because one key is one resource. Tasks pointing at the same resource reuse that pair: the golden's two action tasks on one app carry the same `=bindings.<id>` in both their `data.name` fields, and minting a second pair for the second task is what `CASE_MGMT_BINDING_KEY_SHARED` reads as three resources claiming one binding. Dedup rule and lookup order are in [Reuse](#reuse) below. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
+Create **two** binding entries in top-level `bindings[]` per **resource**, not per task — a name entry and a folderPath entry sharing one `resourceKey`, because one key is one resource. Tasks pointing at the same resource reuse that pair: the golden's two action tasks on one app carry the same `=bindings.<id>` in both their `data.name` fields, and minting a second pair for the second task is what `CASE_MGMT_BINDING_KEY_SHARED` reads as three resources claiming one binding. Dedup rule and lookup order are in [Deduplication](#deduplication) below. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
 
 **Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case.
 
