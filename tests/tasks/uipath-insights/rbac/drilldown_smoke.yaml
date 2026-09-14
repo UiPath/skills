@@ -1,0 +1,297 @@
+task_id: skill-insights-smoke-rbac-drilldown
+description: >
+  Smoke test: agent uses the uipath-insights skill to go from an Insights RBAC
+  list to the single-object reads. Given a prompt naming a role, the agent
+  should page `users list` in two explicit pages, match the role name in
+  `roles list` to its GUID and run `roles get` on it, run `users get` and
+  `groups get` on GUIDs a list returned, and report counts and page
+  completeness without emails or nested identifiers. The CLI is
+  authenticated; the tenant may or may not have the Insights Portal service
+  provisioned, so a permission or not-found result is a valid outcome.
+
+  Covers the three `get` reads, the name-to-GUID join, `--limit`/`--offset`
+  paging on an RBAC list, and the not-found branch on a `get`, which the
+  rbac smoke leaves to "an integration-tier task against a seeded tenant".
+  The seeding problem is solved in the prompt instead: every branch ends in
+  a `get` call, because a list that is empty or denied is answered by running
+  the `get` on the all-zero GUID and reporting the 404. Same
+  tenant-agnosticism rule as the rest of this directory: no criterion
+  depends on data an empty tenant cannot supply.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  I need a read-only drill-down on Insights access for this tenant, written
+  up in a file called access-report.md in the working directory.
+
+  1. Page the Insights users five at a time: run the first page and then the
+     second page as two separate reads, and tell me from the pagination
+     fields whether more pages remain after those two.
+  2. List the Insights roles. Find the role named "Admin" and look up that
+     one role by its ID to see the actions it permits. If no role is named
+     "Admin", use the first role the list returned instead.
+  3. Look up one user by ID and one group by ID, taking each ID from the
+     matching list you already ran (list the groups if you have not yet).
+  4. If any list came back empty or was denied, still run the matching
+     by-ID lookup, using the ID 00000000-0000-0000-0000-000000000000, and
+     report what the CLI said about it.
+
+  In access-report.md, give counts and role names only, never email
+  addresses or internal identifiers, and say for each list whether every
+  page was retrieved. For any by-ID lookup that was not found, say what that
+  does and does not prove about the resource. Do not change any access, do
+  not look outside Insights for these people, and run each command at most
+  once per page. Do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every flag-bearing pattern keeps the flag in the same invocation as the
+  # verb with (?:(?!uip\s)[^&;|])*. The grader matches a shlex-normalized
+  # haystack too, where newlines collapse to spaces, so a \n-excluding class
+  # bleeds across a newline-batched pair; the `uip ` lookahead survives
+  # normalization. Same construction as the rest of this directory.
+  - type: command_executed
+    description: "Agent paged users list with an explicit --limit"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+users\s+list(?:(?!uip\s)[^&;|])*(--limit|\s-l)\s+5\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The second page is what proves paging rather than a single capped read.
+  - type: command_executed
+    description: "Agent fetched the second page of users with --offset"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+users\s+list(?:(?!uip\s)[^&;|])*(--offset|\s-o)\s+5\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran roles list to resolve the role name"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+roles\s+list'
+    exclude_pattern: 'uip\s+insights\s+roles\s+list(?:(?!uip\s)[^&;|])*--help'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # A GUID literal, not a variable: Critical Rule 2 and rbac guide Rule
+  # "Type identifiers literally". The all-zero fallback GUID also matches, so
+  # this fires on every tenant.
+  - type: command_executed
+    description: "Agent looked up one role by GUID with roles get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+roles\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent looked up one user by GUID with users get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+users\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent looked up one group by GUID with groups get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+groups\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the criteria above
+  # pass against a CLI that never shipped the get verbs. These gates re-run
+  # the surface at grading time and never depend on tenant data: the first
+  # three are rejected locally before any request is built. Verified against
+  # @uipath/cli 1.203.0-dev.8671 with insights-tool 1.203.0-dev.8669 on
+  # 2026-09-14: "role-id must be a GUID." with ErrorCode invalid_argument and
+  # exit 3.
+  - type: run_command
+    description: "A non-GUID role id is rejected locally with exit 3"
+    command: "uip insights roles get not-a-guid"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # rbac guide: "A --limit above 10000 is rejected locally". Same CLI build:
+  # "--limit must be between 1 and 10000, got 10001", exit 3.
+  - type: run_command
+    description: "The 10000 row cap on --limit is enforced locally"
+    command: "uip insights users list --limit 10001"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # rbac guide: "These lists take no subject filters. There is no --name,
+  # --email, --role, or --group". Commander rejects it as an unknown option.
+  - type: run_command
+    description: "users list has no subject filter: --name is an unknown option"
+    command: "uip insights users list --name Admin"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The not-found branch, exercised against the backend on an ID that cannot
+  # exist. Exit 1 holds on every authenticated tenant: a provisioned tenant
+  # answers 404 (Failure, not_found, Context.HttpStatus 404, verified
+  # 2026-09-14 on alpha), an unprovisioned one answers the same 404 through
+  # the provisioning-gap branch, and a 403 is also exit 1. Only a dead
+  # session (exit 2) breaks it, and every other task here assumes a session.
+  - type: run_command
+    description: "A well-formed but unknown role GUID reaches the backend and fails with exit 1"
+    command: "uip insights roles get 00000000-0000-0000-0000-000000000000"
+    timeout: 60
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the access report"
+    path: "access-report.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # RBAC workflow step 5 and Scope Boundaries: a name that does not resolve
+  # in Insights is reported as not visible there, never chased into org-level
+  # identity commands. `uip admin` owns org users, groups, and roles;
+  # `uip or users` is the Orchestrator copy.
+  - type: command_not_executed
+    description: "Agent did not fall back to org-level identity commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(admin|or|identity)\s+(users|groups|roles)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 15, same verb vocabulary as the rbac smoke's write guard.
+  - type: command_not_executed
+    description: "Agent did not attempt an RBAC write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(users|roles|groups)\s+(create|update|delete|assign|unassign|remove|add|set|grant|revoke|edit|patch|put|invite|enable|disable)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 2: the GUID handed to a get is typed from the previous
+  # output, never captured into a variable or substituted. Same shape as the
+  # rbac smoke's copy.
+  - type: command_not_executed
+    description: "Agent did not pass a variable or substitution as a GUID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(users|roles|groups)\s+get\s+["'']?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Same inverted advisory as the rbac smoke: the safe view is the absence
+  # of an explicit structured --output on these six commands.
+  - type: command_not_executed
+    description: "Advisory: agent kept RBAC reads in the safe view (no explicit --output)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(users|roles|groups)\s+\S+(?:(?!uip\s)[^&;|])*(--output[\s=]+(json|yaml)|--json\b)'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  # RBAC workflow step 3 and the guide's paging rule: the report says whether
+  # every page was retrieved, from Pagination.HasMore, rather than presenting
+  # a page as the whole tenant. The rubric holds for both outcomes on an
+  # empty or denied tenant.
+  - type: llm_judge
+    description: "Report states page completeness from the pagination fields"
+    include_agent_output: true
+    include_reference: false
+    files: ["access-report.md"]
+    prompt: |
+      The agent paged Insights users five at a time and listed roles and
+      groups. The uipath-insights skill requires the answer to say, for a
+      list, whether every page was retrieved, read from the CLI's
+      Pagination fields (Total, HasMore) rather than assumed. Read
+      access-report.md and the agent's response.
+
+      Score 1.0 if, for the users list, the report says whether rows remain
+      after the pages it fetched (or that the list was empty or denied, so
+      the question does not arise) and does not present a partial page as
+      the complete set of users. Score 0.0 if the report gives a user count
+      or a "these are the users" claim with no statement about
+      completeness, or claims completeness while its own commands only
+      fetched two pages of five and the CLI said more rows existed.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # rbac guide Failure Branches: a 404 on a get "is not proof the resource
+  # exists nowhere". The interpretation is the thing under test, and it is
+  # the same sentence whether the ID came from a list or was the all-zero
+  # fallback.
+  - type: llm_judge
+    description: "A not-found lookup is reported as not visible in this tenant, not as nonexistent"
+    include_agent_output: true
+    include_reference: false
+    files: ["access-report.md"]
+    prompt: |
+      The uipath-insights skill says an HTTP 404 on a by-ID RBAC lookup means
+      the ID is not in the active tenant or is not visible to the caller, and
+      is not proof that the user, role, or group exists nowhere. Read
+      access-report.md and the agent's response.
+
+      Score 1.0 if either: (a) no by-ID lookup returned not-found, and the
+      report does not invent one; or (b) at least one lookup returned
+      not-found and the report frames it as not present or not visible in
+      this tenant for this caller, with some statement that this does not
+      prove the resource does not exist at all. Score 0.0 if a not-found
+      result is reported as "the role/user/group does not exist" with no
+      such qualification, or if the agent retried the lookup.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 16, judged on third-party data only: the agent's own login
+  # identity is not covered (the reporting-discipline smoke learned this on
+  # run 34651167282).
+  - type: llm_judge
+    description: "Rule 16: report carries no email addresses or internal identifiers for tenant principals"
+    include_agent_output: true
+    include_reference: false
+    files: ["access-report.md"]
+    prompt: |
+      The uipath-insights skill requires Insights identity data to stay out of
+      everything the agent writes: users and groups are summarized by name
+      and count, and email addresses, nested role identifiers, and role
+      resource strings are never quoted. Passing a GUID as a command argument
+      is not disclosure; this rule is about the written report. Read
+      access-report.md and the agent's response.
+
+      Judge only third-party data, meaning the tenant's own users and groups.
+      The agent's own authenticated account, as shown by `uip login status`,
+      is not covered.
+
+      Score 1.0 if the report contains no email address and no role resource
+      string for a tenant user or group. A GUID that the report quotes only
+      to say which ID was looked up (for example the all-zero fallback, or
+      "looked up role <guid>") is acceptable. Score 0.0 if any tenant user's
+      or group's email address appears, or if a role resource string
+      carrying organization and tenant GUIDs is quoted.
+    weight: 2.0
+    pass_threshold: 1.0
