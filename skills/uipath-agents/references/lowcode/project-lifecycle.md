@@ -450,6 +450,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Add one resource (local stub or remote import) | `uip solution resources add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
 | Remove one resource by key | `uip solution resources remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
 | Edit one resource's spec | `uip solution resources edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
+| Pull a changed cloud definition | `uip solution resources edit <KEY> --source remote --force --output json` | Solution directory | For a resource changed in Orchestrator / Data Fabric after import, which `refresh` reports under `Skipped`. Without `--force` it lists what would change and writes nothing (exit 1) |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |

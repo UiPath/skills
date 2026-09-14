@@ -15,8 +15,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  I have an HR onboarding flow. Create it by writing to
-  HROnboarding/HROnboarding/HROnboarding.flow:
+  I have an HR onboarding flow. First, create HROnboarding/HROnboarding/project.uiproj:
+
+  { "ProjectType": "Flow" }
+
+  Then write HROnboarding/HROnboarding/HROnboarding.flow:
 
   {
     "nodes": [

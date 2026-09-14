@@ -15,8 +15,12 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  I have a UiPath Flow project. First, create this starting flow by writing
-  it to ExpenseApproval/ExpenseApproval/ExpenseApproval.flow:
+  I have a UiPath Flow project. First, create ExpenseApproval/ExpenseApproval/project.uiproj:
+
+  { "ProjectType": "Flow" }
+
+  Then create this starting flow by writing it to
+  ExpenseApproval/ExpenseApproval/ExpenseApproval.flow:
 
   {
     "nodes": [
