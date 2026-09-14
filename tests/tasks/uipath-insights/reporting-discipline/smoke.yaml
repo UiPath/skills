@@ -141,9 +141,18 @@ success_criteria:
   # agent calling a write route; nothing stopped it pasting an address or a
   # nested role id into its own output, which is what those two rules are for.
   # The CLI's safe projection withholds them, so a compliant report cannot
-  # contain one. pass_threshold 1.0 because a leak is binary; there is no
-  # plain-text backstop because file_matches_regex has no negative form in
-  # coder-eval 0.11.7 (verified against the installed model).
+  # contain one. pass_threshold 1.0 because a leak is binary.
+  #
+  # No plain-text backstop, and the reason is false positives rather than a
+  # missing feature. file_matches_regex does take must_match: false; the
+  # checker branches on it (criteria/file_matches_regex.py, checked against
+  # installed 0.11.7 and 0.12.1). Every pattern broad enough to catch a leak
+  # also catches something legitimate. A blanket email regex fails a compliant
+  # run, because Shared Workflow step 1 asks the agent to run `login status`
+  # and that is exactly how run 34651167282 scored this criterion zero. A bare
+  # GUID regex fires on the folder and process keys a report may legitimately
+  # quote. Narrowing either one to spare the grader's own account would
+  # hardcode an environment-specific address into the task.
   #
   # The rubric is scoped to THIRD-PARTY data on purpose. An earlier revision
   # failed any email anywhere, and run 34651167282 scored it zero because the
