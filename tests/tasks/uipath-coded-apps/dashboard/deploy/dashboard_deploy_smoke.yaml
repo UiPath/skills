@@ -60,9 +60,9 @@ success_criteria:
   # The routing slug rides on --path-name, not -n — so assert -n + --folder-key
   # structurally rather than pinning the slug to -n.
   - type: command_executed
-    description: "Agent ran uip codedapp deploy with -n <display name> and --folder-key"
+    description: "Agent ran uip codedapp deploy with -n <display name> and the folder key (--folder-key, or the UIPATH_FOLDER_KEY env-var prefix that skips the flag's first-page-only folder pre-check)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+deploy.*-n\b.*--folder-key'
+    command_pattern: '(?s)(?=.*\buip\s+codedapp\s+deploy\b)(?=.*\s-n\b)(?=.*(--folder-key\s+\S|UIPATH_FOLDER_KEY=\S))'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
