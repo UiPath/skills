@@ -27,7 +27,7 @@ initial_prompt: |
 
 success_criteria:
   - type: cli_called
-    description: "Agent listed documents via `documents list <Name>`"
+    description: "Agent listed documents via `documents list my_invoices-f1afa9ef-ixp`"
     verb: "ixp documents list"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
