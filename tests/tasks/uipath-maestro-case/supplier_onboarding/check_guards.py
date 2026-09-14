@@ -246,7 +246,7 @@ def main() -> int:
                 )
             elif name not in writable:
                 # A declared variable no task claims is an input, and a guard may read it:
-                # `vars.expectedAnnualSpend` does exactly that on 27 of the 28 runs and
+                # `vars.expectedAnnualSpend` does exactly that on 39 of the 42 runs and
                 # routes. The finding is the narrower case, an extract that claims this
                 # name and then writes under a suffixed id.
                 owner = next(
