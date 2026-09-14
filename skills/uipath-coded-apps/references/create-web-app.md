@@ -145,7 +145,7 @@ uip admin external-apps create "<app name>" \
   --output json
 ```
 
-Parse `id` from the response — that is the Client ID. If the CLI returns `403` (no admin permission) or can't authenticate, use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback).
+Parse `id` from the response — that is the Client ID. If the CLI returns `403` (no admin permission) or can't authenticate, stop after that one attempt — a `403` does not change with different flags — and use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback) per [When the CLI can't be used](oauth-client-setup.md#when-the-cli-cant-be-used).
 
 **If the user pasted an existing Client ID:** show them `<scopes>` and ask whether the External Application already has all of them. If scopes are missing, offer to add them via the `add-scopes` operation in [oauth-client-setup.md](oauth-client-setup.md), or let the user update the app manually. A missing scope at the External Application means the token request is rejected entirely; a scope granted to the app but missing from `uipath.json` causes silent `401`/`403` on first call.
 

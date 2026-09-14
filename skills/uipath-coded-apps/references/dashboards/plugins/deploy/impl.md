@@ -298,6 +298,7 @@ cd <PROJECT_DIR> && uip codedapp deploy \
 Read the JSON output:
 - **Success** → extract `SystemName` and `AppUrl`, continue
 - **Contains "indexing" or "not been published"** → platform propagation delay after publish. Show `↻ App is indexing — retrying in 10 seconds (attempt N/3)…`. Wait 10 seconds and retry (up to 3 times). If all 3 fail, surface the error and stop.
+- **Contains "not found among folders accessible to your account"** → the `--folder-key` pre-check read only the first page of the account's folders; the key is fine. Re-run the same command **once** with `UIPATH_FOLDER_KEY="<FOLDER_KEY>"` prefixed and `--folder-key` removed. No wait, no retry loop, no new folder, no re-publish. See [pack-publish-deploy.md](../../../pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
 - **(Fresh deploy only) Contains "conflict", "already exist", or "name must be unique"** → the routing slug is taken; generate a new suffix and retry the fresh deploy (keep `--path-name`):
 
 ```bash
@@ -364,7 +365,7 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 | Publish 5xx / HTML | Wait 10s and retry (up to 4 times) |
 | Deploy "indexing" / "not been published" (with NO `--version` passed) | Propagation delay — show retry ticker, wait 10s, retry up to 3 times |
 | Deploy "not been published" but you passed `--version` | Remove `--version` from the deploy call — deploy resolves the latest version itself |
-| Deploy "not found among folders accessible to your account" | Folder propagation lag on a just-created folder, or a session missing `OR.Default` — see [pack-publish-deploy.md](../../../pack-publish-deploy.md#a-freshly-created-folder-is-not-immediately-deployable). Retry the **same** key; do not create another folder or chase it as permissions |
+| Deploy "not found among folders accessible to your account" | The `--folder-key` pre-check reads only the first page of the account's folders (any folder beyond it, new or old, is reported missing). Re-run **once** as `UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy …` without `--folder-key` — no waiting, no retry loop, no new folder, no re-publish, no role grants. Zero rows from `uip or folders list` instead means the session lacks `OR.Default`. See [pack-publish-deploy.md](../../../pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible) |
 | Deploy "routing name must be unique" on an upgrade | You passed `--path-name` on an upgrade — omit it; routing already exists |
 | Deploy path-name conflict (fresh deploy) | Generate new suffix, retry deploy only (pack/publish already done) |
 | "Agentic Governance is a preview feature and is not enabled for your organization" (on a pinned/governance deploy) | Not a deploy failure — the app IS deployed and reachable at its URL. Governance pinning is preview-gated: the pin just won't surface in the Governance section until the org is enrolled. Report success with the URL, add the preview note (Step 11), and tell the user to contact their UiPath representative for preview access. Do NOT retry or bump the version. |

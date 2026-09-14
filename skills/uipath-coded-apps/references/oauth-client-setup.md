@@ -92,6 +92,13 @@ Fall back to the [Manual portal steps](#manual-portal-fallback) only when:
 - the signed-in identity lacks external-app admin permission (`403`) — hand the manual steps to an org admin, OR
 - the CLI genuinely lacks the verb (`uip admin external-apps --help` shows nothing — very old CLI; prefer upgrading).
 
+> **`Forbidden (403)` is a stable answer, not a transient one.** It means the signed-in identity cannot manage External Applications in this org, and the payload's `Retry: RetryWillNotFix` is correct. One failing `create` (or `update`) is the diagnosis:
+>
+> 1. Do **not** retry with a different name, `--user-scope`/`--app-scope` mix, `--non-confidential` toggle, or redirect list — every variant returns the same `403`.
+> 2. Do **not** probe or `update` External Applications you did not create for this app (shared tenant clients, other teams' apps) to "test" the permission — that mutates production OAuth clients.
+> 3. Finish the local half: put the required scopes and redirect URI(s) in `uipath.json`, keeping the existing `clientId` (or a placeholder if none exists yet).
+> 4. Report the blocker with the exact `uip admin external-apps create …` (or `update …`) command an org admin must run, plus the [manual portal steps](#manual-portal-fallback), and stop. Login cannot work until that registration exists.
+
 A missing scope name (`scope not found` / `Not all scopes=<list> are present in database`) is NOT a fallback trigger. If the rejected `scopes=` string contains **spaces**, the delimiter is the bug — comma-separate and retry (see [Scope model](#scope-model--cli-vs-portal)). Otherwise fix the name via `uip admin scopes list` and retry.
 
 ## Manual portal fallback
