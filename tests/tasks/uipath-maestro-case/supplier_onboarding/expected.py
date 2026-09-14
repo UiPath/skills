@@ -631,6 +631,7 @@ def _sdd_variables(sdd: str) -> dict[str, tuple[str, str, str]]:
 
 
 _RATIONALE_RE = re.compile(r"^\*\*Design Rationale:\*\*\s*(.+)$", re.M)
+_DESCRIPTION_RE = re.compile(r"^\*\*Description:\*\*\s*(.+)$", re.M)
 _ENVELOPE_RE = re.compile(r"^\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*([^|]*?)\s*\|", re.M)
 
 
@@ -642,6 +643,7 @@ def _sdd_task_envelopes(sdd: str) -> tuple[dict[str, str], dict[str, str]]:
     description in the plan lost it.
     """
     rationale: dict[str, str] = {}
+    described: dict[str, str] = {}
     skips: dict[str, str] = {}
     name = None
     for line in sdd.split("\n"):
@@ -662,10 +664,13 @@ def _sdd_task_envelopes(sdd: str) -> tuple[dict[str, str], dict[str, str]]:
         hit = _RATIONALE_RE.match(line)
         if hit:
             rationale[name] = hit.group(1).strip()
+        said = _DESCRIPTION_RE.match(line)
+        if said:
+            described[name] = said.group(1).strip()
         row = _ENVELOPE_RE.match(line)
         if row and row.group(3) not in ("\u2014", "-", ""):
             skips[name] = row.group(3)
-    return rationale, skips
+    return rationale, described, skips
 
 
 def sdd_facts() -> dict:
@@ -742,7 +747,7 @@ def sdd_facts() -> dict:
             f"expression; got {sorted(bound_inputs)}"
         )
 
-    rationale_tasks, skip_conditions = _sdd_task_envelopes(sdd)
+    rationale_tasks, described_tasks, skip_conditions = _sdd_task_envelopes(sdd)
     if len(rationale_tasks) < 30 or not skip_conditions:
         _fail(
             "fixture parse error: expected >=30 tasks with a Design Rationale and at "
@@ -767,5 +772,9 @@ def sdd_facts() -> dict:
         "custom_outputs": custom_outputs,
         "variables": variables,
         "rationale_tasks": rationale_tasks,
+        # What the skill actually asks for in a task's `description`: Check 18 in
+        # `implementation.md` says the SDD's `**Description:**` line word for word, and
+        # falls back to the Design Rationale only when a task writes no description.
+        "described_tasks": described_tasks,
         "skip_conditions": skip_conditions,
     }

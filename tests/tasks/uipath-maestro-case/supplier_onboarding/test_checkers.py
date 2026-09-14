@@ -163,7 +163,7 @@ def T(
         "type": task_type,
         "displayName": display_name,
         # A real build copies the SDD's Design Rationale here verbatim, on every task.
-        "description": E.sdd_facts()["rationale_tasks"].get(display_name, ""),
+        "description": E.sdd_facts()["described_tasks"].get(display_name, ""),
         "isRequired": req,
         "shouldRunOnlyOnce": once,
         "entryConditions": [
@@ -1613,7 +1613,7 @@ class TasksIoTests(CheckerBase):
         task(plan, E.CHILD_CASE_TASK)["data"]["waitForCompletion"] = True
         self.rejects(plan, "waitForCompletion=")
 
-    def test_rejects_a_task_carrying_only_part_of_its_design_rationale(self):
+    def test_rejects_a_task_carrying_only_part_of_its_sdd_description(self):
         """A fragment drops the reason the task is shaped the way it is."""
         plan = baseline_plan()
         # `description` sits on the task node, beside `displayName`, not inside `data`.
@@ -1626,7 +1626,26 @@ class TasksIoTests(CheckerBase):
                     item["description"] = desc[:20]
                     cut += 1
         self.assertTrue(cut, "the baseline carries no task description to truncate")
-        self.rejects(plan, "is not their whole")
+        self.rejects(plan, "is not the SDD's line word for word")
+
+    def test_rejects_the_design_rationale_in_place_of_the_description(self):
+        """The SDD writes both lines per task; `description` takes the Description one.
+
+        34873903981 copied all 33 Description lines word for word and was reported as
+        carrying a fragment on every one, because the check compared them with the Design
+        Rationale. Swapping the two is the shape that has to stay red.
+        """
+        plan = baseline_plan()
+        swapped = 0
+        for _stage, rows in sorted(E.STAGE_TASKS.items()):
+            for row in rows:
+                wanted = E.sdd_facts()["rationale_tasks"].get(row[0])
+                described = E.sdd_facts()["described_tasks"].get(row[0])
+                if wanted and described and wanted != described:
+                    task(plan, row[0])["description"] = wanted
+                    swapped += 1
+        self.assertGreater(swapped, 20, "the fixture needs both lines on most tasks")
+        self.rejects(plan, "is not the SDD's line word for word")
 
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
@@ -2382,7 +2401,7 @@ class RationaleAttributionTests(unittest.TestCase):
             "#### Stage SLA\n"
             "**Design Rationale:** The source gives buyer review a 4-minute target.\n"
         )
-        rationale, _skips = E._sdd_task_envelopes(sdd)
+        rationale, _described, _skips = E._sdd_task_envelopes(sdd)
         self.assertEqual(
             rationale["Send delay note"],
             "One push operation against a SaaS mail system.",
@@ -2437,7 +2456,7 @@ class RationaleAttributionTests(unittest.TestCase):
     def test_the_fixture_attributes_every_task_inside_its_own_section(self):
         with open(E.FIXTURE_SDD) as handle:
             sdd = handle.read()
-        rationale, _skips = E._sdd_task_envelopes(sdd)
+        rationale, _described, _skips = E._sdd_task_envelopes(sdd)
         self.assertEqual(len(rationale), 33)
         for name, text in rationale.items():
             self.assertNotIn(

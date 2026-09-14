@@ -393,10 +393,15 @@ def main() -> int:
     def _flat(text: str) -> str:
         return " ".join(str(text or "").split())
 
+    # What belongs in `description` is the SDD's own `**Description:**` line, word for
+    # word. `implementation.md` Check 18 falls back to the Design Rationale only for a
+    # task that writes no description, so a task carrying both is graded against the
+    # description. Grading every task against the rationale reported all 33 of
+    # 34873903981 as fragments while every one of them matched its description exactly.
     no_description, partial = [], []
     for _stage, task in P.all_tasks(caseplan):
         name = P.task_name(task)
-        wanted = facts["rationale_tasks"].get(name)
+        wanted = facts["described_tasks"].get(name) or facts["rationale_tasks"].get(name)
         if not wanted:
             continue
         written = _flat(task.get("description"))
@@ -407,12 +412,12 @@ def main() -> int:
     if no_description:
         problems.append(
             f"{len(no_description)} task(s) carry no `description`, and the SDD gives "
-            f"each a Design Rationale the skill copies there: {sorted(no_description)[:6]}"
+            f"each one the skill copies there: {sorted(no_description)[:6]}"
         )
     if partial:
         problems.append(
-            f"{len(partial)} task(s) carry a `description` that is not their whole "
-            f"Design Rationale; the skill copies it across, and a fragment drops the "
+            f"{len(partial)} task(s) carry a `description` that is not the SDD's line "
+            f"word for word; the skill copies it across, and a fragment drops the "
             f"reason the task is shaped the way it is: {sorted(partial)[:6]}"
         )
 
