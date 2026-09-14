@@ -19,7 +19,11 @@ reference:
 
 initial_prompt: |
   I have an existing complaint classification flow. First, create it by
-  writing to ComplaintTriage/ComplaintTriage/ComplaintTriage.flow:
+  writing ComplaintTriage/ComplaintTriage/project.uiproj:
+
+  { "ProjectType": "Flow" }
+
+  Then write ComplaintTriage/ComplaintTriage/ComplaintTriage.flow:
 
   {
     "nodes": [
