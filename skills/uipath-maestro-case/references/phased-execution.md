@@ -30,7 +30,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution/project, structure, triggers, task shapes, conditions in all 4 scopes, SLA + escalation; connector-bound rules use canonical stubs | `caseplan.json` emitted; `--skeleton-v2` preview validate attempted, with unsupported-flag fallback to `--skeleton` | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
+| **2 — Prototyping** | `sdd convert` emits what the document determines (fallback: author by hand); then solution/project, structure, triggers, task shapes, conditions in all 4 scopes, SLA + escalation; connector-bound rules use canonical stubs | `caseplan.json` emitted; `--skeleton-v2` preview validate attempted, with unsupported-flag fallback to `--skeleton` | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, resolved connector-rule stub upgrades | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, summarize `build-issues.md` (journal already on disk) | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
@@ -40,6 +40,32 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 <!--skill-flavor:phase-table-seven-row:end-->
 
 ## Phase 2 — Prototyping
+
+### Convert first — emit from the document before authoring
+
+**Run `uip maestro case sdd convert` before writing any Phase 2 element by hand.** The SDD determines most of the plan; convert derives that part in one call and reports what it could not. Hand-authoring what a parser already derives is the expensive path and the one that drifts from the document.
+
+```bash
+uip maestro case sdd convert "<SDD_PATH>" --out "<CASEPLAN_PATH>" --output json
+```
+
+Run it **after** the Phase 1 registry gate, never before. Convert reads the document only; every tenant identity it cannot supply is one the gate has already resolved, and running it first throws that away.
+
+**Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
+
+**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). Each kind is closed by a later step, not by re-deriving it from the SDD:
+
+| `kind` | What the document cannot determine | Closed by |
+|---|---|---|
+| `resource` | which tenant resource a task runs | Phase 1 bindings — project `selected` into root bindings (Step 12 Check 7) |
+| `output-type` | an output's shape, which comes from the resolved resource's schema | Step 9, via `uip maestro case tasks describe` or `case spec` |
+| `connector-context` | `folderKey` and the connector version `metadata` | Phase 3 connector context (Step 12 Check 12) |
+
+**`Unresolved[]` is a floor, not a ceiling.** It reports what convert knew it was skipping — never what convert emitted wrongly, and never what it omitted silently. Phase 4's `--strict --sdd` stays the authority, and a plain-profile `Status: Valid` on convert output is not a finished plan.
+
+**Verify task entry rules before leaving Phase 2, whatever convert emitted.** Walk every task in every stage and confirm each carries its own `entryConditions`. This check is not optional and not covered by anything upstream: an empty entry rule is only a `Task has no entry rules` warning under plain validate, it does not appear in `Unresolved[]`, and a task with no entry rule hangs `uip maestro case debug` indefinitely (SKILL.md Rule 6). Write the missing ones per task from the SDD's §4.6 **Entry Condition** and **Activation Mode** cells — per task, never once for a group of similar tasks.
+
+The sections below define what Phase 2 must contain either way. With convert, read the emitted plan against them and fill only the gaps. Without it, they are the authoring instructions.
 
 ### Structural nodes (full detail)
 
