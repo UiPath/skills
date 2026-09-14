@@ -396,6 +396,44 @@ jobs:
           # mirrors coder-eval's own grant_container_access.
           chmod -R o+rwX "$HOME/.uipath"
 
+      # ROPC access tokens live ~1h and refresh-auth.sh mints each one
+      # independently (password grant, no refresh-token chain). The nightly VM
+      # re-mints on a cron; this workflow used to mint once, so any run longer
+      # than the TTL lost auth on its late tasks (run 34839598257: token expired
+      # 12:48:03, the two tasks that started 12:36/12:39 died mid-build on
+      # "refresh token is invalid or expired"). Re-mint every 40 minutes for the
+      # life of the job. Containers bind-mount ~/.uipath and read .auth per uip
+      # invocation, so the swapped file is picked up without restarting anything.
+      # Runs detached so it outlives this step; the job's end kills it.
+      - name: Keep the bot token fresh for runs longer than the ROPC TTL
+        env:
+          UIPATH_URL:               https://alpha.uipath.com
+          UIPATH_ORGANIZATION_NAME: ${{ secrets.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ secrets.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ secrets.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ secrets.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
+        run: |
+          # Log to RUNNER_TEMP, not ~/.uipath: the script prints ::add-mask::
+          # lines carrying the minted token, and ~/.uipath is mounted into
+          # every task container.
+          LOG="$RUNNER_TEMP/refresh-auth-loop.log"
+          nohup bash -c '
+            while true; do
+              sleep 2400
+              if bash .github/scripts/refresh-auth.sh >>"$0" 2>&1; then
+                chmod -R o+rwX "$HOME/.uipath"
+                echo "$(date -u +%FT%TZ) re-minted" >>"$0"
+              else
+                echo "$(date -u +%FT%TZ) re-mint FAILED (keeping previous token)" >>"$0"
+              fi
+            done' "$LOG" >/dev/null 2>&1 &
+          echo $! > "$RUNNER_TEMP/refresh-auth-loop.pid"
+          echo "token refresher started (pid $(cat "$RUNNER_TEMP/refresh-auth-loop.pid"), every 40 min, log $LOG)"
+
       # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
       # can no longer import the group-level _shared/ helper by walking up the
       # tree. Co-locate a copy of each group's _shared into its task dirs first.
@@ -574,9 +612,8 @@ jobs:
             # Live token channel: nightly.yaml bind-mounts ~/.uipath -> /.uipath,
             # and the host re-reads the first READABLE path per turn — so the
             # frozen AUTH_TOKEN env copy stops mattering past the ~1h ROPC TTL,
-            # PROVIDED the file stays fresh. This workflow mints the token once
-            # (no refresher loop like the nightly's), so runs longer than ~1h can
-            # still hit token expiry on late tasks.
+            # PROVIDED the file stays fresh. The "Keep the bot token fresh" step
+            # above re-mints it every 40 minutes for the life of the job.
             env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
             # Docker forwards only an env allowlist into the container; append
             # the delegate auth/env vars to nightly.yaml's own list (MergeField
@@ -646,6 +683,17 @@ jobs:
           args: ${{ steps.prep.outputs.args }}
           env: ${{ steps.prep.outputs.env_block }}
           run-dir: /tmp/runs
+
+      - name: Stop the token refresher
+        if: always()
+        run: |
+          pid_file="$RUNNER_TEMP/refresh-auth-loop.pid"
+          if [ -f "$pid_file" ]; then kill "$(cat "$pid_file")" 2>/dev/null || true; fi
+          if [ -f "$RUNNER_TEMP/refresh-auth-loop.log" ]; then
+            # Token lines are masked by ::add-mask:: only when the runner sees
+            # them on a step's stdout, so print status lines only.
+            grep -E "re-minted|re-mint FAILED" "$RUNNER_TEMP/refresh-auth-loop.log" || echo "no re-mint cycle ran (job shorter than 40 min)"
+          fi
 
       - name: Fix permissions on /tmp/runs
         if: always()

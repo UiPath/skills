@@ -89,7 +89,16 @@ A deployed coded app is auto-scoped to the folder it was deployed into: the plat
 
 > **A required positional folder has no fallback — check the signature first.** Where the folder is a required positional parameter there is nothing to omit, so the fallback never applies and leaving it out is a compile error rather than a default. `jobs.stop(jobKeys, folderId)` is the usual shape — mutating operations tend to require it, list/get calls tend not to — so read the method's own signature in `dist/<service>/index.d.ts` and take it at face value. There is no hidden no-folder overload to find, so do not go looking for one.
 >
-> When it is required, either fetch the entity and use its attached method (`job.stop()`, `task.complete()`, `instance.cancel()` take no folder, though the fetch itself may still need one), or hold the folder in module config and pass it.
+> When it is required, **default to module config: hold the folder once at module scope and pass it.** A service module whose exported functions take only data arguments (`stopJob(jobId)`, `cancelProcessInstance(instanceId)`) needs nothing else — do not go looking for a lookup that recovers the folder from the id:
+>
+> ```typescript
+> const FOLDER_ID = Number(APP_CONFIG.folderId);   // Orchestrator services: number
+> const FOLDER_KEY = APP_CONFIG.folderKey;         // Maestro services: GUID string
+> export async function stopJob(jobId: string) { await jobs.stop([jobId], FOLDER_ID); }
+> export async function cancelProcessInstance(id: string) { await processInstances.cancel(id, FOLDER_KEY); }
+> ```
+>
+> Reach for the second form — fetch the entity, then call its attached method (`job.stop()`, `task.complete()`, `instance.cancel()` take no folder, though the fetch itself may still need one) — only when the caller genuinely cannot know the folder. Decide once from the signature in `dist/<service>/index.d.ts`; re-reading the types after that is not going to change the answer.
 
 ## Bridging folderKey ↔ folderId
 
