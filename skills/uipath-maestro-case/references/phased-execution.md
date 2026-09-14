@@ -61,6 +61,8 @@ Run it **after** the Phase 1 registry gate, never before. Convert reads the docu
 | `output-type` | an output's shape, which comes from the resolved resource's schema | Step 9, via `uip maestro case tasks describe` or `case spec` |
 | `connector-context` | `folderKey` and the connector version `metadata` | Phase 3 connector context (Step 12 Check 12) |
 
+**The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
+
 **`Unresolved[]` is a floor, not a ceiling.** It reports what convert knew it was skipping — never what convert emitted wrongly, and never what it omitted silently. Phase 4's `--strict --sdd` stays the authority, and a plain-profile `Status: Valid` on convert output is not a finished plan.
 
 **Verify task entry rules before leaving Phase 2, whatever convert emitted.** Walk every task in every stage and confirm each carries its own `entryConditions`. This check is not optional and not covered by anything upstream: an empty entry rule is only a `Task has no entry rules` warning under plain validate, it does not appear in `Unresolved[]`, and a task with no entry rule hangs `uip maestro case debug` indefinitely (SKILL.md Rule 6). Write the missing ones per task from the SDD's §4.6 **Entry Condition** and **Activation Mode** cells — per task, never once for a group of similar tasks.
