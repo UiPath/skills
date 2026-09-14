@@ -635,6 +635,17 @@ there. Checklist items 30–33 below cover inventory parity, verbatim `=js:` pre
 threshold encoding. What the DRAFT specifically needs repaired on the way through is the lane guide's
 § Resumption; the shape is here.
 
+THE DRAFT'S TASK BLOCKS ARE NOT THE FINAL'S. Measured on shipped drafts: a draft task block carries
+`**Type:**`, `**Description:**`, `**Entry Condition:**` and the type-specific detail, and carries NONE of
+`**Activation Mode:**`, `**Design Rationale:**`, `**Task envelope**`. Finalizing is an UPGRADE, not a
+copy: ADD all three to EVERY task block, including blocks the draft rendered completely. Mirroring the
+draft's block shape is the single most common way a finalized SDD fails item 6 — the draft looking
+finished is exactly why the omission is easy to miss. Same for the stage blocks: `**Type:** Stage` and
+`**Design Rationale:**` go on every one. Derive `**Activation Mode:**` from the draft's Starts When /
+sequencing column (`sequential` when it says nothing), `**Design Rationale:**` from the draft's own
+reasoning for the task (one concrete sentence, never boilerplate), and `**Task envelope**` from the
+Inputs/Outputs the draft already lists.
+
 Gate — the CONFORMANCE CHECKLIST below, run against the on-disk file BEFORE the Status: ready flip, in
 every mode. No script and no interpreter: Read the written file once (the one structural Read the lane
 allows), then answer every item PASS or FAIL in the transcript, each with one verbatim quote from the
