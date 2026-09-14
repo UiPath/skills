@@ -101,7 +101,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip codedapp deploy` with the folder key passed non-interactively — `--folder-key`, or the `UIPATH_FOLDER_KEY=<key>` env-var prefix that skips the flag's first-page-only folder pre-check (Rule #11)"
+    description: "Agent ran `uip codedapp deploy` with the folder key passed non-interactively — `--folder-key`, or the `UIPATH_FOLDER_KEY=<key>` env-var prefix that skips the flag's folder pre-check (Rule #11)"
     tool_name: "Bash"
     command_pattern: '(?s)(UIPATH_FOLDER_KEY=\S+.*\buip\s+codedapp\s+deploy\b|uip\s+codedapp\s+deploy\b.*--folder-key)'
     min_count: 1
