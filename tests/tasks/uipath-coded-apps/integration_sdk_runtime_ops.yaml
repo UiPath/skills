@@ -40,8 +40,9 @@ initial_prompt: |
        cancels a running Maestro process instance using the SDK's
        ProcessInstances service.
 
-  Also write `.env.example` at the sandbox root with the standard
-  `VITE_UIPATH_*` variables. The `VITE_UIPATH_SCOPE` must cover the SDK
+  Also write `.env.example` at the sandbox root declaring
+  `VITE_UIPATH_CLIENT_ID`, `VITE_UIPATH_BASE_URL`, and `VITE_UIPATH_SCOPE`
+  with placeholder values. The `VITE_UIPATH_SCOPE` value must cover the SDK
   methods these three functions call — look up the required scope for
   each in the skill's scope reference.
 
