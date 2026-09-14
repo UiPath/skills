@@ -42,10 +42,16 @@ initial_prompt: |
   the numbers into the Insights command as literals.
 
   In comparison.md, give both windows with their exact bounds and say which
-  bound is exclusive, then the total jobs, successful jobs, and failure
-  rate for each window, the change in average processing time, and a
-  one-line verdict on direction. Where the CLI does not tell you a unit, do
-  not assume one. Run each Insights command once; do not retry.
+  bound is exclusive. Then put the numbers in a table with exactly these
+  four columns, one row per window, filling every cell:
+
+  | Window | Total jobs | Successful jobs | Failure rate |
+
+  If a window returned no jobs, write "no jobs" across its cells rather
+  than leaving them blank. After the table, give the change in average
+  processing time and a one-line verdict on direction. Where the CLI does
+  not tell you a unit, do not assume one. Run each Insights command once;
+  do not retry.
 
 success_criteria:
   - type: skill_triggered
