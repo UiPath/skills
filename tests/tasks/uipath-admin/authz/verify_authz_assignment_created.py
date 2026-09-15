@@ -20,7 +20,7 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
 from admin_helpers import assignments_at, fail, login_info, ok, poll, resolve_scope_path, seed_entry
 
 logging.basicConfig(level=logging.INFO, format="verify_authz_assignment_created: %(message)s")

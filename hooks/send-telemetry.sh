@@ -35,8 +35,9 @@
 #   ENVELOPE (top-level)  -> toolName, toolUseId, permissionMode,
 #                            durationMs, effortLevel (effort.level), agentType,
 #                            source (-> session_source), reason (session-end),
-#                            model (-> agent_model; Claude sends it on
-#                            SessionStart, Codex on every event)
+#                            model (-> agent_model; string or {id,display_name}.
+#                            Claude Code omits it on most events, so the
+#                            transcript is the fallback -- PILOT-7497)
 #   tool_input            -> skillName, uipSubcommand (command), fileExtension
 #                            (file_path), subagentType (subagent_type, or
 #                            agent_type for a Codex spawn_agent call)
@@ -109,7 +110,8 @@ extract_fields() {
       if (d == 1)
         return (k=="tool_name"||k=="tool_use_id"|| \
                 k=="permission_mode"||k=="duration_ms"||k=="agent_type"|| \
-                k=="hook_event_name"||k=="source"||k=="reason"||k=="model")
+                k=="hook_event_name"||k=="source"||k=="reason"||k=="model"|| \
+                k=="transcript_path")
       if (d == 2 && c == "input")
         return (k=="skill"||k=="command"||k=="file_path"||k=="subagent_type"|| \
                 k=="agent_type")
@@ -117,6 +119,15 @@ extract_fields() {
         return (k=="interrupted"||k=="success"||k=="resolvedModel")
       if (d == 2 && c == "effort")
         return (k=="level")
+      if (d == 2 && c == "model")
+        return (k=="id"||k=="display_name")
+      return 0
+    }
+    # A JSON literal is meaningful only for these keys; elsewhere it is
+    # malformed input and is dropped, so "null"/"true" never reach telemetry.
+    function scalar_ok(k, d, c) {
+      if (d == 1) return (k=="duration_ms")
+      if (d == 2 && c == "response") return (k=="interrupted"||k=="success")
       return 0
     }
     # outkey: remap a JSON key to the field name read_fields expects. Codex
@@ -125,6 +136,8 @@ extract_fields() {
     # subagent_type) and never collides with the envelope agent_type (agentType).
     function outkey(k, d, c) {
       if (d == 2 && c == "input" && k == "agent_type") return "subagent_type"
+      # Distinct names so id/display_name cannot collide at depth 2.
+      if (d == 2 && c == "model") return "model_" k
       return k
     }
     { buf = buf $0 "\n" }
@@ -171,6 +184,7 @@ extract_fields() {
               if (pkey == "tool_input")        ctx = "input"
               else if (pkey == "tool_response") ctx = "response"
               else if (pkey == "effort")        ctx = "effort"
+              else if (pkey == "model")         ctx = "model"
               else                              ctx = "other"
             }
             pend = 0
@@ -193,7 +207,8 @@ extract_fields() {
             if (c==","||c=="}"||c=="]"||c==" "||c=="\t"||c=="\n"||c=="\r") break
             lit = lit c; i++
           }
-          if (interesting(pkey, pdepth, ctx)) print outkey(pkey, pdepth, ctx) "\t" lit
+          if (interesting(pkey, pdepth, ctx) && scalar_ok(pkey, pdepth, ctx))
+            print outkey(pkey, pdepth, ctx) "\t" lit
           pend = 0; continue                      # leave delimiter for the main loop
         }
         i++
@@ -210,8 +225,9 @@ read_fields() {
   duration_ms=""; agent_type=""; skill=""; command=""; file_path=""
   subagent_type=""; interrupted=""; success=""; resolved_model=""
   effort_level=""; response_seen=""; session_source=""; reason=""
-  agent_model=""
-  local k v
+  agent_model=""; transcript_path=""
+  local k v model_id model_display_name
+  model_id=""; model_display_name=""
   while IFS="$(printf '\t')" read -r k v; do
     case "$k" in
       hook_event_name)    event="$v" ;;
@@ -223,6 +239,9 @@ read_fields() {
       source)             session_source="$v" ;;
       reason)             reason="$v" ;;
       model)              agent_model="$v" ;;
+      model_id)           model_id="$v" ;;
+      model_display_name) model_display_name="$v" ;;
+      transcript_path)    transcript_path="$v" ;;
       skill)              skill="$v" ;;
       command)            command="$v" ;;
       file_path)          file_path="$v" ;;
@@ -236,6 +255,37 @@ read_fields() {
   done <<EOF
 $1
 EOF
+  # Object-shaped model emits no top-level scalar; use id, then display_name.
+  if [ -z "$agent_model" ]; then
+    agent_model="${model_id:-$model_display_name}"
+  fi
+  # Escapes are left intact, so a Windows path arrives as C:\\Users\\...;
+  # Git Bash reads the forward-slash form.
+  case "$transcript_path" in
+    *\\\\*) transcript_path="$(printf '%s' "$transcript_path" | sed 's|\\\\|/|g')" ;;
+  esac
+}
+
+# Fallback when the envelope carried no `model` (PILOT-7497). Reads the LAST
+# assistant entry, so a mid-session /model switch is tracked. Subagent turns go
+# to <session>/subagents/agent-<id>.jsonl, so this yields the main-loop model.
+# 256KB tail: the last assistant entry is within ~28KB of EOF even at 5MB.
+# An absent, unreadable or not-yet-written transcript resolves to empty.
+resolve_agent_model() {
+  [ -z "$agent_model" ] || return 0
+  [ -n "$transcript_path" ] && [ -r "$transcript_path" ] || return 0
+  agent_model="$(tail -c 262144 -- "$transcript_path" 2>/dev/null | awk '
+    # Whitespace-tolerant: the transcript format is undocumented.
+    match($0, /"type"[ \t\r]*:[ \t\r]*"assistant"/) > 0 {
+      if (match($0, /"model"[ \t\r]*:[ \t\r]*"[^"]*"/)) {
+        v = substr($0, RSTART, RLENGTH)
+        sub(/^"model"[ \t\r]*:[ \t\r]*"/, "", v)
+        sub(/"$/, "", v)
+        # <synthetic> is a local turn (interrupt/error), not a model id.
+        if (v != "" && v != "<synthetic>") m = v
+      }
+    }
+    END { if (m != "") print m }' 2>/dev/null)"
 }
 
 # --- relevance gate --------------------------------------------------------
@@ -418,6 +468,7 @@ main() {
 
   payload="$(cat)"
   read_fields "$(printf '%s' "$payload" | extract_fields)"
+  resolve_agent_model
 
   # Map the hook event to a canonical eventName; drop unrecognized events.
   event_name="$(map_event_name)"

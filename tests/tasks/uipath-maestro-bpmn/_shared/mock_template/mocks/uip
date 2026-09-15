@@ -35,13 +35,16 @@ Each rule has one of:
       committed alongside fixtures so tests stay reproducible offline.
 
 Dispatch precedence:
-    1. First matching rule (substring; first match wins).
+    1. First matching rule (contiguous token run; first match wins).
     2. `unmocked_default` — if set, return its `response` + `exit_code`.
     3. Otherwise, error on stderr (legacy behavior).
 
-Matching is plain substring on `" ".join(argv[1:])`. List specific
-patterns before generic ones. A passthrough rule with `match: "docsai ask"`
-is the typical way to proxy open-ended natural-language commands.
+`match` must appear in `" ".join(argv[1:])` as a contiguous run of
+whitespace-separated tokens, so a rule may stop at an identifier and still
+accept any trailing flags in any order while `job-triage-001` refuses
+`job-triage-001-wrong`. List specific patterns before generic ones. A
+passthrough rule with `match: "docsai ask"` is the typical way to proxy
+open-ended natural-language commands.
 """
 
 import hashlib
@@ -165,6 +168,16 @@ def _passthrough(args: str, original_argv: list[str], rule: dict) -> int:
     return proc.returncode
 
 
+def _matches(match: str, args: str) -> bool:
+    """True when `match`'s tokens appear as a contiguous run in `args`."""
+    needle, hay = match.split(), args.split()
+    if not needle:
+        return False
+    return any(
+        hay[i : i + len(needle)] == needle for i in range(len(hay) - len(needle) + 1)
+    )
+
+
 def main(argv: list[str]) -> int:
     args = " ".join(argv[1:])
 
@@ -177,7 +190,7 @@ def main(argv: list[str]) -> int:
     # 1. First matching rule wins.
     for rule in manifest.get("rules", []):
         match = rule.get("match", "")
-        if not match or match not in args:
+        if not _matches(match, args):
             continue
         if rule.get("passthrough"):
             return _passthrough(args, argv, rule)

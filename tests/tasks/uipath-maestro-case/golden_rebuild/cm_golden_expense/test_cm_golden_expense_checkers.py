@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parent
-TOPOLOGY_CHECKER = ROOT / "check_cm_golden_case.py"
+TOPOLOGY_CHECKER = ROOT.parent.parent / "_shared" / "check_cm_golden_case.py"
 
 
 def condition(rule_name: str, **rule_fields: object) -> dict:

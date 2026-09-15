@@ -3,7 +3,8 @@
 
 An edit task ships a pristine fixture `.bpmn` into the sandbox; the agent makes a
 surgical edit and the sidecar check diffs the edited file against the pristine
-original (read from the task's own `fixture/` dir via ``load_original``).
+original (read from the task's own `fixture/` dir via ``load_original``, which
+resolves against the reference mirror rather than the agent-writable sandbox).
 
 The core contract these helpers enforce: elements the agent did NOT author
 (stable ids, unknown/preserve-only ``uipath:*`` payloads, ``migrationVersion``)
@@ -20,6 +21,10 @@ import xml.etree.ElementTree as ET
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 
+# These helpers live in `_shared/`; fixtures stay with their task. Both are
+# mirrored under $REFERENCE_DIR, which is this file's parent.
+FAMILY_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def fail(message: str) -> None:
     raise SystemExit(f"FAIL: {message}")
@@ -29,9 +34,9 @@ def local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1] if "}" in tag else tag
 
 
-def load_original(check_file: str, basename: str) -> ET.Element:
-    """Parse the pristine fixture stored next to the check script."""
-    path = os.path.join(os.path.dirname(os.path.abspath(check_file)), "fixture", basename)
+def load_original(task_dir: str, basename: str) -> ET.Element:
+    """Parse the pristine fixture from ``<task_dir>/fixture/`` (e.g. `edit/add_node`)."""
+    path = os.path.join(FAMILY_ROOT, task_dir, "fixture", basename)
     if not os.path.isfile(path):
         fail(f"pristine fixture not found at {path}")
     return ET.parse(path).getroot()

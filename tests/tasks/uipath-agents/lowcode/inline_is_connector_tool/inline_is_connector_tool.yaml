@@ -18,6 +18,9 @@ run_limits:
   expected_turns: 56
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project "ResearchFlow" that runs an inline low-code
   agent which can look things up. Give the agent an Integration Service GenAI
@@ -97,7 +100,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline agent IS tool resource, bindings_v2.json, connection resource, and flow wiring (tool.connector node + edge to agent's tool handle)"
-    command: "python3 $TASK_DIR/check_inline_is_connector_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_is_connector_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

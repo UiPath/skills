@@ -55,5 +55,6 @@ success_criteria:
       Score 0.0 if the reply says to just run refresh again, blames a CLI
       bug / cache / wrong file, or prescribes hand-editing JSON as the
       primary fix without mentioning `resources edit`.
+    include_reference: false
     weight: 3.0
     pass_threshold: 0.7

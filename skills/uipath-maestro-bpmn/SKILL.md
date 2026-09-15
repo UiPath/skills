@@ -22,11 +22,12 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 Work with UiPath Maestro (Process Orchestration) `.bpmn` projects across their
 lifecycle: author, validate, package, operate, and diagnose. **Authoring is
-registry-driven**: every `uipath:*` extension payload comes from a template the
-registry serves; the structural BPMN that holds those nodes together (process
-scaffold, sequence flows, gateways, events, boundary events, containers,
-multi-instance markers, and the diagram) is authored from the documented spec +
-canvas contract. Packaging, operating (upload, publish, run, manage), and
+registry-driven for registered nodes**: their execution payloads come from
+templates the registry serves. The structural BPMN and serializer-owned scaffold
+metadata that hold those nodes together (process scaffold, variables, bindings,
+entry points, sequence flows, gateways, events, boundary events, containers,
+multi-instance markers, and the diagram) are authored from the documented spec
+and canvas contract. Packaging, operating (upload, publish, run, manage), and
 diagnosing are driven through the UiPath CLI, covered in the capability
 references below.
 
@@ -56,6 +57,12 @@ do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 
+For an existing ScriptTask, preserve its mapping discriminator and
+`uipath:scriptVersion`, and do not normalize a working brownfield node merely
+because the new-node authoring contract differs. Migration requires explicit
+confirmation — see
+[references/structural-bpmn.md](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
+
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
 `uipath-maestro-case`.
@@ -64,17 +71,20 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 
 Two halves make a valid Maestro `.bpmn`:
 
-1. **`uipath:*` payloads — registry-owned.** Each node's extension XML
-   (`uipath:activity` / `uipath:event` / `uipath:mapping`, its `context`,
-   `input`, `output`, and `bindingInfo`) comes from
+1. **Registry-listed node payloads — registry-owned.** Each listed node's
+   execution XML (`uipath:activity` / `uipath:event` / `uipath:mapping`, its
+   `context`, `input`, `output`, and `bindingInfo`) comes from
    `uip maestro bpmn registry get <type>`'s `xmlTemplate`. **Never hand-author a
-   `uipath:*` element from prose.**
-2. **Structural BPMN — spec/canvas-owned.** The registry emits no
+   registry-owned node payload from prose.**
+2. **Structural BPMN and scaffold metadata — spec/canvas-owned.** The registry emits no
    `<bpmn:definitions>`/`<bpmn:process>`, no sequence flows, no gateway
    conditions/defaults, no event-definition payloads, no boundary-event
-   attributes, no subprocess/loop structure, and no diagram. Author all of these
-   from [references/structural-bpmn.md](references/structural-bpmn.md), which is
-   grounded in the registry spec and the Studio Web canvas serializer.
+   attributes, no subprocess/loop structure, and no diagram. Serializer-owned
+   scaffold extensions such as `uipath:variables`, `uipath:bindings`,
+   `uipath:entryPointId`, and `uipath:migrationVersion` also come from this
+   contract rather than a node template. Author these from
+   [references/structural-bpmn.md](references/structural-bpmn.md), which is
+   grounded in the registry spec, the CLI scaffold, and the canvas serializer.
 
 ## Patterns
 
@@ -115,7 +125,7 @@ constrains. A single pattern needs only its own guide.
 
 ## Workflow
 
-Work the four steps quickly, but keep the path matched to the user's ask. Treat
+Work the five steps quickly, but keep the path matched to the user's ask. Treat
 requests to discover before authoring, save raw registry JSON/evidence, or "do
 not author yet" as discovery-only even if they describe an eventual BPMN. In
 that mode, immediately create `registry-evidence/`, run and save `registry pull
@@ -130,27 +140,8 @@ first complete draft before further spelunking. If
 directly covers the requested construct, write a first complete draft before
 further spelunking.
 
-For registry-evidence-only tasks, be command-first and time-boxed:
-
-- Create `registry-evidence/` before anything else.
-- Run the registry command forms the user asked for. For RPA job + internal
-  message discovery, use `uip maestro bpmn registry list --limit -1 --output
-  json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
-  and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
-- If `uip` is unavailable in a temp/smoke sandbox, or if it writes a valid JSON
-  failure object such as `"Result": "Failure"` instead of registry content, do
-  not search the repo for a replacement CLI or inspect test fixtures. Still
-  issue the required `list` and `get` command forms once each with output
-  redirected to their evidence files (allowing failure with `|| true`), so the
-  transcript shows the discovery loop:
-  `uip maestro bpmn registry list --limit -1 --output json` and
-  `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
-  attempts in `registry-evidence/cli-error.txt`, then overwrite any failure JSON
-  in the expected `registry-evidence/*.json` files with valid JSON evidence from
-  `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
-  extension types and stop. The final evidence files must literally contain the
-  discovered type names, for example `Orchestrator.StartJob` and
-  `Maestro.ReceiveMessageEvent`.
+For registry-evidence-only tasks, follow the command-first recipe in
+[references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -159,28 +150,42 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    every selection with the user (use AskUserQuestion). Never fabricate an identifier.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
-   each chosen registry-owned node only. Enrich `Intsvc.*` connector nodes with
-   `--connection-id`/`--object-name`. Do not call `registry get` for structural
+   each chosen registry-owned node only. Fetch every chosen template in **one**
+   Bash call, not one command per turn — each shell round-trip is a model turn
+   and dozens of them exhaust the run's time budget before authoring finishes:
+   `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
+   Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams. If a registry template's BPMN host tag is PascalCase (for example
    `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
    serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+   `BPMN.ScriptTask` is the registry lookup key, but a new node serializes
+   `<uipath:type value="BPMN.Variables" version="v1" />` — never the lookup
+   key. Local validation accepts the older discriminator, so a clean
+   `validate` does not prove that mapping is right. For the compatibility
+   fallback and its scope, see
+   [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
-   plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
-   shows variables, the entry point, a branch, and the diagram. **Do not
-   reverse-engineer authoring patterns from task fixtures or generated package
-   files** — fixture spelunking is the top reason authoring runs out of time.
+   plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
+   a stable manual entry point, one structural task, and complete DI. **Do not
+   reverse-engineer authoring patterns from task fixtures, generated package
+   files, or the CLI's compiled bundle (`@uipath/cli/dist/*.js`)** — such
+   spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then run
-   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For local authoring prompts, use the
-   plain project layout `<ProjectName>/<ProjectName>.bpmn` with
-   `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
-   `.uipx` artifacts unless the user explicitly asks to package or operate the
-   project.
+   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For a new local project, initialize the
+   supported scaffold with `uip maestro bpmn init <ProjectName> --output json`,
+   edit at the returned `Data.Path`, and preserve its generated metadata. For a
+   source-only draft the user has not asked to package or operate, pass
+   `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
+   created. See
+   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
+   The runnable BPMN/start-event path belongs in lowercase `operate.json.main`,
+   never `project.uiproj.main`.
    When adding draft or preserve-only case-management variants, include a real
    lowercase `<uipath:caseManagement version="v1">...</uipath:caseManagement>`
    payload with synthetic content as a separate preserve-only extension. Do not
@@ -201,19 +206,39 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
+   For an Integration Service draft or boundary handoff (author locally, hand
+   enrichment to the CLI, no pack/upload/operate asked for), emit **only** the
+   `.bpmn` plus the notes file — do NOT create the four generated package files
+   (Rule 16); authoring them fails the boundary the task tests.
    For Integration Service draft notes, name every CLI-owned blocker literally,
    including the exact phrase `connection binding`, plus dynamic schemas,
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
-   If the user asks for the package metadata files, or to package or operate,
-   run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
-   files, and keep its output as written — that shape is the contract `pack`
-   consumes. Only fall back to the equivalent hand-authored shape in
-   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape)
-   when the CLI is unavailable. Every root start event needs a
-   `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements` or
-   the project generates zero entry points.
+   Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
+   start event id or adds or removes an entry point — **not only when packaging
+   or operating**. `operate.json` and `entry-points.json` are generated once and
+   do not follow source edits, so step 4's validator fails on the mismatch:
+   `entry-points.json references start event "Event_start" via filePath, but no
+   <bpmn:startEvent id="Event_start"> exists`. Authoring from the skeleton above
+   renames the initializer's `Event_start`, so a source-only draft needs this
+   too. Keep the output as written — that shape is the contract `pack` consumes.
+   `refresh` requires an init-generated project: with no
+   `project.uiproj` it fails `Required file is missing` / `RetryWillNotFix`.
+   For a bare `.bpmn` (the shape of this repo's edit fixtures), write the
+   two-key `project.uiproj` first — `{ "Name": "<ProjectName>",
+   "ProjectType": "ProcessOrchestration" }` — then refresh, which writes the
+   rest. Only fall back to the equivalent hand-authored shape in
+   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
+   when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
+   synthetic local project. Every root start event needs a
+   `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
+   without one `refresh` fails the whole project `RetryWillNotFix` instead of
+   writing an empty entry-point list.
+   Give public inputs and outputs explicit runtime bridges, and converge routes
+   returning one result on a single completion EndEvent — for the two-layer
+   contract see
+   [references/structural-bpmn.md](references/structural-bpmn.md#variables-bpmnvariables).
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
@@ -225,10 +250,30 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
    with its rule code). Warnings are reported but do not fail the run. Validate
    once; fix only error-severity findings. Do not re-validate in a loop chasing
-   warnings. If `validate` reports "unknown command" or clearly skips the
+   warnings.
+
+   Validation is structural preflight, not runtime proof — see
+   [references/cli-conventions.md](references/cli-conventions.md). When
+   execution is authorized, inspect runtime variables, element executions, and
+   incidents before reporting behavioral success.
+
+   If `validate` reports "unknown command" or clearly skips the
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+5. **Refresh derived metadata when package-ready output is required.** After
+   source validation passes, regenerate the four CLI-owned package files:
+
+   ```bash
+   uip maestro bpmn refresh <project-path> --output json
+   ```
+
+   Treat a nonzero result as a source/precondition failure: fix the BPMN or
+   `project.uiproj`, revalidate, and refresh again — never repair the generated
+   JSON by hand. Refresh is needed only for a package-ready, upload, debug,
+   publish, or deploy deliverable, not for a source-only draft. For the full
+   contract (scope, idempotency, binding rules) see
+   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 ## Operate and diagnose
 
@@ -252,7 +297,8 @@ registry serves a template for vs. what you author by hand:
 
 | Structure | Source |
 | --- | --- |
-| Node `uipath:*` payloads (RPA, agent, HITL, queue, business rule, API workflow, IS connector, internal message, timer, script, variables) | **Registry** `xmlTemplate` |
+| Node `uipath:*` payloads (RPA, agent, HITL, queue, business rule, API workflow, IS connector, internal message, timer, script) | **Registry** `xmlTemplate` |
+| `<uipath:variables>` declarations (each with an `elementId`) | Authored (registry gap) |
 | `<bpmn:definitions>`/`<bpmn:process>` scaffold + namespaces | Authored (registry gap) |
 | Sequence flows, `conditionExpression`, gateway `default` | Authored (registry gap) |
 | Gateways: exclusive, parallel, inclusive, event-based (complex is preserve-only) | Authored (registry gap) |
@@ -270,8 +316,10 @@ and honestly surfaced to the user as gaps when asked.
 
 ## Rules
 
-1. **Registry owns every `uipath:*` payload.** Author from
-   `registry get` templates; never hand-write `uipath:` XML from prose.
+1. **Registry owns registry-listed node payloads.** Author their execution
+   extensions from `registry get` templates; author serializer-owned scaffold
+   metadata only from the structural/canvas contract. Never invent either from
+   prose.
 2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
    keys, app IDs, folder ids/paths come from discovery or the user.
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
@@ -285,10 +333,14 @@ and honestly surfaced to the user as gaps when asked.
    and the process structure with the user (AskUserQuestion).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
-6. **Node type is a child element, never an attribute.** Every `uipath:activity`
-   / `uipath:event` / `uipath:mapping` declares its type as
-   `<uipath:type value="<Type>" version="v1" />` inside the wrapper. Never write
-   `<uipath:activity type="…">` — the canvas will not recognize the node.
+6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
+   `uipath:event` / `uipath:mapping` templates declare their type as a nested
+   `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored
+   templates use the payload's `type` attribute instead; notably,
+   `Orchestrator.StartAgentJob` is a direct child of `bpmn:ServiceTask` with
+   `<uipath:activity type="Orchestrator.StartAgentJob" version="v1">`. Both
+   declarations are supported. Paste the selected registry template literally
+   and do not normalize one form into the other.
    Event extension types (`Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
    `Maestro.ReceiveMessageEvent`, `Maestro.SendMessageEvent`) must use
    `<uipath:event>`, including when the BPMN host is task-like such as
@@ -325,6 +377,12 @@ and honestly surfaced to the user as gaps when asked.
    business rule task. Never do that work at authoring time or hardcode its
    result. Bare "agent" in any process description means a UiPath agent, never
    you.
+16. **Generated package files are CLI-owned.** Never hand-author
+   `bindings_v2.json`, `entry-points.json`, `operate.json`, or
+   `package-descriptor.json`. Run `uip maestro bpmn refresh <project-path>` to
+   generate them — never the deprecated `update-metadata`. An
+   Integration Service draft or boundary handoff asks for none of those — emit
+   only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
 
 ## References
 

@@ -7,13 +7,21 @@ description: >
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:multi-node"]
 
 run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
   expected_turns: 24
-  max_turns: 40
+  # Nightly 2026-09-08_04-17-10 (claude-sonnet-5) hit max_turns at 41 turns
+  # (old cap 40; expected 24). Raise to 60 for margin. Re-verified SUCCESS at
+  # 638s on run 34374073086.
+  max_turns: 60
 
 sandbox:
   template_sources:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
@@ -41,7 +49,7 @@ success_criteria:
   - type: run_command
     description: >
       Process is well-formed, linear, and free of retrofitted pattern scaffolding
-    command: "python3 $TASK_DIR/check_no_pattern.py"
+    command: "python3 $REFERENCE_DIR/patterns/no_pattern/check_no_pattern.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

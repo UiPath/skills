@@ -12,6 +12,9 @@ run_limits:
   expected_turns: 76
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath solution "MemoryFlowSol" with a flow project "MemoryFlow"
   that runs an inline low-code agent. The agent takes a required
@@ -123,7 +126,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline memory feature shape and propagated parent memorySpace binding"
-    command: "python3 $TASK_DIR/check_inline_memory_space.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_memory_space.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

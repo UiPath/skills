@@ -39,6 +39,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   I have an approved SDD for our AgedInvoiceResolution case-management solution —
   it's saved as `sdd.md` in this folder. Build a UiPath Case Management solution
@@ -53,9 +56,8 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
-  - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval and Phase 2 publish-for-review. Choose the continue /
-    skip-publish path and keep going.
+  - Treat all hard stops after the SDD as pre-approved, including the Phase 2
+    publish-for-review. Choose the continue / skip-publish path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Skip Phase 5 and Phase 6. Do NOT run `uip maestro case debug` and do NOT
     publish to Studio Web.
@@ -83,8 +85,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    command: >-
+      uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "staged sdd.md is mechanically sound (variable mappings + lineage, per-gate rule legality, task types, interrupting semantics)"
-    command: "cd $(dirname $(find . -name sdd.md -not -path '*/.venv/*' | head -1)) && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    command: "cd $(dirname $(find . -name sdd.md -not -path '*/.venv/*' | head -1)) && python3 $REFERENCE_DIR/_shared/sdd_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -92,7 +104,7 @@ success_criteria:
 
   - type: run_command
     description: "caseplan preserves the 3-stage primary chain, the two interrupting exception lanes with canonical return-to-origin exits (required-tasks-completed + marksStageComplete=true), the connector-free task-type mix, the Payment Tracking child case, and the aged_invoice_cases event trigger"
-    command: "python3 $TASK_DIR/check_aged_invoice_structure.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_aged_invoice_structure.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

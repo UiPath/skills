@@ -28,10 +28,11 @@ graph LR
     B --> F[project remove]
 ```
 
-`refresh` does bulk reconciliation from `bindings_v2.json`. `add`, `remove`, and `edit` are the atomic, single-resource siblings — use them when you're mutating one resource at a time (a coding agent making a single change, scripted CI step, etc.) and don't want to re-scan the whole solution. `add` is idempotent (a re-run returns `Status: "Unchanged"`); `remove` fails cleanly with `Resource not found in solution` if the key is already gone; `edit` patches an existing resource's spec (the only command that mutates one — `refresh` never overwrites).
+`refresh` does bulk reconciliation from `bindings_v2.json`. `add`, `remove`, and `edit` are the atomic, single-resource siblings — use them when you're mutating one resource at a time (a coding agent making a single change, scripted CI step, etc.) and don't want to re-scan the whole solution. `add` is idempotent (a re-run returns `Status: "Unchanged"`); `remove` fails cleanly with `Resource not found in solution` if the key is already gone; `edit` is the only command that mutates an existing resource — `refresh` never overwrites. `edit` takes the new values either from you (`--patch`) or from the cloud definition the resource was imported from (`--source remote`).
 
 ---
 
+<!--skill-flavor:step-create-solution:start-->
 ## Step 1: Create a New Solution
 
 ```bash
@@ -41,10 +42,11 @@ uip solution init "InvoiceAutomation" --output json
 Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live inside this directory (or be imported into it).
 
 > If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
+<!--skill-flavor:step-create-solution:end-->
 
 ## Step 2: Add Existing Projects
 
-> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
+> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Python Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. JS/TS Coded Functions have no `init` — their `uipath.json` functions map is the registration marker (`entry-points.json` is generated at pack). Registration without these creates an incomplete solution entry.
 
 Register a project that already lives inside the solution directory.
 
@@ -112,7 +114,7 @@ uip solution resources list --kind App --solution-folder ./InvoiceAutomation --o
 | Option | Values | Default |
 |--------|--------|---------|
 | `--solution-folder <path>` | Path to solution root | Current working directory |
-| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger` (any RCS kind) | All kinds |
+| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger`, `Entity`, `ChoiceSet` (any RCS kind) | All kinds |
 | `--search <term>` | Name substring match | No filter |
 | `--source <source>` | `all`, `local`, `remote` | `all` |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
@@ -135,6 +137,8 @@ uip solution resources refresh --solution-folder ./InvoiceAutomation --output js
 | `Imported` | Cloud resources imported into the solution (artefact files written + linked) |
 | `Skipped` | Resources already tracked in the solution |
 | `Warnings` | Bindings that couldn't be resolved (logged for follow-up) |
+
+Refresh pulls in any choice set a Data Fabric `Entity` references automatically as a dependency of the entity — don't add it separately.
 
 ### What `refresh` actually does
 
@@ -192,7 +196,7 @@ This is intentional. Refresh never removes resources, so it cannot silently drop
 
 > A connection can be `Enabled` and pingable and still not be importable: the Resource Catalog is indexed per folder, so `refresh` may warn `Connection <guid> not found in Resource Catalog in the required folder "<folder>"` and import nothing. Membership in `uip is connections list` does not guarantee a connection is refresh-resolvable from a given `folderPath`.
 
-> For single-resource mutations that don't need a full project scan, see [Step 9: Add a Resource Atomically](#step-9-add-a-resource-atomically), [Step 10: Remove a Resource](#step-10-remove-a-resource), and [Step 11: Edit a Resource](#step-11-edit-a-resource). `refresh` and these solve different problems — `refresh` reconciles every binding in every project (and **never overwrites** a resource already in the solution); `add`/`remove`/`edit` operate on one resource at a time. To change an existing resource's spec, `edit` is the only path — `refresh` won't.
+> For single-resource mutations that don't need a full project scan, see [Step 9: Add a Resource Atomically](#step-9-add-a-resource-atomically), [Step 10: Remove a Resource](#step-10-remove-a-resource), and [Step 11: Edit a Resource](#step-11-edit-a-resource). `refresh` and these solve different problems — `refresh` reconciles every binding in every project (and **never overwrites** a resource already in the solution); `add`/`remove`/`edit` operate on one resource at a time. To change an existing resource's spec, `edit` is the only path — `refresh` won't. That includes picking up a change made **in the cloud** after the import: see [Step 11a](#step-11a-pull-a-changed-cloud-definition-source-remote).
 
 ## Step 8: Get a Single Resource Configuration
 
@@ -232,7 +236,7 @@ The local file is what `refresh` (and `solution projects add`) wrote to disk: a 
 | `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` | ❌ | ✅ |
 | `agentMemory`, `targetRuntime`, `environmentVariables` | ❌ | ✅ runtime defaults |
 
-If you need the full server spec for a resource that's already in the solution (e.g., for a deploy override), `--include-dependencies` paired with manual inspection of the dependency graph is one option; the cleaner path is to delete the local file and let `refresh` re-import it from the cloud.
+If you need the full server spec for a resource that's already in the solution (e.g., for a deploy override), `--include-dependencies` paired with manual inspection of the dependency graph is one option; the cleaner path is `resources edit <key> --source remote --force`, which pulls the current cloud definition in place ([Step 11a](#step-11a-pull-a-changed-cloud-definition-source-remote)). Deleting the local file and re-running `refresh` also works but discards every local edit rather than the ones you were shown.
 
 ### Why `solution resources list` and `get` aren't symmetric
 
@@ -257,6 +261,12 @@ uip solution resources add --source local --kind Asset --name ApiKey --type Text
 # Import an existing remote queue (folder disambiguates same-name resources)
 uip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
 
+# Import a Data Fabric entity created in Orchestrator's Shared folder via `uip df entities create`
+uip solution resources add --source remote --kind Entity --name Customer --folder-path Shared --output json
+
+# Import the choice set referenced by that entity's CHOICE_SET_SINGLE field
+uip solution resources add --source remote --kind ChoiceSet --name CustomerStatus --folder-path Shared --output json
+
 # Skip RCS lookup if you already know the cloud key
 uip solution resources add --source remote --kind Queue --name InvoiceQueue \
     --cloud-key 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
@@ -265,7 +275,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 | Option | Values | Default |
 |--------|--------|---------|
 | `--source <source>` | `local`, `remote` | **required** |
-| `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
+| `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger, Entity, ChoiceSet). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
 | `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
@@ -293,6 +303,14 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 ```
 
 `Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied when SDK detects drift on `--source remote`), or `"Unchanged"` (idempotency hit). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
+
+### Data Fabric kinds
+
+**Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. Idempotent — re-run on drift; returns `Updated`.
+
+**Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity and pack the workflow project — the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg). RPA (XAML) workflows use strongly-typed DataService activities that need a compiled `content/.entities/DataService.*.Entities.dll` bundle Studio Web builds at pack time — **Studio Web is required for RPA tenant-DF today**. In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
+
+> **Do not hand-write `configurations/default/configuration.json`.** `uip df entities get` returns `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Only `uip solution resources add --source remote` writes the shape the deploy validator accepts.
 
 ### Ambiguous remote match
 
@@ -374,7 +392,7 @@ If the key isn't in the local solution, the command exits with `Failure` and `Re
 
 ## Step 11: Edit a Resource
 
-Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them). Repointing a binding to a different connection is not an edit either: refresh imports the new one and leaves the old behind for you to `remove` — see [Repointing a connection leaves the old resource behind](#repointing-a-connection-leaves-the-old-resource-behind).
+Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them). Two sources for the new values: `--patch` (you supply them, below) and `--source remote` (the cloud definition supplies them, [Step 11a](#step-11a-pull-a-changed-cloud-definition-source-remote)). Repointing a binding to a different connection is not an edit either: refresh imports the new one and leaves the old behind for you to `remove` — see [Repointing a connection leaves the old resource behind](#repointing-a-connection-leaves-the-old-resource-behind).
 
 ```bash
 # Patch a single spec property
@@ -390,7 +408,9 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <resource-key> --patch -
 | Option | Values | Default |
 |--------|--------|---------|
 | `<resource-key>` | Solution resource key (GUID, positional) — discover via `resources list --source local` | **required** |
-| `--patch <json\|->` | JSON object of spec property → value; `-` reads the JSON from stdin | **required** |
+| `--patch <json\|->` | JSON object of spec property → value; `-` reads the JSON from stdin | **required** unless `--source remote` |
+| `--source <local\|remote>` | Where the new values come from. `local` uses `--patch`; `remote` pulls the cloud definition | `local` |
+| `--force` | With `--source remote`, actually write. Without it the command only reports the drift | off |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
 
 `--patch` is the only input. Purely local — no auth round-trip (a secret-property edit may need login; that surfaces as an SDK error if so). **Why no `--set k=v` shortcut?** Scalar coercion was ambiguous on numeric-looking strings (`--set slaInHours=2` would have become number `2`, but Queue's schema requires string `"2"`). JSON is unambiguous: the agent decides the type, the SDK gets exactly what was emitted.
@@ -422,6 +442,59 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <resource-key> --patch -
 
 `Data` is the SDK's `ResourceConfiguration` — the **same shape `resources get` returns**, so `get`↔`edit` round-trips cleanly: `resources get <key> --output json`, mutate the JSON, feed it back via `--patch`. If you need a before/after diff, run `get` first.
 
+## Step 11a: Pull a changed cloud definition (`--source remote`)
+
+The case this exists for: you imported an entity, queue or asset, then changed it **in Orchestrator or Data Fabric** — added a field, changed a setting. `refresh` will not pick it up. It reports the resource under `Skipped` and says so in `Status`, because overwriting on every re-scan would wipe local edits (a rename you made before deployment, a patched retry count). `edit --source remote` is the explicit override.
+
+```bash
+# 1. What would change? Writes nothing.
+uip solution resources edit <resource-key> --source remote --output json
+
+# 2. Apply it.
+uip solution resources edit <resource-key> --source remote --force --output json
+```
+
+**Step 1 exits `1`, on purpose.** When the local and cloud definitions differ it reports a failure, not a success:
+
+```json
+{
+  "Result": "Failure",
+  "ErrorCode": "invalid_argument",
+  "Message": "2 properties differ from the cloud definition: description, fields",
+  "Instructions": "Overwriting discards the local values of those properties. Re-run with --force to apply: uip solution resources edit <key> --source remote --force"
+}
+```
+
+A script that forgot `--force` must not read "nothing was written" as "done". When there is no drift it exits `0` with `Code: ResourceRemoteDrift` and `Data.Changed: []`.
+
+With `--force` it writes and reports what it replaced:
+
+```json
+{
+  "Result": "Success",
+  "Code": "ResourceEdited",
+  "Data": {
+    "key": "8f3a1b2c-...",
+    "Changed": ["description", "fields"],
+    "Applied": true,
+    "Status": "Overwrote 2 properties with the cloud definition"
+  }
+}
+```
+
+**`--force` is destructive** — the local value of every listed property is gone. Run step 1 first and read `Changed`.
+
+Four ways it refuses:
+
+| Situation | Message |
+|---|---|
+| `--patch` passed with `--source remote` | `--patch cannot be combined with --source remote` — two sources for the same spec would race |
+| `--force` passed without `--source remote` | `--force only applies to --source remote` |
+| No cloud reference recorded for the resource | `Resource has no cloud definition to sync from`. Two causes: it has no cloud counterpart (a `--source local` stub, a project's own artefact resource), **or** the reference belongs to another user or tenant — it lives in `userProfile/<your-user-id>/debug_overwrites.json` and is not shared, so a teammate who cloned the solution hits this for a resource that *was* imported. Fix the second case with `resources add --source remote` to record a reference for yourself |
+| The cloud definition can't be read for the comparison | `Could not read the cloud definition to compare against` — it does **not** report "no drift" on evidence it doesn't have. Check the resource still exists in the cloud, or pass `--force` |
+
+> This replaces the old remove-and-re-add workaround. `resources remove <key>` followed by `refresh` still works, but it drops every local edit rather than the ones you were shown, and it needs the binding to still exist.
+
 ## Step 12: Upload to Studio Web
 
 Upload the solution for browser-based editing. Accepts a directory, `.uipx` file, or `.uis` archive.
@@ -430,7 +503,13 @@ Upload the solution for browser-based editing. Accepts a directory, `.uipx` file
 uip solution upload ./InvoiceAutomation --output json
 ```
 
-If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the upload is **refused** unless `--force` is passed. Forcing replaces the cloud project in place and wipes its Studio Web version history. On a freshly `solution init`-ed project (or any `.uipx` whose `SolutionId` does not yet exist in the cloud) the upload imports as new with no flag. See [`upload` refuses to overwrite without `--force`](#upload-refuses-to-overwrite-without---force) for the recovery path.
+The CLI probes Studio Web for the bundled `SolutionId` and picks the operation itself, so the same command serves the first upload and every one after it. `Data.Action` reports which ran — `"Imported"` or `"Overwritten"`. See [`upload` decides import or overwrite from what the cloud holds](#upload-decides-import-or-overwrite-from-what-the-cloud-holds) for the decision rules, snapshot recording, and failure modes.
+
+| Flag | Purpose | Default |
+|------|---------|---------|
+| `--no-snapshot` | Skip recording the restorable pre-overwrite version. Overwrite only | Version recorded |
+| `--force` | Assert the solution exists and overwrite it without the probe. Not normally needed; fails `not_found` when the cloud solution is gone | Probe runs |
+| `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
 
 > A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
 
@@ -448,8 +527,11 @@ Deletes the Studio Web copy only -- local files and published packages are not a
 
 ## Complete Example
 
+<!--skill-flavor:e2e-lead-in:start-->
 Create a solution with two projects, sync resources, and verify:
+<!--skill-flavor:e2e-lead-in:end-->
 
+<!--skill-flavor:e2e-create-and-add:start-->
 ```bash
 # 1. Create the solution
 uip solution init "InvoiceAutomation" --output json
@@ -463,6 +545,7 @@ cd ./InvoiceAutomation
 
 # 4. Sync resource declarations from project bindings
 uip solution resources refresh --output json
+<!--skill-flavor:e2e-create-and-add:end-->
 
 # 5. Verify resources are tracked (per kind)
 uip solution resources list --kind Process --source local --output json
@@ -559,15 +642,22 @@ Refresh reads both. Don't hand-edit these — they're regenerated whenever Studi
 
 `userProfile/<userId>/debug_overwrites.json` is per-user state (the `userId` is your UiPath user GUID). Refresh writes only your own entries; another user opening the bundled solution would have separate entries. The bundle (`.uis`) carries `userProfile/` for everyone who ran refresh; Studio Web picks the active user's at runtime.
 
-### `upload` refuses to overwrite without `--force`
+### `upload` decides import or overwrite from what the cloud holds
 
 The `SolutionId` in `.uipx` determines identity. Before uploading, the CLI probes Studio Web for that id:
 
-- **Cloud has no solution with that id** → imports as new (no flag needed). This is the freshly `solution init`-ed flow.
-- **Cloud already has that id, no `--force`** → upload is refused with exit code 1 and no `.uipx` mutation. Refusing is the safe default — overwriting destroys the cloud project's Studio Web version history.
-- **`--force` passed** → skips the probe and goes straight through the overwrite path (with the SDK's 404 → import fallback for stale ids).
+- **Cloud has no solution with that id** → imported as new. This is the freshly `solution init`-ed flow. Studio Web assigns its own `SolutionId` — it never honors the one in the archive — so the CLI repoints the local `.uipx` to the assigned id and reports the rewrite under `Data.LocalSolutionIdUpdated` (`Path`, `From`, `To`). That link is what makes the next upload an update rather than a second cloud solution. The file is written only when the id actually changed.
+- **Cloud already has that id** → overwritten in place under the same id. The solution's Studio Web version history is **kept** — history rows key on the solution id, which does not change. The contents being replaced are recorded first as a restorable version (`Data.SnapshotCreated: true`), so an overwrite is recoverable. The local `.uipx` is not touched.
 
-To upload as an unrelated new cloud solution rather than overwriting, scaffold a fresh solution with `uip solution init` or remove the `SolutionId` from the local `.uipx` before re-running `upload`.
+`--no-snapshot` suppresses that recording. Anything edited **in Studio Web** since the last upload is then lost with no way back; local files are never affected.
+
+`--force` asserts that the solution exists — it is not a request to replace history. Not normally needed: a plain upload overwrites an existing cloud solution on its own. Use it when the probe cannot run, since the probe needs read access to the solution. When that solution is gone, the upload fails with `ErrorCode: not_found` (exit 1, `Retry: RetryWillNotFix`) rather than importing a duplicate. With no `SolutionId` bundled it changes nothing: the upload imports as new.
+
+A direct `.uis` upload has no local `.uipx` to read, so the CLI takes the `SolutionId` out of the archive (`SolutionStorage.json`, root `.uipx` as fallback, GUID-shaped values only). Re-uploading a `.uis` produced by `uip solution download` therefore updates the solution it came from instead of minting a `"<name> 1"` copy each time. An archive carrying no usable id imports as new.
+
+<!--skill-flavor:upload-as-new:start-->
+To upload as an unrelated new cloud solution rather than overwriting, scaffold a fresh solution with `uip solution init`, or replace the `SolutionId` in the local `.uipx` with a fresh GUID and re-run `upload` — removing the field entirely fails `.uipx` validation.
+<!--skill-flavor:upload-as-new:end-->
 
 ### `delete` uses the solution UUID, not the name
 
@@ -595,7 +685,9 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 
 | Want to... | Command | Watch for |
 |---|---|---|
+<!--skill-flavor:cheat-create-row:start-->
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
+<!--skill-flavor:cheat-create-row:end-->
 | Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
 | Pull in an external project | `uip solution projects import <path>` | Rename source folder first to avoid 3-name divergence |
 | Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |

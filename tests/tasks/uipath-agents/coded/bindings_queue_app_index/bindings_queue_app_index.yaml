@@ -12,9 +12,13 @@ run_limits:
   expected_turns: 11
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/bindings_queue_app_index/_fixtures/five-bindings/. ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/five-bindings
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   I have a hand-authored UiPath coded agent project in the current
@@ -39,7 +43,7 @@ success_criteria:
 
   - type: run_command
     description: "All five bindings present with correct keys, value blocks, and metadata"
-    command: "python3 $TASK_DIR/check_bindings_queue_app_index.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_bindings_queue_app_index.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

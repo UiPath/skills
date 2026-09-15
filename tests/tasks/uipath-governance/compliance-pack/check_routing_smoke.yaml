@@ -3,7 +3,8 @@ description: >
   Skill-guided: "check my ISO 42001 posture" must run posture analysis using
   state coverage - NOT deployed-policy commands or pack-walker.mjs. Tests that
   the skill correctly identifies a check-only request and makes no mutations.
-  ISO 42001 is the only available compliance standard.
+  The prompt names ISO 42001 explicitly, so the pack-scoped commands must target
+  iso-42001 - several standards are available and picking the wrong one fails.
 
   Platform note: uip commands fail with auth errors in this environment - expected.
   Run once, capture to output.txt, move on.
@@ -12,11 +13,15 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compl
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 # Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
 # fails this test (calls state enable) really mutates the tenant. Clean up after.
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+  - command: 'python3 _setup/cleanup_compliance_pack.py'
     timeout: 120
 
 initial_prompt: |

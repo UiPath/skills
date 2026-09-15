@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Fail if any coder-eval task YAML pins ``sandbox.driver: tempdir``.
+"""Two static gates over the coder-eval task and experiment corpus.
+
+Gate 1: no task YAML pins ``sandbox.driver: tempdir``
+-----------------------------------------------------
 
 The sandbox driver is decided by the run environment, NOT by the task:
 
@@ -19,19 +22,34 @@ zero on an otherwise-correct run. This gate blocks that footgun.
 If a task genuinely needs the Windows toolchain, tag it ``windows`` — do not
 pin the driver.
 
+Gate 2: experiment hook commands must be a single line
+------------------------------------------------------
+
+On Windows coder_eval runs hooks through ``create_subprocess_shell``, i.e.
+cmd.exe, which parses only the FIRST line it is handed. A ``|-`` block scalar
+therefore drops the rest, and ``PreRunCommand.fail_on_error`` defaults to
+``True``, so an unparseable ``pre_run`` ERRORs every task in the split (skills
+#2756, fixed by #3116). Just the newline rule: no false positives, no config.
+It does not detect one-line POSIX sh; see the known-gap test for that cost.
+
+Scope is what cmd.exe can reach: every experiment hook (they run for all tasks,
+including the Windows split) plus the hooks of ``windows``-tagged tasks. A task
+without that tag never runs on Windows, so its hooks are left alone.
+
 Usage:
-    python3 scripts/check-task-driver.py                 # scans tests/tasks
-    python3 scripts/check-task-driver.py tests/tasks ...  # scan given roots/files
+    python3 scripts/check-task-driver.py                              # tests/tasks
+    python3 scripts/check-task-driver.py tests/tasks tests/experiments  # both gates
 
 Exit codes:
-    0 — no task pins ``driver: tempdir``
-    1 — one or more tasks pin ``driver: tempdir`` (paths printed)
+    0 — both gates pass
+    1 — one or more violations (paths printed, with GitHub annotations)
 """
 
 from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 try:
@@ -73,9 +91,43 @@ def _driver_line_number(path: Path) -> int:
     return 0
 
 
+def _iter_hook_commands(doc: dict) -> Iterator[tuple[str, str]]:
+    """Yield ``(yaml_path, command)`` for every pre_run/post_run command."""
+    scopes: list[tuple[str, dict]] = [("", doc)]
+    for key, value in doc.items():
+        if isinstance(value, dict):
+            scopes.append((key, value))
+        elif isinstance(value, list):  # variants[] holds per-variant overrides
+            scopes.extend(
+                (f"{key}[{i}]", v) for i, v in enumerate(value) if isinstance(v, dict)
+            )
+    for scope_name, scope in scopes:
+        for hook in ("pre_run", "post_run"):
+            steps = scope.get(hook)
+            if not isinstance(steps, list):
+                continue
+            prefix = f"{scope_name}.{hook}" if scope_name else hook
+            for index, step in enumerate(steps):
+                if isinstance(step, dict) and isinstance(step.get("command"), str):
+                    yield f"{prefix}[{index}].command", step["command"]
+
+
+def _hook_line_number(path: Path, command: str) -> int:
+    """1-indexed line where ``command`` starts in the raw file (0 if not found)."""
+    needle = command.strip().splitlines()[0].strip()
+    if len(needle) < 8:
+        return 0
+    for n, line in enumerate(path.read_text(errors="ignore").splitlines(), start=1):
+        if needle in line:
+            return n
+    return 0
+
+
 def main(argv: list[str]) -> int:
     offenders: list[tuple[Path, int]] = []
     docker_pins: list[Path] = []
+    multi_line: list[tuple[Path, int, str]] = []
+    hooks_checked = 0
 
     for path in _iter_task_yamls(argv):
         try:
@@ -86,6 +138,18 @@ def main(argv: list[str]) -> int:
             continue
         if not isinstance(doc, dict):
             continue
+
+        tags = doc.get("tags")
+        if (
+            "experiment_id" in doc
+            or "variants" in doc
+            or (isinstance(tags, list) and "windows" in tags)
+        ):
+            for yaml_path, command in _iter_hook_commands(doc):
+                hooks_checked += 1
+                if len(command.strip().splitlines()) > 1:
+                    multi_line.append((path, _hook_line_number(path, command), yaml_path))
+
         sandbox = doc.get("sandbox")
         if not isinstance(sandbox, dict):
             continue
@@ -104,9 +168,30 @@ def main(argv: list[str]) -> int:
             print(f"  {_rel(p)}")
         print()
 
+    rc = 0
+
+    if multi_line:
+        rc = 1
+        print(f"FAIL — {len(multi_line)} Windows-reachable hook command(s) span multiple lines:\n")
+        for path, line, yaml_path in multi_line:
+            rel = _rel(path)
+            loc = f"{rel}:{line}" if line else rel
+            print(f"::error file={rel},line={line}::{yaml_path} spans multiple lines")
+            print(f"  {loc}  ({yaml_path})")
+        print()
+        print(
+            "cmd.exe on the Windows split parses only the first line, so the rest is\n"
+            "dropped and an unparseable pre_run ERRORs every task (skills #2756/#3116).\n"
+            "Collapse it to one line; if it is POSIX sh that must not run on Windows,\n"
+            "prefix it with `:; ` too. See tests/experiments/nightly.yaml."
+        )
+        print()
+    elif hooks_checked:
+        print(f"OK — {hooks_checked} Windows-reachable hook command(s) are single-line.")
+
     if not offenders:
         print("OK — no task pins `sandbox.driver: tempdir`.")
-        return 0
+        return rc
 
     print(f"FAIL — {len(offenders)} task(s) pin `sandbox.driver: tempdir`:\n")
     for path, line in offenders:

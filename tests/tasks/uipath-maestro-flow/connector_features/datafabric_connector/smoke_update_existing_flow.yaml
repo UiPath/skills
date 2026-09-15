@@ -6,16 +6,28 @@ description: >
   + descending sort, then revert. Verifier diffs final vs snapshot to prove
   the revert was clean.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:edit, connector, uipath-uipath-dataservice]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   max_turns: 100
   turn_timeout: 1500
   task_timeout: 2400
 
+reference:
+  directory: .
+
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
     timeout: 60
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/scaffold_movie_report_flow.py"'
+  - command: 'python3 "_setup/scaffold_movie_report_flow.py"'
     timeout: 120
 
 initial_prompt: |
@@ -31,12 +43,20 @@ initial_prompt: |
   3. Then revert both changes so the activity is back to no
      filter, no ordering, and its original settings.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a
-  single pass.
   The flow is not complete until the final state matches the initial
   state on those three fields and `uip maestro flow validate` passes.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
     description: "Final MovieReportFlow validates cleanly"
@@ -48,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Revert restored the exact initial flow state"
-    command: "python3 $TASK_DIR/check_smoke_update_existing_flow.py"
+    command: "python3 $REFERENCE_DIR/check_smoke_update_existing_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -10,10 +10,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from sdd_check import (  # noqa: E402
     _colon_issues,
+    _name_only,
     _return_to_origin_pairing_issue,
     _sdd_frontend_issues,
     _sdd_template_shape_issues,
-    _tasks_frontend_issues,
 )
 
 
@@ -271,39 +271,30 @@ def test_stage_variable_sla_rules_are_checked():
     assert any("duplicate SLA title 'Standard SLA'" in issue for issue in issues)
 
 
-def test_tasks_sla_validation_matches_frontend_contract():
-    tasks = '''
-## T01: Set default SLA for "root"
-- target: "root"
-- display-name: "Default SLA"
-- count: 10
-- unit: min
+def test_sla_title_colon_ban_ignores_the_provenance_annotation():
+    """A `_(source: ...)_` annotation is not part of the name.
 
-## T02: Add conditional SLA rule for root case — urgent
-- target: "root"
-- display-name: "Default SLA"
-- condition: ""
-- count: 0
-- unit: d
+    Nightly 2026-08-31 failed a finalized SDD with "SLA title contains ':'" for
+    `| SLA Title | LoanOrigination Case SLA _(source: inferred-default:no title
+    stated)_ |` — the colon was in the template's own provenance dialect, not
+    in the title.
+    """
+    annotated = (
+        "| SLA Title | LoanOrigination Case SLA "
+        "_(source: inferred-default:no title stated)_ |"
+    )
+    assert _colon_issues(annotated) == []
 
-## T03: Add escalation rule for "root" — breach
-- target: "root"
-- display-name: "Notify: Manager"
-- trigger-type: at-risk
-'''
-    issues = _tasks_frontend_issues(tasks, "tasks.md")
-    assert any("minute count" in issue for issue in issues)
-    assert any("conditional rule requires" in issue for issue in issues)
-    assert any("count must be positive" in issue for issue in issues)
-    assert any("escalation title contains ':'" in issue for issue in issues)
-    assert any("requires at least one recipient" in issue for issue in issues)
-    assert any("requires at-risk-percentage" in issue for issue in issues)
+    # A colon in the name itself is still a violation, annotation or not.
+    violating = "| SLA Title | Loan: Origination _(source: inferred-default)_ |"
+    assert any("SLA title contains ':'" in issue for issue in _colon_issues(violating))
 
 
-def test_tasks_sla_validation_ignores_non_sla_stage_headers():
-    tasks = '''
-## T01: Add stage "SLA Escalation"
-- display-name: "SLA Escalation"
-- stage-kind: secondary
-'''
-    assert _tasks_frontend_issues(tasks, "tasks.md") == []
+def test_name_only_strips_annotations_but_keeps_the_name():
+    assert (
+        _name_only("LoanOrigination Case SLA _(source: inferred-default:no title stated)_")
+        == "LoanOrigination Case SLA"
+    )
+    assert _name_only("Title (qualifier)") == "Title"
+    assert _name_only("Plain Title") == "Plain Title"
+    assert _name_only("Foo: Bar _(source: x:y)_") == "Foo: Bar"

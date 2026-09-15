@@ -68,13 +68,13 @@ Results are cached locally. Use `--refresh` to bypass cache after re-auth or sch
 
 ### `--activity-version`
 
-Pass `--activity-version 4.0.0` only when the activity's `configuration` JSON reports `"version":"4.0.0"`. Otherwise do not pass the flag at all. Any value other than `1.0.0` (the default) or `4.0.0` fails with `Invalid --activity-version value`. `4.0.0` responses cache under a separate key (`<activity-name>.v4.schema.json`), so switching never serves the other version's metadata.
+Pass `--activity-version 4.0.0` only when the activity's `configuration` JSON reports `"version":"4.0.0"`. Otherwise do not pass the flag at all. Any value other than `1.0.0` (the default) or `4.0.0` fails with `Invalid --activity-version value`. `4.0.0` responses cache under a separate key (`<object-name>.v4.schema.json`), so switching never serves the other version's metadata.
 
-The resource argument follows the same rule: `4.0.0` activities are addressed by **activity name** — pass the `activityName` from the `configuration` JSON (`4.0.0` metadata has no `objectName`). Everything else uses the object name.
+The resource argument follows the same rule: `4.0.0` activities are addressed by **object name** — pass the `objectName` from the `configuration` JSON.
 
 ```bash
 uip is resources describe <connector-key> <object-name> --output json
-uip is resources describe <connector-key> <activity-name> --activity-version 4.0.0 --output json
+uip is resources describe <connector-key> <object-name> --activity-version 4.0.0 --output json
 ```
 
 ---

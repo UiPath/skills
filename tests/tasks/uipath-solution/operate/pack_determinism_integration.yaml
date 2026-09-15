@@ -20,13 +20,20 @@ agent:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../fixtures/solutions/e2e-stub-solution
+      mount_point: e2e-stub-solution
+
+reference:
+  directory: .
 
 initial_prompt: |
   Use the `uipath-solution` skill.
 
   I want to be sure packing a solution is reproducible — packing the same source
   twice should give structurally identical packages. There's a ready solution at
-  `$SKILLS_REPO_PATH/tests/fixtures/solutions/e2e-stub-solution`.
+  `./e2e-stub-solution`.
 
   Pack it twice into two separate output folders in your working directory, then
   compare the two packages and confirm they carry the same files and metadata (a
@@ -44,14 +51,14 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-# runpy bootstrap (repo precedent: governance/admin tasks): TASK_DIR is an env
-# var in the run_command subprocess, and shell expansion is sh-only ($TASK_DIR
-# is literal under cmd.exe), so resolve it inside Python. Bare `python` (not
-# python3) because the sandbox venv is prepended to PATH and guarantees it on
-# both platforms — the Windows venv ships no python3.exe.
+# runpy bootstrap (repo precedent: governance/admin tasks): REFERENCE_DIR is an
+# env var in the run_command subprocess, and shell expansion is sh-only
+# ($REFERENCE_DIR is literal under cmd.exe), so resolve it inside Python. Bare
+# `python` (not python3) because the sandbox venv is prepended to PATH and
+# guarantees it on both platforms — the Windows venv ships no python3.exe.
   - type: run_command
     description: "uip solution pack is structurally deterministic (file list + metadata)"
-    command: "python -c \"import os,runpy;runpy.run_path(os.path.join(os.environ['TASK_DIR'],'check_pack_determinism.py'))\""
+    command: "python -c \"import os,runpy;runpy.run_path(os.path.join(os.environ['REFERENCE_DIR'],'check_pack_determinism.py'))\""
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

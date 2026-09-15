@@ -586,6 +586,8 @@ The production runtime uses **Jint** (a .NET JavaScript interpreter, ES2020 subs
 
 A node's output (`$vars.{nodeId}.output`) is available to **all downstream nodes** connected via edges. If a node has not executed (e.g., on an untaken branch), its `$vars` entry is `undefined`.
 
+**Gateways are the exception.** A Decision (`core.logic.decision`) or Switch (`core.logic.switch`) never enters a downstream node's scope, even when it is directly upstream on every path. The registry declares `matchedCase` and `matchedCaseId` on both, but nothing ever assigns them — the branch choice lives on the outgoing edges, not in a variable — so a downstream read is declared, unassigned, and silently `undefined`. To act on which branch ran, recompute the condition from a node upstream of the gateway, or write an `inout` global on each branch — see [decision/impl.md — Outputs](../author/plugins/decision/impl.md#outputs).
+
 ### Loop Scope
 
 Inside a loop body, you have access to:
@@ -598,7 +600,7 @@ Where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
 
 > **Important:** Loop body nodes must have `"parentId": "<loopId>"` set in their JSON. Without this, the runtime does not know the node is inside the loop and `$vars.<loopId>.currentItem` will be undefined.
 
-After loop completion, `$vars.<loopId>.output` holds one entry per iteration — **each entry keyed by body node id, with that node's outputs nested underneath**, NOT the body node's bare return value. See [loop/impl.md § Aggregated loop output](../author/references/plugins/loop/impl.md#aggregated-loop-output-varsloopidoutput).
+After loop completion, `$vars.<loopId>.output` holds one entry per iteration — **each entry keyed by body node id, with that node's outputs nested underneath**, NOT the body node's bare return value. See [loop/impl.md § Aggregated loop output](../author/plugins/loop/impl.md#aggregated-loop-output-varsloopidoutput).
 
 ### Subflow Scope
 
@@ -618,7 +620,7 @@ Subflows have their own variable scope. Parent variables are **not** automatical
 | `uip maestro flow variable list <flow> --output json` | Check what the flow already declares |
 | `uip maestro flow variable remove <flow> <id>` | Drop a declared global |
 
-See [evaluate/references/eval-sets-guide.md](../evaluate/references/eval-sets-guide.md).
+See [evaluate/eval-sets-guide.md](../evaluate/eval-sets-guide.md).
 
 > **`variable add --direction in` binds the variable to a trigger** by writing `triggerNodeId`. That binding is what puts the input in the packed entry point's contract — without it `flow pack` emits an empty `input.properties` while `validate` and `format` stay green. The CLI infers the flow's single trigger; if a flow has more than one, it fails and asks for `--trigger-node-id <nodeId>` to say which entry point the input belongs to. Hand-authored globals need the same field — see [Workflow Variables](#workflow-variables).
 

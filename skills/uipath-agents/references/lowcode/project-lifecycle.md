@@ -30,7 +30,7 @@ The `<path>` argument is relative or absolute; the command can run from any dire
 - `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
 - `--system-prompt <prompt>` — Initial system prompt for the agent
 - `--force` — Overwrite existing directory if non-empty
-- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below). Only applicable for autonomous agents, since adding inline conversational-agents within a flow project is currently not an enabled feature.
+- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below).
 
 #### Inline mode: `--inline-in-flow`
 
@@ -45,7 +45,7 @@ uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
 { "Result": "Success", "Code": "LowCodeAgentInitInline", "Data": { "Status": "Inline agent created inside flow project", "Path": "/path/to/FlowProject/<uuid>", "ProjectId": "<uuid>", "Model": "gpt-4o-2024-11-20" } }
 ```
 
-After scaffolding, add a `uipath.agent.autonomous` node to the flow with `inputs.source = <ProjectId>` and no node instance `model` block. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure.
+After scaffolding an autonomous agent, add a `uipath.agent.autonomous` node to the flow with `inputs.source = <ProjectId>` and no node instance `model` block. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure. Inline conversational agents are added with a `uipath.agent.conversational` node and are authored under the `uipath-maestro-flow` skill.
 
 ### `uip agent guardrails list`
 
@@ -166,20 +166,25 @@ Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId
 
 ## Solution Commands
 
+<!--skill-flavor:create-solution:start-->
 ### Create Solution
 
 ```bash
 uip solution init "<SOLUTION_NAME>" --output json
 ```
+<!--skill-flavor:create-solution:end-->
 
 ### Register Project with Solution
 
+<!--skill-flavor:register-project:start-->
 `uip agent init` always lands the project inside a solution — no manual `solution init` needed:
 
 - **Inside a solution directory** — auto-registers the project with the parent `.uipx`.
 - **Outside any solution** — auto-scaffolds a parent solution: creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/`. The response adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`) and reports `SolutionRegistration.Status: Registered`. Idempotent — re-running reuses the existing `.uipx` (`AlreadyRegistered`). If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<Name>Solution/<Name>/`, not the existing directory.
 - **`--skip-solution-registration`** — opts out of **both** auto-scaffold and registration. No discovery, no sibling solution dir; the project lands at the bare path with `Status: OptedOut`.
+<!--skill-flavor:register-project:end-->
 
+<!--skill-flavor:registration-status:start-->
 Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
 
 - `Registered` / `AlreadyRegistered` — registered (added now / already present). **You are done.**
@@ -194,6 +199,7 @@ uip solution projects add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 ```
 
 Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.
+<!--skill-flavor:registration-status:end-->
 
 ### Upload to Studio Web
 
@@ -328,6 +334,7 @@ If not logged in, prompt the user to run `uip login`.
 
 All commands run from the same working directory — no `cd` needed. Pass paths explicitly.
 
+<!--skill-flavor:e2e-scaffold:start-->
 ```bash
 uip solution init "<SOLUTION_NAME>" --output json
 # `agent init` auto-registers the project in the parent `.uipx` because
@@ -343,6 +350,7 @@ uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 The explicit `uip solution init` is optional: running `uip agent init "<AGENT_NAME>"` alone outside any solution auto-scaffolds `<AGENT_NAME>Solution/<AGENT_NAME>/` and registers the project (response carries `Data.AutoCreatedSolution`). Keep the explicit `solution init` when you want a solution name distinct from the agent name.
 
 When the fallback is needed, `uip solution projects add` automatically finds the nearest `.uipx` by searching up from the agent path.
+<!--skill-flavor:e2e-scaffold:end-->
 
 ### Step 3 — Configure agent.json
 
@@ -424,7 +432,9 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Task | Command | Run From | Terminal states |
 |------|---------|----------|-----------------|
 | Login check | `uip login status --output json` | Any directory | — |
+<!--skill-flavor:create-solution-row:start-->
 | Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
+<!--skill-flavor:create-solution-row:end-->
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Any directory (auto-scaffolds `<NAME>Solution/` if outside a solution) | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
@@ -440,6 +450,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Add one resource (local stub or remote import) | `uip solution resources add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
 | Remove one resource by key | `uip solution resources remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
 | Edit one resource's spec | `uip solution resources edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
+| Pull a changed cloud definition | `uip solution resources edit <KEY> --source remote --force --output json` | Solution directory | For a resource changed in Orchestrator / Data Fabric after import, which `refresh` reports under `Skipped`. Without `--force` it lists what would change and writes nothing (exit 1) |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |

@@ -4,13 +4,13 @@
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --type trigger --input-details` once, reads the populated `caseShape`, substitutes placeholders, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
+Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **task-specific** parts.
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides:
+The SDD row provides:
 
 | Field | Example |
 |---|---|
@@ -27,16 +27,16 @@ The `tasks.md` entry provides:
 
 ## Configuration Workflow
 
-### Step 1 — Build `--input-details` JSON from tasks.md
+### Step 1 — Build `--input-details` JSON from the resolved entry
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object literally from `registry-resolved.json`:
 
 ```jsonc
 {
-    // eventParameters from tasks.md input-values.eventParameters (or omit when absent)
+    // eventParameters from the resolved entry's input-values.eventParameters (or omit when absent)
     "eventParameters": "<input-values.eventParameters or omit>",
-    // filter — FilterTree object from tasks.md (or omit when not authored)
-    "filter": "<filter from tasks.md or omit>"
+    // filter — FilterTree object from registry-resolved.json (or omit when not authored)
+    "filter": "<filter from registry-resolved.json or omit>"
 }
 ```
 
@@ -48,10 +48,10 @@ Single CLI call replaces the legacy `get-connection` + `case tasks describe --ty
 
 ### Step 3 — Required-event-param validation (HARD GATE)
 
-This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
+This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="body"].body.queryParams`.
 
 1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
-2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
+2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="body"].body.queryParams` and verify every required event parameter has a value.
 3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
 4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 8 if user declines to provide a value.
 
@@ -86,10 +86,11 @@ Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [commo
 {
   "id": "<taskId>",
   "type": "wait-for-connector",
-  "displayName": "<display-name from tasks.md>",
+  "displayName": "<display name from sdd.md>",
   "elementId": "<stageId>-<taskId>",
-  "isRequired": "<from tasks.md, default true>",
-  "shouldRunOnlyOnce": "<from tasks.md runOnlyOnce, default false>",
+  "isRequired": "<from sdd.md Required, default true>",
+  "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
+  "description": "<the task's **Description:** line from sdd.md, word for word>",
   "data": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted in Step 5>",
@@ -99,6 +100,8 @@ Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [commo
   }
 }
 ```
+
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 

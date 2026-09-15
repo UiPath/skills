@@ -6,14 +6,18 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
 
 run_limits:
-  expected_turns: 40
+  task_timeout: 2400
   turn_timeout: 1800
+  expected_turns: 40
   max_turns: 70
 
 sandbox:
   template_sources:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
@@ -44,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "Load-bearing mechanisms of the pattern are present"
-    command: "python3 $TASK_DIR/check_greenfield.py"
+    command: "python3 $REFERENCE_DIR/patterns/queue_distribution/check_greenfield.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

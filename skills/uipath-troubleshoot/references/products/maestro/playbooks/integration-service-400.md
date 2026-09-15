@@ -13,8 +13,8 @@ What this looks like:
 
 What can cause it:
 - Malformed or invalid request body for the connector action
-- Connector update changed expected `Content-Type` (e.g., Outlook moved from `application/json` to `multipart/form-data` for attachments) breaking already-published activities — historical bug `ENGCE-46376`
-- A previously-bound variable was removed but the connector activity still references it, sending an empty string `""` instead of `null` (Office 365 Send Email historical issue, `PLT-77820`)
+- Connector update changed expected `Content-Type` (e.g., Outlook moved from `application/json` to `multipart/form-data` for attachments) breaking already-published activities
+- A previously-bound variable was removed but the connector activity still references it, sending an empty string `""` instead of `null` (historically seen with Office 365 Send Email)
 - Mismatched connector input schema after a connector version bump
 - Bad connection state (token, scopes) — connection should be re-provisioned
 

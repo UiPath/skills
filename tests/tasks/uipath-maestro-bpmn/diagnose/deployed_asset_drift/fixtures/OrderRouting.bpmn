@@ -3,7 +3,7 @@
   <bpmn:process id="Process_OrderRouting" name="Order Routing" isExecutable="true">
     <bpmn:extensionElements>
       <uipath:variables version="v1">
-        <uipath:input id="Var_Amount" name="amount" type="number" />
+        <uipath:input id="Var_Amount" name="amount" type="number" elementId="Start_Order" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_Order">
@@ -28,7 +28,7 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_Start_Gw" sourceRef="Start_Order" targetRef="Gw_Value" />
     <bpmn:sequenceFlow id="Flow_HighValue" sourceRef="Gw_Value" targetRef="Task_HighValue">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.amount &gt; 5000</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount &gt; 5000</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_Standard" sourceRef="Gw_Value" targetRef="Task_Standard" />
     <bpmn:sequenceFlow id="Flow_High_End" sourceRef="Task_HighValue" targetRef="End_Order" />

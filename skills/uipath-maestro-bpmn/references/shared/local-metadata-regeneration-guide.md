@@ -2,35 +2,46 @@
 
 Use this guide when BPMN source changed and local package metadata must be refreshed or verified before packaging, upload, debug, publish, or deploy.
 
+<<<<<<< HEAD
+**Do NOT apply it to an Integration Service draft or boundary handoff.** When the task is to author a local BPMN draft and hand connector enrichment to the CLI (no upload/pack yet), `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` stay CLI-owned — do not hand-author or pre-generate them. Author only the `.bpmn` source shape plus a `.md` notes file **inside the project directory** naming the CLI-owned blockers. The regeneration workflow below reaches such a project only once its connectors are enriched.
+=======
+The BPMN `refresh` command is the authoritative local source-to-derived-state
+boundary. It requires exactly one project-root `.bpmn` file
+and atomically regenerates the complete package metadata set. The command is
+offline and provider-neutral: it does not log in, discover a tenant, invoke a
+connector, or resolve an account. It consumes only identities already authored
+into the supported BPMN contract.
+>>>>>>> b77a95d33 (feat(bpmn): derive package metadata with refresh)
+
 ## Ownership
 
 - `.bpmn` is the source of record for process structure, root variables, root bindings, entry point IDs, mappings, diagrams, and documented non-Integration-Service UiPath XML.
 - `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
 - Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
 
-## Local Synthetic Project Contract
+## Current Local Project Contract
 
-> **Use `uip maestro bpmn refresh <project-path>` for any project with an
-> Integration Service connector node.** `refresh` regenerates all four package
-> files *and* materializes `Intsvc.*` connection bindings (activities, and
-> `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` triggers) into `bindings_v2.json`
-> `Connection` resources — the trigger connection field is `connectionId`
-> (activities use `connection`). `update-metadata` is **deprecated** and never
-> materializes connection bindings, so a trigger regenerated with it passes
-> `validate` but faults at runtime with a null connection (error 102010). The
-> file-shape contract below is identical for both commands.
+> **`uip maestro bpmn refresh <project-path>` is the only supported regeneration
+> command.** It rewrites all four derived package files *and* materializes
+> `Intsvc.*` connection bindings (activities, and `Intsvc.EventTrigger` /
+> `Intsvc.WaitForEvent` triggers) into `bindings_v2.json` `Connection` resources
+> — the trigger connection field is `connectionId` (activities use
+> `connection`). `update-metadata` is **deprecated** and never materializes
+> connection bindings, so a trigger regenerated with it passes `validate` but
+> faults at runtime with a null connection (error 102010).
 
-`uip maestro bpmn update-metadata <file.bpmn>` writes the
+`uip maestro bpmn refresh <project-path>` writes the
 same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
 consumes it as written:
 
-- The root process must be `<bpmn:process ... isExecutable="true">`.
+- Preserve the initializer's `bpmn:process@isExecutable` shape — see
+  [structural-bpmn.md](../structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples).
 - `project.uiproj` carries `"Name"` and `"ProjectType":
   "ProcessOrchestration"`. The CLI does not write `"main"` here; it preserves a
   hand-authored one, so do not add one expecting it to be required.
 - `operate.json` uses `"main"` with the entry-point path
   `/content/<file>.bpmn#<start-event-id>` plus `"contentType":
-  "ProcessOrchestration"`. `update-metadata` rewrites this field every run — a
+  "ProcessOrchestration"`. `refresh` rewrites this field every run — a
   bare filename does not survive.
 - `package-descriptor.json` uses a top-level `"files"` map of name to path,
   including the BPMN file, `operate.json`, `entry-points.json`, and
@@ -40,6 +51,17 @@ consumes it as written:
 `content/<file>` paths, so pre-existing synthetic metadata in that shape stays
 valid. Prefer the CLI shape for anything new.
 
+For a new local project, reuse the current solution when one is already in
+scope; otherwise let the supported generator create and register one:
+
+```bash
+uip maestro bpmn init <ProjectName> --output json
+```
+
+Edit the project at the returned `Data.Path` and preserve its generated
+metadata. Do not translate `project.uiproj`, `operate.json`, entry-point, or
+package-descriptor fields from another UiPath project type.
+
 The placeholder-safe JSON shape for a CLI-unavailable fallback is shown below;
 keep it exact apart from project, file, and start event names.
 
@@ -47,57 +69,121 @@ keep it exact apart from project, file, and start event names.
 
 Local regeneration reads:
 
-- Root-level `bpmn:startEvent` elements with `uipath:entryPointId`.
+- Root manual `bpmn:startEvent` elements with `uipath:entryPointId`.
 - Root `uipath:variables` for entry point input/output schemas.
 - Root `uipath:bindings` for package resources.
 - Enriched `uipath:activity` and `uipath:event` payloads for `Intsvc.*` context fields, request payloads, output mappings, and schemas.
-- The project main file from `project.uiproj` or the selected BPMN file.
+- The project/start-event path from `operate.json.main` or the selected BPMN
+  file and root manual start event.
 
 Do not derive metadata from stale package files first. Use existing generated files only as a drift comparison or as CLI-owned enrichment input when the CLI explicitly supports that workflow.
 
 ## Safe Local Workflow
 
 1. Edit `.bpmn` first.
-2. Run local validation for XML, diagrams, entry point IDs, variables, mappings, binding references, and package metadata drift.
+<<<<<<< HEAD
+2. Check the source itself: well-formed XML, diagrams, entry point IDs,
+   variables, mappings, binding references. Do not run `uip maestro bpmn
+   validate` yet — it cross-checks `entry-points.json` against the source, so it
+   reports the pre-refresh state as an error whenever an edit renamed a start
+   event. Run it after step 3.
 3. Regenerate package metadata from the BPMN source:
+=======
+2. Run local validation for XML, diagrams, entry point IDs, variables, mappings, binding references, and package metadata drift.
+3. After validation succeeds, regenerate derived metadata:
+>>>>>>> b77a95d33 (feat(bpmn): derive package metadata with refresh)
 
    ```bash
-   uip maestro bpmn refresh <project-path>                  # regenerate + materialize IS connection bindings
+   uip maestro bpmn refresh <project-path> --output json    # regenerate + materialize IS connection bindings
    ```
+
+<<<<<<< HEAD
+   `refresh` materializes `Intsvc.*` connection bindings (including triggers)
+   and validates before writing. It needs `project.uiproj` — without one it
+   exits `BpmnRefreshFailed` / `RetryWillNotFix`; for a bare `.bpmn`, write the
+   two-key `project.uiproj` first. `Data.WrittenFiles` names the files that were
+   stale and `Data.UnchangedFiles` the ones already current, so a drift answer
+   needs no separate command. Never fall back to the deprecated
+   `update-metadata`.
+=======
+   A successful response reports `Status`, `ProjectPath`, `BpmnFile`,
+   `WrittenFiles`, and `UnchangedFiles`.
 
    Use `refresh` — it materializes `Intsvc.*` connection bindings (including
    triggers) and validates before writing. The deprecated
    `uip maestro bpmn update-metadata <file.bpmn>` (with `--dry-run` for a
    drift check) only rewrites the BPMN-derived fields and does **not** materialize
    connection bindings.
+>>>>>>> 0770c04c1 (docs(bpmn): make refresh the single documented metadata contract)
 
    If CLI unavailable for a local-only synthetic project, write the minimal
    placeholder-safe shape (see below) before continuing.
 
 4. Verify the project directory now contains the full metadata set:
    `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`,
-   and `package-descriptor.json`. The pack command consumes these files; it does
-   not synthesize a missing package descriptor.
-
-5. For package-shape verification, use the local pack command:
+   and `package-descriptor.json`. Run refresh a second time only when checking
+   idempotence; unchanged source must leave all four generated files unchanged.
+5. Inspect the generated content for:
+   - `entry-points.json` entries matching root manual start events and schemas.
+   - `bindings_v2.json` resources matching root bindings and enriched connector metadata.
+   - `operate.json` pointing at the intended BPMN file with `ProcessOrchestration` content type.
+   - `package-descriptor.json` root `files` mappings for the BPMN file and generated JSON.
+6. For package-shape verification, run `pack` only after refresh. Pack consumes
+   the generated files; it does not synthesize a missing package descriptor:
 
    ```bash
    uip maestro bpmn pack <project-path> <OutputDir> --output json
    ```
 
-6. Inspect the package or generated content for:
-   - `entry-points.json` entries matching root start events and schemas.
-   - `bindings_v2.json` resources matching root bindings and enriched connector metadata.
-   - `operate.json` pointing at the intended BPMN file with `ProcessOrchestration` content type.
-   - `package-descriptor.json` entries for the BPMN file and generated JSON under `content/`.
-7. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step.
+If refresh fails, the atomic write contract leaves the prior four-file set
+unchanged. Fix the reported source or project precondition and run it again; do
+not patch generated JSON around the failure.
+
+Refresh checks the project preconditions before it reads any BPMN: the path
+must be a directory, it must hold exactly one root `.bpmn` file, and it must
+hold a `project.uiproj` that sets `ProjectType` to `ProcessOrchestration`. A
+missing one reports `Required file is missing: <path>`, and a wrong type
+reports `project.uiproj must set "ProjectType" to "ProcessOrchestration".` —
+neither is a defect in the BPMN, so do not go looking for one there.
+
+The source contract requires one or more root processes and at least one root
+manual start event overall. Each root manual start event must carry exactly one
+valid GUID `uipath:entryPointId`; refresh generates one `entry-points.json`
+entry for each such start event.
+
+Refresh rejects, with the message it reports:
+
+- A public `uipath:input`/`uipath:output` whose `type` is outside
+  `string`, `boolean`, `integer`, `number`, `array`, `object`, `json`:
+  `Unsupported process input/output type "<type>"`. The canvas float types
+  `double` and `float` are the common case — they are correct on a node-scoped
+  variable and rejected here. Either use `number`, or give the declaration an
+  inline JSON-schema CDATA body, which bypasses the type vocabulary entirely.
+- A root `uipath:output` whose `elementId` is not a root end event:
+  `Process output "<name>" must target a root end event.`
+- A repeated public name: `Duplicate process input/output "<name>".`
+- A declaration with neither a `type` nor an inline schema.
+- A connector `connection` that is not a `=bindings.<id>` reference, a
+  referenced binding that is missing, a connection binding `default` that is
+  not a GUID, and one `resourceKey` reused across different connectors or
+  connections.
+
+Root `uipath:binding` nodes are silently dropped, not reported, unless
+`resource` is `Connection` **and** `propertyAttribute` is `ConnectionId`. A
+connection binding with any other `propertyAttribute` therefore vanishes, and
+the failure surfaces one step away as `Activity "<name>" references missing
+Connection binding "<id>".` — read that message as "check the binding's
+attributes", not "check the activity". If the installed CLI
+does not expose this command, keep any stale generated files only as known
+comparison evidence and report package generation as blocked. A source-only
+project is not package-ready.
 
 Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run are cloud or runtime actions and still require explicit user consent.
 
-## Minimal Local Metadata Shape
+## Source-only fallback
 
 When a local-only synthetic project needs package files and the CLI cannot
-regenerate them in place, mirror what `update-metadata` would have written.
+regenerate them in place, mirror what `refresh` would have written.
 Replace only the BPMN file name and start event id.
 
 `project.uiproj`:
@@ -173,11 +259,18 @@ generated `entry-points.json` must include:
 - `uniqueId` equal to the `uipath:entryPointId` value.
 - `type` equal to `ProcessOrchestration`.
 - `input` from root input variables whose `elementId` matches the start event.
-- `output` from root output variables.
+  An input that matches nothing is dropped silently.
+- `output` from root output variables. Each `uipath:output` must carry an
+  `elementId` naming a root end event; a missing or non-end-event `elementId`
+  fails the project with `Process output "<name>" must target a root end
+  event.`
 
-A start event without that element yields no entry point at all —
-`update-metadata` reports `EntryPointCount: 0` and writes an empty
-`entryPoints` array rather than inventing an id.
+A start event without that element has no entry point, and `refresh` refuses
+the whole project rather than inventing an id. The message depends on what is
+left: with a bare manual start event, `Expected one uipath:entryPointId on root
+manual start event "<id>", found 0.`; with none at all — every root start event
+carrying an event definition — `BPMN file must contain a root manual start
+event with a uipath:entryPointId.`
 
 JSON schema variables use their CDATA body as the property schema. Strip `$schema` from generated package schemas. Other primitive variables map by type, such as `string`, `integer`, `number`, `boolean`, `array`, `object`, or `json`.
 
@@ -231,6 +324,6 @@ If enrichment is unavailable, leave the BPMN element as draft intent. Do not han
 ## Drift Handling
 
 - If `entry-points.json` differs from root variables or start event IDs, fix the BPMN source first, then regenerate.
-- If `bindings_v2.json` differs from root bindings or `Intsvc.*` context references, rerun enrichment/generation.
-- If `operate.json` or `package-descriptor.json` points at the wrong BPMN file, refresh package metadata through the CLI path.
+- If `bindings_v2.json` differs from root bindings or `Intsvc.*` context references, fix or re-enrich the BPMN source, then run the BPMN refresh command again.
+- If `operate.json` or `package-descriptor.json` points at the wrong BPMN file, rerun BPMN refresh instead of editing either file.
 - Do not commit private IDs, tenant URLs, connection IDs, folder keys, or copied customer payloads while resolving drift.

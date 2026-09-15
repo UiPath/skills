@@ -16,13 +16,18 @@ run_limits:
   expected_turns: 63
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/inline_solution_escalation/_fixtures/ReviewFlowSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/ReviewFlowSol
+      mount_point: ReviewFlowSol
 
 # An agent left to itself often models "escalate to a human" as a human-in-the-loop
 # flow node — fine in general, but this task specifically exercises the agent
 # Escalation capability, so the prompt asks for it explicitly.
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a new UiPath Flow project named "ReviewFlow" inside the existing
   "ReviewFlowSol" solution (in the current directory). The flow must use an inline
@@ -122,7 +127,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline solution escalation: resource.json shape + escalation flow node + escalation-handle edge"
-    command: "python3 $TASK_DIR/check_inline_solution_escalation.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_solution_escalation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

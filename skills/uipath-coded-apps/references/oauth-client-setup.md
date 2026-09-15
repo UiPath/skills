@@ -92,9 +92,16 @@ Fall back to the [Manual portal steps](#manual-portal-fallback) only when:
 - the signed-in identity lacks external-app admin permission (`403`) — hand the manual steps to an org admin, OR
 - the CLI genuinely lacks the verb (`uip admin external-apps --help` shows nothing — very old CLI; prefer upgrading).
 
-A missing scope name (`scope not found` / `Not all scopes=<list> are present in database`) is NOT a fallback trigger. If the rejected `scopes=` string contains **spaces**, the delimiter is the bug — comma-separate and retry (see [Scope model](#scope-model--cli-vs-portal)). Otherwise fix the name via `uip admin scopes list` and retry.
+> **`Forbidden (403)` is about the caller, not the request.** The signed-in identity may not manage External Applications in this org, and `Retry: RetryWillNotFix` is correct. One failing `create` (or `update`) is the diagnosis:
+>
+> 1. **Do not retry with a different name, redirect list, `--non-confidential` toggle, or `--user-scope`/`--app-scope`.** Requested scopes describe what the *new app* may do, not what *you* may do, so they cannot clear a 403. What can: a different caller — re-login as an identity with external-app admin rights (for client-credentials logins, a session scope that includes it), or hand the command to an org admin.
+> 2. **Do not `update` apps you did not create for this app**, and do not infer permission from apps that already exist in the tenant.
+> 3. **Reuse an existing app read-only.** `uip admin external-apps list --output json` once, then `get <ID>` on at most three candidates chosen by name; take the first non-confidential one whose scopes cover `uipath.json` and whose redirect URIs already include the ones this app needs (none for action apps). Put its `Id` in `uipath.json` → `clientId`.
+> 4. **Otherwise stop and report.** Write the intended scopes and redirect URI(s) into `uipath.json`, give the admin the exact `uip admin external-apps create …` command plus the [manual portal steps](#manual-portal-fallback). `uip codedapp deploy` rejects a placeholder `clientId` (`The clientId '<GUID>' provided in the package is not valid`), so the build cannot deploy until a real client ID is in place.
 
 ## Manual portal fallback
+
+> **Portal picker labels vs scope names.** In the portal, scopes are grouped under **resource labels** that differ from the CLI scope names. Pick the scopes per resource from [oauth-scopes.md](oauth-scopes.md). Some services require more than one resource.
 
 ### Create a new External Application
 

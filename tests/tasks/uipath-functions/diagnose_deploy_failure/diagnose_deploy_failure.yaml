@@ -10,9 +10,14 @@ description: >
   personal workspace. **Cloud auth pre-configured.**
 tags: [uipath-functions, e2e, mode:diagnose, feature:deploy]
 max_iterations: 1
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-functions/diagnose_deploy_failure/_fixtures/daily-digest ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/daily-digest
+      mount_point: daily-digest
+
+reference:
+  directory: ..
 
 initial_prompt: |
   I have a UiPath Coded Function at `daily-digest/`.
@@ -52,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "pyproject.toml now has authors, code preserved, pack artifact exists"
-    command: "python3 $TASK_DIR/check_diagnose_deploy_failure.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_diagnose_deploy_failure.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

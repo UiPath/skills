@@ -34,20 +34,19 @@ initial_prompt: |
   - The `uip` CLI is available but is NOT connected to a live tenant in this
     environment. Commands may fail with auth errors — that is expected. Run
     each command once and move on. Do NOT retry or attempt to login.
-  - Use `--output json` on every uip command.
 
 success_criteria:
   - type: run_command
-    description: "Agent ran a tenant-scoped consumables summary to reproduce observation 1 (.uip-cmdlog shim log)"
-    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]summary' | grep -Eq -- '--tenant[= ]default'"
+    description: "Agent ran a tenant-scoped consumables summary to reproduce observation 1 (.uip-cmdlog shim log). Summary is the CLI default mode, so an omitted --mode counts."
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Ev -- '--mode[= ](daily|folders)' | grep -Eq -- '--tenant[= ]default'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Agent also ran the summary UNSCOPED, so scoped and account-wide figures could be compared — the diagnostic move, not just an assertion about it"
-    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]summary' | grep -v -- '--tenant' | grep -q ."
+    description: "Agent also ran the summary UNSCOPED, so scoped and account-wide figures could be compared — the diagnostic move, not just an assertion about it. Summary is the CLI default mode, so an omitted --mode counts."
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Ev -- '--mode[= ](daily|folders)' | grep -v -- '--tenant' | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -67,25 +66,68 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Verdict explains observation 1: cross-tenant pool figures are suppressed under --tenant"
-    command: "grep -Eiq 'suppress|scoped|by design|deliberat|expected behaviou?r' verdict.md"
-    timeout: 10
-    expected_exit_code: 0
+  # Semantic, not structural: the documented cause has unbounded phrasings
+  # ("by design", "by-design", "intentional", "org-level only", "no tenant to
+  # attribute it to"). Regex variants of this check have now failed three
+  # correct verdicts, so grade the concept and ignore the wording. Judged on
+  # the artifact only — no dialog, no agent output.
+  - type: llm_judge
+    description: "Verdict explains observation 1: consumedFromOrgWithoutTenant is org-scoped with no tenant attribution, so a --tenant summary reports 0 by design"
     weight: 2.0
     pass_threshold: 1.0
+    include_dialog: false
+    include_agent_output: false
+    include_reference: false
+    files:
+      - verdict.md
+    prompt: |
+      Read the attached verdict.md. Grade ONLY whether it explains why
+      `consumedFromOrgWithoutTenant` reads 0 in a summary scoped with
+      `--tenant`.
 
-  - type: run_command
-    description: "Verdict explains observation 2: folders mode is non-recursive (consumedBySelf excludes children)"
-    command: "grep -Eiq 'non.?recursive|not recursive|child folder|consumedBySelf|exclude' verdict.md"
-    timeout: 10
-    expected_exit_code: 0
+      Score 1.0 if the verdict conveys that this figure counts organization
+      consumption that cannot be attributed to any tenant, and that a
+      tenant-scoped query therefore reports 0 as intended behaviour rather
+      than a defect.
+
+      Wording is irrelevant. "by design", "by-design", "intentional",
+      "deliberate", "suppressed under --tenant", "org-level only",
+      "definitionally org-scoped", and "there is no tenant to attribute it
+      to" are all equivalent and all score 1.0. Ignore formatting, length,
+      structure, and whether the CLI calls succeeded.
+
+      Score 0.0 only if the verdict treats the 0 as data loss, a calculation
+      bug, or an unexplained discrepancy, or does not address the field.
+
+  # Same reasoning as observation 1 — graded on the concept, not the wording.
+  - type: llm_judge
+    description: "Verdict explains observation 2: folder rows carry only their own consumption, so they do not sum to the tenant total"
     weight: 2.0
     pass_threshold: 1.0
+    include_dialog: false
+    include_agent_output: false
+    include_reference: false
+    files:
+      - verdict.md
+    prompt: |
+      Read the attached verdict.md. Grade ONLY whether it explains why the
+      per-folder AIU figures do not add up to the tenant's own total.
+
+      Score 1.0 if the verdict conveys that a folder row carries only that
+      folder's own consumption and therefore is not a rollup of the tenant —
+      whether it attributes the shortfall to descendants being excluded from
+      a parent's row (non-recursive `consumedBySelf`), to consumption that
+      resolves to no folder at all, or to both. Any of those is correct.
+
+      Wording is irrelevant; ignore formatting, length, and whether the CLI
+      calls succeeded.
+
+      Score 0.0 only if the verdict treats the gap as a miscalculation or
+      data loss, or does not address it.
 
   - type: run_command
-    description: "Verdict concludes reporting is NOT broken"
-    command: "grep -Eiq 'not broken|no.{0,3}t broken|working as|correct|by design|expected' verdict.md"
+    description: "Verdict concludes reporting is NOT broken. Needs a negative-polarity statement (hedges like 'not shown to be broken' count); bare 'correct'/'expected'/'by design' are too weak — they appear in wrong verdicts too."
+    command: "grep -Eiq 'not( (shown|demonstrated|proven|actually|really|truly|clearly|evidently|apparently|to|be))* broken|is ?n.?t broken|no evidence (of|that)[^.]{0,60}(broken|defect|bug)|(is|are) working as (designed|intended|documented|specified)|works? as (designed|intended|documented|specified)|not a (bug|defect)' verdict.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

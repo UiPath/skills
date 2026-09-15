@@ -22,14 +22,13 @@ UiPath low-code agents come in **two variants**, both sharing this skill.
    
 2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses.
 
-> Currently, conversational agents are only standalone and not yet supported to be inline in a flow, so inline-in-flow use-cases should always use an autonomous agent.
 > After deployment, conversational agents are interacted with through the UiPath Conversation Service, which manages conversation history and exposes a CLI/SDK for client UIs. Each user-initiated exchange invokes the agent for a single turn, streaming events back to the client.
+> A standalone conversational agent is the simplest way to build a back-and-forth chat assistant driven by a single system prompt. For chats that need more — routing between several agents, deterministic replies, or behind-the-scenes automations running while the conversation continues — direct the user to the `uipath-maestro-flow` skill.
 
 In summary:
 | Signal | Variant |
 |---|---|
 | User wants general input → output execution | **Autonomous** |
-| User wants inline-in-flow | **Autonomous** |
 | `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
 | User wants multi-turn chat / fast latency with real-time user-interaction / streamed responses | **Conversational** |
 | Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
@@ -53,7 +52,9 @@ Although most of the lifecycle and capabilities are shared between both autonomo
 
 Standard workflow for any low-code agent task:
 
+<!--skill-flavor:scaffold-step:start-->
 1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
+<!--skill-flavor:scaffold-step:end-->
 2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
 4. **Refresh** — `uip agent refresh --output json`. Applies pending migrations and regenerates `entry-points.json` and `bindings_v2.json`. Confirm `MigrationApplied`, `StorageVersion`.

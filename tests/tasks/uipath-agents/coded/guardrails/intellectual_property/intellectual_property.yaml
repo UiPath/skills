@@ -23,6 +23,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
+reference:
+  directory: ../../..
+
 initial_prompt: |
   I have a coded UiPath LangGraph agent in graph.py. It handles customer support
   questions. I want to add a UiPath intellectual property guardrail using the
@@ -43,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "Intellectual property middleware guardrail correctly added to graph.py"
-    command: "python3 $TASK_DIR/check_intellectual_property_coded.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_intellectual_property_coded.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -68,3 +68,6 @@ done < <(/usr/bin/find . -name "*.md" -type f)
 
 echo ""
 echo "checked=$checked broken=$broken"
+
+[ "$broken" -gt 0 ] && exit 1
+exit 0

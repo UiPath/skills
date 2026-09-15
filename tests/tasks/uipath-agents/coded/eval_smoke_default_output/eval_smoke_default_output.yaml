@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 22
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I've got chunks of text I want boiled down to a short paragraph each. Can you
   build me a small LangGraph coded agent for that — call it `summarizer`, takes
@@ -32,7 +35,7 @@ success_criteria:
 
   - type: run_command
     description: "Smoke evaluator defaults to an output-based type, never a trajectory/tool-call evaluator"
-    command: "python3 $TASK_DIR/check_eval_smoke_default_output.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_eval_smoke_default_output.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

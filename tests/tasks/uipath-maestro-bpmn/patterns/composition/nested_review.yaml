@@ -8,14 +8,18 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
 
 run_limits:
-  expected_turns: 45
+  task_timeout: 2400
   turn_timeout: 1800
+  expected_turns: 45
   max_turns: 90
 
 sandbox:
   template_sources:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
@@ -52,7 +56,7 @@ success_criteria:
     description: >
       Three shapes composed correctly: batch outermost, review nested per item,
       failure net scoped to the iteration
-    command: "python3 $TASK_DIR/check_nested_review.py"
+    command: "python3 $REFERENCE_DIR/patterns/composition/check_nested_review.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

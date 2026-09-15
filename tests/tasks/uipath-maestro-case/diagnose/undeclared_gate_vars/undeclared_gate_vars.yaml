@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: .
+
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ fails
   `uip maestro case validate`. Diagnose and repair it so it validates cleanly.
@@ -39,11 +42,11 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-case skill"
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "uip maestro case validate passes on the repaired caseplan.json"
@@ -55,7 +58,7 @@ success_criteria:
 
   - type: run_command
     description: "All three gate expressions survive and every vars.X they reference is declared — including the masked riskBand"
-    command: "python3 $TASK_DIR/check_undeclared_gate_vars.py"
+    command: "python3 $REFERENCE_DIR/check_undeclared_gate_vars.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

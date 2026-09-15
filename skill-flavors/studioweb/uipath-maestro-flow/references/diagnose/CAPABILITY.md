@@ -6,5 +6,5 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 <!--skill-flavor:single-nested-task-row:end-->
 
 <!--skill-flavor:single-nested-reference-entry:start-->
-- [failure-modes.md](references/failure-modes.md) — pattern catalog for known recurring failures: missing `=js:`, misshapen nodes, HITL-stuck, reused reference IDs, "validate passes / debug faults"
+- [failure-modes.md](failure-modes.md) — pattern catalog for known recurring failures: missing `=js:`, misshapen nodes, HITL-stuck, reused reference IDs, "validate passes / debug faults"
 <!--skill-flavor:single-nested-reference-entry:end-->

@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -58,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Authored BPMN is well-formed, fully shaped, and gateway-routed"
-    command: "python3 $TASK_DIR/check_debug_not_validation.py"
+    command: "python3 $REFERENCE_DIR/debug/debug_not_validation/check_debug_not_validation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

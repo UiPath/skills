@@ -8,6 +8,9 @@ description: >
   The fixture pins live at version 9 (ProjectScore 0.98) while the latest
   trained is version 30 (ProjectScore 0.91), so the two paths produce different
   numbers in the graded artifact, not merely different command shapes.
+
+  Mirror of get_metrics on the same fixture, which grades the opposite
+  intent: an improvement loop's baseline reads the latest version.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
 
 run_limits:

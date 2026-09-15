@@ -22,11 +22,14 @@ node:
      source node that feeds the merge itself has an incoming edge.
 """
 
-import glob
 import json
 import sys
 from collections import Counter
+from pathlib import Path
 from typing import NoReturn
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "core.logic.merge"
 
@@ -36,14 +39,7 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = sorted(glob.glob("**/ParallelSync*.flow", recursive=True))
-    if not flows:
-        _fail("no ParallelSync*.flow found under cwd")
-    # Prefer the canonical project path; fall back to the first match so the
-    # read is deterministic even if stray *.flow files exist.
-    canonical = "ParallelSync/ParallelSync/ParallelSync.flow"
-    path = canonical if canonical in flows else flows[0]
-    with open(path) as f:
+    with open(find_flow_file(flow_glob="ParallelSync*.flow")) as f:
         return json.load(f)
 
 

@@ -1,6 +1,6 @@
 # HITL AppTask Node — Direct JSON Reference
 
-The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Same three handles (`input`, `completed`) as QuickForm. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema).
+The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Handles: `input`, `completed` — static, unlike QuickForm's outcome-derived `outcome-<outcome.id>` ports. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema) — do not add an `inputs.schema` block here, which would wrongly switch the port to an outcome-derived one.
 
 ---
 
@@ -97,17 +97,13 @@ Flatten both `solutionResources` and `availableResources` folder groups into a s
 **Selection rules:**
 
 - **Exactly one match** → use it, proceed to Step 3.
-- **Multiple matches** → present a numbered list to the user and wait for their choice before proceeding:
+- **Multiple matches** → never block waiting for a choice. Pick the best match automatically (prefer an exact case-insensitive name match in a `Shared` folder, else the first result), proceed, and state the choice plus the alternatives so the user can correct it:
 
-  > I found multiple apps matching that name. Which one should I use?
-  > 1. **Invoice Approval** — Shared / Coded Action
-  > 2. **Invoice Approval** — Finance / VB Action
-  >
-  > Reply with the number of the app you want.
+  > I found multiple apps matching that name and used **Invoice Approval** (Shared / Coded Action). Other matches, if this was the wrong one: **Invoice Approval** (Finance / VB Action). Tell me to swap it if I picked wrong.
 
-  Use `nextPageCursor` to fetch additional pages if the list is truncated. Do not proceed until the user selects.
+  Use `nextPageCursor` to fetch additional pages if the list is truncated.
 
-- **Zero matches** → stop and tell the user: "No deployed app named `<APP_NAME>` was found. Verify the name and that the app is deployed, then try again. Show them the app name, folder name and type"
+- **Zero matches** → never block. Fall back to QuickForm (per SKILL.md Step 3's fallback rule) and proceed. State: "No deployed app named `<APP_NAME>` was found, so I used QuickForm instead. Verify the name and that the app is deployed, then ask me to swap it in."
 
 ### Step 3 — Retrieve app configuration
 
@@ -422,7 +418,7 @@ AppTask uses a **separate** definition entry — `nodeType` is `"uipath.human-in
 
 ## Edge Wiring
 
-Identical to QuickForm. Only the `completed` handle is available — there are no `cancelled` or `timeout` handles in v1.0:
+Unlike QuickForm, this node's port stays a static `completed` regardless of the app's own outcomes — there are no `cancelled` or `timeout` handles in v1.0:
 
 ```json
 { "id": "invoiceReview1-completed-nextNode1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "nextNode1", "targetPort": "input" }

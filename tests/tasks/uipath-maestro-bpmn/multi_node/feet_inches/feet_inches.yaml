@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -51,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "BPMN is a linear script-task pipeline with variable passing and valid DI"
-    command: "python3 $TASK_DIR/check_feet_inches.py"
+    command: "python3 $REFERENCE_DIR/multi_node/feet_inches/check_feet_inches.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

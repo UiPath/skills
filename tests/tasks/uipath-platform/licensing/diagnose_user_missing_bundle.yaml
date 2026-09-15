@@ -55,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Agent did NOT mutate licensing state while diagnosing (no users/groups/tenants set)"
-    command: "test -f .uip-cmdlog && ! grep -Eq 'uip platform .*(licenses|rules) set' .uip-cmdlog"
+    command: "test -f .uip-cmdlog && ! grep -E '^ *uip platform (users licenses|groups rules|tenants licenses) set\\b' .uip-cmdlog | grep -qv -- '--help'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

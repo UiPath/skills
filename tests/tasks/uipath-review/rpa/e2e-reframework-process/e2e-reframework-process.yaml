@@ -25,6 +25,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath REFramework project exists at `RefxFull` in the current directory.
   Perform a full quality review: discover and read every workflow in the
@@ -75,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Comprehensive report: catches multiple cross-workflow defects with severity classification"
-    command: "python3 $TASK_DIR/check_e2e_reframework_process.py"
+    command: "python3 $REFERENCE_DIR/e2e-reframework-process/check_e2e_reframework_process.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

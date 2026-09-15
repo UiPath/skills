@@ -4,7 +4,9 @@
 
 Applies the entire compliance standard in one command. Backend creates and deploys all recommended settings.
 
-**Note:** This configures settings recommended by ISO 42001. Your organization's auditor determines compliance status — UiPath does not certify compliance.
+`<packId>` / `<packName>` below = the standard being applied — `Data.PackId` / `Data.PackName` from the session `catalog.json`, resolved via [`../catalog/impl.md` § Pack ID lookup](../catalog/impl.md#pack-id-lookup).
+
+**Note:** This configures settings recommended by <packName>. Your organization's auditor determines compliance status — UiPath does not certify compliance.
 
 ## Pre-condition
 
@@ -15,7 +17,7 @@ Coverage (posture analysis) has been run and presented. At least one policy has 
 Build this table from `catalog.clauses[].editorialPolicies[].controls[]` filtered to products where `coverage.deploymentPolicies[].status == "new"`. Group settings by impact. For settings needing user-supplied values (flagged by `synthesize-formdata` notEmpty warnings), list them with a plain-English prompt.
 
 ```
-Configure ISO 42001 settings on <tenantName>?
+Configure <packName> settings on <tenantName>?
 
 ┌──────────┬─────────────────────────────────────────────────────┐
 │ Impact   │ Settings                                            │
@@ -59,7 +61,7 @@ Parse `Data.active` (must be `true`) and `Data.policies[]` (policy UUIDs created
 ## Report
 
 ```
-ISO 42001 settings configured on <tenantName> ✓
+<packName> settings configured on <tenantName> ✓
 
 SUMMARY
 ┌───────────────────────────────────┬───────────┐
@@ -107,7 +109,7 @@ Aggregate results: note how many tenants have gaps vs are already fully Applied.
 ### Step 3 — Confirmation
 
 ```
-Configure ISO 42001 settings across all tenants in <UIPATH_ORGANIZATION_NAME>?
+Configure <packName> settings across all tenants in <UIPATH_ORGANIZATION_NAME>?
 
 Tenants to configure:
   <tenantName1> — <N> settings Not Applied
@@ -139,7 +141,7 @@ for each configured tenant:
 ### Report
 
 ```
-ISO 42001 settings configured across <N> tenants in <UIPATH_ORGANIZATION_NAME> ✓
+<packName> settings configured across <N> tenants in <UIPATH_ORGANIZATION_NAME> ✓
 
 ┌──────────────────┬──────────────────┐
 │ Tenant           │ Status           │

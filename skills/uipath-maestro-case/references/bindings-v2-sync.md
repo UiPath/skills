@@ -20,14 +20,17 @@ Individual task / rule plugins write bindings to `caseplan.json` per-target as n
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+After writing bindings to top-level `bindings[]`, run:
 
-### Procedure
+```bash
+uip maestro case bindings sync "<SolutionDir>/<ProjectName>/caseplan.json" --output json
+```
 
-1. Read top-level `bindings[]` from `caseplan.json`
-2. Group bindings by `resourceKey` — entries sharing the same key belong to one resource
-3. For each group, produce one resource entry using the shapes below
-4. Write the full file (always overwrite, never append) to `<SolutionDir>/<ProjectName>/bindings_v2.json`
+It reads the root `bindings[]`, groups entries by `resourceKey`, and writes `bindings_v2.json` next to the plan (full overwrite). Response `Data`: `BindingsPath`, `ResourceCount`, `ConnectionCount`. **Never author or edit `bindings_v2.json` by hand** — a hand-written sidecar with the wrong field names is invisible to `solution resources refresh` and fails silently at deploy. If the installed CLI has no `bindings sync` command, derive the file from the shapes below as a last resort and say so in the completion report.
+
+### What the command emits
+
+`caseplan.json` stores two entries per resource (one per property); `bindings_v2.json` stores one entry per resource with properties nested under `value`. Reference only — the shapes are here so Check 7 can be understood, not so they can be typed.
 
 ### Non-connector resource entry
 
@@ -52,14 +55,14 @@ After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`.
   "resource": "Connection",
   "key": "<connectionId>",
   "value": {
-    "connectionId": { "defaultValue": "<connectionId>" },
+    "ConnectionId": { "defaultValue": "<connectionId>" },
     "folderKey": { "defaultValue": "<folderKey>" }
   },
   "metadata": { "connector": "<connectorKey>" }
 }
 ```
 
-> **Known CLI bug:** `syncConnectionResources` reads `value.connectionId` (lowercase c) but `flow-schema` writes `value.ConnectionId` (uppercase C). Use **lowercase `connectionId`** until fixed.
+> **Casing is `ConnectionId` (capital C).** The reader is `@uipath/solution-sdk` `sync-resources-from-bindings.ts`, which looks up `value.ConnectionId.defaultValue` and falls back to the entry's `key`; the api-workflow bindings writer emits the same capital form. The earlier note here about a lowercase reader named `syncConnectionResources` was wrong — no such function exists in the CLI.
 
 File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ ] }`
 
@@ -90,9 +93,9 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 | Field | Source | Plugin step |
 |---|---|---|
-| `id` | `connection-id` from `tasks.md` | Planning |
+| `id` | `connection-id` from `registry-resolved.json` | Planning |
 | `name` | `.Data.Connections[selected].Name` from `get-connection` | Step 1 |
-| `connectorKey` | `connector-key` from `tasks.md` | Planning |
+| `connectorKey` | `connector-key` from `registry-resolved.json` | Planning |
 | `connectorName` | `.Data.Connections[selected].Connector.Name` from `get-connection` | Step 1 |
 | `folderKey` | `.Data.Connections[selected].Folder.Key` from `get-connection` | Step 1 |
 | `folderName` | `.Data.Connections[selected].Folder.Name` from `get-connection` | Step 1 |
@@ -156,6 +159,6 @@ After regenerating `bindings_v2.json` and running `resources refresh`:
    - **Skip `package` entries** — never target one directly. Removing the owning `process` / `app` cascades to *that resource's own* package declaration (the one its `dependencies[]` names); sibling resources and their packages are untouched.
    - **Never prune the case project's own `process` + `package` pair** (`Name` == the case project) — created by `solution projects add`, never by a binding, so absent from `bindings_v2.json` by design.
 3. Remove each unmatched entry using **that entry's `Key` from step 1's output** — the registry GUID, never the `bindings_v2.json` `key`: `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json`. Offline, no auth, does not touch `bindings_v2.json`.
-4. Re-run `resources refresh`, then re-publish via Phase 5 (`uip solution upload` — [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish)) so Studio Web drops its copy; a local removal alone does not clear an orphan already uploaded. Re-uploading an existing `SolutionId` is **refused without `--force`**, and `--force` destroys that solution's Studio Web version history — confirm with the user before passing it.
+4. Re-run `resources refresh`, then re-publish via Phase 5 (`uip solution upload` — [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish)) so Studio Web drops its copy; a local removal alone does not clear an orphan already uploaded. The re-upload overwrites the Studio Web solution in place, discarding anything edited there since the last upload (the replaced contents are recorded as a restorable version) — keep it behind the Phase 5 consent gate.
 
 <!-- END: bindings-v2-sync.md -->

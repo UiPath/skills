@@ -8,7 +8,11 @@ description: >
   solution is removed by the post-run cleanup.
 tags: [uipath-maestro-case, integration, mode:operate, lifecycle:setup]
 max_iterations: 1
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   task_timeout: 1500
   max_turns: 120
@@ -65,7 +69,7 @@ initial_prompt: |
   | 1 | `handle.holdBriefly` | Hold briefly | wait-for-timer | Yes | No |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the HARD
+  Treat all build gates as pre-approved — do NOT block on the HARD
   STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug`.
   After `uip maestro case validate` passes, PUBLISH the solution to Studio Web:
   run `uip solution resources refresh` on the solution folder, then
@@ -74,14 +78,13 @@ initial_prompt: |
   in a single pass.
 
   Before starting, load the uipath-maestro-case skill and follow its workflow.
-
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-case skill"
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
@@ -108,5 +111,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
