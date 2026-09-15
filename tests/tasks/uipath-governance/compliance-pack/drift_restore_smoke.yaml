@@ -41,8 +41,10 @@ post_run:
 initial_prompt: |
   Check my ISO 42001 compliance posture and tell me how to fix whatever isn't right.
 
-  Capture all command output to ./output.txt
-  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+  Keep a copy of every command's output in ./output.txt - append with
+  `>> output.txt 2>&1`, or `| tee -a output.txt` where the skill redirects that
+  command's output to a session file of its own. The skill's session-file layout
+  wins; output.txt is an extra copy for review, not a replacement.
 
   Important:
   - A uip command may fail with an auth error. If one does, carry on with the
