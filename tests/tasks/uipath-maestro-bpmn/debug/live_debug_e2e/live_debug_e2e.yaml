@@ -32,6 +32,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: .
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -120,7 +123,7 @@ success_criteria:
   # can no longer be read at grading time) to recover the variables payload.
   - type: run_command
     description: "Live debug reached finalStatus Completed, variables-all exposed product, and product is computed by a script task"
-    command: "python3 $TASK_DIR/check_live_debug.py"
+    command: "python3 $REFERENCE_DIR/check_live_debug.py"
     timeout: 900
     expected_exit_code: 0
     weight: 6.0

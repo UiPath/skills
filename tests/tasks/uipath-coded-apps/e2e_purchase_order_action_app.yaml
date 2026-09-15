@@ -11,10 +11,18 @@ description: >
   Deploys into an isolated `codedapp-e2e-*` folder so `post_run` can delete
   it cleanly.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 40
   max_turns: 60
   turn_timeout: 1200
+
+reference:
+  directory: ../../../skills/uipath-coded-apps/scripts
 
 initial_prompt: |
   Build a UiPath Coded Action App that finance reviewers will use to
@@ -38,8 +46,9 @@ initial_prompt: |
     1. Create a new folder named `codedapp-e2e-po-<EPOCH>` via
        `uip or folders create <name> --output json`. Capture the `Key`
        from the response.
-    2. Pass that key to `uip codedapp deploy --folder-key <key>` — do NOT
-       let deploy go interactive.
+    2. Pass that key to `uip codedapp deploy` non-interactively — as
+       `--folder-key <key>`, or as a `UIPATH_FOLDER_KEY=<key>` env-var prefix —
+       do NOT let deploy go interactive.
   This isolates the deployment so `post_run` cleanup can delete the
   folder afterwards (folder delete cascades to the coded-app deployment).
 
@@ -54,7 +63,6 @@ initial_prompt: |
 
   Use `--output json` on every `uip` command. Do not prompt for
   confirmation — this is an automated test.
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status before cloud commands (Rule #2)"
@@ -97,9 +105,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip codedapp deploy` with --folder-key (Rule #11 — non-interactive)"
+    description: "Agent ran `uip codedapp deploy` with the folder key passed non-interactively — `--folder-key`, or the `UIPATH_FOLDER_KEY=<key>` env-var prefix that skips the flag's folder pre-check (Rule #11)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+codedapp\s+deploy\b.*--folder-key'
+    command_pattern: '(?s)(UIPATH_FOLDER_KEY=\S+.*\buip\s+codedapp\s+deploy\b|uip\s+codedapp\s+deploy\b.*--folder-key)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -114,7 +122,7 @@ success_criteria:
 
   - type: run_command
     description: "action-schema.json passes the skill's validator"
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && node $SKILLS_REPO_PATH/skills/uipath-coded-apps/scripts/validate-action-schema.js \"$F\""
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && node $REFERENCE_DIR/validate-action-schema.js \"$F\""
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -207,5 +215,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+  - command: "python3 _setup/cleanup_codedapp_folder.py"
     timeout: 60

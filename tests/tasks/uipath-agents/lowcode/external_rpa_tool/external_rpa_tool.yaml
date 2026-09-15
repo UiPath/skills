@@ -17,6 +17,9 @@ run_limits:
   expected_turns: 24
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "FibonacciAgent" that takes a required
   `index` (number) and returns a number `value`. FibonacciAgent shouldn't
@@ -112,7 +115,7 @@ success_criteria:
 
   - type: run_command
     description: "External tool resource shape, deployed folderPath/referenceKey, and bindings sync"
-    command: "python3 $TASK_DIR/check_external_rpa_tool.py"
+    command: "python3 $REFERENCE_DIR/check_external_rpa_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

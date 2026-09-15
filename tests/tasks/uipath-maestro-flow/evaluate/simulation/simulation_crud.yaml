@@ -15,6 +15,9 @@ run_limits:
   expected_turns: 20
   max_turns: 60
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Scaffold a UiPath Flow project, build an eval set with one data point, then
   add, inspect, and remove node simulations on that data point — purely local,
@@ -69,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "Initialized Flow artifact contains a manual trigger"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SimEval 'core.trigger.manual'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SimEval 'core.trigger.manual'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -77,7 +80,7 @@ success_criteria:
 
   - type: run_command
     description: "SimEval Flow artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SimEval"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SimEval"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -85,7 +88,7 @@ success_criteria:
 
   - type: run_command
     description: "Sim Set eval-set artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/simulation/check_simulation_crud.py --check eval-set"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check eval-set"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -93,7 +96,7 @@ success_criteria:
 
   - type: run_command
     description: "Sim Set contains the hello data point with inputs and expected output"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/simulation/check_simulation_crud.py --check data-point"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check data-point"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -109,7 +112,7 @@ success_criteria:
 
   - type: run_command
     description: "The Llm agent-lookup simulation persists with an explicit output schema"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/simulation/check_simulation_crud.py --check llm-simulation"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check llm-simulation"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -125,7 +128,7 @@ success_criteria:
 
   - type: run_command
     description: "Agent removed the connector-send-email simulation"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/simulation/check_simulation_crud.py --check static-absent"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check static-absent"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -133,7 +136,7 @@ success_criteria:
 
   - type: run_command
     description: "Eval-set JSON shows the Llm simulation persisted and the removed one is gone"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/simulation/check_simulation_crud.py"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

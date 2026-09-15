@@ -8,6 +8,8 @@ Types (`PaginationOptions`, `PaginationCursor`, `PaginatedResponse`, `NonPaginat
 > - **There is no "give me everything" call.** To list every row from a source that may exceed the cap, loop the cursor:
 >
 > ```typescript
+> import type { PaginationCursor } from '@uipath/uipath-typescript/core';
+>
 > const all: T[] = [];
 > let cursor: PaginationCursor | undefined;
 > while (true) {

@@ -3,7 +3,7 @@
 to a production bar, not left on the toy scaffold defaults.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py [--check <scope>] [<glob>]
+    python3 $REFERENCE_DIR/check_inline_agent.py [--check <scope>] [<glob>]
 
   <glob>  Shell-style glob for the inline agent.json. The inline agent dir is a
           UUID, so the path is not statically knowable — pass e.g.

@@ -31,6 +31,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "SlaWithEscalation"
   containing a project also named "SlaWithEscalation" from the sdd.md
@@ -137,7 +140,7 @@ success_criteria:
 
   - type: run_command
     description: "case-level slaRules (metadata.slaRules) has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with conditional priority-is-Urgent rule named Resolve Urgent SLA at 2w before default 1m AND data.description set; together SLA units min/d/w/m all exercised"
-    command: "python3 $TASK_DIR/check_sla_with_escalation.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_sla_with_escalation.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0

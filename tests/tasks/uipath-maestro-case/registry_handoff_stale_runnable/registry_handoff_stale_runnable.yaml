@@ -42,6 +42,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: .
+
 initial_prompt: |
   This approved `sdd.md` is authoritative. Its staged `tasks/registry-resolved.json` came
   from an earlier SDD revision that named the runnable resources differently, so it is
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "Stale runnable entries were discarded and re-resolved to the live api/agent registry entries"
-    command: "python3 $TASK_DIR/check_registry_handoff.py"
+    command: "python3 $REFERENCE_DIR/check_registry_handoff.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

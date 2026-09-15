@@ -46,6 +46,9 @@ dataset:
         parents' names. Trigger manually; the downstream script logs the
         child's full name.
 
+reference:
+  directory: ..
+
 initial_prompt: |
   ${row.prompt}
   Produce a complete flow that validates.
@@ -79,7 +82,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on the generated flow"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -89,14 +92,14 @@ success_criteria:
   # a domain-matching IxP project IS published.
   - type: run_command
     description: "Generated flow contains a real uipath.ixp.* node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"uipath\\.ixp\\.'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"uipath\\.ixp\\.'"
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Generated flow does NOT contain a core.logic.mock fallback"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"core\\.logic\\.mock\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"core\\.logic\\.mock\"'"
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -109,7 +112,7 @@ success_criteria:
   # dataset IDs in scripts/ixp-demo-projects/datasets.jsonl.
   - type: run_command
     description: "IxP node references the exact published model for this row's domain (strict)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/check_project_selection.py"
+    command: "python3 $REFERENCE_DIR/ixp/check_project_selection.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

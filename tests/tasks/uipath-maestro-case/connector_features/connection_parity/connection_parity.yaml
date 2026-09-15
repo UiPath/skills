@@ -22,6 +22,9 @@ run_limits:
   max_turns: 150
   turn_timeout: 2100
 
+reference:
+  directory: ../../../../../scripts
+
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectionParityCase"
   containing a project also named "ConnectionParityCase" from the sdd.md below.
@@ -144,7 +147,7 @@ success_criteria:
       Connection-emission parity: the connector the case calls is declared as a
       solution resource (caseplan bindings == bindings_v2 == emitted
       resources/*/connection/). This is the assertion the real incident failed.
-    command: "python3 $SKILLS_REPO_PATH/scripts/check_connection_parity.py ConnectionParityCase"
+    command: "python3 $REFERENCE_DIR/check_connection_parity.py ConnectionParityCase"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

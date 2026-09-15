@@ -20,6 +20,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   This sandbox has no UiPath tenant, so you can't run the live node-configuration 
   step. Instead, capture the filter you'd apply to the operation as where_detail.json 
@@ -49,7 +52,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "where_detail.json (found anywhere under the solution) has a canonical CEQL filter tree on displayName='active'; flow references the registered Azure AD / Entra connector key with List Groups + Terminate nodes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_ceql_where_flow.py"
+    command: "python3 $REFERENCE_DIR/connector_features/check_ceql_where_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 8.0

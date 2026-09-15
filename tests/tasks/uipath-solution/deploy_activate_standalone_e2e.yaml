@@ -12,16 +12,25 @@ description: >
   asserted via command_executed. Requires a tenant — runs in CI
   (run-coder-eval.yml) or against a local `uip login`, not the tempdir gate.
 tags: [uipath-solution, e2e, mode:operate, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../uipath-platform/_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../../fixtures/packages
+      mount_point: .
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 120
 
 run_limits:
@@ -34,8 +43,7 @@ initial_prompt: |
 
   `seed.json` has a unique `uuid8` (use it in all names so they don't
   collide) and `parent_folder_path` (where the deploy's folder should land).
-  The source .zip is at
-  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`.
+  The source .zip is `e2e-stub-1.0.0.zip`.
 
   1. Publish it.
   2. Deploy it under the name `e2e-deploy-<uuid8>`, provisioning a folder
@@ -45,7 +53,6 @@ initial_prompt: |
      active.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: command_executed
     description: "Agent deployed with activation skipped"
@@ -65,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "Tenant: deploy present and activation materialized its folder + process"
-    command: "python3 $TASK_DIR/check_deploy_round_trip.py"
+    command: "python3 $REFERENCE_DIR/check_deploy_round_trip.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

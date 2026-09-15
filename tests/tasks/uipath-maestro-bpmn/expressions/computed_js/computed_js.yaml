@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -65,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Computed =js: expression present and all json-typed bodies parse as JSON"
-    command: "python3 $TASK_DIR/check_computed_js.py"
+    command: "python3 $REFERENCE_DIR/expressions/computed_js/check_computed_js.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

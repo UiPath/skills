@@ -32,6 +32,9 @@ run_limits:
   expected_turns: 35
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a UiPath Flow named "WebhookSelfTest" with a manual trigger.
 
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "WebhookSelfTest Flow artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name WebhookSelfTest"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name WebhookSelfTest"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -87,7 +90,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow validates successfully"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -95,7 +98,7 @@ success_criteria:
 
   - type: run_command
     description: "Two-branch structure: wait-for-event + manual-GET-to-webhook-URL (no headers/query), both reaching End"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_trigger/check_webhook_waitfor_parallel.py"
+    command: "python3 $REFERENCE_DIR/connector_trigger/check_webhook_waitfor_parallel.py"
     timeout: 120
     expected_exit_code: 0
     weight: 3.0

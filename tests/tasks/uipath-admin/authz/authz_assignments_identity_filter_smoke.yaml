@@ -12,17 +12,25 @@ description: >
   path; that behaviour is exercised by the revoke scenario, which reads back by
   assignment id.)
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, role-assignment]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-identityfilter-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-identityfilter-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-identityfilter-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded grant for the identity-filter scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-identityfilter-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded grant for the identity-filter scenario" python3 _setup/setup_authz_role.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_assignment.py''))"'
+  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 _setup/setup_authz_assignment.py'
     timeout: 90
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-identityfilter-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-identityfilter-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
 
 run_limits:

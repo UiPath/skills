@@ -25,5 +25,5 @@ stages:
               azureSubscription: ${{ parameters.azureServiceConnection }}
               skipToggleKvStep: true
               blockOnIssue: ${{ parameters.blockOnIssue }}
-              FOSSAFlags: '--branch "$(Build.SourceBranch)" --revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills" --config ".pipelines/jobs/fossa-skills.yml"'
+              FOSSAFlags: '--branch "$(Build.SourceBranch)" --revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills" --config ".pipelines/jobs/fossa-skills.yml" --without-default-filters --debug'
               FOSSATestFlags: '--revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills"'

@@ -74,6 +74,16 @@
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 # Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
 /tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+# Guardrail checkers relocated to _shared/ during the host-path-removal migration (test: d61fa9d52) —
+# still owned by the guardrails team, not the broader _shared/ default.
+/tests/tasks/uipath-agents/_shared/check_byog_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/check_escalation.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/check_intellectual_property_coded.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/check_llm_as_judge.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/check_pii_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/check_recommend_all.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/check_recommend_scoped.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/check_user_prompt_attacks_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Functions skill (JS/TS → @lucarachiteanu, Python → @vldcmp-uipath; shared surfaces → both)
 /skills/uipath-functions/ @lucarachiteanu @vldcmp-uipath
@@ -140,6 +150,10 @@
 /skills/uipath-maestro-flow/references/author/plugins/data-fabric/ @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
+# Checkers relocated to _shared/ during the host-path-removal migration (test: d61fa9d52) —
+# still owned by the connector_features team, not the broader maestro-cli-team _shared/ default.
+/tests/tasks/uipath-maestro-flow/_shared/check_databricks_query.py @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/_shared/check_generic_dynamic_node.py @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # IXP
 /skills/uipath-maestro-flow/references/author/plugins/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team

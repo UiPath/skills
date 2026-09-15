@@ -23,6 +23,9 @@ run_limits:
 sandbox:
   python: {}
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code conversational agent "SupportBot" that
   answers customer product support questions. It should base its
@@ -107,7 +110,7 @@ success_criteria:
 
   - type: run_command
     description: "Context resource shape, conversational schemas empty, bindings_v2.json index binding"
-    command: "python3 $TASK_DIR/check_context_index_conversational.py"
+    command: "python3 $REFERENCE_DIR/check_context_index_conversational.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -6,11 +6,18 @@ description: >
   server-side filter rejection verbatim without retrying (Rules 18 + 21).
   Requires the MultilineMax feature enabled on the test tenant.
 tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 20
   max_turns: 50
   turn_timeout: 600
+
+reference:
+  directory: .
 
 initial_prompt: |
   I need a place to store full documents in UiPath Data Fabric — tenant level,
@@ -29,7 +36,6 @@ initial_prompt: |
   4. Try to find records whose Body contains the word "lorem", and report
      exactly what happens — do not retry with different searches and do not
      work around it unless I say so.
-
 success_criteria:
   - type: command_executed
     description: "Agent issued the CE_MultilineMaxTest entity creation"
@@ -41,7 +47,7 @@ success_criteria:
 
   - type: run_command
     description: "End state: Body is actually a MULTILINE_MAX field (not a substituted text type)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_MultilineMaxTest --assertions Body.Name=MULTILINE_MAX"
+    command: "python3 $REFERENCE_DIR/_shared/verify_field_constraints.py --entity-name CE_MultilineMaxTest --assertions Body.Name=MULTILINE_MAX"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -65,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "End state: CE_MultilineMaxTest holds exactly one record"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_MultilineMaxTest --min 1 --max 1"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_MultilineMaxTest --min 1 --max 1"
     timeout: 240
     expected_exit_code: 0
     weight: 2.0
@@ -74,6 +80,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent explained the preview-vs-full contract and surfaced the filter rejection without silent workarounds"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The agent worked against a Data Fabric entity whose Body field is
       MULTILINE_MAX. Platform contract: `records list` / `records query`
@@ -122,10 +129,10 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_MultilineMaxTest"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_MultilineMaxTest"
     timeout: 60
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_MultilineMaxTest"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_MultilineMaxTest"
     timeout: 60

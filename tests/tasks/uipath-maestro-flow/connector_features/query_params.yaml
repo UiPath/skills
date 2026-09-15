@@ -13,6 +13,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new Flow project called "QueryParamsTest" with a manual trigger.
   You need a flow that lists all Google Tasks including hidden ones. Discover
@@ -38,7 +41,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name QueryParamsTest '\"nodes\"' '\"edges\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name QueryParamsTest '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -46,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow uses Google Tasks connector or task-specific managed HTTP fallback"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_managed_http_fallback.py '**/QueryParamsTest*.flow' uipath-google-tasks query_params"
+    command: "python3 $REFERENCE_DIR/connector_features/check_managed_http_fallback.py '**/QueryParamsTest*.flow' uipath-google-tasks query_params"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -54,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

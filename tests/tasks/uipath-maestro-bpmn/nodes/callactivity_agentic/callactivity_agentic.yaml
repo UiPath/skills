@@ -15,6 +15,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -56,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "StartAgenticProcess hosted on a bpmn:callActivity (not a serviceTask) and the graph is sound"
-    command: "python3 $TASK_DIR/check_callactivity_agentic.py"
+    command: "python3 $REFERENCE_DIR/nodes/callactivity_agentic/check_callactivity_agentic.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

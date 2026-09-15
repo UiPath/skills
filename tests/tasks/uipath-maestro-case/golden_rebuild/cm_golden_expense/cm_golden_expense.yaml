@@ -44,6 +44,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I have an approved SDD for our CM-Golden expense-reporting case-management
   solution - it's staged as `sdd.md` in this folder. Build a UiPath Case
@@ -93,7 +96,7 @@ success_criteria:
 
   - type: run_command
     description: "caseplan preserves the golden topology: 8 stages, secondary rework lane, condition-derived transitions, case exits, 15 tasks across all 9 types, run-once timer, runtime flags, SLA escalation"
-    command: "python3 $TASK_DIR/check_cm_golden_case.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_cm_golden_case.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -101,7 +104,7 @@ success_criteria:
 
   - type: run_command
     description: "every resource task and the Stage 5 connector entry rule are resolved: expected name/folder binding keys, connection/activity IDs, connector service types, and no skeleton tasks"
-    command: "python3 $TASK_DIR/check_cm_golden_bindings.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_cm_golden_bindings.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -109,7 +112,7 @@ success_criteria:
 
   - type: run_command
     description: "caseplan semantically implements the SDD's dataflow and gate logic (producer ownership, globally unique output IDs, gate polarity, condition equivalence)"
-    command: "python3 $TASK_DIR/check_cm_golden_semantics.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_cm_golden_semantics.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
@@ -117,7 +120,7 @@ success_criteria:
 
   - type: run_command
     description: "Task 1.1 preserves the SDD's exact expenseRequest seed object (native object or JSON-encoded object)"
-    command: "python3 $TASK_DIR/check_cm_golden_seed.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_cm_golden_seed.py"
     timeout: 120
     expected_exit_code: 0
     weight: 1.0

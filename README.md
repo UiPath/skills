@@ -102,31 +102,31 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 <!-- BEGIN GENERATED SKILL STATUS -->
 | Skill | Status |
 |-------|--------|
-| `uipath-admin` | In-development |
-| `uipath-agents` | In-development |
+| `uipath-admin` | Stable |
+| `uipath-agents` | Stable |
 | `uipath-aops` | Preview |
-| `uipath-api-workflow` | In-development |
+| `uipath-api-workflow` | Stable |
 | `uipath-automation-discovery` | Preview |
 | `uipath-automationhub` | In-development |
 | `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
-| `uipath-governance` | In-development |
-| `uipath-human-in-the-loop` | In-development |
+| `uipath-governance` | Preview |
+| `uipath-human-in-the-loop` | Stable |
 | `uipath-insights` | Preview |
-| `uipath-ixp` | In-development |
+| `uipath-ixp` | Stable |
 | `uipath-maestro-bpmn` | In-development |
-| `uipath-maestro-case` | In-development |
+| `uipath-maestro-case` | Preview |
 | `uipath-maestro-flow` | Stable |
 | `uipath-mcp-servers` | In-development |
-| `uipath-planner` | Preview |
+| `uipath-planner` | Stable |
 | `uipath-platform` | Stable |
 | `uipath-process-mining` | Preview |
 | `uipath-review` | Preview |
 | `uipath-rpa` | Stable |
-| `uipath-solution` | Preview |
-| `uipath-tasks` | Preview |
+| `uipath-solution` | Stable |
+| `uipath-tasks` | Stable |
 | `uipath-test` | In-development |
 | `uipath-troubleshoot` | Preview |
 

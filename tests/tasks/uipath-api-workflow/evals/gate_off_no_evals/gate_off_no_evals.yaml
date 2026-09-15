@@ -16,9 +16,19 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+reference:
+  directory: ..
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/gate_off_no_evals/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 120
 
 initial_prompt: |
@@ -28,7 +38,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Feature off: the workflow was authored (returns sum 5 for 2+3) and no evals/ folder was created"
-    command: python3 $TASK_DIR/check_authored.py
+    command: python3 $REFERENCE_DIR/gate_off_no_evals/check_authored.py
     timeout: 120
     expected_exit_code: 0
     weight: 4.0

@@ -28,6 +28,9 @@ sandbox:
 run_limits:
   expected_turns: 10
 
+reference:
+  directory: .
+
 initial_prompt: |
   Using the UiPath Test Manager Integration Service connector, retrieve the assertions for
   test execution `<FIXTURE_EXECUTION_ID>`. Record result.json with `execution_id` and an
@@ -47,7 +50,7 @@ success_criteria:
 
   - type: run_command
     description: "Data-grounded: returned assertion count meets the fixture's expected minimum (real results fetched)"
-    command: "python3 $TASK_DIR/check.py"
+    command: "python3 $REFERENCE_DIR/check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

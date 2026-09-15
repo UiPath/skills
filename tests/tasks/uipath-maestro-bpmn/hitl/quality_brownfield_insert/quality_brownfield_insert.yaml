@@ -15,6 +15,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   An existing UiPath Maestro BPMN project is at `OrderFulfillmentBpmn/` in the
   current directory. Its process is:
@@ -57,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL spliced in surgically: original IDs/scripts preserved, only the target edge re-routed"
-    command: "python3 $TASK_DIR/check_quality_brownfield_insert.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_quality_brownfield_insert.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -10,9 +10,16 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:schema-sync]
 max_iterations: 1
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/mood-meter
+      mount_point: mood-meter
+
+reference:
+  directory: .
+
 pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/existing_project_resume/_fixtures/mood-meter ."
-    timeout: 10
   - command: "bash -c 'cd mood-meter && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
     timeout: 180
 
@@ -56,7 +63,7 @@ success_criteria:
 
   - type: run_command
     description: "Existing project preserved + feature added + venv prepped + schema regenerated"
-    command: "python3 $TASK_DIR/check_existing_project_resume.py"
+    command: "python3 $REFERENCE_DIR/check_existing_project_resume.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0
