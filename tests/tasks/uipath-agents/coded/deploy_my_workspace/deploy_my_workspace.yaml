@@ -21,6 +21,9 @@ run_limits:
   turn_timeout: 1200
   max_turns: 40
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I want a small UiPath coded agent called `deploy-smoke`. Given a
   short text `message`, it should reply with a one-sentence summary
@@ -61,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Deploy artifacts present and pyproject.toml is well-formed for packaging"
-    command: "python3 $TASK_DIR/check_deploy_my_workspace.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_deploy_my_workspace.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

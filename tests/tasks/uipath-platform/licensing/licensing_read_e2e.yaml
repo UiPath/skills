@@ -22,6 +22,9 @@ sandbox:
   mock_path_dirs:
     - .cmdlog-bin
 
+reference:
+  directory: .
+
 initial_prompt: |
   Produce a read-only licensing snapshot of this account. This is read-only:
   do NOT run anything that mutates licensing state.
@@ -90,7 +93,7 @@ success_criteria:
 
   - type: run_command
     description: "Each JSON artifact has Result=Success and valid envelope shape"
-    command: "python3 $TASK_DIR/_shared/licensing_check.py"
+    command: "python3 $REFERENCE_DIR/_shared/licensing_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
@@ -115,6 +118,7 @@ success_criteria:
   - type: llm_judge
     description: "Final reply renders at least one bundle as `<Friendly Name> (<CODE>)`"
     include_agent_output: true
+    include_reference: false
     prompt: |
       Evaluate ONLY the agent's final reply. Score 1.0 if it references at
       least one license bundle in the form `<Friendly Name> (<CODE>)` —

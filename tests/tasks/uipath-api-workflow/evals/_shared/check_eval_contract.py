@@ -15,7 +15,7 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_setup"))
 from eval_scoring import load_eval_sets, load_evaluators  # noqa: E402
 
 parser = argparse.ArgumentParser()

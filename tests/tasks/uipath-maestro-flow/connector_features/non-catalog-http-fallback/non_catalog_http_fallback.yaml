@@ -21,6 +21,9 @@ run_limits:
   max_turns: 100
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a new Flow project called "SpotifyProfileTest" with a manual trigger
   that gets the current user's Spotify profile. Wire
@@ -44,7 +47,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -52,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Profile fetch uses a managed HTTP node with the uipath-uipath-http connector key (non-catalog fallback) and targets the /me endpoint"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/non-catalog-http-fallback/check_non_catalog_http_fallback.py check_fallback"
+    command: "python3 $REFERENCE_DIR/connector_features/non-catalog-http-fallback/check_non_catalog_http_fallback.py check_fallback"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

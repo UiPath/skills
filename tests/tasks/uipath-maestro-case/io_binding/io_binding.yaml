@@ -21,6 +21,12 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "IoBindingCase" containing a
   project also named "IoBindingCase" from the approved `sdd.md` staged in this
@@ -52,12 +58,12 @@ success_criteria:
 
   - type: run_command
     description: "The task-level I/O matrix, including equal-name ID collision handling, is structurally correct and debugs successfully"
-    command: "python3 $TASK_DIR/check_io_binding_case.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_io_binding_case.py"
     timeout: 1080
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

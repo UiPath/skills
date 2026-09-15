@@ -10,6 +10,9 @@ run_limits:
   expected_turns: 24
   max_turns: 105
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a local BPMN project named "VendorApprovalBpmn" for vendor onboarding:
 
@@ -57,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "Boolean approval is typed boolean and routed as a boolean (not stringly-typed)"
-    command: "python3 $TASK_DIR/check_quality_boolean_decision.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_quality_boolean_decision.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

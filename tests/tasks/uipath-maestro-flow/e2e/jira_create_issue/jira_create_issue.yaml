@@ -1,6 +1,3 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-ipe-jira-create-issue
 description: >
   E2E live Jira coverage — builds a Flow with a manual trigger and an
@@ -15,7 +12,11 @@ description: >
   reaching the `CE` / "Coder Eval" project (issue type Task). Targets live in
   the task's `jira_is.py`.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 40
   task_timeout: 1800
@@ -23,11 +24,14 @@ run_limits:
   turn_timeout: 900
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_create_issue/seed_jira.py"
+  - command: "python3 _setup/seed_jira.py"
     timeout: 60
 
+reference:
+  directory: ../..
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_create_issue/teardown_jira.py"
+  - command: "python3 _setup/teardown_jira.py"
     timeout: 120
 
 initial_prompt: |
@@ -61,7 +65,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow validates successfully"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -69,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "JiraCreateIssue checks: valid flow with Jira Create-Issue node, debug creates a real issue, and the tenant carries the seeded summary"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_create_issue/check_jira_create_issue.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_jira_create_issue.py"
     timeout: 1080
     expected_exit_code: 0
     weight: 5.0

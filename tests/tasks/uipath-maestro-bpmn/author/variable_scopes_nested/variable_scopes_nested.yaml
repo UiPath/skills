@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 22
   max_turns: 80
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a local BPMN project named "OrderEnrich" for this process:
   - It can be started two ways: a manual start where the caller supplies an
@@ -42,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "Nested, multi-entry and published-output variable scopes are correct"
-    command: "python3 $TASK_DIR/check_variable_scopes_nested.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_variable_scopes_nested.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

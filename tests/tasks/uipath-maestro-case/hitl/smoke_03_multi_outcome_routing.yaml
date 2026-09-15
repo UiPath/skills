@@ -7,6 +7,9 @@ description: >
   stages have correct entry conditions.
 tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath Case Management project named "LeaveRequestCase" with this
   shape:
@@ -197,7 +200,7 @@ success_criteria:
 
   - type: run_command
     description: "Both semantic boolean branches are present on Review's exits"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/hitl/check_boolean_routing.py LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    command: "python3 $REFERENCE_DIR/check_boolean_routing.py LeaveRequestCase/LeaveRequestCase/caseplan.json"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

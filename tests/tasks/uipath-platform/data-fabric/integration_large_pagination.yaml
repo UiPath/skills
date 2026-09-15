@@ -7,6 +7,11 @@ description: >
   seeds the 500 records once via `seed_entity.py` and post_run restores the
   fixture. Bulk-import coverage lives in integration_csv_import.
 tags: [uipath-platform, data-fabric, integration, bulk-pagination, mode:operate, lifecycle:discover]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 35
   max_turns: 60
@@ -14,21 +19,18 @@ run_limits:
 
 pre_run:
   - command: >-
-      cp
-      $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/extract_page_ids.py
-      $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_pagination.py
-      .
+      cp _setup/extract_page_ids.py _setup/verify_pagination.py .
     timeout: 10
     fail_on_error: true
 
   # Restore CE_LargePaginationTest to its canonical schema and 500 records.
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
-      --entity-name CE_LargePaginationTest
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json
+      python3 _setup/seed_entity.py --entity-name CE_LargePaginationTest --schema-file _setup/seeds/large_pagination.schema.json --records-file _setup/seeds/large_pagination.records.json
     timeout: 300
     fail_on_error: true
+
+reference:
+  directory: .
 
 initial_prompt: |
   There's an existing UiPath Data Fabric entity `CE_LargePaginationTest` with 500 rows already in
@@ -62,7 +64,6 @@ initial_prompt: |
   - Mark all three temporary rows inactive in one batch.
   - Delete those three temporary rows when finished.
   - Keep the three temporary row IDs in `temp_row_ids.txt`, one per line.
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
@@ -75,6 +76,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent reported the three pagination outcomes coherently"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The seeded entity has 500 rows. A full walk at 60 per page should
       produce 9 pages and 500 unique IDs; the direct slice should represent
@@ -196,7 +198,7 @@ success_criteria:
 
   - type: run_command
     description: "End state: CE_LargePaginationTest is back to the canonical 500 records"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_LargePaginationTest --expected 500"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_LargePaginationTest --expected 500"
     timeout: 240
     expected_exit_code: 0
     weight: 3.0
@@ -204,8 +206,5 @@ success_criteria:
 
 post_run:
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
-      --entity-name CE_LargePaginationTest
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json
+      python3 _setup/revert_entity_to_seed.py --entity-name CE_LargePaginationTest --schema-file _setup/seeds/large_pagination.schema.json --records-file _setup/seeds/large_pagination.records.json
     timeout: 300

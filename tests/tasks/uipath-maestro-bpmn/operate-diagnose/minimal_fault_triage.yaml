@@ -90,6 +90,7 @@ success_criteria:
 
   - type: llm_judge
     description: "Agent diagnosed only and avoided BPMN lifecycle mutations"
+    include_reference: false
     weight: 2.0
     pass_threshold: 0.7
     include_agent_output: true

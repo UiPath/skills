@@ -13,6 +13,9 @@ run_limits:
   expected_turns: 87
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project "WeatherFlow" that runs an inline low-code agent
   which takes a required `location` (string) and returns a number
@@ -118,7 +121,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline external API workflow tool: resource.json shape (location=external) + flow node + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_external_apiworkflow_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_external_apiworkflow_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

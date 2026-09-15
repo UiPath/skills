@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_setup"))
 from eval_fixtures import build_eval_set, build_evaluator, eval_set_path, evaluator_path  # noqa: E402
 
 project = Path("AddNumbers")

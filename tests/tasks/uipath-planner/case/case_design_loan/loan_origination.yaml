@@ -26,6 +26,9 @@ run_limits:
   max_turns: 150
   turn_timeout: 3000
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   We're designing a case-management solution for commercial loan origination at
   Accrual Capital, a mid-market bank doing ~600 term loans a month ($1M–$25M;
@@ -62,7 +65,7 @@ success_criteria:
 
   - type: run_command
     description: "design models the conditional >$5M Credit-Analyst gate"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/check_credit_analyst_gate.py sdd.draft.md sdd.md"
+    command: "python3 $REFERENCE_DIR/_shared/check_credit_analyst_gate.py sdd.draft.md sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -94,7 +97,7 @@ success_criteria:
 
   - type: run_command
     description: "(advisory, non-gating) the draft's data contract closes — every consumed `=vars.<name>` has a producer (Default, trigger source, or a `-> name` row)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/draft_lineage_check.py"
+    command: "python3 $REFERENCE_DIR/_shared/draft_lineage_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -107,6 +110,7 @@ success_criteria:
       - sdd.md
     max_file_chars: 150000
     include_agent_output: false
+    include_reference: false
     prompt: |
       You are reviewing a design-lane draft document for a COMMERCIAL LOAN
       ORIGINATION case. The design is in whichever file is attached —

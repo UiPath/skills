@@ -11,6 +11,9 @@ run_limits:
   expected_turns: 30
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `data-orchestrator`
   that delegates data scraping to an existing RPA process named
@@ -44,7 +47,7 @@ success_criteria:
 
   - type: run_command
     description: "InvokeProcess shape, lazy-LLM-init, process binding"
-    command: "python3 $TASK_DIR/check_process_invoke.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_process_invoke.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

@@ -2,7 +2,7 @@
 """Locate emitted ``.flow`` files and run ``uip maestro flow validate``.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+    python3 $REFERENCE_DIR/validate_flow.py
 
 Why this exists — a hardcoded ``<Name>/<Name>/<Name>.flow`` path in a success
 criterion is brittle: ``uip maestro flow init <Name>`` scaffolds a

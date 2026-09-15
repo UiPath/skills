@@ -23,6 +23,9 @@ run_limits:
   expected_turns: 14
   max_turns: 35
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create an API workflow project `RobustBatch` that takes a `values` array whose
   elements may be numbers or junk, and processes the batch WITHOUT letting one bad
@@ -39,7 +42,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "TryCatch sits INSIDE the loop body, not wrapped around the loop (pattern 7)"
-    command: python3 $TASK_DIR/check_trycatch_in_loop.py
+    command: python3 $REFERENCE_DIR/check_trycatch_in_loop.py
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

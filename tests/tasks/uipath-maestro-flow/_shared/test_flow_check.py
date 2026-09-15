@@ -1181,7 +1181,8 @@ def test_cleanup_solutions_deletes_rotated_ids_from_the_sidecar(monkeypatch, tmp
         "22222222-2222-4222-8222-222222222222\n\n11111111-1111-4111-8111-111111111111\n"
     )
     spec = importlib.util.spec_from_file_location(
-        "cleanup_solutions", os.path.join(os.path.dirname(flow_check.__file__), "cleanup_solutions.py")
+        "cleanup_solutions",
+        os.path.join(os.path.dirname(flow_check.__file__), "..", "_setup", "cleanup_solutions.py"),
     )
     cleanup = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cleanup)

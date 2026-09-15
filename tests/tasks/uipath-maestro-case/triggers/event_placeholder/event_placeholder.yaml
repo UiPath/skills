@@ -16,6 +16,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "EventStartCase" containing a
   project also named "EventStartCase" from the sdd.md below. Write the sdd.md to
@@ -118,7 +121,7 @@ success_criteria:
 
   - type: run_command
     description: "Placeholder event trigger (serviceType only) + entry-points.json entry + first-stage case-entered start, no fabricated connector IDs and no trigger edge"
-    command: "python3 $TASK_DIR/check_event_placeholder.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_event_placeholder.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

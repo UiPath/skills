@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 16
   max_turns: 60
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a local BPMN project named "TierRouting" for this process:
   - The caller supplies an order `amount` when starting the process.
@@ -38,7 +41,7 @@ success_criteria:
 
   - type: run_command
     description: "Every variable declaration is scoped to the element that owns it"
-    command: "python3 $TASK_DIR/check_variable_scopes.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_variable_scopes.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

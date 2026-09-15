@@ -16,6 +16,9 @@ run_limits:
   expected_turns: 77
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project "DevToolsFlow" that runs an inline low-code agent
   connected to our "GitHubMcp" MCP server so it can use that server's GitHub
@@ -78,7 +81,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline MCP server: resource.json shape ($resourceType=mcp) + mcp flow node + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_mcp_server_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_mcp_server_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

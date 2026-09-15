@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -52,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Timer start event is a recurring scheduled start with valid structure"
-    command: "python3 $TASK_DIR/check_timer_start.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_timer_start.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

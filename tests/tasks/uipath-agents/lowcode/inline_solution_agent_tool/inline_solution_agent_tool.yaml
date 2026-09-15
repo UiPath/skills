@@ -16,11 +16,16 @@ run_limits:
   expected_turns: 80
   turn_timeout: 1200
 
-pre_run:
-  # Brownfield fixture: an OrchestratorFlowSol solution that already
-  # contains a registered ToolAgent (mirrors solution_agent_tool's fixture).
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/inline_solution_agent_tool/_fixtures/OrchestratorFlowSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    # Brownfield fixture: an OrchestratorFlowSol solution that already
+    # contains a registered ToolAgent (mirrors solution_agent_tool's fixture).
+    - type: template_dir
+      path: _fixtures/OrchestratorFlowSol
+      mount_point: OrchestratorFlowSol
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a new UiPath Flow project named "OrchestratorFlow" inside the existing
@@ -149,7 +154,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline solution agent tool: resource.json shape + flow node (tool.agent.*) + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_solution_agent_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_solution_agent_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

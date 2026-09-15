@@ -154,7 +154,17 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
   "uipath": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted>",
-    "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
+    "inputs": [
+      {
+        "name":   "<caseShape.inputs[i].name>",
+        "type":   "<caseShape.inputs[i].type>",
+        "target": "<caseShape.inputs[i].target>",
+        "body":   "<caseShape.inputs[i].body, carried over unchanged>",
+        "var": "vxxxxxxxx",
+        "id":  "vxxxxxxxx",
+        "elementId": "<ownerNodeId>-<ruleId>"
+      }
+    ],
     "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
     "bindings": []
   },

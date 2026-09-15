@@ -16,6 +16,9 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-
 run_limits:
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a UiPath Flow project named "ScheduledReport" whose flow is started by
   a **scheduled trigger** that runs every hour.
@@ -51,7 +54,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -60,7 +63,7 @@ success_criteria:
   # ── Structural checks (scheduled trigger replaced manual; valid schedule) ─
   - type: run_command
     description: "Start node is core.trigger.scheduled, manual trigger removed, valid timeCycle schedule + bpmn:TimerEventDefinition"
-    command: "python3 $TASK_DIR/check_scheduled_trigger_flow.py"
+    command: "python3 $REFERENCE_DIR/smoke/check_scheduled_trigger_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -13,6 +13,9 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-
 run_limits:
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project named "TransformMapDemo" that contains a single
   Transform Map node which uppercases a `name` field over a small static
@@ -55,7 +58,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -64,7 +67,7 @@ success_criteria:
   # ── Structural checks (exact map variant, collection path, mappings) ────
   - type: run_command
     description: "Flow has exactly one core.action.transform.map node with a $vars collection and a uppercase name mapping"
-    command: "python3 $TASK_DIR/check_transform_map_flow.py"
+    command: "python3 $REFERENCE_DIR/single_node/transform_map/check_transform_map_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

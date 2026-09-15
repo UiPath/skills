@@ -1,6 +1,3 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-jira-lifecycle
 description: >
   E2E live Jira coverage of a composite loop-and-switch flow. The agent builds
@@ -20,7 +17,11 @@ description: >
   reaching the `CE` / "Coder Eval" project (issue type Task). Targets live in
   the task's `jira_is.py`.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, node:switch, node:decision, connector, e2e, uipath-atlassian-jira, mode:build]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 55
   task_timeout: 2700
@@ -28,11 +29,14 @@ run_limits:
   turn_timeout: 900
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/seed_jira.py"
+  - command: "python3 _setup/seed_jira.py"
     timeout: 60
 
+reference:
+  directory: ../..
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/teardown_jira.py"
+  - command: "python3 _setup/teardown_jira.py"
     timeout: 180
 
 initial_prompt: |
@@ -74,7 +78,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow validates successfully"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -90,7 +94,7 @@ success_criteria:
 
   - type: run_command
     description: "JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/check_jira_lifecycle.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_jira_lifecycle.py"
     timeout: 1320
     expected_exit_code: 0
     weight: 5.0

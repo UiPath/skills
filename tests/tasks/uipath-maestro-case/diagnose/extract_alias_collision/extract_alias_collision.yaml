@@ -22,6 +22,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: .
+
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ passes
   `uip maestro case validate` cleanly, but at runtime the Decision stage never
@@ -70,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "Gate and producer agree — Decision's gate reads a variable that is actually produced; 3 stages preserved; not silenced by declaring an orphan"
-    command: "python3 $TASK_DIR/check_extract_alias_collision.py"
+    command: "python3 $REFERENCE_DIR/check_extract_alias_collision.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

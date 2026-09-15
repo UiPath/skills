@@ -23,6 +23,9 @@ run_limits:
   max_turns: 35
   task_timeout: 1800
 
+reference:
+  directory: .
+
 initial_prompt: |
   Using the UiPath Test Manager Integration Service connector, run the test set HEALTH:21,
   then keep checking the resulting execution until it reaches a final status (no longer
@@ -51,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "Data-grounded: the execution reached a TERMINAL status (real run completed, not just Execute invoked)"
-    command: "python3 $TASK_DIR/check_terminal.py"
+    command: "python3 $REFERENCE_DIR/check_terminal.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

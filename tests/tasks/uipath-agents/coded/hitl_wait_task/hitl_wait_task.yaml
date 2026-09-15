@@ -12,6 +12,9 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded]
 max_iterations: 1
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Scaffold a fresh UiPath coded agent (LangGraph) named `purchase-gate` in
   a `purchase-gate/` directory at the working-directory root. It closes the
@@ -45,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "LangGraph config, interrupt(WaitTask|WaitEscalation) shape, correct imports, no CreateTask/CreateEscalation, graph exported"
-    command: "python3 $TASK_DIR/check_hitl_wait_task.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_hitl_wait_task.py"
     timeout: 30
     expected_exit_code: 0
     weight: 7.0

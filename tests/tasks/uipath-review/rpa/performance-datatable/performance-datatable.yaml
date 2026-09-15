@@ -23,6 +23,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath RPA project exists at `PerfBot` in the current directory.
   Review it for quality and performance issues, focusing on data handling and
@@ -72,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Report flags the nested-loop performance issue or the hardcoded Delay"
-    command: "python3 $TASK_DIR/check_performance_datatable.py"
+    command: "python3 $REFERENCE_DIR/performance-datatable/check_performance_datatable.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
