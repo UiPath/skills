@@ -4,9 +4,15 @@ description: >
   Agent must discover current posture, apply missing settings if gaps exist, and
   deliver a structured compliance summary.
 
-  Core mutations (state enable) are mandatory. pre_run cleanup guarantees the
-  pack starts disabled, so state enable is always required. A post-hoc
-  run_command verifies the mutation actually landed on the tenant.
+  Core mutations (state enable) are mandatory, so this task REQUIRES an isolated
+  tenant. pre_run cleanup disables the pack, but it cannot hold a shared tenant:
+  disable_smoke, restore_smoke and drift_restore_smoke all ENABLE the pack in
+  their own pre_run, so a concurrent one re-enables it mid-flight. When that
+  happens coverage returns NewCount == 0 / NotDeployedCount == 0, `state enable`
+  becomes a genuine no-op, and a correct agent skips it - failing the mandatory
+  criterion for being right. Observed 2026-09-15T11:27:16Z (`LastToggledAt` in
+  this run's own `state get`, toggled by neither this task nor its pre_run).
+  A post-hoc run_command verifies the mutation actually landed on the tenant.
 
   Requires UIPATH_CLI_ENABLE_ENV_AUTH + UIPATH_CLI_AUTH_TOKEN + org/tenant env vars.
 tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, feature:compliance, live]
@@ -34,13 +40,19 @@ initial_prompt: |
   Get my tenant aligned to ISO 42001. Analyze current posture gaps,
   apply any missing settings, and confirm the changes took effect.
 
-  Save all CLI output to output.txt. Save a summary to report.json with
-  the pack name and whether apply was performed.
+  Every CLI response must end up in ./output.txt, including the ones the skill
+  redirects to a session file of its own - use `| tee -a output.txt` so the
+  response lands in both places. The skill's session-file layout wins for the
+  files it names; output.txt is the additional copy and must never be skipped.
+  Save a summary to report.json with the pack name and whether apply was
+  performed.
 
   Important:
   - Always pass --output json.
   - Do NOT prompt for confirmation — automated run.
   - The CLI IS connected to a live tenant. Commands will succeed.
+  - Write report.json as soon as you know the apply outcome, before any
+    optional follow-up work. It is a required deliverable, not a final flourish.
 
 success_criteria:
   - type: skill_triggered
