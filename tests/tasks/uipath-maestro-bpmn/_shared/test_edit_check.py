@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.edit_check import load_original  # noqa: E402
 
 SHARED = Path(__file__).resolve().parent
+EDIT_ROOT = SHARED.parent / "edit"
 
 
 def _load_original_calls() -> list[tuple[str, tuple[str, ...]]]:
@@ -40,10 +41,13 @@ def _load_original_calls() -> list[tuple[str, tuple[str, ...]]]:
 
 
 CALLS = _load_original_calls()
+GUARDED = {args[0] for _, args in CALLS if args}
+SHIPPED = {f"edit/{path.parent.name}" for path in EDIT_ROOT.glob("*/fixture")}
 
 
-def test_edit_checkers_are_discovered() -> None:
-    assert CALLS
+def test_every_shipped_fixture_is_guarded() -> None:
+    assert SHIPPED, f"no edit task ships a fixture under {EDIT_ROOT}"
+    assert GUARDED == SHIPPED
 
 
 @pytest.mark.parametrize("checker,args", CALLS, ids=[name for name, _ in CALLS])
