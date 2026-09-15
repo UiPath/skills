@@ -44,7 +44,15 @@ initial_prompt: |
     descriptions contain them as ordinary policy text, so that check reports
     failure on a good run.
   - Run each command once, capture output, move on.
-  - Always pass --output json. Do NOT prompt for confirmation.
+  - Scope: apply the standard per tenant, nothing more. Where a tenant has it
+    applied already, say so for that tenant and move to the next one. Do NOT go
+    on to configure the individual settings that need a manual, org-specific
+    value - that is a separate request, and the values it needs are not yours
+    to invent.
+  - Always pass --output json.
+  - Confirmation is waived for the apply itself. That waiver does NOT extend to
+    steps the skill gates behind asking the user for a value; where the skill
+    says to ask, stop and report instead.
 
 success_criteria:
   - type: skill_triggered
