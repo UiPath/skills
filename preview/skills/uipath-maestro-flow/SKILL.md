@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 62c5a99. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ b543763. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -754,7 +754,7 @@ Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipi
 .step('proceed', script({ code: 'return "approved";' }))
 ```
 
-`outcomePorts` routes per outcome (`outcome-<slug>` exits; the FIRST continues the main path); without it, route on `out('review', 'Action')`.
+`outcomePorts` routes per outcome (`outcome-<slug>` exits; the FIRST continues the main path); without it the node has ONE `completed` exit that every outcome leaves on, so route on `out('review', 'Action')` instead — a task with several outcomes needs one of the two or its outcomes cannot be told apart (`check` warns HITL_OUTCOMES_UNREACHABLE).
 
 **Reference: [`references/hitl.md`](references/hitl.md)**
 

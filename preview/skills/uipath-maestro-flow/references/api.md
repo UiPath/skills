@@ -1223,7 +1223,11 @@ export interface HitlInputs {
     /**
      * The completion buttons, e.g. `['Approve', 'Reject']`. At least one, or the
      * reviewer has no way to complete the task and the flow waits forever. The
-     * first is the primary (default) one.
+     * first is the primary (default) one. Declaring them creates no EXITS: with
+     * more than one, set `outcomePorts` to fork in the graph, or read
+     * `out('<step>', 'Action')` to route as data. With neither, every outcome
+     * leaves on the same `completed` exit and nothing downstream can tell them
+     * apart — which `check` warns about as `HITL_OUTCOMES_UNREACHABLE`.
      */
     outcomes: Outcome[];
     /** Who gets the task and how. Omit for the definition's default delivery. */
@@ -1234,7 +1238,9 @@ export interface HitlInputs {
      * Route each outcome from its OWN port instead of the single `completed`
      * exit. Selects the node's **1.1** definition, whose exits are
      * `outcome-<id>` handles (one per outcome; ids are the outcome names
-     * slugified, e.g. `'Approve'` → `outcome-approve`).
+     * slugified, e.g. `'Approve'` → `outcome-approve`). It REPLACES `completed`
+     * rather than adding to it, and it is not an optional refinement — see
+     * `outcomes` for the choice it is one half of.
      */
     outcomePorts?: boolean;
     /**
