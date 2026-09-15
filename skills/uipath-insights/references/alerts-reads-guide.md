@@ -222,6 +222,8 @@ A 404 here has two causes, and they are not the ones on `alerts get`: the delive
 
 ## Converting Epoch Seconds
 
+Only for a window the caller pins to a calendar boundary ("since last Monday", "up to the end of August"). A window that just ends now is `--time-range <minutes>`, which needs no conversion at all: 1440 for the last day, 10080 for the last week, 43200 for 30 days. Reach for the recipes below only when no relative window expresses what was asked.
+
 Resolve the number in its own command, then type the literal integer into the flag. These times are UTC; `alert-history` has no timezone flag.
 
 ```bash
