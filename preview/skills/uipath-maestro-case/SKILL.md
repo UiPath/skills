@@ -4,14 +4,13 @@ description: "TRIGGER for authoring UiPath Maestro Case plans as `<Name>.case.ts
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
-Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ b543763. Canonical source lives there;
-edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
+This file is CANONICAL. Edit it here. It was a snapshot of
+UiPath/flow-builder-sdk `typescript/sdk/skill/SKILL-case.md` until
+flow-builder-sdk@b543763; the nightly re-sync that maintained it is gone
+(UiPath/flow-builder-sdk docs/SKILLS_PROMOTION_PLAN.md, phase 2).
 
-This is a snapshot of a generated file. In flow-builder-sdk,
-`typescript/sdk/scripts/gen-case-skill.mjs` renders it from
-`typescript/sdk/skill/SKILL-case.template.md` and the built `.d.ts`; edits
-belong upstream.
+It is no longer generated either: flow-builder-sdk#737 retired the
+`gen-case-skill.mjs` template it used to be rendered from.
 -->
 # UiPath Case Management — TypeScript Builder SDK
 
