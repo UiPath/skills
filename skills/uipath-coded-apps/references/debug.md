@@ -10,7 +10,7 @@ Diagnoses and fixes failures in UiPath coded apps and coded action apps — auth
 - List manual click-through steps for the user to perform
 - Present "Option A: open the portal for you to click / Option B: try something else" menus
 
-The only time to fall back to the [manual portal steps](oauth-client-setup.md#manual-portal-fallback) is when the CLI can't run — not authenticated, or the identity lacks external-app admin permission (`403`). A `403` from `external-apps create`/`update` is stable for the session: one failing call is the diagnosis. Do not retry it with other names, flags, or scopes, and do not `update` an External Application you did not create for this app — see [When the CLI can't be used](oauth-client-setup.md#when-the-cli-cant-be-used).
+The only time to fall back to the [manual portal steps](oauth-client-setup.md#manual-portal-fallback) is when the CLI can't run — not authenticated, or the identity lacks external-app admin permission (`403`; one attempt is the diagnosis — see [When the CLI can't be used](oauth-client-setup.md#when-the-cli-cant-be-used)).
 
 **SDK-FIRST PRINCIPLE**: When fixing code, always check what methods `@uipath/uipath-typescript` already provides before writing custom code.
 
