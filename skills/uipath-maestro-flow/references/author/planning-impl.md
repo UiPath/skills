@@ -2,7 +2,7 @@
 
 Resolve every implementation detail in the approved `.uipath.flow.arch.plan.md` and produce a build-ready `.uipath.flow.impl.plan.md`, using plugin `impl.md` files, wiring rules, and flow patterns.
 
-> **Prerequisite:** The user must explicitly approve `.uipath.flow.arch.plan.md` before this phase, or, non-interactively, the file exists and the unreviewed handoff was recorded ([planning-arch.md — Handoff to Phase 2](planning-arch.md#handoff-to-phase-2)).
+> **Prerequisite:** `.uipath.flow.arch.plan.md` exists and the user approved it — or rule #5's non-interactive fallback took the recommended option and recorded the unreviewed handoff ([planning-arch.md — Handoff to Phase 2](planning-arch.md#handoff-to-phase-2)).
 >
 > **Always validate with the registry**, including OOTB nodes. Port names, required inputs, and output schemas can change.
 
@@ -207,7 +207,9 @@ Present a short chat summary containing:
 
 Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. Do not build until the user explicitly approves.
 
-Non-interactively (CI/headless, no user available), this is a **review** gate, not one of [SKILL.md](../../SKILL.md) rule #5's consent gates — approving a local markdown file is neither destructive nor a tenant write. Write the file, build from it, and record in the final report that it went unreviewed. Write it even then: the resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
+Ask as a dropdown per [SKILL.md](../../SKILL.md) rule #5 — **"Approve and build" marked recommended**, "Revise the plan", then "Something else" last — so a headless run proceeds under rule #5's non-interactive fallback and records the unreviewed build.
+
+**Write the file before asking, always.** The resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
 
 ## Product Heuristics
 
