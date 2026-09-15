@@ -3,7 +3,7 @@ description: Skill folder layout, SKILL.md frontmatter, naming conventions, and 
 globs: ["skills/**/SKILL.md", "skills/**/references/**/*.md", "skills/**/assets/**/*", "skill-flavors/**/*", "scripts/compose-skill-flavor.mjs", "scripts/npm-package-lifecycle.mjs", "scripts/select-skill-package.mjs", ".github/workflows/publish.yml", ".github/workflows/publish-skill-flavor.yml", ".github/workflows/*skill-flavor*.yml"]
 ---
 
-Every skill under `skills/uipath-<kebab-case>/` must have a `SKILL.md` with valid YAML frontmatter: `name` (matching folder name exactly) and `description` (under 1024 characters — repo cap; Claude Code's hard truncation for `description` + `when_to_use` is 1,536 chars).
+Every skill under `skills/uipath-<kebab-case>/` must have a `SKILL.md` with valid YAML frontmatter: `name` (matching folder name exactly) and `description` (under 1024 characters — repo cap; `description` + `when_to_use` must also fit in Claude Code's 1,536-char listing cap, past which the rest — `→` redirects included — is silently dropped; `hooks/validate-skill-descriptions.sh` checks both).
 
 The `description` must front-load skill identity and unique file/domain signals (e.g. `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters. Use compact `→` redirects for commonly confused sibling skills (e.g. `For XAML→uipath-rpa`). Start with `[PREVIEW]` for unstable skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses or nest fields under `metadata:` — both cause Claude Code to drop the field.
 

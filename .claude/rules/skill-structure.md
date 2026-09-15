@@ -29,7 +29,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ### Validation Rules
 
 - `name` MUST exactly match the parent folder name
-- `description` MUST be under 1024 characters. Claude Code truncates `description` + `when_to_use` at 1,536 chars in the skill listing ([source](https://code.claude.com/docs/en/skills.md)); 1024 is the repo cap to keep descriptions focused and leave headroom
+- `description` MUST be under 1024 characters, and `description` + `when_to_use` MUST fit in 1,536 characters combined. Claude Code truncates `description` + `when_to_use` at 1,536 chars in the skill listing ([source](https://code.claude.com/docs/en/skills.md)) and silently drops the rest — including `→` redirects; 1024 is the repo cap to keep descriptions focused and leave headroom. `hooks/validate-skill-descriptions.sh` enforces both limits
 - `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters — the first ~100 chars carry the most matching signal
 - `description` MUST start with the brand or domain identity (e.g., `UiPath`, `UiPath RPA`, `UiPath Maestro Flow`). Do NOT prefix with metadata tags like `[PREVIEW]`, `[BETA]`, etc. — those displace high-value matching tokens and semantically de-prioritize the skill
 - Lifecycle status (Stable / Preview / In-development) MUST be recorded ONLY in [`assets/skill-status.json`](../../assets/skill-status.json) — the single source of truth. Do NOT put status markers in the frontmatter `description` OR the body (no `> **Preview**` callouts). See [Lifecycle Status](#lifecycle-status) below

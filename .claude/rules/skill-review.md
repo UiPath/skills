@@ -17,7 +17,7 @@ Does the skill follow the canonical layout and conventions?
 
 - SKILL.md has valid YAML frontmatter with `name` and `description`
 - `name` matches the folder name exactly
-- `description` is under 1024 characters (repo cap; Claude Code's hard truncation for `description` + `when_to_use` is 1,536 chars — run `hooks/validate-skill-descriptions.sh` to verify)
+- `description` is under 1024 characters and `description` + `when_to_use` fit in 1,536 characters combined (Claude Code's hard truncation point for the listing — run `hooks/validate-skill-descriptions.sh`, which checks both)
 - `description` front-loads the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters
 - `description` includes compact `→` redirects for commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
 - `description` starts with the brand/domain identity (e.g., `UiPath`, `UiPath RPA`) — NOT a metadata tag like `[PREVIEW]`. Lifecycle status lives only in `assets/skill-status.json`, never in the frontmatter or body
@@ -90,7 +90,7 @@ Is the skill ready for public use as a plugin?
 
 - `description` in frontmatter is detailed enough for the plugin system to match it correctly — not too broad (false triggers on unrelated requests), not too narrow (misses valid use cases)
 - `description` uses compact `→` redirects to prevent conflicts with commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
-- `description` passes the 1024-character validation hook (`hooks/validate-skill-descriptions.sh`)
+- `description` passes the validation hook (`hooks/validate-skill-descriptions.sh`): under 1024 characters, and under 1,536 characters combined with `when_to_use`
 - The skill does not assume any state that the plugin's SessionStart hook doesn't guarantee
 - No hardcoded paths, tokens, or environment-specific assumptions
 - Works on all platforms the skill claims to support
