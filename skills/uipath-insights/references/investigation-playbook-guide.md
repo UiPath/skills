@@ -1,5 +1,35 @@
 # Insights — Investigation Playbooks
 
+Each playbook below is one `uip insights jobs investigate` subcommand, which runs the whole
+sequence in a single call and returns the arithmetic already done. Use the subcommand. The chains
+here are the fallback for a CLI that predates it, and the reference for what each playbook reads.
+
+| Playbook | Subcommand | Reads |
+|---|---|---|
+| 1. Overall health | `investigate health` | `summary` |
+| 2. Which processes are failing | `investigate failing` | `top-failures`, `failures-by-reason` |
+| 3. Why one process fails | `investigate process --process-name <name>` | `failures-by-reason`, `failure-details`, `completed-timeline` |
+| 4. Stuck or long-running jobs | `investigate stuck` | `uncompleted-timeline`, `summary`, `process-details` |
+| 5. This period against the last | `investigate compare` | `summary` twice, over two adjacent windows |
+| 6. Health for one folder | `investigate folder --folder-name <name>` | `filter-folders list`, `summary`, `top-failures` |
+
+Four traps in the raw API that the commands now close, all confirmed against the backend handlers.
+Both the playbooks and the seven plain reads project their responses, so you no longer meet any of
+these, but the chains below are written against the projected shape and the reasons are worth
+knowing:
+
+- `failures-by-reason` carries the terminal-job total, not a failure count. The controller fills it
+  from the same handler `summary` uses. The reads name it `CompletedJobs` and say so.
+- `top-failures` ships its faulted counts as one unnamed series indexed by process. The reads name
+  it `FaultedJobs`, paired with `ProcessName` by index.
+- `process-details` ships seven series and `uncompleted-timeline` five, both indexed the same way.
+  The reads name every one, so reading "the first series" is no longer possible.
+- `failure-details` reports no machine name and no exception type, whatever the DTO suggests.
+
+Each command's `Instructions` names the caveats on the numbers it just returned. Quote those.
+
+## The chains, for a CLI without the verb
+
 Step-by-step playbooks for common job monitoring scenarios. Each playbook shows the exact commands to run and how to interpret the results.
 
 ## Playbook 1: "How healthy are my automations?"
@@ -11,12 +41,11 @@ User asks about overall automation health, success rates, or general status.
 uip insights jobs summary --time-range 1440 --output json
 
 # Step 2: Interpret the results (Data keys are PascalCase)
-# - JobsCount: total jobs in the time window
-# - SuccessfulJobsCount: jobs that completed successfully
-# - AverageProcessingTime: mean execution time. The CLI passes this through
-#   unchanged and does not label a unit, so do not state one to the user.
+# - CompletedJobs: jobs in a terminal state (Faulted, Successful, Stopped)
+# - SuccessfulJobs: jobs that completed successfully
+# - AverageProcessingTimeMs: mean execution time in milliseconds
 #
-# Failure rate = (JobsCount - SuccessfulJobsCount) / JobsCount * 100
+# Failure rate = (CompletedJobs - SuccessfulJobs) / CompletedJobs * 100
 #
 # Thresholds (rules of thumb):
 #   < 5% failure rate  → healthy
@@ -87,7 +116,9 @@ uip insights jobs process-details --time-range 1440 --output json
 
 User wants to see if things are getting better or worse.
 
-Resolve both week boundaries to epoch milliseconds first, with the platform-specific `date` recipes under Absolute Time Ranges in [`jobs-commands-guide.md`](jobs-commands-guide.md). Treat `--started-before` as exclusive: pass this Monday 00:00:00 UTC as the upper bound so the window covers all of last week.
+`uip insights jobs investigate compare` resolves both windows itself and is the way to answer this. Its `--time-range` is the length of one window, and it reads the same length again immediately before, so 10080 compares this week against last week. It refuses a window over 21600 minutes, because two adjacent 30-day windows cannot both sit inside the server's 30-day cap and the server clamps the older bound without saying so.
+
+Without the verb, resolve both week boundaries to epoch milliseconds first, with the platform-specific `date` recipes under Absolute Time Ranges in [`jobs-commands-guide.md`](jobs-commands-guide.md), then pass literal numbers. Treat `--started-before` as exclusive: pass this Monday 00:00:00 UTC as the upper bound so the window covers all of last week.
 
 ```bash
 # This week (last 7 days)
@@ -100,7 +131,7 @@ uip insights jobs summary \
   --started-before <this-monday-epoch-ms> \
   --output json
 
-# Compare JobsCount, SuccessfulJobsCount, and AverageProcessingTime
+# Compare CompletedJobs, SuccessfulJobs, and AverageProcessingTimeMs
 # between the two results
 ```
 
@@ -133,7 +164,7 @@ Several endpoints return parallel arrays. The same index across arrays correspon
 ```json
 {
   "ProcessName": ["ProcessA", "ProcessB", "ProcessC"],
-  "JobCountByTime": [[10, 5, 2]]
+  "FaultedJobs": [10, 5, 2]
 }
 ```
 
@@ -141,6 +172,12 @@ This means:
 - ProcessA had 10 failures
 - ProcessB had 5 failures
 - ProcessC had 2 failures
+
+Every column on every read pairs this way, and each one is named. The backend ships these series
+inside one unnamed `jobCountByTime` list whose outer position means something different per route:
+one series on `top-failures`, three on `completed-timeline`, five on `uncompleted-timeline`, seven
+on `process-details`. The commands name each one, so that positional lookup is gone. An empty
+window returns `{}` rather than empty columns, because there is no row to take the names from.
 
 ## When to Hand Off to Other Skills
 

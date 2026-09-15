@@ -5,6 +5,12 @@ description: >
   out-of-scope (start a job, queue metrics, root-cause a specific error).
   The agent should run an insights command for the first and NOT run insights
   commands for the others. Auth errors are expected (no live tenant).
+
+  Both routes count as the same evidence: the agent may issue the plain
+  `jobs` reads or the `jobs investigate` playbook that runs them. The
+  playbook is one `uip insights` command, so the patterns still name only
+  `uip insights` commands, and the negative assertions below are anchored
+  at `uip insights` rather than at a subcommand, so they already cover it.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover, negative]
 
 run_limits:
@@ -36,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran insights jobs for the in-scope request (job failures)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|top-failures|failure-details|summary)\s+.*--time-range'
+    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|top-failures|failure-details|summary|investigate\s+(failing|health|process|stuck))\s+[^&;|\n]*--time-range'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
