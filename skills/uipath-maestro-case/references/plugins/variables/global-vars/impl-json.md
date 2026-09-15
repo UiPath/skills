@@ -17,7 +17,7 @@ return allVariables.find(v => v.id === variableId);
 | `id` | The resolver match key | YES — sole match key |
 | `name` | Human-readable label / FE display | No — never matched |
 | `var` | Pointer field. On wires (Out-arg formal, trigger output, reassigned task output): points OUTWARD to the target slot. On bare self-declarations and trigger spec auto-emits: mirrors `id`. | Only when `id` is absent (FE fallback: synthesizes `Variable.id = "=vars.<var>"` — partial form, non-resolvable) |
-| `elementId` | FE picker scope only. Controls which panel displays the variable. **Not used by the resolver.** | No |
+| `elementId` | FE picker scope only. Controls which panel displays the variable. **Not used by the runtime resolver** — but `validate` rejects a declaration that omits it (see § Validator contract). | No — though `validate` requires it non-empty |
 | `source` | Runtime extraction expression (e.g., `=Decision`, `=response.subject`) | No — read by BPMN engine at runtime |
 | `target` | Runtime write expression (rarely matters) | No |
 | `value` | Currently-bound input value (task inputs) or mirror of var (task outputs) | No |
@@ -36,6 +36,22 @@ return allVariables.find(v => v.id === variableId);
 | `triggerNode.data.inputs.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
 
 **"Companion" = the paired `inputOutputs[]` entry whose `id` matches the lookup name.** Required for trigger outputs that lack `id`; load-bearing for Out-args with a `Default` value; optional when the producer (task output) already self-declares.
+
+### Validator contract — `validate` is stricter than the resolver
+
+Everything above describes `VariablesService.findVariableByVariableId`, which runs at run time. `uip maestro case validate` applies its own reference checks, and they are not the same rule:
+
+| Check | Match rule | Reported at |
+|---|---|---|
+| `CASE_MGMT_REFERENCE_UNBOUND` | Lenient — `id` **or** `name` **or** `var` | The referencing expression path |
+| `VARIABLE_DOES_NOT_EXIST` | Strict — requires `id` **and** a non-empty `elementId` | The owning node (`nodes[<stageId>]`) |
+
+`VARIABLE_DOES_NOT_EXIST` fails the default profile and `--strict` identically — `--strict` adds nothing for this defect, and only the skeleton profiles miss it. A declaration whose `id` matches the `=vars.X` lookup still fails `validate` when `elementId` is absent or `""`. The field is tested for truthiness, not for scope: `"root"`, a stage id, and a trigger id all satisfy it; only missing or empty fails. Write `elementId` on every `inputOutputs[]` entry — `"root"` for case state.
+
+Two traps when `VARIABLE_DOES_NOT_EXIST` fires:
+
+1. `--skeleton-v2` does not catch it when the only consumers are task-scoped (task entry conditions, `skipCondition`), because that profile skips task-content checks. A green `--skeleton-v2` is silent on this defect, not evidence that the declarations are correct.
+2. `validate` emits at most one `VARIABLE_DOES_NOT_EXIST` per node, so several undeclared variables in a single expression surface as one error. Audit every declaration rather than iterating on what `validate` prints.
 
 ## Scope of this plugin
 
