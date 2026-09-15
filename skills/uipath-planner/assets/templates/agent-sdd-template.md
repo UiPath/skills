@@ -295,7 +295,7 @@ flowchart LR
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
-| <CONNECTOR_NAME> | <SYSTEM> | <ACCESS_METHOD> | <TOOLS> |
+| <CONNECTOR_NAME> | <SYSTEM_NAME> | <ACCESS_METHOD> | <TOOLS> |
 
 ### IXP / Document Understanding Models
 
