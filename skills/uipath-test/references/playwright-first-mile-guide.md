@@ -149,7 +149,7 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> \
 
 `--playwright-project` does not appear in `uip tm testsets run --help` — functional but unlisted, so treat this guide as its reference rather than concluding the build lacks it. Semantics (all enforced with clear errors, nothing silently ignored):
 
-- Space-separated, case-sensitive names from the package's `playwright.config`. Passing several (`chromium firefox`) runs all of them, but results stay one log per test case — not per browser — so a per-browser breakdown is not available from Test Manager; scope to one project when you need attributable results. Unknown names **fail fast, before anything is persisted**, listing the available projects.
+- Exactly one case-sensitive name from the package's `playwright.config` — at most one project per execution. Results are one log per test case, not per browser, so Test Manager cannot give a per-browser breakdown; run the set once per project if you need each browser attributed. An unknown name **fails fast, before anything is persisted**, listing the available projects.
 - Valid only when every test case in the set comes from one single Playwright package (see Step 4); fails for Studio/RPA test sets — run those without the flag.
 - The selection **persists on the test set** and applies to later runs until changed; omit the flag to reuse the stored selection (or the config's defaults if none was ever stored).
 - On a Test Manager without Playwright support the command fails with instructions rather than running incorrectly.
