@@ -18,7 +18,7 @@
   },
   "skills": {
     "uipath-admin": {
-      "status": "in-development",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
@@ -98,7 +98,7 @@
       "last_synced": null
     },
     "uipath-governance": {
-      "status": "in-development",
+      "status": "preview",
       "confluence": {
         "page_id": null,
         "url": null
