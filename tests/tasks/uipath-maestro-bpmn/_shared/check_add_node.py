@@ -27,7 +27,7 @@ from _shared.edit_check import (  # noqa: E402
 
 def main() -> None:
     _path, edited = parse_bpmn("OrderIntake")
-    original = load_original(__file__, "OrderIntake.bpmn")
+    original = load_original("edit/add_node", "OrderIntake.bpmn")
 
     added = flow_node_ids(edited) - flow_node_ids(original)
     inserted = [

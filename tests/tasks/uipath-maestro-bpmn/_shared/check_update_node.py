@@ -36,7 +36,7 @@ def _script_text(task) -> str:
 
 def main() -> None:
     _path, edited = parse_bpmn("RiskScoring")
-    original = load_original(__file__, "RiskScoring.bpmn")
+    original = load_original("edit/update_node", "RiskScoring.bpmn")
 
     score = by_id(edited, "Task_Score")
     if score is None:
