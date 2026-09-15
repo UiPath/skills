@@ -78,40 +78,18 @@ A rejected flag is a different shape. Commander catches it before the command ru
 
 Null, empty, or zero across every field on a `Success` response means the query matched no rows. It is not a failure, and it does not on its own prove that no jobs ran. See the last row of Troubleshooting for the causes and what to report.
 
-All endpoints return the same shape. Which fields are populated depends on the endpoint.
+Every route answers with one wide DTO and fills only the fields its own query produces. **The CLI does not print that DTO.** Each read projects its response into named columns, so `Data` carries only what that route fills, and each series has a name instead of a position inside `jobCountByTime`.
 
-**Keys inside `Data` are PascalCase in the CLI's JSON output.** The CLI PascalCases every `Data` key before printing, so read `JobsCount`, not `jobsCount`. The type below is the SDK's `JobsResponse` in its camelCase source form. Every field is optional, so a field the endpoint does not populate may be absent or null.
+**Keys inside `Data` are PascalCase in the CLI's JSON output.** Read `CompletedJobs`, not `completedJobs`.
 
-```typescript
-interface JobsResponse {
-  jobState?: string[];
-  robotName?: string[];
-  processName?: string[];
-  jobCount?: number[];
-  jobCountByTime?: number[][];
-  folderName?: string[];
-  folderKey?: string[];
-  machineName?: string[];
-  hostMachineName?: string[];
-  machineKey?: string[];
-  machineStatus?: string[];
-  timestamp?: string[];
-  processExceptionType?: string[];
-  processExceptionReason?: string[];
-  startTime?: string[];
-  endTime?: string[];
-  utilizationTime?: string[];
-  duration?: number[];
-  successRate?: number[];
-  averageProcessingTime?: number;
-  jobsCount?: number;
-  successfulJobsCount?: number;
-  jobAggregate?: number[][];
-  creationTime?: string[];
-  folderId?: string[];
-  jobKey?: string[];
-}
-```
+Two shapes come back:
+
+- **Scalars.** `summary` returns three numbers and nothing else.
+- **Named columns.** Every other read returns arrays of equal length, one per column. `ProcessName[i]` and `FaultedJobs[i]` describe the same entity. An empty window returns `{}`, because there is no row to take column names from; that is not an error.
+
+Columns rather than one object per row on purpose: a row repeats every key name once per entity, which on a 30-day window costs about half again as many tokens as columns.
+
+Two reads take `--output-file <path>`, which writes the backend's own body (camelCase keys, no `Result`/`Code`/`Data` wrapper) while stdout keeps the projected form. Use it on `failures-by-reason` to recover the untruncated exception text, and on `failure-details` when the row count is large. The two channels are not interchangeable: redirected stdout is PascalCase and wrapped. The file also keeps the backend's row order while `failures-by-reason` sorts stdout by count, so the same index is not the same row in both.
 
 ## Commands
 
@@ -123,7 +101,7 @@ Get job KPIs: total count, successful count, and average processing time.
 uip insights jobs summary --time-range 1440 --output json
 ```
 
-**Key Data fields:** `JobsCount`, `SuccessfulJobsCount`, `AverageProcessingTime`
+**Data:** `CompletedJobs`, `SuccessfulJobs`, `AverageProcessingTimeMs`. `CompletedJobs` counts jobs in a terminal state (`Faulted`, `Successful`, `Stopped`), so a running job is not in it. The average is milliseconds, from the `AVERAGE_PROCESSING_TIME_IN_MS` column.
 
 **Use when:** User asks "how are my automations doing?" or "what's my job success rate?"
 
@@ -135,7 +113,7 @@ Get completed jobs over time, grouped by job state.
 uip insights jobs completed-timeline --time-range 1440 --output json
 ```
 
-**Key Data fields:** `JobState`, `JobCountByTime`, `Timestamp`
+**Columns:** `BucketStart`, `BucketEnd`, `Faulted`, `Successful`, `Stopped`
 
 **Use when:** User asks for job completion trends or when most jobs run.
 
@@ -147,7 +125,7 @@ Get running and pending jobs over time.
 uip insights jobs uncompleted-timeline --time-range 1440 --output json
 ```
 
-**Key Data fields:** `JobState`, `JobCountByTime`, `Timestamp`
+**Columns:** `BucketStart`, `Running`, `Pending`, `Resumed`, `Suspended`, `Other`. No `BucketEnd`: this handler declares it and never fills it.
 
 **Use when:** User asks whether jobs are stuck or how many jobs are still running.
 
@@ -159,7 +137,7 @@ Get processes ranked by failure count.
 uip insights jobs top-failures --time-range 43200 --output json
 ```
 
-**Key Data fields:** `ProcessName`, `JobCountByTime`
+**Columns:** `ProcessName`, `FaultedJobs`. Counts `Faulted` only, not `Stopped`, and the backend caps the list at 10 ranked by that count.
 
 **Use when:** User asks which processes fail most.
 
@@ -171,7 +149,7 @@ Get job failures grouped by exception reason, with total job count for context.
 uip insights jobs failures-by-reason --time-range 1440 --output json
 ```
 
-**Key Data fields:** `ProcessExceptionReason`, `ProcessName`, `RobotName`, `JobsCount`
+**Data:** `CompletedJobs`, `AttributedFailures`, plus the columns `FailedJobs` and `Reason`. `CompletedJobs` is every terminal job in the window, not a failure count: the controller fills it from the same handler `summary` uses. `AttributedFailures` sums the per-reason counts and covers `Faulted` plus `Stopped` jobs that have a known machine, so it can sit below both. `Reason` is the first line of the exception text, capped at 200 characters and marked with `[…]`; pass `--output-file` for the whole trace.
 
 **Use when:** User asks why jobs are failing or what the common error messages are.
 
@@ -183,7 +161,7 @@ Get per-process job counts by state.
 uip insights jobs process-details --time-range 1440 --output json
 ```
 
-**Key Data fields:** `ProcessName`, `JobAggregate`
+**Columns:** `ProcessName`, `FolderName`, the seven states (`Running`, `Pending`, `Resumed`, `Suspended`, `Faulted`, `Successful`, `Stopped`) and three durations (`AverageDurationMs`, `MedianDurationMs`, `P90DurationMs`, the 90th percentile). `FolderName` is the leaf folder, not the fully-qualified path `filter-folders list` reports.
 
 **Use when:** User asks for per-process statistics or which process has the most faulted jobs.
 
@@ -195,7 +173,7 @@ Get detailed failure information for investigation.
 uip insights jobs failure-details --time-range 1440 --output json
 ```
 
-**Key Data fields:** `ProcessName`, `MachineName`, `ProcessExceptionReason`, `StartTime`, `EndTime`
+**Columns:** `ProcessName`, `JobKey`, `FolderId`, `CreatedAt`, `StartedAt`, `EndedAt`, `DurationMs`. This route reports no machine name and no exception type; it fills neither. The backend returns up to 1000 rows newest-first and does not dedupe, so one job can appear twice. `--output-file` writes the whole body.
 
 **Use when:** User asks for recent failure details or which machines are affected.
 
@@ -207,19 +185,20 @@ $ uip insights jobs summary --time-range 1440 --output json
   "Result": "Success",
   "Code": "InsightsJobsSummary",
   "Data": {
-    "JobsCount": 142,
-    "SuccessfulJobsCount": 135,
-    "AverageProcessingTime": 45.7,
-    "JobState": null,
-    "ProcessName": null,
-    ...
+    "CompletedJobs": 142,
+    "SuccessfulJobs": 135,
+    "AverageProcessingTimeMs": 45700
   }
 }
 ```
 
+Three keys, no nulls. The other 23 fields of the wide DTO are not emitted.
+
 Deriving metrics:
-- **Failure rate:** `(JobsCount - SuccessfulJobsCount) / JobsCount * 100`
-- **Success rate:** `SuccessfulJobsCount / JobsCount * 100`
+- **Failure rate:** `(CompletedJobs - SuccessfulJobs) / CompletedJobs * 100`. The remainder is `Faulted` plus `Stopped`, so a cancelled job counts against it.
+- **Success rate:** `SuccessfulJobs / CompletedJobs * 100`
+
+`uip insights jobs investigate health` returns both, already derived and banded.
 
 ## Example: Top Failures with Filter
 
@@ -232,13 +211,12 @@ $ uip insights jobs top-failures --time-range 43200 \
   "Code": "InsightsJobsTopFailures",
   "Data": {
     "ProcessName": ["Invoice_Processing", "Email_Parser", "Data_Upload"],
-    "JobCountByTime": [[23, 15, 8]],
-    ...
+    "FaultedJobs": [23, 15, 8]
   }
 }
 ```
 
-The `ProcessName` array and `JobCountByTime[0]` array are parallel: index 0 of both corresponds to the same process.
+`ProcessName` and `FaultedJobs` are parallel: index 0 of both is the same process. Every column on every read pairs this way, and each one is named, so nothing indexes into an unnamed `JobCountByTime[0]` any more.
 
 ## Absolute Time Ranges
 

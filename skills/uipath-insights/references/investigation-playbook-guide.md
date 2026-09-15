@@ -13,19 +13,20 @@ here are the fallback for a CLI that predates it, and the reference for what eac
 | 5. This period against the last | `investigate compare` | `summary` twice, over two adjacent windows |
 | 6. Health for one folder | `investigate folder --folder-name <name>` | `filter-folders list`, `summary`, `top-failures` |
 
-Four things the subcommands get right that a hand-run chain gets wrong, all confirmed against the
-backend handlers:
+Four traps in the raw API that the commands now close, all confirmed against the backend handlers.
+Both the playbooks and the seven plain reads project their responses, so you no longer meet any of
+these, but the chains below are written against the projected shape and the reasons are worth
+knowing:
 
-- `failures-by-reason` carries `JobsCount`, and it is every terminal job in the window, not a count
-  of failures. The controller fills it from the same handler `summary` uses.
-- `top-failures` puts its faulted counts in one series of `JobCountByTime` indexed by process, so
-  `JobCountByTime[0][i]` belongs to `ProcessName[i]`. Summing the series gives one grand total.
-- `process-details` returns seven series and `uncompleted-timeline` five, both indexed the same way.
-  Reading only the first series drops four states.
-- `failure-details` reports no machine name and no exception type. It fills `ProcessName`,
-  `CreationTime`, `StartTime`, `EndTime`, `FolderId`, `JobKey` and `Duration`, nothing else.
+- `failures-by-reason` carries the terminal-job total, not a failure count. The controller fills it
+  from the same handler `summary` uses. The reads name it `CompletedJobs` and say so.
+- `top-failures` ships its faulted counts as one unnamed series indexed by process. The reads name
+  it `FaultedJobs`, paired with `ProcessName` by index.
+- `process-details` ships seven series and `uncompleted-timeline` five, both indexed the same way.
+  The reads name every one, so reading "the first series" is no longer possible.
+- `failure-details` reports no machine name and no exception type, whatever the DTO suggests.
 
-Each subcommand's `Instructions` names the caveats on the numbers it just returned. Quote those.
+Each command's `Instructions` names the caveats on the numbers it just returned. Quote those.
 
 ## The chains, for a CLI without the verb
 
@@ -40,12 +41,11 @@ User asks about overall automation health, success rates, or general status.
 uip insights jobs summary --time-range 1440 --output json
 
 # Step 2: Interpret the results (Data keys are PascalCase)
-# - JobsCount: total jobs in the time window
-# - SuccessfulJobsCount: jobs that completed successfully
-# - AverageProcessingTime: mean execution time. The CLI passes this through
-#   unchanged and does not label a unit, so do not state one to the user.
+# - CompletedJobs: jobs in a terminal state (Faulted, Successful, Stopped)
+# - SuccessfulJobs: jobs that completed successfully
+# - AverageProcessingTimeMs: mean execution time in milliseconds
 #
-# Failure rate = (JobsCount - SuccessfulJobsCount) / JobsCount * 100
+# Failure rate = (CompletedJobs - SuccessfulJobs) / CompletedJobs * 100
 #
 # Thresholds (rules of thumb):
 #   < 5% failure rate  → healthy
@@ -131,7 +131,7 @@ uip insights jobs summary \
   --started-before <this-monday-epoch-ms> \
   --output json
 
-# Compare JobsCount, SuccessfulJobsCount, and AverageProcessingTime
+# Compare CompletedJobs, SuccessfulJobs, and AverageProcessingTimeMs
 # between the two results
 ```
 
@@ -164,7 +164,7 @@ Several endpoints return parallel arrays. The same index across arrays correspon
 ```json
 {
   "ProcessName": ["ProcessA", "ProcessB", "ProcessC"],
-  "JobCountByTime": [[10, 5, 2]]
+  "FaultedJobs": [10, 5, 2]
 }
 ```
 
@@ -173,12 +173,11 @@ This means:
 - ProcessB had 5 failures
 - ProcessC had 2 failures
 
-`JobCountByTime` is a list of series, and the outer position carries meaning that differs by route:
-one series on `top-failures` (faulted, indexed by process), three on `completed-timeline` (faulted,
-successful, stopped, indexed by time bucket), five on `uncompleted-timeline` (running, pending,
-resumed, suspended, other, indexed by time bucket), and seven on `process-details` (running,
-pending, resumed, suspended, faulted, successful, stopped, indexed by process). Summing a row, or
-reading only the first series, is wrong on every route but `top-failures`.
+Every column on every read pairs this way, and each one is named. The backend ships these series
+inside one unnamed `jobCountByTime` list whose outer position means something different per route:
+one series on `top-failures`, three on `completed-timeline`, five on `uncompleted-timeline`, seven
+on `process-details`. The commands name each one, so that positional lookup is gone. An empty
+window returns `{}` rather than empty columns, because there is no row to take the names from.
 
 ## When to Hand Off to Other Skills
 
