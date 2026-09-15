@@ -193,6 +193,26 @@ truncates to `11`. Preserve an existing value byte-for-byte when editing rather
 than normalising or bumping it — the serializer runs whatever migrations sit
 above it.
 
+Give every root-level `bpmn:startEvent` exactly one stable GUID in
+`<uipath:entryPointId value="..." />`, declared as a **direct child** of that
+start event's own `<bpmn:extensionElements>`. Direct-child placement is not a
+style preference: `validate` finds the element at any depth
+(`project-validator.ts` searches descendants), while entry-point derivation
+reads only direct children of `extensionElements`. An id nested inside
+`uipath:activity` therefore passes `validate` and is invisible to `refresh`.
+Subprocess start events do not carry an entry-point id.
+
+Only a **manual** root start becomes an `entry-points.json` entry. Derivation
+excludes any start event carrying an `eventDefinition` or a `uipath:event`
+extension, so a timer or connector start is never an entry point — an
+`entryPointId` on one is accepted but inert. Because `refresh` throws
+`BPMN file must contain a root manual start event with a uipath:entryPointId`
+when no manual root start remains, a package-ready project must keep one. When
+adding a timer or connector start, add it alongside the initializer's manual
+start rather than replacing it. A process with only a timer or connector start
+is source-only: `validate` stays clean, and `refresh` and `pack` are
+unavailable for it.
+
 Public entry-point variables have a two-layer runtime contract:
 
 - Give each root StartEvent used as an entry point a stable unique UUID in
