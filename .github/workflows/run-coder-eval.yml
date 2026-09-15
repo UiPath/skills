@@ -230,6 +230,11 @@ jobs:
     # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
+      # coder-eval refuses a docker image whose org.coder-eval.version label differs
+      # from the host wheel. A custom coder_eval_image_tag creates that skew on
+      # purpose, so allow it only then. '0', never '': an empty value fails
+      # coder-eval's boolean parse at startup.
+      ALLOW_IMAGE_SKEW: ${{ inputs.coder_eval_image_tag != '' && '1' || '0' }}
       # The `secrets` context is NOT available in any `if:`, so the gate is
       # laundered through the job env. A boolean, not the secret, so the
       # credential stays in the one step that uploads.
