@@ -180,7 +180,7 @@ Some reference fields point to **search endpoints** that require user input as a
 
 ### How to detect
 
-If `reference.filterPattern` exists, the reference supports server-side filtering. Omitting the filter does NOT reliably error — some connectors (Microsoft Graph-backed: Teams, Outlook) return the **entire unfiltered collection** instead (thousands of rows, 50/page). Arbitrary query params (`searchTerm=`, `where=`, `filter=`) are silently ignored — only the exact `filterPattern` key filters. Always apply it; never brute-force paginate a large directory when a `filterPattern` exists.
+If `reference.filterPattern` exists, the reference supports server-side filtering. Omitting the filter does NOT reliably error — some connectors (Microsoft Graph-backed: Teams, Outlook) return the **entire unfiltered collection** instead (thousands of rows, 50/page). Arbitrary query params (`searchTerm=`, `where=`, `filter=`) are silently ignored — only the exact `filterPattern` key filters. Always apply it; do not walk the unfiltered collection when a `filterPattern` exists. The filter narrows the collection, it does not collapse it to one page, so page the filtered result per [resources.md — Pagination](resources.md#pagination).
 
 `filterPattern` is surfaced only by `uip is resources describe` (IS-level metadata). Representations that strip it (e.g. Maestro flow `registry get` reference object, which keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`) are not authoritative — re-describe at IS level before concluding a reference cannot be filtered.
 
