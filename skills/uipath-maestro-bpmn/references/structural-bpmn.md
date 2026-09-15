@@ -217,10 +217,12 @@ Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
 
 ## Script tasks — Jint authoring contract
 
-`bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
+`bpmn:scriptTask scriptFormat="JavaScript"` (exact casing — the serializer is
+case-sensitive) runs under **Jint**, not Node.js or
 a browser. The mapping payload comes from the `BPMN.ScriptTask` registry
 template, but the runtime contract is fixed — including one correction to that
-template, in the first rule below:
+template, in the first rule below (see the registry lookup and compatibility
+fallback contract further down for the discovery workflow):
 
 - Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,
   `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,
