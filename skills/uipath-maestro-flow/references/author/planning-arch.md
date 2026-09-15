@@ -357,3 +357,7 @@ After explicit user approval, [Planning Phase 2: Implementation](planning-impl.m
 7. Finalize implementation-ready details.
 
 **Do not proceed to Phase 2 until the user explicitly approves the architectural plan.**
+
+Non-interactively (CI/headless, no user available), this is a **review** gate, not one of [SKILL.md](../../SKILL.md) rule #5's consent gates — nothing destructive and no tenant write rides on approving a local markdown file. So write `<SolutionName>.uipath.flow.arch.plan.md`, proceed to Phase 2 on it, and record in the final report that it went unreviewed.
+
+**Never skip writing the file.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which is far more expensive than the plan it replaces.
