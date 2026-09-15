@@ -109,8 +109,12 @@ jobs:
             # statuses expose .context/.state, not .name). All required
             # checks here are Actions check runs; a future commit-status
             # required check would need .context matching added below.
-            ROLLUP=$(gh pr view "$PR" --json statusCheckRollup \
-              --jq '[.statusCheckRollup[] | select(.name != null)]')
+            # One read, so the SHA and the rollup describe the same head:
+            # $SHA is passed to --match-head-commit below and the merge is
+            # refused if anything lands on the branch after this point.
+            VIEW=$(gh pr view "$PR" --json statusCheckRollup,headRefOid)
+            SHA=$(echo "$VIEW" | jq -r .headRefOid)
+            ROLLUP=$(echo "$VIEW" | jq '[.statusCheckRollup[] | select(.name != null)]')
             REQ_ROLLUP=$(echo "$ROLLUP" | jq --argjson req "$REQUIRED" \
               '[.[] | select(.name as $n | $req | index($n))]')
 
@@ -138,6 +142,13 @@ jobs:
             fi
 
             echo "All checks green — squashing."
-            gh pr merge "$PR" --squash --delete-branch
+            # `--admin` merges through this PAT's ruleset bypass. Without it gh
+            # refuses client-side: `main` requires an approving review an
+            # unreviewed bot PR never gets, so it sits at BLOCKED forever.
+            # NOT `--auto` — repo auto-merge is off by design (see header).
+            # The required-check gate above is the real boundary; `--admin`
+            # skips gh's local refusal, not this job's verification.
+            gh pr merge "$PR" --squash --delete-branch --admin \
+              --match-head-commit "$SHA"
             echo "::endgroup::"
           done
