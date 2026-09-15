@@ -4,9 +4,10 @@ description: "TRIGGER for authoring structural-core UiPath Maestro BPMN as `<Nam
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
-Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ b543763. Canonical source lives there;
-edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
+This file is CANONICAL. Edit it here. It was a snapshot of
+UiPath/flow-builder-sdk `typescript/sdk/skill/SKILL-bpmn.md` until
+flow-builder-sdk@b543763; the nightly re-sync that maintained it is gone
+(UiPath/flow-builder-sdk docs/SKILLS_PROMOTION_PLAN.md, phase 2).
 -->
 
 # UiPath Maestro BPMN — TypeScript Builder SDK
