@@ -105,42 +105,102 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 ---
 
-## User Gets HTTP 403 (Permission Denied)
+## Access Denied (HTTP 403)
 
-**Symptom:** User or integration receives 403 when calling a platform API or performing a UI action.
+**Symptom:** A principal — user, group member, robot account, or external app — receives 403 / "permission denied" from a platform API or a UI action. This is one investigation, not several. It covers "the user has no access," "the admin assigned a role and it isn't taking effect," and "the Orchestrator role doesn't work in Document Understanding."
 
-**Causes:**
-1. No role at all for the required service
-2. Role exists but at wrong scope (org vs tenant vs folder)
-3. Role missing the specific permission action
-4. Cross-service confusion (Orchestrator role ≠ DU access)
+**The diagnosis is a single comparison in two halves:** what the principal *effectively holds* (Step 1, from the PDP) against what the denied action *requires* (Step 2, from the catalog). Step 3 branches on which half of the comparison failed. Do not name a cause before both halves are in hand.
 
-**Investigation:**
-1. Resolve user: `uip admin users list --search "<USER_EMAIL>" --output json`
-2. Check effective access: `uip admin authorization check-access "<USER_ID>" --output json`
-3. Narrow to service: `uip admin authorization check-access "<USER_ID>" --service <SERVICE> --output json`
-4. Compare against required permission: `uip admin authorization permissions list --service <SERVICE> --output json`
-5. Label each result as `direct` or `inherited from <Group>` — see [check-access.md](../authorization/check-access.md)
+### Step 1 — Establish what the principal effectively holds
 
-**Fix:** Cause 1 → assign a role for the service. Cause 2 → re-assign at correct scope. Cause 3 → update custom role actions or assign additional role. Cause 4 → assign role owned by the correct service.
+Resolve the principal first (Rule 5): `users list --search`, `groups list`, `robot-accounts list`, or `external-apps get`. If the principal does not exist, that is the root cause — stop.
 
----
+Then run the PDP. It is authoritative for effective permissions, including the server-side role catalogs that `roles assignments list` never returns:
 
-## Role Assignment Not Taking Effect
+```bash
+uip admin authorization check-access "<PRINCIPAL>" --output json
+uip admin authorization check-access "<PRINCIPAL>" --service <SERVICE> --output json
+```
 
-**Symptom:** Admin assigned a role but the principal still cannot perform the expected action.
+The principal is the positional argument (UUID, name, or email — there is no `--identity-id` on this command). `--scope` accepts only `Tenant` or `Folder`. Never pass `--service centralizedaccess`; omit `--service` for the umbrella view.
 
-**Causes:**
-1. `ownerServiceName` / scope-path mismatch (Rule 17) — most common
-2. Role assigned at wrong scope level (TenantGlobal vs Tenant vs Folder)
-3. Role missing the needed permission action
-4. Assignment at wrong tenant
+A permission reaches a principal by exactly two routes, and the fix differs by route. Label every nested `roleAssignments[]` entry; never collapse them:
 
-**Investigation:**
-1. Inspect the role first: `uip admin authorization roles get "<ROLE_ID>" --output json` — check `ownerServiceName` and `scopeType`
-2. Validate Rule 17: `CentralizedAccess` → no service segment in scope-path; any other value → path must include `lowercase(ownerServiceName)`
-3. Verify via PDP: `uip admin authorization check-access "<PRINCIPAL_ID>" --output json`
-4. List the principal's grants: `uip admin authorization roles assignments list --identity-id "<PRINCIPAL_ID>" --output json` (`--filter` is **not** a valid flag here — it exists on `roles list`, not on `assignments list`)
+| Nested entry | Route | Report as |
+|---|---|---|
+| `securityPrincipalType: "User"`, id == queried principal | Role assigned to the principal | `direct` |
+| `securityPrincipalType: "Group"` | Role assigned to a group the principal belongs to | `inherited from <Group>` |
+| `securityPrincipalType: "Robot"` / `"ExternalApplication"` | Role assigned to that non-user principal | `via <Robot\|ExternalApplication> <name>` |
+
+Repairing a direct grant targets the principal's own assignment; repairing an inherited grant requires changing group membership or the group's role binding. See [check-access.md](../authorization/check-access.md).
+
+Record four fields per granted role: role name, `ownerServiceName`, `scopeType`, and the scope path the grant sits at. Step 3 needs all four.
+
+### Step 2 — Establish what the denied action requires
+
+The PDP reports what the principal *has*; it never reports what the action *needs*. Look the required permission up in the catalog, searching the whole catalog rather than a guessed `--service` slice:
+
+```bash
+uip admin authorization permissions list --output json \
+  --output-filter "[?contains(Name, 'ADMINISTRATION')]"
+```
+
+`contains` is case-sensitive: `Name` is UPPERCASE, `Description` is lowercase. Three results that do **not** prove the permission is absent — never conclude "not found" from any of them:
+
+1. `Data: []` from a guessed `--service`.
+2. A truncated unfiltered list (the catalog is ~210 KB).
+3. A slice returning only the 10 cross-cutting `AUTHZ` rows — that floor signals a wrong `--service` / `--scope` pair, not an empty service.
+
+Narrow by role shape with `--scope`, never with a guessed `--service`. See [permission-catalog.md — Find the Permission Governing an Action](../authorization/permission-catalog.md#workflow-find-the-permission-governing-an-action).
+
+Read `ScopeType` from the hit. It fixes the role shape any fix must use (`TENANT` → a `Tenant`- or `TenantGlobal`-shape role).
+
+### Step 3 — Branch on the comparison
+
+| Step 1 vs Step 2 | Cause |
+|---|---|
+| No effective role carries the permission | [Cause A — the permission is not granted](#cause-a--the-permission-is-not-granted) |
+| A role carries the permission, but its grant sits at a scope path other than the one the denied call evaluates against | [Cause B — the permission is granted at the wrong scope](#cause-b--the-permission-is-granted-at-the-wrong-scope) |
+
+#### Cause A — The permission is not granted
+
+No role the principal effectively holds carries the permission from Step 2. Find which role does:
+
+```bash
+uip admin authorization roles list --service <SERVICE> --output json
+uip admin authorization roles get "<ROLE_ID>" --output json
+```
+
+`roles get` returns `ActionDetails[].Name`; match it against the permission name from Step 2. Use the permission's own owning service for `--service`, not a guess.
+
+State the diagnosis as: *principal holds `<roles>`, none of which carry `<PERMISSION.NAME>` (`ScopeType <SCOPE>`) → grant a `<SCOPE>`-shape role carrying it.* Never substitute a permission you did not find in Step 2.
+
+**Fix (Operate — present it, do not run it):** assign a role that carries the permission, directly or through a group the principal belongs to; or add the action to a custom role the principal already holds. `roles update` is a PUT-style upsert — run `roles get` first and resend the full action set (Rule 12). Built-in roles cannot be edited.
+
+#### Cause B — The permission is granted at the wrong scope
+
+The principal holds the permission and the PAP accepted the assignment; it simply never applies at the scope the denied call evaluates. Permissions are service-scoped and scope-path-bound: an Orchestrator role never grants Document Understanding, IXP, or any other service's access, whatever its actions say.
+
+Four shapes, most common first:
+
+| Shape | Example | Detect by |
+|---|---|---|
+| Wrong service segment | Denied call evaluates `/tenant/<tid>/documentunderstanding`; grant sits at `/tenant/<tid>/orchestrator` | Grant path's service segment ≠ the denied action's service |
+| Missing service segment (Rule 17 mismatch) | A `DocumentUnderstanding`-owned role granted at the bare `/tenant/<tid>` | `ownerServiceName` ≠ `CentralizedAccess` yet the path has no service segment |
+| Wrong scope level | A `Tenant` grant for a Folder- or Project-level action; an `Organization` role expected to cover a folder | Role `scopeType` ≠ the permission's `ScopeType` from Step 2 |
+| Wrong tenant | Grant on tenant A; the call runs on tenant B | Grant path's `<tid>` ≠ the failing tenant |
+
+Confirm a service split by running `check-access` with and without `--service <SERVICE>`: the missing service's permissions are absent from the filtered result while the umbrella view still shows the role.
+
+Validate the binding (Rule 17):
+
+1. `uip admin authorization roles get "<ROLE_ID>" --output json` — read `ownerServiceName` and `scopeType`.
+2. `CentralizedAccess` → the path carries **no** service segment (`/` for Organization, `/tenant/<tid>` for Tenant/TenantGlobal). Any other value → the path must contain `lowercase(ownerServiceName)`, e.g. `Reinfer` → `/tenant/<tid>/reinfer`. Display names (`Reinfer` → IXP, `DocumentUnderstanding` → Document Understanding) belong in prose only; echoed paths keep CLI slugs.
+3. Retrieve the grant and compare its actual path against the expected one:
+   ```bash
+   uip admin authorization roles assignments list --identity-id "<PRINCIPAL_ID>" --output json
+   ```
+   `--filter` is **not** a valid flag here — it exists on `roles list`, not on `assignments list`.
 
 > **A mis-scoped grant is invisible to the default listing — use `--scope-path` to see it.**
 > `assignments list` filters on a scope path **and** a service, both derived from your flags:
@@ -151,8 +211,8 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 > | `--service <svc>` | `/tenant/<tid>/<svc>` | `<svc>` |
 > | `--scope-path <path>` (no `--service`) | `<path>` verbatim | **unset** |
 >
-> A Cause 1 grant — a `<svc>`-owned role granted at the bare `/tenant/<tid>` — matches
-> neither of the first two shapes: the centralized-access shapes exclude it on service,
+> A missing-service-segment grant — a `<svc>`-owned role granted at the bare `/tenant/<tid>` —
+> matches neither of the first two shapes: the centralized-access shapes exclude it on service,
 > and the `--service` shape excludes it on path. So it is absent from the default
 > listing, from `--identity-id`, from `--scope Tenant` (with or without
 > `--include-inherited`) and from `--service <svc>`. Retrieve it with the one shape that
@@ -167,23 +227,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 > listing as "the grant does not exist"** — re-query with `--scope-path` first, and never
 > re-create the assignment on that basis, which reproduces the original mismatch.
 
-**Fix:** Cause 1 → re-create assignment with correct scope-path matching ownerServiceName. Cause 2 → re-assign at correct scope. Cause 3 → update role actions. Cause 4 → re-assign at correct tenant.
-
----
-
-## Cross-Service Permission Confusion
-
-**Symptom:** "I have a role in Orchestrator but can't access DU projects" or "CentralizedAccess role doesn't grant service-specific permissions."
-
-**Cause:** Permissions are service-scoped — an Orchestrator role does NOT grant DU, IXP, or other service access.
-
-**Investigation:**
-1. Check without service filter: `uip admin authorization check-access "<USER_ID>" --output json`
-2. Check with service filter: `uip admin authorization check-access "<USER_ID>" --service documentunderstanding --output json`
-3. Compare — the missing service's permissions will be absent
-4. Check role's `ownerServiceName` to confirm it belongs to the wrong service
-
-**Fix:** Assign a role owned by the correct service, or create a new custom role scoped to that service.
+**Fix (Operate — present it, do not run it):** re-create the assignment at the scope path that matches the role's `ownerServiceName` and the permission's `ScopeType`, using `--service <slug>` or an explicit `--scope-path`. Derive `<slug>` as `lowercase(ownerServiceName)` from this role's own `roles get`; never copy a service segment off another role's grant, and do not add a project segment for a `Tenant`-scope role. `Reinfer` (display name IXP) and `DocumentUnderstanding` are different services with different segments. Never widen a scope to make the call pass, and never coerce a path onto a role that does not own that service — if no role owns the intended service, author one under it. For folder-level access to Orchestrator resources, use Orchestrator's own folder roles (`uip or roles`, `uipath-platform`). See [role-assignment-management.md — Validate Role Service Binding and Scope Path](../authorization/role-assignment-management.md#validate-role-service-binding-and-scope-path).
 
 ---
 

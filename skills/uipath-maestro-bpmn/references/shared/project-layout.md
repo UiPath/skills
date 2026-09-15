@@ -26,15 +26,27 @@ ProjectNameSolution/             ← auto-scaffolded when init runs outside a so
   ProjectName/
     ProjectName.bpmn
     project.uiproj
+    bindings_v2.json             ← generated; preserve as written
+    entry-points.json            ← generated
+    operate.json                 ← generated
+    package-descriptor.json      ← generated
 ```
 
-With `--skip-solution-registration`, the project lands bare instead, with no
-solution wrapper:
+`init` writes all six files. Preserve the four generated ones as written —
+that shape is the contract `pack` consumes.
+
+With `--skip-solution-registration` the project lands bare instead, with no
+solution wrapper (use it for a local-only project you do not intend to package
+or operate):
 
 ```text
 ProjectName/
   ProjectName.bpmn
   project.uiproj
+  bindings_v2.json
+  entry-points.json
+  operate.json
+  package-descriptor.json
 ```
 
 If a **non-empty** directory already exists at the path you typed, init warns
@@ -50,23 +62,34 @@ and leaves it untouched — the project still lands in
 
 Treat these JSON files as derived unless a CLI contract explicitly identifies a field as user-authored. For source fixes, edit BPMN or rerun CLI enrichment rather than patching generated output by hand.
 
-Local packaging requires the generated metadata set to exist. In particular,
-`uip maestro bpmn pack <project-path> <OutputDir> --output json` consumes
-`package-descriptor.json`; it does not create a missing descriptor from only
-the BPMN and `project.uiproj`.
+After source validation, generate the complete set with:
+
+```bash
+uip maestro bpmn refresh <project-path> --output json
+```
+
+Refresh regenerates all four files as one atomic set and local packaging
+consumes that set — see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+In particular,
+`uip maestro bpmn pack <project-path> <OutputDir> --output json` does not create
+a missing descriptor from only the BPMN and `project.uiproj`.
 
 For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
 
 ## Package content
 
 A synthetic local project authored without a CLI generator must still match the
-executable and metadata contract before packing: the BPMN root process includes
-`isExecutable="true"`, each root start event carries
+metadata contract before packing: the root process follows the initializer's
+shape (`isExecutable` omitted, or the equivalent `"false"` — never forced to
+`"true"`), each root start event carries
 `<uipath:entryPointId value="<uuid>" />`, `operate.json` has `"main"` plus
 `"contentType": "ProcessOrchestration"`, and `package-descriptor.json` maps the
-BPMN file and generated JSON. `uip maestro bpmn update-metadata <file.bpmn>`
+BPMN file and generated JSON. `uip maestro bpmn refresh <project-path>`
 produces that shape; for the exact JSON, see
-[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#source-only-fallback).
+Prefer the files produced by `uip maestro bpmn init`, and do not translate a
+descriptor shape from another UiPath project type.
 
 A Process Orchestration package content folder contains:
 

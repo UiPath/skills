@@ -46,6 +46,7 @@ success_criteria:
   # ask-or-query-both vs silent-single-scope.
   - type: llm_judge
     description: "Agent asked to clarify org vs tenant (or queried both scopes) instead of silently defaulting to one"
+    include_reference: false
     weight: 3.0
     pass_threshold: 1.0
     include_agent_output: true

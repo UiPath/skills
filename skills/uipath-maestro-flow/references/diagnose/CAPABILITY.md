@@ -19,6 +19,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 ## Critical rules
 
+0. **Read the faulted `flow debug` response before any other call — never re-run debug to "see the error again".** See [troubleshooting-guide.md — Step 0](troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
 1. **Investigate in order: incidents → variables → flow correlation → traces.** Stop when the root cause is identified; traces are verbose and last-resort. See [troubleshooting-guide.md](troubleshooting-guide.md).
 2. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` and `incident get` commands.** Run `uip or folders list --output json` to obtain the folder key, or obtain it from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#6---folder-key-requirement).
 3. **Never call underlying APIs directly.** Run supported `uip` CLI commands; `instance` and `incident` are the diagnostic surface.
@@ -36,13 +37,16 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | Need | Read |
 | --- | --- |
 | Triage a failed flow run | [troubleshooting-guide.md](troubleshooting-guide.md) |
+| An in-solution chat agent shows as autonomous | The registry builds that node from the sibling project's `agent.json` and falls back to autonomous when it cannot read it. `--log-level debug` names the reason ("Unparseable agent.json" / "No readable agent.json"); nothing else reports it. See [conversational-agent/impl.md](../author/plugins/conversational-agent/impl.md#resolve-the-agent) |
+| A chat flow "hangs" or times out during debug | Not a fault. `flow debug` hands a `core.trigger.conversation` flow off rather than running it, and a flow parked on `wait-for-message` is waiting for a user message that no headless run will send. Drive it from a chat UI — Studio Web or the UiPath Maestro VS Code extension. See [conversational-agent/impl.md](../author/plugins/conversational-agent/impl.md#debug--the-cli-hands-off) |
+| Read the cause out of a faulted `flow debug` response | [troubleshooting-guide.md — Step 0](troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have) |
 | Find the error message and faulting element | [troubleshooting-guide.md — Step 2 Fetch incidents](troubleshooting-guide.md#step-2--fetch-incidents) |
 | See data state at failure time | [troubleshooting-guide.md — Step 3 Fetch runtime variable state](troubleshooting-guide.md#step-3--fetch-runtime-variable-state) |
 | Map a faulting element ID to a `.flow` node | [troubleshooting-guide.md — Step 4 Correlate with the flow definition](troubleshooting-guide.md#step-4--correlate-with-the-flow-definition) |
 | Pull verbose execution timeline | [troubleshooting-guide.md — Step 5 Traces](troubleshooting-guide.md#step-5--traces-last-resort) |
 | Identify a `vars.X.output.Y` literal-string failure | [failure-modes.md — `=js:` prefix missing](failure-modes.md#js-prefix-missing) |
 | Identify misshapen Studio Web nodes | [failure-modes.md — misshapen nodes](failure-modes.md#misshapen-rectangle-nodes-in-studio-web) |
-| Diagnose a hung HITL node | [failure-modes.md — HITL `completed` port unwired](failure-modes.md#hitl-completed-port-unwired) |
+| Diagnose a hung HITL node | [failure-modes.md — HITL outcome port unwired](failure-modes.md#hitl-outcome-port-unwired) |
 | Diagnose a connector silent fault | [failure-modes.md — Reused reference ID](failure-modes.md#reused-reference-id--cross-connection-id-leakage) |
 <!--skill-flavor:single-nested-task-row:start-->
 | Diagnose a publish/upload structural error | [failure-modes.md — Single-nested layout](failure-modes.md#single-nested-layout) |

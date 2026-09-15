@@ -145,6 +145,18 @@ Using the mapped fields from Step 6, build the `input-values` JSON with dot-path
 
 Dotted keys (`message.body.content`) get nested into structured objects via `nestDottedKeys` at Phase 3 mint time — the planner just records the dotted form.
 
+**A `=js:` value gains one escape level here, and only here (MANDATORY).** The sdd.md cell holds JavaScript **source**, so a line break in it is already the two characters `\` and `n`. `input-values` is JSON, where that backslash needs one more: write `\\n`. Copy the cell character-for-character and JSON decodes `\n` back to a raw line break, which is a `SyntaxError` inside a `'` or `"` literal and faults the element on its first evaluation. Every later hop is JSON to JSON and re-escapes nothing.
+
+| carrier | the literal text it holds |
+|---|---|
+| sdd.md cell | `\n` |
+| `input-values` in `registry-resolved.json` | `\\n` |
+| `--input-details` JSON | `\\n` |
+| `caseplan.json` on disk | `\\n` |
+| the JavaScript the runtime parses | `\n` |
+
+`uip maestro case validate` returns `Valid` either way and the packer copies the broken form into the `.bpmn` unchanged, so nothing before the run reports it. A raw line break is legal inside a backtick template literal and between operands; only a `'` or `"` literal breaks.
+
 #### Array-of-object body fields — SDD authors business shape; planner translates to wire shape
 
 When `inputs.bodyFields[].name` contains `[*]` (e.g. `toRecipients[*].emailAddress.address`, `attachments[*]`, `blocks[*].text`), the `[*]` is **schema notation** meaning "array of" — borrowed from JSONPath. The SDD describes the input at a **business level**; the planner translates to wire shape using the spec's flat field-name metadata.

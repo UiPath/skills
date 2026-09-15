@@ -100,10 +100,10 @@ namespace MyProject
             using var doc = word.UseWordDocument("form.docx");
 
             // Fill bookmarks with data
-            doc.SetBookmarkContent("CompanyName", "Acme Corporation");
-            doc.SetBookmarkContent("Address", "123 Main Street, Suite 100");
-            doc.SetBookmarkContent("ContactName", "John Smith");
-            doc.SetBookmarkContent("Phone", "+1 (555) 123-4567");
+            doc.SetBookmarkContent("CompanyName", "<COMPANY_NAME>");
+            doc.SetBookmarkContent("Address", "<STREET_ADDRESS>");
+            doc.SetBookmarkContent("ContactName", "<CONTACT_NAME>");
+            doc.SetBookmarkContent("Phone", "<PHONE_NUMBER>");
             doc.SetBookmarkContent("Date", DateTime.Now.ToString("yyyy-MM-dd"));
 
             Log("Bookmarks populated successfully.");

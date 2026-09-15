@@ -353,11 +353,35 @@ def model_findings(text: str, facts: dict, carried_names: frozenset[str] = froze
     return findings
 
 
-
 EXIT_TYPES_YES = {"exit-only", "return-to-origin", "wait-for-user"}
 EXIT_TYPES_NO = {"exit-only", "wait-for-user"}
 RECIPIENT_PREFIX = re.compile(r"^(Role|User|UserGroup|Email|Expression):")
 FORBIDDEN_VOCAB = ["groupOperator", "savedFilterTrees", "io-binding", "auto-mint", "originalVar", "inputOutputs["]
+
+
+def decision_routed_behaviors(text: str) -> list[str]:
+    """`Behavior` prose from decision buttons that map a variable to a value.
+
+    A decision task's `**Actions:**` table routes outcomes:
+
+        | Button | Maps To                   | Behavior                       |
+        | Reject | reviewDecision = "Reject" | ... the Application Rejected lane |
+
+    A row whose `Maps To` carries an assignment is a deterministic route, so the
+    lane it names cannot be keyed on `user-selected-stage` (a picker is for a lane
+    a PERSON launches). Kept in code rather than in the template: the design
+    lane's reading budget is saturated, and prose that was long enough to land
+    this repair cost a passing task while prose short enough to be safe left the
+    agent churning without producing an SDD.
+    """
+    out: list[str] = []
+    for chunk in re.split(r"(?=\*\*Actions:\*\*)", text):
+        if not chunk.startswith("**Actions:**"):
+            continue
+        for _, cells in table_rows(chunk):
+            if len(cells) >= 3 and "=" in cells[1]:
+                out.append(cells[2])
+    return out
 
 
 def section_slice(text: str, heading: str) -> str:
@@ -414,6 +438,37 @@ def declared_sla_titles(text: str) -> dict[str, set[str]]:
     return titles
 
 
+AMBIGUOUS_PERSONA = re.compile(r"^[A-Z][A-Za-z/ ]{2,40}\s+or\s+[A-Za-z][A-Za-z/ ]{2,40}$")
+PERSONA_HEADER = re.compile(r"^(assignee|owner|performer|responsible|persona|role)s?$", re.I)
+
+
+def ambiguous_personas(text: str) -> list[str]:
+    """Persona cells naming two roles — an unresolved conditional, not an owner.
+
+    A task runs as exactly one persona. "Underwriter or Credit Analyst" is a
+    routing rule the author stated but never modelled: the reader cannot tell
+    who owns the task, and no guard picks between them at run time.
+    """
+    found: list[str] = []
+    cols: list[int] | None = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            cols = None
+            continue
+        if re.match(r"^[\s\-:|]+$", stripped.strip("|")):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        header = [i for i, c in enumerate(cells) if PERSONA_HEADER.match(c)]
+        if header:
+            cols = header
+            continue
+        if cols:
+            for i in cols:
+                if i < len(cells) and AMBIGUOUS_PERSONA.match(cells[i]):
+                    found.append(cells[i])
+    return sorted(dict.fromkeys(found))
+
 def contract_findings(text: str, facts: dict) -> list[str]:
     """Deterministic contract checks beyond template shape: gate-slot WHEN legality,
     exit-type pairing, SLA title closure, uniqueness, recipients, buttons, Out producers,
@@ -435,6 +490,27 @@ def contract_findings(text: str, facts: dict) -> list[str]:
         findings.append("wait-for-user exit with no user-selected-stage entry anywhere — validate fails with 'no possible stage options'")
     if has_uss_entry and not has_wfu_exit:
         findings.append("user-selected-stage entry with no wait-for-user exit anywhere — validate fails with 'will never be met'")
+
+    for persona in ambiguous_personas(text):
+        findings.append(
+            f"task persona {persona!r} names two roles — a task runs as exactly one "
+            "persona, so an either/or cell is a routing rule stated but not modelled: "
+            "assign the role the case actually uses and put the condition in a guard, "
+            "or split it into two guarded task variants"
+        )
+
+    routed = " || ".join(decision_routed_behaviors(text)).casefold()
+    if routed:
+        for kind, name, block in stage_blocks(text):
+            if kind != "Secondary Stage" or "user-selected-stage" not in block:
+                continue
+            if name.casefold() in routed:
+                findings.append(
+                    f"stage {name!r} is entered by user-selected-stage but a decision button routes to it "
+                    "— a picker rule cannot carry a deterministic route: key the entry on the decision "
+                    '(selected-stage-completed("<origin>") + IF on the fact) and give the origin the '
+                    "matching Marks Stage Complete: No diverting exit"
+                )
 
     # Case Exit Conditions: >= 1 completing row
     case_exit = section_slice(text, "Case Exit Conditions")

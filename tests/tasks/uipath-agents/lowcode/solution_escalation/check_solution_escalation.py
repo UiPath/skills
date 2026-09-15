@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Solution escalation (solution-internal ActionCenter app) resource check.
 
-Validates:
-  1. resources/HumanReviewEscalation/resource.json declares an escalation:
+Validates that the agent authored an escalation wired to the solution-internal
+"HumanReviewEscalation" Action Center app, regardless of what it named the
+escalation resource folder:
+
+  1. Some resources/<Name>/resource.json under ModerationAgent declares an
+     escalation:
        - $resourceType == "escalation"
        - id is a UUID-shaped non-empty string
        - name is a non-empty string
@@ -20,6 +24,12 @@ Validates:
   4. agent.json.inputSchema  == entry-points.json entryPoints[0].input
      agent.json.outputSchema == entry-points.json entryPoints[0].output
      (Critical Rule 4 — schema sync.)
+
+The escalation resource folder name is the agent's choice (the prompt names
+the *app* "HumanReviewEscalation", not the resource, and the skill documents
+the path as resources/<EscalationName>/resource.json), so this check locates
+the escalation by content and verifies the app binding — it does NOT assume a
+specific folder name. Mirrors external_escalation/check_external_escalation.py.
 """
 
 import json
@@ -31,7 +41,7 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "ReviewSol" / "ModerationAgent"
 AGENT = ROOT / "agent.json"
 ENTRY = ROOT / "entry-points.json"
-RESOURCE = ROOT / "resources" / "HumanReviewEscalation" / "resource.json"
+RESOURCES_DIR = ROOT / "resources"
 
 UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
@@ -50,25 +60,45 @@ def load(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
-def assert_escalation_header(resource: dict) -> None:
-    rtype = resource.get("$resourceType")
-    if rtype != "escalation":
-        sys.exit(f'FAIL: $resourceType should be "escalation", got {rtype!r}')
+def find_escalation() -> tuple[Path, dict]:
+    if not RESOURCES_DIR.is_dir():
+        sys.exit(f"FAIL: no resources/ directory under {ROOT}")
+    candidates = sorted(RESOURCES_DIR.glob("*/resource.json"))
+    if not candidates:
+        sys.exit(f"FAIL: no resources/*/resource.json found under {RESOURCES_DIR}")
+    loaded = [(p, load(p)) for p in candidates]
+    escalations = [(p, d) for p, d in loaded if d.get("$resourceType") == "escalation"]
+    if not escalations:
+        found = ", ".join(sorted({str(d.get("$resourceType", "?")) for _, d in loaded}))
+        sys.exit(
+            f'FAIL: no resource.json with $resourceType=="escalation" under {RESOURCES_DIR} '
+            f"(found resource types: {found})"
+        )
+    return escalations[0]
+
+
+def assert_escalation_header(path: Path, resource: dict) -> None:
     eid = resource.get("id")
-    if not isinstance(eid, str) or "-" not in eid:
-        sys.exit(f"FAIL: escalation id missing or malformed: {eid!r}")
+    if not isinstance(eid, str) or not UUID_RE.match(eid):
+        sys.exit(f"FAIL: escalation id missing or malformed at {path}: {eid!r}")
     name = resource.get("name")
     if not isinstance(name, str) or not name.strip():
-        sys.exit(f"FAIL: escalation name missing or empty: {name!r}")
+        sys.exit(f"FAIL: escalation name missing or empty at {path}: {name!r}")
     if not resource.get("isEnabled"):
-        sys.exit(f"FAIL: escalation isEnabled must be truthy, got {resource.get('isEnabled')!r}")
-    print(f'OK: resource.json is $resourceType="escalation" (id={eid}, name={name!r}, isEnabled=true)')
+        sys.exit(
+            f"FAIL: escalation isEnabled must be truthy at {path}, "
+            f"got {resource.get('isEnabled')!r}"
+        )
+    print(
+        f'OK: {path.parent.name}/resource.json is $resourceType="escalation" '
+        f"(id={eid}, name={name!r}, isEnabled=true)"
+    )
 
 
-def assert_actioncenter_channel(resource: dict) -> list:
+def assert_actioncenter_channel(path: Path, resource: dict) -> list:
     channels = resource.get("channels")
     if not isinstance(channels, list) or not channels:
-        sys.exit(f"FAIL: escalation.channels must be a non-empty list, got {channels!r}")
+        sys.exit(f"FAIL: escalation.channels must be a non-empty list at {path}, got {channels!r}")
     ac_channels = [
         c for c in channels
         if isinstance(c, dict)
@@ -79,22 +109,22 @@ def assert_actioncenter_channel(resource: dict) -> list:
     if not ac_channels:
         sys.exit(
             'FAIL: no channel with type=="actionCenter" and non-empty name '
-            f"in channels: {json.dumps(channels, indent=2)}"
+            f"in {path}: {json.dumps(channels, indent=2)}"
         )
     print(f"OK: found {len(ac_channels)} actionCenter channel(s)")
     return ac_channels
 
 
-def assert_solution_app_binding(ac_channels: list) -> None:
+def assert_solution_app_binding(path: Path, ac_channels: list) -> None:
     bound = [
         c for c in ac_channels
         if (c.get("properties") or {}).get("appName") == EXPECTED_APP_NAME
     ]
     if not bound:
+        got = [(c.get("properties") or {}).get("appName") for c in ac_channels]
         sys.exit(
-            f"FAIL: no actionCenter channel is bound to the solution-internal app "
-            f"{EXPECTED_APP_NAME!r} (properties.appName) — got appNames: "
-            f"{[(c.get('properties') or {}).get('appName') for c in ac_channels]}"
+            f"FAIL: no actionCenter channel in {path} is bound to the solution-internal app "
+            f"{EXPECTED_APP_NAME!r} (properties.appName) — got appNames: {got}"
         )
     props = bound[0].get("properties") or {}
     fname = props.get("folderName")
@@ -104,9 +134,9 @@ def assert_solution_app_binding(ac_channels: list) -> None:
             f"(solution-internal app), got {fname!r}"
         )
     rkey = props.get("resourceKey")
-    if not isinstance(rkey, str) or not rkey.strip():
+    if not isinstance(rkey, str) or not UUID_RE.match(rkey):
         sys.exit(
-            f"FAIL: channel properties.resourceKey must be a non-empty string "
+            f"FAIL: channel properties.resourceKey must be a UUID-shaped string "
             f"(Key from `uip solution resources list`), got {rkey!r}"
         )
     print(
@@ -130,11 +160,11 @@ def assert_schema_sync(agent: dict, entry: dict) -> None:
 def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
-    resource = load(RESOURCE)
+    path, resource = find_escalation()
 
-    assert_escalation_header(resource)
-    ac_channels = assert_actioncenter_channel(resource)
-    assert_solution_app_binding(ac_channels)
+    assert_escalation_header(path, resource)
+    ac_channels = assert_actioncenter_channel(path, resource)
+    assert_solution_app_binding(path, ac_channels)
     assert_schema_sync(agent, entry)
 
 

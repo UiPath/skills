@@ -21,6 +21,9 @@ sandbox:
     - type: template_dir
       path: ../templates
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
   definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
@@ -46,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "The breach is a notification only: an sla-breached escalation with a recipient on Review's own SLA, zero sla-status-change rules anywhere, still 3 stages, and no follow-up task added to Review"
-    command: "python3 $TASK_DIR/check_notify_only.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_notify_only.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

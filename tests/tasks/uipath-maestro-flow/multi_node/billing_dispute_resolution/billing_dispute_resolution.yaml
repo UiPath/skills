@@ -1,6 +1,3 @@
-# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
-# prompt; v1-weighted intersection criteria plus report-only offline advisories;
-# paired limit envelope. Cross-arm parity is enforced by the sync gate.
 task_id: skill-flow-devcon-billing-dispute-resolution
 description: |
   E2E (DevCon BillingDisputeResolution scenario): build the full end-to-end billing-dispute flow — IxP invoice extraction, Data Service ERP/CRM lookups, an inline analyst agent grounded on the Billing Dispute SOP index, switch + decision routing, an API-workflow financial-posting call, and an inline writer agent. This is more or less the full DevCon demo flow, with two edits: the human-in-the-loop approval node is removed (the escalation case routes straight to the approval decision), and the terminal Outlook send-email nodes are replaced by `core.control.end` nodes that RETURN the resolution as flow outputs instead of sending mail. Graded by flow validate, a structural check, and one flow debug run.
@@ -14,12 +11,20 @@ tags:
   - node:ixp
   - connector
   - path-to-ga
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   max_turns: 200
   turn_timeout: 3600
   task_timeout: 5400
+reference:
+  directory: ../..
+
 post_run:
-  - command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+  - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
   Build a Maestro Flow "BillingDisputeResolution" (in a solution of the same
@@ -104,33 +109,46 @@ initial_prompt: |
   and re-run — stop after 3 debug attempts and report the last incident instead
   of looping. Grading then runs debug against live tenant data.
 
-  Build the complete flow
-  without stopping to ask me.
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
-    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Structural + topology check: full orchestration present AND wired in order (trigger→IxP→Data Service→analyst→switch→decision→API-workflow→writer→end; SOP index attached to an agent); NO HITL node; NO send-email node; flow returns ≥2 out variables'
-    command: python3 $TASK_DIR/check_structure_billing_dispute_resolution.py
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_structure_billing_dispute_resolution.py
     timeout: 90
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
     description: 'E2E check debugs the flow: it completes and RETURNS a real SOP-grounded resolution citing the disputed invoice (no email sent)'
-    command: python3 $TASK_DIR/check_e2e_billing_dispute_resolution.py
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py
     timeout: 1800
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Advisory: COVERING (offline): the connector''s CONNECTION bindings carry a real tenant key (G-19''s [102010]), the IxP `fileRef` is the plain `=js:` string `flow validate` requires (FC419), and all five outputs are declared with no drafted email on a rejection path'
-    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_dispute_resolution.py
+    command: python3 $REFERENCE_DIR/_shared/advisory_billing_dispute_resolution.py
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

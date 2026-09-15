@@ -18,10 +18,20 @@ tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:generate, feat
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/loop_until_green/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 120
+
+reference:
+  directory: ..
 
 initial_prompt: |
   The API workflow project in ./GradeCheck has an evaluation dataset under
@@ -35,9 +45,9 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Behavioral: every row passes when run and scored as the panel scores it (raw output, strict deep-equal) — both bugs fixed"
-    # $SKILLS_REPO_PATH, not $TASK_DIR/..: the sandbox only mounts the task's own
-    # leaf directory, so ../_shared does not exist there and the check exits 2.
-    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_rows_pass.py GradeCheck --min-rows 3
+    # reference.directory points one level up, so this one mount covers both
+    # _shared/ and this task's own leaf directory.
+    command: python3 $REFERENCE_DIR/_shared/check_rows_pass.py GradeCheck --min-rows 3
     timeout: 300
     expected_exit_code: 0
     weight: 4.0
@@ -45,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Guardrail: the dataset and evaluator are byte-for-byte the seeded files — the workflow was fixed, not the tests"
-    command: python3 $TASK_DIR/check_evals_untouched.py
+    command: python3 $REFERENCE_DIR/loop_until_green/check_evals_untouched.py
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

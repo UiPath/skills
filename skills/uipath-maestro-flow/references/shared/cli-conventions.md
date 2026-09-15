@@ -78,6 +78,8 @@ uip … registry search slack --output json --output-filter "[?contains(NodeType
 uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
 ```
 
+> **Exception — any command that fails.** The CLI applies `--output-filter` only on the success path; a `Result: "Failure"` envelope prints whole. This bites hardest on a faulted `flow debug` (200 KB and more) — redirect stdout to a file and extract from the file, see [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
+
 Treat `Data: []` with exit 0 as a valid but mismatched expression, not proof of absence. Only invalid syntax or type errors fail with exit 3.
 
 Use `python3 -c` or `jq` only when JMESPath cannot perform a multi-step join across CLI calls, JSON-to-CSV or JSON-to-env-var conversion, or conditional output based on multiple fields. Verify the shape first:
@@ -105,10 +107,10 @@ Every `uip` command returns one of these shapes:
 ```
 
 ```json
-{ "Result": "Failure", "Message": "...", "Instructions": "Found N error(s): ..." }
+{ "Result": "Failure", "Message": "...", "Instructions": "Found N error(s): ...", "Data": { ... } }
 ```
 
-Always check `Result` first. On failure, use `Message` and `Instructions` for diagnostics.
+Always check `Result` first. On failure, use `Message` and `Instructions` for diagnostics. A failure envelope may still carry `Data` — `flow debug` returns the full run payload on a fault.
 
 ## 5. Login state
 

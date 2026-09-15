@@ -78,13 +78,21 @@ ERROR: bodyParameters key '<key>' contains literal '[*]'.
 
 The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passes, but runtime APIs reject with HTTP 400 `UnableToDeserializePostBody`. The check repeats as a post-write verification — see [Step 8 Post-Write Verification](#post-write-verification) item #12.
 
+#### Step 1.c — Copy `input-values` verbatim; the escaping is already done (MANDATORY)
+
+`registry-resolved.json` is JSON and its `input-values` is a real JSON object, so a `=js:` value in it already carries `\\n` where the JavaScript needs `\n`. This step is JSON to JSON: **copy it byte for byte and re-escape nothing.** Adding a level here writes `\\\\n`, which reaches the runtime as a literal backslash-n printed in the message body — wrong output with no error anywhere. Dropping a level writes `\n`, which JSON decodes to a raw line break and faults the element with `Invalid or unexpected token`.
+
+The one place a level is added is planning, where the sdd.md cell becomes ledger JSON: [`planning.md` § 8 Build input-values](planning.md#8-build-input-values).
+
+**Pass the payload single-quoted.** Bash strips one backslash level inside double quotes, so `--input-details "…\\n…"` delivers `\n` and reintroduces the fault. Single quotes pass it through unchanged.
+
 ### Step 2 — Run `case spec` with input-details
 
 ```bash
 uip maestro case spec --type activity \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
-  --input-details "<json from Step 1>" \
+  --input-details '<json from Step 1>' \
   --output json
 ```
 
@@ -176,7 +184,7 @@ For each entry in `caseShape.inputs[]`:
 - `elementId` = the task's elementId
 
 For each entry in `caseShape.outputs[]`:
-- Same fields, plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
+- For an entry the SDD does not reference — neither as a bare name nor as the first segment of a `->` path — auto-mint it: `id` = `camelCase(name)`, `var` = same as `id`, `elementId` = the task's elementId. **NOT** the `v` + 8 form the inputs use above. An entry the SDD does reference is emitted by the Output binding step below; do not auto-mint it here. Plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
@@ -203,6 +211,7 @@ Generate the task skeleton:
   "elementId": "<stageId>-<taskId>",
   "isRequired": "<from sdd.md Required, default true>",
   "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
+  "description": "<the task's **Description:** line from sdd.md, word for word>",
   "data": {
     "serviceType": "Intsvc.ActivityExecution",
     "context": "<caseShape.context — placeholders substituted in Step 6>",
@@ -212,6 +221,8 @@ Generate the task skeleton:
   }
 }
 ```
+
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 

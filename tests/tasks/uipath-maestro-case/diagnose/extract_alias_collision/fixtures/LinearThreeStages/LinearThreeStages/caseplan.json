@@ -1,6 +1,6 @@
 {
   "id": "case-Lx7Rq2mPnK",
-  "version": "27.0.0",
+  "version": "30.0.0",
   "name": "LinearThreeStages",
   "description": "Three regular stages chained linearly behind a manual trigger; exercises stage-entry conditions, parallel wait-for-timer tasks, and the full Variable / In / Out argument trio.",
   "metadata": {
@@ -31,7 +31,7 @@
   "variables": {
     "inputs": [
       {
-        "id": "pQr7Ks2Wm",
+        "id": "vPq7Ks2Wm",
         "name": "caseRef",
         "type": "string",
         "default": "",
@@ -40,7 +40,7 @@
     ],
     "outputs": [
       {
-        "id": "nBt4Xh9Vc",
+        "id": "vNb4Xh9Vc",
         "name": "finalDecision",
         "type": "string",
         "var": "finalDecision"
@@ -51,7 +51,7 @@
         "id": "skipReview",
         "name": "skipReview",
         "type": "boolean",
-        "default": false,
+        "default": "false",
         "custom": true,
         "elementId": "root"
       },
@@ -242,7 +242,7 @@
                 {
                   "id": "Rule_Gw3kPj",
                   "rule": "selected-stage-completed",
-                  "selectedStageId": "Stage_Kp3mRx"
+                  "selectedStageIds": ["Stage_Kp3mRx"]
                 }
               ]
             ]
@@ -348,7 +348,7 @@
                 {
                   "id": "Rule_Xz4pQw",
                   "rule": "selected-stage-completed",
-                  "selectedStageId": "Stage_Qn7tBz",
+                  "selectedStageIds": ["Stage_Qn7tBz"],
                   "conditionExpression": "=js:(vars.route === 'approved')"
                 }
               ]
@@ -423,7 +423,7 @@
             {
               "name": "caseRef",
               "type": "string",
-              "source": "=vars.pQr7Ks2Wm",
+              "source": "=vars.vPq7Ks2Wm",
               "var": "caseRef"
             }
           ]

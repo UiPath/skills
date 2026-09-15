@@ -73,7 +73,7 @@ UNRESOLVED_AUDIT = ('[{"task": "Hold", "taskType": "process", "matches": [], "se
 def caseplan(placeholder=True):
     task = {"id": "tA", "type": "wait-for-timer", "displayName": "Hold",
             "data": {} if placeholder else {"serviceType": "X"}}
-    return {"id": "case-Stub000001", "version": "27.0.0", "name": "Stub", "metadata": {},
+    return {"id": "case-Stub000001", "version": "30.0.0", "name": "Stub", "metadata": {},
             "nodes": [{"id": "Stage_a", "type": "case-management:Stage",
                        "data": {"label": "S", "tasks": [[task]]}}], "edges": []}
 

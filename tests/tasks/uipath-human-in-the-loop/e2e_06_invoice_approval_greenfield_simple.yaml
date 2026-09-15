@@ -5,13 +5,16 @@ task_id: skill-hitl-e2e-invoice-approval-greenfield-simple
 description: >
   Authoring E2E test (green field): agent creates a new Flow project with a HITL
   checkpoint from scratch. Tests C1 (green field), B1-B3 (schema design),
-  C5 (completed handle), F1 (validate after add). Does not deploy or run the flow.
+  C5 (outcome wiring), F1 (validate after add). Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field]
 
 run_limits:
   expected_turns: 19
   max_turns: 40
   turn_timeout: 1200
+
+reference:
+  directory: ../uipath-maestro-flow
 
 initial_prompt: |
   Create a new UiPath Flow project called "InvoiceApproval" that processes
@@ -43,15 +46,15 @@ success_criteria:
 
   - type: run_command
     description: "HITL node is present in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Completed handle is wired in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval 'completed'"
+    description: "Both Approve and Reject outcome ports are wired, not the outcome-completed placeholder"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

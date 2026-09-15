@@ -51,6 +51,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Sync solution resource declarations** | [ship.md — Pre-flight](ship.md#pre-flight) (the `uip solution resources refresh` step) |
 <!--skill-flavor:ship-common-tasks-rows:end-->
 | **Debug a flow end-to-end** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) |
+| **Debug a chat flow** | `flow debug` cannot drive a conversation headlessly. On a flow starting with `core.trigger.conversation` it uploads, returns `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run. Chat from either Studio Web (open that URL; `--open-in-browser` does it for you) or the UiPath Maestro VS Code extension. `--timeout` does nothing here. See [author/plugins/conversational-agent/impl.md](../author/plugins/conversational-agent/impl.md#debug--the-cli-hands-off) |
 | **Pass input arguments to `flow debug`** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
 | **Bind local files to file-typed inputs** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) and [run.md — Process run](run.md#process-run--trigger-a-deployed-process) (same `--attachment <variableId>=<localPath>` flag on both, repeatable; `--attachment` overrides `--inputs` on key collisions) |
 | **Trigger a deployed process** | [run.md — Process run](run.md#process-run--trigger-a-deployed-process) |
@@ -69,7 +70,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 - **Never run `solution upload` without `solution resources refresh` first.** Stale resource declarations cause runtime binding failures.
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" → Studio Web upload. Confirm explicitly before running `flow pack` + `solution publish`.
 <!--skill-flavor:upload-antipatterns:end-->
-- **Never run `flow debug` as a validation step, and never re-run a completed one to reshape its output.** Each run re-uploads the solution and executes the flow again against real systems; extract report fields from the payload the completed run already returned. Use `uip maestro flow validate` for correctness checking.
+- **Never run `flow debug` as a validation step, and never re-run a completed one to reshape its output.** Each run re-uploads the solution and executes the flow again against real systems; extract report fields from the payload the completed run already returned, and when that run faulted, read the cause from it first — see [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have). Use `uip maestro flow validate` for correctness checking.
 - **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
 

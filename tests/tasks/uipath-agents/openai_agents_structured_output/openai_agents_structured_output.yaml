@@ -13,6 +13,9 @@ run_limits:
   expected_turns: 48
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build an OpenAI Agents UiPath coded agent named `review-analyzer` that
   analyzes product reviews and returns a structured result.
@@ -54,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "OpenAI Agents project shape, structured output schema, factory pattern"
-    command: "python3 $TASK_DIR/check_openai_agents_structured_output.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_openai_agents_structured_output.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

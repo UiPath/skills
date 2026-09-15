@@ -14,9 +14,13 @@ tags: [uipath-api-workflow, integration, mode:operate, lifecycle:discover]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/operate/run_execute/seed_valid_workflow.py"
+  - command: "python3 _setup/seed_valid_workflow.py"
     timeout: 30
 
 initial_prompt: |

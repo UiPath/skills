@@ -12,6 +12,7 @@ The complete default tree is published as **`@uipath/skills`**, versioned in loc
 | `.claude-plugin/plugin.json` | `version` | Claude Code plugin version — always equals `package.json`'s base `M.N.P` (pre-release suffix stripped) — the canonical plugin version |
 | `.claude-plugin/marketplace.json` | `plugins[0].version` | Always equals `plugin.json` `version` |
 | `.codex-plugin/plugin.json` | `version` | Codex plugin version — always equals `plugin.json` `version` |
+| `.agents/plugins/marketplace.json` | `plugins[0].version` | Codex marketplace index — always equals `plugin.json` `version` |
 | `.cursor-plugin/plugin.json` | `version` | Cursor plugin version — always equals `plugin.json` `version` |
 
 ### One version line
@@ -25,9 +26,9 @@ All channels carry `package.json`'s version; the pre-release channels (`dev`, `p
 | `@uipath/skills` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
 | `@uipath/skills-studioweb` | `preview` | GitHub Packages | `M.N.<release>-preview.<run>` | per push to `release/v*`, or preview dispatch |
 | `@uipath/skills-studioweb` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
-| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`) | — | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex / Cursor plugin auto-update |
+| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.cursor-plugin/plugin.json`) | — | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex / Cursor plugin auto-update |
 
-`sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. The marketplace, Codex, and Cursor versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
+`sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. Both marketplace indexes (`.claude-plugin/marketplace.json` for Claude Code, `.agents/plugins/marketplace.json` for Codex), the Codex plugin, and the Cursor versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
 
 Run after any version change:
 
@@ -105,14 +106,16 @@ Registry follows channel — you pick a channel, not a registry.
 | Package | Trigger | Channel | Registry | dist-tag | Version | Provenance |
 |---------|---------|---------|----------|----------|---------|------------|
 | default | push to `main` (normally a merge) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
-| default | push to `release/v*` (normally a merge) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
+| default | push to `release/v*` (normally a merge) | `preview` | npmjs | `preview`² | `<base>-preview.<run_number>` | yes |
 | default | `workflow_dispatch` (channel: `dev`) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
-| default | `workflow_dispatch` (channel: `preview`) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
+| default | `workflow_dispatch` (channel: `preview`) | `preview` | npmjs | `preview`² | `<base>-preview.<run_number>` | yes |
 | default | `workflow_dispatch` (channel: `latest`) | `latest` | npmjs | `latest` | `package.json` version | yes |
 | Studio Web | push to `main` or dispatch `dev` | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
 | Studio Web | push to `release/v*` or dispatch `preview` | `preview` | GitHub Packages | `preview` | `<base>-preview.<run_number>` | no¹ |
 
 ¹ GitHub Packages does not support npm provenance attestations; only the npmjs channels are signed.
+
+² Only the **highest** release line takes the bare `preview` tag. A lower line publishes to `preview-v<M.N>` instead — see [Which line owns `preview`](#which-line-owns-preview).
 
 **Two default-package channels publish automatically** (mirroring `UiPath/cli`): every push to `main` (normally a merge) publishes a default `dev` build to GitHub Packages, and every push to a `release/v*` branch publishes a default `preview` build to npmjs. When the custom-package gate is enabled after bootstrap, the same run invokes the isolated Studio Web publisher for its GitHub Packages `dev` or `preview` counterpart. `latest` (stable) is published **only** for the default package by an explicit `channel=latest` dispatch — there is no `release:` trigger, so creating a GitHub Release does not publish anything. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
 
@@ -124,7 +127,22 @@ Registry follows channel — you pick a channel, not a registry.
 gh workflow run publish.yml --ref release/v<minor> -f channel=preview
 ```
 
-Either way the default job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to the npmjs `preview` dist-tag with `--provenance` via the same OIDC job as `latest`. When the custom-package gate is enabled, the isolated Studio Web job derives the identical version and publishes it to the GitHub Packages `preview` tag without provenance. Consume the default with `npm install @uipath/skills@preview`. Each run gets a unique version from `run_number`; the tags advance to the newest one in their respective registries.
+Either way the default job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to npmjs with `--provenance` via the same OIDC job as `latest`. When the custom-package gate is enabled, the isolated Studio Web job derives the identical version and publishes it to the GitHub Packages `preview` tag without provenance. Each run gets a unique version from `run_number`.
+
+#### Which line owns `preview`
+
+Two release lines are live whenever one is stabilizing and the next has been cut. `publish.yml` gives the bare `preview` tag to the **highest** line only; a lower line publishes to `preview-v<M.N>`:
+
+| Publishing line | vs. current `preview` | dist-tag | Consume with |
+|---|---|---|---|
+| `release/v1.202` | higher or equal | `preview` | `npm install @uipath/skills@preview` |
+| `release/v1.201` | lower | `preview-v1.201` | `npm install @uipath/skills@preview-v1.201` |
+
+The tag is chosen at publish time by comparing `package.json`'s base version against whatever `preview` currently resolves to, so `npm publish --tag` never has to be undone. If the tag is unset or the registry is unreachable the job falls back to `preview`.
+
+> Without this, the tag followed **publish order** rather than version. On 2026-09-06 run 637 (`release/v1.201`) landed after run 635 (`release/v1.202`) and pointed `preview` at the older line. A promoted line makes it routine: every `M.N.x` hotfix push would take `preview` off the newer line.
+
+Studio Web's GitHub Packages `preview` tag is still unconditional — it has the same ordering exposure between two live lines.
 
 ### The `dev` channel (GitHub Packages)
 

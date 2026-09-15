@@ -17,9 +17,38 @@
 #
 # Run on the CI checkout BEFORE `coder-eval run`. Idempotent. Ephemeral: it
 # mutates the checked-out tree, not the committed repo.
+#
+# Still load-bearing after the 2026-09 host-path-removal migration (test:
+# d61fa9d52): that migration moved most graders to $REFERENCE_DIR (whose
+# staged root already contains _shared/, so those graders no longer need this
+# script), but ~70 graders still do `from _shared import ...` / `import _shared`
+# by walking up out of their own task dir rather than through $REFERENCE_DIR —
+# this script is what makes that resolve in CI. It is CI-only: `tests/Makefile`
+# never calls it, so those same graders resolve `_shared` in CI (this script
+# ran first) but NOT under a local `make all`/`make smoke` run. Retiring this
+# script requires repointing all ~70 to $REFERENCE_DIR-relative imports first.
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$(git -C "$script_dir" rev-parse --show-toplevel)"
+
+manifest=${STAGE_SHARED_MANIFEST:-}
+if [ -n "$manifest" ]; then
+  : > "$manifest"
+fi
+
+search_root=${STAGE_SHARED_ROOT:-tests/tasks}
+# Compare resolved paths so `tests/tasks/../../etc` cannot pass the guard.
+resolved_root=$(realpath -m -- "$search_root")
+tasks_root=$(realpath -m -- "$PWD/tests/tasks")
+case "$resolved_root" in
+  "$tasks_root" | "$tasks_root"/*) ;;
+  *)
+    echo "stage_shared: STAGE_SHARED_ROOT must be under tests/tasks: $search_root" >&2
+    exit 2
+    ;;
+esac
+search_root=${resolved_root#"$PWD"/}
 
 count=0
 while IFS= read -r f; do
@@ -32,8 +61,11 @@ while IFS= read -r f; do
   [ -d "$src" ] || continue          # group has no _shared -> nothing to stage
   [ -e "$dir/_shared" ] && continue  # already present (idempotent / hand-authored)
   cp -R "$src" "$dir/_shared"
+  if [ -n "$manifest" ]; then
+    printf '%s\n' "$PWD/$dir/_shared" >> "$manifest"
+  fi
   count=$((count + 1))
-done < <(git grep -lE 'from _shared|import _shared' -- 'tests/tasks/**/*.py')
+done < <(git grep -lE 'from _shared|import _shared' -- "$search_root/**/*.py")
 
 # Pass 2: graders that put a `_shared` DIR itself on sys.path and then import
 # its modules bare (e.g. `sys.path.insert(0, .../"..", "_shared")` followed by

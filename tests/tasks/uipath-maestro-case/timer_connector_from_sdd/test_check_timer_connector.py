@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parent
-CHECKER = HERE / "check_timer_connector.py"
+CHECKER = HERE.parent / "_shared" / "check_timer_connector.py"
 TIME_CYCLE = "R10/2026-09-01T06:00:00Z/P1D"
 
 

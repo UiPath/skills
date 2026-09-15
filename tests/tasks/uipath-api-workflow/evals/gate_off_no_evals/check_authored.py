@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_setup"))
 from eval_scoring import deep_equal, run_row, wrap_output  # noqa: E402
 
 project = Path("AddNumbers")

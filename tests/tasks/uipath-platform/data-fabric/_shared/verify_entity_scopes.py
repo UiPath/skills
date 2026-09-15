@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Verify tenant and folder entity visibility from two folder contexts."""
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess

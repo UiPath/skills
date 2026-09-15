@@ -1,0 +1,112 @@
+task_id: skill-gov-aops-policy-datatypes-template
+description: >
+  Smoke test (outcome-graded): fetch the E2E product template and verify the
+  CLI generates a correctly-typed default for every supported Form.io data type.
+  Types come from the raw form template (authoritative); defaults from the
+  form-data blueprint. The check asserts each default value's JSON shape matches
+  its component type (checkbox->bool, number/currency->number|null,
+  text/email/url/phone/time/datetime->string|null, selectboxes/survey/container
+  ->object, tags/editgrid/datagrid->array), that the supported set is fully
+  covered, and that no unsupported type (file/signature/address/datamap) remains
+  in the E2E template.
+tags: [uipath-governance, smoke, mode:build, lifecycle:generate, aops-policy, data-types]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  I am about to author a governance policy for the `E2E` product. Fetch that
+  product's current form template and write both artifacts:
+
+  - the raw form template (the form.io schema) -> ./form-template.json
+  - the fillable form-data blueprint -> ./form-data.json
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "every supported data type has a correctly-typed default; no unsupported type remains"
+    command: |
+      python3 -c "
+      import json
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      tpl = load('form-template.json')
+      form = load('form-data.json')
+
+      # key -> component type, from the form template tree (authoritative).
+      # The CLI returns a UiPath-wrapped envelope with PascalCase component
+      # fields (Key/Type); tolerate both casings.
+      ktype = {}
+      def walk(o):
+          if isinstance(o, dict):
+              k = o.get('key') or o.get('Key')
+              t = o.get('type') or o.get('Type')
+              if k and t:
+                  ktype[k] = t
+              for v in o.values():
+                  walk(v)
+          elif isinstance(o, list):
+              for v in o:
+                  walk(v)
+      walk(tpl)
+      assert ktype, 'form-template.json has no typed components'
+
+      data = form['data'] if isinstance(form, dict) and isinstance(form.get('data'), dict) else form
+      assert isinstance(data, dict) and data, 'form-data.json is not a fillable blueprint object'
+
+      def is_num(v): return isinstance(v, (int, float)) and not isinstance(v, bool)
+      SCALAR_STR = lambda v: v is None or isinstance(v, str)
+      SHAPE = {
+          'checkbox':     lambda v: isinstance(v, bool),
+          'number':       lambda v: v is None or is_num(v),
+          'currency':     lambda v: v is None or is_num(v),
+          'textfield':    SCALAR_STR,
+          'textarea':     SCALAR_STR,
+          'email':        SCALAR_STR,
+          'url':          SCALAR_STR,
+          'phoneNumber':  SCALAR_STR,
+          'time':         SCALAR_STR,
+          'datetime':     SCALAR_STR,
+          'select':       lambda v: not isinstance(v, (list, dict)),
+          'radio':        lambda v: not isinstance(v, (list, dict)),
+          'selectboxes':  lambda v: isinstance(v, dict),
+          'survey':       lambda v: isinstance(v, dict),
+          'container':    lambda v: isinstance(v, dict),
+          'tags':         lambda v: isinstance(v, (list, str)),
+          'editgrid':     lambda v: isinstance(v, list),
+          'datagrid':     lambda v: isinstance(v, list),
+      }
+      EXCLUDED = {'file', 'signature', 'address', 'datamap'}
+
+      # Coverage and unsupported-leak are judged against ALL types in the raw
+      # template — not just those the CLI emitted into form-data — so an
+      # unsupported component the CLI drops from the blueprint cannot slip past.
+      template_types = {}
+      for key, t in ktype.items():
+          template_types.setdefault(t, []).append(key)
+
+      leaked = EXCLUDED & set(template_types)
+      assert not leaked, f'unsupported type(s) still in E2E template: {sorted(leaked)} -> {[template_types[t] for t in leaked]}'
+      missing = [t for t in SHAPE if t not in template_types]
+      assert not missing, f'supported types not represented in E2E template: {missing}'
+
+      # Shape is checked against the CLI-generated default for each blueprint field.
+      bad_shape = []
+      for key, value in data.items():
+          chk = SHAPE.get(ktype.get(key))
+          if chk and not chk(value):
+              bad_shape.append((key, ktype.get(key), value))
+      assert not bad_shape, f'default value shape wrong for: {bad_shape}'
+      print(f'OK: {len(SHAPE)} supported types verified across {len(data)} fields, 0 unsupported types')
+      "
+    timeout: 25
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

@@ -101,10 +101,24 @@ def check_report() -> None:
         fail("report does not end with '**Final grade: <A-F>**'")
     if summary_grade.group(1) != final_grade.group(1):
         fail("Summary Agent Grade and final grade do not match")
-    surfaced_canaries = [canary for canary in CANARIES if canary in report]
-    if surfaced_canaries:
-        fail(f"report surfaced generated-only canaries: {surfaced_canaries}")
+    # Scoped to defect findings, not the whole report: the sandbox's own
+    # pre_run setup script (_setup/setup_fixture.py, outside SupportSol/
+    # SupportAgent) carries the same canary literals it writes into the
+    # project's generated trees, so a broad substring match would fail an
+    # agent for noticing harness scaffolding rather than for filing
+    # refresh-managed project state as a defect.
     for heading, lines in defect_sections(report):
+        cited_canaries = [
+            (canary, line.strip())
+            for line in lines
+            for canary in CANARIES
+            if canary in line
+        ]
+        if cited_canaries:
+            fail(
+                f"report cites generated-only canaries as a defect under "
+                f"'{heading}': {cited_canaries[:2]}"
+            )
         cited = [line.strip() for line in lines if mentions_refresh_managed(line)]
         if cited:
             fail(

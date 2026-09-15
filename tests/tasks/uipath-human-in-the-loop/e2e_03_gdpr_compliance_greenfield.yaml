@@ -15,6 +15,9 @@ run_limits:
   max_turns: 60
   turn_timeout: 1200
 
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
   Build a UiPath Flow named "GdprDeletionApproval" that processes GDPR
   data deletion requests. Each request must be reviewed and signed off by
@@ -29,7 +32,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file was created at the expected path"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name GdprDeletionApproval"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -37,7 +40,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the inline HITL node type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name GdprDeletionApproval '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -45,15 +48,15 @@ success_criteria:
 
   - type: run_command
     description: "Flow exposes Approve and Reject outcomes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval 'Approve' 'Reject'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name GdprDeletionApproval 'Approve' 'Reject'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow wires the completed handle"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval 'completed'"
+    description: "Flow wires both Approve and Reject outcome ports, not the outcome-completed placeholder"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -69,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

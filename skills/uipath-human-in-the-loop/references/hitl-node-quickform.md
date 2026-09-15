@@ -6,7 +6,7 @@ The agent writes the `uipath.human-in-the-loop.quick-form` node directly into th
 
 ## Step 1 — Extract the Schema Through Conversation
 
-Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.** **Running non-interactively (CI/headless — no user available to answer):** do not ask — infer the answers from the prompt and any upstream `.flow` data, and proceed to design the schema. Only stop and report the open decision if the request is too ambiguous to pick a sensible default.
+**Never block on this.** Infer the answers to the questions below from the prompt and any upstream `.flow` data, and proceed straight to schema design — do not wait for a reply. If the user is present and volunteers this information unprompted, use it. Only stop and report the open decision if the request is genuinely too ambiguous to pick a sensible default.
 
 | What you need to know | Question to ask |
 |---|---|
@@ -93,7 +93,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 - `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
 - Keep it focused — don't add fields the automation won't use
 
-**Show the designed schema to the user and confirm before writing the node.** **Running non-interactively (CI/headless — no user available to answer):** do not block — design the schema from the prompt and any upstream `.flow` data, write the node, and record the chosen schema prominently in the final report. Only stop and report the open decision if the request is too ambiguous to pick a sensible default. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
+**Never block on this — write the node, don't wait to show the schema first.** Design the schema from the prompt and any upstream `.flow` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Only stop and report the open decision if the request is genuinely too ambiguous to pick a sensible default. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
 
 ---
 
@@ -243,13 +243,14 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
 
 ## Edge Wiring
 
-Wire the `completed` output handle to the downstream node. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
+Wire one output handle per outcome to its downstream node — port `outcome-<outcome.id>` for each entry in `inputs.schema.outcomes[]`, using the outcome's own `id` verbatim (never a lowercased or otherwise derived value). Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
 
 ```json
-{ "id": "invoiceReview1-completed-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "processApproval1", "targetPort": "input" }
+{ "id": "invoiceReview1-outcome-approve-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-approve", "targetNodeId": "processApproval1", "targetPort": "input" }
+{ "id": "invoiceReview1-outcome-reject-end1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-reject", "targetNodeId": "end1", "targetPort": "input" }
 ```
 
-**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever.
+**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is a placeholder that exists only on a schema with zero outcomes — it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit` (id `submit`, port `outcome-submit`). Never wire it once outcomes exist.
 
 ---
 
@@ -352,6 +353,7 @@ The agent translates the user's business description into the `fields[]` and `ou
 | `binding` | **Input / inOut fields only.** Format: `"vars.<nodeId>.output.<field>"` for node outputs; `"vars.<globalId>"` for flow globals. **No `=js:$` prefix** — HITL binding is a raw path, not an expression. |
 | `variable` | **Output / inOut fields only** — absent on input fields. Format: `"vars.<name>"` (always include the `vars.` prefix). Defaults to `"vars.<camelCase id>"` if not specified. |
 | `required` | omit if false; set `true` for mandatory outputs |
+| outcome `id` | Same conversion as field `id`: lowercase name, spaces→`-`, strip non-alphanumeric. `"Approve"` → `"approve"`, `"Needs Info"` → `"needs-info"`. Required and non-empty — an outcome with no `id` renders no wiring handle at all, so an edge drawn to a guessed port name is a no-op. This `id` is also the wiring port verbatim: `outcome-<id>` (see this file's Edge Wiring section below — never lowercase or otherwise transform it again after this conversion). |
 | `outcomes[0]` | `isPrimary: true`, `action: "Continue"` |
 | `outcomes[1+]` | `isPrimary: false`, `action: "End"` |
 | `schema.schemaId` | Generate a fresh UUID (e.g. `crypto.randomUUID()` or any UUID v4) |

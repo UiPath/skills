@@ -1,6 +1,3 @@
-# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
-# prompt; v1-weighted intersection criteria plus report-only offline advisories;
-# paired limit envelope. Cross-arm parity is enforced by the sync gate.
 task_id: skill-flow-coded-agent
 description: |
   Create a UiPath Flow that uses an ApproverCount coded agent to count, from a free-text sentence describing each reviewer's stance, how many people approved a proposal and return that integer. The sentence is deliberately withheld from the prompt and injected by the check script at debug time via --inputs, so the agent cannot hardcode the answer or fit a regex to known text — a deterministic Function is not a viable design. The prompt explicitly asks for a coded agent on a natural-language task, so the resulting flow node must be uipath.core.agent (an Agent project), not uipath.core.function — verifying the skill honors an explicit agent request instead of substituting a deterministic Function. Exercises agent resource node discovery and wiring for coded (vs low-code) agents.
@@ -12,11 +9,19 @@ tags:
   - shape:single-node
   - resource
   - path-to-ga
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 35
   max_turns: 200
   turn_timeout: 1200
   task_timeout: 2400
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project named "ApproverCountAgent" that uses a coded
   agent named "ApproverCount" to analyze a sentence describing the outcome of
@@ -26,22 +31,33 @@ initial_prompt: |
   number of people who approved as an integer flow output.
 
   Validate the flow.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
-    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
   - type: run_command
     description: Flow has an agent node and debug returns the approver count
-    command: python3 $TASK_DIR/check_coded_agent_flow.py
+    command: python3 $REFERENCE_DIR/_shared/check_coded_agent_flow.py
     timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 post_run:
-  - command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+  - command: python3 _setup/cleanup_solutions.py
     timeout: 120

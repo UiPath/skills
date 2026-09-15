@@ -8,20 +8,26 @@ description: >
   refresh-managed synchronization instead of reporting pre-refresh state as a
   defect.
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   turn_timeout: 1800
   task_timeout: 2400
   max_turns: 60
 
+reference:
+  directory: .
+
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_with_stale_generated_files/setup_fixture.py"
+  - command: "python3 _setup/setup_fixture.py"
     timeout: 30
 
 initial_prompt: |
   I have a low-code UiPath agent at `SupportSol/SupportAgent`. Please review it
   and save the structured report to `./_review_report.md`.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-review skill"
@@ -73,7 +79,7 @@ success_criteria:
 
   - type: run_command
     description: "Refreshed derived state passes; the report does not file CLI-managed state as a defect and ends with a matching final grade"
-    command: "python3 $TASK_DIR/check_stale_generated_files.py"
+    command: "python3 $REFERENCE_DIR/check_stale_generated_files.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

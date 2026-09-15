@@ -18,6 +18,9 @@ run_limits:
 # An agent left to itself often models "escalate to a human" as a human-in-the-loop
 # flow node — fine in general, but this task specifically exercises the agent
 # Escalation capability, so the prompt asks for it explicitly.
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project "FraudFlow" that runs an inline low-code agent
   which triages transactions and, when it isn't confident, escalates the case to
@@ -126,7 +129,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline external escalation: resource.json shape (actionCenter channel, appName, folderName, resourceKey) + escalation flow node + escalation-handle edge"
-    command: "python3 $TASK_DIR/check_inline_external_escalation.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_external_escalation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

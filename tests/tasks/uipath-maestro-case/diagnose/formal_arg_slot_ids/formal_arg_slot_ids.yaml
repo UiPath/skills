@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: .
+
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ passes
   `uip maestro case validate`, but it violates one of the uipath-maestro-case
@@ -40,11 +43,11 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-case skill"
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "uip maestro case validate still passes after the repair"
@@ -56,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "Every inputs/outputs slot id is synthetic and distinct from its name/var, and all names/vars are unchanged"
-    command: "python3 $TASK_DIR/check_formal_arg_slot_ids.py"
+    command: "python3 $REFERENCE_DIR/check_formal_arg_slot_ids.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

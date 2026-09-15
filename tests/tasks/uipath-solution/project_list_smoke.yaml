@@ -42,6 +42,7 @@ success_criteria:
       Score 0.0 if the reply lists fictional project names, claims
       projects exist, dodges the question, or only shows raw command
       output without an interpretation.
+    include_reference: false
     weight: 1.5
     pass_threshold: 1.0
 

@@ -13,9 +13,16 @@ tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py export_chain"
+  - command: "python3 _setup/seed_fixture.py"
     timeout: 30
 
 run_limits:
@@ -39,8 +46,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
-      reading the file is equally valid, and 3 of 4 agents did exactly that)"
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by reading the file is equally valid, and 3 of 4 agents did exactly that)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
     min_count: 1

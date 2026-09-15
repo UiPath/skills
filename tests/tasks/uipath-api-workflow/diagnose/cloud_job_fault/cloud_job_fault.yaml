@@ -36,20 +36,30 @@ tags: [uipath-api-workflow, e2e, mode:diagnose, lifecycle:discover]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../uipath-platform/_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: .
 
 pre_run:
   # uuid8 + parent_folder_path, and ensures the parent folder exists on the tenant.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
   # Split in two because coder-eval hard-caps a single pre_run step at 300s and
   # pack + publish + deploy alone costs ~120s. Each phase gets its own budget.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/cloud_job_fault/seed_faulted_job.py deploy"
+  - command: "python3 _setup/seed_faulted_job.py deploy"
     timeout: 300
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/cloud_job_fault/seed_faulted_job.py fault"
+  - command: "python3 _setup/seed_faulted_job.py fault"
     timeout: 300
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/cloud_job_fault/cleanup_fault_deploy.py"
+  - command: "python3 _setup/cleanup_fault_deploy.py"
     timeout: 240
 
 run_limits:
@@ -100,7 +110,7 @@ success_criteria:
 
   - type: run_command
     description: "Diagnosis names the real upstream failure and does not claim the run succeeded"
-    command: "python3 $TASK_DIR/check_cloud_fault_diagnosis.py"
+    command: "python3 $REFERENCE_DIR/check_cloud_fault_diagnosis.py"
     timeout: 180
     expected_exit_code: 0
     weight: 6.0

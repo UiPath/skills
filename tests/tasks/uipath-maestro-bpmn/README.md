@@ -34,7 +34,7 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
 - `operate-diagnose/` covers diagnostic inspection and operate-action guidance
   using mocked CLI responses, matching the operate and diagnose capabilities the
   skill retains.
-- `_shared/` contains small Python helpers for durable XML shape assertions.
+- `_shared/` contains small Python helpers for durable XML shape assertions, plus every per-task `check_*.py` grader (reached only via `$REFERENCE_DIR`, never staged into the agent's sandbox).
 
 These tasks validate with `uip maestro bpmn validate <file>`, which runs the
 full PO.Frontend canvas rule set offline (added in UiPath/cli#3135). If the CLI

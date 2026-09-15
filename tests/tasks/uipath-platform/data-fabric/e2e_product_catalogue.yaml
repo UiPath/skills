@@ -7,11 +7,18 @@ description: >
   produces a final inventory summary. Tests the full Discover → Act → Verify
   loop for a realistic e-commerce use case.
 tags: [uipath-platform, data-fabric, e2e, product-catalogue, mode:build, lifecycle:setup]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 60
   max_turns: 100
   turn_timeout: 1500
+
+reference:
+  directory: .
 
 initial_prompt: |
   I need a product catalogue set up for our e-commerce team. Just
@@ -44,7 +51,6 @@ initial_prompt: |
       attach it to the single most expensive product.
     - Tell me the final tally: total products, how many are in
       stock, and how many are Electronics.
-
 success_criteria:
   - type: command_executed
     description: "Agent created the entity"
@@ -117,7 +123,7 @@ success_criteria:
   - type: run_command
     description: "End state: product-name field is text"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      python3 $REFERENCE_DIR/_shared/verify_field_constraints.py
       --entity-name CE_ProductCatalogue --ignore-field-case
       --assertions "ProductName.Name=STRING"
     timeout: 180
@@ -128,7 +134,7 @@ success_criteria:
   - type: run_command
     description: "End state: price field is decimal"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      python3 $REFERENCE_DIR/_shared/verify_field_constraints.py
       --entity-name CE_ProductCatalogue --ignore-field-case
       --assertions "Price.Name=DECIMAL"
     timeout: 180
@@ -139,7 +145,7 @@ success_criteria:
   - type: run_command
     description: "End state: stock field is boolean"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      python3 $REFERENCE_DIR/_shared/verify_field_constraints.py
       --entity-name CE_ProductCatalogue --ignore-field-case
       --assertions "InStock.Name=BOOLEAN"
     timeout: 180
@@ -150,7 +156,7 @@ success_criteria:
   - type: run_command
     description: "End state: SKU field is text"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      python3 $REFERENCE_DIR/_shared/verify_field_constraints.py
       --entity-name CE_ProductCatalogue --ignore-field-case
       --assertions "SKU.Name=STRING"
     timeout: 180
@@ -161,7 +167,7 @@ success_criteria:
   - type: run_command
     description: "End state: Poster field is a file attachment"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      python3 $REFERENCE_DIR/_shared/verify_field_constraints.py
       --entity-name CE_ProductCatalogue --ignore-field-case
       --assertions "Poster.Name=FILE"
     timeout: 180
@@ -171,7 +177,7 @@ success_criteria:
 
   - type: run_command
     description: "End state (deterministic): all 15 product records landed in CE_ProductCatalogue"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_ProductCatalogue --expected 15"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_ProductCatalogue --expected 15"
     timeout: 240
     expected_exit_code: 0
     weight: 3.0
@@ -180,6 +186,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent reported the final tally correctly — total products (15), in-stock count (12: 15 minus 3 marked out-of-stock), Electronics count (5, one per category)"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The agent seeded 15 products (5 per category across Electronics,
       Clothing, Home). Then:
@@ -219,10 +226,10 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
     timeout: 60
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
     timeout: 60

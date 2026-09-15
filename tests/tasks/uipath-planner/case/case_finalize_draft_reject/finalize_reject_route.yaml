@@ -11,14 +11,21 @@ description: >
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 run_limits:
-  task_timeout: 1800
+  # Matched to the finalize family (finalize_from_draft is 4200/3600): run
+  # 33794565805 hit the old 1500s turn wall on claude-sonnet-5 with the
+  # simulator never reached, while codex finishes in 64s. A finalize task
+  # should not carry a wall 2.4x tighter than its siblings.
+  task_timeout: 4200
   max_turns: 60
-  turn_timeout: 1500
+  turn_timeout: 3600
 
 sandbox:
   template_sources:
     - type: template_dir
       path: fixtures
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   I have a draft design document for our GrantReview case-management solution —
@@ -45,7 +52,7 @@ success_criteria:
 
   - type: run_command
     description: "Application Rejected is entered from the reviewDecision fact, not user-selected-stage"
-    command: "python3 $TASK_DIR/check_reject_route.py --scope lane"
+    command: "python3 $REFERENCE_DIR/case/case_finalize_draft_reject/check_reject_route.py --scope lane"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -56,7 +63,7 @@ success_criteria:
   # the diverting-exit behavior is fixed on its own.
   - type: run_command
     description: "Advisory: Eligibility Review carries a gated diverting exit whose guard is the complement of its completion exit"
-    command: "python3 $TASK_DIR/check_reject_route.py --scope origin"
+    command: "python3 $REFERENCE_DIR/case/case_finalize_draft_reject/check_reject_route.py --scope origin"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

@@ -2,7 +2,10 @@ name: Smoke Skill Tests
 
 concurrency:
   group: smoke-skills-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; `opened` and `reopened` can fire on a
+  # commit a run is already in flight for, and a cancelled run reports the
+  # required context as `cancelled`. See docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No `paths:` filter on purpose. This workflow is a required status
@@ -146,7 +149,11 @@ jobs:
           SKIP_INFRA_TRIGGER=false
           echo "$PR_LABELS" | grep -qw 'ci:skip-infra-trigger' && SKIP_INFRA_TRIGGER=true
 
-          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$|^\.github/workflows/smoke-skills\.yml$'; then
+          INFRA_PATTERN='^tests/docker/|^tests/fixtures/maestro-flow-sdk-smoke/'
+          INFRA_PATTERN+='|^tests/experiments/smoke\.yaml$|^tests/_shared/'
+          INFRA_PATTERN+='|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$'
+          INFRA_PATTERN+='|^\.github/workflows/smoke-skills\.yml$'
+          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE "$INFRA_PATTERN"; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -195,14 +202,38 @@ jobs:
             done
           }
 
+          # A changed non-YAML path can sit under a directory with no *.yaml
+          # anywhere above it up to tests/tasks/<skill>/ — a family-level
+          # _shared/ (grading helpers, reached only via $REFERENCE_DIR) or a
+          # family-level _setup/ (pre_run/post_run tooling shared by several
+          # leaf tasks), neither of which is itself a task directory.
+          # resolve_task_yaml() can't map those to one owning task, so such a
+          # change instead falls back to that skill's FULL smoke suite —
+          # otherwise it silently selected nothing at all.
           CHANGED_TASKS=""
+          FALLBACK_SKILLS=""
           while IFS= read -r path; do
             [ -z "$path" ] && continue
+            found_any=""
             for y in $(resolve_task_yaml "$path"); do
               CHANGED_TASKS="$CHANGED_TASKS"$'\n'"$y"
+              found_any="1"
             done
+            if [ -z "$found_any" ]; then
+              case "$path" in
+                */_shared/*|*/_setup/*)
+                  skill=$(echo "$path" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p')
+                  [ -n "$skill" ] && FALLBACK_SKILLS="$FALLBACK_SKILLS"$'\n'"$skill"
+                  ;;
+              esac
+            fi
           done < <(echo "$CHANGED" | grep '^tests/tasks/' || true)
           CHANGED_TASKS=$(echo "$CHANGED_TASKS" | sort -u | grep -v '^$' || true)
+          FALLBACK_SKILLS=$(echo "$FALLBACK_SKILLS" | sort -u | grep -v '^$' || true)
+          if [ -n "$FALLBACK_SKILLS" ]; then
+            echo "Falling back to full smoke suite for (changed _shared/_setup file with no owning task yaml): $(echo "$FALLBACK_SKILLS" | xargs)"
+            SRC_SKILLS=$(echo "$SRC_SKILLS"$'\n'"$FALLBACK_SKILLS" | sort -u | grep -v '^$' || true)
+          fi
 
           if [ -z "$SRC_SKILLS" ] && [ -z "$CHANGED_TASKS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -368,20 +399,32 @@ jobs:
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
 
-      # Build custom smoke image extending coder-eval-agent with @uipath/cli and
-      # every whitelisted tool plugin from GitHub Packages @dev (see
-      # tests/docker/Dockerfile). Every push to `cli/main` publishes a
-      # `-dev.<run>` prerelease under the `dev` dist-tag (cli PR #2650 renamed the
-      # old `alpha` tag → `dev` on 2026-06-26), so smoke tracks main — not stale
-      # `latest` from public npm (which lags by ~2 weeks).
+      # Build custom smoke image extending coder-eval-agent with @uipath/cli,
+      # every whitelisted tool plugin from GitHub Packages @dev, and the latest
+      # published @uipath/maestro-builder-sdk (see tests/docker/Dockerfile). Every push to
+      # `cli/main` publishes a `-dev.<run>` prerelease under the `dev` dist-tag
+      # (cli PR #2650 renamed the old `alpha` tag → `dev` on 2026-06-26), so
+      # smoke tracks main — not stale `latest` from public npm (which lags by ~2
+      # weeks).
       - name: Build skills smoke Docker image
         env:
           DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+          FLOW_SDK_PKG_NAME: ${{ vars.FLOW_SDK_PKG_NAME }}
         run: |
+          # The image's ARG default is the post-rename package name; override it
+          # only when a repo var pins a different one. The pre-rename baseline
+          # needs BOTH this and FLOW_SDK_VERSION (see tests/docker/Dockerfile) —
+          # pinning the version alone asks for a version the new name never had.
+          pkg_name_arg=()
+          if [ -n "${FLOW_SDK_PKG_NAME:-}" ]; then
+            pkg_name_arg=(--build-arg "FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}")
+          fi
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }} \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
+            --build-arg FLOW_SDK_VERSION="${{ vars.FLOW_SDK_VERSION || 'latest' }}" \
+            ${pkg_name_arg[@]+"${pkg_name_arg[@]}"} \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
