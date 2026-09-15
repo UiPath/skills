@@ -20,13 +20,13 @@ initial_prompt: |
       - They can SEE (read-only): PO number, vendor name, total amount
       - They must FILL IN: their decision (Approve/Reject) and optional notes
       - They click: Approve (primary) or Reject
-  - A decision node routes on the officer's decision:
+  - Route each outcome directly (no decision node — the outcome ports are the branch):
       - Approve → Script node that logs "PO approved"
       - Reject  → End node
 
   Use the inline quickform node (uipath.human-in-the-loop.quick-form).
   Set priority to High.
-  Wire completed → decision node.
+  Wire the outcome-approve and outcome-reject ports to their targets above.
   Validate the flow after building.
 
   This run is headless. No user is present and nobody will answer a question or

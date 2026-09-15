@@ -26,7 +26,9 @@ initial_prompt: |
      variable property name.
   5. End node
 
-  Wire: Trigger → Script → HITL →|completed| Script (log) → End
+  Wire: Trigger → Script → HITL → Script (log) → End, with both outcomes
+  (Approve and Reject) routed to the log Script node — every outcome needs
+  its own wired port.
 
   Validate the flow after building.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
