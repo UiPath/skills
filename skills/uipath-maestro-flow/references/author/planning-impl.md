@@ -207,9 +207,9 @@ Present a short chat summary containing:
 
 Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. Do not build until the user explicitly approves.
 
-Ask as a dropdown per [SKILL.md](../../SKILL.md) rule #5 — **"Approve and build" marked recommended**, "Revise the plan", then "Something else" last — so a headless run proceeds under rule #5's non-interactive fallback and records the unreviewed build.
+Ask per [SKILL.md](../../SKILL.md) rule #5, and **mark the proceed option recommended** so its non-interactive fallback carries a headless run through rather than stopping.
 
-**Write the file before asking, always.** The resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
+**Write the plan before asking, always.** The resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
 
 ## Product Heuristics
 

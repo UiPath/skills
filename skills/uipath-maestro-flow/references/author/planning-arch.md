@@ -358,6 +358,6 @@ After explicit user approval, [Planning Phase 2: Implementation](planning-impl.m
 
 **Do not proceed to Phase 2 until the user explicitly approves the architectural plan.**
 
-Ask as a dropdown per [SKILL.md](../../SKILL.md) rule #5 — **"Approve and proceed to Phase 2" marked recommended**, "Revise the plan", then "Something else" last. Marking one is what lets rule #5's non-interactive fallback carry a headless run past this gate and record the unreviewed handoff; an unmarked gate stops that run instead.
+Ask per [SKILL.md](../../SKILL.md) rule #5, and **mark the proceed option recommended**. That mark is the whole mechanism: rule #5's non-interactive fallback carries a headless run past a gate that has one, and stops at a gate that does not.
 
-**Write `<SolutionName>.uipath.flow.arch.plan.md` before asking, always.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which costs more than the plan it replaces.
+**Write the plan before asking, always.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which costs more than the plan it replaces.
