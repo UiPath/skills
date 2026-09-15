@@ -1,5 +1,34 @@
 # Insights — Investigation Playbooks
 
+Each playbook below is one `uip insights jobs investigate` subcommand, which runs the whole
+sequence in a single call and returns the arithmetic already done. Use the subcommand. The chains
+here are the fallback for a CLI that predates it, and the reference for what each playbook reads.
+
+| Playbook | Subcommand | Reads |
+|---|---|---|
+| 1. Overall health | `investigate health` | `summary` |
+| 2. Which processes are failing | `investigate failing` | `top-failures`, `failures-by-reason` |
+| 3. Why one process fails | `investigate process --process-name <name>` | `failures-by-reason`, `failure-details`, `completed-timeline` |
+| 4. Stuck or long-running jobs | `investigate stuck` | `uncompleted-timeline`, `summary`, `process-details` |
+| 5. This period against the last | `investigate compare` | `summary` twice, over two adjacent windows |
+| 6. Health for one folder | `investigate folder --folder-name <name>` | `filter-folders list`, `summary`, `top-failures` |
+
+Four things the subcommands get right that a hand-run chain gets wrong, all confirmed against the
+backend handlers:
+
+- `failures-by-reason` carries `JobsCount`, and it is every terminal job in the window, not a count
+  of failures. The controller fills it from the same handler `summary` uses.
+- `top-failures` puts its faulted counts in one series of `JobCountByTime` indexed by process, so
+  `JobCountByTime[0][i]` belongs to `ProcessName[i]`. Summing the series gives one grand total.
+- `process-details` returns seven series and `uncompleted-timeline` five, both indexed the same way.
+  Reading only the first series drops four states.
+- `failure-details` reports no machine name and no exception type. It fills `ProcessName`,
+  `CreationTime`, `StartTime`, `EndTime`, `FolderId`, `JobKey` and `Duration`, nothing else.
+
+Each subcommand's `Instructions` names the caveats on the numbers it just returned. Quote those.
+
+## The chains, for a CLI without the verb
+
 Step-by-step playbooks for common job monitoring scenarios. Each playbook shows the exact commands to run and how to interpret the results.
 
 ## Playbook 1: "How healthy are my automations?"
@@ -87,7 +116,9 @@ uip insights jobs process-details --time-range 1440 --output json
 
 User wants to see if things are getting better or worse.
 
-Resolve both week boundaries to epoch milliseconds first, with the platform-specific `date` recipes under Absolute Time Ranges in [`jobs-commands-guide.md`](jobs-commands-guide.md). Treat `--started-before` as exclusive: pass this Monday 00:00:00 UTC as the upper bound so the window covers all of last week.
+`uip insights jobs investigate compare` resolves both windows itself and is the way to answer this. Its `--time-range` is the length of one window, and it reads the same length again immediately before, so 10080 compares this week against last week. It refuses a window over 21600 minutes, because two adjacent 30-day windows cannot both sit inside the server's 30-day cap and the server clamps the older bound without saying so.
+
+Without the verb, resolve both week boundaries to epoch milliseconds first, with the platform-specific `date` recipes under Absolute Time Ranges in [`jobs-commands-guide.md`](jobs-commands-guide.md), then pass literal numbers. Treat `--started-before` as exclusive: pass this Monday 00:00:00 UTC as the upper bound so the window covers all of last week.
 
 ```bash
 # This week (last 7 days)
@@ -141,6 +172,13 @@ This means:
 - ProcessA had 10 failures
 - ProcessB had 5 failures
 - ProcessC had 2 failures
+
+`JobCountByTime` is a list of series, and the outer position carries meaning that differs by route:
+one series on `top-failures` (faulted, indexed by process), three on `completed-timeline` (faulted,
+successful, stopped, indexed by time bucket), five on `uncompleted-timeline` (running, pending,
+resumed, suspended, other, indexed by time bucket), and seven on `process-details` (running,
+pending, resumed, suspended, faulted, successful, stopped, indexed by process). Summing a row, or
+reading only the first series, is wrong on every route but `top-failures`.
 
 ## When to Hand Off to Other Skills
 

@@ -5,6 +5,31 @@ when_to_use: "User says 'job failures', 'automation health', 'job success rate',
 allowed-tools: Bash, Read
 ---
 
+# Reasoning budget
+- Match reasoning to step difficulty and bias toward acting. For a mechanical step, if a command
+  already does the work, run it and read its output instead of re-deriving it.
+- Save deep, extended reasoning for the one judgment no command can make: what the data means for
+  the user, whether a failure rate matters, and what the evidence does not prove.
+- None of this licenses a shorter answer. Finish every step the task asked for; where a budget rule
+  and completeness conflict, completeness wins. These rules cut rework, not required work.
+
+# Working style
+- **Understand first, then decide.** Read this SKILL.md and the subcommand table in Shared Workflow
+  before you act, then plan around what the commands actually do rather than a guess.
+- **Plan the whole path up front, then chain.** Outline the full sequence before running anything.
+  Critical Rule 2 forbids chaining `uip insights` subcommands in one shell line, so batch by picking
+  the one command that covers the whole question instead of issuing its parts turn by turn.
+- **Inspect an input ONCE.** Read a guide or a response once and work from what you have. Never
+  re-open a file field by field, and never re-run a command whose output is already in context.
+- **Don't repeat work.** Do not rerun a command when its inputs and the relevant state are
+  unchanged, and do not reread an unchanged guide or SKILL.md already in context.
+- **Write code once and reuse.** Do not paste near-duplicate inline `python3 -c` or `jq` to compute
+  something a subcommand already returns.
+- **Keep outputs small.** Prefer a projected result over a raw envelope. When a large read needs the
+  full body, send it to a file and inspect the file.
+- **Don't do anything unnecessary.** Do not call tools, read guides, or pull results into context
+  unless they are needed right now. This governs what you read, never which commands you run.
+
 # UiPath Insights
 
 Use `uip insights` for job monitoring, monitoring-scope discovery, read-only alert inspection, and Insights RBAC reads. Read the guide for the task before running commands.
@@ -47,7 +72,37 @@ Use `uip insights` for job monitoring, monitoring-scope discovery, read-only ale
    ```
 
 2. Read the guide the Task Navigation table below names for this task.
-3. Run the subcommand and parse `Data` for the result. On list subcommands also read `Pagination` for list completeness.
+3. For a job investigation, run one `uip insights jobs investigate` playbook instead of issuing the
+   chain yourself. Everything needed to call it is in the table below: do not open the playbook
+   guide when the table already answers the question.
+
+   | Question | Playbook | Flags |
+   |---|---|---|
+   | How healthy are the automations, what is the success rate | `health` | window (default 1440) |
+   | Which processes are failing, and why | `failing` | window (default 43200) |
+   | Why does one named process fail | `process` | `--process-name <name>` (required), window |
+   | Are jobs stuck, pending, or still running | `stuck` | window (default 1440) |
+   | Is this period better or worse than the one before | `compare` | window (default 10080, max 21600) |
+   | Job health scoped to one folder by name | `folder` | `--folder-name <name>` (required), window |
+
+   Every playbook takes the same window as the plain `jobs` reads: `--time-range <minutes>`, or both
+   `--started-after` and `--started-before` in epoch milliseconds. `health`, `failing`, `stuck` and
+   `compare` also take the repeatable `--folder-key`, `--process-name` and `--machine-name` filters.
+   Each one resolves its window bounds itself, so never build them with `date`. Each returns the
+   same `{ Result, Code, Data }` envelope as every other command, with an `Instructions` string
+   naming the caveats on its numbers: quote those in the explanation.
+
+   If `investigate` reports `unknown command`, the installed CLI predates it. Tell the user to update
+   (`npm i -g @uipath/cli`) and fall back to the numbered chains in
+   [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) for
+   this run.
+4. Otherwise run the subcommand and parse `Data` for the result. On list subcommands also read
+   `Pagination` for list completeness.
+
+   A request that names a subcommand, or asks for every subcommand, means the seven plain `jobs`
+   reads: run those. A playbook answers a question; it is not a substitute for a named read, and it
+   is not what "run every subcommand" asks for. The plain reads are also the way to get an
+   unprojected, uncapped body when the caller wants the raw response.
 
 Default to the active Production session. Change authority, organization, or tenant only when the user explicitly names another environment or scope. Give the user the command to run rather than running it yourself:
 
@@ -60,7 +115,7 @@ uip login tenant set MyTenant                                      # same enviro
 
 | User's task | Read first |
 |---|---|
-| Check job health, success rate, trends, failures, stuck jobs, or compare periods | [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) |
+| Check job health, success rate, trends, failures, stuck jobs, or compare periods | Nothing. Run the `jobs investigate` playbook from Shared Workflow step 3. Read [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) only when no playbook fits the question, or when the CLI lacks the verb |
 | Choose a Jobs subcommand, flag, time range, or interpret its response fields | [`references/jobs-commands-guide.md`](references/jobs-commands-guide.md) |
 | Answer which folders, processes, queues, or machines are visible, or resolve an exact folder key, process name, or machine name to filter by | [`references/filter-discovery-guide.md`](references/filter-discovery-guide.md) |
 | Inspect alert definitions, alerting entitlement, trigger history, or delivery metadata | [`references/alerts-reads-guide.md`](references/alerts-reads-guide.md) |
@@ -70,7 +125,7 @@ Read only the guides the task needs. A job investigation that must first resolve
 
 ## Scope Boundaries
 
-`uip insights` ships four command families: `jobs`, the `filter-*` discovery commands, the alert reads (`alerts`, `alert-history`, `alert-deliveries`), and the RBAC reads (`users`, `roles`, `groups`). If a request needs anything else, say it is not available rather than guessing a subcommand.
+`uip insights` ships four command families: `jobs`, the `filter-*` discovery commands, the alert reads (`alerts`, `alert-history`, `alert-deliveries`), and the RBAC reads (`users`, `roles`, `groups`). The `jobs` family is seven reads plus `jobs investigate`, which runs one whole investigation playbook per call. If a request needs anything else, say it is not available rather than guessing a subcommand.
 
 | Request | Route |
 |---|---|

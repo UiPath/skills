@@ -6,6 +6,11 @@ description: >
   then failures-by-reason for drill-down. Tests that the agent follows the
   investigation workflow and uses --output json and --time-range consistently.
   Auth errors are expected (no live tenant).
+
+  Either route counts as the same evidence: the agent may issue the plain
+  `jobs` reads or the `jobs investigate` playbook that runs them. Both are
+  `uip insights` commands. `investigate failing` reads top-failures and
+  failures-by-reason in one call, so it satisfies two of the three below.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -33,7 +38,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran jobs summary to get overall KPIs"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+summary\s+.*--time-range'
+    command_pattern: 'uip\s+insights\s+jobs\s+(summary|investigate\s+(health|stuck))\s+[^&;|\n]*--time-range'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -41,7 +46,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran top-failures to find which processes fail most"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+top-failures\s+.*--time-range'
+    command_pattern: 'uip\s+insights\s+jobs\s+(top-failures|investigate\s+(failing|folder))\s+[^&;|\n]*--time-range'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -49,15 +54,18 @@ success_criteria:
   - type: command_executed
     description: "Agent ran failures-by-reason to get error reasons"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason\s+.*--time-range'
+    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|investigate\s+(failing|process))\s+[^&;|\n]*--time-range'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
+  # min_count is 2, not 3: it asserts the flag rode the commands the agent
+  # ran, and the playbook route answers all three questions in two calls.
+  # Three would penalize the shorter route for being shorter.
   - type: command_executed
     description: "Advisory: agent used --output json on all commands (non-gating)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--output\s+json'
-    min_count: 3
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+[^&;|\n]*--output\s+json'
+    min_count: 2
     weight: 1.5
     pass_threshold: 0
