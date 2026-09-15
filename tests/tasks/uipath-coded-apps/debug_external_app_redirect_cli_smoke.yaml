@@ -16,6 +16,10 @@ sandbox:
       mount_point: _setup
 run_limits:
   expected_turns: 12
+  # Without this the task inherits the experiment's 900s turn cap while every
+  # other coded-apps task runs at 1200s. The 2026-09-14 full-suite pass took
+  # 718s (403 fallback: read-only reuse of an existing External Application).
+  turn_timeout: 1200
 
 pre_run:
   # Seed a minimal coded-web-app config so the client ID is concrete and the
