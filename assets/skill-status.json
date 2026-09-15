@@ -42,7 +42,7 @@
       "last_synced": null
     },
     "uipath-api-workflow": {
-      "status": "in-development",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
