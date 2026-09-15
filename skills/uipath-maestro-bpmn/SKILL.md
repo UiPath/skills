@@ -209,7 +209,13 @@ For registry-evidence-only tasks, follow the command-first recipe in
    For an Integration Service draft or boundary handoff (author locally, hand
    enrichment to the CLI, no pack/upload/operate asked for), emit **only** the
    `.bpmn` plus the notes file — do NOT create the four generated package files
-   (Rule 16); authoring them fails the boundary the task tests.
+   (Rule 16); authoring them fails the boundary the task tests. The node itself
+   is still authored: paste the registry's `Intsvc.*` template and keep its
+   `uipath:activity` shell, context, and output intact, filling the resource
+   identity slots with the escaped public placeholders. A bare `bpmn:sendTask`
+   carrying no `uipath:activity` is a missing node, not a draft. Only the
+   resolved values are CLI-owned — see
+   [references/registry-workflow.md](references/registry-workflow.md#2-get-the-template-for-each-chosen-type).
    For Integration Service draft notes, name every CLI-owned blocker literally,
    including the exact phrase `connection binding`, plus dynamic schemas,
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
