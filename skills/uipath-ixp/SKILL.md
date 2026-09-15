@@ -118,6 +118,7 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | A second `--occurrence` call landed on the wrong row, or `unconfirm --occurrence N` no-ops | Indices came from a read taken *before* an earlier confirm renumbered the group | Re-read `get-predictions` between per-occurrence writes, or issue them as one `--updates` call. |
 | `deployments create` returns `409` | That title is already deployed in that folder on a different version — `create` only ever ADDS | Use `deployments upgrade <project-name> <deployment-name>` instead, taking `<deployment-name>` from `deployments list` (Critical Rule #20). |
 | `deployments upgrade` returns `404` | A `DeploymentTitle` was passed where `DeploymentName` is expected — the name is slugged and suffixed (`invoices` → `invoices-08963f00-ixp`), so it cannot be derived from the title | Run `deployments list <project-name> --output json` and pass its `DeploymentName` verbatim. |
+| User asks to nest one group under another, or a taxonomy plan adds `>` to group names for hierarchy | IXP has no group hierarchy — `>` in a name is literal text, and output is always one flat level (group → fields) | Skip the change; it alters nothing but how some UI surfaces draw the tree. To tie a repeatable group's rows to a parent, add the parent's identifier (e.g. `Invoice Number`) as a field on that group. |
 
 ## Unsupported Capabilities
 
