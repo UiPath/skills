@@ -152,7 +152,8 @@ tests/
 │   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
 ├── tasks/
 │   └── <skill-name>/             # One folder per skill (must match skills/<name>/)
-│       ├── _shared/              # Optional — helpers, cleanup scripts, per-skill pytest
+│       ├── _shared/              # Optional — grading helpers/checkers, per-skill pytest; reached only via $REFERENCE_DIR, never staged into the agent's sandbox
+│       ├── _setup/                # Optional — pre_run/post_run tooling (seed/cleanup/scaffold scripts); staged into the agent's sandbox via sandbox.template_sources
 │       ├── smoke/                # Tier: smoke
 │       ├── single_node/          # Tests isolating a single node type (optional)
 │       ├── multi_node/           # Composite-flow tests (optional)
@@ -324,13 +325,32 @@ the exception — they inline their fixture key instead of reading an env var.
 
 ### Shape
 
+Task sandboxes don't have access to a full host repo checkout, so setup/
+cleanup scripts are staged via `sandbox.template_sources` (agent-visible,
+used for pre_run/post_run tooling) and grading scripts are reached via
+`$REFERENCE_DIR` (mirrors `reference.directory` on disk, used by
+`run_command`/`llm_judge` criteria, invisible to the agent):
+
 ```yaml
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 pre_run:
-  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 _setup/seed.py"
     timeout: 60
+post_run:
+  - command: "python3 _setup/cleanup.py"
+    timeout: 60
+success_criteria:
+  - type: run_command
+    command: "python3 $REFERENCE_DIR/check_asset_scoping.py"
 ```
 
-A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
+A single helper script (`tests/tasks/uipath-platform/_setup/seed.py`) writes
 `seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
 `process_key` + `folder_path` (resolved via `uip or processes list`, matched by Key — the `get` endpoint doesn't populate FolderPath). Tests
 that don't need a process omit the env var assignment; the script just

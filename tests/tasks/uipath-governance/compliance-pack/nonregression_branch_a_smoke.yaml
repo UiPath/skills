@@ -14,6 +14,10 @@ tags: [uipath-governance, smoke, mode:build, lifecycle:setup]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 # CI passes live tenant auth into every smoke sandbox, so `aops-policy create`
 # here really creates a policy on the shared tenant. Two choices keep it from
@@ -24,11 +28,11 @@ sandbox:
 #     policy take effect).
 # Best-effort cleanup deletes the pinned policy by name prefix before and after.
 pre_run:
-  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="test-nonreg" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="test-nonreg" python3 _setup/cleanup_policy.py'
     timeout: 120
 
 post_run:
-  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="test-nonreg" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="test-nonreg" python3 _setup/cleanup_policy.py'
     timeout: 120
 
 initial_prompt: |

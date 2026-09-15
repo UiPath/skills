@@ -13,6 +13,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new Flow project called "EnhancedEnumTest" with a manual trigger. 
   Build a flow that retrieves WooCommerce product reviews and lets the caller 
@@ -38,7 +41,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EnhancedEnumTest '\"nodes\"' '\"edges\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name EnhancedEnumTest '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -46,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has a connector node referencing uipath-automattic-woocommerce"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EnhancedEnumTest 'uipath-automattic-woocommerce'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name EnhancedEnumTest 'uipath-automattic-woocommerce'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

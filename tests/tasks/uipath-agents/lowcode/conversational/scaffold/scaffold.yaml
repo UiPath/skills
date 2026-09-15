@@ -20,6 +20,9 @@ run_limits:
 sandbox:
   python: {}
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code conversational agent "ChatAgent" that users
   can chat with. The solution should be named "ChatSol".
@@ -82,7 +85,7 @@ success_criteria:
 
   - type: run_command
     description: "Conversational fixup applied (7 fields), static user message, entry-points.json schema sync"
-    command: "python3 $TASK_DIR/check_conversational_scaffold.py"
+    command: "python3 $REFERENCE_DIR/check_conversational_scaffold.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

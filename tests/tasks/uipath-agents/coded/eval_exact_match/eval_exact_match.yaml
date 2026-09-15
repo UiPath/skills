@@ -17,6 +17,9 @@ run_limits:
   expected_turns: 35
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `lingo-tagger` that reads
   a short customer message and tags its language — english, french,
@@ -50,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Exact-match evaluator authored, eval set wired to it, evaluator ran on every case with results written (scores not graded)"
-    command: "python3 $TASK_DIR/check_eval_exact_match.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_eval_exact_match.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -17,9 +17,14 @@ run_limits:
   expected_turns: 70
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/inline_solution_apiworkflow_tool/_fixtures/ShippingFlowSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/ShippingFlowSol
+      mount_point: ShippingFlowSol
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a new UiPath Flow project named "ShippingFlow" inside the existing
@@ -118,7 +123,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline solution API workflow tool: resource.json shape + flow node + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_solution_apiworkflow_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_solution_apiworkflow_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

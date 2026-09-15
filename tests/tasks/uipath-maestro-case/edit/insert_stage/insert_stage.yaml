@@ -19,6 +19,12 @@ sandbox:
     - type: template_dir
       path: ../templates
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+reference:
+  directory: ../..
+
 initial_prompt: |
   The LinearThreeStages case solution already exists on disk under
   LinearThreeStages/. Its case definition (LinearThreeStages/LinearThreeStages/caseplan.json)
@@ -56,12 +62,12 @@ success_criteria:
 
   - type: run_command
     description: "Approval stage inserted between Review and Decision: 4 stages total, Approval carries a wait-for-timer task with current-stage-entered entry, Review → Approval and Approval → Decision transitions exist, the old Review → Decision transition is gone, and the edited case launches in the Studio Web debug runtime"
-    command: "python3 $TASK_DIR/check_insert_stage.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_insert_stage.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

@@ -11,6 +11,9 @@ run_limits:
   expected_turns: 43
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `policy-rag` that
   answers natural-language questions by retrieving relevant snippets
@@ -37,7 +40,7 @@ success_criteria:
 
   - type: run_command
     description: "ContextGroundingRetriever shape, lazy-LLM-init, index binding"
-    command: "python3 $TASK_DIR/check_rag_langgraph.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_rag_langgraph.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

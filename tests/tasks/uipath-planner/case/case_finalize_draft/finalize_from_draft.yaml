@@ -43,6 +43,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I have a draft design document for our CandidateInterview case-management
   solution — it's saved as `sdd.draft.md` in this folder. Please finalize it into
@@ -81,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "sdd.md is mechanically sound: variable mappings + lineage, per-gate rule legality, task types, entry/completion/exit conditions"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
+    command: "python3 $REFERENCE_DIR/_shared/sdd_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -89,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "Unresolved agent tasks preserve concrete names in Section 2 and Section 4 while folder and identity remain unresolved"
-    command: "python3 $TASK_DIR/check_resource_name_contract.py"
+    command: "python3 $REFERENCE_DIR/case/case_finalize_draft/check_resource_name_contract.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -97,7 +100,7 @@ success_criteria:
 
   - type: run_command
     description: "sdd.md preserves the engineering-role / L4+ Onsite-Loop gating rule"
-    command: "python3 $TASK_DIR/check_finalize_inventory.py"
+    command: "python3 $REFERENCE_DIR/case/case_finalize_draft/check_finalize_inventory.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -134,6 +137,7 @@ success_criteria:
       - sdd.draft.md
     max_file_chars: 150000
     include_agent_output: false
+    include_reference: false
     prompt: |
       You are reviewing a finalized Solution Design Document (the attached
       sdd.md) for a CANDIDATE-INTERVIEW (hiring) case. A separate mechanical check

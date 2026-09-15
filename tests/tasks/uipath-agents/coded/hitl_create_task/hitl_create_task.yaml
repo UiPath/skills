@@ -11,6 +11,9 @@ run_limits:
   expected_turns: 40
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Can you build me a uipath coded agent in LangGraph for expense
   reimbursements? Call it expense-approver. Anything $1000 or under can
@@ -52,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "interrupt(CreateEscalation) shape, MemorySaver checkpointer, app binding"
-    command: "python3 $TASK_DIR/check_hitl_create_task.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_hitl_create_task.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

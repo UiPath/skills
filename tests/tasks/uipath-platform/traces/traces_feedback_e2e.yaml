@@ -7,12 +7,18 @@ description: >
   verifies the round-trip. FolderKey and TraceId are still derived at runtime —
   only the fixture process key is fixed.
 tags: [uipath-platform, e2e, mode:build, lifecycle:discover, traces, feedback]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 16
+
+reference:
+  directory: .
 
 initial_prompt: |
   Run a feedback round-trip on a real trace:
@@ -20,7 +26,6 @@ initial_prompt: |
   - Fetch the LLM trace spans for that job and save to spans.json
   - Create positive feedback on the trace and save the response to feedback_create.json
   - Fetch the feedback record back by ID and save to feedback_get.json
-
 success_criteria:
   - type: command_executed
     description: "Agent fetched spans using uip traces spans get"
@@ -60,12 +65,12 @@ success_criteria:
 
   - type: run_command
     description: "Round-trip verified: create ID matches get ID, IsPositive=True"
-    command: "python3 $TASK_DIR/check_traces_feedback_e2e.py"
+    command: "python3 $REFERENCE_DIR/check_traces_feedback_e2e.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/cleanup_traces_feedback_e2e.py"
+  - command: "python3 _setup/cleanup_traces_feedback_e2e.py"
     timeout: 60

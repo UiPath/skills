@@ -10,6 +10,9 @@ tags: [uipath-maestro-flow, smoke, lifecycle:generate]
 run_limits:
   expected_turns: 9
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
@@ -36,7 +39,7 @@ success_criteria:
 
   - type: run_command
     description: "Initialized flow has the default manual trigger"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name WeatherAlert 'core.trigger.manual'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name WeatherAlert 'core.trigger.manual'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file was created in a supported authoring layout"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name WeatherAlert"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name WeatherAlert"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

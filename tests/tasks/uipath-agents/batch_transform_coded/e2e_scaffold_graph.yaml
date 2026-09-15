@@ -11,6 +11,9 @@ description: >
 tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding, mode:build]
 max_iterations: 1
 
+reference:
+  directory: .
+
 initial_prompt: |
   I want a coded agent named `batch-transform-agent` that performs batch BatchTransform
   on a CSV file uploaded as an attachment. at the end return destination_path of the modified file.
@@ -33,7 +36,7 @@ success_criteria:
 
   - type: run_command
     description: "Graph imports CreateBatchTransform / WaitEphemeralIndex / BatchTransformOutputColumn; uses interrupt(); passes is_ephemeral_index=True; no module-level UiPath()"
-    command: "python3 $TASK_DIR/check_batch_transform_graph.py"
+    command: "python3 $REFERENCE_DIR/check_batch_transform_graph.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

@@ -7,6 +7,9 @@ tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "sh
 run_limits:
   expected_turns: 36
   max_turns: 60
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a local BPMN project named "RiskScoreScriptBpmn".
   It must manually start with public `amount` (number) and `daysOverdue`
@@ -26,7 +29,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "BPMN uses supported public I/O and ScriptTask runtime contracts"
-    command: "python3 $TASK_DIR/check_script_jint_guidance.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_script_jint_guidance.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

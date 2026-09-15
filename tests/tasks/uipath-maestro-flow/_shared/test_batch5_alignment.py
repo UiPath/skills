@@ -89,7 +89,7 @@ def test_type_choice_report_accepts_persisted_namespaced_ids(tmp_path: Path) -> 
 
 
 def test_add_node_celsius_check_matches_the_requested_output() -> None:
-    checker = _load_module("edit/add_node/check_add_node.py", "check_add_node")
+    checker = _load_module("_shared/check_add_node.py", "check_add_node")
     payload = {
         "variables": {
             "globals": {
@@ -106,7 +106,7 @@ def test_add_node_celsius_check_matches_the_requested_output() -> None:
 
 
 def test_add_node_celsius_check_rejects_unrelated_weather_advice() -> None:
-    checker = _load_module("edit/add_node/check_add_node.py", "check_add_node_bad")
+    checker = _load_module("_shared/check_add_node.py", "check_add_node_bad")
     payload = {
         "variables": {
             "globals": {

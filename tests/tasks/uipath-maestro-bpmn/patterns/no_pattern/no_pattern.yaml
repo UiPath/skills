@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -46,7 +49,7 @@ success_criteria:
   - type: run_command
     description: >
       Process is well-formed, linear, and free of retrofitted pattern scaffolding
-    command: "python3 $TASK_DIR/check_no_pattern.py"
+    command: "python3 $REFERENCE_DIR/patterns/no_pattern/check_no_pattern.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -30,7 +30,7 @@ The `<path>` argument is relative or absolute; the command can run from any dire
 - `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
 - `--system-prompt <prompt>` — Initial system prompt for the agent
 - `--force` — Overwrite existing directory if non-empty
-- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below). Only applicable for autonomous agents, since adding inline conversational-agents within a flow project is currently not an enabled feature.
+- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below).
 
 #### Inline mode: `--inline-in-flow`
 
@@ -45,7 +45,7 @@ uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
 { "Result": "Success", "Code": "LowCodeAgentInitInline", "Data": { "Status": "Inline agent created inside flow project", "Path": "/path/to/FlowProject/<uuid>", "ProjectId": "<uuid>", "Model": "gpt-4o-2024-11-20" } }
 ```
 
-After scaffolding, add a `uipath.agent.autonomous` node to the flow with `inputs.source = <ProjectId>` and no node instance `model` block. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure.
+After scaffolding an autonomous agent, add a `uipath.agent.autonomous` node to the flow with `inputs.source = <ProjectId>` and no node instance `model` block. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure. Inline conversational agents are added with a `uipath.agent.conversational` node and are authored under the `uipath-maestro-flow` skill.
 
 ### `uip agent guardrails list`
 
@@ -450,6 +450,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Add one resource (local stub or remote import) | `uip solution resources add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
 | Remove one resource by key | `uip solution resources remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
 | Edit one resource's spec | `uip solution resources edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
+| Pull a changed cloud definition | `uip solution resources edit <KEY> --source remote --force --output json` | Solution directory | For a resource changed in Orchestrator / Data Fabric after import, which `refresh` reports under `Skipped`. Without `--force` it lists what would change and writes nothing (exit 1) |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |

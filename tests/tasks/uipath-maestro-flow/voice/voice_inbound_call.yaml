@@ -16,6 +16,9 @@ run_limits:
   max_turns: 80
   turn_timeout: 900
 
+reference:
+  directory: ..
+
 # The prompt deliberately does not SAY "don't run flow debug" — the whole
 # question is whether the agent knows on its own that debug is not the inbound
 # test loop. Reaching for it is still graded below (a wasted turn against a CLI
@@ -60,7 +63,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on the generated flow"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -69,7 +72,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains the inbound trigger, the voice agent, and end-call"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+      python3 $REFERENCE_DIR/_shared/flow_contains.py
       '"core.trigger.voice"'
       '"uipath.agent.voice"'
       '"uipath.conversational.voice.end-call"'
@@ -80,7 +83,7 @@ success_criteria:
 
   - type: run_command
     description: "callContext comes from the incoming-call trigger, bound into BOTH the voice agent and end-call, with no dial-out node, no leftover scaffolded manual trigger, and an entryPointId on the trigger"
-    command: "python3 $TASK_DIR/check_voice_flow.py inbound-call-context"
+    command: "python3 $REFERENCE_DIR/voice/check_voice_flow.py inbound-call-context"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -91,7 +94,7 @@ success_criteria:
   # goal — and holding the conversation is the deliverable.
   - type: run_command
     description: "Inline agent.json carries settings.voice, keeps settings.engine and metadata.isConversational, and holds a real system prompt"
-    command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
+    command: "python3 $REFERENCE_DIR/voice/check_voice_flow.py agent-voice"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -111,6 +114,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent explains the inbound test loop — publish, bind a number, dial it — and does not claim flow debug can run it"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The user asked for an inbound voice flow (an AI agent that answers calls
       to a support line) and asked what they have to do to run it and take a

@@ -19,6 +19,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/MisplacedPromptAttacksAgent
 
+reference:
+  directory: .
+
 initial_prompt: |
   I've got a UiPath coded agent in graph.py and I added a UiPath guardrail to
   it recently. I'm not confident it's set up the way UiPath expects. I might
@@ -65,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "user_prompt_attacks guardrail moved off @tool and onto LLM factory; graph.py parses"
-    command: "python3 $TASK_DIR/check_validate.py"
+    command: "python3 $REFERENCE_DIR/check_validate.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

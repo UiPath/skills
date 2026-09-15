@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-11T04:06:55Z",
-  "cli_version": "1.203.0-dev.8632",
+  "generated_at": "2026-09-15T04:06:56Z",
+  "cli_version": "1.203.0-dev.8677",
   "verbs": [
     "admin",
     "admin audit",
@@ -822,6 +822,7 @@
     "maestro case job",
     "maestro case job status",
     "maestro case job traces",
+    "maestro case merge",
     "maestro case pack",
     "maestro case process",
     "maestro case process get",
@@ -1330,6 +1331,7 @@
     "rpa remote",
     "rpa remote configure",
     "rpa remote download-file",
+    "rpa remote echo",
     "rpa remote exec",
     "rpa remote start",
     "rpa remote status",

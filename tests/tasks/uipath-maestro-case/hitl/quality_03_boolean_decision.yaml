@@ -6,6 +6,9 @@ description: >
   and that both true and false branches are wired to distinct downstream
   stages with consistent entry conditions.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath Case Management project named "VendorApprovalCase" for
   vendor onboarding with this shape:
@@ -260,7 +263,7 @@ success_criteria:
 
   - type: run_command
     description: "Both semantic boolean branches reference approved"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/hitl/check_boolean_routing.py VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    command: "python3 $REFERENCE_DIR/check_boolean_routing.py VendorApprovalCase/VendorApprovalCase/caseplan.json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

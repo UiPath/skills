@@ -30,6 +30,9 @@ run_limits:
   max_turns: 150
   turn_timeout: 4200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   We're designing a case-management solution for the candidate-interview process
   at Helix, a 1,200-person software company that hires ~80 candidates a quarter.
@@ -114,7 +117,7 @@ success_criteria:
 
   - type: run_command
     description: "(advisory, non-gating) the draft's data contract closes — every consumed `=vars.<name>` has a producer (Default, trigger source, or a `-> name` row)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/draft_lineage_check.py"
+    command: "python3 $REFERENCE_DIR/_shared/draft_lineage_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -127,6 +130,7 @@ success_criteria:
       - sdd.md
     max_file_chars: 150000
     include_agent_output: false
+    include_reference: false
     prompt: |
       You are reviewing a design-lane draft document for a CANDIDATE-INTERVIEW
       (hiring) case. The design is in whichever file is attached — `sdd.draft.md`

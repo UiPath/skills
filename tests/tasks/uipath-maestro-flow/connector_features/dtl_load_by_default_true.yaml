@@ -15,6 +15,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new Flow project called "DTLLoadByDefaultTrueTest" with a manual trigger.
   You need a flow that fetches Jira ticket ENGCE-00000. Select the first project and issue type available.
@@ -35,7 +38,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name DTLLoadByDefaultTrueTest '\"nodes\"' '\"edges\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name DTLLoadByDefaultTrueTest '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -51,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "DTL loadByDefault feature: issue key set and first project + issue type pre-selected in queryParameters AND customFieldsRequestDetails (matching values)"
-    command: "python3 $TASK_DIR/check_dtl_load_by_default.py"
+    command: "python3 $REFERENCE_DIR/connector_features/check_dtl_load_by_default.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -59,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

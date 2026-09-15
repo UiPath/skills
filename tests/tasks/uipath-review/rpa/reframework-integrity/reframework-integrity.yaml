@@ -23,6 +23,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath REFramework project exists at `REFrameworkBot` in the current
   directory. Review it for quality, reliability, and best-practice issues,
@@ -72,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Report flags the swallowed system exception (no Rethrow -> item marked success)"
-    command: "python3 $TASK_DIR/check_reframework_integrity.py"
+    command: "python3 $REFERENCE_DIR/reframework-integrity/check_reframework_integrity.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

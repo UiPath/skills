@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   I have an approved SDD for an AthenaCMEventCase case-management solution —
   it is saved as `sdd.md` in this folder. Build a UiPath Case Management
@@ -81,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "staged sdd.md retains the Athena caseplan topology contract"
-    command: "python3 $TASK_DIR/check_athena_cm_event_sdd.py"
+    command: "python3 $REFERENCE_DIR/athena_cm_event/check_athena_cm_event_sdd.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -89,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "generated caseplan preserves the authored Athena task-entry rule on every task"
-    command: "python3 $TASK_DIR/check_athena_cm_event_rules.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_athena_cm_event_rules.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -98,7 +101,7 @@ success_criteria:
 
   - type: run_command
     description: "generated caseplan preserves the Athena stage/task rules, external identity, and event trigger"
-    command: "python3 $TASK_DIR/check_athena_cm_event_case.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_athena_cm_event_case.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

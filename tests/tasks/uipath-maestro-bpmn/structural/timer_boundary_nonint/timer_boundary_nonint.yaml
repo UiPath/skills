@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "Non-interrupting timer boundary on a userTask does not cancel it, fully shaped"
-    command: "python3 $TASK_DIR/check_timer_boundary_noninterrupting.py"
+    command: "python3 $REFERENCE_DIR/structural/timer_boundary_nonint/check_timer_boundary_noninterrupting.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
