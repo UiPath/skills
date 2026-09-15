@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, requirements, test cases, test steps, test sets, and test executions: create, run/execute, wait for executions, fetch results, logs, and attachments; set a project's default Orchestrator folder; link automation packages to test cases; generate test reports and go/no-go summaries; run performance scenarios (load groups, dry runs); package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -11,13 +11,15 @@ Manage UiPath Test Manager projects, requirements, test cases, test sets, execut
 
 ## Use For
 
-Test Manager CRUD; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; and shareable QA-engineer, developer, or release-manager reports.
+Test Manager CRUD; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; shareable QA-engineer, developer, or release-manager reports; and performance scenarios — load groups, dry runs, scenario executions, load-testing an existing test case, p95/p99 latency, SLO violations, persona-organized performance reports.
 
 ## Concepts and CLI
 
 Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps.
 
 External Playwright packages are suites packaged and uploaded to Orchestrator. Ingestion auto-creates one testcase per Playwright test, without a link step, and labels each `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, and `PW_File_*`. They run on serverless cloud runtimes; see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
+
+Performance scenarios are reusable load-test definitions composed of load groups — a bound test case plus a load profile (virtual users, ramp-up / peak / ramp-down); one scenario can hold many. A scenario execution is one run of a scenario and produces cumulative metrics, per-second time series, application logs, and SLO violation reasons.
 
 Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcommand> --help`. **Always pass `--output json` to every `uip` command; all commands below require it.**
 
@@ -69,6 +71,42 @@ Project-scoped custom-field **definitions** (attach to Requirement/TestCase/Test
 
 Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Full list/get/add/remove surface, `--label-types`, and authoritative-set (`--remove-other-labels`) semantics: [references/object-labels-guide.md](references/object-labels-guide.md).
 
+### Performance Scenario Commands (`perf-scenario`)
+
+| Command | Purpose |
+|---|---|
+| `uip tm perf-scenario list --project-key <PROJECT_KEY> [--search <text>] [--limit <n>] [--offset <n>]` | List the performance scenarios in a project. Use only when the user wants to find or reuse an existing scenario. NOT a precondition for `create` — when the user asked to create a scenario, run `create` directly. |
+| `uip tm perf-scenario create --project-key <PROJECT_KEY> --name <NAME>` | Create a performance scenario. Returns `ScenarioKey` (`PROJECT_KEY:NUMBER`). Metadata flags are enum-validated: `--app-type` (`web` default, `apiService`, `ecommerce`, `gaming`, `financial`, `healthcare`, `saaS`, `streaming`, `messaging`, `enterprise` — note `api`/`desktop` are NOT valid), `--perf-test-type` (`loadTesting` default, `stressTesting`, `enduranceTesting`, `spikeTesting`), `--responsiveness` (`fast` default, `instant`, `moderate`, `slow`, `verySlow`). |
+| `uip tm perf-scenario get --scenario-key <SCENARIO_KEY>` | Scenario metadata + every load group bound to it. Project is derived from the scenario-key prefix — **no `--project-key` flag**. |
+| `uip tm perf-scenario load-groups add --scenario-key <SCENARIO_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME>` | Attach a test case as a load group. **Omit `--package-version`** to auto-resolve the latest published version (preferred). **If auto-resolve fails** (e.g. `featureDisabled` — the TM package-discovery feature is off on the tenant), resolve the version yourself via `uip or processes list` / `uip or packages list` and pass `--package-version` explicitly. **Always pass `--robot-type serverless` explicitly** unless the user names another robot type — the flag defaults to `standard`, which requires a machine with Performance Testing runtimes *connected* to the folder and fails with "runtimes are assigned … but none are connected" on machineless (cloud/serverless) tenants. Optional load-profile flags: `--virtual-users`, `--ramp-up-minutes`, `--peak-minutes`, `--ramp-down-minutes`, `--delay-minutes`, `--max-response-time-ms`, `--max-error-rate`, `--robot-type`. |
+| `uip tm perf-scenario execute --scenario-key <SCENARIO_KEY> --wait` | Kick off a run. With `--wait` the CLI polls the execution's typed status until terminal (`finished` / `cancelled` — the service serializes PascalCase `Finished`, matched case-insensitively). Exits `1` when the run is cancelled, its configuration execution failed, or any SLO was violated (even though the results envelope still says `Success`); exits `4` on timeout. Tune with `--poll-interval-sec` (default `12`) and `--timeout-sec` (default `1800`, `0` = no timeout). Use `--execution-type performanceTesting` for a full load run honouring the load-profile flags; default is `dryRun` (fast smoke). Add `--full` (only meaningful with `--wait`) to include the per-second time series in the emitted results. |
+| `uip tm perf-scenario load-groups update --load-group-id <LOAD_GROUP_ID> --project-key <PROJECT_KEY> [--virtual-users <n>] [--ramp-up-minutes <n>] [--peak-minutes <n>] [--ramp-down-minutes <n>] [--delay-minutes <n>] [--max-response-time-ms <ms>] [--max-error-rate <rate>] [--multiplexing-factor <n>] [--robot-type <type>] [--enabled <bool>]` | Update one load group's load profile in place. Use **between** a passing dry run and a full run (apply the dry run's `Recommended multiplexing factor: N` here). Partial update — omitted flags are preserved. `--load-group-id` is the **scenario** load-group UUID (`LoadGroupId` from `get` / `load-groups add`), never the per-execution id from `load-groups list`. |
+| `uip tm perf-scenario load-groups remove --load-group-id <LOAD_GROUP_ID> --project-key <PROJECT_KEY>` | Detach a load group from the scenario. The test case and past execution data are untouched. `--project-key` is REQUIRED (a bare UUID has no prefix to derive it from). Confirm with the user first — there is no undo beyond re-adding. |
+| `uip tm perf-scenario stop --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | Cancel a running scenario execution — including from a **separate terminal** while `execute --wait` polls elsewhere. |
+| `uip tm perf-scenario list-dry-run-reports --scenario-key <SCENARIO_KEY>` | Check whether a passing dry-run report exists before a full run. `Data.HasPassingDryRun: true` → skip the dry run. |
+| `uip tm perf-scenario executions list --project-key <PROJECT_KEY> [--scenario-id <uuid>] [--execution-type dryRun\|performanceTesting] [--limit <n>] [--offset <n>]` | List scenario executions (find an execution id). Rows carry `Id`, `Status`, `ExecutionType`, `Duration` (ms — the `--end-time-ms` value for the window flags below). |
+| `uip tm perf-scenario load-groups list --project-key <PROJECT_KEY> --execution-id <uuid>` | Per-load-group config + status **for one execution** (thresholds, `SystemUnderTestType`, VUs, ramp timing). Each row's `Id` is the **per-execution** load-group id (use it for the metrics/errors commands); its `LoadGroupId` is the scenario load-group id (use it for `load-groups update` / `remove`). For the load groups configured on the scenario itself use `perf-scenario get`. |
+| `uip tm perf-scenario results get --execution-id <uuid> [--completed true\|false]` | Full raw data bundle: time-series, CPU/RAM, application logs. No `--project-key` (perf-service endpoint). `--completed true` (default) reads the finished run from the database; `false` reads a live run. `ExecutionsData` keys = per-load-group execution ids; use each entry's dashed `ExecutionId` field downstream. |
+| `uip tm perf-scenario http-errors list --execution-id <uuid> --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | HTTP errors for one load group execution (window flags REQUIRED; no `--project-key`). |
+| `uip tm perf-scenario automation-errors list --execution-id <uuid> --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | Automation-step failures for one load group execution (window flags REQUIRED; no `--project-key`). |
+| `uip tm perf-scenario transaction-metrics list --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | Per-transaction avg / min / max / p50 / p90 / p95 / p99, request count, HTTP error count + rate. Window flags REQUIRED; no `--project-key`; **API-SUT load groups only** — others return `[]`. |
+| `uip tm perf-scenario report generate --execution-id <uuid> --format pdf\|html --report-file <path> --project-key <key>` | Render an authored report; returns a single `ViewUrl` (in-app report page when `--project-key` is passed). See [references/perf-report-guide.md](references/perf-report-guide.md). |
+| `uip tm perf-scenario report compare --scenario-id <uuid> --execution-ids <uuid...> --report-file <path> --project-key <key>` | Render an authored comparison report across runs of one scenario (ids oldest→newest); returns a single `ViewUrl`. |
+
+> **All four load-group verbs live under `load-groups`** — `add`, `list`, `update`, `remove`. The dashed compounds `perf-scenario add-testcase` and `perf-scenario update-loadgroup` do **not** exist; they exit with `unknown command`.
+>
+> **Every read command accepts `--query <jq-expr>`** (`list`, `executions list`, `load-groups list`, `results get`, `http-errors list`, `automation-errors list`, `transaction-metrics list`, `report generate`, `report compare`). Use it to slim large payloads instead of piping the whole bundle back — `results get` alone runs to hundreds of KB.
+>
+> **Prefer `--wait` over a hand-rolled poll loop** — the CLI handles the poll loop and status dedup. **BUT for long full-load runs (peak > 5 min), kick off WITHOUT `--wait`**: `--wait` blocks the agent's shell, so the user can't cancel or ask anything meanwhile. Return the `ExecutionId` plus the check (`results get`) and cancel (`stop`) commands instead. Use `--wait` only for dry runs and short peaks (≤ 5 min).
+>
+> **Dry run vs. full — two phases, different rules:** `dryRun` **ignores the load profile** (always 1 VU, short fixed profile; emits `Recommended multiplexing factor: N`) — don't ask the user about load values or call `load-groups update` before a dry run. `performanceTesting` **honours the load profile** and requires a passing dry run on file.
+>
+> **New vs. existing scenarios:** scenario created this turn → dry run first, then full. User gave an existing `<SCENARIO_KEY>` → try `performanceTesting` directly; only on HTTP 400 "No dry run reports found" fall back to dry-run + retry. When unsure, `list-dry-run-reports`.
+>
+> **`create` + `load-groups add` + `execute` are independent — don't fuse them.** If the user supplies a `<SCENARIO_KEY>`, jump straight to `execute` (confirm load groups with `get` first). See [references/perf-scenario-guide.md](references/perf-scenario-guide.md).
+>
+> **Confirm the load profile with the user BEFORE a full run — never before a dry run.** Sequence: `get` → ask the user to confirm/override VUs, ramp/peak/ramp-down, thresholds, multiplexing per load group → `load-groups update` → then submit `performanceTesting`.
+
 ## Critical Rules
 
 1. **Always check login first:** run `uip login status --output json` before any Test Manager operation. If unauthenticated, run `uip login`.
@@ -100,6 +138,8 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 - Pack, ingest, label, and run Playwright on serverless: [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md)
 - Custom-field definitions, labels, and values (`uip tm customfield`): [references/custom-fields-guide.md](references/custom-fields-guide.md)
 - Object labels / tag metadata on test entities (`uip tm objectlabel`): [references/object-labels-guide.md](references/object-labels-guide.md)
+- Run a performance scenario end-to-end (create → load group → dry run → full run): [references/perf-scenario-guide.md](references/perf-scenario-guide.md)
+- Persona-organized performance report (text / PDF / HTML; requires a scenario execution id): [references/perf-report-guide.md](references/perf-report-guide.md)
 
 ## Anti-patterns
 
