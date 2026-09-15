@@ -14,6 +14,13 @@ sandbox:
     - type: template_dir
       path: _setup
       mount_point: _setup
+    # Brownfield scaffold, mounted ONLY here. It lands in the shared `_setup`
+    # mount but lives outside the shared source dir, so the nine sibling tasks
+    # that mount `_setup` cannot see a script that seeds a query node into a
+    # flow they are supposed to build themselves.
+    - type: template_dir
+      path: _setup_brownfield
+      mount_point: _setup
 run_limits:
   max_turns: 100
   turn_timeout: 1500
