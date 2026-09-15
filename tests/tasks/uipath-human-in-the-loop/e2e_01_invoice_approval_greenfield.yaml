@@ -10,6 +10,13 @@ description: >
   so the test exercises HITL authoring and wiring, not live connector
   discovery. Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga]
+# Scope note: this task used to extract via a real SharePoint connector and
+# post via a real SAP connector, exercising live connector/registry
+# discovery. Mocking both as Script nodes (see run_limits below) drops that
+# coverage — this suite has no other e2e task exercising live connector
+# discovery either. Confirmed as an intentional trade for a reliable,
+# fast HITL-wiring test; tracked as an open gap in
+# ../TEST_PLAN.md#coverage-gaps rather than left unstated.
 
 run_limits:
   expected_turns: 34
