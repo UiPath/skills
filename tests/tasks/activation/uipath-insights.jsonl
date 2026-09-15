@@ -35,3 +35,7 @@
 {"id": "uipath-insights-035", "prompt": "Which Insights roles exist and what do they permit?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-036", "prompt": "Which groups have been given Insights roles?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-037", "prompt": "Which Insights roles is this user assigned?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-038", "prompt": "How many queue items did we process yesterday and how many succeeded?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-039", "prompt": "Which queues are at risk of breaching their SLA?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-040", "prompt": "Why are items failing in the Invoices queue?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-041", "prompt": "Of the queue items we retried this month, how many went on to succeed?", "expected_skill": "uipath-insights"}
