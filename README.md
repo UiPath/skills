@@ -112,7 +112,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
-| `uipath-governance` | In-development |
+| `uipath-governance` | Preview |
 | `uipath-human-in-the-loop` | Stable |
 | `uipath-insights` | Preview |
 | `uipath-ixp` | In-development |
