@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-14T04:06:21Z",
-  "cli_version": "1.203.0-dev.8651",
+  "generated_at": "2026-09-15T04:06:56Z",
+  "cli_version": "1.203.0-dev.8677",
   "verbs": [
     "admin",
     "admin audit",
@@ -822,6 +822,7 @@
     "maestro case job",
     "maestro case job status",
     "maestro case job traces",
+    "maestro case merge",
     "maestro case pack",
     "maestro case process",
     "maestro case process get",
