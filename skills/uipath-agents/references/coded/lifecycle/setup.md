@@ -10,7 +10,7 @@ which uip > /dev/null 2>&1 || echo "install uip: npm install -g @uipath/cli"
 
 ## Framework Selection
 
-Pick the framework before starting. The package installed in the Workflow determines which scaffold `uip codedagent new` produces: `uipath new` defaults to `--type auto`, which uses the agent template of the framework package installed in the active venv and falls back to a Coded Function scaffold (`uipath.json` with a `functions` map, no `<framework>.json`) when none is installed. Install exactly one `<FRAMEWORK_PACKAGE>` before `new`, not after. `uipath new` also accepts `--type agent --agent-framework <langchain|llamaindex|openai-agents>` and `--type function` to force a scaffold; this workflow relies on `auto` and does not pass them.
+Pick the framework before starting. The package installed in the Workflow determines which scaffold `uip codedagent new` produces: `uipath new` defaults to `--type auto`, which uses the agent template of the framework package installed in the active venv and falls back to a Coded Function scaffold (`uipath.json` with a `functions` map, no `<framework>.json`) when none is installed. Install exactly one `<FRAMEWORK_PACKAGE>` before `new`, not after — with several installed, `new` fails and names them. `uipath new` also accepts `--type function` to force a Coded Function scaffold and `--type agent` to require an agent one (which fails when no framework package is installed); there is no flag for naming the framework, and this workflow relies on `auto` and passes neither.
 
 | Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
 |---|---|---|---|
