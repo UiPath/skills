@@ -34,6 +34,6 @@ success_criteria:
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
     flags:
-      fields: {contains: "a7c3e9105f2b4d86", aliases: ["f"]}
+      fields: {equals: "a7c3e9105f2b4d86", aliases: ["f"]}
     weight: 3.0
     pass_threshold: 1.0
