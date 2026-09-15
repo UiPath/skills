@@ -90,7 +90,13 @@ def test_bundled_context_inputs_declare_a_type() -> None:
             continue
         context = template.split("<uipath:context>")[1].split("</uipath:context>")[0]
         declared = {field["name"]: field["type"] for field in extension["contextFields"]}
-        for tag in re.findall(r"<uipath:input [^/>]*/>", context):
+        # Opening tag only: a context input is self-closing or, for metadata,
+        # wraps CDATA. The count guards the pattern against silently skipping one.
+        tags = re.findall(r"<uipath:input\b[^>]*>", context)
+        assert len(tags) == len(re.findall(r"<uipath:input\b", context)), (
+            f"{name}: the input pattern skipped a context input"
+        )
+        for tag in tags:
             field = re.search(r'name="([^"]+)"', tag).group(1)
             match = re.search(r'type="([^"]+)"', tag)
             if match is None:
