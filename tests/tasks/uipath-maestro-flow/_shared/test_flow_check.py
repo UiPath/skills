@@ -226,6 +226,8 @@ def test_billing_gates_use_the_shared_entity_hints():
     gates = (
         "multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py",
         "multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py",
+        "multi_node/billing_dispute_resolution/"
+        "check_structure_billing_dispute_resolution.py",
     )
     for relative in gates:
         with open(os.path.join(suite, relative), encoding="utf-8") as handle:
