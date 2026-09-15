@@ -22,6 +22,9 @@ run_limits:
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 
+reference:
+  directory: ../..
+
 simulation:
   enabled: true
 
@@ -77,7 +80,7 @@ success_criteria:
   # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0
@@ -91,7 +94,7 @@ success_criteria:
   # provide. See check_escalation_behavior.py for the rationale.
   - type: run_command
     description: "Flow performs the triage: trigger, urgency+VIP routing, Slack notify, email reply, ticket creation"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/customer_escalation_simulated/check_escalation_behavior.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_escalation_behavior.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0
@@ -104,7 +107,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named CustomerEscalation (elicited from the user)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name CustomerEscalation"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name CustomerEscalation"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

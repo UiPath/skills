@@ -21,6 +21,9 @@ sandbox:
     - type: template_dir
       path: ../templates
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
   definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
@@ -52,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "One sla-status-change entry on a NON-interrupting lane: slaId alone (no escalationId) on the root SLA, isInterrupting false, and the lane stays stageType secondary with isRequired false rather than being promoted to a regular stage; 4 stages total"
-    command: "python3 $TASK_DIR/check_case_breach_oversight.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_case_breach_oversight.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

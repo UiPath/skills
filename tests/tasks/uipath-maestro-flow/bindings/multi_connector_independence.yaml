@@ -1,6 +1,3 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-bindings-multi-connector-independence
 description: >
   Two distinct connector nodes (different connector keys) in the same flow,
@@ -14,12 +11,19 @@ description: >
   in the first place. See https://github.com/UiPath/cli/pull/2197 and
   https://github.com/UiPath/flow-workbench/pull/1726.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, bindings, regression]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 71
   task_timeout: 3600
   max_turns: 80
   turn_timeout: 1200
+
+reference:
+  directory: ..
 
 initial_prompt: |
   Build a flow named "BindingsMulti" with TWO Integration Service connector
@@ -44,7 +48,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The flow contains at least two connector nodes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py connector_node_count '**/BindingsMulti*.flow' 2"
+    command: "python3 $REFERENCE_DIR/bindings/check_bindings.py connector_node_count '**/BindingsMulti*.flow' 2"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -52,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "Both recorded connection ids appear in the flow bindings"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
+    command: "python3 $REFERENCE_DIR/bindings/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -68,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py structure '**/BindingsMulti*.flow'"
+    command: "python3 $REFERENCE_DIR/bindings/check_bindings.py structure '**/BindingsMulti*.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -76,7 +80,7 @@ success_criteria:
 
   - type: run_command
     description: "Both connection ids appear in Connection bindings, each on its own ConnectionId row"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
+    command: "python3 $REFERENCE_DIR/bindings/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -84,7 +88,7 @@ success_criteria:
 
   - type: run_command
     description: "No empty-keyed Connection bindings (cross-node aliasing surface)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_empty_stubs '**/BindingsMulti*.flow'"
+    command: "python3 $REFERENCE_DIR/bindings/check_bindings.py no_empty_stubs '**/BindingsMulti*.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 4.0
@@ -92,12 +96,12 @@ success_criteria:
 
   - type: run_command
     description: "No (name, propertyAttribute, resourceKey) triplet duplicates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_triplet_dups '**/BindingsMulti*.flow'"
+    command: "python3 $REFERENCE_DIR/bindings/check_bindings.py no_triplet_dups '**/BindingsMulti*.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

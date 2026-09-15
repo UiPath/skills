@@ -10,6 +10,9 @@ run_limits:
   expected_turns: 24
   max_turns: 100
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a local BPMN project named "ExpenseApprovalBpmn" with this process:
 
@@ -52,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "A downstream gateway condition references the HITL output variable"
-    command: "python3 $TASK_DIR/check_quality_result_downstream.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_quality_result_downstream.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

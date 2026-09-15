@@ -36,6 +36,14 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/falconry
       mount_point: documents
+    # handoff.py + handoff_tenant.py (pre_run/post_run tooling + shared tenant
+    # plumbing; no scoring logic — the primary gate lives in
+    # _shared/check_ixp_handoff.py, never staged here). Shared with
+    # e2e_04_build_mechanics.yaml, which mounts this same _setup at the same
+    # mount_point.
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 # Cut at the handoff, so the expensive tail (`projects create`, training,
 # registry propagation) never runs here — that budget lives in e2e_04. Still
@@ -54,11 +62,11 @@ run_limits:
 # pull/search/get cycle is gone, leaving a help probe, one list, one create and
 # a delete per swept project. Arithmetic at handoff.py's UIP_TIMEOUT_SECONDS.
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py seed"
+  - command: "python3 _setup/handoff.py seed"
     timeout: 300
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py teardown"
+  - command: "python3 _setup/handoff.py teardown"
     timeout: 300
 
 # The prompt is deliberately UNCHANGED from the pre-RE-13543 version but for

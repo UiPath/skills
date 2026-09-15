@@ -1,16 +1,20 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-multi-city-weather
 description: >
   Loop over 3 cities, fetch weather from open-meteo for each, classify warm/cold
   with a script, collect results. Exercises Loop → HTTP → Script chaining with
   data flowing between nodes across iterations.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:loop, feature:http]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 43
   turn_timeout: 1200
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build the flow inside a solution of the same name.
@@ -34,7 +38,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -42,12 +46,12 @@ success_criteria:
 
   - type: run_command
     description: "Flow debug runs: loop + HTTP + script all execute, output contains all 3 cities"
-    command: "python3 $TASK_DIR/check_multi_city_weather.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_multi_city_weather.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

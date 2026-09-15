@@ -6,16 +6,26 @@ description: >
   `flow debug` skipped to avoid live tenant side effects. Full CRUD /
   negative-path coverage lives in e2e_contract_intake_pipeline.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   max_turns: 100
   turn_timeout: 1800
   task_timeout: 3600
 
+reference:
+  directory: .
+
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-uipath-dataservice'
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
     timeout: 120
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
     timeout: 60
 
 initial_prompt: |
@@ -64,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "Create body covers all 8 field types with correct JSON literal shapes (or =js: expression bindings)"
-    command: "python3 $TASK_DIR/check_smoke_create_all_types.py"
+    command: "python3 $REFERENCE_DIR/check_smoke_create_all_types.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

@@ -186,4 +186,4 @@ This skill only handles dashboard building, editing, and deploying. For anything
 - **Never** run directory exploration via ANY shell — `ls`, `find`, `dir`, `Get-ChildItem`, `tree`, glob loops. Memory or prior-session hints are not a reason to explore; the state.json check is the only existing-work probe
 - **Never** read files one at a time
 - **Never** commit generated dashboard files
-- **Never** auto-deploy without explicit user confirmation
+- **Never** auto-deploy without an explicit deploy request. A BUILD or EDIT request ends at the local dashboard — the build subagent's return block is the finish line — even in a non-interactive/automated run. "Non-interactive" only removes the mode/folder questions *inside* Path C after the user asked to deploy; it never turns a build into a deploy

@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -56,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "BPMN has distinct filter and map script tasks over the catalog and valid DI"
-    command: "python3 $TASK_DIR/check_reading_list.py"
+    command: "python3 $REFERENCE_DIR/multi_node/reading_list/check_reading_list.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

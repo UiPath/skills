@@ -8,6 +8,9 @@ description: >
   so the build is fully local (no registry/cloud needed).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a UiPath Case Management project named "TimerLogCase" with a manual
   trigger and two sequential stages, each holding one built-in timer task.
@@ -165,7 +168,7 @@ success_criteria:
       append-only Journal section flushed at each section boundary, and a summary filled
       from it at Step 12.1. An end-of-build dump held in reasoning is lost to context
       pressure before it is ever written.
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_issue_journal.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_issue_journal.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

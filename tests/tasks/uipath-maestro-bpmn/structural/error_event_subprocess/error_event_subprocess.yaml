@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -75,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Error end event with a configured code is caught by an interrupting error event subprocess, fully shaped"
-    command: "python3 $TASK_DIR/check_error_event_subprocess.py"
+    command: "python3 $REFERENCE_DIR/structural/error_event_subprocess/check_error_event_subprocess.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

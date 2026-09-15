@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Structural checks for a text conversational flow (conversational-agent plugin).
 
-    python3 $TASK_DIR/check_conversational_flow.py settings    # the five-key settings block
-    python3 $TASK_DIR/check_conversational_flow.py agent-json  # sidecar agent.json
-    python3 $TASK_DIR/check_conversational_flow.py loop        # trigger + success-port loop
+    python3 $REFERENCE_DIR/conversational/check_conversational_flow.py settings    # the five-key settings block
+    python3 $REFERENCE_DIR/conversational/check_conversational_flow.py agent-json  # sidecar agent.json
+    python3 $REFERENCE_DIR/conversational/check_conversational_flow.py loop        # trigger + success-port loop
 
 Offline — reads the `.flow` source and the inline agent's `agent.json`. No
 tenant calls, no agent self-reports. Exit 0 on pass; exit 1 with a `FAIL:` line.
@@ -16,24 +16,16 @@ import json
 import os
 import sys
 
-# `_shared/` resolves two ways: locally the task dir sits in the repo so
-# `../_shared` works; under coder-eval the task dir is copied in alone
-# ($TASK_DIR -> /work/task_dir) and only the repo mount ($SKILLS_REPO_PATH,
-# which the other criteria also use) has it.
+# `../_shared` resolves locally (the task dir sits in the repo) and under
+# coder-eval (this script runs from $REFERENCE_DIR, which mounts the same
+# subtree rooted at this dir's parent).
 _TASK_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-_REPO = os.environ.get("SKILLS_REPO_PATH")
-_ROOTS = [_TASK_ROOT]
-if _REPO:
-    _ROOTS.insert(0, os.path.join(_REPO, "tests", "tasks", "uipath-maestro-flow"))
-for _root in _ROOTS:
-    if os.path.isdir(os.path.join(_root, "_shared")):
-        sys.path.insert(0, _root)
-        break
+if os.path.isdir(os.path.join(_TASK_ROOT, "_shared")):
+    sys.path.insert(0, _TASK_ROOT)
 else:
     sys.exit(
-        "FAIL: cannot locate the _shared helpers. Looked in: "
-        + ", ".join(os.path.normpath(r) for r in _ROOTS)
-        + ". Set SKILLS_REPO_PATH to the repo root."
+        "FAIL: cannot locate the _shared helpers at "
+        + os.path.normpath(_TASK_ROOT)
     )
 from _shared.flow_check import find_project_dir  # noqa: E402
 

@@ -17,6 +17,9 @@ run_limits:
 sandbox:
   node: {}
 
+reference:
+  directory: ..
+
 # Reclaim the build's node_modules before artifact preservation. The build
 # installs a full ~200MB node_modules; the experiment-default prune (30s) can
 # time out on it, bloating the preserved artifact. This task-level prune runs
@@ -58,7 +61,7 @@ success_criteria:
   - type: run_command
     description: "Project is a valid 1-widget compiler-model dashboard after the remove"
     command: >
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      python3 $REFERENCE_DIR/_shared/check_dashboard.py
       --min-metrics 1 --min-widgets 1 --forbid-substr fnBody
     timeout: 30
     expected_exit_code: 0

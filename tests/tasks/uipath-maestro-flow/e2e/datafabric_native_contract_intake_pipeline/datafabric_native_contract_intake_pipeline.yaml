@@ -1,0 +1,91 @@
+task_id: skill-flow-datafabric-native-contract-intake-pipeline
+description: >
+  E2E test for the native Data Fabric entity nodes (`core.datafabric.*`) —
+  the OOTB canvas nodes that read/write records directly, without the
+  Integration Service connector — exercised across Create / Read(single) /
+  Read(multiple) / Update / Delete on one ContractRegistry record. Mirrors
+  connector_features/datafabric_connector/e2e_contract_intake_pipeline.yaml
+  but the prompt steers to the native nodes and validation checks the
+  native shape (`entityConfig`, `_filters`, `_sort`, `recordSource`)
+  instead of connector activity parameters. Static-validate only; runtime
+  `flow debug` skipped to avoid live tenant side effects.
+tags: [uipath-maestro-flow, e2e, mode:build, shape:multi-node, feature:entities]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 100
+  turn_timeout: 1800
+  task_timeout: 2400
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/datafabric_native_contract_intake_pipeline/preflight_native_entity_nodes.py"'
+    timeout: 60
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a UiPath Flow against the `ContractRegistry` Data Fabric entity
+  (fields: contractTitle STRING, status STRING, priority INTEGER,
+  dueDate DATE, value DECIMAL, isUrgent BOOLEAN) that exercises the native
+  Data Fabric entity nodes on ONE record. Use the native entity nodes for
+  every step below — do not fall back to the Integration Service Data
+  Fabric connector. All downstream nodes bind their record id to the
+  create node's output Id — do NOT hard-code any Id.
+
+  Chain the following in order:
+
+  1. Create a record on ContractRegistry. Populate the body with
+     contractTitle, status='Draft', priority (any integer 1-10),
+     dueDate (any valid date), value (any decimal), isUrgent (boolean).
+
+  2. Read that same record by Id (single-record mode) — filter on Id,
+     bound to the create node's output Id.
+
+  3. Read records in multiple-record mode — filter where contractTitle
+     equals the literal value used in step 1, sorted by priority
+     descending.
+
+  4. Update the record (single-record mode, by Id) — recordId bound to
+     the create node's output Id. The update body must contain ONLY the
+     `status` key set to "In Review"; no other fields.
+
+  5. Delete the record (single-record mode, by Id) — recordId bound to
+     the create node's output Id.
+
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow chains native Create → Read(single)/Read(multiple)/Update/Delete on ContractRegistry with recordId bound to create.output, plus a priority-desc-sorted multi-read and a partial status-only update"
+    command: "python3 $TASK_DIR/check_datafabric_native_contract_intake_pipeline.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Native entity node instances match registry shape: definitions[] entry present, no instance outputs/model block, no error-port edge"
+    command: "python3 $TASK_DIR/check_native_node_shape.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

@@ -3,8 +3,8 @@
 Both the review-CLI and guardrail-catalog checkers ask the same two questions of
 a saved review report, so the regexes live here rather than drifting apart in
 two copies. Imported by sibling `check_*.py` scripts, which coder_eval invokes
-as `python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_*.py` --
-so this directory is already `sys.path[0]` and a plain import works.
+as `python3 $REFERENCE_DIR/check_*.py` -- so this directory is already
+`sys.path[0]` and a plain import works.
 """
 
 import re

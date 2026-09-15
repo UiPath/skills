@@ -17,6 +17,9 @@ run_limits:
   max_turns: 150
   turn_timeout: 2700
 
+reference:
+  directory: .
+
 initial_prompt: |
   Design a "CaseReasoningRegression" Maestro case and produce `sdd.md`. Stop
   after the SDD — do not create caseplan.json. This is a design-only exercise:
@@ -53,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "Known case-reasoning invariants are represented in sdd.md"
-    command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/design_delegation_regressions/check_case_reasoning_regressions.py\""
+    command: "python3 \"$REFERENCE_DIR/check_case_reasoning_regressions.py\""
     timeout: 10
     expected_exit_code: 0
     weight: 4.0
@@ -65,6 +68,7 @@ success_criteria:
       - sdd.md
     max_file_chars: 180000
     include_agent_output: false
+    include_reference: false
     prompt: |
       Review the CaseReasoningRegression SDD.
 
