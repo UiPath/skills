@@ -162,7 +162,7 @@
       "last_synced": null
     },
     "uipath-planner": {
-      "status": "preview",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
