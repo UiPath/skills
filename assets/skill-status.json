@@ -58,7 +58,7 @@
       "last_synced": null
     },
     "uipath-automationhub": {
-      "status": "in-development",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
