@@ -346,7 +346,7 @@ Before presenting the plan, validate every rule:
 
 ## Handoff to Phase 2
 
-After explicit user approval, [Planning Phase 2: Implementation](planning-impl.md) must:
+Once the plan is approved, [Planning Phase 2: Implementation](planning-impl.md) must:
 
 1. Validate every node type with `uip maestro flow registry get`; read each plugin's `impl.md`.
 2. Resolve connector and resource nodes using relevant `impl.md` files, including [connector](plugins/connector/impl.md) and [rpa](plugins/rpa/impl.md).
@@ -356,8 +356,6 @@ After explicit user approval, [Planning Phase 2: Implementation](planning-impl.m
 6. Replace `core.logic.mock` nodes with real resources when available.
 7. Finalize implementation-ready details.
 
-**Do not proceed to Phase 2 until the user explicitly approves the architectural plan.**
+**Do not proceed to Phase 2 until the plan is approved, and route that approval through [SKILL.md](../../SKILL.md) rule #5 with the proceed option marked recommended.** Rule #5 then owns both branches: a user approves interactively, and its non-interactive fallback takes the marked option and records the unreviewed handoff. The mark is the whole mechanism — the fallback carries a headless run past a gate that has one and stops at a gate that does not.
 
-Non-interactively (CI/headless, no user available), this is a **review** gate, not one of [SKILL.md](../../SKILL.md) rule #5's consent gates — nothing destructive and no tenant write rides on approving a local markdown file. So write `<SolutionName>.uipath.flow.arch.plan.md`, proceed to Phase 2 on it, and record in the final report that it went unreviewed.
-
-**Never skip writing the file.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which is far more expensive than the plan it replaces.
+**Write the plan before asking, always.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which costs more than the plan it replaces.

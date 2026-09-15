@@ -2,7 +2,7 @@
 
 Resolve every implementation detail in the approved `.uipath.flow.arch.plan.md` and produce a build-ready `.uipath.flow.impl.plan.md`, using plugin `impl.md` files, wiring rules, and flow patterns.
 
-> **Prerequisite:** The user must explicitly approve `.uipath.flow.arch.plan.md` before this phase, or, non-interactively, the file exists and the unreviewed handoff was recorded ([planning-arch.md — Handoff to Phase 2](planning-arch.md#handoff-to-phase-2)).
+> **Prerequisite:** `.uipath.flow.arch.plan.md` exists and its approval went through rule #5 ([planning-arch.md — Handoff to Phase 2](planning-arch.md#handoff-to-phase-2)).
 >
 > **Always validate with the registry**, including OOTB nodes. Port names, required inputs, and output schemas can change.
 
@@ -205,9 +205,9 @@ Present a short chat summary containing:
 5. Required fields needing user input.
 6. Connections needing creation.
 
-Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. Do not build until the user explicitly approves.
+Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. **Do not build until the plan is approved, and route that approval through [SKILL.md](../../SKILL.md) rule #5 with the proceed option marked recommended** — rule #5 owns both branches, so a user approves interactively and its non-interactive fallback takes the marked option and records the unreviewed build.
 
-Non-interactively (CI/headless, no user available), this is a **review** gate, not one of [SKILL.md](../../SKILL.md) rule #5's consent gates — approving a local markdown file is neither destructive nor a tenant write. Write the file, build from it, and record in the final report that it went unreviewed. Write it even then: the resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
+**Write the plan before asking, always.** The resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
 
 ## Product Heuristics
 
