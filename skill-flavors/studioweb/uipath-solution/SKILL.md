@@ -24,7 +24,7 @@
 <!--skill-flavor:solution-lifecycle-steps:end-->
 
 <!--skill-flavor:when-to-use-uipx:start-->
-- User wants to publish the open Studio Web solution (`uip solution publish`; `pack`/`upload`/`deploy` are unavailable in the browser — publishing to the personal workspace auto-deploys)
+- User wants to publish or deploy the open Studio Web solution (`uip solution publish`, then `uip solution deploy run` for shared destinations — publishing to the personal workspace auto-deploys; `pack`/`upload` are unavailable in the browser)
 <!--skill-flavor:when-to-use-uipx:end-->
 
 <!--skill-flavor:when-to-use-detected-uipx:start-->
