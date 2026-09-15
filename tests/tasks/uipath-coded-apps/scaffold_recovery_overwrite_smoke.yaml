@@ -1,0 +1,71 @@
+task_id: skill-coded-apps-scaffold-recovery-overwrite-smoke
+description: >
+  Smoke test: the scaffold gate has already failed and left a vanilla-TypeScript
+  tree on disk. Verifies Rule #20's recovery path — re-scaffold over it, never
+  convert a vanilla scaffold into a React one by hand. A bare re-run of
+  `create-vite` into the occupied directory prints `Operation cancelled` and
+  exits `0` without changing anything, so an agent that does not clear the
+  directory makes no progress and the artifacts on disk stay vanilla.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+
+pre_run:
+  - command: "mkdir -p intake-report/src && printf '{\\n  \"name\": \"intake-report\",\\n  \"private\": true,\\n  \"version\": \"0.0.0\",\\n  \"type\": \"module\",\\n  \"scripts\": { \"dev\": \"vite\", \"build\": \"tsc && vite build\" },\\n  \"devDependencies\": { \"typescript\": \"~5.9.0\", \"vite\": \"^8.0.0\" }\\n}\\n' > intake-report/package.json && printf 'import { setupCounter } from \\x27./counter.ts\\x27\\n' > intake-report/src/main.ts && printf 'export function setupCounter() {}\\n' > intake-report/src/counter.ts && printf 'body { margin: 0 }\\n' > intake-report/src/style.css"
+    timeout: 30
+
+initial_prompt: |
+  The project at `intake-report` was scaffolded with the wrong Vite template — it is
+  vanilla TypeScript, not React. Produce the correct React + TypeScript scaffold for a
+  UiPath Coded Web App at that same path.
+
+  Scaffold only — do NOT install the UiPath SDK, Tailwind, or any other dependency, do
+  NOT write project files from the templates, and do NOT run `uip`; this environment is
+  not authenticated.
+
+  This is a non-interactive automated test with no user to consult: do not ask setup
+  questions.
+
+success_criteria:
+  - type: file_exists
+    description: "React entrypoint exists — the recovery actually replaced the tree"
+    path: "intake-report/src/main.tsx"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no vanilla-TypeScript leftovers — a bare re-run would have left these in place"
+    command: "sh -c 'test ! -f intake-report/src/main.ts && test ! -f intake-report/src/counter.ts'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "package.json declares react — the seeded one did not"
+    command: "grep -q '\"react\":' intake-report/package.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Rule #20: agent did NOT use an `npm create vite` form"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+create\s+vite'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "React root component exists"
+    path: "intake-report/src/App.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "(advisory, non-gating) recovery used `--overwrite` rather than deleting the directory by hand"
+    tool_name: "Bash"
+    command_pattern: '--overwrite'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: clearing the directory another way reaches the same artifacts
