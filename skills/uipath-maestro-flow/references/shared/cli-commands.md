@@ -93,7 +93,7 @@ uip solution resources edit <KEY> --patch '{"maxNumberOfRetries":5}' --output js
 echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output json
 ```
 
-`add` is idempotent on `(kind, name, folder)` for local resources and on resource key for remote resources; retries return `Status: "Unchanged"`. `edit` alone mutates an existing resource spec; `refresh` never overwrites and skips resources already in the solution. These commands do not modify `bindings_v2.json`; a later `refresh` re-imports a still-bound resource. See [uipath-solution Step 9–11](/uipath:uipath-solution).
+`add` is idempotent on `(kind, name, folder)` for local resources and on resource key for remote resources; retries return `Status: "Unchanged"`. `edit` alone mutates an existing resource spec; `refresh` never overwrites and skips resources already in the solution. When the change you want was made **in the cloud** after the import, `edit --source remote --force` pulls it in (without `--force` it only reports the drift). These commands do not modify `bindings_v2.json`; a later `refresh` re-imports a still-bound resource. See [uipath-solution Step 9–11](/uipath:uipath-solution).
 
 <!--skill-flavor:upload-command-section:start-->
 ## uip solution upload
@@ -213,7 +213,7 @@ Success output:
 { "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop.quick-form", "Label": "Invoice Review", "DefinitionAdded": true } }
 ```
 
-After adding, wire the `completed` port; an unwired `completed` blocks the flow. See the [Author HITL plugin reference](../author/plugins/hitl/impl.md).
+After adding, wire one `outcome-<outcome.id>` port per outcome; any outcome left unwired blocks the flow on that branch. See the [Author HITL plugin reference](../author/plugins/hitl/impl.md).
 
 ## uip maestro flow instance / uip maestro flow incident
 

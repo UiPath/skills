@@ -18,6 +18,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -53,7 +56,7 @@ success_criteria:
     description: >
       Three shapes composed correctly: batch outermost, review nested per item,
       failure net scoped to the iteration
-    command: "python3 $TASK_DIR/check_nested_review.py"
+    command: "python3 $REFERENCE_DIR/patterns/composition/check_nested_review.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

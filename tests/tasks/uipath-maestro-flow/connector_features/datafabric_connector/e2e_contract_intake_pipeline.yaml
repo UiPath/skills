@@ -8,7 +8,14 @@ description: >
   Static-validate only; runtime `flow debug` skipped to avoid live tenant
   side effects.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 40
   max_turns: 100
@@ -16,10 +23,13 @@ run_limits:
   task_timeout: 5400
 
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-uipath-dataservice'
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
     timeout: 120
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/contract_registry.entity.json"'
     timeout: 60
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build this with the UiPath Data Service connector activities
@@ -80,7 +90,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow chains Create → Get/Update/Delete on ContractRegistry with recordId bound to create.output, plus one Query with priority-desc sort and a partial Update body"
-    command: "python3 $TASK_DIR/check_e2e_contract_intake_pipeline.py"
+    command: "python3 $REFERENCE_DIR/connector_features/datafabric_connector/check_e2e_contract_intake_pipeline.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0
@@ -88,7 +98,7 @@ success_criteria:
 
   - type: run_command
     description: "Connector node shape matches manifest"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    command: 'python3 "$REFERENCE_DIR/_shared/check_connector_node_shape.py"'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

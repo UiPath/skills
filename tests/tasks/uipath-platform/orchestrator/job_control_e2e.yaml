@@ -4,16 +4,22 @@ description: >
   jobs list directly to verify both jobs exist on the seeded process and
   the stopped one is in a stop-related state.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "E2E_PROCESS_KEY=$E2E_LONG_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "E2E_PROCESS_KEY=$E2E_LONG_PROCESS_KEY python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 initial_prompt: |
@@ -29,11 +35,10 @@ initial_prompt: |
   started them, so I can pull them up afterwards.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant: 2 jobs on process; first stop-related, second terminal"
-    command: "python3 $TASK_DIR/check_job_control.py"
+    command: "python3 $REFERENCE_DIR/check_job_control.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

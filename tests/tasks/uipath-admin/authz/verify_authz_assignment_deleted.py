@@ -18,7 +18,7 @@ import os
 import sys
 import time
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
 from admin_helpers import fail, ok, run_cli, seed_entry
 
 logging.basicConfig(level=logging.INFO, format="verify_authz_assignment_deleted: %(message)s")

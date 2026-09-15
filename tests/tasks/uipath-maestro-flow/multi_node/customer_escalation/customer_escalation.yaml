@@ -18,6 +18,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new
   Outlook inbox emails and routes each one based on two signals: whether
@@ -51,7 +54,7 @@ success_criteria:
   # ── Flow file validity ────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 5.0
@@ -64,7 +67,7 @@ success_criteria:
   # node with two branches, and Slack + Outlook-reply references.
   - type: run_command
     description: "Flow has Outlook trigger, classifier scripts, decision with two branches, Slack DM and Outlook reply references"
-    command: "python3 $TASK_DIR/check_customer_escalation_flow.py"
+    command: "python3 $REFERENCE_DIR/multi_node/customer_escalation/check_customer_escalation_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0

@@ -22,10 +22,16 @@ sandbox:
     - type: template_dir
       path: ../_shared/live_calls_template
 
-# Creates the project the agent must find; writes seed.json with its title only.
-# fail_on_error defaults on: a rejected seed ends the run as an environment error.
+    # Creates the project the agent must find; writes seed.json with its title only.
+    # fail_on_error defaults on: a rejected seed ends the run as an environment error.
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
+
 pre_run:
-  - command: 'IXP_SEED_TITLE_BASE="Codereval Name Resolution" python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/seed_project.py"'
+  - command: 'IXP_SEED_TITLE_BASE="Codereval Name Resolution" python3 "_setup/seed_project.py"'
     timeout: 300
 
 initial_prompt: |
@@ -77,7 +83,7 @@ success_criteria:
   # unreachable without its ProjectName, the document without its DocumentId.
   - type: run_command
     description: "Tenant: york is gone from the seeded project; the other two documents remain"
-    command: "python3 $TASK_DIR/check_documents_after.py"
+    command: "python3 $REFERENCE_DIR/check_documents_after.py"
     timeout: 150
     expected_exit_code: 0
     weight: 3.0
@@ -85,7 +91,7 @@ success_criteria:
 
   - type: run_command
     description: "Every project-scoped write stayed inside the seeded project"
-    command: "python3 $TASK_DIR/check_own_project.py"
+    command: "python3 $REFERENCE_DIR/check_own_project.py"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
@@ -94,5 +100,5 @@ success_criteria:
 # Deletes the seeded project. Reads seed.json, so it works even if the agent
 # crashed before touching anything. Idempotent; always exits 0.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+  - command: "python3 _setup/cleanup_project.py"
     timeout: 60

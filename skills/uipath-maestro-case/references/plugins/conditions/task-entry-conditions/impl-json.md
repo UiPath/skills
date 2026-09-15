@@ -106,7 +106,17 @@ Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger -
 "uipath": {
   "serviceType": "Intsvc.WaitForEvent",
   "context": "<caseShape.context — placeholders substituted>",
-  "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
+  "inputs": [
+    {
+      "name":   "<caseShape.inputs[i].name>",
+      "type":   "<caseShape.inputs[i].type>",
+      "target": "<caseShape.inputs[i].target>",
+      "body":   "<caseShape.inputs[i].body, carried over unchanged>",
+      "var": "vxxxxxxxx",
+      "id":  "vxxxxxxxx",
+      "elementId": "<stageId>-<ruleId>"
+    }
+  ],
   "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
   "bindings": []
 }

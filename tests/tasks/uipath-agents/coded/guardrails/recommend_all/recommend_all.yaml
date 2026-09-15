@@ -18,6 +18,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
+reference:
+  directory: ../../..
+
 initial_prompt: |
   I have a coded LangGraph agent in graph.py. It handles customer-support
   questions and uses a lookup_account_info tool. It has no guardrails. Check
@@ -54,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "At least 2 guardrails added including LLM-scoped and content-safety guardrails; graph.py parses"
-    command: "python3 $TASK_DIR/check_recommend_all.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_recommend_all.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

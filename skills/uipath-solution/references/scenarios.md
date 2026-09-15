@@ -24,6 +24,7 @@ Land here from a grep on an error message? Pick the matching row.
 | I want to delete a single resource by key | `uip solution resources remove <resource-key>` — see [develop-solution.md Step 10](develop-solution.md#step-10-remove-a-resource) |
 | I want to change a field on an existing resource's spec | `uip solution resources edit <resource-key> --patch '{...}'` — see [develop-solution.md Step 11](develop-solution.md#step-11-edit-a-resource) |
 | I edited a spec field but `refresh` didn't pick it up | Expected — `refresh` never overwrites a resource already in the solution. Use `resources edit` to mutate spec. |
+| I changed the resource **in the cloud** (new entity field, queue setting) and `refresh` reports it under `Skipped` | `uip solution resources edit <resource-key> --source remote --force` — see [develop-solution.md Step 11a](develop-solution.md#step-11a-pull-a-changed-cloud-definition-source-remote) |
 | `resources edit` silently ignored a property I passed | The SDK skips unknown / reference / read-only props by design — see [manual-edits](scenarios/manual-edits.md) for what's editable vs not |
 | My hand-edit got reverted on the next refresh | [manual-edits](scenarios/manual-edits.md) (the SDK re-derives bindings) |
 | Other deploy / refresh failures (folder collision, suffix amplification, missing bindings, version collision) | [failure-modes](scenarios/failure-modes.md) |

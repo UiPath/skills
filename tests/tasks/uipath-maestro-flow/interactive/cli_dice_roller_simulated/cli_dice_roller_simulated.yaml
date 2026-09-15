@@ -15,6 +15,9 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 agent:
   # Override only the system prompt; type, permission_mode, allowed_tools,
   # plugins, and sandbox all inherit from the experiment (tests/README.md —
@@ -72,7 +75,7 @@ success_criteria:
   # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 4.0
@@ -83,7 +86,7 @@ success_criteria:
   # static grep for "random", which a flow that never executes would still pass.
   - type: run_command
     description: "Flow debug runs; Script node executed and output is an integer in [1,6]"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/cli_dice_roller_simulated/check_dice_runs.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_dice_runs_simulated.py"
     # Cloud `flow debug` on this task regularly exceeds the old 240s inner
     # budget (measured: 2 of 3 codex runs raised subprocess.TimeoutExpired), so
     # the criterion was scoring 0 on runner latency rather than on the flow.
@@ -100,7 +103,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named DiceRoller (elicited from the user)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name DiceRoller"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name DiceRoller"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

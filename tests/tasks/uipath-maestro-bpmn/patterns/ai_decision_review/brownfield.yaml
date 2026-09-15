@@ -18,6 +18,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -48,7 +51,7 @@ success_criteria:
     description: >
       Review branch was inserted, bound to the existing score variable, with the
       original process preserved and no duplicate scoring step
-    command: "python3 $TASK_DIR/check_brownfield.py"
+    command: "python3 $REFERENCE_DIR/patterns/ai_decision_review/check_brownfield.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

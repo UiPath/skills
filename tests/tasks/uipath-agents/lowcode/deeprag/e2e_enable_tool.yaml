@@ -11,6 +11,9 @@ run_limits:
   expected_turns: 36
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "DeepAgent" that synthesizes answers across
   multiple PDF or TXT attachments uploaded in chat. Enable the
@@ -79,7 +82,7 @@ success_criteria:
 
   - type: run_command
     description: "deep-rag built-in tool resource shape (type=internal, referenceKey=null, toolType=deep-rag)"
-    command: "python3 $TASK_DIR/check_deep_rag_tool.py"
+    command: "python3 $REFERENCE_DIR/check_deep_rag_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

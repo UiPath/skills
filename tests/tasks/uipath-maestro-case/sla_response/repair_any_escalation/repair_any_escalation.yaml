@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: ./templates
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   The SLA lane in `SlaResponse/SlaResponse/caseplan.json` has an `sla-status-change` entry
   rule left over from the Case Designer with `escalationId: "any"`. Diagnose whether that's
@@ -45,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "The \"any\" sentinel is gone and the lane's entry is a plain breach rule (slaId, no escalationId); the lane and its single sla-status-change entry survive, and no escalation was invented to make the reference resolve"
-    command: "python3 $TASK_DIR/check_repair_any_escalation.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_repair_any_escalation.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

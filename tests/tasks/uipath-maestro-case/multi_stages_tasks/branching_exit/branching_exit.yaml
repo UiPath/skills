@@ -24,6 +24,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "BranchingExit" containing
   a project also named "BranchingExit" from the sdd.md below.
@@ -261,7 +264,7 @@ success_criteria:
 
   - type: run_command
     description: "Triage WIDE fan-outs to 3 branches via stage-exit conditions routing through exitToStageId; exits cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-complete:TRUE on Pending); Approved/Rejected exits use selected-tasks-completed referencing the Triage Review placeholder task, Pending exit uses required-tasks-completed; branch discrimination via conditionExpression on vars.decision; every stage carries a process-typed skeleton placeholder task; Approved Path has user-selected-stage entry (edges retired)"
-    command: "python3 $TASK_DIR/check_branching_exit.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_branching_exit.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0

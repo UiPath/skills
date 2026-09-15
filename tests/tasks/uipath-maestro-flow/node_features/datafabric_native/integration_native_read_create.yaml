@@ -11,17 +11,27 @@ description: >
   to the native node (planning-arch.md — Selecting External Service Nodes), so
   without this task nothing grades the default path.
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, feature:records, feature:entities, feature:registry]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../connector_features/datafabric_connector/_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 30
   task_timeout: 1500
   max_turns: 100
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/node_features/datafabric_native/preflight_native_nodes.py" core.datafabric.read core.datafabric.create'
+  - command: 'python3 "_setup/preflight_native_nodes.py" core.datafabric.read core.datafabric.create'
     timeout: 120
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
     timeout: 60
 
 initial_prompt: |
@@ -72,7 +82,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow uses native core.datafabric.read + create on FlowCodeEvalEntity with registry-shaped definitions"
-    command: "python3 $TASK_DIR/check_native_read_create.py"
+    command: "python3 $REFERENCE_DIR/check_native_read_create.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -55,6 +55,9 @@ dataset:
         Create a flow with a timer trigger that waits 10 minutes, then sends an
         Outlook email.
 
+reference:
+  directory: ..
+
 initial_prompt: |
   ${row.prompt}
 
@@ -82,7 +85,7 @@ success_criteria:
   # Inverted twin of the positive routing.yaml artifact check.
   - type: run_command
     description: "No uipath.ixp.* node landed in any .flow file (negative IxP routing)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"uipath\\.ixp'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"uipath\\.ixp'"
     expected_exit_code: 0
     suite_thresholds: {mean: 0.85}
 

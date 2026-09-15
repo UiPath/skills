@@ -13,7 +13,7 @@ HERE = Path(__file__).parent
 
 
 def _load_module() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("escalation_jira_is", HERE / "jira_is.py")
+    spec = importlib.util.spec_from_file_location("escalation_jira_is", HERE / "_setup" / "jira_is.py")
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

@@ -8,7 +8,11 @@ description: >
   solution is removed by the post-run cleanup.
 tags: [uipath-maestro-case, integration, mode:operate, lifecycle:setup]
 max_iterations: 1
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   task_timeout: 1500
   max_turns: 120
@@ -74,7 +78,6 @@ initial_prompt: |
   in a single pass.
 
   Before starting, load the uipath-maestro-case skill and follow its workflow.
-
 success_criteria:
   - type: skill_triggered
     description: "Advisory: agent invoked the uipath-maestro-case skill"
@@ -108,5 +111,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

@@ -15,6 +15,9 @@ run_limits:
   expected_turns: 33
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I want an OpenAI Agents UiPath coded agent called `triage-agent` that
   sits in front of two specialists. A triage agent reads the customer's
@@ -64,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "OpenAI Agents project shape, factory pattern, handoff wiring"
-    command: "python3 $TASK_DIR/check_openai_agents_handoff.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_openai_agents_handoff.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

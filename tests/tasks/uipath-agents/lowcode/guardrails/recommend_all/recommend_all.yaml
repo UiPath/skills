@@ -14,6 +14,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/WebResearchBriefingSolution
 
+reference:
+  directory: .
+
 initial_prompt: |
   I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
   It searches the web, summarizes findings, and posts results to Slack and Jira. It has
@@ -58,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "At least 2 guardrails added including Llm-scoped and content-safety guardrails"
-    command: "python3 $TASK_DIR/check_recommend_all.py"
+    command: "python3 $REFERENCE_DIR/check_recommend_all.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -12,6 +12,9 @@ run_limits:
   expected_turns: 18
   max_turns: 80
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a local BPMN project named "PurchaseApprovalBpmn" with this process:
   manual start -> HITL approval -> a step that records the approval -> end.
@@ -43,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "An Actions.HITL BPMN exists and its completion is wired to a downstream step that reaches an end event"
-    command: "python3 $TASK_DIR/check_smoke_completed_wired.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_smoke_completed_wired.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

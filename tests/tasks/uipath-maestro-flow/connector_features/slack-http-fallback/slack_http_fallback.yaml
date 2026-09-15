@@ -18,6 +18,9 @@ run_limits:
   max_turns: 100
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a new Flow project called "SlackEmojiListTest" inside a solution of the
   same name, with a manual trigger that lists the custom emoji for a team. Wire
@@ -42,7 +45,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -58,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Emoji list falls back to an HTTP-request node bound to the Slack connector (no native activity exists for it) and targets the emoji.list endpoint"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/slack-http-fallback/check_slack_http_fallback.py check_fallback"
+    command: "python3 $REFERENCE_DIR/connector_features/slack-http-fallback/check_slack_http_fallback.py check_fallback"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -66,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow debug finishes with finalStatus Completed against the live Slack connection"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/slack-http-fallback/check_slack_http_fallback.py check_debug"
+    command: "python3 $REFERENCE_DIR/connector_features/slack-http-fallback/check_slack_http_fallback.py check_debug"
     timeout: 720
     expected_exit_code: 0
     weight: 6.0

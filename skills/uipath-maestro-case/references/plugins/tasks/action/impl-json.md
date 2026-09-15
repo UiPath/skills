@@ -12,6 +12,7 @@
   "elementId": "Stage_aB3kL9-ty5UcykfU",
   "isRequired": true,
   "shouldRunOnlyOnce": false,
+  "description": "An approver reads the purchase order and either approves it or rejects it with a reason.",
   "data": {
     "taskTitle": "Please review this PO and approve or reject",
     "priority": "High",
@@ -27,6 +28,7 @@
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
 - `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Action-Specific Fields

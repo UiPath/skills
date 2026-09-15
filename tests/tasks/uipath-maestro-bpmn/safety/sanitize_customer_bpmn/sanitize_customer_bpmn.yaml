@@ -19,6 +19,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill, and apply its public-safety
   rules (references/public-safety.md).
@@ -75,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "No seeded private data remains, no real tenant host, placeholders adopted, graph intact"
-    command: "python3 $TASK_DIR/check_sanitize.py"
+    command: "python3 $REFERENCE_DIR/safety/sanitize_customer_bpmn/check_sanitize.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

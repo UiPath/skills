@@ -202,14 +202,38 @@ jobs:
             done
           }
 
+          # A changed non-YAML path can sit under a directory with no *.yaml
+          # anywhere above it up to tests/tasks/<skill>/ — a family-level
+          # _shared/ (grading helpers, reached only via $REFERENCE_DIR) or a
+          # family-level _setup/ (pre_run/post_run tooling shared by several
+          # leaf tasks), neither of which is itself a task directory.
+          # resolve_task_yaml() can't map those to one owning task, so such a
+          # change instead falls back to that skill's FULL smoke suite —
+          # otherwise it silently selected nothing at all.
           CHANGED_TASKS=""
+          FALLBACK_SKILLS=""
           while IFS= read -r path; do
             [ -z "$path" ] && continue
+            found_any=""
             for y in $(resolve_task_yaml "$path"); do
               CHANGED_TASKS="$CHANGED_TASKS"$'\n'"$y"
+              found_any="1"
             done
+            if [ -z "$found_any" ]; then
+              case "$path" in
+                */_shared/*|*/_setup/*)
+                  skill=$(echo "$path" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p')
+                  [ -n "$skill" ] && FALLBACK_SKILLS="$FALLBACK_SKILLS"$'\n'"$skill"
+                  ;;
+              esac
+            fi
           done < <(echo "$CHANGED" | grep '^tests/tasks/' || true)
           CHANGED_TASKS=$(echo "$CHANGED_TASKS" | sort -u | grep -v '^$' || true)
+          FALLBACK_SKILLS=$(echo "$FALLBACK_SKILLS" | sort -u | grep -v '^$' || true)
+          if [ -n "$FALLBACK_SKILLS" ]; then
+            echo "Falling back to full smoke suite for (changed _shared/_setup file with no owning task yaml): $(echo "$FALLBACK_SKILLS" | xargs)"
+            SRC_SKILLS=$(echo "$SRC_SKILLS"$'\n'"$FALLBACK_SKILLS" | sort -u | grep -v '^$' || true)
+          fi
 
           if [ -z "$SRC_SKILLS" ] && [ -z "$CHANGED_TASKS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
