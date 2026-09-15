@@ -1,6 +1,6 @@
 # Coded Agents in Flow Projects (Sibling Folder)
 
-A coded agent can live as a sibling folder to a flow project inside the same solution. The flow references it via `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. The flow's `uip maestro flow registry list --local` discovers the agent by reading `resources/solution_folder/process/agent/<CodedAgentProject>.json`, written by `uip solution projects add`.
+A coded agent can live as a sibling folder to a flow project inside the same solution. The flow references it via `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. The flow's `uip maestro flow registry list --local` discovers the agent by reading the generated resource file written by `uip solution projects add`. That file is under `resources/solution_folder/process/<type>/<CodedAgentProject>.json`; **glob for it rather than assuming `<type>`** — `projects add` infers project type from the manifest it finds, and a coded agent's `uipath.json` is indistinguishable from a Function project's, so it lands under `function/` today.
 
 For the published-agent path (deployed standalone via `uip codedagent deploy`), see [coded/flow-integration.md § Pattern 2](flow-integration.md#pattern-2-published-coded-agent).
 
@@ -13,7 +13,7 @@ The `<resourceKey>` is the local UUID minted by `uip solution projects add` — 
 ├── <SolutionName>.uipx
 ├── resources/                      # created and maintained by `uip solution projects add`
 │   └── solution_folder/
-│       ├── process/agent/<CodedAgentProject>.json   # holds the `resource.key` UUID
+│       ├── process/function/<CodedAgentProject>.json  # holds `resource.key` (see note)
 │       └── package/<CodedAgentProject>.json
 ├── <FlowProject>/
 │   ├── <FlowName>.flow
@@ -82,7 +82,7 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    uip solution projects add <CodedAgentProject> <SolutionName>.uipx --output json
    ```
 
-   After this command, `resources/solution_folder/process/agent/<CodedAgentProject>.json` holds the `resource.key` UUID.
+   After this command the generated resource file holds the `resource.key` UUID. Find it with `ls resources/solution_folder/process/*/<CodedAgentProject>.json` — it is under `process/function/` today, because `projects add` cannot tell a coded agent's `uipath.json` from a Function project's.
 <!--skill-flavor:flow-solution-registration-paths:end-->
 
 

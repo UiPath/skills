@@ -4,7 +4,7 @@ Agent nodes invoke UiPath AI agents through `uipath.core.agent.{key}`. Coded (Py
 
 Agents are either:
 
-- **In this solution**: a sibling project. `{key}` is the local `resource.key` minted by `uip solution projects add` and written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`. Runtime resolution uses the Studio Web projects API after `uip solution upload`; `definitions[]` uses `model.section: "In this solution"`.
+- **In this solution**: a sibling project. `{key}` is the local `resource.key` minted by `uip solution projects add` and written to a generated resource file under `resources/solution_folder/process/<type>/<CodedAgentProject>.json` — `<type>` is `function` today, see [Discovery and Registry Validation](#discovery-and-registry-validation). Runtime resolution uses the Studio Web projects API after `uip solution upload`; `definitions[]` uses `model.section: "In this solution"`.
 - **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `category: "agent.published"` (registry output omits `model.section`).
 
 The `nodes[]` shape is the same; only the `definitions[]` manifest differs.
@@ -109,7 +109,7 @@ Never hand-author `definitions[]`. Run:
 uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json
 ```
 
-Extract the `Data.Node` object verbatim into `definitions[]`; hand construction can omit `model.section`, `runtimeConstraints`, and `supportsErrorHandling`. Read `<resourceKey>` from `resources/solution_folder/process/agent/<CodedAgentProject>.json` or from `uip maestro flow registry list --local --output json`. Read `<DEFINITION_VERSION>` from `.version` in local `registry get` output.
+Extract the `Data.Node` object verbatim into `definitions[]`; hand construction can omit `model.section`, `runtimeConstraints`, and `supportsErrorHandling`. Read `<resourceKey>` from `uip maestro flow registry list --local --output json` — that is the authoritative source. The generated resource file carries the same value, but **glob for it rather than assuming its directory**: `uip solution projects add` infers project type from the manifest it finds, and a coded agent's `uipath.json` is indistinguishable from a Function project's, so the file currently lands at `resources/solution_folder/process/function/<CodedAgentProject>.json`. Use `ls resources/solution_folder/process/*/<CodedAgentProject>.json`. Read `<DEFINITION_VERSION>` from `.version` in local `registry get` output.
 
 ## Top-level `bindings[]`
 
@@ -231,7 +231,7 @@ For format and wiring details, see the `uipath-agents` skill:
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry | Agent is unpublished or registry is stale | For an in-solution agent, run `registry list --local`. Otherwise run `uip login` then `uip maestro flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully. |
-| In-solution node does not resolve | `resourceKey` was invented, or `uip solution projects add` was not run | Run `uip maestro flow registry list --local` and use its `resourceKey`, which must equal `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`. |
-| Agent execution failed | Underlying agent error | Inspect `$vars.{nodeId}.error`; for coded agents, test locally with `uip codedagent run`. |
+| In-solution node does not resolve | `resourceKey` was invented, or `uip solution projects add` was not run | Run `uip maestro flow registry list --local` and use its `resourceKey`, which must equal `resource.key` in the generated resource file — found with `ls resources/solution_folder/process/*/<CodedAgentProject>.json`, today under `process/function/`. Never substitute a hand-written GUID: `validate` accepts a well-formed key that resolves to nothing. |
+| Agent execution failed | Underlying agent error | Inspect `$vars.{nodeId}.error`. For coded agents, `uip codedagent review` checks the project offline; `uip codedagent run` executes the graph and needs `UIPATH_ACCESS_TOKEN` plus LLM-gateway reach, so where those are absent its import and virtualenv errors are environment, not project defects — do not chase them. |
 | Empty `output.content` | Agent returned no response | Verify configuration in Orchestrator for published agents or Studio Web for in-solution agents. |
 | `inputDefinition` is empty | Agent declares no typed input schema (free-form) | Wire upstream data through `jsExpression` inputs; see [Wiring Inputs](#wiring-inputs). |

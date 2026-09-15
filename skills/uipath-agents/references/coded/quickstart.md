@@ -303,7 +303,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 <!--skill-flavor:agent-solution-registration:end-->
    ```
 
-   After this command, `resources/solution_folder/process/agent/<AgentName>.json` holds the `resource.key`. Read that file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.
+   After this command a generated resource file holds the `resource.key`. Find it with `ls resources/solution_folder/process/*/<AgentName>.json` — it is under `process/function/` today, because `projects add` cannot tell a coded agent's `uipath.json` from a Function project's, and `uip solution projects list` reporting `Type: Function` is that same classification rather than a scaffolding mistake. Read the file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.
 
 6. **Discover the agent's flow-side definition** (no `uip login` required for `--local`):
 

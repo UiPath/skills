@@ -12,7 +12,7 @@ The coded agent lives as a sibling folder inside the same solution as the flow. 
 - **Wiring the agent's inputs:** [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs)
 - **Flow node JSON shape + top-level `bindings[]` + `definitions[]` entry:** uipath-maestro-flow skill, agent-plugin reference (In-solution variant)
 
-The node-type's `{key}` is the local `resource.key` minted by `uip solution projects add` (written to `resources/solution_folder/process/agent/<name>.json`) and surfaced by `uip maestro flow registry list --local`.
+The node-type's `{key}` is the local `resource.key` minted by `uip solution projects add` and surfaced by `uip maestro flow registry list --local`, which is the source to read it from. It is also written to a generated resource file — **glob for that file rather than assuming its directory** (`ls resources/solution_folder/process/*/<name>.json`). `projects add` infers project type from the manifest it finds, and a coded agent's `uipath.json` is indistinguishable from a Function project's, so the file lands under `process/function/` today.
 
 ---
 
@@ -84,6 +84,6 @@ Coded agents use `location: "external"`.
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node doesn't resolve in SW (Pattern 1) | `resourceKey` was hand-invented rather than read from the resource file | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (it matches `resource.key` in `resources/solution_folder/process/agent/<name>.json`) |
+| Node doesn't resolve in SW (Pattern 1) | `resourceKey` was hand-invented rather than read from the resource file | Run `uip maestro flow registry list --local` and use the returned `resourceKey`. It matches `resource.key` in the generated resource file (`ls resources/solution_folder/process/*/<name>.json`, under `process/function/` today). Never substitute a hand-written GUID: `uip maestro flow validate` accepts a well-formed key that resolves to nothing on the tenant. |
 | Agent not found in registry (Pattern 2/3) | Not deployed or registry stale | `uip codedagent deploy`, then `uip maestro flow registry pull --force` |
 | Tool resource never called | Tool description too vague | Sharpen the `description` in `resource.json` |
