@@ -79,7 +79,6 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
       "Bash(uip or jobs list *)",
       "Bash(uip or jobs logs *)",
       "Bash(uip or jobs history *)",
-      "Bash(uip or jobs traces *)",
       "Bash(uip or jobs healing-data *)",
       "Bash(uip or assets get *)",
       "Bash(uip or assets list *)",

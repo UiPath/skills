@@ -24,7 +24,7 @@ graph LR
     A[packages upload] --> B[processes create]
     B --> C[jobs start]
     C --> D[jobs logs]
-    C --> E[jobs traces]
+    C --> E[traces spans get]
     C --> F[jobs healing-data]
     C --> G[jobs history]
 ```
@@ -140,9 +140,19 @@ uip or processes delete <process-key-guid> --yes --output json
 > `Success` = the resource exists in the folder (`ResourceId` names it), `NotFound` = it is missing and
 > `ValidationError` says which one ("This queue cannot be found in the folder"), `Unknown` = not
 > folder-validated (connections, execution settings). Filter for the broken ones with
-> `--output-filter "[?ValidationResult=='NotFound']"`. The answer is release-specific: resource
-> overwrites configured on that process are applied first, so a resource pointed at a different
-> target than the package default still reports `Success`.
+> `--output-filter "[?ValidationResult=='NotFound']"`.
+>
+> `ResourceName`, `FolderPath`, `ResourceId` and `ValidationResult` describe what the **package**
+> declares, and stay on those defaults even when the release rebinds the resource somewhere else.
+> The rebind is reported alongside them: `IsOverwritten` is `true`, and `OverwriteName` /
+> `OverwriteEntityId` / `OverwriteFolderId` name the target Orchestrator resolved, with
+> `OverwriteProperties` holding the raw pairs (`name`, `folderPath`) verbatim — lowercase, as the API
+> names them. So a row can read `FolderPath: Dev/Apps` with `OverwriteProperties.folderPath: Prod/Apps`;
+> the second is what the job will bind to. Find the rebound rows with
+> `--output-filter "[?IsOverwritten]"`.
+>
+> Because validation runs against the package default, a `Success` row does not prove the *overwrite*
+> target exists — check `OverwriteProperties` yourself when a job fails to bind.
 
 `processes update` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
 
@@ -208,13 +218,15 @@ uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV fi
 
 ## Step 7: Get Traces
 
-Retrieve LLM and agentic execution traces for Agent-type processes:
+LLM and agentic execution traces are served by the traces tool, keyed by the job:
 
 ```bash
-uip or jobs traces <job-key> --output json
+uip traces spans get --job-key <job-key> --output json
 ```
 
-Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For a standard Process the result is an empty list, and the response adds an `Instructions` note saying so — that's how you tell "no traces recorded" apart from "this isn't an Agent process". For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`) — see [traces.md](../traces/traces.md).
+Traces exist only for processes that use UiPath Autopilot or Agent capabilities; a standard Process has none. Pass a trace id positionally instead of `--job-key` when you already have one. See [traces.md](../traces/traces.md).
+
+`uip or jobs traces` was the old entry point. It is removed — it still parses, but only prints a pointer to the command above and exits non-zero, so replace it in any script that still calls it.
 
 Traces are cross-folder -- no `--folder-path` required.
 
@@ -339,7 +351,6 @@ These commands resolve the folder from the job key -- no `--folder-path` needed:
 
 - `uip or jobs get <key>`
 - `uip or jobs logs <key>`
-- `uip or jobs traces <key>`
 - `uip or jobs history <key>`
 - `uip or jobs healing-data <key>`
 
