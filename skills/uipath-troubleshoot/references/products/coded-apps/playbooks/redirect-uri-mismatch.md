@@ -52,7 +52,7 @@ What to look for:
 
 - **If the dev server runs on a non-default port:** set `redirectUri` in `uipath.json` to the actual URL, restart the dev server, and register that URL (both slash variants) with the `update` command above.
 
-- **If the production URI is missing after deploy:** re-run `uip codedapp deploy` (it registers the production redirect URI). If it still isn't registered, add the `appUrl` from `.uipath/app.config.json` with the `update` command above.
+- **If the hosted URI is missing after deploy:** do not rerun `deploy` blindly. Re-read the authoritative deployment, version, route, OAuth client, and hosted URL; treat `.uipath/app.config.json` as a locator only. If the expected candidate is already active and the redirect is still absent, prepare a fresh guarded remediation that updates that exact External Application with the remotely verified hosted URL. Re-bind the changed client configuration to the applicable testing receipt or governed approval before another deployment write.
 
 - **If `uipath.json` `redirectUri` doesn't match the URL the app is served at:** fix `redirectUri` to the served URL and restart the dev server so the `uipath:redirect-uri` meta tag is re-injected.
 
