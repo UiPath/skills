@@ -3,18 +3,31 @@
 Verify that `uip` verb literals referenced in coder-eval task YAMLs actually
 exist in the CLI catalog.
 
-For every `command_executed` criterion in each task YAML, extract literal verb
-tokens that follow the `uip` prefix in `command_pattern`, enumerate the
-alternation paths, and check each path against `assets/uip-catalog-snapshot.json`
+Two criterion types name a verb, and both are checked:
+
+  - `command_executed` — extract literal verb tokens that follow the `uip`
+    prefix in `command_pattern` and enumerate the alternation paths.
+  - `cli_called` — read `verb` / `verb_any_of` directly. These are literal
+    whitespace-separated verb chains by contract, so there is nothing to
+    enumerate and no dynamic case. Only criteria carrying `tool: uip` are
+    checked: the recorded log is shared across shadowed executables, so a
+    verb under any other `tool` is not a `uip` verb and gets no verdict.
+
+Each resulting verb path is checked against `assets/uip-catalog-snapshot.json`
 and `.claude/rules/cli-renames.md`.
 
 Findings:
-  - High   — pattern does not match any verb in the catalog. The success
+  - High   — no verb the criterion names is in the catalog. The success
              criterion can never fire; the task scores zero on a passing run.
-  - Medium — pattern matches only retired verbs listed in cli-renames.md.
+  - Medium — the criterion names only retired verbs listed in cli-renames.md.
              Suggest the canonical replacement.
-  - Info   — pattern is too dynamic to analyse (contains `.`, `[`, `\\w`, etc).
-             Skipped — no claim made about it.
+  - Info   — `command_pattern` is too dynamic to analyse (contains `.`, `[`,
+             `\\w`, etc). Skipped — no claim made about it.
+
+A retired verb sitting alongside a reachable one is not reported, for either
+criterion type: the criterion still fires on the reachable spelling, so the
+verdict is `reachable`. `verb_any_of` entries are treated exactly like a regex
+alternation's paths for that reason.
 
 Output formats:
   - Default: human-readable, one finding per line.
@@ -218,8 +231,20 @@ def extract_verb_paths(pattern):
     return verb_paths or None
 
 
-def classify(verb_paths, catalog, renames):
-    """Return ('reachable'|'retired'|'unknown', details)."""
+def classify(verb_paths, catalog, renames, *, exact=False):
+    """Return ('reachable'|'retired'|'unknown', details).
+
+    `exact` controls the CATALOG lookup only. A `command_pattern` verb can carry
+    a trailing fragment the regex happened to capture, so it needs the
+    longest-prefix fallback below. A `cli_called` verb is a complete literal
+    chain, and the catalog holds group prefixes as their own entries
+    (`ixp`, `ixp projects`, `ixp projects list`) — so an exact test accepts a
+    deliberately short verb while still failing a typo'd leaf. Under the prefix
+    fallback, `ixp projects lisst` matched the group `ixp projects` and passed.
+
+    Renames stay prefix-matched in both modes: `flow validate` is retired
+    because its `flow` ancestor is, and the suggestion is worth surfacing.
+    """
     if not verb_paths:
         return "unknown", {}
 
@@ -234,15 +259,22 @@ def classify(verb_paths, catalog, renames):
                 return candidate
         return None
 
+    def catalog_match(verb):
+        if exact:
+            return verb if verb in catalog else None
+        return best_match(verb, catalog)
+
     reachable = []
     retired = []
     for v in verb_paths:
-        cat_hit = best_match(v, catalog)
+        cat_hit = catalog_match(v)
         ren_hit = best_match(v, renames)
         # A more specific renames entry shadows a shallower catalog prefix.
         # Example: `solution new` was removed in 1.2.0; the parent group
         # `solution` is still in the catalog, so catalog longest-prefix would
-        # otherwise mis-classify `solution new` as reachable.
+        # otherwise mis-classify `solution new` as reachable. Under `exact` the
+        # two hits are the same string when both fire, so this falls through to
+        # `cat_hit` — the catalog is the source of truth for what exists today.
         if ren_hit and (not cat_hit or len(ren_hit.split()) > len(cat_hit.split())):
             retired.append(v)
         elif cat_hit:
@@ -272,6 +304,46 @@ def iter_command_patterns(spec, path):
         yield idx, pattern, crit.get("description", "")
 
 
+# `cli_called` matches per-facet against a recorded argv instead of a rendered
+# command string, so its verb needs no regex parsing — but it is also invisible
+# to iter_command_patterns, which is how migrated tasks silently left the
+# catalog linter's reach.
+def iter_cli_called_verbs(spec):
+    """Yield (idx, verb_paths, description, display) per checkable cli_called.
+
+    `verb` and `verb_any_of` are mutually exclusive and hold literal verb
+    chains; coder_eval splits them on whitespace, so the same normalisation
+    applies here. Criteria whose `tool` is not `uip` are skipped without a
+    verdict — including an absent `tool`, which matches any executable and so
+    cannot be claimed as a `uip` verb.
+    """
+    for idx, crit in enumerate(spec.get("success_criteria") or []):
+        if not isinstance(crit, dict):
+            continue
+        if crit.get("type") != "cli_called":
+            continue
+        if crit.get("tool") != "uip":
+            continue
+        verb, any_of = crit.get("verb"), crit.get("verb_any_of")
+        if isinstance(verb, str):
+            spellings, display = [verb], f"verb: {verb!r}"
+        elif isinstance(any_of, list):
+            spellings = [v for v in any_of if isinstance(v, str)]
+            display = "verb_any_of: " + " | ".join(repr(v) for v in spellings)
+        else:
+            # No verb facet at all — a positional/flags-only criterion. Legal,
+            # and it names no verb to check.
+            continue
+        # Normalise the way coder_eval does (`verb.split()`), so " ixp  projects
+        # list " and "ixp projects list" reach the catalog as one string. A
+        # blank entry is rejected upstream by the model validator.
+        verb_paths = list(dict.fromkeys(
+            " ".join(v.split()) for v in spellings if v.split()))
+        if not verb_paths:
+            continue
+        yield idx, verb_paths, crit.get("description", ""), display
+
+
 def lint_file(path, catalog, renames):
     try:
         import yaml
@@ -289,6 +361,32 @@ def lint_file(path, catalog, renames):
     if not isinstance(spec, dict):
         return []
     findings = []
+
+    def record(verdict, details, *, idx, desc, display, source):
+        """Emit the Medium/High finding for one classified criterion.
+
+        Shared so a `cli_called` verb and a `command_pattern` verb cannot drift
+        into different severities or message shapes. `command_pattern` stays the
+        display key for both: write_report and the stdout printer read it, and
+        the High histogram parses `unmatched: [...]` out of the message.
+        """
+        if verdict == "reachable":
+            return
+        common = {"path": str(path), "axis": "cli-verb-reachability",
+                  "criterion_index": idx, "command_pattern": display,
+                  "description": desc, "source": source}
+        if verdict == "retired":
+            sugg = details["suggestions"]
+            findings.append({**common, "severity": "Medium",
+                             "message": "Criterion matches only retired verbs: "
+                                        + ", ".join(f"`{r}` → `{sugg[r]}`"
+                                                    for r in details["retired"])})
+        else:
+            findings.append({**common, "severity": "High",
+                             "message": "No verb this criterion names is in the "
+                                        "uip catalog "
+                                        f"(unmatched: {details['unmatched']})."})
+
     for idx, pattern, desc in iter_command_patterns(spec, path):
         verbs = extract_verb_paths(pattern)
         if verbs is None:
@@ -302,30 +400,14 @@ def lint_file(path, catalog, renames):
             })
             continue
         verdict, details = classify(verbs, catalog, renames)
-        if verdict == "reachable":
-            continue
-        if verdict == "retired":
-            sugg = details["suggestions"]
-            findings.append({
-                "path": str(path), "severity": "Medium",
-                "axis": "cli-verb-reachability",
-                "criterion_index": idx,
-                "command_pattern": pattern,
-                "description": desc,
-                "message": "Pattern matches only retired verbs: "
-                           + ", ".join(f"`{r}` → `{sugg[r]}`"
-                                       for r in details["retired"]),
-            })
-        else:
-            findings.append({
-                "path": str(path), "severity": "High",
-                "axis": "cli-verb-reachability",
-                "criterion_index": idx,
-                "command_pattern": pattern,
-                "description": desc,
-                "message": "No verb in pattern matches uip catalog "
-                           f"(unmatched: {details['unmatched']}).",
-            })
+        record(verdict, details, idx=idx, desc=desc, display=pattern,
+               source="command_pattern")
+
+    for idx, verb_paths, desc, display in iter_cli_called_verbs(spec):
+        verdict, details = classify(verb_paths, catalog, renames, exact=True)
+        record(verdict, details, idx=idx, desc=desc, display=display,
+               source="cli_called")
+
     return findings
 
 
@@ -387,7 +469,8 @@ def write_report(findings, catalog_size, version, output_path):
                         key=lambda x: x["path"]):
             out.append(f"- **`{f['path']}`** (criterion "
                        f"{f['criterion_index']})  ")
-            out.append(f"  pattern: `{f['command_pattern']}`  ")
+            label = "cli_called" if f.get("source") == "cli_called" else "pattern"
+            out.append(f"  {label}: `{f['command_pattern']}`  ")
             out.append(f"  {f['message']}")
         out.append("")
     out.append("## Info findings — patterns skipped\n")
@@ -449,7 +532,9 @@ def main():
         for f in all_findings:
             print(f"[{f['severity']}] {f['path']}: {f['message']}")
             if f.get("command_pattern"):
-                print(f"           pattern: {f['command_pattern']}")
+                label = ("cli_called" if f.get("source") == "cli_called"
+                         else "pattern")
+                print(f"           {label}: {f['command_pattern']}")
         high = sum(1 for f in all_findings if f["severity"] == "High")
         med = sum(1 for f in all_findings if f["severity"] == "Medium")
         info = sum(1 for f in all_findings if f["severity"] == "Info")

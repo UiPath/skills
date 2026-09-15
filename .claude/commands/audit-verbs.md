@@ -9,7 +9,7 @@ Verify that every `uip <verb>` mentioned in task YAMLs and skill docs correspond
 - `--refresh` — force a catalog rebuild before running, even if a snapshot already exists.
 
 **Output:** One or both of:
-- `tests/reports/cli-verb-audit.md` — task-YAML reachability (High/Medium/Info severities, sourced from `command_executed` patterns).
+- `tests/reports/cli-verb-audit.md` — task-YAML reachability (High/Medium/Info severities, sourced from `command_executed` patterns and from `cli_called` `verb` / `verb_any_of` fields carrying `tool: uip`).
 - `tests/reports/skill-verb-audit.md` — skill-doc verb references (Stale/Uncertain severities, sourced from prose, code blocks, and tables).
 
 Plus a chat summary with the top counts and the worst-offender files.
