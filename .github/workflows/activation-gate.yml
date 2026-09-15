@@ -114,7 +114,7 @@ jobs:
           SKILLS_REPO_PATH: ${{ github.workspace }}
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
           # The agent model the gate measures (activation_gate.py passes it as --model,
           # and exits non-zero when this is unset — no literal fallback). Its recall

@@ -414,7 +414,7 @@ jobs:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION:               ${{ secrets.AWS_REGION }}
+          AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_PROCESS_KEY:          ${{ vars.E2E_PROCESS_KEY }}
@@ -1185,7 +1185,7 @@ jobs:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION:               ${{ secrets.AWS_REGION }}
+          AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
