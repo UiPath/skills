@@ -29,7 +29,7 @@ from _shared.edit_check import (  # noqa: E402
 
 def main() -> None:
     _path, edited = parse_bpmn("Fulfillment")
-    original = load_original(__file__, "Fulfillment.bpmn")
+    original = load_original("edit/group_to_subflow", "Fulfillment.bpmn")
 
     subs = elements_local(edited, "subProcess")
     if not subs:

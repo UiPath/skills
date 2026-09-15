@@ -31,7 +31,7 @@ def _output_vars(task) -> set[str]:
 
 def main() -> None:
     _path, edited = parse_bpmn("Invoicing")
-    original = load_original(__file__, "Invoicing.bpmn")
+    original = load_original("edit/add_output", "Invoicing.bpmn")
 
     orig_vars = variable_ids(original)
     new_vars = variable_ids(edited)
