@@ -7,15 +7,23 @@ description: >
   one absolute-window summary for last calendar week, resolve both epoch
   millisecond bounds in separate `date` commands and type them as literals,
   treat `--started-before` as exclusive by passing this Monday 00:00 UTC,
-  and compare JobsCount, SuccessfulJobsCount, and AverageProcessingTime
-  without inventing a unit for the last one. The CLI is authenticated; both
-  windows may be empty, and the comparison is still writable.
+  and compare CompletedJobs, SuccessfulJobs, and AverageProcessingTimeMs.
+  The CLI is authenticated; both windows may be empty, and the comparison
+  is still writable.
 
   Covers Playbook 5, the exclusive upper bound, the failure-rate derivation
-  from JobsCount and SuccessfulJobsCount, the AverageProcessingTime
-  no-unit rule, and the local rejection of a half-specified absolute pair,
-  none of which any other task grades. `smoke_absolute_time_range.yaml`
-  asserts the 13-digit literals; this asserts what the two windows are for.
+  from CompletedJobs and SuccessfulJobs, and the local rejection of a
+  half-specified absolute pair, none of which any other task grades.
+  `smoke_absolute_time_range.yaml` asserts the 13-digit literals; this
+  asserts what the two windows are for.
+
+  The prompt pins the chain route: it names both windows, asks for one
+  Insights read each, and asks for the bounds to be resolved in a separate
+  `date` command. `uip insights jobs investigate compare` answers the same
+  question in one call and resolves both bounds itself, so it is the right
+  tool when a user simply asks whether things got worse. It is deliberately
+  not what this task grades, because the point here is the absolute-window
+  mechanics the playbook documents.
 
   The prompt names `uip insights` and spells out the relative window. On
   eval run 34880436493 a prompt that only said "are my automations doing
@@ -50,8 +58,8 @@ initial_prompt: |
 
   If a window returned no jobs, write "no jobs" across its cells rather
   than leaving them blank. After the table, give the change in average
-  processing time and a one-line verdict on direction. Where the CLI does
-  not tell you a unit, do not assume one. Run each Insights command once;
+  processing time and a one-line verdict on direction. Report the average
+  in the unit the CLI's field name gives. Run each Insights command once;
   do not retry.
 
 success_criteria:
@@ -85,7 +93,10 @@ success_criteria:
   # The jobs guide's Absolute Time Ranges recipe resolves the bound in its own
   # command. Advisory, per .claude/rules/test-writing.md: this is a convention
   # that is invisible in the outcome, and gating it docks an agent that reaches
-  # the correct bounds without typing `date`. Runs 34898270949 and 34901646509
+  # the correct bounds without typing `date`. It stays advisory for a second
+  # reason now: `jobs investigate compare` resolves both bounds inside the
+  # command, which is what the optimization rule asks of a relative window, so
+  # a `date` call is not evidence of anything on that route. Runs 34898270949 and 34901646509
   # both computed 1788739200000 and 1789344000000 in-model, correctly, and this
   # criterion was the only thing they failed. What still gates the outcome: the
   # 13-digit literal pair above, the no-substitution guard below, and the window
@@ -202,28 +213,31 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Playbook 1's derivation and its unit rule: failure rate is
-  # (JobsCount - SuccessfulJobsCount) / JobsCount, and AverageProcessingTime
-  # is passed through with no unit, so the report must not label one.
+  # Playbook 1's derivation: failure rate is
+  # (CompletedJobs - SuccessfulJobs) / CompletedJobs. The unit half of this
+  # judge is inverted from what it used to assert. The field is now
+  # `AverageProcessingTimeMs`, because the Snowflake column the handler reads
+  # is `AVERAGE_PROCESSING_TIME_IN_MS` (SnowQuery.cs
+  # JobsAverageProcessingTime), so milliseconds is source-proven and a report
+  # that states it is correct. Forbidding the unit would fail a right answer.
   - type: llm_judge
-    description: "Report derives failure rate from the two counts and attaches no unit to AverageProcessingTime"
+    description: "Report derives failure rate from the two counts and reports the average in milliseconds"
     include_agent_output: false
     include_reference: false
     files: ["comparison.md"]
     prompt: |
       The uipath-insights skill derives failure rate as
-      (JobsCount - SuccessfulJobsCount) / JobsCount, and says the CLI passes
-      AverageProcessingTime through unchanged without a unit, so the agent
-      must not state one (no "ms", "seconds", "minutes"). Read comparison.md
-      only.
+      (CompletedJobs - SuccessfulJobs) / CompletedJobs. The CLI reports the
+      average as `AverageProcessingTimeMs`, so the value is milliseconds and
+      a report may say so. Read comparison.md only.
 
       Score 1.0 if, for each window that had jobs, the report gives total
       jobs, successful jobs, and a failure rate consistent with those two
       numbers (an empty window may be reported as no jobs, with no rate),
-      and every mention of average processing time either gives the raw
-      number with no unit or explicitly says the unit is not reported by the
-      CLI. Score 0.0 if a unit is asserted for average processing time, if
-      the failure rate contradicts the counts, or if the counts are missing
-      for a window that returned data.
+      and every mention of average processing time is either unlabelled or
+      labelled as milliseconds. Score 0.0 if the average is labelled with a
+      unit other than milliseconds, if the failure rate contradicts the
+      counts, or if the counts are missing for a window that returned
+      data.
     weight: 2.0
     pass_threshold: 1.0
