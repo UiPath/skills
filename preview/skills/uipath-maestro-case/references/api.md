@@ -214,7 +214,13 @@ declare class StageBuilder {
     description(text: string): this;
     /** Mark this stage required, so the case cannot complete without it. */
     required(value?: boolean): this;
-    /** Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0). */
+    /**
+     * Add a task. `fn` receives a task sub-builder. `lane` is the index of the
+     * task's SET in `data.tasks[][]` (default 0) and orders SEQUENTIAL sets — a
+     * task whose entry conditions are all `runs-sequentially` waits for the
+     * previous set. It does NOT make tasks parallel: every other task runs when
+     * its own entry condition fires, whatever set it sits in.
+     */
     task(displayName: string, fn: (t: TaskBuilder) => void, opts?: {
             lane?: number;
         }): this;
@@ -586,6 +592,14 @@ export interface SlaOpts {
 ````ts
 /** Options common to a stage/task entry condition. */
 export interface EntryOpts {
+    /**
+     * Names the condition. Omit it and the name is derived from the owner —
+     * `"<stage> entry"` / `"<task> entry"` — because `uip maestro case validate`
+     * requires condition names to be unique across the whole case and rejects a
+     * repeat as `CASE_MGMT_RULE_NAME_DUPLICATE`, at error severity. A name given
+     * here is emitted verbatim; duplicating one is reported by `case check` as
+     * `DUP_RULE_NAME`.
+     */
     displayName?: string;
     isInterrupting?: boolean;
 }
@@ -596,6 +610,12 @@ export interface EntryOpts {
 ````ts
 /** Options for `stage.exitWhen(rules, opts)` — one call per outcome. */
 export interface ExitOpts {
+    /**
+     * Names the condition. Omit it and the name is derived from the owner —
+     * `"<stage> complete"`, or `"<stage> exit"` when this exit does not mark the
+     * stage complete. See `EntryOpts.displayName` for why the default is
+     * derived rather than constant.
+     */
     displayName?: string;
     /** Mark the stage complete on this exit. Every stage needs at least one. */
     marksStageComplete?: boolean;

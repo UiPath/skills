@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ a82b640. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 62c5a99. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -22,26 +22,42 @@ An existing Flow JSON can also be decompiled back into TypeScript for editing.
 ## Project layout
 
 The workspace installs `@uipath/maestro-builder-sdk` in `node_modules/`; `examples/` contains authored examples, and `references/` contains the details routed from this guide.
-To author a Flow, create a root-level `<Name>.flow.ts` and import the package directly.
+A Flow is authored as a root-level `<Name>.flow.ts` that imports the package directly.
 
-**The source lives at the root; the compiled artifact does not.** Scaffold the project
-before authoring, then emit into it — `compile -o` is the authority over where the
-emitted file is written. `<Solution>` and `<Name>` are the request's own names, used
-verbatim: a request that gives one name for both ("inside a solution of the same
-name") uses it for both, and a request that names only the Flow uses `<Name>` for both.
+**The source lives at the root; the compiled artifact does not.**
+Scaffold the project first, seed the source from it, then emit back into it — `compile -o` is the authority over where the emitted file is written.
+`<Solution>` and `<Name>` are the request's own names, used verbatim: a request that gives one name for both ("inside a solution of the same name") uses it for both, and a request that names only the Flow uses `<Name>` for both.
 
 ```bash
 uip solution init <Solution>
 ( cd <Solution> && uip maestro flow init <Name> )
+uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o <Name>.flow.ts --no-pipeline
+# edit <Name>.flow.ts
 uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
 ```
 
-Exactly one emitted `<Name>.flow` may exist, at that path. Never leave a second copy
-at the workspace root, and never leave behind the trigger-only stub `flow init` writes —
-validators and evidence collectors cannot choose safely between duplicates, and an
-abandoned stub outranks the real work. Emitting to the root is correct only for the
-packaged-SDK local gates, which never scaffold a project; pick the loop first
-([`references/CLI-LOOP.md`](references/CLI-LOOP.md)) and do not mix the two.
+Do not hand-write the skeleton.
+Decompiling the trigger-only artifact `flow init` writes produces exactly that skeleton, and it carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
+So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
+`--no-pipeline` keeps the greenfield seed to one file; `<Name>.pipeline.mjs` is the brownfield read/modify/write helper ([`references/brownfield.md`](references/brownfield.md)) and is noise here.
+
+An existing project needs no `init`: skip the first two commands and seed from the `.flow` that is already there.
+Exactly one emitted `<Name>.flow` may exist, at that path, and never a second copy at the workspace root — validators and evidence collectors cannot choose safely between duplicates.
+Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([`references/CLI-LOOP.md`](references/CLI-LOOP.md)) and do not mix the two.
+
+### Installing the package into a bare workspace
+
+Skip this when `node_modules/@uipath/maestro-builder-sdk` is already present, as it is in a prepared workspace.
+Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
+One install does the whole bootstrap, writing `package.json` itself when the directory has none:
+
+```bash
+npm install --save-dev @uipath/maestro-builder-sdk
+```
+
+It resolves the `@uipath` scope through GitHub Packages, so `.npmrc` must route the scope and carry a `read:packages` token before it can succeed.
+npm records the dependency in the nearest `package.json` up the directory tree, installing `node_modules/` beside that file rather than in the current directory — so when an unrelated ancestor owns one, claim the intended root first with `[ -f package.json ] || npm init -y`.
+On a `package.json` npm generated itself, `npm pkg set type=module` silences the `MODULE_TYPELESS_PACKAGE_JSON` warning every compile otherwise prints; leave an existing project's `type` alone.
 
 Integrations with non-UiPath systems are handled through connectors.
 Connectors require a root-level [`bindings.json`](references/bindings.md).
@@ -61,9 +77,10 @@ lookup token with no recorded value, `CONNECTOR_INPUT` for a field the
 operation does not declare. Run that one
 `npx flow-sdk registry prepare <connector-key> <action>` — `--object`,
 `--resolve` and `-f` compose in a single invocation, it finds the connection
-itself and writes `bindings.json` — switch the import to the generated
-`connectors-local/<key>.ts` descriptor where it printed one, and re-run
-`check`, then compile.
+itself, writes `bindings.json`, and repoints your import at the generated
+`connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
+Where two flows import the same connector it names them instead of guessing,
+and asks for `--source`.
 
 The gate this replaces still holds for schema-dynamic operations
 (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the
@@ -186,9 +203,9 @@ under `examples/` resolve inside this skill folder.
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
-| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric / Data Service entity ops — create, delete, get-by-id, query-many: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
-| Data Fabric read | `core.datafabric.read` | `dataFabricRead(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
-| Data Fabric update | `core.datafabric.update` | `dataFabricUpdate(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric / Data Service — **every** entity op: create, get-by-id, query, update, delete, file fields, events: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
+| Data Fabric read | `core.datafabric.read` (transitional — prefer the connector row above unless the scenario names this node) | `dataFabricRead(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric update | `core.datafabric.update` (transitional — prefer the connector row above unless the scenario names this node) | `dataFabricUpdate(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Subflow | `core.subflow` | `subflow(...)` | [Subflow](#subflow) | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
 | Human task | `uipath.human-in-the-loop` | `hitl(...)` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/GallerySubmission.flow.ts` |
 | Human quick form | `uipath.human-in-the-loop.quick-form` | `hitl({ variant: 'quick-form', ... })` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
@@ -561,29 +578,25 @@ Check tenant uniqueness/schema settings; wait only when a consumer exists and it
 
 ## Data Fabric
 
-**Route on the VERB, not the name in the prompt.** "Data Fabric" and "Data
-Service" are one product (key `uipath-uipath-dataservice` shows as *UiPath Data Fabric*).
-`core.datafabric.*` has two verbs and no output schema: `dataFabricRead({ entity, filters? })`
-and `dataFabricUpdate({ entity, record, set })` (`record` is one of `{ byId }` /
-`{ fromRead: '<read step>' }`). **Create, delete, get-by-id, query-many with a row
-limit, file fields, declared outputs and events are
-`connector('uipath-uipath-dataservice', …)`** even when the scenario says "Data
-Fabric" — `registry prepare … -f entityName=<Entity>` first.
+**One product, one surface — the connector.** "Data Fabric" and "Data Service" are one product (key `uipath-uipath-dataservice` shows as *UiPath Data Fabric*).
+**Every entity operation is `connector('uipath-uipath-dataservice', …)`** — create, get-by-id, query, update, delete, file fields, Record Created/Updated events — even when the scenario says "Data Fabric".
+Body fields come from the entity, so `compile` refuses them until `registry prepare … -f entityName=<Entity>` resolves the schema once.
 
 ```ts
-.step('lookup', dataFabricRead({ entity: 'Invoices',
-  filters: [{ field: 'InvoiceId', value: input('invoiceId') }] }))
-.step('markPaid', dataFabricUpdate({ entity: 'Invoices',
-  record: { fromRead: 'lookup' }, set: { Status: 'Paid' } }))
+.step('listInvoices', connector('uipath-uipath-dataservice', 'query-entity-records',
+  { entityName: 'Invoices', queryExpression: tmpl`Amount gt ${input('min')}`, limit: 20 },
+  { connection: 'dataservice', folder: 'shared' }))
 ```
 
-Filters default to `=`; `or: true` joins with OR. **Reference: [`references/data-fabric.md`](references/data-fabric.md)**
+`core.datafabric.*` compiles (`dataFabricRead`, `dataFabricUpdate`) but covers only 2 of those 7 verbs and declares no output schema, so it strands the rest of the flow on the connector: two bindings, two payload shapes, one entity.
+**Do not reach for the native nodes unless the scenario names them** — a routing default, not a rule; `examples/BeeHiveLedger.flow.ts` shows that native pair.
+**Reference: [`references/data-fabric.md`](references/data-fabric.md)**
 
 ## Error handling
 
 Route the immediately preceding action's failure through a handler path.
 
-Signature: `.step(name, action).onError(handler => ... )`; handler may use `err(step, field)` and `stepToRef(target)`. `.stepToList(port, fn)` runs a path from any port; `.stepToRef(port, target)` is a side exit that leaves the success path running.
+Signature: `.step(name, action).onError(handler => ... )`; the handler reads the failure with `h.err(field)` (or `err(step, field)`) and may `stepToRef(target)`. `.stepToList(port, fn)` runs a path from any port; `.stepToRef(port, target)` is a side exit that leaves the success path running. Never read the failed step's `out(...)` inside its own handler — that output was never written.
 
 ```ts
 .step('fetch', http({ url, managed: true }))
@@ -813,8 +826,8 @@ Signatures: `connector(descriptor, inputs, opts?)`;
   { connection: 'jira', folder: 'shared' }))
 ```
 
-Data Fabric is key `uipath-uipath-dataservice`: every entity operation but
-read-one/update-one lives here ([Data Fabric](#data-fabric)). Discover tenant-specific fields and ids; preserve every scenario-named input.
+Data Fabric is key `uipath-uipath-dataservice`: every entity operation lives
+here ([Data Fabric](#data-fabric)). Discover tenant-specific fields and ids; preserve every scenario-named input.
 
 **Reference: [`references/connector-params.md`](references/connector-params.md)**
 
