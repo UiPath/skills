@@ -65,10 +65,12 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    Confirm `<framework>.json` exists before continuing — a `uipath.json` `functions` map without it is a function scaffold (see [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold).
 
    For a simple stub with no LLM call, use the Coded Function framework
-   (`uipath` package only): `uv pip install uipath`, then `uip codedagent new <agent-name>`
-   — with no framework package installed, `--type auto` produces a function
-   scaffold. This avoids downloading the full LangGraph or LlamaIndex stack and
-   keeps the setup fast.
+   (`uipath` package only): `uv pip install uipath`, then
+   `uip codedagent new <agent-name> --type function`. If that fails with
+   `No such option '--type'`, the venv's `uipath` predates the option — re-run
+   without the flag, which produces the same function scaffold while no
+   framework package is installed. This avoids downloading the full LangGraph
+   or LlamaIndex stack and keeps the setup fast.
 
 2. Implement `main.py`. Use lazy LLM initialization (create clients inside functions, never at module level).
 

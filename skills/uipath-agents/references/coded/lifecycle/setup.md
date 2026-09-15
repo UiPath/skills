@@ -10,7 +10,9 @@ which uip > /dev/null 2>&1 || echo "install uip: npm install -g @uipath/cli"
 
 ## Framework Selection
 
-Pick the framework before starting. The package installed in the Workflow determines which scaffold `uip codedagent new` produces: `uipath new` defaults to `--type auto`, which uses the agent template of the framework package installed in the active venv and falls back to a Coded Function scaffold (`uipath.json` with a `functions` map, no `<framework>.json`) when none is installed. Install exactly one `<FRAMEWORK_PACKAGE>` before `new`, not after — with several installed, `new` fails and names them. `uipath new` also accepts `--type function` to force a Coded Function scaffold and `--type agent` to require an agent one (which fails when no framework package is installed); there is no flag for naming the framework, and this workflow relies on `auto` and passes neither.
+Pick the framework before starting: the package installed in the active venv selects the agent template, and there is no flag for naming it. Install exactly one `<FRAMEWORK_PACKAGE>` before `new`, not after — with several installed, `new` fails and names them.
+
+`uip codedagent new` asks `uipath new` for an agent scaffold (`--type agent`) whenever the installed `uipath` accepts that option, so a missing framework package fails with an error naming what to install. An older `uip` or `uipath` leaves the choice to `uipath new`'s `--type auto` default, which silently produces a Coded Function scaffold (`uipath.json` with a `functions` map, no `<framework>.json`) instead. § Verify the Scaffold covers both symptoms.
 
 | Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
 |---|---|---|---|
@@ -51,13 +53,13 @@ uip codedagent init
 After `uip codedagent new`, check the directory before running anything else:
 
 1. `<framework>.json` present (`langgraph.json` / `llama_index.json` / `openai_agents.json`) → agent scaffold. Continue.
-2. `uipath.json` with a `functions` map and no `<framework>.json` → function scaffold: `<FRAMEWORK_PACKAGE>` was not installed in the active venv when `new` ran (`--type auto` found no framework). Fix: `uv pip install <FRAMEWORK_PACKAGE>`, confirm `uip codedagent setup --force` reports the same venv, delete `main.py`, `pyproject.toml`, `uipath.json`, then re-run `uip codedagent new <PROJECT_NAME>`. Do not hand-write `<framework>.json` on top of the function scaffold, and do not hand off to `uipath-functions` — the project was never meant to be a function.
+2. `uipath.json` with a `functions` map and no `<framework>.json` → function scaffold: `<FRAMEWORK_PACKAGE>` was not installed in the active venv when `new` ran, on a `uip` or `uipath` old enough that `--type auto` made the choice. Fix: `uv pip install <FRAMEWORK_PACKAGE>`, confirm `uip codedagent setup --force` reports the same venv, delete `main.py`, `pyproject.toml`, `uipath.json`, then re-run `uip codedagent new <PROJECT_NAME>`. Do not hand-write `<framework>.json` on top of the function scaffold, and do not hand off to `uipath-functions` — the project was never meant to be a function.
 3. `No agent framework integration is installed` (or `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent`) → same cause as 2, reported by a CLI that forwards `--type agent` instead of falling back to a function scaffold. Nothing was generated. Fix: `uv pip install <FRAMEWORK_PACKAGE>`, then re-run `uip codedagent new <PROJECT_NAME>`.
 4. `Multiple agent frameworks are installed` → keep exactly one framework package in the venv (`uv pip uninstall` the others), then re-run `new`.
 
 ## Coded Function Agents
 
-What `uip codedagent new <PROJECT_NAME>` produces when no framework package is installed (`--type auto` falls back to a function scaffold); only `uipath` is needed. `uipath.json` carries the entrypoint mapping:
+Ask for one explicitly: `uip codedagent new <PROJECT_NAME> --type function`. Only the `uipath` package is needed. If that fails with `No such option '--type'`, the venv's `uipath` predates the option — re-run without the flag and, with no framework package installed, the same project is what you get. `uipath.json` carries the entrypoint mapping:
 
 ```json
 {
