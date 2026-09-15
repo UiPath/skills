@@ -388,7 +388,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 |-------|------|---------|
 | offeringDescription | string | =vars.offeringDescription |
 | selectedCategory | string | =vars.offeringCategory |
-| submittedDocuments | string | =js:([["Registration certificate", vars.registrationCertificate], ["Insurance", vars.insuranceDocument], ["Tax forms", vars.taxFormsDocument]].filter(function (p) { return p[1] && p[1].FullName; }).map(function (p) { return p[0] + ": " + p[1].FullName; }).join("; ") || "None attached") |
+| submittedDocuments | string | =js:([["Registration certificate", vars.registrationCertificate], ["Insurance", vars.insuranceDocument], ["Tax forms", vars.taxFormsDocument]].filter(function (p) { return p[1] && p[1].FullName; }).map(function (p) { return p[0] + ": " + p[1].FullName; }).join("; ") \|\| "None attached") |
 
 **Outputs:**
 
