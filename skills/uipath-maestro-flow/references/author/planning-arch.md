@@ -346,7 +346,7 @@ Before presenting the plan, validate every rule:
 
 ## Handoff to Phase 2
 
-After explicit user approval, [Planning Phase 2: Implementation](planning-impl.md) must:
+Once the plan is approved, [Planning Phase 2: Implementation](planning-impl.md) must:
 
 1. Validate every node type with `uip maestro flow registry get`; read each plugin's `impl.md`.
 2. Resolve connector and resource nodes using relevant `impl.md` files, including [connector](plugins/connector/impl.md) and [rpa](plugins/rpa/impl.md).
@@ -356,8 +356,6 @@ After explicit user approval, [Planning Phase 2: Implementation](planning-impl.m
 6. Replace `core.logic.mock` nodes with real resources when available.
 7. Finalize implementation-ready details.
 
-**Do not proceed to Phase 2 until the user explicitly approves the architectural plan.**
-
-Ask per [SKILL.md](../../SKILL.md) rule #5, and **mark the proceed option recommended**. That mark is the whole mechanism: rule #5's non-interactive fallback carries a headless run past a gate that has one, and stops at a gate that does not.
+**Do not proceed to Phase 2 until the plan is approved, and route that approval through [SKILL.md](../../SKILL.md) rule #5 with the proceed option marked recommended.** Rule #5 then owns both branches: a user approves interactively, and its non-interactive fallback takes the marked option and records the unreviewed handoff. The mark is the whole mechanism — the fallback carries a headless run past a gate that has one and stops at a gate that does not.
 
 **Write the plan before asking, always.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which costs more than the plan it replaces.

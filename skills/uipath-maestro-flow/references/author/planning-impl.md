@@ -2,7 +2,7 @@
 
 Resolve every implementation detail in the approved `.uipath.flow.arch.plan.md` and produce a build-ready `.uipath.flow.impl.plan.md`, using plugin `impl.md` files, wiring rules, and flow patterns.
 
-> **Prerequisite:** `.uipath.flow.arch.plan.md` exists and the user approved it — or rule #5's non-interactive fallback took the recommended option and recorded the unreviewed handoff ([planning-arch.md — Handoff to Phase 2](planning-arch.md#handoff-to-phase-2)).
+> **Prerequisite:** `.uipath.flow.arch.plan.md` exists and its approval went through rule #5 ([planning-arch.md — Handoff to Phase 2](planning-arch.md#handoff-to-phase-2)).
 >
 > **Always validate with the registry**, including OOTB nodes. Port names, required inputs, and output schemas can change.
 
@@ -205,9 +205,7 @@ Present a short chat summary containing:
 5. Required fields needing user input.
 6. Connections needing creation.
 
-Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. Do not build until the user explicitly approves.
-
-Ask per [SKILL.md](../../SKILL.md) rule #5, and **mark the proceed option recommended** so its non-interactive fallback carries a headless run through rather than stopping.
+Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. **Do not build until the plan is approved, and route that approval through [SKILL.md](../../SKILL.md) rule #5 with the proceed option marked recommended** — rule #5 owns both branches, so a user approves interactively and its non-interactive fallback takes the marked option and records the unreviewed build.
 
 **Write the plan before asking, always.** The resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
 
