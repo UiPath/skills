@@ -4,13 +4,20 @@ description: >
   file, choice, multi-choice, and relationship fields on a reusable expense
   model.
 tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 45
   max_turns: 120
   turn_timeout: 1500
   task_timeout: 2400
 
+
+reference:
+  directory: .
 
 initial_prompt: |
   I have an employee directory called `CE_SmokeEmployees`, a projects list
@@ -56,7 +63,6 @@ initial_prompt: |
     - Make sure the tenant-level dropdown `CE_SmokePaymentState0726` has
       values "paid", "unpaid", and "refunded", and that `CE_SmokeExpense`
       has it as a payment-status column.
-
 success_criteria:
   - type: command_executed
     description: "Agent listed entities (any variant)"
@@ -85,7 +91,7 @@ success_criteria:
   - type: run_command
     description: "Live Expense schema contains all requested complex field types and amount constraints"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      python3 $REFERENCE_DIR/_shared/verify_field_constraints.py
       --entity-name CE_SmokeExpense --ignore-field-case
       --assertions 'amount.Name=DECIMAL,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000,category.Name=CHOICE_SET_SINGLE,tags.Name=CHOICE_SET_MULTIPLE,submitter.Name=RELATIONSHIP,project.Name=RELATIONSHIP,Receipt.Name=FILE'
     timeout: 180
@@ -96,10 +102,10 @@ success_criteria:
   - type: run_command
     description: "Live relationship fields point to the requested employee and project entities"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py
+      python3 $REFERENCE_DIR/_shared/verify_field_binding.py
       --entity-name CE_SmokeExpense --field-name submitter --target-entity-name CE_SmokeEmployees
       &&
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py
+      python3 $REFERENCE_DIR/_shared/verify_field_binding.py
       --entity-name CE_SmokeExpense --field-name project --target-entity-name CE_SmokeProjects
     timeout: 180
     expected_exit_code: 0
@@ -109,7 +115,7 @@ success_criteria:
   - type: run_command
     description: "Live Employees schema contains the requested status choice field"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      python3 $REFERENCE_DIR/_shared/verify_field_constraints.py
       --entity-name CE_SmokeEmployees --ignore-field-case
       --assertions 'status.Name=CHOICE_SET_SINGLE'
     timeout: 180
@@ -120,7 +126,7 @@ success_criteria:
   - type: run_command
     description: "The reusable payment-state dropdown contains all requested values and is used by the expense schema"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py
+      python3 $REFERENCE_DIR/_shared/verify_choice_set_values.py
       --name CE_SmokePaymentState0726 --required paid,unpaid,refunded
       --bound-entity-name CE_SmokeExpense
     timeout: 180
@@ -131,7 +137,7 @@ success_criteria:
   - type: run_command
     description: "The reusable expense fixture contains exactly one matching working row"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py
+      python3 $REFERENCE_DIR/_shared/assert_record_count.py
       --entity-name CE_SmokeExpense --expected 1
     timeout: 240
     expected_exit_code: 0
@@ -166,6 +172,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent reported the four requested multi-choice query outcomes coherently"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The reusable expense fixture contains one $250 expense tagged urgent
       and reimbursable, but not client. The agent was asked for:
@@ -225,22 +232,22 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
     timeout: 180
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_categories.choice_set.json"
+  - command: "python3 _setup/seed_choice_set.py --spec _setup/seeds/smoke_categories.choice_set.json"
     timeout: 180
     fail_on_error: true
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_tags.choice_set.json"
+  - command: "python3 _setup/seed_choice_set.py --spec _setup/seeds/smoke_tags.choice_set.json"
     timeout: 180
     fail_on_error: true
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeEmployees --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_employees.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_employees.records.json"
+  - command: "python3 _setup/seed_entity.py --entity-name CE_SmokeEmployees --schema-file _setup/seeds/smoke_employees.schema.json --records-file _setup/seeds/smoke_employees.records.json"
     timeout: 240
     fail_on_error: true
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeProjects --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_projects.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_projects.records.json"
+  - command: "python3 _setup/seed_entity.py --entity-name CE_SmokeProjects --schema-file _setup/seeds/smoke_projects.schema.json --records-file _setup/seeds/smoke_projects.records.json"
     timeout: 240
     fail_on_error: true
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
     timeout: 180

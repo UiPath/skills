@@ -25,6 +25,9 @@ Exit codes:
          or points at the wrong entity
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import subprocess

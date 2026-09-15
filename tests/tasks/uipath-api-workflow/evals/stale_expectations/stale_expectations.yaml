@@ -15,10 +15,20 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/stale_expectations/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 120
+
+reference:
+  directory: ..
 
 initial_prompt: |
   The API workflow project in ./GradeCheck grades a numeric `score` and has an
@@ -33,7 +43,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Behavioral: the workflow now grades with threshold 50 (55 and 50 -> PASS, 49 -> FAIL), read from the raw output"
-    command: python3 $TASK_DIR/check_stale_row.py behavior
+    command: python3 $REFERENCE_DIR/stale_expectations/check_stale_row.py behavior
     timeout: 300
     expected_exit_code: 0
     weight: 3.0
@@ -41,7 +51,7 @@ success_criteria:
 
   - type: run_command
     description: "Dataset: the stale `score 55` row now expects PASS; the 85/40/60 rows and the evaluator are unchanged; no row dropped"
-    command: python3 $TASK_DIR/check_stale_row.py dataset
+    command: python3 $REFERENCE_DIR/stale_expectations/check_stale_row.py dataset
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -49,9 +59,9 @@ success_criteria:
 
   - type: run_command
     description: "Behavioral: every row of the updated dataset passes when scored as the panel scores it"
-    # $SKILLS_REPO_PATH, not $TASK_DIR/..: the sandbox only mounts the task's own
-    # leaf directory, so ../_shared does not exist there and the check exits 2.
-    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_rows_pass.py GradeCheck --min-rows 4
+    # reference.directory points one level up, so this one mount covers both
+    # _shared/ and this task's own leaf directory.
+    command: python3 $REFERENCE_DIR/_shared/check_rows_pass.py GradeCheck --min-rows 4
     timeout: 300
     expected_exit_code: 0
     weight: 2.0

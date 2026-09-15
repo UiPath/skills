@@ -19,6 +19,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -77,7 +80,7 @@ success_criteria:
 
   - type: run_command
     description: "Send/receive wrappers on the right host events share a consistent message reference, fully shaped"
-    command: "python3 $TASK_DIR/check_message_send_receive_pair.py"
+    command: "python3 $REFERENCE_DIR/structural/message_send_receive_pair/check_message_send_receive_pair.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -38,7 +38,9 @@ Skill emits empty `layout: {}` at top level — never populates `layout.nodes` o
 Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents.
 
 1. **Canonical `caseplan.json` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory.
+<!--skill-flavor:t01-preconditions:start-->
    - **For the `case` plugin (T01)**: neither `caseplan.json` nor the 5 scaffold files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) exist before the plugin runs. `uip solution init` (Step 6.0, CLI) creates the solution dir + `.uipx` only. T01 creates the project dir and writes all 6 files directly — § Scaffold writes the 5 boilerplate files, § Write caseplan.json writes the root placeholder. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `<SolutionDir>/<SolutionName>.uipx` exists AND none of the 5 scaffold files exist yet in `<SolutionDir>/<ProjectName>/`.
+<!--skill-flavor:t01-preconditions:end-->
    - **For every other plugin**: `caseplan.json` must already exist (the `case` plugin always runs first as T01). If absent, run the `case` plugin first; do not attempt to synthesize a different JSON shape.
 
 2. **IDs match CLI format.** Generate IDs using the `prefixedId` algorithm (see "ID Generation" below). The frontend's `generateNextId(prefix, count)` expects this exact format — deviation risks Studio Web rejection.
@@ -66,7 +68,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 11. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
-12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each element-class section batch completes (per § Per-section batch write contract below). One validate per section, not one per element. Fixing errors at the section boundary is cheaper than chasing a cascade.
+12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each element-class section batch completes (the closing validate at Phase 3 exit and in Phase 4 adds `--strict`; section boundaries use the default profile because mid-build state is legitimately incomplete) (per § Per-section batch write contract below). One validate per section, not one per element. Fixing errors at the section boundary is cheaper than chasing a cascade.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes, so the case cannot be entered). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
     - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no entry conditions yet). The plugin's validation parity is captured in the fixture instead.
 
@@ -160,7 +162,7 @@ All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `i
 - **Edit** for narrowly-scoped, unambiguous in-place replacements — default for all mutations after T01, and required for sections with <10 elements.
 - **Write** for the T01 scaffold (initial empty-file creation by the `case` plugin) and for whole-section batched writes when a section has ≥10 elements — see § Per-section batch write contract for the bounded conditions under which whole-section Write replaces N sibling Edits.
 
-**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. The one exception is the skill's own bundled read-only `scripts/audit_caseplan.py` completeness gate (SKILL.md Rule 6 and Rule 13), which reads `caseplan.json` and `sdd.md` and writes nothing. No other helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
+**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
 This is a hard constraint — it keeps every mutation reviewable in the tool-call transcript and prevents silent state changes the user cannot audit.
 
@@ -174,7 +176,9 @@ This is a hard constraint — it keeps every mutation reviewable in the tool-cal
 
 Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issues.append(...)`, `existingTriggers = schema.nodes.filter(...)`, etc.) are **specifications of intent**, not commands to execute. Read them, apply the logic in-head, then use Read/Write/Edit to realize the mutation.
 
+<!--skill-flavor:bash-usage:start-->
 **Bash is still used for**: UUID v4 generation only (`node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId`; subprocess MUST NOT `require('fs')`, `require('child_process')`, or use any redirection operator), `uip solution init` / `uip solution projects add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
+<!--skill-flavor:bash-usage:end-->
 
 **Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `c`, `r`, `b`, `sla_`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
 
@@ -269,7 +273,7 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 
 1. Read `caseplan.json`.
 2. Remove the node from `schema.nodes` by ID.
-3. **If the deleted node is a stage with successors, repoint them — do NOT skip.** Edges are retired, so a successor reaches only via an entry-condition rule naming the deleted stage in `selectedStageId`. Find every stage whose `data.entryConditions[].rules[][]` has a `selected-stage-completed` / `selected-stage-exited` rule with `selectedStageId == <removedStageId>`, and repoint each to a surviving predecessor (the deleted stage's own predecessor, or `case-entered` if the deleted stage was first). Leaving them unrepointed orphans every successor — the case can validate structurally yet the successors never execute. Inverse of § Insert a stage between two existing stages.
+3. **If the deleted node is a stage with successors, repoint them — do NOT skip.** Edges are retired, so a successor reaches only via an entry-condition rule naming the deleted stage in `selectedStageIds`. Find every stage whose `data.entryConditions[].rules[][]` has a `selected-stage-completed` / `selected-stage-exited` rule whose `selectedStageIds` contains `<removedStageId>`, and repoint each to a surviving predecessor (the deleted stage's own predecessor, or `case-entered` if the deleted stage was first). Leaving them unrepointed orphans every successor — the case can validate structurally yet the successors never execute. Inverse of § Insert a stage between two existing stages.
 4. `schema.edges` is `[]` (Rule 20) — nothing to remove. Defensive: drop any stray edge referencing the removed node's ID.
 5. **If the deleted node is a Trigger, prune its `entry-points.json` entry.** Triggers live in `schema.nodes`, so trigger removal routes here — but every trigger plugin mandates a matching `entry-points.json` entry ([manual/impl-json.md § Recipe — entry-points.json](plugins/triggers/manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints), timer, event). Remove the entry whose `filePath` ends in `#<removedTriggerId>` from `entry-points.json.entryPoints`. Leaving it orphans a `#<triggerId>` fragment pointing at a node that no longer exists.
 6. **If the deleted node is a Trigger with In-args / trigger outputs, run the variable cascade.** An In-arg emits three entries keyed by the trigger ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)): the formal slot in `root.inputs[]` (`elementId == <triggerId>`), the companion in `root.inputOutputs[]` (`elementId == "root"`), and the bridge on `triggerNode.data.inputs.outputs[]`. The bridge dies with the node, but the formal slot and companion survive — leaving every `=vars.<name>` consumer reading undefined (`validate` does not catch dangling `=vars.*`). For the deleted trigger:
@@ -317,7 +321,7 @@ Change a rule's behavior without removing it — keep the rule `id` so any refer
 1. Read `caseplan.json`; locate the rule by `id` in its `rules[][]` DNF array.
 2. Edit the rule fields in place:
    - **Operator / expression:** rewrite `conditionExpression` (`=js:<expr>`) — use strict `===` / `!==`, parenthesize each sub-clause of a combined boolean ([bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink)). Re-validate any `=vars.<id>` referenced still type-checks.
-   - **`rule` type:** swap the `rule` value (e.g., `selected-stage-completed` ↔ `selected-stage-exited`) and add/drop the side field the new type requires (`selectedStageId`, `selectedTasksIds`). For case-exit, honor the rule-type × `marksCaseComplete` matrix ([case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md#rule-type--markscasecomplete-matrix)).
+   - **`rule` type:** swap the `rule` value (e.g., `selected-stage-completed` ↔ `selected-stage-exited`) and add/drop the side field the new type requires (`selectedStageIds`, `selectedTasksIds`). For case-exit, honor the rule-type × `marksCaseComplete` matrix ([case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md#rule-type--markscasecomplete-matrix)).
    - **`marksCaseComplete` (case-exit only):** flipping `true`→`false` may remove the last completion rule — run the ≥1-completion-rule guard in § Delete a case-exit completion rule first.
 3. Connector-bound rules: if the connector configuration (`rule.uipath`) changed, re-fetch via `uip maestro case spec` (never hand-author) and re-run the bindings cascade (steps 4–6 above).
 4. Edit — narrow slice targeting that rule. Never whole-file Write. Validate at the section boundary.
@@ -484,7 +488,7 @@ Transitions are not edges. To change where a stage flows, edit the relevant stag
 
 ## Validation Cadence
 
-Run `uip maestro case validate <file> --output json` after each element-class section's batch completes — not after every Edit. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
+Run `uip maestro case validate <file> --output json` after each element-class section's batch completes — not after every Edit. The closing validate at Phase 3 exit and in Phase 4 adds `--strict`. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
 
 On failure: fix the reported issue (usually a missing field, malformed ID, or orphan reference) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
 

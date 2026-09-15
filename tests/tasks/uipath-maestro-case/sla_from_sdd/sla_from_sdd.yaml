@@ -35,6 +35,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build the Case Management project described by sdd.md in this directory. It is the
   sole source of truth — trust it as written.
@@ -74,7 +77,7 @@ success_criteria:
       (not a stage-entry rule, which would re-run the stage), an interrupting enter-stage
       lane with return-to-origin, a non-completing case exit, and an adhoc optional task.
       validate accepts both start-task shapes, so validate passing is not evidence.
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/sla_from_sdd/check_sla_from_sdd.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_sla_from_sdd.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

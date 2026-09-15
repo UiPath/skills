@@ -16,6 +16,9 @@ run_limits:
 
 # Explicitly mentioning "autonomous" here since the "question"/"answer" prompt may
 # cause the coding agent to assume the conversational low-code agent variant.
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project "KnowledgeFlow" that runs an autonomous inline 
   low-code agent which answers a user's `question` (string) and returns an `answer`
@@ -125,7 +128,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline context index: resource.json shape + context.index flow node + context-handle edge"
-    command: "python3 $TASK_DIR/check_inline_context_index.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_context_index.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

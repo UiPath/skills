@@ -7,7 +7,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "27.0.0",
+  "version": "30.0.0",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -73,7 +73,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "27.0.0",
+  "version": "30.0.0",
   "name": "Loan Approval",
   "description": "case description",
   "metadata": {
@@ -95,7 +95,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"27.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"30.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -268,12 +268,26 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 All conditions share the same shape but attach at different levels. Per-level field tables and `--rule-type` semantics live in the corresponding condition plugin's `impl-json.md`.
 
+<a id="condition-name-uniqueness"></a>
+
+### Condition name uniqueness
+
+Every condition `displayName` must be unique across the **whole case**. One flat pool of literal strings spans all four scopes at once — stage `data.entryConditions[]`, stage `data.exitConditions[]`, task `entryConditions[]`, `metadata.caseExitRules[]` — so conditions in different stages, or different scopes, collide exactly like two in one array.
+
+`validate` enforces it as a hard **error**: `Rule name '<displayName>' is not unique`, reported once per node holding the name (`nodes[<stageId>]`, or `nodes[root]` for a case-exit rule). A name repeated in two stages errors on each, so a stage holding only one instance is still reported.
+
+The plugin defaults `Entry Rule {N}` / `Complete Rule {N}` / `Exit Rule {N}` share this pool with SDD-authored names. **Number them with a case-wide counter per label kind — highest existing number in the pool + 1 — never a per-array counter.** A per-array counter restarts at `1` in every stage and on every task, which is the usual cause of a collision.
+
+An SDD `Display Name` cell holding the default pattern (`Entry Rule <n>` etc.) is the SDD echoing the default: renumber it case-wide, which is not a divergence from the SDD. Only a **semantic** name repeated across stages is a planning defect — rename it in the SDD and re-emit.
+
+> **Never repair a collision by deleting a condition.** `validate` downgrades a task left with no entry rules to a warning (`CASE_MGMT_STAGE_TASK_ENTRY_CONDITION_MISSING`), so emptying `entryConditions[]` turns the build green while destroying authored behaviour — an `adhoc` task becomes unreachable, a gated task ungated. Always rename; never remove.
+
 ### EntryCondition (stage-level)
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 | `isInterrupting` | boolean? | Whether the condition interrupts the current stage |
 
@@ -282,7 +296,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 | `type` | string? | `"exit-only"` \| `"wait-for-user"` \| `"return-to-origin"` |
 | `exitToStageId` | string? | Target stage ID when routing to a specific stage |
@@ -293,7 +307,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 
 ### CaseExitCondition (case-level)
@@ -326,8 +340,8 @@ Rules = Rule[][]
 |--------|-------------------|-------------|
 | `wait-for-connector` | `id?`, `uipath` (connector config — **required**; absent → `connector activity missing`. Unresolved → **stub** placeholder, not bare — see § Placeholder fallback), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
 | `case-entered` | `id?`, `conditionExpression?` | Fires when the case is first entered |
-| `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
-| `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |
+| `selected-stage-completed` | `id?`, `selectedStageIds?`, `conditionExpression?` | One or more specific stages have completed |
+| `selected-stage-exited` | `id?`, `selectedStageIds?`, `conditionExpression?` | One or more specific stages have been exited |
 | `selected-tasks-completed` | `id?`, `selectedTasksIds?`, `conditionExpression?` | Specific tasks have all completed |
 | `required-tasks-completed` | `id?`, `conditionExpression?` | All required tasks in the stage have completed |
 | `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
@@ -343,11 +357,13 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 
 ```json
 { "rule": "case-entered", "id": "<id>" }
-{ "rule": "selected-stage-completed", "id": "<id>", "selectedStageId": "<stageId>" }
+{ "rule": "selected-stage-completed", "id": "<id>", "selectedStageIds": ["<stageId>"] }
 { "rule": "selected-tasks-completed", "id": "<id>", "selectedTasksIds": ["<taskId1>", "<taskId2>"] }
 { "rule": "sla-status-change", "id": "<id>", "slaId": "<slaId>", "escalationId": "<escalationId>" }
 { "rule": "adhoc", "id": "<id>", "conditionExpression": "=js:vars.score > 700" }
 ```
+
+> **Selected-stage rules are multi-select (schema v30).** `selected-stage-completed` and `selected-stage-exited` carry `selectedStageIds` — an array of stage ids, even for a single stage. The legacy singular `selectedStageId` is rejected: `selectedStageId is deprecated, it should be a stage in selectedStageIds instead`. Applies in all four rule scopes (stage-entry, stage-exit, task-entry, case-exit).
 
 An interrupting secondary-stage `sla-status-change` entry is global to the referenced SLA scope: it can exit whichever covered stage is active. Do not pair it with duplicated per-stage exit rules.
 
@@ -498,7 +514,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "27.0.0",
+  "version": "30.0.0",
   "name": "Simple Case",
   "metadata": {
     "caseIdentifier": "Simple Case",

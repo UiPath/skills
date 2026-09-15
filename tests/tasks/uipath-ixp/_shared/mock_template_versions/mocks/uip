@@ -33,9 +33,9 @@
     printf '\n'
 } >> "$(dirname "$0")/calls.log" 2>/dev/null || true
 
-# Per-version metrics bodies. Field ids are opaque by design — get-metrics
-# returns `FieldId`, never a name, so a run that reports field names has to join
-# against get-taxonomy (out of scope here; this fixture grades version choice).
+# Per-version metrics bodies. Field ids are opaque by design; this fixture
+# predates the `Name` field the API now returns next to `FieldId` and omits it
+# — nothing here grades names, this fixture grades version choice.
 METRICS_V9='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":9,"ValidatedDocuments":5,"ProjectScore":0.98,"ProjectScoreQuality":"excellent","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.978,"Precision":0.978,"Recall":0.978,"ErrorRate":0.022,"Documents":5}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"9a3f5d2c81b7e604","F1":0.978,"Precision":0.978,"Recall":0.978,"ErrorRate":0.022,"Documents":5,"Annotations":5,"Quality":"excellent"}]}}'
 METRICS_V30='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":30,"ValidatedDocuments":5,"ProjectScore":0.91,"ProjectScoreQuality":"excellent","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.864,"Precision":0.778,"Recall":0.972,"ErrorRate":0.222,"Documents":5}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"9a3f5d2c81b7e604","F1":0.889,"Precision":0.8,"Recall":1,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"}]}}'
 

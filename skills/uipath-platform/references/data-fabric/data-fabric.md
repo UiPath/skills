@@ -111,7 +111,7 @@ Do not change field types, create federated entities, or write federated records
 
 20. **`records import` supports Basic types only.** `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, `AUTO_NUMBER` columns are ignored on import — optional columns land as `null`; **`isRequired` columns without a `defaultValue` fail the whole row** (`ErrorFileLink` entry per row). Sequence: (1) `entities get` → list unsupported columns; (2) tell the user which columns will be skipped, and which rows will fail because a required unsupported column has no default; (3) offer `records insert --file <json>` (+ `files upload` for FILE) as the alternative; (4) invoke only after explicit confirmation. See [`bulk-import.md` → Complex Field Types Not Supported](bulk-import.md#complex-field-types-not-supported).
 
-21. **`MULTILINE_MAX` — marker reads, no filter/sort.** `records list` / `records query` return a size marker (`HasValue=true Length=N`) — full value only via `records get`. Never echo the marker back through `records update` — the server accepts it as a normal value and destroys the real content; omit the key instead. No filter/sort support (400). `lengthLimit` is a UTF-16 byte budget (max 131072 ≈ 65,536 chars). Full contract: [`entity-schema.md` → MULTILINE_MAX](entity-schema.md#multiline_max-fields) + [`records-query.md` → MULTILINE_MAX](records-query.md#multiline_max-fields--marker-vs-full-content).
+21. **`MULTILINE_MAX` — preview reads, no filter/sort.** `records list` / `records query` return a preview, either content truncated to 10,000 characters with a `...[Truncated]` suffix or a size marker (`HasValue=true Length=N`), depending on the tenant; full value only via `records get`. Never echo a preview back through `records update` — the server accepts it as a normal value and destroys the real content; omit the key instead. No filter/sort support (400). `lengthLimit` is a UTF-16 byte budget (max 131072 ≈ 65,536 chars). Full contract: [`entity-schema.md` → MULTILINE_MAX](entity-schema.md#multiline_max-fields) + [`records-query.md` → MULTILINE_MAX](records-query.md#multiline_max-fields--preview-vs-full-content).
 
 ---
 
@@ -165,3 +165,9 @@ For topic-specific errors, use the relevant reference. Cross-cutting failures:
 | Entity / choice set created via `--folder-key <X>` doesn't appear in list | Lists default to tenant-only | Re-run with `--folder-key <X>` or `--include-folders` |
 
 Any error not in this table → Rule 18. Topic-specific error tables live in the topic references.
+
+---
+
+## Packaging into a Solution
+
+To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).

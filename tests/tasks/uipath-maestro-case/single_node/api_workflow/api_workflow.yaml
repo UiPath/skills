@@ -7,12 +7,19 @@ description: >
   end-to-end, asserting only that the case finalStatus is `Completed`.
 tags: [uipath-maestro-case, e2e, mode:operate, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 131
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ApiWorkflowSingleCase"
@@ -105,7 +112,6 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
   with `uip maestro case validate` passing on the resulting caseplan.json.
-
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
@@ -117,12 +123,12 @@ success_criteria:
 
   - type: run_command
     description: "Caseplan has an api-workflow task and debug completes successfully"
-    command: "python3 $TASK_DIR/check_api_workflow_case.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_api_workflow_case.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

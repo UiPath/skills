@@ -4,19 +4,42 @@ description: >
   entities from the tenant, selects the right one, and builds a
   deterministic @tool-wrapped query with lazy init and correct imports.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../uipath-platform/data-fabric/_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 55
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
+pre_run:
+  - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedOrderSdk --include-folders"
+    timeout: 60
+    fail_on_error: false
+  - command: "$(command -v python3.13 || command -v python3) _setup/seed_coded_order.py --entity-name CE_CodedOrderSdk"
+    timeout: 300
+    fail_on_error: true
+
 initial_prompt: |
   Build me a coded agent called `order-lookup` that can look up
   customer orders. The data lives in Data Fabric — find the right
-  entity by listing what's available. The agent should take a
-  customer name and return their open orders — the query is always
-  the same shape.
+  entity by listing what's available. Users ask in plain language
+  ("what's still open for Acme?", "any outstanding orders from the
+  O'Brien account?") — the agent should work out which customer they
+  mean, fetch that customer's open orders (that query is always the
+  same shape), and summarize the results conversationally.
 
   Scaffold and init only — don't run or deploy.
+post_run:
+  - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedOrderSdk --include-folders"
+    timeout: 60
 
 success_criteria:
   - type: skill_triggered
@@ -36,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "SDK import, lazy init, entity filter, binding shape"
-    command: "python3 $TASK_DIR/check_datafabric_sdk_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_datafabric_sdk_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

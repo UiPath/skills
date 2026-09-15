@@ -55,7 +55,7 @@ The values `get-metrics` returns are neither independent nor interchangeable —
 | `ErrorRate` | field, group | **Report — independent of `Precision`.** Wrong extractions over `Annotations`. A wrong value counts **once** (not as a false positive plus a false miss), and a miss counts even though it cannot lower `Precision` — so `Precision` 1.00 can still carry `ErrorRate` 0.20. Report it as the manual-correction burden; diagnose direction from `Precision`/`Recall`. |
 | `Quality` | field | **Ignore.** A coarse label derived from the numbers, on a scale inconsistent with `ProjectScoreQuality` (an `F1` of 1.00 still reads `good` while a `ProjectScore` of 0.91 reads `excellent`). Never gate on it and don't report it per field — if the user asks about the UI's label, explain the scales differ. |
 | `ProjectScoreQuality` | project | **Report on the project line only** (the label the UI shows beside the score) — different scale from field `Quality` (above). |
-| `FieldGroup`, `FieldId` | field | Identity. `FieldId` needs the taxonomy join for a human-readable name (see 1a). |
+| `FieldGroup`, `FieldId`, `Name` | field | Identity — SKILL.md Critical Rule 22. |
 
 
 ## Waiting for retrain
@@ -89,12 +89,7 @@ Note the `ModelVersion` from this baseline read — later iterations check that 
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
 
-**Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `field` entries:
-
-- For each metric entry: `FieldGroup` = label_def name, `FieldId` = the field's `field_id`
-- Find the matching field entry in the taxonomy where `field_id == FieldId` — its `name` is the human-readable field name
-
-Build this mapping once and reuse it throughout the loop.
+**Field names:** compare on `FieldId`, report on `Name`, and qualify a shared `Name` with its `FieldGroup` — SKILL.md Critical Rule 22.
 
 ### 1b. Check model configuration
 

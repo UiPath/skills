@@ -40,8 +40,9 @@ initial_prompt: |
   - the safe next action.
 
   The `uip` CLI is already available and is backed by a local test harness. Use
-  `uip maestro bpmn ... --output json` for every read. Do NOT inspect `mocks/`,
-  `fixtures/`, or any response JSON files directly. This is a diagnosis only —
+  `uip maestro bpmn ... --output json` for every read. Do NOT inspect `mocks/`
+  or `fixtures/` directly; capturing a CLI response to your own file and reading
+  it back is fine. This is a diagnosis only —
   do NOT retry, cancel, continue, migrate, or otherwise operate the instance,
   and do NOT ask for approval, confirmation, or feedback.
 

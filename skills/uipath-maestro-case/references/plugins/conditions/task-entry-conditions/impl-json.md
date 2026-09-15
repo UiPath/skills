@@ -34,7 +34,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 4. Locate the target task inside `stageNode.data.tasks[lane][index]` (search every lane until the task ID is found)
 5. Initialize `task.entryConditions = []` if absent
 6. Read the rule type from the SDD's Entry Condition table; pick the recipe below
-7. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+7. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`. `N` counts **case-wide**, not within this task: scan the whole `caseplan.json` for existing `Entry Rule <number>` names across every stage's `data.entryConditions[]` and every task's `entryConditions[]`, then `N` = highest + 1 (`1` when none). A per-task counter names every unnamed first condition `Entry Rule 1` and fails `validate` — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness). Never emit a blank or omitted `displayName`.
 8. Append the condition object to `task.entryConditions[]`
 
 ## Rule Types
@@ -106,7 +106,17 @@ Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger -
 "uipath": {
   "serviceType": "Intsvc.WaitForEvent",
   "context": "<caseShape.context — placeholders substituted>",
-  "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
+  "inputs": [
+    {
+      "name":   "<caseShape.inputs[i].name>",
+      "type":   "<caseShape.inputs[i].type>",
+      "target": "<caseShape.inputs[i].target>",
+      "body":   "<caseShape.inputs[i].body, carried over unchanged>",
+      "var": "vxxxxxxxx",
+      "id":  "vxxxxxxxx",
+      "elementId": "<stageId>-<ruleId>"
+    }
+  ],
   "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
   "bindings": []
 }

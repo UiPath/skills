@@ -112,7 +112,7 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | `uip traces feedback get <id>` | Fetch one feedback record |
 | `uip traces feedback list` | List feedback, optionally filtered by trace/span/agent/sentiment |
 | `uip traces feedback list detailed` | Feedback with span context, plus time-range/category/sort filters |
-| `uip traces feedback update <id>` | Change sentiment, comment, or categories |
+| `uip traces feedback update <id>` | Change sentiment, comment, metadata, or categories |
 | `uip traces feedback delete <id>` | Remove feedback |
 
 ---

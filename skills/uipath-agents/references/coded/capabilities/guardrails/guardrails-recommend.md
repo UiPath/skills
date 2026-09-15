@@ -240,6 +240,8 @@ Use when the agent already has guardrails and the user asks whether they are cor
 
 **Fetch the SDK docs first (WebFetch) — they are the authoritative source** for which Python class corresponds to which `validator_id` and which scopes/stages each class supports; a scope/placement diagnosis is grounded there. Also run the `catalog` and `list` fetches to support the Relevance (`when_not_to_use`) and entitlement checks below — recommended, but not a hard prerequisite once the SDK docs settle the scope question.
 
+**Do NOT use `uip codedagent review --checks guardrails` as the verdict.** It checks structure and presence, not scope/stage placement or entity/threshold correctness — a misplaced or misconfigured guardrail can score `PASS` / `A+` (see [guardrails.md § Critical Rules](guardrails.md#critical-rules) Rule 19). The three checks below are the authority for validate mode.
+
 For each existing guardrail discovered in the Python file (Step 1 from Recommend Mode):
 
 ### Correctness Check

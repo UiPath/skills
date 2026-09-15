@@ -80,7 +80,7 @@ jobs:
           for skill in flow case bpmn; do
             findings="$RUNNER_TEMP/maestro-$skill-verbs.ndjson"
             python3 scripts/check-skill-verbs.py \
-              --json "preview/uipath-maestro-$skill" > "$findings"
+              --json "preview/skills/uipath-maestro-$skill" > "$findings"
             blocking=$(jq -c \
               'select(.severity=="Stale" and .matched_prefix == null)' \
               "$findings" | wc -l | tr -d ' ')
@@ -108,16 +108,16 @@ jobs:
         run: |
           set -euo pipefail
           if git diff --quiet -- \
-            preview/uipath-maestro-flow \
-            preview/uipath-maestro-case \
-            preview/uipath-maestro-bpmn; then
+            preview/skills/uipath-maestro-flow \
+            preview/skills/uipath-maestro-case \
+            preview/skills/uipath-maestro-bpmn; then
             changed=false
           else
             changed=true
             git diff --stat -- \
-              preview/uipath-maestro-flow \
-              preview/uipath-maestro-case \
-              preview/uipath-maestro-bpmn
+              preview/skills/uipath-maestro-flow \
+              preview/skills/uipath-maestro-case \
+              preview/skills/uipath-maestro-bpmn
           fi
           if [ "$changed" != "$SCRIPT_CHANGED" ]; then
             echo "Sync script reported changed=$SCRIPT_CHANGED but git reported changed=$changed."
@@ -146,9 +146,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add \
-            preview/uipath-maestro-flow \
-            preview/uipath-maestro-case \
-            preview/uipath-maestro-bpmn
+            preview/skills/uipath-maestro-flow \
+            preview/skills/uipath-maestro-case \
+            preview/skills/uipath-maestro-bpmn
           git commit \
             -m "chore(preview): re-sync Maestro SDK skills to flow-builder-sdk@$NEW_PIN" \
             -m "🤖 Generated with Claude Code

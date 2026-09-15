@@ -39,7 +39,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | Field | Source | Notes |
 |-------|--------|-------|
 | `count` | sdd.md duration number | Positive integer |
-| `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
+| `unit` | sdd.md duration unit | `min` (minutes) \| `h` (hours) \| `d` (days) \| `w` (weeks) \| `m` (months). Carry the sdd.md token verbatim — `m` is **months**, never minutes. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `display-name` | sdd.md `SLA Title` (§1 Case Metadata for root; `**SLA Title:**` under `#### Stage SLA`) or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context for the target, duration, threshold, and escalation behavior. |
@@ -196,7 +196,7 @@ Before emitting SLA elements, reject or repair the same cases the Case App rejec
 
 - every SLA rule has a non-empty, target-unique `display-name`;
 - every escalation has a non-empty, target-unique `display-name`;
-- every SLA `count` is positive, and minute-based values are between 15 and 1000 inclusive;
+- every SLA `count` is positive, and `unit: "min"` counts are between 15 and 1000 inclusive. This floor applies ONLY to `min`; `h` / `d` / `w` / `m` counts carry no floor, so never rewrite a unit or clamp a count to satisfy it;
 - every non-default rule has a condition/expression;
 - every escalation has at least one recipient, and every `at-risk` escalation carries `at-risk-percentage`.
 
@@ -204,6 +204,7 @@ Before emitting SLA elements, reject or repair the same cases the Case App rejec
 
 - **Do not fabricate expression syntax.** Describe conditional SLA rules in natural language during planning; the execution phase handles the exact syntax.
 - **Do not lose the conditional rule's target.** Root and stage rules have the same entry shape but different destinations (`metadata.slaRules[]` vs `node.data.slaRules[]`). Preserve the SDD row's target through to the caseplan write.
+- **Do not normalize the sdd.md duration unit.** `m` in an sdd.md SLA row is **months**, not minutes — emit `unit: "m"` and keep the count as written. A count below 15 is legal for `m` / `h` / `d` / `w`; the 15–1000 floor is `min`-only. Rewriting the unit or clamping the count to clear a floor that does not apply silently moves every escalation deadline in the case.
 - **Do not invert rule order.** Conditional rules are evaluated in insertion order — insert them in the priority order the sdd.md specifies.
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.

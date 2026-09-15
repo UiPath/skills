@@ -5,7 +5,7 @@ Agent nodes invoke UiPath AI agents through `uipath.core.agent.{key}`. Coded (Py
 Agents are either:
 
 - **In this solution**: a sibling project. `{key}` is the local `resource.key` minted by `uip solution projects add` and written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`. Runtime resolution uses the Studio Web projects API after `uip solution upload`; `definitions[]` uses `model.section: "In this solution"`.
-- **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `model.section: "Published"`.
+- **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `category: "agent.published"` (registry output omits `model.section`).
 
 The `nodes[]` shape is the same; only the `definitions[]` manifest differs.
 
@@ -188,6 +188,16 @@ Connect trigger → agent → end:
 ```
 
 Reference upstream values as `$vars.<nodeId>.output.<field>` and flow globals as `$vars.<global>`. Agent inputs therefore reference `$vars.<TRIGGER_ID>.output.<INPUT_FIELD>`.
+
+## Conversational Agents
+
+A conversational (text chat) agent uses this node type with a different input shape — `isConversational: true` plus a `conversationalAgentSettings` block, instead of the agent's own schema fields. It also needs the conversation trigger and wait-for-message loop around it.
+
+All of that — the five-key settings block, the node JSON, the loop, and the ports — lives in [conversational-agent/impl.md](../conversational-agent/impl.md). Come back here only for discovery: an in-solution agent is visible only with `--local`.
+
+```bash
+uip maestro flow registry get "uipath.core.agent.{key}" --local --output json
+```
 
 ## Accessing Output
 

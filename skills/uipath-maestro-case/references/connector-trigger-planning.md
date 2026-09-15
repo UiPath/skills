@@ -277,7 +277,7 @@ A connector-bound rule's condition element records these on its ledger entry (al
 
 ```jsonc
 {
-  "rule-type": "wait-for-connector",
+  "rule-type": "wait-for-connector",   // ledger field only; the caseplan rule object is keyed "rule"
   "type-id": "<uiPathActivityTypeId>",
   "connection-id": "<connection-id>",
   "connector-key": "<connector-key>",

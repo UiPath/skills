@@ -5,7 +5,7 @@ Manage and run runtime evaluations for agents published as Orchestrator packages
 ## Command Structure
 
 ```
-uip or eval
+uip eval
 ├── execute-and-evaluate             Submit a runtime eval run
 ├── run list                         List eval set runs for a process
 ├── run get <evalSetRunId>           Get details of a specific run
@@ -24,7 +24,7 @@ uip or eval
 Submit a runtime eval run for a published Orchestrator package.
 
 ```bash
-uip or eval execute-and-evaluate \
+uip eval execute-and-evaluate \
   --process-key <guid> \
   --workload-id <guid> \
   --items <json> \
@@ -52,7 +52,7 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 ### Example
 
 ```bash
-uip or eval execute-and-evaluate \
+uip eval execute-and-evaluate \
   --process-key "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
   --workload-id "a1b2c3d4-0000-0000-0000-000000000001" \
   --items '[{"id":"i1","name":"Test","inputs":{"input":"hello"},"expectedOutput":{},"expectedBehavior":""}]' \
@@ -84,7 +84,7 @@ CRUD for evaluators scoped by process key.
 ### evaluator list
 
 ```bash
-uip or eval evaluator list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
+uip eval evaluator list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
 ```
 
 Output code: `EvaluatorList`. Fields: EvaluatorId, Name, Description, EvaluatorTypeId, Version, CreatedAt. Includes `Pagination` field.
@@ -92,7 +92,7 @@ Output code: `EvaluatorList`. Fields: EvaluatorId, Name, Description, EvaluatorT
 ### evaluator get
 
 ```bash
-uip or eval evaluator get <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval evaluator get <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvaluatorDetails`.
@@ -100,7 +100,7 @@ Output code: `EvaluatorDetails`.
 ### evaluator create
 
 ```bash
-uip or eval evaluator create \
+uip eval evaluator create \
   --process-key <guid> \
   --workload-id <guid> \
   --folder-key <guid> \
@@ -129,7 +129,7 @@ Output code: `EvaluatorCreated`.
 ### evaluator update
 
 ```bash
-uip or eval evaluator update <evaluatorId> \
+uip eval evaluator update <evaluatorId> \
   --process-key <guid> \
   [--name <name>] \
   [--description <text>] \
@@ -147,7 +147,7 @@ Output code: `EvaluatorUpdated`.
 ### evaluator delete
 
 ```bash
-uip or eval evaluator delete <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval evaluator delete <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvaluatorDeleted`.
@@ -161,7 +161,7 @@ CRUD for eval sets (dataset containers) scoped by process key.
 ### eval-set list
 
 ```bash
-uip or eval eval-set list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
+uip eval eval-set list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetList`. Fields: EvalSetId, Name, Description, BatchSize, EvaluatorRefs, CreatedAt. Includes `Pagination` field.
@@ -169,7 +169,7 @@ Output code: `EvalSetList`. Fields: EvalSetId, Name, Description, BatchSize, Eva
 ### eval-set get
 
 ```bash
-uip or eval eval-set get <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval eval-set get <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetDetails`.
@@ -177,7 +177,7 @@ Output code: `EvalSetDetails`.
 ### eval-set create
 
 ```bash
-uip or eval eval-set create \
+uip eval eval-set create \
   --process-key <guid> \
   --workload-id <guid> \
   --folder-key <guid> \
@@ -206,7 +206,7 @@ Output code: `EvalSetCreated`.
 ### eval-set update
 
 ```bash
-uip or eval eval-set update <evalSetId> \
+uip eval eval-set update <evalSetId> \
   --process-key <guid> \
   [--name <name>] \
   [--description <text>] \
@@ -224,7 +224,7 @@ Output code: `EvalSetUpdated`.
 ### eval-set delete
 
 ```bash
-uip or eval eval-set delete <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval eval-set delete <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetDeleted`.
@@ -238,7 +238,7 @@ CRUD for evaluations (test cases / data points) within eval sets.
 ### evaluation list
 
 ```bash
-uip or eval evaluation list \
+uip eval evaluation list \
   --process-key <guid> \
   --eval-set-id <guid> \
   [--limit <n>] \
@@ -252,7 +252,7 @@ Output code: `EvaluationList`. Fields: EvaluationId, EvalSetId, Name, Inputs, Ex
 ### evaluation get
 
 ```bash
-uip or eval evaluation get <evaluationId> \
+uip eval evaluation get <evaluationId> \
   --process-key <guid> \
   --eval-set-id <guid> \
   [--tenant <tenant>] \
@@ -264,7 +264,7 @@ Output code: `EvaluationDetails`.
 ### evaluation create
 
 ```bash
-uip or eval evaluation create \
+uip eval evaluation create \
   --process-key <guid> \
   --eval-set-id <guid> \
   --folder-key <guid> \
@@ -293,7 +293,7 @@ Output code: `EvaluationCreated`.
 ### evaluation update
 
 ```bash
-uip or eval evaluation update <evaluationId> \
+uip eval evaluation update <evaluationId> \
   --process-key <guid> \
   --eval-set-id <guid> \
   [--name <name>] \
@@ -312,7 +312,7 @@ Output code: `EvaluationUpdated`.
 ### evaluation delete
 
 ```bash
-uip or eval evaluation delete <evaluationId> \
+uip eval evaluation delete <evaluationId> \
   --process-key <guid> \
   --eval-set-id <guid> \
   [--tenant <tenant>] \
@@ -330,7 +330,7 @@ Query eval run results by process key.
 ### run list
 
 ```bash
-uip or eval run list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
+uip eval run list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetRunList`. Fields: EvalSetRunId, EvalSetId, Status, Score, EvalsExecuted, Duration, CreatedAt. Includes `Pagination` field.
@@ -338,7 +338,7 @@ Output code: `EvalSetRunList`. Fields: EvalSetRunId, EvalSetId, Status, Score, E
 ### run get
 
 ```bash
-uip or eval run get <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval run get <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetRunDetails`.
@@ -346,7 +346,7 @@ Output code: `EvalSetRunDetails`.
 ### run results
 
 ```bash
-uip or eval run results <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval run results <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalRunResults`. Fields: EvalRunId, DataPoint, Status, Result, CreatedAt.
@@ -360,7 +360,7 @@ CRUD for scheduled recurring eval runs.
 ### schedule create
 
 ```bash
-uip or eval schedule create \
+uip eval schedule create \
   --process-key <guid> \
   --eval-set-id <guid> \
   --cron <expression> \
@@ -377,12 +377,12 @@ Output code: `EvalScheduleCreated`. Fields: ScheduleId, WorkloadId, ProcessKey, 
 ### schedule list / get / update / pause / resume / delete
 
 ```bash
-uip or eval schedule list --process-key <guid> --output json
-uip or eval schedule get <scheduleId> --process-key <guid> --output json
-uip or eval schedule update <scheduleId> --process-key <guid> [--eval-set-id <guid>] [--cron <expr>] --output json
-uip or eval schedule pause <scheduleId> --process-key <guid> --output json
-uip or eval schedule resume <scheduleId> --process-key <guid> --output json
-uip or eval schedule delete <scheduleId> --process-key <guid> --output json
+uip eval schedule list --process-key <guid> --output json
+uip eval schedule get <scheduleId> --process-key <guid> --output json
+uip eval schedule update <scheduleId> --process-key <guid> [--eval-set-id <guid>] [--cron <expr>] --output json
+uip eval schedule pause <scheduleId> --process-key <guid> --output json
+uip eval schedule resume <scheduleId> --process-key <guid> --output json
+uip eval schedule delete <scheduleId> --process-key <guid> --output json
 ```
 
 Output codes: `EvalScheduleList`, `EvalScheduleDetails`, `EvalScheduleUpdated`, `EvalSchedulePaused`, `EvalScheduleResumed`, `EvalScheduleDeleted`.
@@ -397,7 +397,7 @@ Create evaluators, eval sets, and data points via CRUD, then run against the eva
 
 ```bash
 # 1. Create an evaluator
-uip or eval evaluator create \
+uip eval evaluator create \
   --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" --folder-key "$FOLDER_KEY" \
   --name "Semantic Similarity" --description "LLM output comparison" \
   --evaluator-type-id uipath-llm-judge-output-semantic-similarity \
@@ -405,26 +405,26 @@ uip or eval evaluator create \
   --output json
 
 # 2. Create an eval set linking the evaluator
-uip or eval eval-set create \
+uip eval eval-set create \
   --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" --folder-key "$FOLDER_KEY" \
   --name "Smoke Tests" --evaluator-refs "$EVALUATOR_ID" \
   --output json
 
 # 3. Add data points to the eval set
-uip or eval evaluation create \
+uip eval evaluation create \
   --process-key "$PROCESS_KEY" --eval-set-id "$EVAL_SET_ID" --folder-key "$FOLDER_KEY" \
   --name "Greeting test" --inputs '{"input":"hello"}' \
   --expected-output '{"content":"Hi there!"}' \
   --output json
 
 # 4. Update the eval set to add more evaluator refs if needed
-uip or eval eval-set update "$EVAL_SET_ID" \
+uip eval eval-set update "$EVAL_SET_ID" \
   --process-key "$PROCESS_KEY" \
   --evaluator-refs "$EVALUATOR_ID" "$ANOTHER_EVALUATOR_ID" \
   --output json
 
 # 5. Run the eval — items and evaluators are passed inline
-uip or eval execute-and-evaluate \
+uip eval execute-and-evaluate \
   --process-key "$PROCESS_KEY" \
   --workload-id "$WORKLOAD_ID" \
   --eval-set-id "$EVAL_SET_ID" \
@@ -433,11 +433,11 @@ uip or eval execute-and-evaluate \
   --output json
 
 # 6. Check results
-uip or eval run list --process-key "$PROCESS_KEY" --output json
-uip or eval run results "$EVAL_SET_RUN_ID" --process-key "$PROCESS_KEY" --output json
+uip eval run list --process-key "$PROCESS_KEY" --output json
+uip eval run results "$EVAL_SET_RUN_ID" --process-key "$PROCESS_KEY" --output json
 
 # 7. Schedule recurring runs (workload-id and folder-key auto-resolved from eval set)
-uip or eval schedule create \
+uip eval schedule create \
   --process-key "$PROCESS_KEY" \
   --eval-set-id "$EVAL_SET_ID" \
   --cron "0 9 * * *" --output json

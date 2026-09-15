@@ -14,6 +14,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
+reference:
+  directory: ../../..
+
 initial_prompt: |
   I have a coded LangGraph agent in graph.py that answers customer support questions.
   Add an LLM as Judge guardrail using middleware style at Agent scope. The guardrail
@@ -34,7 +37,7 @@ success_criteria:
 
   - type: run_command
     description: "LLM as Judge middleware correctly added to graph.py"
-    command: "python3 $TASK_DIR/check_llm_as_judge.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_llm_as_judge.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -87,6 +87,16 @@ Validation rules:
 
 ## Step 3: Apply the Allocation
 
+> **Diagnosing, not fixing? Stop here.** If you are explaining why an allocation
+> behaved unexpectedly, do not run `set` at all — not even to reproduce the
+> command the user described. `set` is an overlay: running it destroys the
+> evidence of the prior state, and the semantics you need are documented in
+> [Gotchas](#gotchas) and in `set --help`. A CLI that looks disconnected is not
+> permission to try it — an unauthenticated command is not guaranteed to fail,
+> and if the credentials resolve you have mutated production while diagnosing.
+> Read `get`, cite the semantics, and let the user authorize any fix.
+
+
 ```bash
 uip platform tenants licenses set <TENANT_KEY> --input ./delta.json --output json
 ```
@@ -135,6 +145,7 @@ uip platform tenants licenses get <TENANT_KEY> --output json
 
 ## Gotchas
 
+- **Never run `set` while diagnosing.** Reproducing the user's own `set` is still a mutation, and it overwrites the state you are trying to explain. See [Step 3](#step-3-apply-the-allocation).
 - **`quantity` is absolute, not delta.** `{"code":"UNATT","quantity":5}` sets the tenant to 5 — it does not add 5 to the current value. Read `get` first to know the starting point.
 - **Codes are overlay, not replace.** A product already on the tenant but missing from the input keeps its current quantity. To zero out a code, include it explicitly with `quantity: 0`.
 - **Cannot add new product codes.** If a tenant doesn't have `AIU` on its service licenses, you cannot introduce it via `set`. Provision the SKU through the portal first.

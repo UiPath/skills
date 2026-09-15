@@ -10,8 +10,8 @@ Data only so callers can tell an empty window from a populated one and can
 cross-check an agent-written report against what the CLI actually returned.
 
 Checkers import this module via a sys.path insert relative to their own file
-(coder_eval runs them as `python3 $TASK_DIR/<checker>.py` with the sandbox as
-cwd, so a plain relative import would not resolve).
+(coder_eval runs them as `python3 $REFERENCE_DIR/<checker>.py` with the sandbox
+as cwd, so a plain relative import would not resolve).
 """
 
 from __future__ import annotations

@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""Check either native Flow bindings schema for empty or placeholder resources."""
+"""Check either native Flow bindings schema for empty or placeholder resources.
+
+A flow whose only external calls are native `core.datafabric.read` nodes has no
+Integration Service connection to bind, so it legitimately declares no
+`connection` resource. Demanding one there fails the better build (see
+advisory_flow_utils — entity reads). Any connection resource that IS declared is
+still held to a real tenant key.
+
+Measured on the 2026-09-11 eval: such a flow emits NO bindings file at all, not
+an empty one. A pure Data Fabric flow references no packaged resource, so the CLI
+writes nothing, and both native billing tasks died on `assert candidates` one
+line before the connection check could apply. The presence of a `.flow` is what
+separates that from the checker running in the wrong tree and finding nothing.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +20,8 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+
+from advisory_flow_utils import CONNECTOR_NODE_PREFIX
 
 EXCLUDED_PARTS = {
     ".cli-stage",
@@ -65,25 +80,66 @@ def invalid_ids(entries: list[dict[str, Any]], schema: str) -> list[str]:
     return failures
 
 
+def _generated(cwd: Path, pattern: str) -> list[Path]:
+    return sorted(
+        path
+        for path in cwd.rglob(pattern)
+        if not EXCLUDED_PARTS.intersection(path.relative_to(cwd).parts)
+    )
+
+
+def needs_a_connection(cwd: Path) -> bool:
+    """True when any generated flow carries an Integration Service connector node.
+
+    Matched on the whole `uipath.connector.` family rather than the Data Service
+    one: a checker that only knew Data Service would stop requiring bindings for
+    a flow whose connector is Slack or Jira, which is a silent pass, not a fix.
+    """
+    for path in _generated(cwd, "*.flow"):
+        try:
+            nodes = json.loads(path.read_text(encoding="utf-8")).get("nodes") or []
+        except (OSError, json.JSONDecodeError):
+            continue
+        if any(str(node.get("type") or "").startswith(CONNECTOR_NODE_PREFIX) for node in nodes):
+            return True
+    return False
+
+
 def main() -> None:
     cwd = Path.cwd()
-    candidates = sorted(
+    candidates = [
         path
-        for path in cwd.rglob("bindings*.json")
+        for path in _generated(cwd, "bindings*.json")
         if path.name in {"bindings.json", "bindings_v2.json"}
-        and not EXCLUDED_PARTS.intersection(path.relative_to(cwd).parts)
-    )
-    assert candidates, "no generated bindings.json or bindings_v2.json found"
+    ]
+    required = needs_a_connection(cwd)
+
+    if not candidates:
+        # A `.flow` has to be here for "no bindings file" to mean "none needed"
+        # rather than "this ran in the wrong tree and found nothing".
+        assert _generated(cwd, "*.flow"), (
+            "found neither a generated bindings file nor a .flow to check against"
+        )
+        assert not required, (
+            "no generated bindings.json or bindings_v2.json found, and the flow carries a connector "
+            "node that needs one"
+        )
+        print("no bindings file, and no connector node that needs one (native entity reads)")
+        return
 
     checked = 0
     for path in candidates:
         entries, schema = load_entries(path)
-        assert entries, f"{path} declares no bindings at all"
+        assert entries or not required, f"{path} declares no bindings at all"
         failures = invalid_ids(entries, schema)
         assert not failures, f"stub or empty bindings in {path}: {failures}"
         checked += len(entries)
 
-    print(f"{checked} bindings across {len(candidates)} file(s), all populated with non-stub values")
+    scope = "connector" if required else "native entity reads, no connection to bind"
+    print(
+        f"{checked} connection binding(s) across {len(candidates)} file(s), all populated with "
+        f"non-stub values ({scope})"
+    )
 
 
 if __name__ == "__main__":

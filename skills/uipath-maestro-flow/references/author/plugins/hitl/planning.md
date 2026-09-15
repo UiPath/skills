@@ -30,14 +30,29 @@ Available: always — no `uip login` or registry pull required.
 | Need a quick form with specific fields and outcomes | Yes |
 | Existing coded/Action Center app should be used | No — use Option 2 |
 | Fully automated processing, no human involvement | No |
+| The user wants to **see** a value the flow produced | Only if a human will open the task — see below |
+
+**A HITL node blocks until a human completes its task, so place one only where a human actually will.** The task appears in Action Center; if it has no assignee, or the run is unattended (a schedule, a `flow debug`, an eval), nobody opens it and the flow never reaches its End node. The instance stays `Running` until the caller's timeout, with no output. Every outcome port can be wired correctly and this still happens, so it does not present as the unwired-port failure below.
+
+**"Show me the result" does not by itself mean a form.** The mechanisms differ in who can consume them, so ask what *seeing it* means before choosing:
+
+| Mechanism | Reaches | Completes unattended |
+| --- | --- | --- |
+| HITL form | a person who opens Action Center | No — blocks until submitted |
+| Message to a channel or mailbox (connector node) | a person wherever they already are | Yes |
+| `out` variable mapped on the End node | whoever or whatever invoked the flow | Yes |
+
+With no user to ask, pick one that terminates unattended and record which you chose and why. Do not reach for a form because the request said "display" — that word describes the goal, not the node.
 
 ### Ports
 
-| Input port | Output port |
+| Input port | Output port(s) |
 | --- | --- |
-| `input` | `outcome-completed` |
+| `input` | one per outcome — `outcome-<outcome.id>`, derived verbatim from `inputs.schema.outcomes[].id` |
 
-**The output port must be wired.** A node with no edge on `outcome-completed` blocks the flow indefinitely.
+**Every outcome gets its own port — wire one edge per outcome, not a single shared port.** A schema with `outcomes: [Approve, Reject]` (ids `approve`, `reject`) produces two ports, `outcome-approve` and `outcome-reject`; each needs its own edge. Every outcome needs a non-empty string `id` — one without gets no handle at all, so an edge drawn to a guessed port name is a no-op, not a working branch. A node with any outcome port left unwired blocks the flow indefinitely on that branch.
+
+> **`outcome-completed` is the port for a zero-outcome node, or for a real outcome whose `id` is literally `completed`.** It is an ordinary string, not a reserved one, so it can be a genuine outcome port. The instant `inputs.schema.outcomes` has one or more entries with a different `id` — including the shipped default `Submit` (id `submit`) — its port becomes `outcome-submit`, not `outcome-completed`. Never wire `outcome-completed` standing in for several different outcomes.
 
 ### Output Variables
 
@@ -72,24 +87,31 @@ Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill]
 ### Wiring Pattern
 
 ```
-[Upstream] -> [HITL] ->|outcome-completed| [Continue]
+[Upstream] -> [HITL] ->|outcome-approve| [Continue]
+                ->|outcome-reject| [End]
 ```
+
+Each outcome branches directly off its own handle — no separate Decision node needed to re-derive the branch from `$vars.{nodeId}.status`.
 
 ### Common Topology Patterns
 
 **Approval gate:**
 ```
-Trigger -> Fetch Data -> HITL (review) ->|outcome-completed| Decision (approved?) ->
-  true: Script (process) -> End
-  false: Script (log rejection) -> End
+Trigger -> Fetch Data -> HITL (review, outcomes: Approve/Reject) ->
+  outcome-approve: Script (process) -> End
+  outcome-reject: Script (log rejection) -> End
 ```
 
 **Exception escalation:**
 ```
 Trigger -> Process -> Decision (confidence ok?) ->
   true: Continue -> End
-  false: HITL (exception review) ->|outcome-completed| Script (retry with human input) -> End
+  false: HITL (exception review, outcomes: Retry/Escalate) ->
+    outcome-retry: Script (retry with human input) -> End
+    outcome-escalate: End
 ```
+
+**Do not insert a Decision node after a HITL node to re-branch on outcome.** Each outcome already has its own wired handle — that handle IS the branch point. Reach for a Decision node only where the branch is on something other than the HITL outcome itself (e.g., the confidence check above, which runs before any HITL node).
 
 ### Planning Annotation
 

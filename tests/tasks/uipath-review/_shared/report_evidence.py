@@ -3,15 +3,15 @@
 Both the review-CLI and guardrail-catalog checkers ask the same two questions of
 a saved review report, so the regexes live here rather than drifting apart in
 two copies. Imported by sibling `check_*.py` scripts, which coder_eval invokes
-as `python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_*.py` --
-so this directory is already `sys.path[0]` and a plain import works.
+as `python3 $REFERENCE_DIR/check_*.py` -- so this directory is already
+`sys.path[0]` and a plain import works.
 """
 
 import re
 import shutil
 import subprocess
 
-# SKILL.md Critical Rule 11 / rule-catalog-workflow.md 2.5a: when a required
+# agent-review-guide.md Critical Rule 3 / rule-catalog-workflow.md 2.5a: when a required
 # input genuinely cannot be obtained, the report must say so HERE and not just
 # anywhere in prose ("the CLI was unavailable, so I guessed" must not count).
 SKIPPED_HEADING = re.compile(r"^#+\s*Rules Skipped\s*$", re.MULTILINE)

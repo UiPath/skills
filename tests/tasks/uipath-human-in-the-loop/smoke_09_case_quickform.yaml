@@ -8,6 +8,9 @@ tags: [uipath-human-in-the-loop, smoke, lifecycle:edit, node:hitl, feature:appro
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: templates/case_single_stage_no_app
 
 initial_prompt: |
   I have a UiPath case management project with a caseplan.json that has
@@ -15,97 +18,10 @@ initial_prompt: |
   using the QuickForm path (separate .hitl.json schema file — no deployed
   Action Center app needed).
 
-  First, create the starting caseplan.json at ./caseplan.json:
-
-  {
-    "root": {
-      "id": "root",
-      "name": "Invoice Review Case",
-      "type": "case-management:root",
-      "caseIdentifier": "INV",
-      "caseAppEnabled": false,
-      "caseIdentifierType": "constant",
-      "version": "v19",
-      "publishVersion": 2,
-      "data": {
-        "intsvcActivityConfig": "v2",
-        "uipath": {
-          "variables": {
-            "inputs": [
-              { "id": "var_invoiceId", "name": "invoiceId", "type": "string" },
-              { "id": "var_amount", "name": "amount", "type": "number" }
-            ],
-            "outputs": [],
-            "inputOutputs": []
-          },
-          "bindings": []
-        }
-      },
-      "description": "Invoice review case"
-    },
-    "nodes": [
-      {
-        "id": "trigger_xY2mNp",
-        "type": "case-management:Trigger",
-        "position": { "x": 200, "y": 0 },
-        "data": { "label": "Start" }
-      },
-      {
-        "id": "Stage_aB3kL9",
-        "type": "case-management:Stage",
-        "position": { "x": 100, "y": 200 },
-        "style": { "width": 304, "opacity": 0.8 },
-        "measured": { "width": 304, "height": 128 },
-        "width": 304,
-        "zIndex": 1001,
-        "data": {
-          "label": "Review",
-          "parentElement": { "id": "root", "type": "case-management:root" },
-          "isInvalidDropTarget": false,
-          "isPendingParent": false,
-          "entryConditions": [
-            {
-              "id": "Condition_uqCYDc",
-              "displayName": "Case Entered",
-              "rules": [ [ { "id": "Rule_GGCJC6", "rule": "case-entered" } ] ]
-            }
-          ],
-          "exitConditions": [
-            {
-              "id": "Condition_FSPwx7",
-              "displayName": "Stage Done",
-              "rules": [ [ { "id": "Rule_M3P1RF", "rule": "required-tasks-completed" } ] ],
-              "marksStageComplete": true
-            }
-          ],
-          "tasks": []
-        }
-      }
-    ],
-    "edges": [
-      {
-        "id": "edge_Qz7hVr",
-        "type": "case-management:TriggerEdge",
-        "source": "trigger_xY2mNp",
-        "target": "Stage_aB3kL9",
-        "sourceHandle": "trigger_xY2mNp____source____right",
-        "targetHandle": "Stage_aB3kL9____target____left",
-        "data": {}
-      }
-    ],
-    "metadata": {
-      "caseExitRules": [
-        {
-          "id": "Condition_xC1XyX",
-          "displayName": "Case resolved",
-          "marksCaseComplete": true,
-          "rules": [
-            [ { "id": "Rule_jdBFrJ", "rule": "required-stages-completed" } ]
-          ]
-        }
-      ]
-    }
-  }
+  The starting caseplan.json already exists on disk at ./caseplan.json.
+  It has one stage (Stage_aB3kL9, "Review") with no HITL task yet, and
+  declares two case variables: invoiceId (string, id var_invoiceId) and
+  amount (number, id var_amount).
 
   Now add a QuickForm action task to Stage_aB3kL9:
   - Reviewer sees: invoiceId (text, bound to vars.var_invoiceId) and

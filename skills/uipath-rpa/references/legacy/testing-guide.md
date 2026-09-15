@@ -111,7 +111,7 @@ Sequence "Test_ValidateInput_MultipleScenarios"
 | `"INV-12345"` | True | Valid invoice number |
 | `""` | False | Empty string |
 | `"INV"` | False | Incomplete format |
-| `"INV-99999999999"` | False | Number too long |
+| `"INV-"` + 11 digits | False | Number too long |
 | `"inv-12345"` | True | Lowercase (should be case-insensitive) |
 
 ### Data Sources

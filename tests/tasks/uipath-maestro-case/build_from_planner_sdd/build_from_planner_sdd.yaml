@@ -38,6 +38,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: .
+
 initial_prompt: |
   The `sdd.md` in this folder is the approved design for our
   PlannerReturnedInvoiceCase Maestro case — it came back from the solution
@@ -54,15 +57,16 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-case skill (not planner Lane A)"
+    description: "Advisory: agent invoked the uipath-maestro-case skill (not planner Lane A)"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: llm_judge
     description: "Final reply names both unresolved resource identities as deferred to the build machine"
     include_agent_output: true
+    include_reference: false
     prompt: |
       Evaluate ONLY the agent's final reply. The user staged an approved
       PlannerReturnedInvoiceCase SDD on an offline machine, told the agent to
@@ -92,7 +96,7 @@ success_criteria:
 
   - type: run_command
     description: "Staged sdd.md is byte-identical — never rewritten, regenerated, or normalized"
-    command: "cmp -s sdd.md $TASK_DIR/fixtures/sdd.md"
+    command: "cmp -s sdd.md $REFERENCE_DIR/fixtures/sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

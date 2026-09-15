@@ -21,6 +21,10 @@ def text(value):
     return str(value or "").lower()
 
 
+def entity_name(d):
+    return d.get("entityName") or (d.get("pathParameters") or {}).get("entityName")
+
+
 def has_due_filter(d):
     values = [d.get("filterExpression"), d.get("filter")]
     config = d.get("configuration")
@@ -62,7 +66,7 @@ def main():
 
     contract_queries = []
     for _, n in queries:
-        if (detail(n).get("pathParameters") or {}).get("entityName") == "ContractRegistry":
+        if entity_name(detail(n)) == "ContractRegistry":
             contract_queries.append(n)
     if not contract_queries:
         print("FAIL: Query Entity Records after ContractRegistry trigger missing", file=sys.stderr)
@@ -80,8 +84,8 @@ def main():
         print("FAIL: Record Updated trigger for FileUploadVerify_20260618 missing", file=sys.stderr)
         return 1
     trigger_ids = {n.get("id", "") for n in file_updated}
-    file_gets = [n for _, n in gets if (detail(n).get("pathParameters") or {}).get("entityName") == "FileUploadVerify_20260618"]
-    file_deletes = [n for _, n in deletes if (detail(n).get("pathParameters") or {}).get("entityName") == "FileUploadVerify_20260618"]
+    file_gets = [n for _, n in gets if entity_name(detail(n)) == "FileUploadVerify_20260618"]
+    file_deletes = [n for _, n in deletes if entity_name(detail(n)) == "FileUploadVerify_20260618"]
     if not file_gets or not file_deletes:
         print("FAIL: FileUploadVerify updated flow must contain Get and Delete activities", file=sys.stderr)
         return 1

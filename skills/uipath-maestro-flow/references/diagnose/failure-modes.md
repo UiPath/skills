@@ -11,7 +11,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [`=js:` prefix missing](#js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
 | [`variables.nodes[]` missing](#variablesnodes-missing--varsxoutput-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
 | [Misshapen nodes in Studio Web](#misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
-| [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
+| [HITL outcome port unwired](#hitl-outcome-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from one of the node's `outcome-<outcome.id>` source ports |
 | [Run reports `Completed`, work not done](#run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 <!--skill-flavor:project-creation-recovery-index:start-->
@@ -129,19 +129,19 @@ Format:
 
 ---
 
-## HITL `completed` port unwired
+## HITL outcome port unwired
 
 ### Symptom
 
-Flow execution reaches a HITL QuickForm node, the human task is created and completed, but the flow blocks indefinitely afterward. No further nodes execute.
+Flow execution reaches a HITL QuickForm node, the human task is created and completed, but the flow blocks indefinitely afterward on one or more branches. No further nodes execute on the affected branch.
 
 ### Cause
 
-The HITL node's `completed` output handle has no outgoing edge — there is no consumer for the `completed` port event.
+A QuickForm node has one output port per outcome, named `outcome-<outcome.id>`. `outcome-completed` is a separate, zero-outcome placeholder port that disappears the instant the schema has any real outcome — it is never a real branch once outcomes exist. Either one of the real outcome ports has no outgoing edge, or the flow was wired against the stale `outcome-completed` placeholder instead of the real per-outcome ports.
 
 ### Fix
 
-Add an edge from the HITL node's `completed` port to the next node in the flow. After running `uip maestro flow hitl add`, always wire the `completed` port before validating.
+Add an edge from each `outcome-<outcome.id>` port to its next node — every outcome the schema declares needs its own edge. After running `uip maestro flow hitl add`, always wire every outcome port before validating; see [hitl/impl.md](../author/plugins/hitl/impl.md).
 
 ### Reference
 
@@ -326,20 +326,21 @@ Local `uip maestro flow validate` returns `Result: Success`. The same flow fails
 
 Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expression-reference linting, and a small set of structural rules.
 
-**Caught** (validate exits non-zero, with a precise field path and remediation hint):
+**Caught** (each with a precise field path and remediation hint). **Error** severity exits non-zero; **warning** severity still exits **0**, so read `Data.Warnings` rather than the exit code:
 
 - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` — emitted by cli-side `expression-prefix-validator`
 - Invented `nodes.<id>.output.<...>` syntax (same failure class) — same validator, suggests `=js:$vars.<id>.output.<...>` as the fix
 - References to unknown variable IDs or node IDs in `=js:` expressions (`EXPR_UNRESOLVED_REF`) — flow-schema `expression-ref` rule
 - Output-path walks that descend into a declared primitive (`type: "string"` etc.) or a schema closed with `additionalProperties: false` (`EXPR_INVALID_OUTPUT_PATH`) — flow-schema `expression-ref` rule
 - Missing End-node output mappings for declared `out` variables (`MISSING_OUTPUT_MAPPING`, **warning** severity) — flow-schema `output-mapping` rule
+- A `$vars.<nodeId>` read whose node is not in the reader's scope (`EXPRESSION_DIAGNOSTIC`, **warning** severity). The message prints the scope it *is* in: `Property '<nodeId>' does not exist on type '{ … }'`. Never ship it, but diagnose the runtime symptom from *why* the node is out of scope, because the three causes do not behave alike: a Decision or Switch is unreadable from anywhere downstream and reads `undefined`, silently yielding a wrong result instead of faulting ([decision/impl.md — Outputs](../author/plugins/decision/impl.md#outputs)); a node that runs *after* the reader faults instead, with `[400302]`/`[400300]` ([brownfield.md — Common edits](../author/brownfield.md#common-edits)); a node on a branch the reader is not on reads `undefined`, having never executed
 - Connector `inputs.detail.configuration` missing, empty, missing the `essentialConfiguration` envelope, or containing invalid JSON inside the `=jsonString:` prefix — emitted with a shape hint pointing at `uip maestro flow node configure`. Re-run that command rather than hand-editing.
 
 **Not caught** — these still surface only at `flow debug` or in deployed runs:
 
 - Reused reference IDs → see [Reused reference ID](#reused-reference-id--cross-connection-id-leakage)
 - Missing top-level `bindings[]` entries on resource nodes → see [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node)
-- HITL `completed` port unwired → see [HITL `completed` port unwired](#hitl-completed-port-unwired)
+- HITL outcome port unwired → see [HITL outcome port unwired](#hitl-outcome-port-unwired)
 - Stale `layout` data → see [Misshapen rectangle nodes](#misshapen-rectangle-nodes-in-studio-web) (cosmetic, not faulting)
 - Output-path walks against **open** output schemas — HTTP response bodies, script returns, free-text agent output. The deep-path walker is permissive by design: it skips when the producer's schema doesn't authoritatively declare the field's structure, so e.g. `=js:$vars.fetchWeather.output.body.current_weather` against an HTTP node that declares only `output: { type: "object" }` passes validate and faults only when the runtime response doesn't have that path.
 - Wrong-direction reads (reading an `out`-only variable) — currently a runtime concern; the direction discriminator isn't yet threaded into the validator context.

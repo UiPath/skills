@@ -152,7 +152,8 @@ tests/
 │   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
 ├── tasks/
 │   └── <skill-name>/             # One folder per skill (must match skills/<name>/)
-│       ├── _shared/              # Optional — helpers, cleanup scripts, per-skill pytest
+│       ├── _shared/              # Optional — grading helpers/checkers, per-skill pytest; reached only via $REFERENCE_DIR, never staged into the agent's sandbox
+│       ├── _setup/                # Optional — pre_run/post_run tooling (seed/cleanup/scaffold scripts); staged into the agent's sandbox via sandbox.template_sources
 │       ├── smoke/                # Tier: smoke
 │       ├── single_node/          # Tests isolating a single node type (optional)
 │       ├── multi_node/           # Composite-flow tests (optional)
@@ -170,6 +171,18 @@ Groupings under a skill are advisory — pick the ones that map to how the skill
 Experiment files define shared agent defaults per test type. Tasks inherit these defaults and should only override what differs.
 
 Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
+
+`turn_timeout` bounds one agent turn; `task_timeout` bounds the turns **and**
+grading under a single watchdog. Raising `task_timeout` therefore does not give
+a turn more room — the orchestrator logs `A larger task_timeout cannot extend
+the agent's single iteration` when a task tries. Raise `turn_timeout` for an
+agent that runs out of time mid-build, and `task_timeout` when the criteria
+need room after it: grading only gets what the turn did not spend. A task whose
+`task_timeout` equals its `turn_timeout` therefore grades only if the agent
+finishes early. That is fine where turns reliably come in short (`smoke.yaml`
+runs equal 900s caps on purpose) and a trap for a task that uses its full turn,
+because firing that watchdog reports the whole task `TIMEOUT`, losing even the
+criteria that passed.
 
 | Experiment | Driver | Used by | max_turns | task_timeout | turn_timeout |
 |------------|--------|---------|-----------|--------------|--------------|
@@ -190,10 +203,16 @@ runner. The image build passes the package credential as
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
 
-`flow-v2-preview.yaml` runs the three `preview/uipath-maestro-{flow,case,bpmn}`
-builder-SDK skills as the ONLY skill catalog, shadowing the shipped v1 skills of
-the same name, so a run measures the Flow v2 authoring path rather than a mix of
-both generations. Narrowing `plugins.path` to `preview/` drops the automatic
+`flow-v2-preview.yaml` runs the three `preview/skills/uipath-maestro-{flow,case,bpmn}`
+builder-SDK skills as the ONLY skill catalog, so a run measures the Flow v2
+authoring path rather than a mix of both generations. `preview/` is a Claude Code
+**plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
+which is the one layout every harness loads: Claude Code requires it, the
+Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
+as `uipath-preview:uipath-maestro-flow` (the repo-root catalog is `uipath:`). Never
+point `plugins.path` at a bare directory of skill folders: Claude Code loads
+nothing from it and says so only as a per-task WARNING in task.log (every v2 run
+08-20 → 09-03 ran that way). Narrowing `plugins.path` to `preview/` drops the automatic
 repo-root bind mount, so the root is remounted explicitly; the image also needs
 runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
 identical to `nightly.yaml`. Confirm that mount resolves before a full run, or
@@ -207,6 +226,13 @@ docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
+
+`agent.allowed_tools` is an **auto-approval** list, not a restriction: it reaches
+`ClaudeAgentOptions.allowed_tools`, which names the tools that skip a permission
+prompt. A tool left off it is still callable — on 2026-09-08 flow runs used
+`Agent` and `TaskOutput`, neither of which is listed, and one spent 420s of a
+900s turn blocked on `TaskOutput`. Use `agent.disallowed_tools` to actually
+withhold a tool.
 
 Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
 
@@ -240,7 +266,7 @@ initial_prompt: |
 
 ## Checker Context
 
-`checker_context.api_route` overrides which backend grades `llm_judge` criteria, decoupled from the agent's own route. Requires a coder_eval version with the simulator decoupled from this override (`Orchestrator.simulator_route`, unreleased as of `tests/.coder-eval-version` — bump the pin once released). This repo's experiment defaults (`default`/`smoke`/`smoke-windows`/`nightly`/`activation`) route `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in judge (Bedrock/Anthropic):
+`checker_context.api_route` overrides which backend grades `llm_judge` criteria, decoupled from the agent's own route. Requires coder_eval ≥ 0.11.5, where the simulator resolves its own route independently of this override (`Orchestrator.simulator_route`). This repo's experiment defaults (`default`/`smoke`/`smoke-windows`/`nightly`/`activation`) route `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in judge (Bedrock/Anthropic):
 
 ```yaml
 checker_context:
@@ -261,6 +287,33 @@ Running these tasks (locally, or a docker-driven experiment) requires:
 - The `coder-eval[litellm]` extra installed wherever the checker actually executes: on the **host** for `driver: tempdir` (`make install` includes it — see `tests/Makefile`), or **baked into the agent image** for `driver: docker` (coder_eval's own `coder-eval-agent` image bakes `--extra litellm` in as of 0.11.4; a custom overlay image needs it too if built from an older pin).
 - `CODEX_BASE_URL`/`CODEX_API_KEY` set in the environment the checker runs in — exported to the job for `tempdir`, or listed under `sandbox.docker.env_passthrough_extra` for `docker` (see `smoke.yaml`/`nightly.yaml`).
 
+### Running a judge-free task locally with no credentials
+
+The two requirements above apply to tasks that actually resolve a checker
+route — i.e. those with an `llm_judge` or `agent_judge` criterion. A task with
+**neither** needs no credentials at all and runs against your own logged-in
+`claude` CLI:
+
+```bash
+cd tests && make install          # once
+SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run <task.yaml> \
+  -e experiments/default.yaml -v
+```
+
+With no judge criteria nothing resolves a checker route, so the agent and the
+simulated user both run as plain Claude Code subprocesses on your cached CLI
+auth — no key is injected.
+
+Two traps:
+
+- **Do not set `ANTHROPIC_API_KEY` or `AWS_BEARER_TOKEN_BEDROCK`** to "help".
+  Either one overrides the cached auth, and a stale or wrong value then fails
+  at call time rather than falling back.
+- **Pinning the same route explicitly does not work.** A task-level
+  `checker_context.api_route.route: direct` goes through
+  `_resolve_backend_route`, which *does* demand `ANTHROPIC_API_KEY`. Absent
+  and inherited succeeds where explicit and identical fails.
+
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
@@ -272,13 +325,32 @@ the exception — they inline their fixture key instead of reading an env var.
 
 ### Shape
 
+Task sandboxes don't have access to a full host repo checkout, so setup/
+cleanup scripts are staged via `sandbox.template_sources` (agent-visible,
+used for pre_run/post_run tooling) and grading scripts are reached via
+`$REFERENCE_DIR` (mirrors `reference.directory` on disk, used by
+`run_command`/`llm_judge` criteria, invisible to the agent):
+
 ```yaml
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 pre_run:
-  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 _setup/seed.py"
     timeout: 60
+post_run:
+  - command: "python3 _setup/cleanup.py"
+    timeout: 60
+success_criteria:
+  - type: run_command
+    command: "python3 $REFERENCE_DIR/check_asset_scoping.py"
 ```
 
-A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
+A single helper script (`tests/tasks/uipath-platform/_setup/seed.py`) writes
 `seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
 `process_key` + `folder_path` (resolved via `uip or processes list`, matched by Key — the `get` endpoint doesn't populate FolderPath). Tests
 that don't need a process omit the env var assignment; the script just

@@ -33,10 +33,12 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Human-in-the-loop | `uipath.human-in-the-loop.quick-form` (inline form), `uipath.human-in-the-loop.coded-action-app` (app-based) |
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
+| Chat | `core.trigger.conversation`, `uipath.conversational.wait-for-message`, `uipath.conversational.send-message`, `uipath.conversational.get-conversation-context`, plus the agent — `uipath.agent.conversational` (inline; after `uip agent init --inline-in-flow --conversational`) or `uipath.core.agent.*` (in-solution / published) |
 | Voice | `core.trigger.voice`, `uipath.agent.voice` (inline; after `uip agent init --inline-in-flow --conversational`), `uipath.conversational.voice.create-outgoing-call`, `uipath.conversational.voice.end-call` |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
 | Document extraction | `uipath.ixp.*` — the extraction step must always land a node ([ixp/impl.md](plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it)) |
 | Queue | `core.action.queue.create`, `core.action.queue.create-and-wait` |
+| Data Fabric | `core.datafabric.read`, `core.datafabric.create`, `core.datafabric.update`, `core.datafabric.delete` — `inputs.entityConfig` is plain JSON, not an envelope ([data-fabric/impl.md](plugins/data-fabric/impl.md)) |
 
 **CLI-owned nodes (`uip maestro flow node add` + `uip maestro flow node configure`):**
 
@@ -52,7 +54,17 @@ For CLI-owned nodes:
 - Use `uip maestro flow node add` to insert the node and copy the definition into `definitions[]`.
 - Use `uip maestro flow node configure --detail '{...}'` to populate `inputs.detail` and `bindings[]`.
 - Subsequent edits to `inputs.detail` are also CLI-only — re-run `node configure` (it's a full rebuild; see [connector/impl.md](plugins/connector/impl.md)).
-- **Never `Write` (full-file rewrite) a flow that contains CLI-owned nodes** — it silently clobbers their `bindings[]` / `inputs.detail`, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. `Edit` user-owned nodes in place; if a `Write` is unavoidable, re-run `node configure` for every CLI-owned node as the **last** write to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers what `configure` just fixed).
+- **A full-file `Write` is safe BEFORE `node configure` and unsafe AFTER.** `node add` leaves `inputs.detail` empty, so a `Write` that precedes `configure` costs nothing — provided it carries forward **verbatim every key `node add` touched**, not just the node:
+
+  | Key | What `node add` wrote |
+  | --- | --- |
+  | `nodes[]` | the node object (`inputs: {}`) |
+  | `definitions[]` | one entry for its `type:typeVersion` |
+  | `bindings[]` | unresolved rows (`resourceKey: ""`) per connection property |
+  | `layout.nodes.<id>` | its layout entry — `configure` and `format` put this back if lost |
+  | `variables.nodes[]` | its `<id>.output` and `<id>.error` bindings — **what makes `$vars.<id>.output` resolve** |
+
+  `variables.nodes` is the one `node configure` does **not** regenerate, and `flow validate` reports `Valid` without it, so between the `Write` and T3's trailing `flow format` the flow is silently missing what makes `$vars.<id>.output` resolve. `format` does regenerate it (rule 14 below), so the omission self-heals there — carry it forward regardless rather than relying on a later step to repair it. Once `configure` has populated `inputs.detail`, the rows' `resourceKey` / `default`, and `bindings_v2.json`, a `Write` silently clobbers those too, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. Order the work so `node configure` is the **last** write to touch `inputs.detail` / `bindings[]`; if a later `Write` happens anyway, re-run `configure` for every CLI-owned node.
 - You may still `Edit` the node's `display.label`, edges, layout, and outputs — those are not part of the envelope.
 
 If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bindings[]` entries for a connector node — stop. Use the CLI.
@@ -106,16 +118,18 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](plugins/rpa/), [agent](plugins/agent/), [agentic-process](plugins/agentic-process/), [flow](plugins/flow/), [api-workflow](plugins/api-workflow/), [hitl](plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](plugins/inline-agent/) |
+| **Build a chat agent flow (model a text-based chat experience)** | [plugins/conversational-agent/](plugins/conversational-agent/) — the conversation trigger and message nodes, plus inline, in-solution, or published chat agent(s) |
 | **Build a voice agent flow (answer or place phone calls)** | [plugins/inline-voice-agent/](plugins/inline-voice-agent/) — `uipath.agent.voice` plus the nodes that start, place, and end the call |
 | **Extract structured fields from documents** | [plugins/ixp/](plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |
 | **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node), then the `impl.md` of the plugin for the node that *replaces* the mock (`core.logic.mock` has no plugin of its own) |
 | **Add data transform nodes** | [plugins/transform/impl.md](plugins/transform/impl.md) |
-| **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform`, gated by tenant flag `canvas.nodes.batch-transform` |
-| **Summarize / synthesize one document with optional citations** | [plugins/summarize/impl.md](plugins/summarize/impl.md) — `uipath.pattern.deep-rag`, gated by tenant flag `canvas.nodes.summarize` |
+| **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform` |
+| **Summarize / synthesize one document with optional citations** | [plugins/summarize/impl.md](plugins/summarize/impl.md) — `uipath.pattern.deep-rag` |
 | **Create a subflow** | [plugins/subflow/impl.md](plugins/subflow/impl.md) + [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [plugins/delay/](plugins/delay/) or [plugins/scheduled-trigger/](plugins/scheduled-trigger/) |
 | **Use queue nodes** | [plugins/queue/impl.md](plugins/queue/impl.md) |
+| **Read or write Data Fabric entity records** | [plugins/data-fabric/impl.md](plugins/data-fabric/impl.md) — `core.datafabric.read` / `create` / `update` / `delete`, the default for record CRUD. Any other Data Service operation, or an explicit request for the connector, goes to [plugins/connector/impl.md](plugins/connector/impl.md) |
 
 ## Anti-patterns
 
@@ -158,7 +172,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - [planning-arch.md](planning-arch.md) — capability discovery, plugin index, topology design
 - [planning-impl.md](planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](plugins/) — per-node-type planning + impl docs:
-  - [connector](plugins/connector/) — IS connector nodes (incl. Data Fabric activities)
+  - [connector](plugins/connector/) — IS connector nodes, and the path for every Data Service operation that is not record CRUD, or when the user names the connector (the `uipath-uipath-dataservice` entity activities; see [data-fabric](plugins/data-fabric/))
   - [connector-trigger](plugins/connector-trigger/)
   - [script](plugins/script/) — Jint ES2020 JavaScript
   - [http](plugins/http/) — `core.action.http.v2` (Managed HTTP Request)
@@ -181,9 +195,11 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [hitl](plugins/hitl/) — human input via UiPath Apps
   - [agent](plugins/agent/) — published AI agent resources
   - [inline-agent](plugins/inline-agent/) — autonomous agent embedded in flow
+  - [conversational-agent](plugins/conversational-agent/) — model a text-based chat experience: conversation trigger, message nodes, and an inline, in-solution, or published chat agent
   - [inline-voice-agent](plugins/inline-voice-agent/) — voice agent on a live phone call (inbound/outbound) + the trigger, create-call, and end-call nodes
   - [ixp](plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](plugins/queue/) — Orchestrator queue item creation
+  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`); the default path for those four operations
 
 ### Cross-capability (shared)
 

@@ -17,7 +17,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. e.g., "Pre-check", "Interrupt on Fraud" |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Pre-check", "Interrupt on Fraud". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage. Required for every secondary-stage entry row, except an `sla-status-change` parallel-oversight row; otherwise `false` is for regular-stage entry only. Carry the sdd.md value — never override it from the rule type or the SLA's scope. |
 | `rationale` | sdd.md Design Rationale | Required reviewer context for why this rule/interrupt is used. Not emitted into caseplan JSON. |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
@@ -36,8 +36,8 @@ Allowed `ruleType` values and when to pick each:
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
 | `case-entered` | Fires the moment the case is entered (first stage pattern) | — |
-| `selected-stage-completed` | Fires when a specific upstream stage completes | `selectedStageId` |
-| `selected-stage-exited` | Fires when a specific upstream stage exits (even without completing) | `selectedStageId` |
+| `selected-stage-completed` | Fires when the named upstream stage(s) complete | `selectedStageIds` |
+| `selected-stage-exited` | Fires when the named upstream stage(s) exit (even without completing) | `selectedStageIds` |
 | `user-selected-stage` | Fires when an upstream stage exits via a `wait-for-user` exit condition and the user selects this stage as the next one. Only stages carrying this rule appear in the picker. | — |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields (above); `conditionExpression` optional |
 | `sla-status-change` | Fires when the referenced case/stage SLA breaches, or reaches the referenced at-risk escalation. Breach reads the 2-arg SDD cell `sla-status-change("<SLA target>","<SLA Title>")`; at-risk reads the 3-arg cell `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")`. | `sla-target`, `sla-display-name`; `escalation-display-name` **at-risk only** |

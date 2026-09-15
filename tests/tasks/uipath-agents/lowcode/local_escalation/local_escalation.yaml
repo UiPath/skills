@@ -13,18 +13,24 @@ description: >
 tags: [uipath-agents, e2e, mode:build, low-code, feature:escalation]
 
 run_limits:
-  expected_turns: 24
+  expected_turns: 40
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/local_escalation/_fixtures/AgentWithLocalEscalation ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/AgentWithLocalEscalation
+      mount_point: AgentWithLocalEscalation
+
+reference:
+  directory: .
 
 initial_prompt: |
-  Add an escalation resource named "ApprovalEscalation" to the existing
-  "Agent" agent inside the existing "AgentWithLocalEscalation" solution
-  (in the current directory). The escalation should use the Action Center
-  app that is already part of this solution.
+  Update the existing UiPath low-code agent "Agent" inside the existing
+  "AgentWithLocalEscalation" solution (in the current directory). Agent should
+  escalate cases it cannot decide on its own to a human approver through an
+  escalation named "ApprovalEscalation", using the existing "SimpleApprovalApp"
+  Action Center app that's already in the solution.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -72,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Local escalation resource shape: ActionCenter channel wired to solution-internal SimpleApprovalApp"
-    command: "python3 $TASK_DIR/check_local_escalation.py"
+    command: "python3 $REFERENCE_DIR/check_local_escalation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
