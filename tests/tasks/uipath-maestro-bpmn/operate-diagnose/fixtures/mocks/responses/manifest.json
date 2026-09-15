@@ -1,7 +1,7 @@
 {
   "version": 2,
   "_doc": "Mocked public-safe BPMN operate/diagnose responses for minimal lifecycle coverage.",
-  "_matching": "Rules match a plain substring of the joined argv, so they stop at the identifier: a flag the agent puts between the id and a longer pattern (-f vs --folder-key, --output json in either order) would otherwise miss the rule and fall through to unmocked_default.",
+  "_matching": "Rules stop at the identifier so any folder/output flag in any order still matches; the dispatcher matches whole tokens, so a mistyped id falls through to unmocked_default.",
   "rules": [
     {
       "match": "maestro bpmn job status job-triage-001",
