@@ -19,6 +19,10 @@ For connector tasks, input values are written directly to `caseplan.json` — se
 
 When using the literal/expression mode, the `--value` string can start with one of these prefixes to resolve dynamically at runtime. Plain strings without a prefix are treated as literals.
 
+> **Why `=vars.` may be bare and `=metadata.` may not.** Two different things wear a leading `=`. A **path prefix** has a resolver — `=vars.`, `=bindings.`, `=datafabric.`, `=response`, `=orchestrator.JobAttachments` — and resolves on its own. A **scope namespace** is a name visible *inside* a `=js:` expression: `vars`, `iterator`, `metadata`. `vars` is registered as both, which is why bare `=vars.X` is correct and is the dominant form in every reference plan. `metadata` is **only** a namespace: there is no `=metadata.` resolver, so a bare `=metadata.X` names nothing and reads empty at run time. Do not generalise from `=vars.` to the others — the list of path prefixes above is closed, and `iterator` has the same shape as `metadata`.
+>
+> **This table is the `--value` sink. `=metadata.` does not travel to every slot.** In a task or rule **output** — `value` and `source` on a `custom: true` entry — write **`=js:metadata.<Field>`**, never the bare `=metadata.` form. `metadata` is a namespace resolved *inside* an expression (alongside `vars` and `iterator`), not a prefix that routes one, which is why the product's own constant carries no leading `=`. The canvas normalises a bare `=` value to `=js:` + body, so the two are not alternatives: one is the input to that normalisation and the other is its output, and a plan carrying the bare form in an output source has an un-normalised value in a slot that expects the normalised one. Validated by nothing on any profile — `validate` returns `Valid` either way and the expression simply reads nothing at run time.
+
 | Prefix | Meaning | Example |
 |--------|---------|---------|
 | `=metadata.` | Runtime case metadata — exactly four fields: `FolderKey`, `ProcessKey`, `InstanceId`, `ExternalId`; anything else reads `undefined` at runtime. NOT for arbitrary SDD "Case Metadata" business fields (e.g. Priority) — those are case variables, use `=vars.<id>` | `=metadata.ExternalId` |
@@ -112,7 +116,9 @@ Cross-task references wire the output of an earlier task into an input of a late
 input_name <- "Stage Name"."Task Name".output_name
 ```
 
-- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task)
+- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task). A heading like `### Stage 2: Underwriting (`stage-underwriting`)` makes that stage referenceable three ways: by its **name** (`"Underwriting"`), by its **slug** (`"stage-underwriting"`), and by its **ordinal** (`"Stage 2"`). A WHEN cell may carry both halves — `selected-stage-completed("Underwriting" (`stage-underwriting`))` — and is read name half first.
+  **Resolve in that order: display name, then slug, then ordinal — each accepted only where nothing stronger already claims the reference, whatever order the stages appear in.** A stage actually titled "Stage 2" therefore beats the second stage's ordinal either way round, and a stage named `Alpha` beats another stage's slug `alpha`. Comparison is case-insensitive and trimmed, nothing more: `stage-1` and `stage 1` are different keys, so a hyphenated slug can never collide with an ordinal and only the name-versus-slug collision is reachable in a normal document.
+  The ordinal and the slug are positional or generated, so a reordered or re-slugged SDD silently re-points them, while the name is what the author wrote — resolve any of the three, and never rewrite a reference from one spelling to another.
 - `Task Name` — the `display-name` of the source task (exactly as written in an `Add <type> task "<name>"` task)
 - `output_name` — a named output field from the source task
 

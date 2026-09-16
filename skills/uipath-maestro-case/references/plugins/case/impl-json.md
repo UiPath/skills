@@ -14,7 +14,7 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
 <!--skill-flavor:cli-bookends:start-->
-Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 7); this recipe writes all case fields directly into the initial `caseplan.json`.
 <!--skill-flavor:cli-bookends:end-->
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
@@ -155,7 +155,7 @@ If any check fails, halt and report.
 ## § Write caseplan.json — Pre-write checks
 
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
-2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `caseplan.json` from scratch per SKILL.md Rule 6, so a collision here means a genuine re-run and overwriting is correct.
+2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `caseplan.json` from scratch per SKILL.md Rule 7, so a collision here means a genuine re-run and overwriting is correct.
 
 ## ID generation
 

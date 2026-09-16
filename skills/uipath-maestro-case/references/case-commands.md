@@ -48,7 +48,9 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 ## uip maestro case init
 
-Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
+> **Run this from inside the solution directory (SKILL.md Rule 24).** `cd <SolutionDir>` first. Run outside any solution and it auto-scaffolds `<ProjectName>Solution/` around the project.
+
+Scaffolds a Case project with the 6 boilerplate files, including `project.uiproj`, and registers it in the parent `.uipx`. The T01 direct-JSON path in [plugins/case/impl-json.md](plugins/case/impl-json.md) writes the same files by hand when `case init` is unavailable.
 
 <!--skill-flavor:case-init-command:start-->
 ```bash
@@ -170,7 +172,7 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 
 > **Read the produced filename from the response `Data.Packages`** (or list `<output-path>/`) — do not construct it by hand.
 
-> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 14).
+> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 15).
 
 > **Does NOT compile the case BPMN.** It bundles `caseplan.json.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
 
@@ -232,7 +234,7 @@ Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` f
 
 ## uip maestro case format
 
-Rewrite `caseplan.json` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 13).
+Rewrite `caseplan.json` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 14).
 
 ```bash
 uip maestro case format <file> --output json

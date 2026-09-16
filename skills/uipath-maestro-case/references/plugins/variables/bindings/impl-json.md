@@ -26,7 +26,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 
 ## Binding Creation
 
-For every task, create **two** binding entries in top-level `bindings[]`. Both bindings share the same `resourceKey`. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
+Create **two** binding entries in top-level `bindings[]` per **resource**, not per task — a name entry and a folderPath entry sharing one `resourceKey`, because one key is one resource. Tasks pointing at the same resource reuse that pair: the golden's two action tasks on one app carry the same `=bindings.<id>` in both their `data.name` fields, and minting a second pair for the second task is what `CASE_MGMT_BINDING_KEY_SHARED` reads as three resources claiming one binding. Dedup rule and lookup order are in [Deduplication](#deduplication) below. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
 
 **Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case.
 
@@ -111,7 +111,7 @@ Examples:
 - folderPath `""` (empty), name `"ReviewHITL"` → `".ReviewHITL"`
 - **api-workflow** — `name` is the registry entry's own `name` field, read verbatim: often the generic literal `"API Workflow"` (folderPath `"Shared/Finance/EnrichInvoice"` → `"Shared/Finance/EnrichInvoice.API Workflow"`), but a workflow given a real name carries that instead (e.g. `"ContractOperationsApi"`). Never assume which — using the wrong one produces a `resourceKey` Orchestrator can't resolve. See [api-workflow/planning.md § Registry Resolution](../../tasks/api-workflow/planning.md#registry-resolution).
 
-> **Inline-built sibling (agent / api-workflow) — `resourceKey` and `folderPath` are DECOUPLED (do NOT derive one from the other).** For an agent or API workflow built inline at the Rule 17 gate ([create-inline-common.md § Step 3](../../tasks/create-inline-common.md#step-3--binding-invariants)), the `folderPath` binding `default` is **`""`** (runtime co-located folder) but the `resourceKey` is the literal **`"solution_folder.<name>"`** (resource identity) — NOT `".<name>"`. The general `<folderPath>.<name>` formula does **not** apply here; hardcode the `solution_folder` prefix in `resourceKey` while leaving `folderPath` empty. This split is intentional: `solution_folder` identifies the resource for deploy/provisioning, `""` tells the running case to start the sibling in its own folder. Authoring `folderPath: "solution_folder"` (so `resourceKey` and `folderPath` agree) passes `validate` but fails at invocation with `folder not exist`.
+> **Inline-built sibling (agent / api-workflow) — `resourceKey` and `folderPath` are DECOUPLED (do NOT derive one from the other).** For an agent or API workflow built inline at the Rule 18 gate ([create-inline-common.md § Step 3](../../tasks/create-inline-common.md#step-3--binding-invariants)), the `folderPath` binding `default` is **`""`** (runtime co-located folder) but the `resourceKey` is the literal **`"solution_folder.<name>"`** (resource identity) — NOT `".<name>"`. The general `<folderPath>.<name>` formula does **not** apply here; hardcode the `solution_folder` prefix in `resourceKey` while leaving `folderPath` empty. This split is intentional: `solution_folder` identifies the resource for deploy/provisioning, `""` tells the running case to start the sibling in its own folder. Authoring `folderPath: "solution_folder"` (so `resourceKey` and `folderPath` agree) passes `validate` but fails at invocation with `folder not exist`.
 
 ### Data sources — connector tasks
 
@@ -128,7 +128,7 @@ Do NOT use literal strings.
 
 ## Deduplication
 
-Multiple tasks referencing the same resource share one binding pair. Deduped by `default + resource + resourceKey`. Before creating a new binding, check if an existing entry in top-level `bindings[]` matches on all three fields. If found, reuse the existing binding's `id` instead of creating a new one.
+Multiple tasks referencing the same resource share one binding pair (stated at [Binding Creation](#binding-creation) above; repeated here because this is where the lookup happens). Deduped by `default + resource + resourceKey`. Before creating a new binding, check if an existing entry in top-level `bindings[]` matches on all three fields. If found, reuse the existing binding's `id` instead of creating a new one.
 
 ## Binding ID Generation
 

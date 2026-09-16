@@ -1,6 +1,6 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
-> **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 16 + Plugin Index.
+> **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 17 + Plugin Index.
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
@@ -125,7 +125,7 @@ This is a hard gate — do NOT proceed to write the task until every required fi
 1. From the lean planning-phase spec (run with `--skip-case-shape` in [planning](planning.md) Step 3), collect `inputs.*[?required]`.
 2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[].body` and verify every required field has a value.
 3. If any required field is missing, **AskUserQuestion** — list the missing fields with their `displayName` and what kind of value is expected. Free-form input is appropriate when the value space is open-ended (channel names, message bodies, IDs); when a finite set of sensible values exists (e.g. an `enum`), present them via AskUserQuestion per the dropdown rule in [SKILL.md](../../../../SKILL.md).
-4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 8 if user declines to provide a value.
+4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 9 if user declines to provide a value.
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
 
@@ -154,7 +154,7 @@ Mint two prefixed IDs for the connection + folder bindings:
 | Connection binding | `b` + 8 alphanumeric chars (e.g. `bA1B2C3D4`) |
 | Folder binding | `b` + 8 alphanumeric chars (different from connection binding) |
 
-These ids are **picked inline by the agent** (per SKILL.md Rule 13) — no subprocess.
+These ids are **picked inline by the agent** (per SKILL.md Rule 14) — no subprocess.
 
 Save them as `<connBindingId>` and `<folderBindingId>` for Step 6.
 
@@ -254,8 +254,8 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
-| Required-field gate fails (user declines) | Placeholder per Rule 8 OR re-prompt | `[SKIPPED] required field <name> missing — placeholder task per Rule 8` |
+| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 9 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 9 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
+| Required-field gate fails (user declines) | Placeholder per Rule 9 OR re-prompt | `[SKIPPED] required field <name> missing — placeholder task per Rule 9` |
 | All succeed | Full population per Steps 5-10 including bindings_v2 sync | — |
 
 All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).

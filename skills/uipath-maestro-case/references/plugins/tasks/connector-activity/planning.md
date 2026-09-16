@@ -18,11 +18,11 @@ Run these steps during planning. Each step feeds into the resolved entry.
 
 ### 1. Find the connector in TypeCache
 
-If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still missing after pull, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
+If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still missing after pull, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
 
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
-**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 (no `activity-type-id` to pass to `get-connection`), and fall through to § Unresolved Fallback (placeholder task, `data: {}`). Continue planning — do not halt ([planning.md § 3.4](../../../planning.md)).
+**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 18 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 (no `activity-type-id` to pass to `get-connection`), and fall through to § Unresolved Fallback (placeholder task, `data: {}`). Continue planning — do not halt ([planning.md § 3.4](../../../planning.md)).
 
 ### 2. Resolve the connection
 
@@ -192,7 +192,7 @@ Resolution emits to `input-values.bodyParameters`:
 
 ## Fields to Resolve
 
-Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus the resolved connector fields:
+Ledger entry in `tasks/registry-resolved.json` — Rule 10's keys plus the resolved connector fields:
 
 ```json
 {
@@ -221,9 +221,9 @@ Output bindings are **not** recorded here: they come from the SDD Outputs table 
 
 ## Unresolved Fallback
 
-Two entry paths: **Scenario A** — connector not found in TypeCache ([§ 1 No-match](#1-find-the-connector-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the Step 2 create offer is **declined** or fails (or the run is non-interactive). When `Connections` is empty, offer to create one first (Step 2) — do not jump straight here.
+Two entry paths: **Scenario A** — connector not found in TypeCache ([§ 1 No-match](#1-find-the-connector-in-typecache), after the Rule 18 gate); **Scenario B** — connector found but connection unresolved, only after the Step 2 create offer is **declined** or fails (or the run is non-interactive). When `Connections` is empty, offer to create one first (Step 2) — do not jump straight here.
 
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
+> **Rule 18 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 18 gate — proceed directly to placeholder.
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`

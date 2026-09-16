@@ -22,7 +22,7 @@ Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream C
 
 ## Why phased
 
-Once resources are resolved, skill does **not** build the full case in one pass. Phase 2 produces a reviewable preview containing structure, conditions, SLA, and escalation; Phase 3 adds the detail that depends on connector `case spec` calls and task value binding. Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Publish (Phase 5), Debug (Phase 6), and Publish to Orchestrator (Phase 7) follow; the publish, debug, and Orchestrator-publish gates are unconditional. Publish runs before Debug so the debug session exercises the same build the user just shipped to Studio Web (debug uploads there anyway). Publish to Orchestrator runs last so only an exercised build reaches the tenant solution feed.
+Once resources are resolved, skill does **not** build the full case in one pass. Phase 2 emits the plan with `sdd convert` and completes it into a reviewable preview containing structure, conditions, SLA, and escalation; Phase 3 adds the detail that depends on connector `case spec` calls and task value binding. Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 12): pause-at-preview stops for visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Publish (Phase 5), Debug (Phase 6), and Publish to Orchestrator (Phase 7) follow; the publish, debug, and Orchestrator-publish gates are unconditional. Publish runs before Debug so the debug session exercises the same build the user just shipped to Studio Web (debug uploads there anyway). Publish to Orchestrator runs last so only an exercised build reaches the tenant solution feed.
 
 Decisions are front-loaded so the build can run unattended; the gates that remain protect real-world side effects (publish ships the case to Studio Web, debug executes it, publish to Orchestrator ships it to the tenant solution feed).
 
@@ -30,7 +30,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution/project, structure, triggers, task shapes, conditions in all 4 scopes, SLA + escalation; connector-bound rules use canonical stubs | `caseplan.json` emitted; `--skeleton-v2` preview validate attempted, with unsupported-flag fallback to `--skeleton` | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
+| **2 — Prototyping** | `sdd convert` emits what the document determines (fallback: author by hand); then solution/project, structure, triggers, task shapes, conditions in all 4 scopes, SLA + escalation; connector-bound rules use canonical stubs | `caseplan.json` emitted; `--skeleton-v2` preview validate attempted, with unsupported-flag fallback to `--skeleton` | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 12) |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, resolved connector-rule stub upgrades | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, summarize `build-issues.md` (journal already on disk) | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
@@ -41,6 +41,36 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 
 ## Phase 2 — Prototyping
 
+### Convert first — emit from the document before authoring
+
+**Run `uip maestro case sdd convert` before writing any Phase 2 element by hand.** The SDD determines most of the plan; convert derives that part in one call and reports what it could not. Hand-authoring what a parser already derives is the expensive path and the one that drifts from the document.
+
+```bash
+uip maestro case sdd convert "<SDD_PATH>" --out "<CASEPLAN_PATH>" --output json
+```
+
+Run it **after** the Phase 1 registry gate, never before. Convert reads the document only; every tenant identity it cannot supply is one the gate has already resolved, and running it first throws that away.
+
+**Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
+
+**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **19 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The three below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
+
+> This table is the only place in this skill that names an `Unresolved` kind. That makes it the sole definition **and** the sole opportunity for an error — a kind added here and nowhere else has nothing to contradict it. Check a name against `types.ts` before trusting it.
+
+| `kind` | What the document cannot determine | Closed by |
+|---|---|---|
+| `resource-binding` | which tenant resource a task runs | Phase 1 bindings — project `selected` into root bindings (Step 12 Check 7) |
+| `output-type` | an output's shape, which comes from the resolved resource's schema | Step 9, via `uip maestro case tasks describe` or `case spec` |
+| `connector-context` | `folderKey` and the connector version `metadata` | Phase 3 connector context (Step 12 Check 12) |
+
+**The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
+
+**`Unresolved[]` is a floor, not a ceiling.** It reports what convert knew it was skipping — never what convert emitted wrongly, and never what it omitted silently. Phase 4's `--strict --sdd` stays the authority, and a plain-profile `Status: Valid` on convert output is not a finished plan.
+
+**Verify task entry rules before leaving Phase 2, whatever convert emitted.** Walk every task in every stage and confirm each carries its own `entryConditions`. This check is not optional and not covered by anything upstream: an empty entry rule is only a `Task has no entry rules` warning under plain validate, it does not appear in `Unresolved[]`, and a task with no entry rule hangs `uip maestro case debug` indefinitely (SKILL.md Rule 7). Write the missing ones per task from the SDD's §4.6 **Entry Condition** and **Activation Mode** cells — per task, never once for a group of similar tasks.
+
+The sections below define what Phase 2 must contain either way. With convert, read the emitted plan against them and fill only the gaps. Without it, they are the authoring instructions.
+
 ### Structural nodes (full detail)
 
 <!--skill-flavor:structural-scaffolding:start-->
@@ -49,7 +79,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 2).
+- Edges — none authored (Rule 21); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 2).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 
@@ -59,8 +89,8 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 |---|---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
-| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks/registry-resolved.json`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
-| `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
+| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks/registry-resolved.json`) | Placeholder task per Rule 9 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
+| `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 18 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
 ### Rules, SLA, and connector-rule stubs
 
@@ -88,7 +118,7 @@ If the parser response names `--skeleton-v2` as unknown or unsupported (typicall
 
 ### Phase 2 hard stop
 
-**Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the design-handoff Case Review Build options on the greenfield journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
+**Gated by the up-front build-review preference (SKILL.md Rule 12) — never a mid-build surprise.** The preference was captured at journey start: the design-handoff Case Review Build options on the greenfield journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
 
 - **Straight-through** → continue directly into Phase 3 with no prompt; the summary doubles as the milestone narration line.
 - **Pause-at-preview** → present the §Prompt below; only a user response transitions out of Phase 2.
@@ -144,7 +174,7 @@ Proceed directly to Phase 3.
 3. Print `Suggested next steps: inspect tasks/build-issues.md and the generated artifacts, then rerun after editing the design or plan.`
 4. Exit skill.
 
-Do **not** delete artifacts. User may want to inspect them, or re-run skill later (re-resolves and rebuilds `caseplan.json` from `sdd.md` per Rule 6).
+Do **not** delete artifacts. User may want to inspect them, or re-run skill later (re-resolves and rebuilds `caseplan.json` from `sdd.md` per Rule 7).
 
 ## Phase 3 — Implementation
 
@@ -185,7 +215,7 @@ End of detail mutations. Run strict validate with the SDD audit:
 uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json
 ```
 
-`--strict` runs the default profile plus the case-wide and per-task checks that `full` cannot see: a stage with no tasks (`STRICT_STAGE_NO_TASKS`), a surviving `$xref(` marker or a `<-`/`->` planning-notation input value or a `vars.<x>` reference that resolves to nothing (`CASE_MGMT_XREF_UNRESOLVED`, `CASE_MGMT_PLANNING_NOTATION`, `CASE_MGMT_REFERENCE_UNBOUND`), a `conditionExpression` hoisted onto the condition instead of a rule (`CASE_MGMT_CONDITION_EXPR_HOISTED`) an output `id` shared by two tasks (`CASE_MGMT_OUTPUT_ID_DUPLICATE`) and an SLA rule `id` shared by two holders (`CASE_MGMT_SLA_ID_DUPLICATE`) — these six fail every profile, not only strict — a connector task whose `caseShape.context` is incomplete or lacks its Activity Type ID (`STRICT_CONNECTOR_*`), a task with `data: {}` (`TASK_NOT_CONFIGURED`, a warning; with `--sdd` it becomes the error `STRICT_SDD_PLACEHOLDER_RESOLVED` when the SDD resolved that resource), a malformed output shape or formal-argument slot (`STRICT_OUTPUT_*`), and a task input that is unbound or not in `=vars.<id>` form (`STRICT_INPUT_UNBOUND` / `STRICT_INPUT_REF_FORM`). `--sdd <path>` implies `--strict` and adds the completeness audit: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present (`STRICT_SDD_*`). Each failure carries its code in `Data.Issues[]` with the element path — fix the named element with a targeted Edit and re-run. `--strict` cannot be combined with `--skeleton` / `--skeleton-v2`. If the installed CLI rejects `--strict` as an unknown option, re-run without it and record `strict validate unavailable` in the completion report; a `Valid` without `--strict` is not evidence the strict checks passed. Both flags exist from CLI 1.202; an `invalid_argument` naming them as unknown options is the only reason to run plain `validate` — apply the SKILL.md Rule 14 version guard and log the fallback.
+`--strict` runs the default profile plus the case-wide and per-task checks that `full` cannot see: a stage with no tasks (`STRICT_STAGE_NO_TASKS`), a surviving `$xref(` marker or a `<-`/`->` planning-notation input value or a `vars.<x>` reference that resolves to nothing (`CASE_MGMT_XREF_UNRESOLVED`, `CASE_MGMT_PLANNING_NOTATION`, `CASE_MGMT_REFERENCE_UNBOUND`), a `conditionExpression` hoisted onto the condition instead of a rule (`CASE_MGMT_CONDITION_EXPR_HOISTED`) an output `id` shared by two tasks (`CASE_MGMT_OUTPUT_ID_DUPLICATE`) and an SLA rule `id` shared by two holders (`CASE_MGMT_SLA_ID_DUPLICATE`) — these six fail every profile, not only strict — a connector task whose `caseShape.context` is incomplete or lacks its Activity Type ID (`STRICT_CONNECTOR_*`), a task with `data: {}` (`TASK_NOT_CONFIGURED`, a warning; with `--sdd` it becomes the error `STRICT_SDD_PLACEHOLDER_RESOLVED` when the SDD resolved that resource), a malformed output shape or formal-argument slot (`STRICT_OUTPUT_*`), and a task input that is unbound or not in `=vars.<id>` form (`STRICT_INPUT_UNBOUND` / `STRICT_INPUT_REF_FORM`). `--sdd <path>` implies `--strict` and adds the completeness audit: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present (`STRICT_SDD_*`). Each failure carries its code in `Data.Issues[]` with the element path — fix the named element with a targeted Edit and re-run. `--strict` cannot be combined with `--skeleton` / `--skeleton-v2`. If the installed CLI rejects `--strict` as an unknown option, re-run without it and record `strict validate unavailable` in the completion report; a `Valid` without `--strict` is not evidence the strict checks passed. Both flags exist from CLI 1.202; an `invalid_argument` naming them as unknown options is the only reason to run plain `validate` — apply the SKILL.md Rule 15 version guard and log the fallback.
 
 On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid", Profile: "strict" } }` — proceed to the Phase 4 issue-log summary step.
 
@@ -197,7 +227,23 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-**A finding is read, not investigated.** Every `Data.Issues[]` entry carries the element path and the repair; act on that path. Do not open the installed CLI (`node_modules/@uipath/**/dist`) to work out why a check fired — the answer is not there, and the reading costs the repair rounds this budget exists to fund. **Keep repairing while the errors are falling.** Each retry MUST be preceded by a fix edit (validate-loop guard above). Compare the error count of each `--strict --sdd` run to the previous one: while it falls, continue — a complete build has needed six to nine rounds in practice, and stopping at three leaves a plan that is honestly incomplete. Halt only when two consecutive fix→validate rounds leave the error count unchanged (the same findings are being routed around, not repaired), or after 12 rounds. Never drop `--strict --sdd` to make a run pass: a plain-profile `Valid` is not progress. On halt, ask the user with **AskUserQuestion**: show remaining errors and options:
+### Findings whose names mislead
+
+Read these four from this table, not from the code name — each has sent a repair at the wrong element. Ranked by how often they appear across measured runs.
+
+| Code | What the name suggests | What it actually means |
+|---|---|---|
+| `CASE_MGMT_ROOT_CASE_CONDITION_RULE_USER_SELECTED_STAGE_MISSING` | the rule's selector points at nothing | it does **not** check the selector. It checks whether **any other stage** carries an exit condition of type `wait-for-user`. The finding names the stage that cannot be entered while the missing half sits on a **different stage** — repair the other stage, not the named one. |
+| `STRICT_CONNECTOR_CONTEXT_INCOMPLETE` | the context entries hold wrong values | keyed on an entry being **present by name**, never on its value. All seven of `connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `operation`, `metadata` must exist; an entry holding `""` satisfies it. "Seven of seven present" and "the context is complete" are different claims — values are other rules' job (`CASE_MGMT_CONNECTOR_RESOURCE_KEY_UNRESOLVED`, `STRICT_CONNECTOR_ACTIVITY_TYPE_ID`). |
+| `CASE_MGMT_STAGE_ALL_EXIT_CONDITIONS_MISSING_ERROR` | an error | a **warning**. The `_ERROR` suffix is part of the upstream name, not its severity. |
+| `TASK_NOT_CONFIGURED` | the task is incompletely configured | fires only when `data` has **zero keys**. `data: { inputs: [] }` does not fire it. It is a placeholder detector, not a completeness check. |
+
+Two more worth knowing before reading a clean run as a clean plan:
+
+- **`CASE_MGMT_STAGE_ENTRY_CONDITION_MISSING` and `CASE_MGMT_STAGE_EXIT_CONDITION_MISSING` are suppressed plan-wide** when any case-manager stage carries tasks — deliberate parity with the front end, which treats an adhoc case's completion as dynamic. On such a plan their absence is not evidence the transitions are correct; read `marksStageComplete` directly.
+- **A `CASE_MGMT_ROOT_ROOT_` prefix (doubled) comes from the external canvas validator, and it is the spelling that fires.** The single-`ROOT_` forms of the same three codes are unreachable from the CLI. Match on the observed name.
+
+**A finding is read, not investigated.** Every `Data.Issues[]` entry carries the element path and the repair; act on that path. Do not open the installed CLI (`node_modules/@uipath/**/dist`) to work out why a check fired — the answer is not there, and the reading costs the repair rounds this budget exists to fund. **A mid-build strict run fails on what is not built yet — that is not a stop signal.** Under `--strict --sdd`, every stage the SDD declares that still has no tasks reports `STRICT_STAGE_NO_TASKS` plus one `STRICT_SDD_TASK_MISSING` per declared task and one `STRICT_SDD_CONDITION_MISSING` per declared row; on a plan with one of eight stages built that is twenty-plus errors that say "keep building", not "this plan is wrong". Count only findings on stages you have already built when judging progress; findings on unbuilt stages disappear when you build them. Never close a build because a strict run on a partial plan looks large. **Keep repairing while the errors are falling.** Each retry MUST be preceded by a fix edit (validate-loop guard above). Compare the error count of each `--strict --sdd` run to the previous one: while it falls, continue — a complete build has needed six to nine rounds in practice, and stopping at three leaves a plan that is honestly incomplete. Halt only when two consecutive fix→validate rounds leave the error count unchanged (the same findings are being routed around, not repaired), or after 12 rounds. Never drop `--strict --sdd` to make a run pass: a plain-profile `Valid` is not progress. On halt, ask the user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
@@ -233,7 +279,7 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 
 - `uip solution upload` accepts solution directory (folder containing `.uipx`) directly — no intermediate bundling step.
 - **`--output-filter` is mandatory on every `uip solution upload` call** — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload) for the projection and fallback procedure.
-- `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
+- `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 15).
 - Do **NOT** run `uip solution pack` + `uip solution publish` in this phase. That chain is Phase 7 and has its own consent gate — see [§ Phase 7](#phase-7--publish-to-orchestrator). Studio Web (`uip solution upload`) is always the Phase 5 path.
 - Publish ships a build that has not been exercised — the debug gate follows (Phase 6). If a Phase 6 debug run leads to a fix, ask via **AskUserQuestion** (`Re-publish the fixed build` / `Skip re-publish`). On `Re-publish`, re-run this phase's `resources refresh` + `solution upload` so Studio Web holds the fixed build — the re-upload overwrites whatever is on Studio Web now, which a reviewer may have edited since Phase 5. On `Skip re-publish`, leave Studio Web on the build it already has.
 
@@ -244,7 +290,7 @@ After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 - `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
 - `Continue to publish` — proceed to Phase 7 without debugging.
 
-> **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 12).
+> **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 13).
 
 Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
 
@@ -254,7 +300,7 @@ Before this prompt, include `Suggested next steps: run a debug session if you ar
 
 ### Debug notes
 
-- `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
+- `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 15).
 - Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
 - **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip maestro case pack` → `uip solution pack` → `uip solution publish` → `uip solution deploy run` — `case pack` first, always, per [§ Phase 7](#why-case-pack-is-mandatory)) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
 
@@ -265,7 +311,7 @@ After Phase 6 (whether debug ran or was skipped), prompt via **AskUserQuestion**
 - `Publish to Orchestrator` — run the four commands below in order.
 - `Done` — exit skill without publishing.
 
-> **Publish to Orchestrator ships the case to the tenant solution feed — a real, outward-facing publish. Only run when user explicitly selects it. Never auto-run** (Rule 12).
+> **Publish to Orchestrator ships the case to the tenant solution feed — a real, outward-facing publish. Only run when user explicitly selects it. Never auto-run** (Rule 13).
 
 <!--skill-flavor:phase-seven-commands:start-->
 Requires `uip login`.
@@ -279,7 +325,7 @@ uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json
 uip solution publish "<packagePath>" --wait --output json
 ```
 
-1. **`resources refresh`** — same Rule 14 requirement as publish and debug: syncs artefact files and debug overwrites from `bindings_v2.json` before they are bundled into the package.
+1. **`resources refresh`** — same Rule 15 requirement as publish and debug: syncs artefact files and debug overwrites from `bindings_v2.json` before they are bundled into the package.
 2. **`case pack`** — recompiles `caseplan.json` into `caseplan.json.bpmn` inside the **case project directory**. **Mandatory, in every run, no exceptions** — see § Why `case pack` is mandatory below. Its `.nupkg` output is a throwaway; only the regenerated `.bpmn` matters. Point the output at `<SolutionDir>/dist` (a sibling of the project dir — stray folders under the solution root are not bundled). Never point it inside the case project directory.
 3. **`solution pack`** — packs the **solution directory** (the folder containing the `.uipx`), not the case project. It packs each contained project into a `.nupkg` and bundles them into a single `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when the user names one; default is `1.0.0`. Republishing an existing `name+version` pair is rejected by the feed — bump `--version` on a re-deploy.
 4. **`solution publish`** — uploads the packed `.zip` to the tenant solution feed. `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when the user asks for their Personal Workspace feed instead of the tenant feed. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
@@ -325,7 +371,7 @@ For further authoring changes (add task, tweak condition, etc.), user updates `s
 
 Placeholder tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
 
-> **Agents / API workflows built inline are not placeholders.** When the user picks **Create** at the Rule 17 gate, Phase 1 builds the resource (a side effect — spawns a sub-agent invoking `uipath-agents` / `uipath-api-workflow`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
+> **Agents / API workflows built inline are not placeholders.** When the user picks **Create** at the Rule 18 gate, Phase 1 builds the resource (a side effect — spawns a sub-agent invoking `uipath-agents` / `uipath-api-workflow`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 Phase 3 still wires placeholder TaskIds into:
 - Task-entry conditions that reference the placeholder.
@@ -352,6 +398,6 @@ No artifact deletion. No rollback. User owns partial state.
 ## Out of scope
 
 - **Re-ingesting Studio Web edits.** If user edits published placeholder in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 5 re-publish overwrites Studio Web with completed local build.
-- **Resuming aborted session.** Re-running skill re-runs Phase 1 resolution (refreshing `registry-resolved.json`) and re-executes Phase 2 onwards from `sdd.md` (Rule 6).
+- **Resuming aborted session.** Re-running skill re-runs Phase 1 resolution (refreshing `registry-resolved.json`) and re-executes Phase 2 onwards from `sdd.md` (Rule 7).
 
 <!-- END: phased-execution.md -->

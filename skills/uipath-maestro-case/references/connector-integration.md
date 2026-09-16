@@ -169,7 +169,7 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 ## Output Contract to `registry-resolved.json`
 
-Record the resolved values on the task's ledger entry, alongside Rule 9's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
+Record the resolved values on the task's ledger entry, alongside Rule 10's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
 
 ```json
 {

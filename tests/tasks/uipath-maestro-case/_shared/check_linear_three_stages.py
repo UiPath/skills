@@ -2,6 +2,7 @@
 """LinearThreeStages: 3 regular stages chained linearly behind a manual trigger."""
 
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -155,10 +156,24 @@ def main():
         )
 
     trigger_outputs = ((triggers[0].get("data") or {}).get("inputs") or {}).get("outputs") or []
-    if not any(o.get("name") == "caseRef" and o.get("var") == "caseRef" for o in trigger_outputs):
+    bridge = next(
+        (o for o in trigger_outputs if o.get("name") == "caseRef" and o.get("var") == "caseRef"),
+        None,
+    )
+    if bridge is None:
         sys.exit(
             f"FAIL: trigger node missing data.inputs.outputs entry for In argument "
             f"'caseRef'; got {[(o.get('name'), o.get('var')) for o in trigger_outputs]}"
+        )
+    # name/var alone are satisfied by a bridge that copies nothing: {name, var, type, value}
+    # with no source validates clean and leaves =vars.caseRef undefined at run time. The
+    # bridge must carry `source` pointing at the formal slot's synthetic v-prefixed id.
+    src = str(bridge.get("source") or "")
+    if not re.fullmatch(r"=vars\.v[A-Za-z0-9]{8}", src):
+        sys.exit(
+            f"FAIL: trigger bridge for 'caseRef' has source {src!r}; expected "
+            f"'=vars.<formal slot id>' matching =vars.v<8 alphanumerics>. A bridge without a "
+            f"resolving source copies nothing at run time and still validates clean."
         )
 
     if not any(v.get("name") == "finalDecision" and v.get("type") == "string" for v in out_vars):

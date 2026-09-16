@@ -30,6 +30,21 @@ Inputs are populated with empty `value` from the `tasks describe` schema when th
 
 Output IDs are name-based camelCase per [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule). `source` reads from the task response — never changes even when `var` is counter-suffixed.
 
+**`originalVar` equals this entry's own `id`, collision suffix included.** On a `->` reassignment the entry keeps its minted `id` and points `var` at the case variable; `originalVar` repeats that `id` verbatim so the front end can filter the entry out of root-mirroring. When the plain camelCase name was already claimed by an earlier task, this entry's `id` carries a counter suffix — and `originalVar` carries the suffixed id too, **not** the pre-collision name. Two tasks each producing `APIOutput1`:
+
+```json
+// first task to claim the name
+{ "name": "APIOutput1", "id": "aPIOutput1",  "var": "aPIOutput1" }
+
+// second task, reassigned: id is suffixed, and originalVar repeats THAT id
+{ "name": "APIOutput1", "id": "aPIOutput12", "var": "renamedResult",
+  "originalVar": "aPIOutput12", "source": "=APIOutput1", "target": "=aPIOutput12" }
+```
+
+**Every `->` reassignment carries `originalVar`, including when the two names match.** `estimatedAge -> estimatedAge` is still a reassignment: the entry keeps its minted `id`, points `var` at the case variable, and repeats that `id` in `originalVar`. Equal-name rows are the ones agents drop it on, and a null `originalVar` there is `CASE_MGMT_OUTPUT_ORIGINAL_VAR_MISSING` exactly as a missing one on a renamed row would be.
+
+`"originalVar": "aPIOutput1"` on that second entry names another task's output and is an error — `CASE_MGMT_OUTPUT_ORIGINAL_VAR_MISSING`. The test is local and needs no lookup: read `originalVar` off the same entry's `id`, never off the schema field name.
+
 ## Output Binding Shapes
 
 Each task plugin emits `data.outputs[]` entries by combining its Step 0 schema (from `tasks describe` for non-connector plugins, `case spec --input-details` `caseShape.outputs[]` for connector plugins) with the SDD's `->` / `=` rows and any bare items added by schema discovery. Bare is an internal auto-mint form, never an SDD Outputs operator. Apply these rules during the plugin's task-write step.
@@ -255,8 +270,8 @@ If none of these exist → **pure orphan**, prompt the author.
 | Producer status | Validate time action |
 |---|---|
 | Companion has non-empty `default` | OK — Out-arg always has a value. |
-| At least one producer (extraction, assignment, or bare-name) exists in the SDD AND its task is resolved (not Rule 17 placeholder) | OK — producer wires the slot when its task fires. |
-| Producer declared but its task is a Rule 17 placeholder (declared-but-unwirable) | **Silent WARN.** Log to `tasks/build-issues.md` under `## Open Items for User`. Rule 17 already prompted the author for this task. |
+| At least one producer (extraction, assignment, or bare-name) exists in the SDD AND its task is resolved (not Rule 18 placeholder) | OK — producer wires the slot when its task fires. |
+| Producer declared but its task is a Rule 18 placeholder (declared-but-unwirable) | **Silent WARN.** Log to `tasks/build-issues.md` under `## Open Items for User`. Rule 18 already prompted the author for this task. |
 | NO producer anywhere AND companion default empty | **AskUserQuestion** — pure orphan. 4 options below. |
 
 Pseudocode:
@@ -273,13 +288,13 @@ for entry in root.outputs[]:
   has_bare_name_producer   = exists a schema-discovered bare output `<name>` (no operator) where camelCase(name) == var
   has_any_producer         = has_extraction_producer || has_assignment_producer || has_bare_name_producer
 
-  producer_task_unresolved = the SDD-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.inputs` is empty `{}`)
+  producer_task_unresolved = the SDD-declared producer task is a Rule 18 placeholder (look up the task in caseplan.json by displayName; check `node.data.inputs` is empty `{}`)
 
   if has_companion_default:
       # Companion default guarantees a value; producer is optional bonus
       OK
   elif has_any_producer and producer_task_unresolved:
-      # Declared producer but task is unresolvable — Rule 17 already prompted; just log
+      # Declared producer but task is unresolvable — Rule 18 already prompted; just log
       LOG_OPEN_ITEM("Out-arg with declared but unresolvable producer — runtime returns empty until producer is wired")
   elif not has_any_producer:
       # Pure orphan — author never declared a producer AND no Default. Ask.
@@ -310,7 +325,7 @@ Pick one:
 
 Option (d) is the build-with-best escape for cases where the author intends to wire the producer later but wants to keep iterating now — equivalent to the silent-WARN treatment that declared-but-unresolvable producers (T20-style) get automatically.
 
-**Rationale for the split:** real-world authoring is iterative. When an author has already gone through a Rule 17 prompt for the producer task (T20-style), the skill should not pile a second prompt on top — that's the path the author already chose by picking "Skip". But when the author authored a *pure orphan* with no producer declared at all (T14-style — wait-for-timer with no aliasing wire AND no Default), there's no prior signal of intent; the AskUserQuestion is the right surface to ask "did you mean to forget this, or wire it now?" Option (d) preserves the build-with-best escape.
+**Rationale for the split:** real-world authoring is iterative. When an author has already gone through a Rule 18 prompt for the producer task (T20-style), the skill should not pile a second prompt on top — that's the path the author already chose by picking "Skip". But when the author authored a *pure orphan* with no producer declared at all (T14-style — wait-for-timer with no aliasing wire AND no Default), there's no prior signal of intent; the AskUserQuestion is the right surface to ask "did you mean to forget this, or wire it now?" Option (d) preserves the build-with-best escape.
 
 **Build-issues entry template** (both branches log to this, only the AskUserQuestion branch ALSO prompts):
 
@@ -370,7 +385,7 @@ Pick one:
 
 Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of the design-side Resolved-resource I/O completeness rule (case SDD content contract, `uipath-planner`) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
 
-Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
+Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 18 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
 
 ```text
 # pseudocode — not executed. Realize via Read → reason → Write/Edit.
