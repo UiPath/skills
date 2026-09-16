@@ -22,6 +22,7 @@ initial_prompt: |
   Create a new Flow project called "ComplexArrayTest" with a manual trigger that
   creates a Slack group direct message between the users "coder evals" and
   "e2e-testing". Use the connection present in Shared/uipath-maestro-flow.
+  Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Validate the final flow file.
 
   This run is headless. No user is present and nobody will answer a question or
