@@ -9,7 +9,7 @@ Package: [`@uipath/ui-widgets-external-auth`](https://www.npmjs.com/package/@uip
 ## When to Use
 
 - The coded app is a **user-facing portal whose end users sign in with external identity providers** (Google, UAE PASS, a corporate SAML IdP) — the widget is the front-door sign-in screen.
-- **NOT for signing in to UiPath.** Coded web apps authenticate to UiPath Cloud via the built-in OAuth-PKCE flow (`useAuth()` / `sdk.initialize()` — see [../create-web-app.md](../create-web-app.md)); action apps use the host-injected session. Never replace those with this widget.
+- **NOT for signing in to UiPath.** Coded web apps authenticate to UiPath Cloud via the built-in OAuth-PKCE flow (`useAuth()` / `sdk.initialize()` — see [../create-web-app.md](../create-web-app.md)); action apps authenticate silently against their registered redirect URI. Never replace those with this widget.
 
 ## Critical Rules
 

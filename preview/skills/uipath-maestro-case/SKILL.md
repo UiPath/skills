@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ a82b640. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ b543763. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -21,11 +21,11 @@ Use this as a router: read only the capability reference you need, then let Type
 
 ## Workflow
 
-1. Scaffold with `uip solution init <SolutionName>`, then run `uip maestro case init <CaseName>` inside it. Scaffold once: exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates. If a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
+1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
 2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
-5. Start from the closest staged `examples/*.case.ts`; change only scenario data.
+5. Seed the source by decompiling the stub `case init` wrote — `uip maestro case decompile <CaseName>/caseplan.json -o <Name>.case.ts --no-pipeline` — rather than hand-writing the skeleton: it carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned, and `entry-points.json` references that trigger id. Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
 6. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.

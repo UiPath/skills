@@ -24,7 +24,7 @@ Prompts live at two levels and are edited by two separate commands:
 - **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field name.
 - **`uip ixp groups update-prompts <project> --updates <json>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
 
-Each command sends one server-side call; the server matches by name and writes per affected label_def, preserving every definition you didn't change. To update both field and group instructions in the same iteration, run the two commands back-to-back.
+Each command matches by name and updates only the named entries, preserving every definition you didn't change. To update both field and group instructions in the same iteration, run the two commands back-to-back.
 
 **Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model sees alongside per-field instructions. If the group instruction says "Extract only fields visible on the first page" but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` if it contradicts.
 
@@ -32,7 +32,7 @@ Each command sends one server-side call; the server matches by name and writes p
 
 The user may specify a max number of iterations (default: 3). Track:
 
-- **Baseline metrics** — the `get-metrics` payload before any changes, and its `ModelVersion` — a trained version's metrics can be re-read at any time with `--model-version <N>`, so keeping the version number is enough to recover anything. The values that drive the loop are mapped in [What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide); the rest is reported once or ignored.
+- **Baseline metrics** — the `get-metrics` output before any changes, and its `ModelVersion` — a trained version's metrics can be re-read at any time with `--model-version <N>`, so keeping the version number is enough to recover anything. The values that drive the loop are mapped in [What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide); the rest is reported once or ignored.
 - **Previous iteration metrics** — the same, for the last successful iteration's version
 - **Previous instructions** — the per-field (field) instructions from the last successful iteration (for rollback)
 
@@ -55,7 +55,7 @@ The values `get-metrics` returns are neither independent nor interchangeable —
 | `ErrorRate` | field, group | **Report — independent of `Precision`.** Wrong extractions over `Annotations`. A wrong value counts **once** (not as a false positive plus a false miss), and a miss counts even though it cannot lower `Precision` — so `Precision` 1.00 can still carry `ErrorRate` 0.20. Report it as the manual-correction burden; diagnose direction from `Precision`/`Recall`. |
 | `Quality` | field | **Ignore.** A coarse label derived from the numbers, on a scale inconsistent with `ProjectScoreQuality` (an `F1` of 1.00 still reads `good` while a `ProjectScore` of 0.91 reads `excellent`). Never gate on it and don't report it per field — if the user asks about the UI's label, explain the scales differ. |
 | `ProjectScoreQuality` | project | **Report on the project line only** (the label the UI shows beside the score) — different scale from field `Quality` (above). |
-| `FieldGroup`, `FieldId`, `Name` | field | Identity — SKILL.md Critical Rule 22. |
+| `FieldGroup`, `FieldId`, `Name` | field | Identity — SKILL.md Critical Rule 21. |
 
 
 ## Waiting for retrain
@@ -66,7 +66,7 @@ Every change to model inputs — labellings, instructions, document upload/delet
 
 1. Record `ModelVersion` from the last metrics read BEFORE the change.
 2. Wait 2 minutes, then read `uip ixp projects get-metrics <project-name> --output json`.
-3. `ModelVersion` **greater than** the recorded value → retrain is done, proceed. Any increment counts. Do NOT wait for a specific number: queued input changes can bump the version by more than one, so waiting for exactly *N*+1 polls until the budget dies when the server jumps straight to *N*+2.
+3. `ModelVersion` **greater than** the recorded value → retrain is done, proceed. Any increment counts. Do NOT wait for a specific number: queued input changes can bump the version by more than one, so waiting for exactly *N*+1 polls until the budget dies when the version jumps straight to *N*+2.
 4. Otherwise repeat step 2 — **2 minutes between checks, 5 checks in total** (10 minutes). Do NOT use a single long sleep, and do NOT escalate or shorten the interval between checks. Issue one `uip` call per command, never a loop, never a chain — bundled checks hit the command timeout and get killed.
 5. Still unchanged after the 5th check → **stop polling** and report that the retrain did not complete. Metrics you carry forward predate the change: label them as such, never present them as the post-change measurement, and never roll back instructions on a comparison against them.
 
@@ -83,13 +83,13 @@ mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
-`--model-version latest` is deliberate: the baseline is the latest trained version — the model your instruction edits retrain — not the `live` tag (Critical Rule 21: the version follows the question).
+`--model-version latest` is deliberate: the baseline is the latest trained version — the model your instruction edits retrain — not the `live` tag (Critical Rule 20: the version follows the question).
 
 Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
 
-**Field names:** compare on `FieldId`, report on `Name`, and qualify a shared `Name` with its `FieldGroup` — SKILL.md Critical Rule 22.
+**Field names:** compare on `FieldId`, report on `Name`, and qualify a shared `Name` with its `FieldGroup` — SKILL.md Critical Rule 21.
 
 ### 1b. Check model configuration
 
@@ -276,7 +276,7 @@ That is 0.2 at `Annotations` = 5 — one flipped annotation is not evidence — 
 **A small `Annotations` has two causes with opposite remedies.** `Annotations` counts reviewed **extractions**, not documents — one document can contribute several — so it cannot be compared against a document count directly. Compare the field's own `Documents` against the project-level `ValidatedDocuments`:
 
 - **`Documents` equal to `ValidatedDocuments`** → this field already has evidence on every labelled document; the sample is as large as the data allows. Tag it **UPLOAD**.
-- **`Documents` below `ValidatedDocuments`** → some labelled documents carry no evidence for this field, and the payload cannot say why — never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** — the review pass ([Label Documents Guide](label-documents-guide.md)) shows which in seconds, and 2a-check's `Recall < 0.5` gate would never trigger it. Even when the review finds nothing to add, confirming that costs a glance, while an unreviewed document left unfound caps the field for good.
+- **`Documents` below `ValidatedDocuments`** → some labelled documents carry no evidence for this field, and the output cannot say why — never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** — the review pass ([Label Documents Guide](label-documents-guide.md)) shows which in seconds, and 2a-check's `Recall < 0.5` gate would never trigger it. Even when the review finds nothing to add, confirming that costs a glance, while an unreviewed document left unfound caps the field for good.
 
 Both tags are **final-report lines, not loop actions**: the loop runs on to its normal stopping criteria — never pause mid-run to ask for documents or to review — and the report then says plainly that a tagged field's score cannot rise further until its sample grows.
 
@@ -311,7 +311,7 @@ Wait out the retrain ([Waiting for retrain](#waiting-for-retrain)). On the next 
 
 **Rollback caveat:** Rollback restores the previous instructions but the model needs to retrain. Expect only **partial recovery** — prefer small-scope iterations (few fields at a time).
 
-**No regression:** Accept the iteration. Update `previous_metrics` (the complete payload again, not just F1) and `previous_instructions` with the new values.
+**No regression:** Accept the iteration. Update `previous_metrics` (the complete output again, not just F1) and `previous_instructions` with the new values.
 
 **Stopping criteria — stop the loop if:**
 

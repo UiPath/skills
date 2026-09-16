@@ -27,6 +27,7 @@ initial_prompt: |
   Create a new Flow project called "DriveToSlackTest" with a manual trigger.
   It should download a file from Google Drive and then post that file into a 
   Slack channel named "coding-agent-testing" using Slack.
+  For slack, do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Wire the file output of the download operation to the channel input of the slack send file.  
   Validate the final flow file.
   For the Google Drive Download File activity, use the first available file.

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-15T04:06:56Z",
-  "cli_version": "1.203.0-dev.8677",
+  "generated_at": "2026-09-16T04:05:30Z",
+  "cli_version": "1.203.0-dev.8690",
   "verbs": [
     "admin",
     "admin audit",
@@ -1548,6 +1548,7 @@
     "tm testsets delete",
     "tm testsets list",
     "tm testsets list-testcases",
+    "tm testsets playwright-context",
     "tm testsets run",
     "tm testsets update",
     "tm teststeplog",

@@ -563,6 +563,9 @@ export declare function entryInput(entryPointId: string, name: string): Expr;
 /**
  * Reference an upstream step's output → `$vars.<step>.output[.<path>]`.
  * e.g. `out('fetchRate', 'body.rate')`.
+ *
+ * @enforcedBy VARS_BRACKET_READ Reach a step by a dot, not a bracket — the bracketed
+ *   spelling is the one the compiler cannot rewrite.
  */
 export declare function out(step: string, path?: string): Expr;
 ````
@@ -586,11 +589,13 @@ export declare function ran(step: string): Expr;
  * Reference a FAILED step's error → `$vars.<step>.error[.<field>]`.
  *
  * @enforcedBy ERROR_READ_VIA_OUT Read an error with `err()`, never `out('<step>',
- *   'error')` — the envelope has no `error` field of its own.
+ *   'error')` — the success output has no `error` field of its own.
+ * @enforcedBy ERROR_ENVELOPE_VIA_OUTPUT Inside a handler, the failed step's `.output`
+ *   is empty; an envelope field read from it resolves to nothing.
  */
 export declare function err(step: string, field?: ErrorEnvelopeField): Expr;
 
-// ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status'
+// ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status' | 'response' | 'element'
 ````
 
 ## js (function)
@@ -970,6 +975,8 @@ declare class FlowBuilder extends StepList {
 /** Collects a sequence of steps. Used for the flow body and each branch/loop arm. */
 declare class StepList {
     steps: Step[];
+    /** Read the failure that led into this handler → `err('<the failed step>', field)`. */
+    err(field?: ErrorEnvelopeField): Expr;
     /** Add an action node (see `http` / `script` / `subflow`). */
     step(name: string, spec: FlowActionSpec | FlowAction, options?: NodeOptions): this;
     /**
@@ -1029,6 +1036,8 @@ declare class StepList {
     /** Terminate this path, binding flow outputs to expressions. */
     return(values?: Record<string, Expr | unknown>, options?: ReturnOptions): this;
 }
+
+// ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status' | 'response' | 'element'
 ````
 
 ## ArmBuilder (class)
@@ -1214,7 +1223,11 @@ export interface HitlInputs {
     /**
      * The completion buttons, e.g. `['Approve', 'Reject']`. At least one, or the
      * reviewer has no way to complete the task and the flow waits forever. The
-     * first is the primary (default) one.
+     * first is the primary (default) one. Declaring them creates no EXITS: with
+     * more than one, set `outcomePorts` to fork in the graph, or read
+     * `out('<step>', 'Action')` to route as data. With neither, every outcome
+     * leaves on the same `completed` exit and nothing downstream can tell them
+     * apart — which `check` warns about as `HITL_OUTCOMES_UNREACHABLE`.
      */
     outcomes: Outcome[];
     /** Who gets the task and how. Omit for the definition's default delivery. */
@@ -1225,7 +1238,9 @@ export interface HitlInputs {
      * Route each outcome from its OWN port instead of the single `completed`
      * exit. Selects the node's **1.1** definition, whose exits are
      * `outcome-<id>` handles (one per outcome; ids are the outcome names
-     * slugified, e.g. `'Approve'` → `outcome-approve`).
+     * slugified, e.g. `'Approve'` → `outcome-approve`). It REPLACES `completed`
+     * rather than adding to it, and it is not an optional refinement — see
+     * `outcomes` for the choice it is one half of.
      */
     outcomePorts?: boolean;
     /**
@@ -2493,7 +2508,7 @@ export type ActionSpec = {
 ## ErrorEnvelopeField (type)
 
 ````ts
-export type ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status';
+export type ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status' | 'response' | 'element';
 ````
 
 ## RawReference (type)

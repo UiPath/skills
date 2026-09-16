@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ a82b640. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ b543763. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -27,7 +27,12 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    outside one and a parent `<Name>Solution` is scaffolded around it.
 2. Keep `<Name>.bpmn.ts` at the workspace root, beside `package.json`.
 3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
-4. Start from the closest staged `examples/*.bpmn.ts`.
+4. Seed the source by decompiling the stub `bpmn init` wrote —
+   `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts` — rather than
+   hand-writing the skeleton. It carries the process id and the `entryPointId` UUID the
+   product assigned, which a hand-written chain cannot invent. An existing project needs
+   no `init`: seed from the `.bpmn` already there. For shape, copy the closest staged
+   `examples/*.bpmn.ts`.
 5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` after structural changes.
 6. Compile **into the scaffolded project**, format only when layout is needed, and run
    product validation. Exactly one emitted `<Name>.bpmn` may exist, at
