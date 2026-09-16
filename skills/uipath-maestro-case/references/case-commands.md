@@ -50,7 +50,7 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 > **Run this from inside the solution directory (SKILL.md Rule 24).** `cd <SolutionDir>` first. Run outside any solution and it auto-scaffolds `<ProjectName>Solution/` around the project.
 
-Scaffolds a Case project with the 6 boilerplate files, including `project.uiproj`, and registers it in the parent `.uipx`. The T01 direct-JSON path in [plugins/case/impl-json.md](plugins/case/impl-json.md) writes the same files by hand when `case init` is unavailable.
+**The standard way to create the project (SKILL.md Rule 24).** Scaffolds a Case project with the 6 boilerplate files, including `project.uiproj`, and registers it in the parent `.uipx`. The T01 direct-JSON path in [plugins/case/impl-json.md](plugins/case/impl-json.md) writes whichever files it did not seed, and the whole scaffold by hand when `case init` is unavailable.
 
 <!--skill-flavor:case-init-command:start-->
 ```bash
@@ -67,7 +67,7 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 <!--skill-flavor:cd-mandatory-note:end-->
 
 <!--skill-flavor:case-init-semantics:start-->
-`case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution projects add` step — see `implementation.md` § Step 6.
+`case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). After `case init` seeds the project, the case plugin (`plugins/case/impl-json.md`) writes only the scaffold files it did not seed — see `implementation.md` § Step 6.
 <!--skill-flavor:case-init-semantics:end-->
 
 ---
@@ -77,7 +77,7 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 
 Register a project with an existing solution. Used in two scenarios in this skill:
 
-1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
+1. **`case init` unavailable** — when the case plugin (T01 in `impl-json.md`) wrote `project.uiproj` by hand, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
 2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
 
 ```bash

@@ -74,7 +74,7 @@ The sections below define what Phase 2 must contain either way. With convert, re
 ### Structural nodes (full detail)
 
 <!--skill-flavor:structural-scaffolding:start-->
-- Solution + project scaffolding (`uip solution init`, `uip solution projects add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
+- Solution + project scaffolding (`uip solution init`, then `uip maestro case init` from inside the solution directory, plus the remaining JSON scaffolding from `plugins/case/impl-json.md`).
 <!--skill-flavor:structural-scaffolding:end-->
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.

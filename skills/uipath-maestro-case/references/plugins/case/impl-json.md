@@ -5,16 +5,16 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 ## Purpose
 
 <!--skill-flavor:purpose-intro:start-->
-Create the full project on disk in a single plugin invocation — 5 scaffold files + `caseplan.json`. Runs exactly once per project, as the first build step. Two sections:
+Complete the project on disk in a single plugin invocation — whichever of the 5 scaffold files `uip maestro case init` did not seed, plus `caseplan.json`. Runs exactly once per project, as the first build step. Two sections:
 <!--skill-flavor:purpose-intro:end-->
 
 <!--skill-flavor:purpose-scaffold-item:start-->
-1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
+1. **§ Scaffold** — inventory the project dir and write only the missing boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 <!--skill-flavor:purpose-scaffold-item:end-->
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
 <!--skill-flavor:cli-bookends:start-->
-Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 7); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project creation (`uip maestro case init`, from inside the solution dir) are CLI — see [implementation.md Step 6](../../implementation.md). `case init` registers the project; `uip solution projects add` is the fallback when it reports `Skipped` or `Failed`. Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 7); this recipe writes all case fields directly into the initial `caseplan.json`.
 <!--skill-flavor:cli-bookends:end-->
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
@@ -36,7 +36,7 @@ See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
 ## § Scaffold — write project boilerplate
 
 <!--skill-flavor:scaffold-intro:start-->
-Runs before § Write caseplan.json. Writes 5 static JSON files directly. All substitution is name-for-name — no subprocess.
+Runs before § Write caseplan.json. `uip maestro case init` (Step 6.0a) seeds some or all of the 5 static JSON files; write only the ones that are missing, directly. All substitution is name-for-name — no subprocess.
 <!--skill-flavor:scaffold-intro:end-->
 
 ### Pre-flight
@@ -48,11 +48,7 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 2. **Project dir is a distinct child of the solution dir.** The target is always `<SolutionDir>/<ProjectName>/`, never `<SolutionDir>/` itself. `<ProjectName>` equal to `<SolutionName>` is normal and still nests — `Foo/Foo/`. Never collapse the two because the names match.
 <!--skill-flavor:preflight-distinct-child:end-->
 <!--skill-flavor:preflight-target-clean:start-->
-3. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
-   ```
-   <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.
-   ```
-   Do not overwrite. Do not merge.
+3. **Inventory the seeded scaffold.** List `<SolutionDir>/<ProjectName>/`. Every one of the 5 scaffold files already present was seeded by `case init` at Step 6.0a — keep it untouched and skip its entry under § Files to write. Write only the missing ones. Do not overwrite. Do not merge into a seeded file. `caseplan.json` is governed by § Pre-write checks, not by this item.
 <!--skill-flavor:preflight-target-clean:end-->
 4. **Create directory.** `mkdir -p <SolutionDir>/<ProjectName>` via Bash.
 
@@ -69,7 +65,7 @@ Capture the printed UUID; inject it at `<PROJECT_ID>` below.
 ### Files to write
 
 <!--skill-flavor:files-to-write-intro:start-->
-Use the Write tool for each. All 5 files go directly into `<SolutionDir>/<ProjectName>/` — **flat layout, no `content/` directory on disk**.
+Use the Write tool for each file Step 6.0a did not seed. All 5 files live directly in `<SolutionDir>/<ProjectName>/` — **flat layout, no `content/` directory on disk** — whether `case init` seeded them or § Scaffold writes them.
 <!--skill-flavor:files-to-write-intro:end-->
 
 #### `project.uiproj`
