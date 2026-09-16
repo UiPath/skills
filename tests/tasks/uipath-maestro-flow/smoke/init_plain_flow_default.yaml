@@ -1,0 +1,50 @@
+task_id: skill-flow-init-plain-default
+description: >
+  Skill-guided evaluation: asked for a plain Flow, the agent does NOT create a
+  Maestro Automate project. Guards the other branch of the same decision — the
+  Automate smoke alone would still pass if the skill started marking every
+  project, and the existing init smoke only checks that a .flow exists and
+  validates.
+tags: [uipath-maestro-flow, smoke, lifecycle:generate]
+
+run_limits:
+  expected_turns: 9
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Create a new UiPath Flow project called "ShipmentTracker".
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  # The request says Flow, so the marker must be absent and the profile must be
+  # the default. Scoped to this project: a sandbox-wide check would be
+  # satisfied by any unmarked scaffold.
+  - type: run_command
+    description: "ShipmentTracker is a plain Flow — no marker, Standard profile"
+    command: >
+      python3 $REFERENCE_DIR/_shared/project_profile.py --flow-name ShipmentTracker
+      --expect-profile Standard --expect-no-sentinel
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow file was created in a supported authoring layout"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ShipmentTracker"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

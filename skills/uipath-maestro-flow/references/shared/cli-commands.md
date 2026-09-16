@@ -14,7 +14,7 @@ uip solution init "<SolutionName>" --output json
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
 
-Add `--automate` to create a Maestro Automate project instead of a Flow. Nothing else changes — same scaffold, same authoring, same `pack` / `publish` / `debug` / `eval`; the flag writes `runtimeOptions.profile` into the packaged `operate.json` and a `.maestro_automate` marker into the project root. There is no `--profile` option: that name is a host global (the login profile) and is stripped before this command sees it.
+Add `--automate` to create a Maestro Automate project instead of a Flow. Nothing else changes — same scaffold, same authoring, same `pack` / `publish` / `debug` / `eval`; the flag writes `runtimeOptions.profile` into the packaged `operate.json` and a `.maestro_automate` marker into the project root.
 
 Confirm `Data.SolutionRegistration.Status`: `Registered`, `AlreadyRegistered`, `OptedOut`, `Skipped`, `Failed`, or `NotInSolution`. Inside a solution, `flow init` auto-registers the project with the parent `.uipx`. Outside one, it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project, and adds `Data.AutoCreatedSolution`. `--skip-solution-registration` opts out with status `OptedOut`; do not manually wire an intentionally opted-out project. Manually wire `Skipped`, `Failed`, or the rare `NotInSolution`:
 

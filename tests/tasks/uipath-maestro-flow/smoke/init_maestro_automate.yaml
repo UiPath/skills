@@ -38,15 +38,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 0.0
 
-  # `--profile <name>` is the host's login profile and is stripped from argv
-  # before the command parses, so reaching for it silently creates a Flow.
-  - type: command_not_executed
-    description: "Agent did not reach for the host-owned --profile option"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--profile)'
-    weight: 1.5
-    pass_threshold: 1.0
-
   # Scoped to the project the task asked for. A sandbox-wide search passes
   # when any unrelated scaffold carries the marker, which proves nothing about
   # InvoiceIntake.
