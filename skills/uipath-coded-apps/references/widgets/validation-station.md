@@ -12,6 +12,8 @@ Package: [`@uipath/ui-widgets-validation-station`](https://www.npmjs.com/package
 
 **Two integration shapes.** The all-in-one `ValidationStation` component (standard layout, fastest — most apps want this) covers the sections below. When you need a **custom layout** — rearrange, hide, or embed individual panels (viewer, fields form, table editor, doc-type field, business rules) — the package also exports those as composable **subcomponents**. See [Compose-your-own layout: subcomponents](#compose-your-own-layout-subcomponents).
 
+**Layout is one axis; where the data comes from is the other.** Both shapes above fetch the document from a storage bucket. If your own backend already holds the taxonomy and extraction result, supply them directly and own every write instead — see [Integration: in-memory data](#integration-in-memory-data-no-storage-bucket).
+
 If the user just wants a generic form (no DU document), use the standard Action App form pattern in [../create-action-app.md](../create-action-app.md) instead.
 
 ## Critical Rules
@@ -21,7 +23,7 @@ If the user just wants a generic form (no DU document), use the standard Action 
 3. **Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
 4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
 5. **`sdk` must already be initialized.** Pass the same `UiPath` instance produced by `useAuth()` (web app) or constructed in `src/uipath.ts` (action app). Do not construct a second SDK just for the widget — auth state will diverge.
-6. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
+6. **`OR.Buckets` depends on where the document data comes from; `OR.Tasks` does not.** Bucket-backed paths need `OR.Buckets` — the widget fetches the document and extraction artifacts from a storage bucket. The in-memory path needs no `OR.Buckets`, and the widget itself needs no `UiPath` instance, because it issues no HTTP calls (see [Integration: in-memory data](#integration-in-memory-data-no-storage-bucket)). **Add `OR.Tasks` whenever your app completes an Action Center task on save** — action app, or web app that calls `task.complete()` — regardless of which data path you chose, and note a web app completing a task still needs its own `UiPath` instance to do so. Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
 7. **Widget does NOT surface failures.** `onSubmitComplete` / `onSaveAsDraftComplete` fire with `{ success: false, error }` on failure but render no toast — the host owns all UI feedback (toast, retry, log). Wire these callbacks or failures are silent.
 8. **Report-as-exception makes no API call.** `onReportExceptionComplete(documentId, reason)` only hands the host the data — it does NOT persist. The host must call `OrchestratorDuModule.submitExceptionReport(taskId, documentId, reason, { folderId })` itself, or the user's "Report as exception" click is a no-op. Needs `OR.Tasks`.
 
@@ -351,9 +353,193 @@ useEffect(() => {
 }, [isDark]);
 ```
 
+## Integration: in-memory data (no storage bucket)
+
+Both sections above read the document from a storage bucket. The underlying web component makes **no HTTP calls of its own** — when your backend already holds the document data, you can hand it over directly and keep every write. No bucket, no `OR.Buckets`, and no `UiPath` instance for the widget.
+
+This drops the bucket requirement only. If your app completes an Action Center task on save it still needs `OR.Tasks` — and, in a web app, still needs its own `UiPath` instance to call `task.complete()`. See Critical Rule 6.
+
+**One question decides which way you go:**
+
+| Where the document data already is | Path |
+|---|---|
+| In a storage bucket, because a DU workflow ran `Create Document Validation Artifacts` and handed you a `ContentValidationData` descriptor | The bucket-backed sections above. This is the usual action-app case — keep it as the default. |
+| In your own backend — you hold the taxonomy and extraction result as objects | This section. |
+
+`ContentValidationData` is nothing but bucket coordinates and paths (`BucketId`, `FolderId`, `TaxonomyPath`, `DocumentObjectModelPath`, …), so if you were handed one, you are on the bucket path. Don't mix them.
+
+### Two in-memory shapes
+
+|  | A — subcomponents, pre-fetched | B — standalone element |
+|---|---|---|
+| Package | `@uipath/ui-widgets-validation-station` | `@uipath/du-validation-station-wc` |
+| Layout | custom — you place the panels | the standard all-in-one layout (fields + document viewer) |
+| Data goes in as | React props | JS properties on a custom element |
+| Persistence | raw request callbacks | typed DOM events |
+
+**The all-in-one `<ValidationStation>` component is not an option here.** Its props require `sdk: UiPath` and `data: ContentValidationData`, so it always fetches from a bucket. Shape B is the only in-memory route to that layout.
+
+### Shape A — subcomponents with host-built artifacts
+
+`artifacts` is a plain object. Build it yourself, pass it with `documentId`, and omit `sdk`/`data` — the hook then performs no fetch. Because there is no SDK context, **nothing is auto-persisted**: `onSubmitComplete` and `onSaveAsDraftComplete` never fire, and the raw request callbacks are your only signal.
+
+```typescript
+import { useMemo } from 'react';
+import {
+  DocumentViewer,
+  CompactFieldsForm,
+  ValidationStationLanguage,
+  type BucketArtifacts,
+  type CompactFieldsFormProps,
+} from '@uipath/ui-widgets-validation-station';
+
+// The request type lives in the WC package; reach it through the props type so you
+// don't have to depend on a transitive package.
+type SaveRequest = Parameters<NonNullable<CompactFieldsFormProps['onSaveValidatedDataRequest']>>[0];
+
+function ReviewScreen({ doc }: { doc: MyDocument }) {
+  // No bucket, no sdk — every field is something the host already has.
+  const artifacts = useMemo<BucketArtifacts>(
+    () => ({
+      taxonomy: doc.taxonomy,
+      extractionResult: doc.extractionResult,
+      dom: doc.dom,
+      text: doc.text,
+      original: doc.originalDataUrl, // base64 data URL
+      customizationInfo: undefined,
+    }),
+    [doc],
+  );
+
+  const shared = {
+    artifacts,
+    documentId: doc.id,
+    instanceId: `review-${doc.id}`, // links the panels — see the subcomponents section
+    theme: 'light' as const,        // keep the body class in sync — Critical Rule #4
+    language: ValidationStationLanguage.English,
+    persistent: false,
+  };
+
+  const handleSave = async (request: SaveRequest) => {
+    await myBackend.saveValidatedData(request.documentId, request.validatedData);
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 8, height: '100%' }}>
+      <DocumentViewer {...shared} style={{ height: '100%' }} />
+      <CompactFieldsForm
+        {...shared}
+        // Defaults to true. Leave it on only if you also handle
+        // onSaveValidatedDataAsDraftRequest, or the draft button does nothing.
+        enableSaveAsDraft={false}
+        onSaveValidatedDataRequest={handleSave}
+      />
+    </div>
+  );
+}
+```
+
+Everything else in [Compose-your-own layout: subcomponents](#compose-your-own-layout-subcomponents) still applies — the shared `instanceId`, `persistent: false`, and hiding duplicated panels.
+
+### Shape B — the standalone element
+
+`<ui-du-validation-station-standalone-wc-element>` renders the standard layout from data you supply. Register the custom elements once at startup (or behind a route boundary), then mount the element and drive it imperatively.
+
+```typescript
+// src/vs/register.ts — side-effect imports; run once before mounting.
+import '@uipath/du-validation-station-wc/polyfills';
+import '@uipath/du-validation-station-wc/main';
+import '@uipath/du-validation-station-wc/styles.css';
+// Only if the host page does not already load Apollo fonts + Material Icons:
+import '@uipath/du-validation-station-wc/fonts.css';
+```
+
+```typescript
+import { useEffect, useRef } from 'react';
+import type {
+  IVsSaveValidatedDataRequest,
+  IVsSaveExceptionReportRequest,
+} from '@uipath/du-validation-station-wc';
+import '../vs/register';
+
+const TAG = 'ui-du-validation-station-standalone-wc-element';
+
+function DocumentReview({ doc }: { doc: MyDocument }) {
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+
+    // Typed by the package's HTMLElementTagNameMap augmentation — no cast needed.
+    const el = document.createElement(TAG);
+
+    el.documentId = doc.id; // first — required before any data input
+    el.taxonomy = doc.taxonomy;
+    el.extractionResult = doc.extractionResult;
+    el.dom = doc.dom;
+    el.text = doc.text;
+    el.original = doc.originalDataUrl; // base64 data URL
+    el.theme = 'light';                // keep the body class in sync — Critical Rule #4
+    el.language = 'en';
+    el.isReadonly = false;
+
+    // The element persists nothing. These handlers ARE the save.
+    const onSave = (e: CustomEvent<IVsSaveValidatedDataRequest>) => {
+      void myBackend.saveValidatedData(e.detail.documentId, e.detail.validatedData);
+    };
+    const onException = (e: CustomEvent<IVsSaveExceptionReportRequest>) => {
+      void myBackend.reportException(e.detail.documentId, e.detail.exceptionReport);
+    };
+    el.addEventListener('saveValidatedDataRequest', onSave);
+    el.addEventListener('saveExceptionReportRequest', onException);
+
+    host.appendChild(el);
+    return () => {
+      el.removeEventListener('saveValidatedDataRequest', onSave);
+      el.removeEventListener('saveExceptionReportRequest', onException);
+      el.remove();
+    };
+  }, [doc]);
+
+  return <div ref={hostRef} style={{ height: '100%' }} />;
+}
+```
+
+**Data inputs** — all set as JS properties, never HTML attributes. Object types come from `@uipath/uipath-typescript/document-understanding`.
+
+| Property | Type | Notes |
+|---|---|---|
+| `documentId` | `string` | **Assign first.** Required before any data input is set. |
+| `taxonomy` | `DocumentTaxonomy` | Field definitions for this document. |
+| `extractionResult` | `ExtractionResult` | The *initial* result. Edits come back out on events; they are not written here. |
+| `dom` | `DocumentEntity` | Digitized document — drives bounding boxes and anchors. |
+| `text` | `string \| undefined` | Plain text. Supply to enable the text view. |
+| `original` | `string \| undefined` | The document itself as a **base64 data URL**. Supply to enable the document/canvas view. |
+| `customizationInfo` | `unknown` | Optional. Carries `ICustomizationInfoDTO`; no SDK type exists for it. |
+
+**Events the host owns.** Nothing here reaches the network on its own.
+
+| Event | `detail` | Host must |
+|---|---|---|
+| `saveValidatedDataRequest` | `{ documentId, validatedData, automaticExtractionResult, taxonomy }` | persist `validatedData` — otherwise Save is a no-op |
+| `saveValidatedDataAsDraftRequest` | `{ documentId, validatedData }` | store the in-progress result (set `enableSaveAsDraft = true` to expose the action) |
+| `saveExceptionReportRequest` | `{ documentId, exceptionReport }` | route the document to your exception flow |
+
+`addEventListener` / `removeEventListener` are overloaded per event name, so `e.detail` is typed without a cast. The edit/state events (`loaded`, `dirty`, `isValid`, `fieldValueSelected`, `fieldValueChanged`, `extractionResultChanged`, `businessRulesEvaluated`) are typed the same way; `extractionResultChanged` needs `options.emitDtoStateChanges = true`.
+
+**Two element-lifecycle rules:**
+
+- `taxonomy` and `extractionResult` are setup inputs. To show a **different document**, destroy the element and create a new one rather than re-assigning them.
+- If the element moves between DOM parents (portals, tab switches), use `<ui-du-validation-station-standalone-wc-persistent-element>` — it survives detachment — and call `forceDestroy()` when removing it for good, or the inner component leaks.
+
+**React version.** Coded App scaffolds pin React 19.2+, where object props can also go straight on the JSX tag. The `createElement` path above works on either version and guarantees `documentId` lands first, so prefer it. Under React 18 the JSX form is not an option at all — React serialises props to attributes and Angular Elements cannot deserialise object JSON.
+
+**Runtime assets are unchanged.** Same `optimizeDeps.exclude` and same copy/serve plugins as [Static Assets](#static-assets--vite-plugin) — this is the same web component. The one difference: here you register the custom elements yourself with the side-effect imports above, whereas the React wrapper does that for you.
+
 ## Compose-your-own layout: subcomponents
 
-When the standard layout doesn't fit — you need to rearrange panels, hide some, or embed one piece inside your own screen — the package also exports the Validation Station as **five composable subcomponents** plus a data hook, instead of the all-in-one `ValidationStation`. Same document, same bucket artifacts, same save flows; you own the layout.
+When the standard layout doesn't fit — you need to rearrange panels, hide some, or embed one piece inside your own screen — the package also exports the Validation Station as **five composable subcomponents** plus a data hook, instead of the all-in-one `ValidationStation`. Same document, same artifacts, same save flows; you own the layout.
 
 Exports (from the same `@uipath/ui-widgets-validation-station` package):
 
@@ -371,7 +557,7 @@ Exports (from the same `@uipath/ui-widgets-validation-station` package):
 Must-knows (all easy to get wrong):
 
 0. **Requires a package version that exports the subcomponents** (`@uipath/ui-widgets-validation-station >= 1.0.1`). Earlier versions export only `ValidationStation`.
-1. **Fetch artifacts once, share them.** Call `useBucketArtifacts` in the parent and pass the same `artifacts` object to all subcomponents. Calling it per-subcomponent re-downloads the same unchanged document once per panel.
+1. **Fetch artifacts once, share them.** Call `useBucketArtifacts` in the parent and pass the same `artifacts` object to all subcomponents. Calling it per-subcomponent re-downloads the same unchanged document once per panel. `artifacts` need not come from a bucket at all — a host that already holds the data builds the object itself and omits `sdk`/`data`, and no fetch happens (see [Integration: in-memory data](#integration-in-memory-data-no-storage-bucket)).
 2. **Only `CompactFieldsForm` gets `sdk`/`data`/`folderId`.** It owns persistence. The other four can take the pre-fetched `artifacts` only.
 3. **Set `persistent: false` for static layouts.** These panels sit in a fixed grid and are never re-parented. Leaving `persistent` on makes React StrictMode's throwaway unmount call `forceDestroy()`, tearing down the underlying element so it renders **blank**. Only set `persistent: true` if you actually move a subcomponent between DOM parents.
 4. **Drop duplicated panels via `options`.** When you render `CompactBusinessRules` / `CompactDocTypeField` standalone, tell the fields form to hide its built-in copies: `options={{ hideBusinessRules: true, hideDocumentTypeField: true, emitDtoStateChanges: true }}`. (`emitDtoStateChanges` is still required for save-as-draft, same as the monolithic widget.)
@@ -462,3 +648,11 @@ Subcomponents (compose-your-own layout) only:
 - **Do not give subcomponents different `instanceId`s** and expect them to sync — the shared id is what links the store; mismatched ids leave the panels independent.
 - **Do not render `CompactBusinessRules`/`CompactDocTypeField` standalone without hiding the form's built-in copies** (`options.hideBusinessRules` / `hideDocumentTypeField`) — you'll get each panel twice.
 - **Do not add your own Submit / Save-draft / Report-exception controls without hiding the form's built-in buttons** (`options.hideSubmitButton` / `hideReportAsExceptionButton`, and omit the `enableSaveAsDraft` prop) — `CompactFieldsForm` ships its own action bar, so every action renders twice. The controlled `save` / `discardChanges` props still drive the flows once the built-ins are hidden. (`enableSaveAsDraft` only exposes the built-in draft button; the controlled `save={{ validate: false }}` trigger keeps working via `options.emitDtoStateChanges`. There is no flag to hide the built-in discard control — drop your own Discard button if it would duplicate.)
+
+In-memory paths (no storage bucket) only:
+
+- **Do not reach for `<ValidationStation>` when the data is already in memory.** Its props require `sdk` + `data: ContentValidationData`, so it always fetches from a bucket. Use a subcomponent in pre-fetched mode, or the standalone element.
+- **Do not wait on `onSubmitComplete` / `onSaveAsDraftComplete` in pre-fetched mode.** With `sdk`/`data` omitted there is nothing to auto-persist, so neither ever fires. Handle `onSaveValidatedDataRequest` / `onSaveValidatedDataAsDraftRequest` instead.
+- **Do not set data inputs before `documentId`.** It is required first — assign it as the element's first property.
+- **Do not re-assign `taxonomy`/`extractionResult` to switch documents.** They are setup inputs; destroy the element and create a new one.
+- **Do not forget the side-effect imports on the standalone path.** Without them the custom element never upgrades and the panel renders empty, with no build error. The React wrapper does this registration for you; the raw element does not.
