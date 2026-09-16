@@ -33,7 +33,7 @@ success_criteria:
   - type: command_executed
     description: "Advisory: v1 agent passed --automate to flow init"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b[^|&;]*--automate'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--automate)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
@@ -43,27 +43,21 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not reach for the host-owned --profile option"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b[^|&;]*--profile'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--profile)'
     weight: 1.5
     pass_threshold: 1.0
 
+  # Scoped to the project the task asked for. A sandbox-wide search passes
+  # when any unrelated scaffold carries the marker, which proves nothing about
+  # InvoiceIntake.
   - type: run_command
-    description: "Project carries the Maestro Automate marker"
-    command: "find . -name .maestro_automate -print -quit | grep -q ."
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Scaffolded operate.json declares the Lite runtime profile"
+    description: "InvoiceIntake is a Maestro Automate project — marker and Lite profile"
     command: >
-      python3 -c "import glob,json,sys;
-      f=[p for p in glob.glob('**/operate.json', recursive=True)];
-      sys.exit(0 if any(json.load(open(p)).get('runtimeOptions',{}).get('profile')=='Lite' for p in f) else 1)"
+      python3 $REFERENCE_DIR/_shared/project_profile.py --flow-name InvoiceIntake
+      --expect-profile Lite --expect-sentinel
     timeout: 30
     expected_exit_code: 0
-    weight: 2.5
+    weight: 5.0
     pass_threshold: 1.0
 
   # Maestro Automate is a Flow project under a restricted profile, not a
