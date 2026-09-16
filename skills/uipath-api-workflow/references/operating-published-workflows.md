@@ -17,6 +17,8 @@ A published API workflow is started three ways — the same three trigger types 
 
 All three deliver the payload as the workflow's input variables — the same body runs under any trigger if the input shape matches.
 
+> **A scalar `Response` reaches every one of these callers under the generic key `Result`, not the field name in `output.schema`.** A caller reading a named field — a Maestro BPMN `Orchestrator.ExecuteApiWorkflowAsync` node mapping `source="=result.<field>"`, another workflow, an HTTP caller parsing a specific JSON key — gets nothing back unless the workflow's `Response` is object-shaped (`"${{ <field>: <expr> }}"`). See [workflow-file-format.md](workflow-file-format.md) and SKILL.md critical rule 15.
+
 > **`uip or` commands are folder-scoped — but the accepted selectors differ per command:**
 > - `jobs list` requires `--folder-path <path>`, `--folder-key <key>`, **or** `--all-folders` (searches every folder).
 > - `triggers list`/`create`/`get`/`update`/`delete` require `--folder-path <path>` or `--folder-key <key>` — they do **not** accept `--all-folders`.
