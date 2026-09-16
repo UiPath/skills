@@ -38,9 +38,10 @@ initial_prompt: |
   The reason must state that no outgoing condition matched and the gateway has
   no default flow.
 
-  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,
-  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,
-  migrate, move a cursor, debug, run, upload, publish, or deploy anything.
+  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/` or
+  `fixtures/` directly. Capturing a CLI response to your own file and reading it
+  back is fine. Do NOT retry, cancel, migrate, move a cursor, debug, run,
+  upload, publish, or deploy anything.
 
 success_criteria:
   - type: command_executed

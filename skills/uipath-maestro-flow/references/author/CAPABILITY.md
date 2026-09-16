@@ -54,7 +54,17 @@ For CLI-owned nodes:
 - Use `uip maestro flow node add` to insert the node and copy the definition into `definitions[]`.
 - Use `uip maestro flow node configure --detail '{...}'` to populate `inputs.detail` and `bindings[]`.
 - Subsequent edits to `inputs.detail` are also CLI-only — re-run `node configure` (it's a full rebuild; see [connector/impl.md](plugins/connector/impl.md)).
-- **Never `Write` (full-file rewrite) a flow that contains CLI-owned nodes** — it silently clobbers their `bindings[]` / `inputs.detail`, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. `Edit` user-owned nodes in place; if a `Write` is unavoidable, re-run `node configure` for every CLI-owned node as the **last** write to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers what `configure` just fixed).
+- **A full-file `Write` is safe BEFORE `node configure` and unsafe AFTER.** `node add` leaves `inputs.detail` empty, so a `Write` that precedes `configure` costs nothing — provided it carries forward **verbatim every key `node add` touched**, not just the node:
+
+  | Key | What `node add` wrote |
+  | --- | --- |
+  | `nodes[]` | the node object (`inputs: {}`) |
+  | `definitions[]` | one entry for its `type:typeVersion` |
+  | `bindings[]` | unresolved rows (`resourceKey: ""`) per connection property |
+  | `layout.nodes.<id>` | its layout entry — `configure` and `format` put this back if lost |
+  | `variables.nodes[]` | its `<id>.output` and `<id>.error` bindings — **what makes `$vars.<id>.output` resolve** |
+
+  `variables.nodes` is the one `node configure` does **not** regenerate, and `flow validate` reports `Valid` without it, so between the `Write` and T3's trailing `flow format` the flow is silently missing what makes `$vars.<id>.output` resolve. `format` does regenerate it (rule 14 below), so the omission self-heals there — carry it forward regardless rather than relying on a later step to repair it. Once `configure` has populated `inputs.detail`, the rows' `resourceKey` / `default`, and `bindings_v2.json`, a `Write` silently clobbers those too, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. Order the work so `node configure` is the **last** write to touch `inputs.detail` / `bindings[]`; if a later `Write` happens anyway, re-run `configure` for every CLI-owned node.
 - You may still `Edit` the node's `display.label`, edges, layout, and outputs — those are not part of the envelope.
 
 If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bindings[]` entries for a connector node — stop. Use the CLI.

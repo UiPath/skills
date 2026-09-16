@@ -7,6 +7,17 @@ import xml.etree.ElementTree as ET
 from bpmn_doc_example import NS, minimal_example
 
 
+# The two layers use different vocabularies: a public declaration reaches
+# entry-point schema derivation and must use `number`, while a node-scoped
+# inputOutput uses the canvas float type `double`. They correspond; they are
+# not identical strings.
+_NODE_SCOPED = {"number": "double"}
+
+
+def _corresponds(public_type: str, mutable_type: str) -> bool:
+    return mutable_type == _NODE_SCOPED.get(public_type, public_type)
+
+
 def _variables(process: ET.Element) -> dict[str, ET.Element]:
     items = process.findall(
         "bpmn:extensionElements/uipath:variables/*",
@@ -48,7 +59,9 @@ def test_minimal_example_bridges_public_input_to_mutable_state() -> None:
         assert len(matches) == 1
         mutable = variables[matches[0].attrib["var"]]
         assert mutable.tag.endswith("}inputOutput")
-        assert mutable.attrib["type"] == public_input.attrib["type"]
+        assert _corresponds(public_input.attrib["type"], mutable.attrib["type"]), (
+            public_input.attrib["type"], mutable.attrib["type"]
+        )
 
 
 def test_minimal_example_bridges_mutable_state_to_public_output() -> None:
@@ -78,4 +91,6 @@ def test_minimal_example_bridges_mutable_state_to_public_output() -> None:
         assert source.startswith("=vars.")
         mutable = variables[source.removeprefix("=vars.")]
         assert mutable.tag.endswith("}inputOutput")
-        assert mutable.attrib["type"] == public_output.attrib["type"]
+        assert _corresponds(public_output.attrib["type"], mutable.attrib["type"]), (
+            public_output.attrib["type"], mutable.attrib["type"]
+        )
