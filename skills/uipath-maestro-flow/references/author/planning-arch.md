@@ -243,7 +243,7 @@ Every edge requires `sourcePort` and `targetPort`.
 4. Every non-trigger node has at least one incoming edge.
 5. Every non-terminal node has at least one outgoing edge.
 6. Decisions have exactly one `true` and one `false` edge.
-7. Switches have one edge per case and optionally `default`.
+7. Switches have one edge per case, plus `default` unless the cases are provably exhaustive (an agent-authored discriminator never is).
 8. A loop's inner `start` feeds the body, the last body node returns to `continue`, and outer `success` continues after all iterations.
 9. Merge accepts one input per parallel path.
 10. Do not create cycles except through Loop's `continue` handle.
@@ -328,7 +328,7 @@ Before presenting the plan, validate every rule:
 9. Do not use semicolons.
 10. Do not put blank lines inside the mermaid block.
 11. Every defined node is connected; every node-table node appears in the diagram; every edge-table edge appears in the diagram.
-12. Decisions show `true` and `false`; switches show every case and optional `default`; loops show the body and `continue`; parallel branches fork and converge at Merge.
+12. Decisions show `true` and `false`; switches show every case plus `default` when the edge table has one; loops show the body and `continue`; parallel branches fork and converge at Merge.
 
 ## Node Selection Heuristics
 
