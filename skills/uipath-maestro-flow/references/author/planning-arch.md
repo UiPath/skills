@@ -328,7 +328,7 @@ Before presenting the plan, validate every rule:
 9. Do not use semicolons.
 10. Do not put blank lines inside the mermaid block.
 11. Every defined node is connected; every node-table node appears in the diagram; every edge-table edge appears in the diagram.
-12. Decisions show `true` and `false`; switches show every case and `default`; loops show the body and `continue`; parallel branches fork and converge at Merge.
+12. Decisions show `true` and `false`; switches show every case plus `default` when the edge table has one; loops show the body and `continue`; parallel branches fork and converge at Merge.
 
 ## Node Selection Heuristics
 
