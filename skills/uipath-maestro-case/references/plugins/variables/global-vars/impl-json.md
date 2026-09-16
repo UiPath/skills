@@ -213,7 +213,7 @@ SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
   "custom": true, "elementId": "root", "default": "Open" }
 ```
 
-No trigger.outputs[] write, no root.inputs[] / outputs[] writes.
+No trigger.outputs[] write, no root.inputs[] / outputs[] writes. A `jsonSchema`-typed pure-state Variable additionally carries `body` and `_jsonSchema` — see [`## jsonSchema type`](#jsonschema-type).
 
 ### `default` encoding — EVERY type, MANDATORY
 
@@ -418,6 +418,10 @@ Writes a fixed constant to a global variable when a task completes — not from 
 Custom outputs are an existing task-plugin concept, unchanged by B's redesign. They are the emission shape for SDD `=` rows (set / compute / copy operations per [`../io-binding/planning.md`](../io-binding/planning.md)): when a task's Outputs table contains `caseVar = expression`, the task plugin emits a `custom: true` entry with `var: <caseVar's id>, value: <expression>, source: <same as value>, elementId: "root"`, and NO root mirror is created (per FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64`). The `->` operator handles schema-field extraction and renaming; `=` handles literal / computed / variable-reference writes.
 
 ## jsonSchema type
+
+**A `jsonSchema` variable MUST carry `body` and `_jsonSchema`.** Both hold the same schema object, taken from the schema the SDD row declares (the variable table's Description carries it, e.g. `Body schema: {"type": "object"}`). `body: null` leaves the variable untyped: the FE picker cannot discover sub-fields, `=vars.<id>.<field>` cannot be selected in connector-task inputs, and `validate` reports `Valid` on either spelling.
+
+> **`sdd convert` emits `jsonSchema` companions with `body: null` and does not list them in `Data.Unresolved[]`.** Fill `body` and `_jsonSchema` after conversion from the SDD row. This is a named exception to SKILL.md Rule 4's settled-shape clause — the companion arrived in the converted plan and is still incomplete.
 
 Note the string-encoded `default`. `body` and `_jsonSchema` are objects — those are correct as objects
 and survive serialization via a separate CDATA path; only `default` is string-encoded.
