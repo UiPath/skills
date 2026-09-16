@@ -35,7 +35,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-type) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [PublishedFunctionInputs](#publishedfunctioninputs-interface) · [SendMessageInputs](#sendmessageinputs-interface) · [WaitForMessageInputs](#waitformessageinputs-interface) · [ConversationContextInputs](#conversationcontextinputs-interface) · [CreateOutgoingCallInputs](#createoutgoingcallinputs-interface) · [EndCallInputs](#endcallinputs-interface) · [VoiceAgentInputs](#voiceagentinputs-interface) · [ConversationalAgentInputs](#conversationalagentinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [DocumentClassifyInputs](#documentclassifyinputs-interface) · [DynamicExtractInputs](#dynamicextractinputs-interface) · [DataFabricReadInputs](#datafabricreadinputs-interface) · [DataFabricUpdateInputs](#datafabricupdateinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [DocValidationInputs](#docvalidationinputs-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface) · [ReturnOptions](#returnoptions-interface)
 
-**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [RawReference](#rawreference-type) · [EventFilter](#eventfilter-type) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [StickyNote](#stickynote-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [ReturnFieldType](#returnfieldtype-type) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [StickyNoteColor](#stickynotecolor-type) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
+**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [RawReference](#rawreference-type) · [EventFilter](#eventfilter-type) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [StickyNote](#stickynote-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [ReturnFieldType](#returnfieldtype-type) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [StickyNoteColor](#stickynotecolor-type) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [PortArm](#portarm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
 
 ## SCHEDULE_PRESETS (const)
 
@@ -979,6 +979,11 @@ declare class StepList {
     err(field?: ErrorEnvelopeField): Expr;
     /** Add an action node (see `http` / `script` / `subflow`). */
     step(name: string, spec: FlowActionSpec | FlowAction, options?: NodeOptions): this;
+    /** Add an action node and route EVERY exit it declares, one arm per exit. */
+    stepSwitch(name: string, spec: FlowActionSpec | FlowAction, cases: {
+            value: string;
+            body: (b: ArmBuilder) => void;
+        }[], options?: NodeOptions): this;
     /**
      * Handle the PREVIOUS step's failure: if it fails, the flow runs `bodyFn`'s
      * steps instead of continuing.
@@ -1223,11 +1228,12 @@ export interface HitlInputs {
     /**
      * The completion buttons, e.g. `['Approve', 'Reject']`. At least one, or the
      * reviewer has no way to complete the task and the flow waits forever. The
-     * first is the primary (default) one. Declaring them creates no EXITS: with
-     * more than one, set `outcomePorts` to fork in the graph, or read
-     * `out('<step>', 'Action')` to route as data. With neither, every outcome
-     * leaves on the same `completed` exit and nothing downstream can tell them
-     * apart — which `check` warns about as `HITL_OUTCOMES_UNREACHABLE`.
+     * first is the primary (default) one. MORE THAN ONE gives each outcome its own
+     * exit, `outcome-<slug>`: the first continues the main path and the rest are
+     * routed with `.stepToList('outcome-<slug>', …)`. Only
+     * `outcomePorts``: false`, a `variant`, an
+     * explicit `{ version }`, or every outcome ending the process keeps the older
+     * single `completed` exit.
      */
     outcomes: Outcome[];
     /** Who gets the task and how. Omit for the definition's default delivery. */
@@ -1235,12 +1241,10 @@ export interface HitlInputs {
     /** Action Center labels, comma-separated (the platform stores one string). */
     labels?: string;
     /**
-     * Route each outcome from its OWN port instead of the single `completed`
-     * exit. Selects the node's **1.1** definition, whose exits are
-     * `outcome-<id>` handles (one per outcome; ids are the outcome names
-     * slugified, e.g. `'Approve'` → `outcome-approve`). It REPLACES `completed`
-     * rather than adding to it, and it is not an optional refinement — see
-     * `outcomes` for the choice it is one half of.
+     * Whether each outcome exits from its OWN port (`outcome-<id>`) instead of the
+     * single `completed` one. **More than one outcome does this by default**, so
+     * the useful value is `false` — an opt back into the single exit, for a task
+     * that routes the decision as DATA by reading `out('<step>', 'Action')`.
      */
     outcomePorts?: boolean;
     /**
@@ -2935,6 +2939,12 @@ export type Step = {
     default?: Step[];
     options?: NodeOptions;
 } | {
+    kind: 'stepSwitch';
+    name: string;
+    spec: FlowActionSpec;
+    cases: PortArm[];
+    options?: NodeOptions;
+} | {
     kind: 'loop';
     name: string;
     label?: string;
@@ -3415,6 +3425,15 @@ export interface HttpRequestToolRef {
 export interface SwitchArm {
     value: CaseValue;
     label?: string;
+    body: Step[];
+}
+````
+
+## PortArm (interface)
+
+````ts
+export interface PortArm {
+    value: string;
     body: Step[];
 }
 ````
