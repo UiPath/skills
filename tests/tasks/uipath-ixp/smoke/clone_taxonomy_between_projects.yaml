@@ -1,0 +1,122 @@
+task_id: skill-ixp-clone-taxonomy-between-projects-smoke
+description: >
+  Smoke: agent clones one project's taxonomy into a blank one — `get-taxonomy`
+  on the source, `import-taxonomy` into the target.
+
+  The trap is the envelope. `get-taxonomy` returns
+  `{ Result, Data: { status, dataset: { entity_defs, label_groups } } }`, but
+  `import-taxonomy` reads `entity_defs`/`label_groups` at the TOP level, so it
+  rejects the whole response and also a bare `.Data`. A real run lost most of
+  its turn budget to that (ACTV-90996). What's graded is the payload's shape,
+  not the command's — so `record_cli` serves the source read, because an agent
+  with no response to unwrap would correctly stop instead of getting it wrong.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      responses:
+        - when:
+            verb: "ixp projects get-taxonomy"
+            positional: ["my_invoices-f1afa9ef-ixp"]
+          stdout: >-
+            {"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[
+            {"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},
+            {"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""},
+            {"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}
+            ],"label_groups":[{"name":"default","label_defs":[
+            {"name":"Invoice Header","id":"5f21c88ab90d4e17","instructions":"Header-level fields of the supplier invoice.","moon_form":[
+            {"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The unique invoice identifier printed in the document header.","rule_set":null},
+            {"field_id":"1d8e42b7c3a95f60","id":"c128ad65bd8af3f8","field_type_id":"c128ad65bd8af3f8","kind":"Date","name":"Invoice Date","instructions":"The issue date of the invoice.","rule_set":null},
+            {"field_id":"6e0b74a1f83c2d95","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Total Amount","instructions":"The grand total payable on the invoice, including tax.","rule_set":null}
+            ]},
+            {"name":"Line Items","id":"7be409c2d15fa833","instructions":"One entry per line item row on the invoice.","moon_form":[
+            {"field_id":"c47a91e05d2b3f68","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Description","instructions":"The line item description as printed on the row.","rule_set":null}
+            ]}]}]}}}
+
+        # Succeeds, so a correct unwrap isn't told it failed and doesn't retry
+        # with the envelope this task is looking for.
+        - when:
+            verb: "ixp projects import-taxonomy"
+          stdout: '{"Result":"Success","Data":{"status":"ok"}}'
+
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  `vendor_bills-7c2e10b4-ixp` is a blank IXP project — it has no taxonomy yet.
+  Give it the same taxonomy as the project `my_invoices-f1afa9ef-ixp`.
+
+  Save the exact JSON payload you send to the target as `taxonomy-payload.json`.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: cli_called
+    description: "Read the source taxonomy with `projects get-taxonomy my_invoices-f1afa9ef-ixp`"
+    verb: "ixp projects get-taxonomy"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The filename in `positional` ties the payload graded below to the one
+  # actually imported. Compared literally, hence the bare name in the prompt.
+  - type: cli_called
+    description: "Imported `taxonomy-payload.json` into the blank target with `projects import-taxonomy`"
+    verb: "ixp projects import-taxonomy"
+    tool: "uip"
+    positional: ["vendor_bills-7c2e10b4-ixp", "taxonomy-payload.json"]
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # `type()`, not `length()`: it answers "null" for a missing key instead of raising.
+  # `length(null)` throws, which reports as a broken test;
+  # `type(null)` returns "null", which simply fails the assertion.
+  #
+  # The third assertion is the anti-cheat one — the first two would accept a
+  # hand-written `{"entity_defs": [], "label_groups": []}`. The prompt names no
+  # field and no type, so "Total Amount is a Monetary Quantity" could only have
+  # come from the served read.
+  - type: json_check
+    description: "Payload is the unwrapped `dataset` — entity_defs/label_groups at the TOP level, field detail intact"
+    path: "taxonomy-payload.json"
+    assertions:
+      - expression: "type(entity_defs)"
+        operator: equals
+        expected: "array"
+      - expression: "type(label_groups)"
+        operator: equals
+        expected: "array"
+      - expression: "label_groups[].label_defs[].moon_form[?name=='Total Amount'][].kind | [0]"
+        operator: equals
+        expected: "Monetary Quantity"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT hand-rebuild the taxonomy with `groups add`"
+    verb: "ixp groups add"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT import the source project's taxonomy back into the source"
+    verb: "ixp projects import-taxonomy"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
