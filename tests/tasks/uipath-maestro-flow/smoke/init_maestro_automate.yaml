@@ -4,7 +4,7 @@ description: >
   passes --automate to `uip maestro flow init` rather than creating a plain
   Flow. The words in the request are the only signal; nothing else about the
   build changes.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 9

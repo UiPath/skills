@@ -5,7 +5,11 @@ description: >
   Automate smoke alone would still pass if the skill started marking every
   project, and the existing init smoke only checks that a .flow exists and
   validates.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate]
+
+  The prompt uses "automate" as a verb on purpose: it is the common word in
+  this domain, and reading it as the product name would silently change the
+  project type.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 9
@@ -14,7 +18,8 @@ reference:
   directory: ..
 
 initial_prompt: |
-  Create a new UiPath Flow project called "ShipmentTracker".
+  Automate our shipment tracking with a new UiPath Flow project called
+  "ShipmentTracker".
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.

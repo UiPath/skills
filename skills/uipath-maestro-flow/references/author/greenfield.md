@@ -114,7 +114,7 @@ uip solution init "<SolutionName>" --output json \
 > && uip maestro flow init "<ProjectName>" --automate --output json \
 > ```
 >
-> Only when the user asked for a Maestro Automate (or "Automate"). A Flow, or no signal, leaves it off. Steps 3-6 are identical either way — the flag changes the packaged `runtimeOptions.profile`, not how you author the `.flow`. See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal).
+> Only when the request names **Maestro Automate** as the product. The bare verb does not count — "automate invoice intake with a Flow" asks for a Flow. Anything else, including no signal, leaves the flag off. Steps 3-6 are identical either way — the flag changes the packaged `runtimeOptions.profile`, not how you author the `.flow`. See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal).
 
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 
