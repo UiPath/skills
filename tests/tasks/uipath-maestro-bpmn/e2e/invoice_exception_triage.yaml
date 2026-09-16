@@ -17,8 +17,10 @@ sandbox:
     - type: template_dir
       path: ../../../../skills/uipath-maestro-bpmn
 
+# The check imports _shared/bpmn_check.py, so the reference mirror must span
+# the whole uipath-maestro-bpmn task tree, not just e2e/.
 reference:
-  directory: .
+  directory: ../..
 
 initial_prompt: |
   Create a new local Maestro BPMN Process Orchestration project named
@@ -71,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "Generated BPMN project has the required process structure and package references"
-    command: "python3 $REFERENCE_DIR/check_invoice_exception_triage.py"
+    command: "python3 $REFERENCE_DIR/e2e/check_invoice_exception_triage.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

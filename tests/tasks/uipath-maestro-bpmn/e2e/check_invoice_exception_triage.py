@@ -4,9 +4,17 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+_d = os.path.dirname(os.path.abspath(__file__))
+while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
+    _d = os.path.dirname(_d)
+sys.path.insert(0, _d)
+
+from _shared.bpmn_check import resolve_project  # noqa: E402
 
 BPMN_NAME = "InvoiceExceptionTriage.bpmn"
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -29,25 +37,8 @@ def load_json(path: Path) -> object:
         fail(f"{path} is not valid JSON: {exc}")
 
 
-def resolve_project() -> Path:
-    # Grade the project wherever the agent placed it (top level or nested under
-    # a `<Name>Solution/` wrapper — `uip maestro bpmn init` creates the wrapper
-    # unless --skip-solution-registration is passed), but pick the real project
-    # unambiguously: exactly one InvoiceExceptionTriage.bpmn with project.uiproj
-    # beside it, so a stray draft copy is never graded.
-    candidates = [
-        p for p in Path.cwd().rglob(BPMN_NAME) if (p.parent / "project.uiproj").is_file()
-    ]
-    if len(candidates) != 1:
-        fail(
-            f"expected exactly one {BPMN_NAME} with project.uiproj beside it, "
-            f"found {[str(p) for p in candidates]}"
-        )
-    return candidates[0].parent
-
-
 def main() -> int:
-    project = resolve_project()
+    project = resolve_project(BPMN_NAME)
     bpmn = project / BPMN_NAME
 
     required_files = [
