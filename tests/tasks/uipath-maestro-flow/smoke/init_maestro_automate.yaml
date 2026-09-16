@@ -27,13 +27,16 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
+  # Advisory: command grammar is v1-arm-specific — the SDK arm produces the
+  # same project without running `uip` at all. The gating criteria below are
+  # the outcome: a project that IS Maestro Automate, however it got made.
   - type: command_executed
-    description: "Agent passed --automate to flow init"
+    description: "Advisory: v1 agent passed --automate to flow init"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b[^|&;]*--automate'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.5
+    pass_threshold: 0.0
 
   # `--profile <name>` is the host's login profile and is stripped from argv
   # before the command parses, so reaching for it silently creates a Flow.
@@ -49,7 +52,7 @@ success_criteria:
     command: "find . -name .maestro_automate -print -quit | grep -q ."
     timeout: 30
     expected_exit_code: 0
-    weight: 2.0
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
@@ -60,7 +63,7 @@ success_criteria:
       sys.exit(0 if any(json.load(open(p)).get('runtimeOptions',{}).get('profile')=='Lite' for p in f) else 1)"
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
+    weight: 2.5
     pass_threshold: 1.0
 
   # Maestro Automate is a Flow project under a restricted profile, not a
