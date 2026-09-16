@@ -108,6 +108,14 @@ uip solution init "<SolutionName>" --output json \
 
 > **One creation path — never drop the `cd`.** `uip solution init "<SolutionName>"` → `cd "<SolutionName>"` → `uip maestro flow init "<ProjectName>"`, one chain. Without the `cd`, `flow init` runs in the old directory and auto-scaffolds a duplicate `<ProjectName>Solution/` (1-node husk). Never let auto-scaffold create the solution. Finish with exactly one `project.uiproj` — delete strays.
 
+> **Building a Maestro Automate?** Add `--automate` to the `flow init` segment and change nothing else:
+>
+> ```bash
+> && uip maestro flow init "<ProjectName>" --automate --output json \
+> ```
+>
+> Only when the request names **Maestro Automate** as the product. The bare verb does not count — "automate invoice intake with a Flow" asks for a Flow. Anything else, including no signal, leaves the flag off. Steps 3-6 are identical either way — the flag changes the packaged `runtimeOptions.profile`, not how you author the `.flow`. See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal).
+
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
@@ -131,6 +139,8 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 ```bash
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
+
+Append `--automate` for a Maestro Automate project (SKILL.md rule #6). The rest of this step, and Steps 3-6, are unchanged.
 
 The `cd` puts the project inside the solution you just created. Skip it and `flow init` won't find that solution (discovery walks **up**, not down into `<SolutionName>/`) — it auto-scaffolds a **second, separate** `<ProjectName>Solution/` beside your empty `<SolutionName>/`, leaving two solutions. The project no longer single-nests, but `cd` first to land in the right one.
 

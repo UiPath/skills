@@ -271,6 +271,8 @@ uip maestro flow init <ProjectName> --output json
 #   uip solution projects add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
+> **Was the broken project a Maestro Automate one?** This recipe rebuilds it, so carry `--automate` on the `flow init` above. Check before deleting: a `.maestro_automate` file in the project root means it was. Rebuilding without the flag returns a plain Flow, and nothing downstream reports the change.
+
 After running, verify the file exists at the double-nested path. The `cd <SolutionName>` above persists across Bash calls, so anchor the check with `$(pwd)` instead of repeating `<SolutionName>/`:
 
 ```bash
