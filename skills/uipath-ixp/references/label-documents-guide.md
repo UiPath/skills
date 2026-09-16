@@ -175,7 +175,7 @@ Repeat steps 2a–2d for all documents in the list.
 
 ### Occurrence numbers are read-scoped
 
-`get-predictions` does not return a repeatable group's rows in a fixed order. The server pairs each annotation with its prediction and lists the **matched pairs first**, then the still-unmatched predictions. So on a partly-confirmed group:
+`get-predictions` does not return a repeatable group's rows in a fixed order. It lists **annotated occurrences first**, then the still-unannotated ones. So on a partly-confirmed group:
 
 - confirmed rows sort to the front — confirm the third row of four and it reads back as `Occurrence` 0, with the other three shifted to 1, 2, 3;
 - the same holds in the IXP UI, which shows the confirmed row first;
