@@ -433,7 +433,7 @@ and survive serialization via a separate CDATA path; only `default` is string-en
   "_jsonSchema": { "type": "object", "properties": { "status": { "type": "string" } } } }
 ```
 
-An empty jsonSchema default is `"{}"` (a two-character string), never `{}`.
+An empty jsonSchema default is a **string** — `""` or `"{}"`, both accepted; `sdd convert` writes `""`. Never the object `{}`: an object `default` is silently deleted by the caseplan → BPMN converter (Step 12 Check 14).
 
 ## file type
 
