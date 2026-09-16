@@ -4,9 +4,10 @@ description: "TRIGGER for authoring or editing UiPath Maestro Flow sources as `<
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
-Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ b543763. Canonical source lives there;
-edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
+This file is CANONICAL. Edit it here. It was a snapshot of
+UiPath/flow-builder-sdk `typescript/sdk/skill/SKILL.md` until
+flow-builder-sdk@b543763; the nightly re-sync that maintained it is gone
+(UiPath/flow-builder-sdk docs/SKILLS_PROMOTION_PLAN.md, phase 2).
 
 This file is deliberately a router. Node-specific detail belongs in
 `references/`; statically checkable rules belong in the SDK's own `check`.
