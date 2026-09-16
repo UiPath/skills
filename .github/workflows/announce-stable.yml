@@ -7,23 +7,21 @@ name: Announce stable publish
 # job therefore proves acceptance only — this workflow waits for availability,
 # then announces the real outcome (mirrors UiPath/cli's stable-publish post).
 #
-#   - workflow_call      : publish.yml calls it after every `channel=latest` publish
-#   - workflow_dispatch  : (re)announce a version by hand, e.g. one published
+# The release branch is the single input: its committed package.json is the
+# version that was published and its assets/skill-status.json is the skill list.
+#
+#   - workflow_call      : publish.yml calls it after every `channel=latest`
+#                          publish; the caller's ref is the release branch.
+#   - workflow_dispatch  : (re)announce a line by hand, e.g. one published
 #                          before this workflow existed:
-#                            gh workflow run announce-stable.yml --ref main -f version=<M.N.P>
-#                          The skill list comes from release/v<M.N> of that version.
+#                            gh workflow run announce-stable.yml --ref main -f ref=release/v<M.N>
 
 on:
-  workflow_call:
-    inputs:
-      version:
-        description: "Committed version just published to npm `latest`"
-        required: true
-        type: string
+  workflow_call: {}
   workflow_dispatch:
     inputs:
-      version:
-        description: "Stable version to announce (M.N.P); its release/v<M.N> branch supplies the skill list"
+      ref:
+        description: "Release branch whose committed package.json version was published to npm `latest` (e.g. release/v1.202)"
         required: true
         type: string
 
@@ -34,35 +32,35 @@ jobs:
   announce:
     name: Announce stable publish on Slack
     runs-on: uipath-ubuntu-latest
+    env:
+      PUBLISH_REF: ${{ inputs.ref || github.ref_name }}
     steps:
-      # Called from publish.yml the caller's ref is already the release branch;
-      # dispatched by hand the branch is derived from the version line.
-      - name: Resolve release branch
-        id: line
-        env:
-          VERSION: ${{ inputs.version }}
-          EVENT_NAME: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
-        run: |
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::version must be M.N.P, got '$VERSION'"; exit 1
-          fi
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then REF="release/v${VERSION%.*}"; else REF="$REF_NAME"; fi
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
-
+      # Scripts come from the ref this workflow file runs on (`main` for a
+      # dispatch). The release line contributes only its two manifests, so a
+      # line cut before this workflow existed can still be announced.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
-          ref: ${{ steps.line.outputs.ref }}
+          ref: ${{ env.PUBLISH_REF }}
+          path: line
+          sparse-checkout: |
+            package.json
+            assets/skill-status.json
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
+
+      - name: Read the published version from the release branch
+        id: line
+        run: echo "version=$(node -p "require('./line/package.json').version")" >> "$GITHUB_OUTPUT"
 
       # Fails the job if the version never becomes installable — that is the
       # only signal that a "successful" publish was actually held by npmjs.
       - name: Wait for npmjs to serve the version
         id: served
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.line.outputs.version }}
         run: node .github/workflows/scripts/wait-npmjs-version.mjs
 
       # Always report the real outcome (served or not), but never let a Slack
@@ -74,8 +72,8 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           CHANNEL_ID: 'C0A2T23NJ59'   # #team-coding-agents
-          VERSION: ${{ inputs.version }}
-          PUBLISH_REF: ${{ steps.line.outputs.ref }}
+          VERSION: ${{ steps.line.outputs.version }}
+          STATUS_FILE: line/assets/skill-status.json
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SERVED: ${{ steps.served.outcome == 'success' }}
         run: node .github/workflows/scripts/slack-stable-publish-notify.mjs
