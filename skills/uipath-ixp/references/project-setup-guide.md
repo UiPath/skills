@@ -26,7 +26,7 @@ This uploads documents and auto-suggests a taxonomy based on the document conten
 
 **Option B — Blank project + import taxonomy from file:**
 
-If the user provides a taxonomy file, create a blank project and import separately:
+If the user provides a taxonomy file, create a blank project and import separately. **This is the only supported use of `import-taxonomy`** — it merges, so it can seed an empty taxonomy but never change one that already has content (SKILL.md Critical Rule 22):
 
 ```bash
 uip ixp projects create "<name>" <folder-path> --skip-taxonomy --output json
@@ -36,7 +36,7 @@ uip ixp projects import-taxonomy <project-name> <taxonomy-file> --output json
 The taxonomy file can be in either format — the CLI auto-detects based on which keys are present:
 
 - `{ "field_types": [...], "label_group": {...} }` — the suggestion format; no CLI command writes it to disk, so expect it only if the user hands you such a file
-- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
+- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project **into a new blank one**. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response. A `get-taxonomy` dump is only ever imported into an **empty** target — editing one and re-importing it into its own project duplicates entries instead of changing them ([Changing an existing taxonomy](cli-reference.md#changing-an-existing-taxonomy))
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
