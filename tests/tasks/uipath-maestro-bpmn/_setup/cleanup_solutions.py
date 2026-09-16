@@ -13,8 +13,8 @@ Cleanup policy is controlled by the ``BPMN_E2E_CLEANUP`` env var:
   link, so the solution stays available for manual inspection; whoever asked
   then owns deleting it.
 
-Ported from ``uipath-maestro-flow/_shared/cleanup_solutions.py`` rather than
-imported: each suite ships its own ``_shared`` (see the loader comments in the
+Ported from ``uipath-maestro-flow/_setup/cleanup_solutions.py`` rather than
+imported: each suite ships its own copy (see the loader comments in the
 task checkers), so cross-suite imports are deliberately not done here.
 
 Best-effort: failures here never affect pass/fail (post_run results are

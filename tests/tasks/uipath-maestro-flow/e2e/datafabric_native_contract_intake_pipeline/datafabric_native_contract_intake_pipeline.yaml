@@ -11,6 +11,18 @@ description: >
   `flow debug` skipped to avoid live tenant side effects.
 tags: [uipath-maestro-flow, e2e, mode:build, shape:multi-node, feature:entities]
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../../connector_features/datafabric_connector/_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
 run_limits:
   expected_turns: 40
   max_turns: 100
@@ -18,10 +30,13 @@ run_limits:
   task_timeout: 2400
 
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/datafabric_native_contract_intake_pipeline/preflight_native_entity_nodes.py"'
+  - command: 'python3 "_setup/preflight_native_entity_nodes.py"'
     timeout: 60
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/contract_registry.entity.json"'
     timeout: 60
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build a UiPath Flow against the `ContractRegistry` Data Fabric entity
@@ -76,7 +91,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow chains native Create → Read(single)/Read(multiple)/Update/Delete on ContractRegistry with recordId bound to create.output, plus a priority-desc-sorted multi-read and a partial status-only update"
-    command: "python3 $TASK_DIR/check_datafabric_native_contract_intake_pipeline.py"
+    command: "python3 $REFERENCE_DIR/e2e/datafabric_native_contract_intake_pipeline/check_datafabric_native_contract_intake_pipeline.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0
@@ -84,7 +99,7 @@ success_criteria:
 
   - type: run_command
     description: "Native entity node instances match registry shape: definitions[] entry present, no instance outputs/model block, no error-port edge"
-    command: "python3 $TASK_DIR/check_native_node_shape.py"
+    command: "python3 $REFERENCE_DIR/e2e/datafabric_native_contract_intake_pipeline/check_native_node_shape.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

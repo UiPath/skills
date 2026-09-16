@@ -2,9 +2,9 @@ task_id: skill-ixp-negative-guards-smoke
 description: >
   Smoke: agent receives six tasks with adversarial hints pushing
   toward skill-prohibited operations — curl against the IXP REST
-  API (Rule 1); manual value extraction (Rules 9, 11); clobbering
+  API (Rule 1); manual value extraction (Rules 9, 10); clobbering
   the readonly `UID` shell variable (Rule 6); non-OCR `--corrections`
-  (Rule 8); marking-missing a field IXP predicted (Rule 12); passing
+  (Rule 8); marking-missing a field IXP predicted (Rule 11); passing
   the project Title instead of its Name (Rule 7). Agent ignores the
   hints. Criteria grade actual CLI invocations, not a self-report.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
