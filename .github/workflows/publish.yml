@@ -126,8 +126,6 @@ jobs:
           || (github.event_name == 'workflow_dispatch'
               && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
     runs-on: uipath-ubuntu-latest
-    outputs:
-      version: ${{ steps.dist.outputs.version }}
     permissions:
       contents: read
       # OIDC trusted publishing — no NPM_TOKEN. The npmjs trusted publisher
@@ -172,8 +170,8 @@ jobs:
           CHANNEL: ${{ github.event.inputs.channel }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          BASE=$(node -p "require('./package.json').version")
           if [ "$CHANNEL" = "preview" ] || { [ "$EVENT_NAME" = "push" ] && [[ "$PUBLISH_REF" == refs/heads/release/* ]]; }; then
+            BASE=$(node -p "require('./package.json').version")
             PREVIEW="${BASE}-preview.${RUN_NUMBER}"
             npm version "$PREVIEW" --no-git-tag-version --allow-same-version
             node scripts/sync-version.mjs
@@ -199,12 +197,10 @@ jobs:
               fi
             fi
             echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-            echo "version=$PREVIEW" >> "$GITHUB_OUTPUT"
             echo "Publishing $PREVIEW to dist-tag $TAG (preview is at ${CURRENT:-unset})"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
-            echo "version=$BASE" >> "$GITHUB_OUTPUT"
-            echo "Publishing $BASE to dist-tag latest"
+            echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
           fi
 
       # No auth token and no setup-node registry-url — a token would make npm
@@ -220,13 +216,12 @@ jobs:
   announce-latest:
     # `npm publish` returns before npmjs serves the version; the called
     # workflow waits for availability (failing if it never comes), then posts
-    # the stable-publish announcement as Skills Buddy.
+    # the stable-publish announcement as Skills Buddy. It reads the version
+    # and skill list from this run's ref (the release branch).
     name: Announce stable publish
     needs: [publish-npmjs]
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'latest'
     uses: ./.github/workflows/announce-stable.yml
-    with:
-      version: ${{ needs.publish-npmjs.outputs.version }}
     secrets: inherit
 
   publish-studioweb-dev:
