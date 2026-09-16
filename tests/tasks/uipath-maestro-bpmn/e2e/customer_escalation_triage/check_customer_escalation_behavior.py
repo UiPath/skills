@@ -8,7 +8,7 @@ escalation_jira_ticket, adapted to the BPMN CLI surface):
   2. LIVE: the exact submitted project (sha256-pinned through solution
      import) runs the seeded Sev1 case via `uip maestro bpmn debug` inside an
      ephemeral solution under the sandbox CWD — kept there so the repo's
-     standard `_shared/cleanup_solutions.py` post_run sweep can find the
+     standard `_setup/cleanup_solutions.py` post_run sweep can find the
      .uipx. Unlike `flow debug`, `bpmn debug` returns an instance id; runtime
      evidence comes from `debug-instance variables-all` (variables addressed
      by id, not name) and `debug-instance incidents`.
@@ -35,7 +35,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)  # local escalation_is (which also wires up _shared)
+sys.path.insert(0, os.path.join(HERE, "_setup"))  # local escalation_is (which also wires up _shared)
 import escalation_is  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402

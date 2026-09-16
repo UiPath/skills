@@ -4,7 +4,7 @@
 Replays the flat journal the grader appends to the moment each id is visible
 (`escalation_is.JOURNAL`) — the only cleanup that survives coder_eval
 SIGKILLing the graded command. Solutions are not swept here: the standard
-`_shared/cleanup_solutions.py` post_run step globs the ephemeral .uipx.
+`_setup/cleanup_solutions.py` post_run step globs the ephemeral .uipx.
 Idempotent and never fails the task.
 """
 

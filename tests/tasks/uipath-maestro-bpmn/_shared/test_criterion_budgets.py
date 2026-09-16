@@ -45,23 +45,36 @@ _TOP_LEVEL_KEY = re.compile(r"^[A-Za-z_][\w-]*:", re.M)
 _COMMAND = re.compile(r"command:\s*(.*)", re.S)
 _TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
+# $REFERENCE_DIR replaced $TASK_DIR for every checker script (2026-09); the
+# token resolves against the task's own `reference: {directory: ...}` block,
+# not the yaml's own directory.
+_REFERENCE_DIR_SCRIPT = re.compile(r"\$REFERENCE_DIR/(\S+\.py)")
+_REFERENCE_BLOCK = re.compile(r"^reference:\s*\n\s*directory:\s*(\S+)", re.M)
 # The same-ground campaign addresses checkers through the mounted repo instead of
 # the task dir (`python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/<rel>/check_x.py`);
 # both forms name one script under this suite, and both are priced.
 _SUITE_SCRIPT = re.compile(r"\$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/(\S+\.py)")
 
 
-def _script_path(root: str, command_text: str) -> str | None:
+def _script_path(root: str, command_text: str, yaml_text: str = "") -> str | None:
     """The checker script a run_command criterion executes, resolved on disk, or
-    None when the command is not one of the two forms this guard prices."""
+    None when the command is not one of the forms this guard prices."""
     m = _TASK_DIR_SCRIPT.search(command_text)
     if m:
         resolved = os.path.join(root, m.group(1))
     else:
-        m = _SUITE_SCRIPT.search(command_text)
-        if not m:
-            return None
-        resolved = os.path.join(_SUITE_ROOT, m.group(1))
+        m = _REFERENCE_DIR_SCRIPT.search(command_text)
+        if m:
+            ref_match = _REFERENCE_BLOCK.search(yaml_text)
+            if not ref_match:
+                return None
+            ref_root = os.path.normpath(os.path.join(root, ref_match.group(1)))
+            resolved = os.path.join(ref_root, m.group(1))
+        else:
+            m = _SUITE_SCRIPT.search(command_text)
+            if not m:
+                return None
+            resolved = os.path.join(_SUITE_ROOT, m.group(1))
     return resolved if os.path.exists(resolved) else None
 _TASK_TIMEOUT = re.compile(r"^\s*task_timeout:\s*(\d+)", re.M)
 # Only these timeouts run inside the watchdog.
@@ -492,6 +505,10 @@ def _seed_case_count(script: str) -> int | None:
     cross-check than a wrong one."""
     seed = os.path.join(os.path.dirname(script), "seed.py")
     if not os.path.exists(seed):
+        # pre_run scripts moved into a sibling _setup/ (2026-09) so they can be
+        # staged via sandbox.template_sources without $SKILLS_REPO_PATH.
+        seed = os.path.join(os.path.dirname(script), "_setup", "seed.py")
+    if not os.path.exists(seed):
         return None
     counts = set()
     for node in ast.walk(ast.parse(open(seed).read())):
@@ -580,7 +597,7 @@ def _criteria():
                 command = _COMMAND.search(block)
                 if not command:
                     continue
-                resolved = _script_path(root, command.group(1))
+                resolved = _script_path(root, command.group(1), text)
                 if not resolved:
                     continue
                 first_line = command.group(1).split("\n")[0].strip().strip("'\"")
@@ -669,7 +686,7 @@ def _eligible():
                 tasks += 1
             for block in _criterion_blocks(text, "run_command"):
                 command = _COMMAND.search(block)
-                if command and _script_path(root, command.group(1)):
+                if command and _script_path(root, command.group(1), text):
                     criteria += 1
     return criteria, tasks
 
