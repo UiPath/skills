@@ -28,7 +28,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 
 Create **two** binding entries in top-level `bindings[]` per **resource**, not per task — a name entry and a folderPath entry sharing one `resourceKey`, because one key is one resource. Tasks pointing at the same resource reuse that pair: the golden's two action tasks on one app carry the same `=bindings.<id>` in both their `data.name` fields, and minting a second pair for the second task is what `CASE_MGMT_BINDING_KEY_SHARED` reads as three resources claiming one binding. Dedup rule and lookup order are in [Deduplication](#deduplication) below. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
 
-**Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case.
+**Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case. Two `default` rules are not interchangeable: a **FolderKey / `folderKey` binding `default` is load-bearing** — it has no fallback, and without it the folder key is silently dropped from `bindings_v2.json` (`validate --strict` reports `STRICT_CONNECTION_FOLDER_KEY_NO_DEFAULT`). A **ConnectionId binding `default`** is written but also falls back: the sidecar takes `attributeDefault(group, "ConnectionId") ?? resourceKey`, and for a connection `resourceKey` is the connection id, so the sidecar is correct either way. Emit both anyway; never rely on the fallback.
 
 ### Full binding shape — non-connector tasks
 
@@ -61,7 +61,7 @@ For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `c
 
 ### Full binding shape — connector tasks (activity / trigger)
 
-> **`name` and `propertyAttribute` deliberately differ** for connector bindings — the CLI's `binding-builder.ts` (in `uipcli-case-validate/packages/case-tool/src/utils/`) is the source of truth. Authoring with mirror-cased values may render in Studio Web but diverges from canonical CLI output.
+> **`name` and `propertyAttribute` deliberately differ** for connector bindings — the CLI's `binding-builder.ts` (in `uipcli-case-validate/packages/case-tool/src/utils/`) is the source of truth. Match it so the file matches canonical CLI output. **`name` carries no runtime meaning on a connection binding** — `case-bindings-service.ts` groups and keys on `resourceKey` and reads values by `propertyAttribute`, never by `name`, and the connector key comes from the connector task's `context`. Write the canonical `name`; do not build a check on it, and do not treat a differently-named connection binding as a defect.
 
 ConnectionBinding `name` is **templated** with the connector key (`` `${connectorKey} connection` ``); FolderKey binding `name` is `"FolderKey"` (PascalCase) while its `propertyAttribute` is `"folderKey"` (camelCase). Both bindings share the same `resourceKey` (the connection UUID):
 
