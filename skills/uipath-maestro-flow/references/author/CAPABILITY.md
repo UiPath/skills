@@ -9,7 +9,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 ## When to use this capability
 
 <!--skill-flavor:project-creation-scope:start-->
-- Create a new Flow project with `uip maestro flow init`
+- Create a new Flow project with `uip maestro flow init`, or a Maestro Automate one with `uip maestro flow init --automate`
 <!--skill-flavor:project-creation-scope:end-->
 - Edit a `.flow` file — adding nodes, edges, or logic
 - Explore available node types via the registry
