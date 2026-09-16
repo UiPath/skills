@@ -37,3 +37,14 @@ success_criteria:
       fields: {equals: "a7c3e9105f2b4d86", aliases: ["f"]}
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT mark any field other than a7c3e9105f2b4d86 missing"
+    verb: "ixp labellings mark-missing"
+    tool: "uip"
+    flags:
+      fields: {matches_regex: "^(?!a7c3e9105f2b4d86$)", aliases: ["f"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
