@@ -1,6 +1,6 @@
 # Document classify and Dynamic Extract
 
-*Exact signatures, fields, and defaults: [`documentClassify()`](api.md#documentclassify-function) and [`dynamicExtract()`](api.md#dynamicextract-function).*
+*Exact signatures, fields, and defaults: `documentClassify()` and `dynamicExtract()`.*
 
 Two document steps that need no published IxP project: classification
 (`uipath.document.classify`) labels a document, and Dynamic Extract

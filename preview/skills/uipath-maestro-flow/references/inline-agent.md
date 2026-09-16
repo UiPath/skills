@@ -1,6 +1,6 @@
 # Inline Agent
 
-*Exact signatures, fields, and defaults: [`inlineAgent()`](api.md#inlineagent-function).*
+*Exact signatures, fields, and defaults: `inlineAgent()`.*
 
 An inline agent is defined inside this Flow project and may be connected to
 tenant context, callable tools, and human escalation resources.
