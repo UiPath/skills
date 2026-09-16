@@ -1,0 +1,262 @@
+task_id: skill-insights-smoke-period-comparison
+description: >
+  Smoke test: agent uses the uipath-insights skill to compare this week's
+  job health with last week's, which is Playbook 5 in the investigation
+  guide. Given a prompt asking whether things got better or worse, the
+  agent should run one relative-window summary for the last seven days and
+  one absolute-window summary for last calendar week, resolve both epoch
+  millisecond bounds in separate `date` commands and type them as literals,
+  treat `--started-before` as exclusive by passing this Monday 00:00 UTC,
+  and compare the two job counts and the average processing time. The CLI
+  is authenticated; both windows may be empty, and the comparison is still
+  writable.
+
+  Covers Playbook 5, the exclusive upper bound, the failure-rate derivation
+  from the total and successful counts, and the local rejection of a
+  half-specified absolute pair, none of which any other task grades.
+  `smoke_absolute_time_range.yaml` asserts the 13-digit literals; this
+  asserts what the two windows are for.
+
+  The prompt pins the chain route: it names both windows, asks for one
+  Insights read each, and asks for the bounds to be resolved in a separate
+  `date` command. `uip insights jobs investigate compare` is not a shipped
+  route: cli `origin/main` registers seven `jobs` subcommands and no
+  `investigate` group. Once it lands it answers the same question in one call
+  and resolves both bounds itself, which will make it the right tool when a
+  user simply asks whether things got worse. It is deliberately
+  not what this task grades, because the point here is the absolute-window
+  mechanics the playbook documents.
+
+  The prompt names `uip insights` and spells out the relative window. On
+  eval run 34880436493 a prompt that only said "are my automations doing
+  better or worse" did not trigger the skill, and the agent used absolute
+  bounds for both windows, so skill_triggered and the --time-range 10080
+  criterion both scored zero. Every other task in this directory names the
+  surface.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Using UiPath Insights job metrics (`uip insights`), are my automations
+  doing better or worse than last week? Compare the last seven days as one
+  relative window (the last 10080 minutes, ending now) against last
+  calendar week as an absolute window, Monday 00:00 UTC through Sunday
+  inclusive, and write the answer to `comparison.md` in the working
+  directory.
+
+  Save the full JSON output of the seven-day summary to `this-week.json`
+  and of the last-week summary to `last-week.json`, by redirecting stdout.
+  Resolve the two absolute bounds by running `date` in its own command
+  first, then type the numbers it gives you into the Insights command as
+  literals. Do not work the epochs out in your head.
+
+  In comparison.md, give both windows with their exact bounds and say which
+  bound is exclusive. Then put the numbers in a table with exactly these
+  four columns, one row per window, filling every cell:
+
+  | Window | Total jobs | Successful jobs | Failure rate |
+
+  If a window returned no jobs, write "no jobs" across its cells rather
+  than leaving them blank. After the table, give the change in average
+  processing time and a one-line verdict on direction. Do not attach a unit
+  the CLI did not give you. Run each Insights command once; do not retry.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Playbook 5's first call, verbatim: the relative seven-day window.
+  - type: command_executed
+    description: "Agent ran the relative seven-day summary"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary(?:(?!uip\s)[^&;|])*--time-range[\s=]+["'']?10080\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Playbook 5's second call: both absolute bounds as 13-digit epoch
+  # millisecond literals in one invocation. The literal requirement is
+  # Critical Rule 2; the digit count is the jobs guide's unit.
+  - type: command_executed
+    description: "Agent ran the last-week summary with both absolute bounds as epoch-ms literals"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary(?:(?!uip\s)[^&;|])*--started-after[\s=]+["'']?\d{13}\b(?:(?!uip\s)[^&;|])*--started-before[\s=]+["'']?\d{13}\b|uip\s+insights\s+jobs\s+summary(?:(?!uip\s)[^&;|])*--started-before[\s=]+["'']?\d{13}\b(?:(?!uip\s)[^&;|])*--started-after[\s=]+["'']?\d{13}\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # The jobs guide's Absolute Time Ranges recipe resolves the bound in its own
+  # command. Advisory, per .claude/rules/test-writing.md: this is a convention
+  # that is invisible in the outcome, and gating it docks an agent that reaches
+  # the correct bounds without typing `date`. It stays advisory for a second
+  # reason once `jobs investigate compare` ships: that route resolves both
+  # bounds inside the command, which is what the optimization rule asks of a
+  # relative window, so a `date` call would not be evidence of anything on it.
+  # Runs 34898270949 and 34901646509
+  # both computed 1788739200000 and 1789344000000 in-model, correctly, and this
+  # criterion was the only thing they failed. What still gates the outcome: the
+  # 13-digit literal pair above, the no-substitution guard below, and the window
+  # judge, which reads the stated bounds and so catches arithmetic that is wrong.
+  - type: command_executed
+    description: "Advisory: agent resolved a boundary with a separate date command"
+    tool_name: "Bash"
+    command_pattern: '(^|[\s;&|(])date\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0
+
+  # Critical Rule 2: no $(date ...), backtick, or $VAR inside a jobs flag
+  # value. Flag branch names only the flags summary takes, because the
+  # (?!uip\s) barrier crosses newline-batched neighbours.
+  - type: command_not_executed
+    description: "Agent did not substitute or interpolate a timestamp into a jobs command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+(?:(?!uip\s)[^&;|])*--(started-after|started-before|time-range)[\s=]+["'']?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-pattern 1: jobs commands take no paging flags.
+  - type: command_not_executed
+    description: "Agent did not add --limit or --offset to a jobs command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+(?:(?!uip\s)[^&;|])*(--limit|--offset)\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string. This gate re-runs the
+  # jobs guide's time-range rule at grading time: "both --started-after and
+  # --started-before" is a pair, and one half alone is the same local
+  # Failure as no window at all. Verified 2026-09-14 against @uipath/cli
+  # 1.203.0-dev.8671 with insights-tool 1.203.0-dev.8669: exit 1, "A time
+  # range is required." Tenant-agnostic: rejected before any request.
+  - type: run_command
+    description: "A lone --started-after is rejected locally with exit 1"
+    command: "uip insights jobs summary --started-after 1789344000000 --output json"
+    timeout: 60
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Both saved envelopes are the shipped summary contract. Data-agnostic:
+  # the assertions hold on an empty window, since the fields are present
+  # either way. Code is the per-subcommand string the jobs guide documents.
+  - type: json_check
+    description: "this-week.json is a Success envelope with the summary Code"
+    path: "this-week.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+      - expression: "Code"
+        operator: equals
+        expected: "InsightsJobsSummary"
+      - expression: "Data"
+        operator: exists
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "last-week.json is a Success envelope with the summary Code"
+    path: "last-week.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+      - expression: "Code"
+        operator: equals
+        expected: "InsightsJobsSummary"
+      - expression: "Data"
+        operator: exists
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the comparison"
+    path: "comparison.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Playbook 5 and the jobs guide's Absolute Time Ranges: the upper bound
+  # is exclusive, so last week ends at this Monday 00:00 UTC.
+  - type: llm_judge
+    description: "Report states both windows and treats --started-before as exclusive"
+    include_agent_output: false
+    include_reference: false
+    files: ["comparison.md"]
+    prompt: |
+      The uipath-insights skill's Playbook 5 compares the last seven days
+      (a relative window) against last calendar week (absolute bounds), and
+      says to treat the absolute upper bound as exclusive: to cover all of
+      last week, the end bound is this Monday 00:00:00 UTC, not Sunday
+      23:59:59. Read comparison.md.
+
+      Score 1.0 if the report describes both windows and says that the
+      absolute window's --started-before value is this Monday 00:00 UTC and
+      is exclusive (or equivalently that the window runs up to but not
+      including this Monday 00:00 UTC). The prompt itself describes last
+      week as "Monday 00:00 UTC through Sunday inclusive", so a report that
+      says both "through Sunday inclusive" and "the upper bound passed is
+      Monday 00:00 UTC, exclusive" is correct; those are the same window.
+      The relative window is described adequately as the last 10080 minutes
+      or seven days ending at the query time; the CLI does not surface its
+      exact bounds. Score 0.0 only if the report passes or describes Sunday
+      23:59:59 as the --started-before value, describes only one window, or
+      never says the upper bound is exclusive.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Playbook 1's derivation: failure rate is
+  # (total jobs - successful jobs) / total jobs.
+  #
+  # The unit half names no field on purpose. The value is milliseconds either
+  # way, because the Snowflake column the handler reads is
+  # `AVERAGE_PROCESSING_TIME_IN_MS` (SnowQuery.cs JobsAverageProcessingTime),
+  # but the field name only says so once cli#4261 lands. A judge that asserts
+  # one spelling grades the wrong CLI on one side of that merge: asserting
+  # `AverageProcessingTimeMs` failed this task on 2026-09-15 against the
+  # published CLI, which still emits `AverageProcessingTime`. So the judge
+  # accepts an unlabelled number or milliseconds and rejects any other unit,
+  # which is correct before and after the rename.
+  - type: llm_judge
+    description: "Report derives failure rate from the two counts and reports the average in milliseconds"
+    include_agent_output: false
+    include_reference: false
+    files: ["comparison.md"]
+    prompt: |
+      The uipath-insights skill derives failure rate as
+      (total jobs - successful jobs) / total jobs. The average processing time
+      the CLI returns is a number of milliseconds, whether or not the field
+      name it arrives under says so. Read comparison.md only.
+
+      Score 1.0 if, for each window that had jobs, the report gives total
+      jobs, successful jobs, and a failure rate consistent with those two
+      numbers (an empty window may be reported as no jobs, with no rate),
+      and every mention of average processing time is either unlabelled or
+      labelled as milliseconds. Score 0.0 if the average is labelled with a
+      unit other than milliseconds, if the failure rate contradicts the
+      counts, or if the counts are missing for a window that returned
+      data.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 9, the same guard the other eight uipath-insights tasks
+  # carry at the same weight: the session is already authenticated, so an
+  # interactive re-login is never the agent's move. `refresh`, `status`,
+  # `tenant` and `which` are the non-interactive subcommands.
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

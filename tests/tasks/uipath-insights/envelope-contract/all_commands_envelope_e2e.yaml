@@ -13,7 +13,7 @@ description: >
   cannot write to) and the checker issues one live read of its own, so an
   unentitled tenant fails with the CLI's own message rather than looking
   like bad artifacts. Data-agnostic: empty Data passes structurally.
-tags: [uipath-insights, e2e, mode:operate, lifecycle:discover]
+tags: [uipath-insights, e2e, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 24

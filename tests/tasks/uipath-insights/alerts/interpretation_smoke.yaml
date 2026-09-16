@@ -1,0 +1,279 @@
+task_id: skill-insights-smoke-alert-interpretation
+description: >
+  Smoke test: agent uses the uipath-insights skill to interpret alert
+  envelopes the way the alert guide's rules say to, on fixture data the
+  prompt supplies, plus one live aggregate read. Given four envelopes
+  (definitions, history, metrics, delivery) and six questions, the agent
+  should tell a curated alert from a query alert by `Engine`, convert
+  `TriggeredAt` as epoch seconds and leave `LastTriggeredAt` and
+  `SnoozedUntil` in their own formats, pair `Counts` with `Groups` and
+  `IntervalEndTimes` by index, read a 1,000-row history as truncated and
+  send the count question to `get-metrics`, report a delivery as type and
+  count only, and keep the trigger and the delivery apart. The CLI is
+  authenticated and the tenant may hold no alerts; the fixture is what
+  makes every interpretation rule gradeable on an empty tenant.
+
+  Covers the eight alert contract and interpretation rows the coverage
+  report lists as untested (Engine, time formats, index pairing,
+  truncation, folder scope forms, Not-Free preflight avoidance, recipient
+  count only, trigger versus delivery) without needing a seeded alert. The
+  fixture carries no recipient data and no real identifiers.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  A colleague pasted these four `uip insights` outputs from another tenant
+  and asked me six questions. Answer them in `alert-notes.md` in the
+  working directory, using the skill's own rules for reading these fields.
+  Do not run the alert definition routes (`alerts list`, `alerts get`,
+  `alerts check-entitlement`) on my tenant; the answers are in the paste.
+
+  Output A, `alerts list`:
+  ```json
+  {"Result":"Success","Code":"InsightsAlertsList","Data":[
+    {"Id":41,"Name":"Queue backlog","IsActive":true,"Severity":"ERROR","Engine":"curated",
+     "Metric":"QueueItemsPending","MetricState":"Pending","Operator":"GreaterThan","Threshold":100,
+     "WindowSeconds":900,"DeliveryId":7,"AutoSnoozeSeconds":0,"SnoozedUntil":null,
+     "LastTriggeredAt":"2026-09-10T08:15:00Z","Scopes":[{"Field":"FolderName","Values":["Shared"]}]},
+    {"Id":42,"Name":"Nightly reconciliation drift","IsActive":true,"Severity":"WARN","Engine":"query",
+     "Metric":null,"MetricState":null,"Operator":null,"Threshold":null,"WindowSeconds":null,
+     "DeliveryId":8,"AutoSnoozeSeconds":3600,"SnoozedUntil":"2026-09-20T00:00:00Z",
+     "LastTriggeredAt":null,"Scopes":[],"ConditionVisible":true,"Condition":"failed_jobs > 3 within 1h"}],
+   "Pagination":{"Returned":2,"Limit":50,"Offset":0,"Total":2,"HasMore":false},
+   "Instructions":"Only active alert definitions are returned."}
+  ```
+
+  Output B, `alert-history list --time-range 43200`:
+  ```json
+  {"Result":"Success","Code":"InsightsAlertHistoryList","Data":[
+    {"AlertId":41,"AlertName":"Queue backlog","TriggeredAt":1789200900,"Severity":"ERROR",
+     "Metric":"QueueItemsPending","MetricState":"Pending","Operator":"GreaterThan","Threshold":100,"DeliveryId":7}],
+   "Pagination":{"Returned":1000,"Limit":1000,"Offset":0,"Total":1000,"HasMore":false},
+   "Instructions":"TriggeredAt is epoch seconds. The result set is capped at 1000 rows, newest first; narrow the window to see older triggers."}
+  ```
+  (only the first of the 1,000 rows is shown)
+
+  Output C, `alert-history get-metrics --time-range 43200 --time-grouping Day`:
+  ```json
+  {"Result":"Success","Code":"InsightsAlertHistoryMetrics","Data":
+   {"Groups":["JobFailure","QueueItemFailure"],"IntervalEndTimes":[1789084800,1789171200,1789257600],
+    "Counts":[[3,0,2],[1,2,0]]}}
+  ```
+
+  Output D, `alert-deliveries get 7`:
+  ```json
+  {"Result":"Success","Code":"InsightsAlertDeliveryGet","Data":{"Id":7,"Type":"Email","RecipientCount":4,"TenantMatches":true}}
+  ```
+
+  The six questions:
+  1. Which alert is a curated alert and which is a stored-query alert, and
+     is the null `Metric` on one of them a data problem?
+  2. When did "Queue backlog" last fire, in UTC, according to the history
+     row? Convert the epoch value with the `date` recipe the alert guide
+     gives, in its own command, rather than in your head. Write that
+     converted value and the definition's own `LastTriggeredAt` next to
+     each other in the notes, then say plainly whether the two are the same
+     instant or different ones, and if they differ give the gap. Say which
+     fields you converted and which you left as they were. Then, for alert
+     42, quote its `SnoozedUntil` value exactly as the paste gives it and
+     say what the guide says about deciding whether that alert is snoozed
+     right now.
+  3. From Output C, how many times did `JobFailure` fire in total and in
+     the second interval, and what unit did you assume for the interval end
+     times?
+  4. Output B says 1,000 rows with no more pages. How many triggers were
+     there in the 30-day window, and if I only need the count, which
+     command should I run instead?
+  5. Who was notified when "Queue backlog" fired? Does the history row
+     prove a notification went out?
+  6. If I run `alerts get 41` on that tenant, how will its folder scope
+     differ from what Output A shows?
+
+  Then one live read on my own tenant: get the alert trigger counts for the
+  last 30 days bucketed by day and save the full JSON output to
+  `metrics.json` by redirecting stdout. Run it once; an empty or failed
+  result is fine, just report what it said.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The alert guide's Converting Epoch Seconds recipe: `date -u -r <secs>`
+  # on macOS, `date -u -d @<secs>` on Linux (the eval image). Advisory, on the
+  # same reasoning period_comparison_smoke.yaml records: .claude/rules/
+  # test-writing.md says a convention invisible in the outcome belongs in an
+  # advisory check, and the tool used to convert is invisible while a wrong
+  # conversion is not. What gates the outcome is the Rules 4/5 judge, which
+  # reads the stated timestamp; on run 34880436493 the agent converted
+  # 1789200900 by hand, landed a day early, and that judge scored it zero.
+  - type: command_executed
+    description: "Advisory: agent converted the epoch value with a date command"
+    tool_name: "Bash"
+    command_pattern: '(^|[\s;&|(])date\s+(?:-u\s+)?(?:-r|-d|--date)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0
+
+  # The one live read. --time-grouping is mandatory on get-metrics
+  # (.makeOptionMandatory(), choices FifteenMinutes|Hour|Day), so requiring
+  # the flag means a call that cannot succeed scores zero. Flag scan is
+  # bounded to the invocation with (?:(?!uip\s)[^&;|])*, as in the rest of
+  # this directory.
+  - type: command_executed
+    description: "Agent ran the live get-metrics aggregate bucketed by day"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--time-grouping[\s=]+["'']?Day\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Not-Free Reads: the three definition routes run an entitlement and
+  # permission preflight, so the guide says to prefer history and delivery
+  # routes when either answers the question. Here nothing needs them, and
+  # the prompt says so.
+  # Anchored to a command position: question 6 asks what `alerts get` would
+  # return, so a compliant answer names the command, and an unanchored guard
+  # fails an agent that writes alert-notes.md with a Bash heredoc.
+  - type: command_not_executed
+    description: "Agent did not run a Not-Free definition route it did not need"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[\n;&|]\s*)uip\s+insights\s+alerts\s+(list|get|check-entitlement)\b(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 12 and 14: no alert write, and no second command or skill
+  # to put names to a recipient count.
+  - type: command_not_executed
+    description: "Agent did not attempt an alert write or a recipient lookup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history|alert-deliveries)\s+(create|update|delete|set|edit|patch|put|enable|disable|snooze|acknowledge|mute|recipients)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The saved envelope is whatever the tenant answered. Both shapes carry
+  # Result, so the assertion is on the envelope contract rather than on
+  # tenant data: a Success carries the metrics Code, a Failure carries the
+  # Retry verdict, and this checks the one field common to both.
+  - type: json_check
+    description: "metrics.json is a uip envelope"
+    path: "metrics.json"
+    assertions:
+      - expression: "Result"
+        operator: regex
+        expected: "^(Success|Failure|ValidationError|AuthenticationError)$"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the notes"
+    path: "alert-notes.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Alert guide Rules 4 and 5.
+  - type: llm_judge
+    description: "Rules 4 and 5: Engine decides the typed fields, and each time field keeps its own format"
+    include_agent_output: false
+    include_reference: false
+    files: ["alert-notes.md"]
+    prompt: |
+      The uipath-insights alert guide says: a `curated` alert carries the
+      typed fields (Metric, MetricState, Operator, Threshold, WindowSeconds)
+      and a `query` alert is a stored query, so those five are null on it
+      and that null is correct data, not a gap. `TriggeredAt` on a history
+      row is epoch seconds; `LastTriggeredAt` on a definition is an ISO
+      string; `SnoozedUntil` has an unconfirmed format and must be echoed,
+      not converted or compared against now. In the fixture, alert 41
+      "Queue backlog" is curated and alert 42 "Nightly reconciliation
+      drift" is query; the history row's TriggeredAt 1789200900 is
+      2026-09-12 08:15:00 UTC, which is later than the definition's
+      LastTriggeredAt of 2026-09-10T08:15:00Z; alert 42 has SnoozedUntil
+      "2026-09-20T00:00:00Z". Read alert-notes.md.
+
+      Score 1.0 if the notes (a) name 41 as curated and 42 as query and say
+      the null Metric on 42 is expected for a query alert; (b) convert
+      TriggeredAt from epoch seconds to 2026-09-12 08:15 UTC and note
+      that it does not match the definition's LastTriggeredAt (which is a
+      different format), without converting one into the other's format
+      silently; and (c) report alert 42's SnoozedUntil value as given, and
+      do not assert it is or is not currently snoozed by comparing it to
+      the current time (saying the value is echoed and its format is not
+      confirmed is ideal; "snoozed until 2026-09-20" as an echo of the
+      field is acceptable; "currently snoozed because that date is in the
+      future" is the comparison the guide forbids).
+      Score 0.5 if two of the three hold. Score 0.0 otherwise, or if the
+      notes call the null Metric a data problem, or treat TriggeredAt as
+      milliseconds.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Alert guide get-metrics pairing and Rule 12.
+  - type: llm_judge
+    description: "get-metrics arrays are paired by index and a 1,000-row history is read as truncated"
+    include_agent_output: false
+    include_reference: false
+    files: ["alert-notes.md"]
+    prompt: |
+      The uipath-insights alert guide says `Counts[i]` is the row for
+      `Groups[i]` and `Counts[i][j]` pairs with `IntervalEndTimes[j]`, that
+      the CLI does not state the unit of IntervalEndTimes so the agent must
+      say which unit it assumed, and that a history result whose
+      Pagination.Total is 1,000 is truncated even when HasMore is false, so
+      a "how many" question is answered by `alert-history get-metrics` for
+      the same window rather than by counting rows. In the fixture,
+      JobFailure is Counts[0] = [3, 0, 2]: 5 in total, 0 in the second
+      interval. Read alert-notes.md.
+
+      Score 1.0 if the notes give JobFailure as 5 total and 0 in the second
+      interval, state an assumed unit for the interval end times (epoch
+      seconds is the expected guess) as an assumption, say the 1,000-row
+      history is capped so the true trigger count in the window is unknown
+      or at least 1,000, and name get-metrics as the command for the count.
+      Score 0.5 if the arithmetic is right but either the truncation or the
+      get-metrics recommendation is missing. Score 0.0 if the arithmetic is
+      wrong, or the notes report exactly 1,000 triggers as the count.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Critical Rules 13 and 14, and alert guide Rule 10.
+  - type: llm_judge
+    description: "Rules 13, 14 and 10: delivery as type and count, trigger and delivery kept apart, folder scope forms per route"
+    include_agent_output: false
+    include_reference: false
+    files: ["alert-notes.md"]
+    prompt: |
+      The uipath-insights skill says a delivery is reported as its type and
+      recipient count only, and that a "who was notified" question ends at
+      the count; that a history row proves the alert fired and does not
+      prove a notification was sent or received; and that `alerts list`
+      shows the first folder scope as a name while `alerts get` and the
+      agentic route return folder keys. In the fixture, delivery 7 is Email
+      with 4 recipients, and alert 41's scope shows the folder name
+      "Shared". Read alert-notes.md.
+
+      Score 1.0 if the notes (a) answer question 5 with "email, 4
+      recipients" or equivalent and do not attempt to name anyone or
+      suggest a way to find out who; (b) say the history row proves the
+      alert fired but not that anyone was notified; and (c) answer question
+      6 by saying `alerts get` returns the folder scope as a key (a GUID)
+      where the list shows the name "Shared". Score 0.5 if two of the three
+      hold. Score 0.0 otherwise, or if the notes claim the notification was
+      delivered because the history row exists.
+    weight: 2.5
+    pass_threshold: 1.0
