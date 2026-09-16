@@ -52,6 +52,11 @@
             "type": "command",
             "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"",
+            "timeout": 5
           }
         ]
       }
@@ -63,6 +68,18 @@
             "type": "command",
             "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"",
+            "timeout": 130
           }
         ]
       }
