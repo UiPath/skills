@@ -318,14 +318,63 @@ Action dropdown** in Studio Web. Do not use it for a folder-deployed agent — t
 canvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for
 folder-deployed resources.
 
-## API workflow — wait vs fire-and-forget
+## API workflow invocation — `ExecuteApiWorkflowAsync` waits, despite the name
 
-Pick the wrapper by whether downstream needs the invocation result:
-`Orchestrator.ExecuteApiWorkflow` **waits** for completion (result available to
-later nodes); `Orchestrator.ExecuteApiWorkflowAsync` **returns immediately**
-(fire-and-forget). Both are `bpmn:serviceTask` activities. Resolve `ReleaseKey`
-(process GUID), `FolderKey`/`FolderPath`, and the request/response schemas before
-the node is runnable — make the wait-versus-async choice explicit in the model.
+There is one registry type for invoking a published API workflow from a
+`bpmn:serviceTask`: `Orchestrator.ExecuteApiWorkflowAsync`. Its display label —
+`Start and wait for API workflow` — is the accurate behavior: it **waits** for
+completion and the result is available to later nodes. There is no separate
+fire-and-forget API-workflow wrapper; do not model one. Resolve the invoked
+workflow's release key and folder key, plus its request/response schemas,
+before the node is runnable — the served template is broken as-is; see the
+next section for the fix.
+
+## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
+
+`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`,
+`Orchestrator.BusinessRules`, and `Orchestrator.StartAgenticProcess[Async]` /
+`StartCaseMgmtProcess[Async]` all serve the same **v1** `xmlTemplate`:
+`<uipath:activity version="v1">` with a hidden, unbound `releaseKey` /
+`folderId` / `folderPath` / `name` context (`binding: false` on every field
+except `releaseKey`, which carries `bindingInfo` — `resource: "process"`,
+`propertyAttribute: "Key"` — in `validator/bpmn-spec.json`). Pasted with the
+template's blank placeholders it passes `validate` and packs clean, then
+faults at runtime because nothing ever resolves `releaseKey`:
+
+- `StartJob` → `170005 Required field 'releaseKey' missing`
+- `ExecuteApiWorkflowAsync` → `170009 Could not get value for key:ReleaseKey from context in input`
+
+**The fix is not to drop `releaseKey` — it is to resolve it, and to correct
+the template's second bug.** Verified end-to-end for
+`Orchestrator.ExecuteApiWorkflowAsync` against a live deployed API workflow:
+
+1. **Bind `releaseKey`** via the resource-binding mechanism this field's
+   `bindingInfo` already documents (see [§4
+   Bindings](#4-bindings--from-bindinginfo-never-invented) above): a
+   process-kind `<uipath:binding resource="process" propertyAttribute="Key"
+   default="<resolved-key>" />`, referenced from the context as
+   `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list
+   --folder-path <path> --all-fields --output json` → the deployed resource's
+   `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
+2. **The template's `folderId` context field is misnamed — the runtime reads
+   `folderKey`, not `folderId` or `folderPath`.** Populating `releaseKey`
+   alone still faults with `Could not get value for key:FolderKey from
+   context in input`. Add a context field literally named `folderKey` holding
+   the target folder's `FolderKey` GUID (the same `or processes list
+   --all-fields` response carries it as `FolderKey`) — a plain literal value,
+   not a binding (this field has no `bindingInfo` in the served template).
+3. With both fields correct — `releaseKey` bound to the resource's real `Key`,
+   `folderKey` literal to the folder's real `FolderKey` — the node runs to
+   completion. The template's own `folderId`/`folderPath`/`name` context
+   fields are not needed for `Orchestrator.ExecuteApiWorkflowAsync` and can be
+   dropped.
+
+This is a property of the wrapper **family**, not confirmed per-type: every
+type in the list above shares the identical broken template (same misnamed
+field, same blank `releaseKey` placeholder), so the same `releaseKey` +
+`folderKey` substitution is the first thing to try — but re-verify each type
+with a live run rather than assuming the fix transfers unchanged; only
+`Orchestrator.ExecuteApiWorkflowAsync` has been confirmed this way so far.
 
 When the caller asks for API workflow invocation/status/result fields, map those
 fields as `uipath:output` rows on the API workflow `bpmn:serviceTask` itself
