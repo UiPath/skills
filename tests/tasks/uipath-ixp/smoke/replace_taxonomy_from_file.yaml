@@ -1,0 +1,92 @@
+task_id: skill-ixp-replace-taxonomy-from-file-smoke
+description: >
+  Smoke: the user hands over a taxonomy file and asks for an EXISTING
+  project's taxonomy to match it. "Provides a taxonomy file" is the exact
+  trigger that routes to `projects import-taxonomy` — but the import MERGES,
+  and the file carries the live `field_id`s, so importing it mints a second
+  field named `Invoice Total` and leaves `Total Amount` in place. It reports
+  `{"status":"ok"}` while producing two fields where one rename was asked
+  for.
+
+  Critical Rule 22 requires the two differences to be applied as targeted
+  commands instead: `fields rename` for Total Amount -> Invoice Total, and
+  `fields add` for the new Purchase Order Number. The fixture diff removes
+  nothing, so the correct path is non-destructive and unambiguous.
+
+  No hint in the prompt — the request shape alone is the trap.
+
+  The overlaid uip mock serves the current taxonomy so the diff is
+  computable. Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 7
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_taxonomy}
+    - {type: template_dir, path: ../_shared/replace_taxonomy_fixture}
+
+initial_prompt: |
+  Here is the taxonomy we want on project my_invoices-f1afa9ef-ixp:
+  ./new-taxonomy.json. Make the project's taxonomy match that file.
+
+  Important:
+  - The `uip` CLI in this environment is not connected to a live tenant;
+    some commands fail. Run each command once and move on. Do NOT retry or
+    attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The discriminator. Importing this file duplicates the renamed field and
+  # removes nothing, while reporting success.
+  - type: file_matches_regex
+    description: "Agent did NOT apply the file with `projects import-taxonomy`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy\b)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The file is a diff, not a spec — the current taxonomy has to be read
+  # before it can be applied as a set of targeted edits.
+  - type: file_matches_regex
+    description: "Agent read the current taxonomy to diff the file against it"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\b(?=.*my_invoices-f1afa9ef-ixp).*)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Difference 1: same field_id, new name — a rename. `fields rename`
+  # preserves the field_id and its confirmed annotations.
+  - type: file_matches_regex
+    description: "Agent applied the rename via `fields rename` (Total Amount -> Invoice Total)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--field\s+["']?Total Amount)(?=.*--new-name\s+["']?Invoice Total).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Difference 2: a field_id absent from the live taxonomy — an addition.
+  - type: file_matches_regex
+    description: "Agent added the new field via `fields add` (Purchase Order Number in Line Items)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Line Items)(?=.*--field\s+["']?Purchase Order Number).*)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # "Make it match the file" is not a licence to recreate the project or the
+  # group — either one destroys documents, labels, or annotations.
+  - type: file_matches_regex
+    description: "Agent did NOT recreate the project or the group to force a match"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+(?:projects\s+delete|groups\s+delete)\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
