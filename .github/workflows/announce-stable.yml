@@ -1,0 +1,81 @@
+name: Announce stable publish
+
+# Posts "Published to npm (stable)" to #team-coding-agents as Skills Buddy once
+# npmjs actually serves the version. `npm publish` succeeds as soon as the
+# registry ACCEPTS the tarball ("Your package is being processed…"); the
+# version appears minutes later, or never if held for review. A green publish
+# job therefore proves acceptance only — this workflow waits for availability,
+# then announces the real outcome (mirrors UiPath/cli's stable-publish post).
+#
+#   - workflow_call      : publish.yml calls it after every `channel=latest` publish
+#   - workflow_dispatch  : (re)announce a version by hand, e.g. one published
+#                          before this workflow existed:
+#                            gh workflow run announce-stable.yml --ref main -f version=<M.N.P>
+#                          The skill list comes from release/v<M.N> of that version.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Committed version just published to npm `latest`"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Stable version to announce (M.N.P); its release/v<M.N> branch supplies the skill list"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  announce:
+    name: Announce stable publish on Slack
+    runs-on: uipath-ubuntu-latest
+    steps:
+      # Called from publish.yml the caller's ref is already the release branch;
+      # dispatched by hand the branch is derived from the version line.
+      - name: Resolve release branch
+        id: line
+        env:
+          VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version must be M.N.P, got '$VERSION'"; exit 1
+          fi
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then REF="release/v${VERSION%.*}"; else REF="$REF_NAME"; fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          ref: ${{ steps.line.outputs.ref }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      # Fails the job if the version never becomes installable — that is the
+      # only signal that a "successful" publish was actually held by npmjs.
+      - name: Wait for npmjs to serve the version
+        id: served
+        env:
+          VERSION: ${{ inputs.version }}
+        run: node .github/workflows/scripts/wait-npmjs-version.mjs
+
+      # Always report the real outcome (served or not), but never let a Slack
+      # hiccup mask the wait result above. SLACK_BOT_TOKEN belongs to Skills
+      # Buddy, which is a member of the channel.
+      - name: Announce on Slack (#team-coding-agents)
+        if: always() && steps.served.outcome != 'skipped'
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          CHANNEL_ID: 'C0A2T23NJ59'   # #team-coding-agents
+          VERSION: ${{ inputs.version }}
+          PUBLISH_REF: ${{ steps.line.outputs.ref }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SERVED: ${{ steps.served.outcome == 'success' }}
+        run: node .github/workflows/scripts/slack-stable-publish-notify.mjs
