@@ -18,9 +18,10 @@ sandbox:
       path: ../../../../skills/uipath-maestro-bpmn
 
 # The check imports _shared/bpmn_check.py, so the reference mirror must span
-# the whole uipath-maestro-bpmn task tree, not just e2e/.
+# the whole uipath-maestro-bpmn task tree, not just e2e/. This yaml sits
+# directly in e2e/ (no per-task subdir), so one `..` reaches the tree root.
 reference:
-  directory: ../..
+  directory: ..
 
 initial_prompt: |
   Create a new local Maestro BPMN Process Orchestration project named
