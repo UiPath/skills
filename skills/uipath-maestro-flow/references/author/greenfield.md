@@ -347,7 +347,15 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
 
-> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. The connector-keyword warning (`node "…" mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding`) means the flow took the brand-name shortcut and will run against an undefined endpoint at debug time — resolve it by switching to the connector before reporting the flow complete (see [SKILL.md rule #3](../../SKILL.md#critical-rules-universal) and the anti-pattern list). Treat this class of warning as a build failure for your own definition of "done."
+> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. Three classes are build failures, not advisories. Each one describes a run that faults or silently does the wrong thing:
+>
+> | Warning | What it means at debug time | Resolve by |
+> | --- | --- | --- |
+> | `mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding` | The flow took the brand-name shortcut and runs against an undefined endpoint | Switch to the connector node (see [SKILL.md rule #3](../../SKILL.md#critical-rules-universal) and the anti-pattern list) |
+> | `declares no inputs in its agent.json \`inputSchema\`, but the flow node binds N inputs … these bindings are silently dropped` | The inline agent runs with **empty input** and returns boilerplate; every downstream read of its output is `undefined` | Add the keys to `inputSchema.properties`, then `uip agent refresh --inline-in-flow` — the warning names them ([inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts)) |
+> | `Expression at this field is not valid JavaScript` / `[EXPRESSION_DIAGNOSTIC] Cannot find name '…'` | The expression throws or evaluates to garbage; validate cannot catch it any other way | Fix the syntax before debug |
+>
+> Treat all three as a build failure for your own definition of "done."
 
 ### Common error categories
 
