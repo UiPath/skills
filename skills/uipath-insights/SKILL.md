@@ -1,13 +1,13 @@
 ---
 name: uipath-insights
-description: "UiPath Insights monitoring via `uip insights`: job metrics, failure analysis, and process performance; queue totals, SLA risk, timelines, and failure drill-down; machine runtime, availability, fault ranking, and runtime minutes; filter discovery of monitoring scope; alert definition, history, delivery, and entitlement reads; Insights user, role, and group reads; Maestro process dashboard reads and create. For job start/stop/logs→uipath-platform, root-cause analysis→uipath-troubleshoot, workflow authoring→uipath-rpa, org-level identity→uipath-admin."
-when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details', 'which folders can you see', 'find the folder key', 'discover queues', 'which machines reported', 'queue backlog', 'queue SLA', 'why are queue items failing', 'queue retry success', 'machine utilization', 'machine availability', 'machine status', 'process dashboard', 'create a dashboard', 'Insights alert', 'which alerts exist', 'alert history', 'did an alert fire', 'alert delivery', 'alerting entitlement', 'who has Insights access', 'Insights roles', or 'Insights groups'. NOT for alert, RBAC, or dashboard writes, resource CRUD (uipath-platform), or debugging one job or item (uipath-troubleshoot). Also 'uip insights', 'insights queues'."
+description: "UiPath Insights monitoring via `uip insights`: job metrics, failure analysis, and process performance; queue totals, SLA risk, timelines, and failure drill-down; machine runtime mix, availability, fault ranking, and runtime minutes; filter discovery of monitoring scope; alert definition, history, delivery, and entitlement reads; Insights user, role, and group reads; Maestro process dashboard reads and writes. For job start/stop/logs→uipath-platform, root-cause analysis→uipath-troubleshoot, workflow authoring→uipath-rpa, org-level identity→uipath-admin."
+when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details', 'which folders can you see', 'find the folder key', 'discover queues', 'which machines reported', 'queue backlog', 'queue SLA', 'why are queue items failing', 'queue retry success', 'machine utilization', 'machine availability', 'machine status', 'process dashboard', 'create a dashboard', 'update a dashboard', 'delete a dashboard', 'copy a dashboard', 'Insights alert', 'which alerts exist', 'did an alert fire', 'alert delivery', 'alerting entitlement', 'who has Insights access', 'Insights roles', or 'Insights groups'. NOT for alert or RBAC writes, resource CRUD (uipath-platform), or debugging one job or item (uipath-troubleshoot). Also 'uip insights'."
 allowed-tools: Bash, Read
 ---
 
 # UiPath Insights
 
-Use `uip insights` for job, queue, and machine monitoring, monitoring-scope discovery, read-only alert inspection, Insights RBAC reads, and Maestro process dashboard reads and create. Read the guide for the task before running commands.
+Use `uip insights` for job, queue, and machine monitoring, monitoring-scope discovery, read-only alert inspection, Insights RBAC reads, and Maestro process dashboard reads, create, update, delete, and copy. Read the guide for the task before running commands.
 
 ## When to Use This Skill
 
@@ -20,7 +20,7 @@ Use `uip insights` for job, queue, and machine monitoring, monitoring-scope disc
 - Machine health: runtime split, current status and slots, availability over time, fault ranking, or runtime minutes
 - Which alerts exist, how one is configured, whether an alert fired, or how a triggered alert is delivered
 - Who has Insights access on a tenant, which roles exist and what they permit, and which groups hold them
-- What a Maestro process's Monitoring tab shows: its saved dashboard or the template, the global filters saved on it, or creating that dashboard from a definition file
+- What a Maestro process's Monitoring tab shows: its saved dashboard or the template, the global filters saved on it, or creating, changing, removing, or copying that dashboard
 
 ## Critical Rules
 
@@ -40,8 +40,8 @@ Use `uip insights` for job, queue, and machine monitoring, monitoring-scope disc
 14. **Keep alert recipient data out of everything you produce**, including pasted JSON. Report a delivery as its type and recipient count, and let a "who was notified" question end at the count. Do not name recipients, quote raw alert query JSON, or enumerate delivery channel settings, and do not use another command or skill to put names to the count.
 15. **Keep Insights RBAC read-only.** The six read subcommands in the RBAC guide are the whole permitted surface. Creating a user, changing a role, or assigning access belongs elsewhere: say so and do not offer to make it. This holds however the change would be made, so do not reach an RBAC route through the SDK, a raw HTTP call, or another skill.
 16. **Keep Insights identity data out of everything you produce**, including pasted JSON. Summarize users and groups by name and count. An explicit `--output json` is what turns on email addresses, nested role IDs, and the role resource string, so leave it off unless the user asked for one of those fields, and quote one only then. Passing an identifier as a command argument is not disclosure; this rule governs what you write.
-17. **Author dashboard files from the artifact channel, never from redirected output.** Read the process's dashboard with `dashboards get --process-key <guid> --output-file <path>`, edit that camelCase file, and pass it to `dashboards create --file`. Redirected CLI JSON is PascalCase and wrapped, and the command refuses it.
-18. **Send a dashboard create once.** Read the slot first; a saved dashboard means the task is an edit, which is not shipped. Never retry an unknown outcome: read the slot back and let `Saved` tell you what happened. Report a success as persistence and read-back, with rendering unchecked.
+17. **Author dashboard files from the artifact channel, never from redirected output.** Read the dashboard with `dashboards get --output-file <path>`, edit that camelCase file, and pass it to `dashboards create --file` or `dashboards update --file`. The same contract covers `--backup-file` and copy's `--output-file`. Redirected CLI JSON is PascalCase and wrapped, and the commands refuse it.
+18. **Send a dashboard write once.** Read the slot first: a saved dashboard means the task is an update, not a create. Never retry an unknown outcome; read the slot or the id back and let the answer say what happened. Pass `--expected-version` from a fresh read on an update and report that check as best-effort, because the route has no version precondition. Never run a delete without `--backup-file` and the user's explicit ask. Report a success as persistence and read-back, with rendering unchecked.
 
 ## Shared Workflow
 
@@ -74,8 +74,9 @@ uip login tenant set MyTenant                                      # same enviro
 | Inspect Insights users, roles, or groups | [`references/rbac-reads-guide.md`](references/rbac-reads-guide.md) |
 | Read a Maestro process's monitoring dashboard, its definition, or its stored global filters | [`references/dashboard-reads-guide.md`](references/dashboard-reads-guide.md) |
 | Author and create a Maestro process's monitoring dashboard from a definition file | [`references/dashboard-writes-guide.md`](references/dashboard-writes-guide.md) |
+| Change, remove, or copy a Maestro process's monitoring dashboard | [`references/dashboard-writes-guide.md`](references/dashboard-writes-guide.md) |
 
-Read only the guides the task needs. A job investigation that must first resolve a folder, process, or machine needs the filter guide, then the jobs guide. A queue question that names a queue needs the filter guide for the exact name, then the queue guide. A machine question that names a machine needs the filter guide for the exact name, then the machine guide. The machine guide also lists the five machine type labels, which `filter-machines list` does not report. An alert question needs the alert guide alone; it owns the full definition, history, and delivery sequence. An Insights access question needs the RBAC guide alone. A dashboard question needs the dashboard reads guide, and a create needs the writes guide after it: the process key comes from the user or from `uip maestro bpmn processes list`, and no `filter-*` command discovers a dashboard.
+Read only the guides the task needs. A job investigation that must first resolve a folder, process, or machine needs the filter guide, then the jobs guide. A queue question that names a queue needs the filter guide for the exact name, then the queue guide. A machine question that names a machine needs the filter guide for the exact name, then the machine guide. The machine guide also lists the five machine type labels, which `filter-machines list` does not report. An alert question needs the alert guide alone; it owns the full definition, history, and delivery sequence. An Insights access question needs the RBAC guide alone. A dashboard question needs the dashboard reads guide, and any write needs the writes guide after it: the process key comes from the user or from `uip maestro bpmn processes list`, and no `filter-*` command discovers a dashboard.
 
 ## Scope Boundaries
 
@@ -91,8 +92,8 @@ Read only the guides the task needs. A job investigation that must first resolve
 | Create, edit, or delete a machine, or manage its runtimes | `uipath-platform`; `machines` reports on machines and never changes one |
 | Machine or robot utilization as a percentage of capacity | Not in the shipped `uip insights` surface; `machines utilization` reports runtime minutes with no capacity denominator |
 | Read a Maestro process's monitoring dashboard or its stored global filters | [`references/dashboard-reads-guide.md`](references/dashboard-reads-guide.md) |
-| Create a Maestro process's monitoring dashboard from a definition file (see Critical Rules 17 and 18) | [`references/dashboard-writes-guide.md`](references/dashboard-writes-guide.md) |
-| Update, delete, or copy a dashboard, or generate one from a prompt | Insights UI; not in the shipped `uip insights` surface |
+| Create, update, delete, or copy a Maestro process's monitoring dashboard (see Critical Rules 17 and 18) | [`references/dashboard-writes-guide.md`](references/dashboard-writes-guide.md) |
+| Generate a dashboard from a prompt | Insights UI; not in the shipped `uip insights` surface |
 | Any Insights RBAC write, such as assigning a role (see Critical Rule 15) | Insights UI; not in the shipped `uip insights` surface |
 | Manage org-level user accounts, groups, or roles outside Insights | `uipath-admin` |
 

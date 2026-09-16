@@ -1,0 +1,185 @@
+task_id: skill-insights-smoke-dashboard-update
+description: >
+  Smoke test: agent uses the uipath-insights skill to change a Maestro
+  process's saved monitoring dashboard. Given a rename-and-reorder
+  request, the agent should read the process's dashboard first, take the
+  definition as a file rather than as captured stdout, and either update
+  from that file with the version the read reported, or say the slot holds
+  no saved dashboard and stop. Both outcomes are correct; which one
+  happens depends on the tenant, and the task does not control that.
+
+  It grades the local flow and the command shape, never a round trip. An
+  update rewrites a real dashboard and, unlike a create, is not
+  self-limiting, so a task that graded a successful update would mutate
+  whatever the runner's tenant has. The prompt uses the same placeholder
+  process key create_smoke uses, which belongs to no Maestro process: its
+  slot is either free, in which case the update is refused by the
+  preflight with nothing sent, or it holds the orphan dashboard a create
+  task left there. Delete and copy are graded here only for the surface
+  being real; their own round trips need a seeded tenant and belong in the
+  e2e tier.
+
+  The two criteria naming update's own flags are advisory at
+  pass_threshold 0, because reaching an update at all depends on the slot
+  state. They record the shape when the agent gets there. Everything that
+  does not depend on the slot is gating.
+tags: [uipath-insights, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  Rename the Insights monitoring dashboard on the Maestro process
+  00000000-0000-0000-0000-000000000000 to "Order intake health (EMEA)"
+  and move its failures chart to the front. Read the dashboard before you
+  change anything, and work from the definition as a file rather than
+  from what the command prints. Pass the version that read reported. If
+  the process has no saved dashboard, say so and stop rather than
+  creating one. Send the update once: if it fails or the outcome is
+  unclear, read the dashboard back and tell me what you found instead of
+  running it again. Do not delete anything. Report what the result proves
+  and what it does not.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every barrier here is (?:(?!uip\s)[^&;|\n])*, which needs both halves.
+  # The grader matches each pattern against two haystacks: the raw
+  # `bash -lc "..."` text, which keeps newlines, and a normalized one that
+  # unwraps the wrapper and re-joins the argv with single spaces, which
+  # does not (coder-eval 0.12.1, criteria/command_executed.py
+  # _normalize_shell). The \n in the class stops a batched neighbour on the
+  # raw haystack; the lookahead stops the next `uip ` on the normalized
+  # one. A bare [^&;|\n]* stops nothing on the second haystack, which is
+  # how skills#2854 false-failed. A bare .* is worse, since re.DOTALL lets
+  # it leave the command entirely. Neither barrier closes the case where
+  # the neighbour is not a `uip` command; naming the flags the target
+  # accepts is what does that, which the flag patterns below do.
+  #
+  # Rule 10 and Rule 13: read before writing, and take the file from the
+  # artifact channel. --output-file is required rather than a bare read,
+  # because it is the only channel carrying the camelCase definition that
+  # update accepts.
+  - type: command_executed
+    description: "Agent read the dashboard to a file before changing anything"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?!uip\s)[^&;|\n])*--output-file'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Rule 1: the file is the contract and CLI stdout is not. Catches the two
+  # ways stdout becomes a file, a redirect and a pipe into tee. A pipe into
+  # jq to read the summary on screen is not caught and is not forbidden.
+  - type: command_not_executed
+    description: "Agent did not capture read stdout into the definition file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?!uip\s)[^&;|\n])*(>>?|\|\s*tee)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 18: one write, never a blind repeat. The cap is 1 rather than 0,
+  # so this is a bounded command_executed and not a command_not_executed:
+  # the loader rewrites command_not_executed to min_count 0 / max_count 0
+  # whatever the file says (coder_eval/models/tasks.py, the success_criteria
+  # normalizer), which would fail the single legitimate update. min_count 0
+  # keeps a run that correctly stopped at an empty slot from failing here.
+  - type: command_executed
+    description: "Agent did not send the update more than once"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+--help)'
+    min_count: 0
+    max_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 17: an edit is never a delete and a recreate, however clean the
+  # result. High weight, because an agent that deletes has destroyed the
+  # dashboard's linked alert definitions along with it.
+  - type: command_not_executed
+    description: "Agent did not delete the dashboard to start over"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+delete\b(?!\s+--help)'
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The update id form takes the numeric id only; a template-keyed id is
+  # refused locally. Anchored to the literal backend prefix rather than to
+  # a general shape, so a numeric id that happens to contain those
+  # characters is not caught.
+  - type: command_not_executed
+    description: "Agent did not address the update with a template-keyed id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\s+"?UiPath-'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids command substitution and shell
+  # variables inside a uip invocation. The flag branch names only the flags
+  # these commands accept; --json and --output are left out because both
+  # are real host global options
+  # (packages/common/src/host-global-options.ts).
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights dashboard command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+\S+(?:(?!uip\s)[^&;|\n])*--(process-key|file|output-file|backup-file|source-type|expected-version|from-process-key|to-process-key|localization|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so every pattern above
+  # passes even when the verb exists in no installed CLI. --help is the
+  # reality gate: it exits 0 only when the CLI registers the command and
+  # exits 3 on an unknown one. These three are why this task cannot pass
+  # before cli#4263, #4241 and #4262 reach main and republish
+  # @uipath/cli@dev, which is what the do-not-land line on the PR says.
+  - type: run_command
+    description: "CLI path is real: dashboards update is registered in the installed CLI"
+    command: "uip insights dashboards update --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: dashboards delete is registered in the installed CLI"
+    command: "uip insights dashboards delete --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: dashboards copy is registered in the installed CLI"
+    command: "uip insights dashboards copy --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory, per the description: whether the agent reaches an update at
+  # all depends on the slot state, which this task does not control. They
+  # record the shape when it does.
+  - type: command_executed
+    description: "Advisory: the update carried --expected-version"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+--help)(?:(?!uip\s)[^&;|\n])*--expected-version'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: the update passed a file rather than inline JSON"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+--help)(?:(?!uip\s)[^&;|\n])*--file'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
