@@ -2,7 +2,6 @@
 """LinearThreeStages: 3 regular stages chained linearly behind a manual trigger."""
 
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -167,13 +166,25 @@ def main():
         )
     # name/var alone are satisfied by a bridge that copies nothing: {name, var, type, value}
     # with no source validates clean and leaves =vars.caseRef undefined at run time. The
-    # bridge must carry `source` pointing at the formal slot's synthetic v-prefixed id.
+    # bridge must carry `source` NAMING a real formal slot.
+    #
+    # Referential, not pattern-based. The v+8 id shape is a convention, not the contract:
+    # matching `=vars\.v[A-Za-z0-9]{8}` rejected 27 corpus plans with hand-minted ids
+    # (=vars.pQr7Ks2Wm, =vars.vCaseRef, =vars.vSerial001) and ACCEPTED a transposed id
+    # that fits the shape and names nothing. Resolving the id is what matters.
+    #
+    # A bridge with NO source is not universally defective — the Pattern C trigger-sourced
+    # Variable shape carries `value` and must not carry `source`. This assertion is about a
+    # Category=In argument, which does require the bridge, so no-source fails HERE. Do not
+    # generalise it to other tasks without that distinction.
     src = str(bridge.get("source") or "")
-    if not re.fullmatch(r"=vars\.v[A-Za-z0-9]{8}", src):
+    slot_ids = {v.get("id") for v in (plan.get("variables") or {}).get("inputs") or []}
+    ref = src[len("=vars."):] if src.startswith("=vars.") else src
+    if not src or ref not in slot_ids:
         sys.exit(
-            f"FAIL: trigger bridge for 'caseRef' has source {src!r}; expected "
-            f"'=vars.<formal slot id>' matching =vars.v<8 alphanumerics>. A bridge without a "
-            f"resolving source copies nothing at run time and still validates clean."
+            f"FAIL: trigger bridge for 'caseRef' has source {src!r}, which names no id in "
+            f"variables.inputs[] (slots: {sorted(i for i in slot_ids if i)}). A bridge whose "
+            f"source does not resolve copies nothing at run time and still validates clean."
         )
 
     if not any(v.get("name") == "finalDecision" and v.get("type") == "string" for v in out_vars):
