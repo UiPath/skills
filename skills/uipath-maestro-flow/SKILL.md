@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build/edit requests, and adding or listing IXP model/document-extraction nodes for a Flow. Build, edit, run, debug, fix, evaluate a Maestro Flow (.flow): create/connect nodes (connector, approval, script, subflow, ixp, data fabric entity), triggers, schedules, validate; build conversational flows (chat, chatbot, voice, phone calls); upload, publish, manage runs/instances; diagnose errors, incidents, traces; design eval sets, evaluators, run Studio Web evals. `uip maestro flow` CLI. DO NOT TRIGGER for raw IXP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
+description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow / Maestro Automate build/edit requests, and adding or listing IXP model/document-extraction nodes for a Flow. Build, edit, run, debug, fix, evaluate a Maestro Flow (.flow): create/connect nodes (connector, approval, script, subflow, ixp, data fabric entity), triggers, schedules, validate; build conversational flows (chat, chatbot, voice, phone calls); upload, publish, manage runs/instances; diagnose errors, incidents, traces; design eval sets, evaluators, run Studio Web evals. `uip maestro flow` CLI. DO NOT TRIGGER for raw IXP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
