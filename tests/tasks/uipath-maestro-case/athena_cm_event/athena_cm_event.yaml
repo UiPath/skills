@@ -72,15 +72,24 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Advisory, not gating. This task's prompt instructs the placeholder fallback
+  # when the registry has no match, and none of its seven named processes exist
+  # in the tenant. `--strict --sdd` reads an SDD that NAMES a resource as an SDD
+  # that RESOLVED it — it cannot see tenant state — so it reports every correct
+  # placeholder as `empty data: {} but the SDD resolved the resource to "X"`.
+  # Gating on it fails the agent for obeying the prompt. Completeness here is
+  # graded by the three topology/rule criteria below, which do not assume
+  # resolution. Do not re-gate this without also resolving the conflict in the
+  # prompt or seeding the processes.
   - type: run_command
-    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    description: "Advisory: caseplan is complete against the staged sdd.md under validate --strict --sdd (placeholder tasks are expected here, so strict SDD-resolution findings do not gate)"
     command: >-
       uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "staged sdd.md retains the Athena caseplan topology contract"
