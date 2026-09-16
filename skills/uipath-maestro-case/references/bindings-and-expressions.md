@@ -44,6 +44,8 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 ## Canonical form per sink
 
+> **Inside `=js:`, every identifier is namespace-qualified.** Write `=js:vars.<variableName>`, `=js:metadata.<field>`, `=js:response.<field>`, `=js:bindings.<id>`, `=js:iterator.<field>`. A bare identifier — `=js:priority`, `=js:amount > 100` — is an undefined global: it evaluates to `undefined`, throws nothing, and `validate` returns `Valid`. Use the variable's `name`, not its formal-arg `id`.
+
 Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime evaluators based on the sink it lands in. **The wrap form must match the sink** — wrong wrap is a silent runtime fault (the literal string arrives at the consumer instead of the resolved value).
 
 ### Two evaluator paths
@@ -233,10 +235,11 @@ action task "Review Classification" in stage "Triage"
 - **Plain-string where expression was intended.** `"metadata.amount"` (no `=`) is the literal string `metadata.amount`, not a reference. Always include the `=` prefix for dynamic values.
 - **Nesting expressions inside literals.** `"$metadata.amount"` or `"{{ amount }}"` do not work. Use `=metadata.amount` directly as the full value.
 - **Plain `=vars.X` inside connector body JSON.** The runtime does NOT evaluate plain prefix refs in connector body sinks — they arrive at the API as literal strings. Wrap as `=js:(vars.X)`. See [§ Canonical form per sink](#canonical-form-per-sink).
+- **Namespace-less identifier inside `=js:`.** `=js:priority === 'Urgent'` reads an undefined global and the rule never fires. Qualify it: `=js:vars.priority === 'Urgent'`.
 - **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
 - **Trailing default instead of a guard.** `vars.X.Y || '{}'` guards nothing — the throw lands on `.Y`, before `||` is reached. Guard the object: `vars.X?.Y`.
 - **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user?.email`.
-- **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
+- **`=js:(...)` outer parens on `conditionExpression`.** Conditions take `=js:<expr>` with no outer parentheses per FE convention. "No outer parentheses" never means "no namespace" — the identifiers inside stay qualified. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
 - **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-planning.md](connector-trigger-planning.md).
 
 <!-- END: bindings-and-expressions.md -->

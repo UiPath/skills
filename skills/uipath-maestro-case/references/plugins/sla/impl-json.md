@@ -126,9 +126,9 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Expression translation
 
-SDD SLA rows carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink).
+SDD SLA rows carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use `=js:<expr>` with no outer parentheses per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink).
 
-> **A business field is a case variable, never `metadata`.** Write `=js:vars.<id> === "<literal>"`. This holds for every SDD-declared field, **including the ones the SDD's "Case Metadata" table lists for readability** — that table is a human-facing grouping, not a runtime namespace. `Priority` is authored as a case variable and referenced `=js:vars.priority === 'Urgent'`.
+> **A business field is a case variable, never `metadata`.** Write `=js:vars.<variableName> === "<literal>"` — the variable's `name`, never its formal-arg `id`, and never a bare identifier ([bindings-and-expressions.md § Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink)). This holds for every SDD-declared field, **including the ones the SDD's "Case Metadata" table lists for readability** — that table is a human-facing grouping, not a runtime namespace. `Priority` is authored as a case variable and referenced `=js:vars.priority === 'Urgent'`.
 >
 > **Never write `=js:metadata.<businessField>`.** The `metadata` namespace is a closed set of structural fields (see [case-schema.md § 1](../../case-schema.md#1-top-level--metadata)); anything else reads `undefined` at run time. `=js:metadata.priority` resolves to nothing, `validate` returns `Valid` on either spelling, and the rule silently never fires.
 
