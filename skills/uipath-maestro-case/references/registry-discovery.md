@@ -14,12 +14,12 @@ Run `uip login status --output json`, then `uip maestro case registry pull`, bef
 
 > **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). A missing file **before** a pull is a precondition failure, not a 0-result lookup. **After a successful pull, a still-absent index means the tenant has zero resources of that type — which IS the genuine 0-matches case.** For **non-creatable** types (regular RPA process, agentic processes / Process Orchestration, action, case-management, connectors) → proceed to placeholder. For a **creatable** type (`agent`, `api-workflow`), a zero-resource tenant index is the genuine 0-matches case where inline **Create** applies — but **first resolve any in-solution sibling** (a prior run may have already built it; see the per-type pre-gate checks — [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution) — and § Handle Empty Results below). Only a resource absent from **both** the tenant index **and** the local siblings is genuinely empty → feed it to the [Rule 18 / § MUST-Confirm gate](#must-confirm-before-placeholder-fallback) (Create offered), NOT straight to placeholder.
 
-## CLI Search Gaps
+## When a search returns nothing
 
-The `uip maestro case registry search` command has known gaps. In particular, it fails to return results for certain resource types even when the resource is present in the cache (most commonly affecting **action-apps** / HITL tasks). When search returns an empty or incomplete result for a resource you know exists:
+`uip maestro case registry search` matches an action app on its `deploymentTitle` as well as its slug `title`; earlier CLI versions matched neither, returning `Success` with `ResultCount: 0` for an app that was deployed. If a search comes back empty for a resource you believe exists:
 
 1. Do **not** retry the same search with different keywords.
-2. Fall back to reading the cache files directly using the procedure in this document.
+2. Read the cache file directly using the procedure in this document, and confirm from the index whether the resource is absent or merely unmatched.
 3. Record the gap in `registry-resolved.json` so the audit trail reflects the fallback.
 
 Direct cache-file inspection is the authoritative discovery method for this skill.

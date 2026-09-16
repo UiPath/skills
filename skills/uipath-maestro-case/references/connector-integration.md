@@ -26,7 +26,7 @@ For every connector task or event trigger, run these CLI metadata fetches in ord
 
 ### Step 1 — Find the activity-type-id
 
-Read the relevant TypeCache index file directly (CLI `registry search` has known gaps — see [registry-discovery.md](registry-discovery.md)).
+Read the relevant TypeCache index file directly, or search it with `uip maestro case registry search` (see [registry-discovery.md](registry-discovery.md)).
 
 | Target | Cache file | Identifier field |
 |--------|-----------|------------------|
