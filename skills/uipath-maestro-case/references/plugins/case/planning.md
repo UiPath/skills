@@ -1,7 +1,7 @@
 # case (root) — Planning
 
 <!--skill-flavor:root-planning-intro:start-->
-The root case definition — the top-level container that every other node lives inside. Created exactly once per project. The case plugin **also owns project scaffolding**: T01 writes the 5 boilerplate project files directly — never via `uip maestro case init`, which forks the solution ([SKILL.md](../../../SKILL.md) Rule 23) — see [impl-json.md](impl-json.md).
+The root case definition — the top-level container that every other node lives inside. Created exactly once per project. The case plugin **also owns project scaffolding**: T01 writes the 5 boilerplate project files directly — never via `uip maestro case init`, which forks the solution ([SKILL.md](../../../SKILL.md) Rule 24) — see [impl-json.md](impl-json.md).
 <!--skill-flavor:root-planning-intro:end-->
 
 ## When to Use

@@ -126,7 +126,18 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Expression translation
 
-SDD SLA rows carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink). Common patterns: `=js:vars.<id> === "<literal>"` for a case-variable comparison — this covers any SDD-declared field, including ones the SDD's "Case Metadata" table lists for readability (e.g. `Priority`: `=js:vars.priority === 'Urgent'`); `=js:true` for the default rule; `=js:(vars.X === 'foo') && (vars.Y > 5)` for combined boolean (each sub-clause parenthesized for operator precedence). Reserve `=js:metadata.<field>` for the closed set of structural fields in [case-schema.md § 1](../../case-schema.md#1-top-level--metadata) (e.g. `metadata.caseAppEnabled`) — it is NOT a namespace for arbitrary business data. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
+SDD SLA rows carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink).
+
+> **A business field is a case variable, never `metadata`.** Write `=js:vars.<id> === "<literal>"`. This holds for every SDD-declared field, **including the ones the SDD's "Case Metadata" table lists for readability** — that table is a human-facing grouping, not a runtime namespace. `Priority` is authored as a case variable and referenced `=js:vars.priority === 'Urgent'`.
+>
+> **Never write `=js:metadata.<businessField>`.** The `metadata` namespace is a closed set of structural fields (see [case-schema.md § 1](../../case-schema.md#1-top-level--metadata)); anything else reads `undefined` at run time. `=js:metadata.priority` resolves to nothing, `validate` returns `Valid` on either spelling, and the rule silently never fires.
+
+Remaining patterns:
+
+- `=js:true` — the default rule.
+- `=js:(vars.X === 'foo') && (vars.Y > 5)` — combined boolean; parenthesize each sub-clause for operator precedence.
+
+If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
 
 ## The clock is not the response
 
