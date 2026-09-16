@@ -16,7 +16,7 @@ run_limits:
 initial_prompt: |
   Create a UiPath Case Management solution named "RunOnceEnvelopeCase"
   containing a project also named "RunOnceEnvelopeCase", so the case file lands
-  at RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json.
+  at RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.case.
 
   Use this sdd.md as the sole source of truth — write it to sdd.md first, then
   build from it. Author exactly what it states and nothing more: do not add,
@@ -126,14 +126,14 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "caseplan.json was created at the conventional path"
-    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    description: "caseplan.case was created at the conventional path"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.case"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json --output json"
+    command: "uip maestro case validate RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -145,7 +145,7 @@ success_criteria:
   # while re-running or not is the behavior this PR changed.
   - type: json_check
     description: "shouldRunOnlyOnce is read from the SDD: Yes stays true; No and the unspecified row are not run-once"
-    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?displayName=='Freeze Snapshot' && shouldRunOnlyOnce==`true`])"
         operator: equals
@@ -169,7 +169,7 @@ success_criteria:
   # the falsy key still behaves correctly, so this is recorded, not gated.
   - type: json_check
     description: "Advisory: the non-run-once tasks emit shouldRunOnlyOnce explicitly instead of omitting it"
-    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.case"
     assertions:
       - expression: "nodes[].data.tasks[][] | [?displayName=='Reminder Ping'] | [0].shouldRunOnlyOnce"
         operator: equals

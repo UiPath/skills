@@ -1,10 +1,10 @@
 # Phase 1 — Resolution: sdd.md → registry-resolved.json
 
-Resolve every resource the design document (`sdd.md`) names into tenant identities, and record them in `tasks/registry-resolved.json`. `sdd.md` stays the plan; this phase only fills in what the SDD could not know — task type IDs, connection IDs, folder paths, recipient identities. The downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug → Phase 7 Publish to Orchestrator) read the SDD and this ledger and write `caseplan.json` directly. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
+Resolve every resource the design document (`sdd.md`) names into tenant identities, and record them in `tasks/registry-resolved.json`. `sdd.md` stays the plan; this phase only fills in what the SDD could not know — task type IDs, connection IDs, folder paths, recipient identities. The downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug → Phase 7 Publish to Orchestrator) read the SDD and this ledger and write `caseplan.case` directly. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
 > **There is no intermediate plan file.** The SDD is the plan. Do not author a `tasks.md`, a T-numbered task list, or any other restatement of the SDD — it costs a full rewrite of the design and drifts from it. Step 12 walks the SDD against the artifact and closes with `validate --strict` ([implementation.md](implementation.md)).
 
-> **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
+> **Editing an existing case?** Targeted edits to an existing `caseplan.case` skip this planning pipeline — see [brownfield.md](brownfield.md).
 
 > **Output:** `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution). `tasks/` is adjacent to `sdd.md`, never inside the solution/project.
 >
@@ -20,7 +20,7 @@ Resolve every resource the design document (`sdd.md`) names into tenant identiti
 > - Global variables & arguments → `plugins/variables/global-vars/planning.md`
 > - Task I/O binding → `plugins/variables/io-binding/planning.md` (**always read alongside the matching task plugin**)
 
-Each plugin's `planning.md` says how to read that element out of the SDD and what to resolve for it; the sibling `impl-json.md` turns the result into `caseplan.json` JSON.
+Each plugin's `planning.md` says how to read that element out of the SDD and what to resolve for it; the sibling `impl-json.md` turns the result into `caseplan.case` JSON.
 
 ---
 
@@ -50,9 +50,9 @@ If `npm install -g` fails with a permission error, prompt the user to re-run it 
 
 Registry discovery happens during build planning, so login is required first. This gate runs on every Phase 1 build run — including SDD-without-ledger handoffs and runs with a staged `tasks/registry-resolved.json` — **with two exceptions:** the same-session fast path, and the Design-only exception in SKILL.md Rule 3 (restated below). For the same-session fast path, when the planner subagent's report (SKILL.md Rule 15) says its `registry pull` succeeded in THIS session — the `~/.uip/case-resources/` cache is machine-global, so the subagent's pull is this session's pull — reuse that cache and skip the re-pull, and run this step **verify-only**: persist the subagent's returned resolution ledger verbatim to `tasks/registry-resolved.json`, spot-verify entries against the session cache, execute recorded `gateDecision`s (Rule 17), and re-resolve only stale or missing entries. Any doubt in a build run (user-provided SDD, cross-session resume, context compaction, failed or never-run design-lane pull, missing cache files) runs the gate in full.
 
-**Design-only exception:** when the request explicitly asks to stop at the design and not create `caseplan.json`, do not run login, registry, connection, schema, or user-discovery commands. The deliverable is `sdd.md` alone, with tenant identities left `<UNRESOLVED>`; state that the later build run must run this hard gate before caseplan execution. Do not author a substitute plan file.
+**Design-only exception:** when the request explicitly asks to stop at the design and not create `caseplan.case`, do not run login, registry, connection, schema, or user-discovery commands. The deliverable is `sdd.md` alone, with tenant identities left `<UNRESOLVED>`; state that the later build run must run this hard gate before caseplan execution. Do not author a substitute plan file.
 
-**Negative trigger — tenant work overrides it.** The exception defers tenant lookup; it does not describe where a run stops. It does NOT fire when the same request asks to resolve resources or identities, pull or refresh the registry, replace a stale registry audit, or produce `tasks/registry-resolved.json` / `tasks/recipients-resolved.json` — even when that request also says to stop before `caseplan.json`, a solution, or Phase 2. Such a run is a normal resolution run: run this gate in full, resolve every identity, write the ledger, and stop before Phase 2.
+**Negative trigger — tenant work overrides it.** The exception defers tenant lookup; it does not describe where a run stops. It does NOT fire when the same request asks to resolve resources or identities, pull or refresh the registry, replace a stale registry audit, or produce `tasks/registry-resolved.json` / `tasks/recipients-resolved.json` — even when that request also says to stop before `caseplan.case`, a solution, or Phase 2. Such a run is a normal resolution run: run this gate in full, resolve every identity, write the ledger, and stop before Phase 2.
 
 ```bash
 uip login status --output json
@@ -92,9 +92,9 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 
 For every task, trigger, and condition in the sdd.md:
 
-If the design-only exception is active — per Step 1, including its negative trigger, and not merely because the request stops before `caseplan.json` — skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. The SDD already carries the design; leave its tenant identities `<UNRESOLVED>`, report which resources the later build run must resolve, and stop. Do not write a plan file in its place.
+If the design-only exception is active — per Step 1, including its negative trigger, and not merely because the request stops before `caseplan.case` — skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. The SDD already carries the design; leave its tenant identities `<UNRESOLVED>`, report which resources the later build run must resolve, and stop. Do not write a plan file in its place.
 
-End the response with suggested next steps: review the SDD, then run a build to resolve tenant resources and create `caseplan.json`.
+End the response with suggested next steps: review the SDD, then run a build to resolve tenant resources and create `caseplan.case`.
 
 Otherwise, continue with the normal resolution path:
 
@@ -105,9 +105,9 @@ Otherwise, continue with the normal resolution path:
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
+> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.case `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
 
-| sdd.md `Type:` / caseplan.json `type` | Plugin folder |
+| sdd.md `Type:` / caseplan.case `type` | Plugin folder |
 |---|---|
 | `process` (covers `AGENTIC_PROCESS` legacy label) | `plugins/tasks/process/` |
 | `agent` | `plugins/tasks/agent/` |
@@ -154,7 +154,7 @@ Otherwise:
 2. Carry the input mapping the sdd.md described into the entry's `wiringNotes` string array — Phase 2 has no schema to wire against, and the completion report reads this back to the user. See [placeholder-tasks.md](placeholder-tasks.md).
 3. **Continue resolving — do not halt.** The SDD still carries every structural field (display name, required, run-only-once), and Phase 2 still writes the task node and its entry conditions.
 
-At execution time, unresolved tasks become **placeholder tasks** in `caseplan.json` (display-name + type only, no task-type-id, no bindings). The workflow graph is still reviewable end-to-end, and the user attaches real resources + bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
+At execution time, unresolved tasks become **placeholder tasks** in `caseplan.case` (display-name + type only, no task-type-id, no bindings). The workflow graph is still reviewable end-to-end, and the user attaches real resources + bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
 
 ## Step 4 — Write `registry-resolved.json`
 

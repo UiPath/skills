@@ -2,7 +2,7 @@ task_id: skill-case-single-process
 description: >
   Build a Case Management definition from an sdd.md whose only task is a
   PROCESS. Exercises the process plugin, registry resolution via
-  processOrchestration-index.json, and direct caseplan.json write of a
+  processOrchestration-index.json, and direct caseplan.case write of a
   `type: "process"` task. Validates the resulting case file and runs
   `uip maestro case debug` end-to-end, asserting only that the case
   finalStatus is `Completed`.
@@ -101,7 +101,7 @@ initial_prompt: |
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
-  with `uip maestro case validate` passing on the resulting caseplan.json.
+  with `uip maestro case validate` passing on the resulting caseplan.case.
 
   Resolve `ProcurementProcess` from `processOrchestration-index.json`; this
   fixture contains the exact entry there. Use `process-index.json` only as a
@@ -109,8 +109,8 @@ initial_prompt: |
   the task's `taskTypeId`.
 success_criteria:
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate ProcessSingleCase/ProcessSingleCase/caseplan.json --output json"
+    description: "uip maestro case validate passes on the generated caseplan.case"
+    command: "uip maestro case validate ProcessSingleCase/ProcessSingleCase/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

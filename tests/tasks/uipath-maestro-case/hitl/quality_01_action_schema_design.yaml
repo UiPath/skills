@@ -17,7 +17,7 @@ initial_prompt: |
       → Stage "Closed" (no tasks; required for case completion)
 
   Use the same name for solution and project so the case file lives at
-  VendorPOReviewCase/VendorPOReviewCase/caseplan.json.
+  VendorPOReviewCase/VendorPOReviewCase/caseplan.case.
 
   HITL action task design requirements:
   - **task-title**: "Please review this PO and approve or reject"
@@ -190,14 +190,14 @@ initial_prompt: |
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
   {
-    "caseplan_path": "<path to caseplan.json>",
+    "caseplan_path": "<path to caseplan.case>",
     "action_task_id": "<id of the action task>",
     "skeleton": <true|false>,
     "schema": {
       "input_fields":  ["<field names>"],
       "output_fields": ["<field names>"]
     },
-    "task_title": "<taskTitle from registry-resolved.json or caseplan.json>",
+    "task_title": "<taskTitle from registry-resolved.json or caseplan.case>",
     "priority":   "<priority value>",
     "recipient":  "<recipient or empty if none>",
     "validation_passed": true
@@ -206,7 +206,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate VendorPOReviewCase/VendorPOReviewCase/caseplan.json --output json"
+    command: "uip maestro case validate VendorPOReviewCase/VendorPOReviewCase/caseplan.case --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -214,7 +214,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains an action-typed task"
-    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
+    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt

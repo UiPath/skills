@@ -32,7 +32,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Never block on schema confirmation.** Design the schema from the prompt and any upstream `.flow`/`caseplan.json` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Asking the user is never a precondition for proceeding — if the user is present and offers input, use it, but do not wait for it. Only stop and report the open decision when the request is genuinely too ambiguous to make any reasonable inference. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
+1. **Never block on schema confirmation.** Design the schema from the prompt and any upstream `.flow`/`caseplan.case` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Asking the user is never a precondition for proceeding — if the user is present and offers input, use it, but do not wait for it. Only stop and report the open decision when the request is genuinely too ambiguous to make any reasonable inference. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
 2. **Wire every QuickForm outcome's own port.** A QuickForm node has one output handle per outcome, named `outcome-<outcome.id>` — never a single `completed` handle. `outcome-completed` is a placeholder that exists only on a schema with zero outcomes; it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit`. A HITL node with any outcome port left unwired blocks the flow forever on that branch. App-based (`coded-action-app`) nodes are different: their port stays a static `completed` regardless of the app's own outcomes — do not add an `inputs.schema` block to an app-based node, which would wrongly flip it onto an outcome-derived port. Neither node type ever uses `output`, `success`, or any other name.
 3. **Always add the definition entry when inserting into an existing flow.** Before writing the node, check `workflow.definitions[]` for the correct `nodeType` for the selected path (`"uipath.human-in-the-loop.quick-form"` for QuickForm, `"uipath.human-in-the-loop.coded-action-app"` for app-based). If absent, append the full definition entry with its `handleConfiguration` block. Skipping the definition means the node's handles are invisible to the runtime and the wiring check fails.
 4. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
@@ -74,7 +74,7 @@ find . -name "*.flow" -maxdepth 4 | head -5
 
 # Check for a Case Management project — detect by content marker, not by filename.
 # Project files are flat in the project dir (no content/ dir on disk). The generated
-# sibling caseplan.json.bpmn carries the same marker: exclude it, edit caseplan.json.
+# sibling caseplan.case.bpmn carries the same marker: exclude it, edit caseplan.case.
 find . -maxdepth 4 -iname "*.json*" ! -name "*.bpmn" -print0 2>/dev/null | xargs -0 grep -l '"case-management:root"' 2>/dev/null | head -3
 
 # Check for agent.json (Low-Code Agent project)
@@ -87,7 +87,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | Found | Surface | How HITL is added |
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
-| `caseplan.json` (any `*.json` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
+| `caseplan.case` (any `*.json` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
@@ -187,7 +187,7 @@ Infer the right option from the description below — do not pull the registry f
 
 | # | Option | Fingerprint | Description |
 |---|---|---|---|
-| 1 | **QuickForm (file-based schema)** | separate `<TaskLabel>.hitl.json` file + `hitlType: "quick"` context entry in the action task | Structured form fields in a `.hitl.json` file alongside `caseplan.json`. Action Center renders fields at runtime. No deployed app needed. |
+| 1 | **QuickForm (file-based schema)** | separate `<TaskLabel>.hitl.json` file + `hitlType: "quick"` context entry in the action task | Structured form fields in a `.hitl.json` file alongside `caseplan.case`. Action Center renders fields at runtime. No deployed app needed. |
 | 2 | **App-based action task** | `data.name` and `data.folderPath` as `=bindings.<id>` references + `data.actionCatalogName` | Uses a deployed Action Center app with custom input/output fields. Requires the app to exist in Orchestrator. |
 
 > **Default: QuickForm.** Pick QuickForm unless the request explicitly names a deployed Action Center app. State the choice, do not ask: "I'll use QuickForm — it's the quickest to set up, supports structured form fields, and doesn't need a deployed app. You can upgrade to an app-based task later if you need a custom UI layout."
@@ -242,7 +242,7 @@ Use the JS/JSON type that fits the field: `string`, `number`, `boolean`, `date`,
 
 If the user says something like "just add some fields" or "use whatever makes sense":
 
-1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file (Flow) or in `caseplan.json` upstream task `outputs[]` and `root.data.uipath.variables` (Case).
+1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file (Flow) or in `caseplan.case` upstream task `outputs[]` and `root.data.uipath.variables` (Case).
 2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
 3. If there is nothing upstream to bind to (Flow with only a trigger; Case with this as the first task), use output-direction fields only and note: "There are no upstream values to pull data from, so the reviewer will fill in all fields from scratch."
 
@@ -309,19 +309,19 @@ uip maestro flow validate <file> --output json
 
 ### Surface: Case
 
-Read the `caseplan.json` to identify the target stage. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
+Read the `caseplan.case` to identify the target stage. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
 
 Full reference: **[references/hitl-casetask-action.md](references/hitl-casetask-action.md)** — three task JSON shapes (QuickForm, generic, app-based), field reference, assignee handling, post-write verification, and downstream output access.
 
 | Path chosen in Step 3 | What gets written |
 |---|---|
-| QuickForm | A `<TaskLabel>.hitl.json` schema file (unified `fields[]` with `direction`, `outcomes[]`) + action task in `caseplan.json` with `data.context[hitlType].value: "quick"`, `_schemaFileId` (placeholder UUID), and `hitlSchemaId` (matches `schemaId` in `.hitl.json`). `data.inputs[]` and `data.outputs[]` are empty arrays. No `root.data.uipath.bindings[]` entries. Apply Step 4b schema-design checks before writing. |
+| QuickForm | A `<TaskLabel>.hitl.json` schema file (unified `fields[]` with `direction`, `outcomes[]`) + action task in `caseplan.case` with `data.context[hitlType].value: "quick"`, `_schemaFileId` (placeholder UUID), and `hitlSchemaId` (matches `schemaId` in `.hitl.json`). `data.inputs[]` and `data.outputs[]` are empty arrays. No `root.data.uipath.bindings[]` entries. Apply Step 4b schema-design checks before writing. |
 | App-based | Action task with `data.actionCatalogName`, `data.name` and `data.folderPath` as `=bindings.<id>` references. Add 2 root-level bindings. |
 
 After writing, validate (build-time check — must pass before reporting success):
 
 ```bash
-uip maestro case validate <caseplan.json> --output json
+uip maestro case validate <caseplan.case> --output json
 ```
 
 > `uip maestro case validate` is the only `uip maestro case` CLI used by this skill on the Case surface. All authoring is direct JSON.

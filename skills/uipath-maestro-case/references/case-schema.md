@@ -505,7 +505,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
-> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 16).
+> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.case` (SKILL.md Rule 16).
 
 ---
 
@@ -553,7 +553,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 
 ## Appendix — Edge shapes (read-only — never author)
 
-> **Read-only reference (Rule 20 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.json` — see §4.
+> **Read-only reference (Rule 20 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.case` — see §4.
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 

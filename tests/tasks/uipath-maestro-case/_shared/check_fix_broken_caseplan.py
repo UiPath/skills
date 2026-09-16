@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Diagnose → fix a pre-broken caseplan.json: root-cause grader.
+"""Diagnose → fix a pre-broken caseplan.case: root-cause grader.
 
 The fixture stages a LinearThreeStages case (Intake → Review → Decision)
 with two deliberate defects that `uip maestro case validate` reports:

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""WarrantyClaimTriage: did the SLA responses declared in sdd.md survive into caseplan.json?
+"""WarrantyClaimTriage: did the SLA responses declared in sdd.md survive into caseplan.case?
 
 Why this check exists
 ---------------------
 The `sla_response/*` family already covers SLA behaviour, but every one of those tasks
-starts from an existing `caseplan.json` under `templates/` and grades a brownfield EDIT.
+starts from an existing `caseplan.case` under `templates/` and grades a brownfield EDIT.
 No task took an SDD that *declares* SLA responses through Phase 1 -> 4 and asserted the
 emitted plan. Across all nine SDD fixtures in this suite, `sla-status-change` appears
 zero times.

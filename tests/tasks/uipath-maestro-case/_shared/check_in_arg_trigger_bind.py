@@ -13,7 +13,7 @@ Asserts each In-arg's formal slot (variables.inputs) + companion
 bridge leaks onto the other trigger. This proves sourceTriggers SELECTS the
 bound trigger (blank → primary) instead of defaulting every In-arg to one
 trigger. Structural-only (no debug): the binding is fully determined by
-caseplan.json; running the case reveals nothing about which node hosts the
+caseplan.case; running the case reveals nothing about which node hosts the
 elementId.
 """
 

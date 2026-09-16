@@ -57,7 +57,7 @@ Two entry paths: **Scenario A** — connector not found in TypeCache ([connector
 
 > **Rule 17 exception.** Empty `Connections` from `get-connection` (the trigger activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 
-> **Planning emits the element; execution emits a placeholder trigger node.** "Cannot resolve the connector / connection yet" is not a reason to drop the trigger from `caseplan.json` — the no-omission rule (planning.md completeness principle) applies to triggers the same as it does to stages, tasks, and conditions. The pattern mirrors the connector-trigger task placeholder in [placeholder-tasks.md](../../../placeholder-tasks.md): structure preserved, runtime config deferred.
+> **Planning emits the element; execution emits a placeholder trigger node.** "Cannot resolve the connector / connection yet" is not a reason to drop the trigger from `caseplan.case` — the no-omission rule (planning.md completeness principle) applies to triggers the same as it does to stages, tasks, and conditions. The pattern mirrors the connector-trigger task placeholder in [placeholder-tasks.md](../../../placeholder-tasks.md): structure preserved, runtime config deferred.
 
 If the connector or connection cannot be resolved:
 - Mark **every connector-derived field** with `<UNRESOLVED: reason>` in the element — `type-id`, `connection-id`, `connector-key`, `object-name`, `event-operation`, and `event-mode` all derive from the connector / connection lookup, so when the connector itself is unresolved, none of them have authoritative values. Mark each one explicitly rather than omitting them (so the user sees the full attach checklist when upgrading).

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CM-Golden rebuild: structural topology and runtime-contract grader.
 
-Checks that the generated caseplan.json encodes the golden feature-coverage
+Checks that the generated caseplan.case encodes the golden feature-coverage
 design, not just a structurally valid case:
 
   - 8 stages: 7 primary + the "Stage 4 - return to origin" secondary lane
@@ -37,7 +37,7 @@ from _shared.case_check import (  # noqa: E402
     selected_stage_ids,
 )
 
-EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.json")
+EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.case")
 
 # Stage key -> expected task-type multiset (sorted). Keys are matched as
 # normalized prefixes of the stage label ("Stage 4" matches

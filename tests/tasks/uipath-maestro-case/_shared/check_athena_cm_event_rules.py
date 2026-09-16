@@ -2,7 +2,7 @@
 """Assert the build does not reinterpret Athena's authored task-entry rules.
 
 The SDD states an explicit entry rule for all seven tasks. The build must carry
-each one into `caseplan.json` unchanged — normalizing an authored
+each one into `caseplan.case` unchanged — normalizing an authored
 `selected-tasks-completed` gate into `runs-sequentially` (or vice versa) is the
 regression this grades. `check_athena_cm_event_case.py` grades topology, flags,
 identity, and the trigger; this file grades rule preservation for every task.
@@ -72,7 +72,7 @@ def main() -> None:
         rules = entry_rules(tasks[name])
         if not rules:
             fail(
-                f"{name} has no entry rule in caseplan.json — `validate` only warns about this, "
+                f"{name} has no entry rule in caseplan.case — `validate` only warns about this, "
                 f"but a task with no entry rule never starts and `case debug` hangs"
             )
         names = [rule.get("rule") for rule in rules]

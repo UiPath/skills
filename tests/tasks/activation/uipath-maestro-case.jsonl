@@ -1,6 +1,6 @@
 {"id": "uipath-maestro-case-001", "prompt": "Create a new UiPath Case Management project from this sdd.md", "expected_skill": "uipath-maestro-case"}
-{"id": "uipath-maestro-case-002", "prompt": "I have an sdd.md for a personal injury claim \u2014 build the caseplan.json", "expected_skill": "uipath-maestro-case"}
-{"id": "uipath-maestro-case-003", "prompt": "Generate caseplan.json from my sdd.md", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-002", "prompt": "I have an sdd.md for a personal injury claim \u2014 build the caseplan.case", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-003", "prompt": "Generate caseplan.case from my sdd.md", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-004", "prompt": "Build a case management project for a freedom of information request workflow", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-005", "prompt": "I don't have an sdd.md yet \u2014 can you interview me and generate one for a loan application case?", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-006", "prompt": "Convert this spec into a Case Management plan with stages and tasks", "expected_skill": "uipath-maestro-case"}
@@ -33,10 +33,10 @@
 {"id": "uipath-maestro-case-033", "prompt": "Place the Send Email and Update Record tasks in separate lanes inside the Notification stage", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-034", "prompt": "Add a case-exit condition that completes the case when status is closed", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-035", "prompt": "Run uip maestro case registry pull and resolve the connector activities I need", "expected_skill": "uipath-maestro-case"}
-{"id": "uipath-maestro-case-036", "prompt": "Validate my caseplan.json", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-036", "prompt": "Validate my caseplan.case", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-037", "prompt": "Run uip maestro case debug on this case", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-038", "prompt": "Publish my case management solution to Studio Web", "expected_skill": "uipath-maestro-case"}
-{"id": "uipath-maestro-case-039", "prompt": "What's the schema for caseplan.json?", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-039", "prompt": "What's the schema for caseplan.case?", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-040", "prompt": "What's the difference between v19 and v20 case schema, and which one should I use?", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-041", "prompt": "Generate the caseplan with v20 schema", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-042", "prompt": "I want to build a case for an insurance claim \u2014 intake, validation, eligibility check, manager approval, payment, and close. Walk me through it", "expected_skill": "uipath-maestro-case"}
@@ -46,5 +46,10 @@
 {"id": "uipath-maestro-case-046", "prompt": "Add displayName and description fields to every stage and task in my caseplan", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-047", "prompt": "Resolve the ServiceNow connector for this connector-activity task and fill in the typeId", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-048", "prompt": "Add a skeleton task for the credit-check process \u2014 I'll resolve the resource later", "expected_skill": "uipath-maestro-case"}
-{"id": "uipath-maestro-case-049", "prompt": "List the stages and tasks in my caseplan.json", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-049", "prompt": "List the stages and tasks in my caseplan.case", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-050", "prompt": "Refresh the bindings_v2.json before I upload the solution", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-051", "prompt": "I have an sdd.md for a personal injury claim \u2014 build the caseplan.json", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-052", "prompt": "Generate caseplan.json from my sdd.md", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-053", "prompt": "Validate my caseplan.json", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-054", "prompt": "What's the schema for caseplan.json?", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-055", "prompt": "List the stages and tasks in my caseplan.json", "expected_skill": "uipath-maestro-case"}

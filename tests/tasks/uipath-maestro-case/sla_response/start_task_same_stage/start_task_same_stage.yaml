@@ -29,7 +29,7 @@ reference:
 
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
-  definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
+  definition is SlaResponse/SlaResponse/caseplan.case: three stages (Intake → Review →
   Decision), a 10-day case SLA, and a two-day SLA on Review.
 
   Ops asked for one change: when a case blows past the Review SLA, an approval task called
@@ -43,13 +43,13 @@ initial_prompt: |
 
   Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
   approval, confirmation, or feedback — make the change end-to-end in a single pass and
-  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  finish with `uip maestro case validate` passing on the resulting caseplan.case.
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 
 success_criteria:
   - type: run_command
-    description: "uip maestro case validate passes on the edited caseplan.json"
-    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.json --output json"
+    description: "uip maestro case validate passes on the edited caseplan.case"
+    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.case --output json"
     timeout: 120
     expected_exit_code: 0
     weight: 3.0

@@ -22,7 +22,7 @@ initial_prompt: |
       → Stage "Closed" (no tasks)
 
   Use the same name for solution and project so the case file lives at
-  ContractReviewCase/ContractReviewCase/caseplan.json.
+  ContractReviewCase/ContractReviewCase/caseplan.case.
 
   This test environment has no live tenant — the action-app for the
   reviewer step is intentionally unlikely to resolve. When that happens
@@ -192,7 +192,7 @@ initial_prompt: |
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
   {
-    "caseplan_path": "<path to caseplan.json>",
+    "caseplan_path": "<path to caseplan.case>",
     "action_task_id": "<id of Approve Contract>",
     "action_task_skeleton": <true|false>,
     "process_task_skeleton": <true|false>,
@@ -208,7 +208,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes (skeleton warnings allowed)"
-    command: "uip maestro case validate ContractReviewCase/ContractReviewCase/caseplan.json --output json"
+    command: "uip maestro case validate ContractReviewCase/ContractReviewCase/caseplan.case --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -216,7 +216,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains an action-typed task"
-    path: "ContractReviewCase/ContractReviewCase/caseplan.json"
+    path: "ContractReviewCase/ContractReviewCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -226,7 +226,7 @@ success_criteria:
 
   - type: file_contains
     description: "Stage LegalReview exit references selected-tasks-completed"
-    path: "ContractReviewCase/ContractReviewCase/caseplan.json"
+    path: "ContractReviewCase/ContractReviewCase/caseplan.case"
     includes:
       - "selected-tasks-completed"
     weight: 2.0
@@ -237,7 +237,7 @@ success_criteria:
     command: |
       python3 -c "
       import json, sys
-      with open('ContractReviewCase/ContractReviewCase/caseplan.json') as f: cp=json.load(f)
+      with open('ContractReviewCase/ContractReviewCase/caseplan.case') as f: cp=json.load(f)
       with open('report.json') as f: rep=json.load(f)
       # If reported as skeleton, the action task's data must be empty
       if rep.get('action_task_skeleton') is True:

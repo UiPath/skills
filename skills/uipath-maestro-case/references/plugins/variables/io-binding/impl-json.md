@@ -2,7 +2,7 @@
 
 > **Phase split.** Phase 3 only. Input/output binding at Step 9.8; in-expression `vars.$xref` marker resolution at Step 11.5 (after conditions + SLA). Phase 2 writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
+Wire task inputs by editing `caseplan.case` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
 
 ## Task Input Shape
 
@@ -171,7 +171,7 @@ Normal, bare, and reassigned outputs use their own `.id`. This is load-bearing w
 
 For each task input row in the SDD's Inputs table:
 
-**Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates the SDD's `=metadata.X` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator). **A quoted string literal's quotes are SDD delimiters, never payload** — same rule as the `=` output side above: the SDD's `APIInput1 = "literal-seed"` emits `"value": "literal-seed"`, NOT `"value": "\"literal-seed\""`. The projected item keeps the SDD cell's own quotes ([planning.md § code spans](planning.md)); `caseplan.json` strips them. Embedded delimiters pass `validate` and ship the quote characters to the resource as payload:
+**Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates the SDD's `=metadata.X` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator). **A quoted string literal's quotes are SDD delimiters, never payload** — same rule as the `=` output side above: the SDD's `APIInput1 = "literal-seed"` emits `"value": "literal-seed"`, NOT `"value": "\"literal-seed\""`. The projected item keeps the SDD cell's own quotes ([planning.md § code spans](planning.md)); `caseplan.case` strips them. Embedded delimiters pass `validate` and ship the quote characters to the resource as payload:
 ```
 "=vars.amount"  |  "=js:metadata.ExternalId"  |  "literal-seed"  |  "50"  |  "=js:new Date()"
 ```
@@ -192,7 +192,7 @@ target_input["value"] = f"=vars.{output_reference_id}"
 
 ## In-Expression Marker Resolution (Step 11.5)
 
-Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.json`** at **Step 11.5** — after conditions (Step 10) and SLA (Step 11) are written, and every task/trigger/rule output is minted and deduped (so the marker resolves to the final output reference ID). This is the LAST mutation of Phase 3 before the validator; running it earlier (e.g. right after Step 9.8 input binding) misses markers in conditions / SLA and reads pre-dedup IDs.
+Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.case`** at **Step 11.5** — after conditions (Step 10) and SLA (Step 11) are written, and every task/trigger/rule output is minted and deduped (so the marker resolves to the final output reference ID). This is the LAST mutation of Phase 3 before the validator; running it earlier (e.g. right after Step 9.8 input binding) misses markers in conditions / SLA and reads pre-dedup IDs.
 
 This single sink-blind pass replaces per-sink resolution: it walks every string value regardless of which sink holds it, so conditions, SLA, inputs, and connector bodies are all covered in one place.
 
@@ -200,7 +200,7 @@ This single sink-blind pass replaces per-sink resolution: it walks every string 
 # pseudocode — not executed. Realize via Read → reason → Write/Edit.
 TOKEN = /vars\.\$xref\('([^']+)','([^']+)','([^']+)'\)/   # global, all matches
 
-for each string value V anywhere in caseplan.json:
+for each string value V anywhere in caseplan.case:
     for each match (stageLabel, taskName, outputName) of TOKEN in V:
         src_stage  = find_node_by_label(nodes, stageLabel)        # data.label
         src_task   = find_task_by_name(src_stage, taskName)       # displayName
@@ -273,7 +273,7 @@ for entry in root.outputs[]:
   has_bare_name_producer   = exists a schema-discovered bare output `<name>` (no operator) where camelCase(name) == var
   has_any_producer         = has_extraction_producer || has_assignment_producer || has_bare_name_producer
 
-  producer_task_unresolved = the SDD-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.inputs` is empty `{}`)
+  producer_task_unresolved = the SDD-declared producer task is a Rule 17 placeholder (look up the task in caseplan.case by displayName; check `node.data.inputs` is empty `{}`)
 
   if has_companion_default:
       # Companion default guarantees a value; producer is optional bonus
@@ -334,7 +334,7 @@ See [implementation.md § Step 12 — End-of-Phase-3 validator pass](../../../im
 
 ### Check 4 — No surviving `$xref` markers
 
-Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple or output reference ID failed to resolve. This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
+Scan every string value in `caseplan.case` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple or output reference ID failed to resolve. This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
 
 **On AskUserQuestion** (present the outputs that DO exist on the named task as candidates — same diagnostic shape as a failed whole-value `<-`):
 
@@ -354,7 +354,7 @@ Pick one:
 
 **Skill response per pick:**
 
-- **(a)** Rewrite the marker's triple in place in `caseplan.json` with the corrected name(s), re-run the [Step 11.5](#in-expression-marker-resolution-step-115) resolution for that token, then re-scan. If it still fails, re-prompt.
+- **(a)** Rewrite the marker's triple in place in `caseplan.case` with the corrected name(s), re-run the [Step 11.5](#in-expression-marker-resolution-step-115) resolution for that token, then re-scan. If it still fails, re-prompt.
 - **(b)** Edit the SDD expression as directed, re-run the Phase 1 dispatcher from the modified SDD, then retry Step 11.5 + this check.
 - **(c)** Leave the token unsubstituted, append the build-issues entry (template below), continue to Phase 4. No re-run.
 
@@ -374,7 +374,7 @@ Read each resolved task's persisted contract from `tasks/registry-resolved.json`
 
 ```text
 # pseudocode — not executed. Realize via Read → reason → Write/Edit.
-for task in caseplan.json tasks where contract = registry_resolved[task].contract is present:
+for task in caseplan.case tasks where contract = registry_resolved[task].contract is present:
     bound_inputs = { inp.name : inp.value for inp in task.data.inputs[] }
     # (a) required-input coverage
     for decl in contract.inputs where decl.required:
@@ -419,8 +419,8 @@ Pick one:
 
 **Skill response per pick:**
 
-- Unbound (a) — write the Inputs row to `sdd.md` + `caseplan.json`, run the Step 9.8 binding for that input, retry Check 5. (b) — set the input `value` to a placeholder and append a `high` review item (`rev_unbound_input_<task>_<field>`), continue. (c) — append the build-issues entry, continue. No re-run.
-- Phantom (a) — rewrite the output `source`/`Field` in `caseplan.json`, retry Check 5. (b) — delete the output row (and any now-orphaned `=vars.<caseVar>` consumer falls to Check 1). (c) — append the build-issues entry, continue.
+- Unbound (a) — write the Inputs row to `sdd.md` + `caseplan.case`, run the Step 9.8 binding for that input, retry Check 5. (b) — set the input `value` to a placeholder and append a `high` review item (`rev_unbound_input_<task>_<field>`), continue. (c) — append the build-issues entry, continue. No re-run.
+- Phantom (a) — rewrite the output `source`/`Field` in `caseplan.case`, retry Check 5. (b) — delete the output row (and any now-orphaned `=vars.<caseVar>` consumer falls to Check 1). (c) — append the build-issues entry, continue.
 
 Check 5 honors the same **build-with-best** policy as Checks 1, 2, 4: option (c) appends a `## Open Items for User` entry and proceeds to Phase 4. Phase 4 `validate` stays green (a missing input / phantom extract is structurally valid); the runtime concern is surfaced for pre-publish review.
 

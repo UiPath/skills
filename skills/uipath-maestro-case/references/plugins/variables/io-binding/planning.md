@@ -55,7 +55,7 @@ The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactl
 - APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1
 ```
 
-Before writing the task's `data.inputs[]`, reject any projected input item that wraps its value in backticks or in a quote pair the SDD `Binding` cell did not itself contain, and any item whose name and value are separated by `:` rather than `<-` or `=`. The same delimiter-strip rule governs the value that reaches `input.value` in `caseplan.json`: a backtick or quote the SDD cell did not contain must never survive into the JSON.
+Before writing the task's `data.inputs[]`, reject any projected input item that wraps its value in backticks or in a quote pair the SDD `Binding` cell did not itself contain, and any item whose name and value are separated by `:` rather than `<-` or `=`. The same delimiter-strip rule governs the value that reaches `input.value` in `caseplan.case`: a backtick or quote the SDD cell did not contain must never survive into the JSON.
 
 ## Discovering Input/Output Names
 
@@ -127,7 +127,7 @@ Record outputs on each task entry as one item per row. This is the common output
 
 Do not reduce this to a comma-separated list of names: that representation loses the operator and destination required by implementation.
 
-> **The SDD carries natural form; impl applies the per-sink canonical wrap.** Values in the canonical form use the natural prefix notation shown above — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<-`. The implementation step rewrites each value to its canonical sink form when constructing `caseplan.json` (e.g., `=js:(vars.X)` for connector body fields, `=js:metadata.X` for `=metadata` references in any sink that runs the JS evaluator). Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+> **The SDD carries natural form; impl applies the per-sink canonical wrap.** Values in the canonical form use the natural prefix notation shown above — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<-`. The implementation step rewrites each value to its canonical sink form when constructing `caseplan.case` (e.g., `=js:(vars.X)` for connector body fields, `=js:metadata.X` for `=metadata` references in any sink that runs the JS evaluator). Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## I/O table validation rules
 

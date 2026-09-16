@@ -25,7 +25,7 @@ initial_prompt: |
   to discover the correct varId — never fabricate).
 
   Use the same name for solution and project so the case file lives at
-  ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json.
+  ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case.
 
   Write this sdd.md to sdd.md first, then build from it:
 
@@ -167,18 +167,18 @@ initial_prompt: |
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
   {
-    "caseplan_path": "<path to caseplan.json>",
+    "caseplan_path": "<path to caseplan.case>",
     "action_task_id": "<id of Review Expense>",
     "downstream_task_id": "<id of Log Decision>",
     "skeleton_action": <true|false>,
-    "result_path_used": "<actual binding string used in caseplan.json or the registry-audit wiring notes — e.g. =vars.<varId> or 'Review'.'Review Expense'.approved>",
+    "result_path_used": "<actual binding string used in caseplan.case or the registry-audit wiring notes — e.g. =vars.<varId> or 'Review'.'Review Expense'.approved>",
     "validation_passed": true
   }
 
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json --output json"
+    command: "uip maestro case validate ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -186,7 +186,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains both action and process tasks"
-    path: "ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json"
+    path: "ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -198,8 +198,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Cross-task wiring is recorded — `=vars.` in caseplan.json OR a Review Expense.approved reference in the registry audit"
-    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'Review Expense.*approved' tasks/registry-resolved.json"
+    description: "Cross-task wiring is recorded — `=vars.` in caseplan.case OR a Review Expense.approved reference in the registry audit"
+    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case || grep -q 'Review Expense.*approved' tasks/registry-resolved.json"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -207,7 +207,7 @@ success_criteria:
 
   - type: run_command
     description: "the action output binding for `approved` is recorded (caseplan on the resolved path, registry audit on the skeleton path)"
-    command: "grep -q 'approved' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'approved' tasks/registry-resolved.json"
+    command: "grep -q 'approved' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case || grep -q 'approved' tasks/registry-resolved.json"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

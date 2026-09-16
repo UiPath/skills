@@ -21,7 +21,7 @@ CASE_ROOT = Path(__file__).resolve().parents[1]
 ADD_TASK_YAML = CASE_ROOT / "edit" / "add_task_run_once_default" / "add_task_run_once_default.yaml"
 ENVELOPE_YAML = CASE_ROOT / "single_node" / "run_once_envelope" / "run_once_envelope.yaml"
 LINEAR_FIXTURE = (
-    CASE_ROOT / "edit" / "templates" / "LinearThreeStages" / "LinearThreeStages" / "caseplan.json"
+    CASE_ROOT / "edit" / "templates" / "LinearThreeStages" / "LinearThreeStages" / "caseplan.case"
 )
 
 def load_expressions(task_yaml: Path, *, advisory: bool = False) -> list[tuple[str, object]]:

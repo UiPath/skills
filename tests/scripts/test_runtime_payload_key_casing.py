@@ -12,7 +12,7 @@ case-insensitive accessor (``_get_ci``).
 
 This test fails if any checker reads a RUNTIME-ONLY key — ``finalStatus`` or
 ``elementExecutions``, which exist only in debug output, never in ``.flow`` /
-``caseplan.json`` source — by a hard-coded lowercase ``.get("…")`` / ``["…"]``
+``caseplan.case`` source — by a hard-coded lowercase ``.get("…")`` / ``["…"]``
 instead of through ``_get_ci``. It deliberately targets only those two
 unambiguous keys (``variables``/``outputs``/``value`` also appear in source
 files and would false-positive).

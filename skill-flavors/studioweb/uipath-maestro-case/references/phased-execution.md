@@ -25,5 +25,5 @@ If `publish` fails, print the CLI error verbatim, note it in `build-issues.md`, 
 <!--skill-flavor:phase-seven-on-failure:end-->
 
 <!--skill-flavor:phase-seven-next-steps:start-->
-Before the prompt: `Suggested next steps: publish to Orchestrator when you want the case on the tenant solution feed, or stop here if Studio Web and debug are enough.` After a successful publish: `Suggested next steps: check the publish result in Studio Web's Publish history, then deploy it to an Orchestrator folder from Orchestrator.` On `Done`: `Suggested next steps: review caseplan.json in Studio Web, or update sdd.md and re-run when you want changes.`
+Before the prompt: `Suggested next steps: publish to Orchestrator when you want the case on the tenant solution feed, or stop here if Studio Web and debug are enough.` After a successful publish: `Suggested next steps: check the publish result in Studio Web's Publish history, then deploy it to an Orchestrator folder from Orchestrator.` On `Done`: `Suggested next steps: review caseplan.case in Studio Web, or update sdd.md and re-run when you want changes.`
 <!--skill-flavor:phase-seven-next-steps:end-->

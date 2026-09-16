@@ -1,5 +1,5 @@
 import json,os,re,sys
-CP = "LinearThreeStages/LinearThreeStages/caseplan.json"
+CP = "LinearThreeStages/LinearThreeStages/caseplan.case"
 def fail(m): sys.exit(f"FAIL: {m}")
 def load():
     if not os.path.isfile(CP): fail(f"{CP} not found")

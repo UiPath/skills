@@ -55,7 +55,7 @@ def load(path):
         return None
 
 
-caseplan = load(PROJECT / "caseplan.json")
+caseplan = load(PROJECT / "caseplan.case")
 bindings_v2 = load(PROJECT / "bindings_v2.json")
 
 if caseplan is not None:
@@ -68,11 +68,11 @@ if caseplan is not None:
     names = [t.get("displayName") for t in tasks]
 
     if REMOVED_TASK in names:
-        failures.append(f'task "{REMOVED_TASK}" is still in caseplan.json')
+        failures.append(f'task "{REMOVED_TASK}" is still in caseplan.case')
 
     if caseplan.get("bindings"):
         ids = [b.get("id") for b in caseplan["bindings"]]
-        failures.append(f"caseplan.json still carries bindings {ids} - expected none")
+        failures.append(f"caseplan.case still carries bindings {ids} - expected none")
 
     added = [
         t

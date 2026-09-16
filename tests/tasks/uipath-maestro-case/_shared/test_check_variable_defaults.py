@@ -36,7 +36,7 @@ def run(tmp_path, case=None, *, nested="Sol/Proj"):
     if case is not None:
         d = tmp_path / nested
         d.mkdir(parents=True, exist_ok=True)
-        (d / "caseplan.json").write_text(json.dumps(case))
+        (d / "caseplan.case").write_text(json.dumps(case))
     return subprocess.run([sys.executable, str(CHECKER)], cwd=tmp_path,
                           capture_output=True, text=True)
 
@@ -124,7 +124,7 @@ def test_all_variable_arrays_scanned(tmp_path, arr):
 def test_venv_copies_ignored(tmp_path):
     v = tmp_path / ".venv" / "s"
     v.mkdir(parents=True)
-    (v / "caseplan.json").write_text(json.dumps(caseplan(var("x", "jsonSchema", default={}))))
+    (v / "caseplan.case").write_text(json.dumps(caseplan(var("x", "jsonSchema", default={}))))
     res = run(tmp_path, caseplan(var("ok", "string", default="fine")))
     assert res.returncode == 0, res.stdout
 
@@ -132,7 +132,7 @@ def test_venv_copies_ignored(tmp_path):
 def test_unparseable_caseplan_fails(tmp_path):
     d = tmp_path / "Sol" / "Proj"
     d.mkdir(parents=True)
-    (d / "caseplan.json").write_text("{ not json")
+    (d / "caseplan.case").write_text("{ not json")
     res = subprocess.run([sys.executable, str(CHECKER)], cwd=tmp_path,
                          capture_output=True, text=True)
     assert res.returncode == 1

@@ -48,7 +48,7 @@ The **area** (which product) becomes the title tag and a Jira label for filterin
 | `uip rpa …`, or `project.json` + `*.cs`/`*.xaml` | `RPA` |
 | `uip maestro flow …`, or `*.flow` file | `Flow` |
 | `uip maestro bpmn …`, or `*.bpmn` file | `BPMN` |
-| `uip maestro case …`, or `caseplan.json` | `Case` |
+| `uip maestro case …`, or `caseplan.case` | `Case` |
 | `uip <agent…>`, or `pyproject.toml` with `uipath` / `agent.json` | `Agents` |
 | `uip codedapp …`, or `app.config.json` / `action-schema.json` | `CodedApps` |
 | `uip api-workflow …` | `ApiWorkflow` |

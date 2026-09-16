@@ -6,7 +6,7 @@ description: >
   (unreachable / dangling reference) and Intake's task carries an invalid
   `type: "wait-for-event"` outside the closed 9-value enum (Rule 16). Exercises
   the skill's validate → read-structured-errors → fix → re-validate loop on a
-  pre-broken caseplan.json. Local-only (validate, no debug) — the agent must
+  pre-broken caseplan.case. Local-only (validate, no debug) — the agent must
   fix the actual root causes, not delete stages to silence the validator.
 tags: [uipath-maestro-case, e2e, mode:diagnose, lifecycle:edit, shape:multi-node, feature:conditions]
 max_iterations: 1
@@ -27,7 +27,7 @@ reference:
 initial_prompt: |
   The LinearThreeStages case solution already exists on disk under
   LinearThreeStages/. Its case definition
-  (LinearThreeStages/LinearThreeStages/caseplan.json) currently FAILS
+  (LinearThreeStages/LinearThreeStages/caseplan.case) currently FAILS
   `uip maestro case validate` — someone left the file in a broken state.
 
   Diagnose and repair it so it validates cleanly, keeping the intended design:
@@ -36,7 +36,7 @@ initial_prompt: |
 
   Use the uipath-maestro-case skill's validate → fix loop: run
   `uip maestro case validate` to surface the structured errors, read them, fix
-  each root cause directly in caseplan.json, and re-validate until it passes.
+  each root cause directly in caseplan.case, and re-validate until it passes.
 
   - Fix the ACTUAL defects. Do NOT delete stages, tasks, conditions, the
     trigger, or the case-exit rule to make errors disappear — all three stages
@@ -44,7 +44,7 @@ initial_prompt: |
   - Do NOT run `uip maestro case debug` — validation is the bar here.
   - Do NOT ask for approval, confirmation, or feedback. Work end-to-end in a
     single pass and finish with `uip maestro case validate` passing on
-    LinearThreeStages/LinearThreeStages/caseplan.json.
+    LinearThreeStages/LinearThreeStages/caseplan.case.
 
   Before starting, load the uipath-maestro-case skill and follow its
   troubleshooting / validate-loop workflow.
@@ -66,8 +66,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro case validate passes on the repaired caseplan.json"
-    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    description: "uip maestro case validate passes on the repaired caseplan.case"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

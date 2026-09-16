@@ -23,13 +23,13 @@ initial_prompt: |
   the missing fields and submit. I do NOT have a deployed Action Center
   app for this — please use whatever approach works without one.
 
-  The starting caseplan.json already exists on disk at ./caseplan.json.
+  The starting caseplan.case already exists on disk at ./caseplan.case.
   It has one stage (Stage_aB3kL9, "Review") and no HITL task yet.
 
   Add a HITL action task to Stage_aB3kL9. The reviewer:
     - sees the raw extract from the agent (read-only, bound to an
       existing case variable — read the available variables from
-      caseplan.json)
+      caseplan.case)
     - fills in vendorName (text, required) and costCenter (text, required)
     - clicks Submit
 
@@ -50,8 +50,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "caseplan.json action task has hitlType: quick context entry"
-    path: "caseplan.json"
+    description: "caseplan.case action task has hitlType: quick context entry"
+    path: "caseplan.case"
     includes:
       - '"hitlType"'
       - '"quick"'
@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "QuickForm path must NOT contain =bindings. references (the app-based fingerprint)"
-    command: "! grep -q '=bindings\\.' caseplan.json"
+    command: "! grep -q '=bindings\\.' caseplan.case"
     timeout: 10
     expected_exit_code: 0
     weight: 2.5

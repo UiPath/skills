@@ -83,8 +83,8 @@ success_criteria:
   # Advisory: convention adherence, not the objective. "Not if it validated" — a case
   # that validates while notifying nobody has not achieved anything.
   - type: run_command
-    description: "ADVISORY — uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate OutcomeExpenseApproval/OutcomeExpenseApproval/caseplan.json --output json"
+    description: "ADVISORY — uip maestro case validate passes on the generated caseplan.case"
+    command: "uip maestro case validate OutcomeExpenseApproval/OutcomeExpenseApproval/caseplan.case --output json"
     timeout: 60
     weight: 1.0
     pass_threshold: 0

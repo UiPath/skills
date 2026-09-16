@@ -12,7 +12,7 @@ asserts the placeholder shape and its sibling-file coupling:
   3. No trigger edge is created (edges retired) — `schema.edges` stays `[]`.
   4. The case still starts: some stage has a `case-entered` entry condition
      (the placeholder event trigger does not itself edge into a stage).
-  5. `entry-points.json` (sibling of caseplan.json) has an entry whose
+  5. `entry-points.json` (sibling of caseplan.case) has an entry whose
      `filePath` references the event trigger node id.
 """
 
@@ -90,7 +90,7 @@ def main():
     # 5. entry-points.json references the event trigger node.
     ep_path = os.path.join(os.path.dirname(caseplan_path), "entry-points.json")
     if not os.path.exists(ep_path):
-        _fail(f"entry-points.json not found next to caseplan.json ({ep_path})")
+        _fail(f"entry-points.json not found next to caseplan.case ({ep_path})")
     with open(ep_path) as f:
         ep = json.load(f)
     entries = ep.get("entryPoints") or []

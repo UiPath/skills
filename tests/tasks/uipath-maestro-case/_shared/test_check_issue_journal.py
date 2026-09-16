@@ -15,7 +15,7 @@ CHECKER = Path(__file__).with_name("check_issue_journal.py")
 
 GOOD = """# Build Issues — Stub
 
-**Case file:** caseplan.json | **Build started:** 2026-08-13T00:00:00Z
+**Case file:** caseplan.case | **Build started:** 2026-08-13T00:00:00Z
 
 <!--build-issues:summary:start-->
 | Category | Errors | Warnings | Skipped |
@@ -81,7 +81,7 @@ def caseplan(placeholder=True):
 def run(tmp_path, *, case=None, log=None, audit=None):
     if case is not None:
         d = tmp_path / "Sol" / "Proj"; d.mkdir(parents=True, exist_ok=True)
-        (d / "caseplan.json").write_text(json.dumps(case))
+        (d / "caseplan.case").write_text(json.dumps(case))
     for name, content in (("build-issues.md", log), ("registry-resolved.json", audit)):
         if content is not None:
             d = tmp_path / "tasks"; d.mkdir(parents=True, exist_ok=True)
@@ -170,7 +170,7 @@ def test_unresolved_markers_alone_require_a_journal(tmp_path):
 def test_venv_copies_ignored(tmp_path):
     """A placeholder-laden caseplan inside .venv must not drive the verdict."""
     v = tmp_path / ".venv" / "s"; v.mkdir(parents=True)
-    (v / "caseplan.json").write_text(json.dumps(caseplan()))
+    (v / "caseplan.case").write_text(json.dumps(caseplan()))
     res = run(tmp_path, case=caseplan(placeholder=False),
               audit=CLEAN_AUDIT, log=EMPTY_JOURNAL)
     assert res.returncode == 0, res.stdout

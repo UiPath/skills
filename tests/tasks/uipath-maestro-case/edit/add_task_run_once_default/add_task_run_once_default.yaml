@@ -24,7 +24,7 @@ sandbox:
 initial_prompt: |
   The LinearThreeStages case solution already exists on disk under
   LinearThreeStages/. Its case definition
-  (LinearThreeStages/LinearThreeStages/caseplan.json) chains three stages
+  (LinearThreeStages/LinearThreeStages/caseplan.case) chains three stages
   linearly: Intake → Review → Decision. The Review stage runs two parallel
   wait-for-timer tasks in distinct data.tasks lanes: "Hold For 1 Hour" and
   "Notify Reviewer".
@@ -42,14 +42,14 @@ initial_prompt: |
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Make the edit end-to-end in a single pass and
   finish with `uip maestro case validate` passing on the resulting
-  caseplan.json.
+  caseplan.case.
   Before starting, load the uipath-maestro-case skill. Read and follow its
   workflow steps exactly.
 
 success_criteria:
   - type: run_command
-    description: "uip maestro case validate passes on the edited caseplan.json"
-    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    description: "uip maestro case validate passes on the edited caseplan.case"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -60,7 +60,7 @@ success_criteria:
   # tasks are graded on their exact stored values, since an edit must not rewrite them at all.
   - type: json_check
     description: "The new task is not run-once, both existing Review tasks keep their original flags, and no other task was flipped to run-once"
-    path: "LinearThreeStages/LinearThreeStages/caseplan.json"
+    path: "LinearThreeStages/LinearThreeStages/caseplan.case"
     assertions:
       - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder' && shouldRunOnlyOnce!=`true`])"
         operator: equals
@@ -86,7 +86,7 @@ success_criteria:
   # Advisory — see the note above; implementation.md says to write the default, not omit it.
   - type: json_check
     description: "Advisory: the newly added task emits shouldRunOnlyOnce explicitly instead of omitting it"
-    path: "LinearThreeStages/LinearThreeStages/caseplan.json"
+    path: "LinearThreeStages/LinearThreeStages/caseplan.case"
     assertions:
       - expression: "nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder'] | [0].shouldRunOnlyOnce"
         operator: equals

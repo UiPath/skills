@@ -103,7 +103,7 @@ def main() -> None:
 
     SIBLINGS = ("Wait for Payment Confirmation", "Payment Deadline")
 
-    # sdd.md is the design AND the build plan — Phase 2 writes caseplan.json from
+    # sdd.md is the design AND the build plan — Phase 2 writes caseplan.case from
     # it directly — so every activation-mode decision is graded here.
     for name in SIBLINGS:
         block = sdd_task_block(sdd, name)

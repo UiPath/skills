@@ -41,7 +41,7 @@ VARIABLE_ARRAYS = ("inputs", "outputs", "inputOutputs")
 
 
 def find_caseplans(root: Path):
-    for p in root.rglob("caseplan.json"):
+    for p in root.rglob("caseplan.case"):
         if SKIP.isdisjoint(p.parts):
             yield p
 
@@ -79,7 +79,7 @@ def main() -> int:
     plans = list(find_caseplans(root))
 
     if not plans:
-        print("PASS: no caseplan.json under the sandbox — nothing to check.")
+        print("PASS: no caseplan.case under the sandbox — nothing to check.")
         return 0
 
     total_bad = 0

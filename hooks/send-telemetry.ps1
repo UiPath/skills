@@ -223,7 +223,10 @@ function Get-DerivedFields([string]$Tool, [string]$Skill, [string]$Command, [str
       $m = [regex]::Match($FilePath, '\.[A-Za-z0-9]+$')
       if ($m.Success) { $derived.fileExt = $m.Value }
       if ($FilePath -clike '*agent.json') { $derived.fileExt = 'agent.json' }
-      if ($FilePath -clike '*caseplan.json') { $derived.fileExt = 'caseplan.json' }
+      # Studio Web saves the plan as caseplan.case; `case init` still scaffolds
+      # caseplan.json. Both are a case plan: collapse to one dimension value.
+      if ($FilePath -clike '*caseplan.case') { $derived.fileExt = 'caseplan.case' }
+      if ($FilePath -clike '*caseplan.json') { $derived.fileExt = 'caseplan.case' }
       break
     }
   }

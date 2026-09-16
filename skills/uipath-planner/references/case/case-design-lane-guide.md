@@ -10,7 +10,7 @@ Case knowledge is split three ways. Read all three to begin, in parallel, **at m
 | [case-design-layers-guide.md](case-design-layers-guide.md) | the case model and every design **Default** — skeleton, gates, data, SLAs, naming, the closure checklist |
 | [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) | the render contract — skeleton, cell rules inline, validation footer |
 
-That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
+That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (caseplan.case, validate, publish) belongs to `uipath-maestro-case`.
 
 **Draft finalization reads less (hard):** this file's §Resumption + §Terminal step, `sdd.draft.md`, and the template (its validation footer is the gate) — once each. NOT the layers guide: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists.
 
@@ -112,7 +112,7 @@ Settle before Confirm: case name, prefix, ≥ 1 trigger, ≥ 1 stage, ≥ 1 type
 
 Every non-verbatim value gets a source-ledger entry AND a line in the confirmation's `Decisions` block. Every stage, task, and configured SLA gets a durable `Design Rationale` covering kind/type, activation/sequencing, and the routing/threshold choice. Resources resolve per §Tenant grounding. The model lives in memory — **no draft file, no checkpoint writes**.
 
-**Bounded no-build design — plan-only requests.** Request stops before `caseplan.json` (design + implementation plan only, tenant work forbidden): once the model covers the stated stages, tasks, global interrupts, SLAs, variables, resources, and rationales — write. **Concise CONTENT, exact SHAPE.**
+**Bounded no-build design — plan-only requests.** Request stops before `caseplan.case` (design + implementation plan only, tenant work forbidden): once the model covers the stated stages, tasks, global interrupts, SLAs, variables, resources, and rationales — write. **Concise CONTENT, exact SHAPE.**
 
 1. **Shape never relaxes.** The template's heading skeleton, the per-stage Entry/Exit Conditions TABLES (rule syntax included), the per-task detail blocks with `**Task envelope**`, and the Planner Handoff header all hold. A freeform outline (`## 1. Case Metadata…`, `## Decisions I Made` as a body section) is a blocking render failure in this mode too.
 2. **Concision lives only in prose depth.** One rationale sentence per stage/task/SLA/exception choice; no expanded examples, provenance prose, or registry audit detail.
@@ -193,7 +193,7 @@ Structured gap escalations — a field could not be fully resolved but the build
 
 ### Template conformance gate — before `sdd.md` is written
 
-Mechanized by `audit_sdd.py` — the template's § Validation footer is the contract (document skeleton, per-block markers, forbidden summary-only sections). Skeleton head: `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows. Run it against the **written file, before the `Status: ready` flip** — every mode; one structural Read is allowed to repair findings. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.json` would validate.
+Mechanized by `audit_sdd.py` — the template's § Validation footer is the contract (document skeleton, per-block markers, forbidden summary-only sections). Skeleton head: `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows. Run it against the **written file, before the `Status: ready` flip** — every mode; one structural Read is allowed to repair findings. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.case` would validate.
 
 ### Terminal step — write the SDD
 

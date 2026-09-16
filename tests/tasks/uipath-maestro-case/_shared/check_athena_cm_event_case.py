@@ -21,7 +21,7 @@ from _shared.case_check import (  # noqa: E402
 )
 
 
-CASEPLAN_PATH = os.path.join("AthenaCMEventCase", "AthenaCMEventCase", "caseplan.json")
+CASEPLAN_PATH = os.path.join("AthenaCMEventCase", "AthenaCMEventCase", "caseplan.case")
 TASK_FLAGS = {
     "StageATask1": (True, False),
     "StageATask2": (True, True),

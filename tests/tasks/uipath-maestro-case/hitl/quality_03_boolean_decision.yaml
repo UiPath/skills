@@ -32,7 +32,7 @@ initial_prompt: |
   Rejected   enters on `selected-stage-exited("Compliance")` IF `approved == false`.
 
   Use the same name for solution and project so the case file lives at
-  VendorApprovalCase/VendorApprovalCase/caseplan.json.
+  VendorApprovalCase/VendorApprovalCase/caseplan.case.
 
   Write this sdd.md to sdd.md first, then build from it:
 
@@ -233,7 +233,7 @@ initial_prompt: |
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
   {
-    "caseplan_path": "<path to caseplan.json>",
+    "caseplan_path": "<path to caseplan.case>",
     "action_task_id": "<id of Compliance Review>",
     "approve_exit_expression": "<IF expression on Compliance approve exit>",
     "reject_exit_expression":  "<IF expression on Compliance reject exit>",
@@ -245,7 +245,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate VendorApprovalCase/VendorApprovalCase/caseplan.json --output json"
+    command: "uip maestro case validate VendorApprovalCase/VendorApprovalCase/caseplan.case --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -253,7 +253,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains an action task"
-    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    path: "VendorApprovalCase/VendorApprovalCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -263,7 +263,7 @@ success_criteria:
 
   - type: run_command
     description: "Both semantic boolean branches reference approved"
-    command: "python3 $REFERENCE_DIR/check_boolean_routing.py VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    command: "python3 $REFERENCE_DIR/check_boolean_routing.py VendorApprovalCase/VendorApprovalCase/caseplan.case"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -271,7 +271,7 @@ success_criteria:
 
   - type: file_contains
     description: "Caseplan uses selected-tasks-completed (exits) and selected-stage-exited (entries)"
-    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    path: "VendorApprovalCase/VendorApprovalCase/caseplan.case"
     includes:
       - "selected-tasks-completed"
       - "selected-stage-exited"

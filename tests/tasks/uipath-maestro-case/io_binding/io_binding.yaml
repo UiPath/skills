@@ -37,7 +37,7 @@ initial_prompt: |
   Build end-to-end in one pass and finish with `uip maestro case validate`
   passing. Bind the exact existing resources and folders written in the SDD;
   do not create an inline API workflow or add an API project to the solution.
-  Bind every SDD Outputs row into caseplan.json, including both
+  Bind every SDD Outputs row into caseplan.case, including both
   `estimatedAge -> estimatedAge` rows. Discover the undeclared top-level
   `APIOutput1` resource output and auto-mint it as a bare output; do not
   invent an operator-free Outputs row in sdd.md.
@@ -49,8 +49,8 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate IoBindingCase/IoBindingCase/caseplan.json --output json"
+    description: "uip maestro case validate passes on the generated caseplan.case"
+    command: "uip maestro case validate IoBindingCase/IoBindingCase/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

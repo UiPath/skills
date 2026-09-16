@@ -10,7 +10,7 @@ Investigate in this order — each step adds context, stop when you have enough 
 
 1. Incidents (error message + faulting element)
 2. Runtime variables (data state at failure)
-3. Case definition correlation (map element to `caseplan.json` node)
+3. Case definition correlation (map element to `caseplan.case` node)
 4. Traces (last resort — verbose full timeline)
 
 ## Step 1 — Get the instance ID
@@ -71,15 +71,15 @@ uip maestro case instance variables <INSTANCE_ID> --folder-key <FOLDER_KEY> --pa
 
 ## Step 4 — Correlate with the case definition
 
-Use the incident's faulting element ID and the variable state to locate the failure point in `caseplan.json`. Map the element ID to the corresponding stage or task, check its `data.inputs[]`, the entry/exit conditions that route into it, and the variable values flowing into it.
+Use the incident's faulting element ID and the variable state to locate the failure point in `caseplan.case`. Map the element ID to the corresponding stage or task, check its `data.inputs[]`, the entry/exit conditions that route into it, and the variable values flowing into it.
 
-If the local `caseplan.json` may differ from what was deployed, fetch the deployed case definition:
+If the local `caseplan.case` may differ from what was deployed, fetch the deployed case definition:
 
 ```bash
 uip maestro case instance asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
 ```
 
-> **`instance asset` fails →** fall back to local `caseplan.json`.
+> **`instance asset` fails →** fall back to local `caseplan.case`.
 
 Additional instance inspection commands:
 
@@ -105,7 +105,7 @@ uip maestro case job traces <JOB_KEY> --pretty                  # human-readable
 2. **Empty result → next step.** If a step returns empty/missing data, move to the next step. Do not retry the same command.
 3. **One retry on transient failure** (auth, network). Second failure: halt that step, continue.
 4. **Max one full pass through Steps 1–5.** No looping.
-5. **Escalate to user** if Steps 1–5 yield no root cause, or all paths blocked. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot. Do not propose `caseplan.json` edits without confirmed cause.
+5. **Escalate to user** if Steps 1–5 yield no root cause, or all paths blocked. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot. Do not propose `caseplan.case` edits without confirmed cause.
 
 ## CLI command reference
 
