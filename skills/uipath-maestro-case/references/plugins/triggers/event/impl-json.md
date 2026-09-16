@@ -149,7 +149,7 @@ When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or
 
 **Log:** `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.`
 
-**Upgrade:** regenerate from scratch (Rule 6) — no in-place mutation path. Trigger config is sibling-file-coupled (`entry-points.json`, root variable bindings); a partial in-place edit leaves siblings stale.
+**Upgrade:** regenerate from scratch (Rule 7) — no in-place mutation path. Trigger config is sibling-file-coupled (`entry-points.json`, root variable bindings); a partial in-place edit leaves siblings stale.
 
 ## Graceful degradation — unified placeholder conditions
 
