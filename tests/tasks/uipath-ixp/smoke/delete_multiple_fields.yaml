@@ -30,23 +30,25 @@ initial_prompt: |
 
 success_criteria:
   - type: cli_called
-    description: "Agent deleted field1 via `fields delete my_invoices-f1afa9ef-ixp --group 'Invoice Header' --field field1`"
+    description: "Agent deleted field1 via `fields delete my_invoices-f1afa9ef-ixp --group 'Invoice Header' --field field1 -y/--yes`"
     verb: "ixp fields delete"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
     flags:
       group: "Invoice Header"
       field: "field1"
+      "yes": {present: true, aliases: ["y"]}
     weight: 2.0
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Agent deleted field2 via `fields delete my_invoices-f1afa9ef-ixp --group 'Invoice Header' --field field2` (both, not just one)"
+    description: "Agent deleted field2 via `fields delete my_invoices-f1afa9ef-ixp --group 'Invoice Header' --field field2 -y/--yes` (both, not just one)"
     verb: "ixp fields delete"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
     flags:
       group: "Invoice Header"
       field: "field2"
+      "yes": {present: true, aliases: ["y"]}
     weight: 2.0
     pass_threshold: 1.0

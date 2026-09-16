@@ -28,13 +28,14 @@ initial_prompt: |
 
 success_criteria:
   - type: cli_called
-    description: "Agent added the field via `fields add my_invoices-f1afa9ef-ixp --group 'Subscriber information' --field email`"
+    description: "Agent added the field via `fields add my_invoices-f1afa9ef-ixp --group 'Subscriber information' --field email`, with a non-empty --type and --instructions"
     verb: "ixp fields add"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
-    value_flags: ["type", "instructions", "output"]
     flags:
       group: "Subscriber information"
       field: "email"
+      type: {matches_regex: ".+"}
+      instructions: {matches_regex: ".+"}
     weight: 3.0
     pass_threshold: 1.0
