@@ -110,11 +110,7 @@ def one_variable(
     kind: str,
     element_id: str,
 ) -> ET.Element:
-    # Scope is expressed by elementId for EVERY root declaration — the process
-    # id for a process-scoped variable, the owning node's id otherwise. A
-    # declaration without one does not exist to the canvas and every vars.<id>
-    # reference to it fails on import (#3211, verified in Studio Web against
-    # PO.Frontend VariableValidationUtils.ts).
+    # elementId is the scope: the owning element's id, never absent (#3211).
     return exactly_one(
         [
             variable
@@ -174,17 +170,16 @@ def bridge_target(
     element: ET.Element,
     *,
     source: str,
-    output_type: str,
 ) -> str:
-    # Matched by source + type + a non-empty target var. The output's `name`
-    # (and the internal variable's) is display metadata — expressions resolve
-    # ids, so pinning internal names would grade naming style, not behaviour.
+    # Matched by source + a non-empty target var. The output's `name` and
+    # `type` are display metadata — expressions resolve ids and the type
+    # contract lives on the variable declarations, so pinning either here
+    # would grade serialization style, not behaviour.
     output = exactly_one(
         [
             candidate
             for candidate in mapping_outputs(element)
             if candidate.attrib.get("source") == source
-            and candidate.attrib.get("type") == output_type
             and candidate.attrib.get("var")
         ],
         f"variable bridge from {source!r}",
@@ -436,12 +431,10 @@ def main() -> None:
     internal_amount_id = bridge_target(
         start,
         source=f"=vars.{attr(public_amount, 'id')}",
-        output_type="double",
     )
     internal_days_id = bridge_target(
         start,
         source=f"=vars.{attr(public_days, 'id')}",
-        output_type="integer",
     )
     if internal_amount_id == internal_days_id:
         fail("the amount and daysOverdue bridges must target distinct variables")
@@ -449,9 +442,7 @@ def main() -> None:
         [
             output
             for output in mapping_outputs(end)
-            if output.attrib.get("name") == "riskScore"
-            and output.attrib.get("var") == attr(public_risk, "id")
-            and output.attrib.get("type") == "double"
+            if output.attrib.get("var") == attr(public_risk, "id")
             and re.fullmatch(
                 r"=vars\.[\w.-]+",
                 output.attrib.get("source", ""),
@@ -461,9 +452,6 @@ def main() -> None:
     )
     result_variable_id = attr(end_output, "source").removeprefix("=vars.")
 
-    # The bridges are resolved by id from the StartEvent mapping, so the
-    # internal variables' display names are not pinned — only their kind,
-    # type, and process scope carry runtime meaning.
     for variable_id, expected_type in (
         (internal_amount_id, "double"),
         (internal_days_id, "integer"),
@@ -476,8 +464,7 @@ def main() -> None:
         if variable.attrib.get("elementId") != process_id:
             fail(
                 f"{variable_id!r} must be process-scoped via "
-                f"elementId={process_id!r} — a root variable without an "
-                "elementId does not exist to the canvas (#3211)"
+                f"elementId={process_id!r} (#3211)"
             )
 
     response_id = attr(response, "id")
@@ -579,9 +566,6 @@ def main() -> None:
                 "the two standard ScriptTask outputs"
             )
     else:
-        # Resolved by id from the EndEvent bridge; the display name is not
-        # pinned. Scope must name an owning element (task or process) — an
-        # elementId-less declaration does not exist to the canvas (#3211).
         business_result = variable_by_id(variables, result_variable_id)
         if local_name(business_result) != "inputOutput":
             fail("the optional business result must be a mutable inputOutput variable")
