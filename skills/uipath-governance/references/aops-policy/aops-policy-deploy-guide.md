@@ -184,7 +184,7 @@ Run `uip gov aops-policy deployment group list --output json`. Parse `Data.resul
 
 If the group is not yet known to the governance service, fall back to the IdP:
 
-1. Run `uip admin groups list --output json` and filter client-side: `--output-filter "Data[?contains(displayName, '<NAME>')]"`. `uip admin groups list` has **no** `--search` flag (see [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md)).
+1. Run `uip admin groups list --output json` and filter client-side: `--output-filter "[?contains(displayName, '<NAME>')]"`. `uip admin groups list` has **no** `--search` flag (see [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md)).
 2. From the matched record, take `id` as `$GROUP_ID` and `displayName` as `$GROUP_DISPLAY_NAME`. Set `$GROUP_SOURCE` from the IdP origin.
 3. `configure` auto-registers the group via the `AddGroup` endpoint on first call — no separate registration step is needed.
 4. If the IdP lookup also returns nothing, ask the caller to supply the GUID and display name directly.

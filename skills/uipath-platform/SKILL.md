@@ -294,7 +294,7 @@ Every `uip` command accepts:
 >
 > **To narrow `list` results, use the noun's own filter flag** (`--state Faulted`, `--type Text`, `--status New`, `--name`, `--process-name`, `--search`). The backend filters before sending; pagination stays correct. Per-noun flags: [references/uip-commands.md](references/uip-commands.md). Never list-everything-then-filter-mentally.
 >
-> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "Data[].{id: id, name: name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute.
+> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "[].{id: id, name: name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute. The expression is evaluated against the `Data` payload, so it starts inside `Data` and never names it: write `[].Key` or `items[].slug`, never `Data[].Key`, which looks for a `Data` key inside `Data` and silently returns nothing.
 
 ## Deployment Notes
 

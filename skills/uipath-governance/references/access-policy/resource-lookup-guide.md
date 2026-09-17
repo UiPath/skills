@@ -152,7 +152,7 @@ Filter client-side with `--output-filter` when the tenant has many folders:
 ```bash
 uip or folders list \
   --output json \
-  --output-filter "Data[?contains(FullyQualifiedName, 'Prod')]"
+  --output-filter "[?contains(FullyQualifiedName, 'Prod')]"
 ```
 
 ---
@@ -196,7 +196,7 @@ Response: `Data` is an array; each entry has `id` (UUID), `name`, `displayName`,
 ```bash
 uip admin groups list \
   --output json \
-  --output-filter "Data[?contains(displayName, 'Ops')]"
+  --output-filter "[?contains(displayName, 'Ops')]"
 ```
 
 Take the matching record's `id` as the Group UUID for `actorRule.values[]`. See [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md) for the broader group workflow. Only surface as an Open question on the Phase 1 Spec when the admin lookup returns nothing and the user cannot supply a GUID. Never fabricate.

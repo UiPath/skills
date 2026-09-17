@@ -94,7 +94,7 @@ uip admin users list \
   --search "jane.doe@example.com" \
   --limit 5 \
   --output json \
-  --output-filter "Data[0].id"
+  --output-filter "[0].id"
 ```
 
 The Identity Server user-list endpoint searches name/email columns and returns the user GUID, which equals the user’s audit-event `actorId`.
