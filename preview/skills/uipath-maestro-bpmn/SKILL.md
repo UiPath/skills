@@ -3,12 +3,7 @@ name: uipath-maestro-bpmn
 description: "TRIGGER for authoring structural-core UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, and semantic `.bpmn` output. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case. DO NOT TRIGGER for registry-backed typed BPMN nodes beyond the structural core."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
-<!--
-This file is CANONICAL. Edit it here. It was a snapshot of
-UiPath/flow-builder-sdk `typescript/sdk/skill/SKILL-bpmn.md` until
-flow-builder-sdk@b543763; the nightly re-sync that maintained it is gone
-(UiPath/flow-builder-sdk docs/SKILLS_PROMOTION_PLAN.md, phase 2).
--->
+<!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 
 # UiPath Maestro BPMN — TypeScript Builder SDK
 
@@ -41,20 +36,30 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    leave the template `init` wrote in place of your compiled output.
 7. Use the merge pipeline for targeted edits to an existing process.
 
+## API index
+
+Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
+true of the build that emitted it. The `@uipath/maestro-builder-sdk` package
+ships `dist/api-members.md`, keyed by field or method name (`gateway`), and
+`dist/api-index.md`, keyed by exported symbol (`BpmnBuilder`). Match one name — do not
+read either end to end — then read the span it gives you: the whole declaration,
+doc comment included. Both cover all three entry points; each file's own header
+spells the paths its rows are relative to.
+
 ## Capability router
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
-| Process and nested scopes | `bpmn`, `subProcess` | [Builders](references/api.md#bpmnbuilder-class) | `examples/NotifyChannel.bpmn.ts` |
-| Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [ScopeBuilder](references/api.md#scopebuilder-class) | `examples/NotifyChannel.bpmn.ts` |
+| Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Start, end, catch, throw, boundary | event methods | [Events](references/bpmn-runtime.md#events-and-timers) | `examples/NotifyChannel.bpmn.ts` |
-| Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](references/api.md#gatewayopts-interface) | `examples/NotifyChannel.bpmn.ts` |
-| Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](references/api.md#scopebuilder-class) | `examples/NotifyChannel.bpmn.ts` |
+| Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Human work | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/NotifyChannel.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/NotifyChannel.bpmn.ts` |
-| Generic registry activity | `activity` | [ActivityNodeOpts](references/api.md#activitynodeopts-interface) | `examples/NotifyChannel.bpmn.ts` |
+| Generic registry activity | `activity` | [ActivityNodeOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 
