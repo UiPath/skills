@@ -278,7 +278,7 @@ uip maestro case splice <caseplan.json> --node <taskId> --spec tasks/spec-cache.
 | `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks; mutually independent of `--spec` |
 | `--out <file>` | write elsewhere instead of in place |
 
-Output: `Code: CaseSplice` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` splices without complaint and fails `--strict` with `CASE_MGMT_CONNECTOR_RESOURCE_KEY_MISMATCH`.
+Output: `Code: CaseSplice` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` is refused — the message names both ids and no file is written.
 
 ---
 
