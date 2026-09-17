@@ -1,14 +1,18 @@
 task_id: skill-insights-smoke-critical-rules
 description: >
   Smoke test: agent correctly follows the uipath-insights skill's boundaries.
-  Presented with four requests — one in-scope (job failures) and three
-  out-of-scope (start a job, queue metrics, root-cause a specific error).
-  The agent should run an insights command for the first and NOT run insights
-  commands for the others. Auth errors are expected (no live tenant).
+  Presented with four requests: job failures and queue item metrics are both
+  in scope and belong to different families, while starting a job and
+  root-causing a specific error belong to other skills. The agent should
+  answer the first from `jobs`, must not reach for `jobs` to answer the queue
+  request, and must not run any insights command for the other two. Auth
+  errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover, negative]
 
 run_limits:
-  expected_turns: 8
+  # Two in-scope requests, one invocation each: Critical Rule 2 forbids
+  # batching them.
+  expected_turns: 10
 
 initial_prompt: |
   Handle each of these four requests using the appropriate approach.
@@ -33,29 +37,58 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # All three criteria span flags with the barrier
+  # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, and each of its three parts stops a
+  # different false result. The grader searches two haystacks and a hit on
+  # either counts (coder-eval 0.12.1, criteria/command_executed.py
+  # _match_haystacks): the raw `bash -lc "..."` text, and a normalized one that
+  # unwraps the wrapper and re-joins the argv with single spaces.
+  #
+  # (?!uip\s) stops the match at the next `uip `. It is what keeps a pattern
+  # inside the command it started in on the NORMALIZED haystack, where
+  # unescaped newlines have already collapsed to spaces, so a negated class
+  # alone cannot see the boundary between two batched commands.
+  # [^&;|\n] stops it at a shell separator or a bare newline. The newline still
+  # earns its place on the RAW haystack, which keeps newlines, and that is the
+  # only haystack left when a stray quote makes _normalize_shell return None.
+  # |\\\n lets the match cross a backslash line continuation, the multi-line
+  # form the guides teach (jobs-commands-guide.md:27). Without it the positive
+  # criterion misses a correct call, because shlex consumes the backslash and
+  # leaves a bare newline behind. Two e2e tasks in this tree use the same
+  # alternation: envelope-contract/all_commands_envelope_e2e.yaml:54 and
+  # job-health/job_health_investigation_e2e.yaml:56.
+  #
+  # The negatives name the forbidden shapes instead of a bare token, so a
+  # batched `echo` that merely mentions "start" or "queue" no longer fails a
+  # correct run. \b keeps `start` off --started-after, and anchoring on
+  # `jobs start` keeps it off `--time-event start`, a real flag value on both
+  # timeline commands that this skill now teaches. A bare .* would be worse
+  # than any of this, since re.DOTALL lets it leave the command entirely.
+  #
+  # Each negative needs its no-subcommand alternative as well as its
+  # subcommand-slot one, because `jobs --queue-name X` puts the flag where the
+  # subcommand belongs and `jobs\s+\S+\s+` then never matches. The bare
+  # `Invoice_Processing` literal is safe here only because no in-scope example
+  # in this prompt uses that name; do not copy that alternation onto a task
+  # where a legitimate command would mention it.
   - type: command_executed
     description: "Agent ran insights jobs for the in-scope request (job failures)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|top-failures|failure-details|summary)\s+.*--time-range'
+    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|top-failures|failure-details|summary)\s+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--time-range'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
-  # Negative patterns use [^&;|\n]* and \b, not .* : the grader compiles with
-  # re.DOTALL, so .* bleeds across command separators (a legitimate insights
-  # call batched with an out-of-scope command would false-fail), bare `start`
-  # matches --started-after, and bare `queue` matches the now-taught
-  # filter-queues discovery command.
   - type: command_not_executed
     description: "Agent did NOT run uip insights for starting a job (out of scope)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights[^&;|\n]*\bstart\b|uip\s+insights[^&;|\n]*Invoice_Processing'
+    command_pattern: 'uip\s+insights\s+jobs\s+start\b|uip\s+insights\s+jobs\s+\S+\s+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*Invoice_Processing'
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did NOT run uip insights jobs for queue metrics (not supported)"
+    description: "Agent did NOT answer the queue request from the jobs family"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs[^&;|\n]*queue'
+    command_pattern: 'uip\s+insights\s+jobs\s+queue|uip\s+insights\s+jobs\s+--queue|uip\s+insights\s+jobs\s+\S+\s+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--queue'
     weight: 2.0
     pass_threshold: 1.0
