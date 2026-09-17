@@ -16,12 +16,13 @@ run_limits:
   task_timeout: 3900
   turn_timeout: 2400
 
+# TASK_DIR is criterion-only (exposed to success_criteria run_command, not pre_run/post_run) — resolve via SKILLS_REPO_PATH.
 pre_run:
-  - command: "python3 $TASK_DIR/seed.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/e2e/api_workflow_composition/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $TASK_DIR/teardown.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/e2e/api_workflow_composition/teardown.py"
     timeout: 300
 
 initial_prompt: |
