@@ -42,8 +42,11 @@ Per artifact, in inventory order, using the source guide's signal tables. Collec
 | Hardcoded literals: paths, URLs, addresses, names, thresholds, columns | Configuration Questions |
 | Test cases, eval sets, assertions | Acceptance Criteria evidence |
 | Prompts and instructions (agents) | Business Rules (paraphrased) |
+| UI control recognition data (object maps, selectors, XPaths) | **Source artifact** `source/targets.json` (source guide § UI Target Locators) — never the genome body |
+| Data-driving rows (recordsets, data sheets) | **Source artifact** `source/test-data.json` + `source/process-data.json` (source guide § Test Data); literals also feed Configuration Questions |
+| Login accounts used per scenario | Platform Dependencies: one credential asset per account; the account identity stays in the test data, the secret never |
 
-Read every relevant file. No sampling, no "the helpers are similar".
+Read every relevant file. No sampling, no "the helpers are similar". The two source artifacts are part of every extraction whose source guide has the sections; execution builds the UI targets and migrates the test data from them ([source-migration-guide.md](source-migration-guide.md)).
 
 ### Step 4 — Build graphs
 
@@ -73,7 +76,7 @@ Write the **process genome first** (when applicable), then each **component geno
 | Overview | Purpose synthesised from names, targets, and data flow. Author's voice. Inferred intent gets `*[Inferred]*`. |
 | Target Applications / Actors and Systems | Resolved applications (source guide § Target Resolution). Human lanes, escalation recipients, task assignees become actors. |
 | Build With / Components | Source guide § Component Detection → skill per component; [skill-mapping-guide.md](skill-mapping-guide.md) decision tree for steps inside a hybrid component. |
-| Platform Dependencies | Source guide § Platform Resources. Keep the source resource name. |
+| Platform Dependencies | Source guide § Platform Resources. Keep the source resource name. One credential asset per login account the scenarios use, named after the account. |
 | Interface | Arguments, schemas, entry points. Must agree with the Handoffs rows that touch this component. |
 | Configuration Questions | Every hardcoded literal and every application choice: `N. {Question}? (default: {source value})`. |
 | Workflow / Process Map | Ordered from the call graph; substeps for every multi-field, conditional, or transforming step; `(input: …; output: …)` annotations. |
@@ -83,7 +86,13 @@ Write the **process genome first** (when applicable), then each **component geno
 | Acceptance Criteria | One per step, per transformation, per rule, per handler, plus edge cases. Existing test cases and eval sets become criteria directly (behavioural wording). |
 | Deployment | Solution vs independent packages, triggers, folders from the manifest and bindings. |
 | Complexity, Tags | Step 5; applications + domain + platform features. |
-| Source Map | Step → file / workflow / node label; component → project. Dead code, unresolved references, inferred steps. |
+| Source Map | Step → file / workflow / node label; component → project. Dead code, unresolved references, inferred steps. Names the source artifacts written in Step 6b. |
+
+### Step 6b — Write the source artifacts
+
+Under `<slug>-genome/source/` write `targets.json` (UI target catalog), `test-data.json` and `process-data.json` (decoded rows and process → recordset links), each with a readable `.md` twin, using the source guide's script or procedure. Secrets are redacted at decode time; account user names are kept. Record the counts (windows, controls, recordsets, rows, credential accounts) in the process genome's Source Map. Skip an artifact only when the source guide states the framework stores nothing of that kind, and say so in the Source Map.
+
+Also write `step-map.json`: the Source Map in machine-readable form — one entry per component workflow step with `component`, `step`, `sourceProcesses` (names) and `recordsets` (names) — so execution can map built activities to source controls and test cases to source rows without re-reading the prose.
 
 Generalization checklist before writing Configuration Questions: file and folder paths, URLs and hosts, email addresses, server and database names, credential and asset names, queue and bucket names, folder paths, thresholds and limits, column and field names, document types, prompts' tunable parameters (model, thresholds), the application choice itself.
 
@@ -110,3 +119,5 @@ Write all files, then ask "Want to adjust anything?". Common follow-ups:
 6. **Treating designer metadata, generated files, or test projects as workflow logic.**
 7. **Sampling files.** Every non-generated artifact is read.
 8. **Leaving a section empty because the source is ambiguous.** Write the best interpretation, flag it, note it in the Source Map.
+9. **Extracting the behaviour and leaving the recognition data and test rows behind.** The source artifacts are what makes the rebuilt automation runnable; without them execution ships placeholders and invented data.
+10. **Copying credentials, or dropping the account identity with them.** Passwords stay out; which account each scenario signs in as is part of the data.

@@ -31,7 +31,11 @@ Never ask the user to declare complexity. Infer it, defaulting to the lower leve
 
 ## Step 4 — Extract
 
-From the description, extract: target applications, human actors, workflow steps in order, business rules, error scenarios, input and output data, triggers and schedules, hardcoded values (paths, addresses, thresholds, names).
+From the description, extract: target applications, human actors, workflow steps in order, business rules, error scenarios, input and output data, triggers and schedules, hardcoded values (paths, addresses, thresholds, names), and:
+
+- **Who signs in.** Every persona or account that logs into a target system (administrator, recruiter, integration user, a proxied approver) becomes one credential asset in Platform Dependencies, named after the persona, with its environment or tenant. Never assume one login for all scenarios.
+- **What varies per scenario.** When the description implies data-driven runs (per country, per organisation type, per integration, per worker), separate the fields that change per row from the constants; the row schema is what the Interface of a test component lists (at most about 20 fields), the constants go to configuration.
+- **Whether the application is reachable at build time.** Note it; execution captures UI targets live when it is and ships placeholders when it is not (an authored genome has no source target catalog).
 
 ## Step 5 — Suggest platform capabilities
 
@@ -47,18 +51,23 @@ Add these to the genome even when the user did not name them:
 | Judgement, classification, summarisation, free-text decisions | `uipath-agents` component |
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in the coordinator, actor row in Actors and Systems |
 | Screen for end users, dashboard | `uipath-coded-apps` component |
+| Several automations or test suites drive the same application's screens | One `uipath-rpa` library component (screens and shared actions, Interface as per-workflow argument tables) plus consumer components; the process genome states that the library builds and packs first |
+| Regression or test scenarios, "per release", "verify that", data-driven cases | `uipath-rpa` test project component(s) with data variations; Test Manager under Platform Dependencies (`uipath-test`), never in Build With |
+| Approvals performed as another user, "proxy as", "impersonate", "on behalf of" | A library step that switches user and stops the switch afterwards; one credential asset per persona that can be proxied |
 
 ## Step 6 — Ask follow-ups (bounded)
 
 Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. After the last round, generate with defaults and stubs; never loop.
 
-Ask only for gaps that change the build: missing target system, unknown trigger, undefined decision outcome, unspecified failure behaviour for a critical step, unclear ownership of a handoff. Do not ask for values that a Configuration Question can carry as a default.
+Ask only for gaps that change the build: missing target system, unknown trigger, undefined decision outcome, unspecified failure behaviour for a critical step, unclear ownership of a handoff, which persona signs in for a scenario when several are implied, and whether the UI application is reachable at build time (live capture) or not (placeholders, indicated later). Do not ask for values that a Configuration Question can carry as a default.
 
 ## Step 7 — Generate
 
 Populate every template section per the format guide's population matrix. Build With rows come from the skill mapping guide, one skill per step. Business rules and error handling attach to the step where they fire. Acceptance criteria derive one-to-one from steps, rules, transformations, and handlers.
 
 Process genomes: write the process file first (Components table, Process Map, Handoffs), then each component genome with its `Part of:` line and an Interface that matches the Handoffs row.
+
+Interface by component type ([genome-format-guide.md § Interface](genome-format-guide.md)): a library component gets one argument table per public workflow; a test component gets its per-scenario row schema and, separately, its constants; credentials appear as asset names, never values. Deployment records how UI targets will be obtained ("captured at build time against <environment>" or "placeholders until indicated") and that libraries pack before their consumers.
 
 ## Step 8 — Write, then offer edits
 
@@ -73,3 +82,6 @@ Edits are in-place, never a regeneration:
 | "Add/remove an application" | Target Applications, Workflow, Build With, Acceptance Criteria |
 | "Use a different skill for step X" | Build With row and rationale, validated against the mapping guide |
 | "Split this into components" | Promote to a process genome: create the process file, move component content into component files, add Handoffs |
+| "Scenario X signs in as persona Y" | Platform Dependencies (credential asset for Y), the test component's row schema (asset name per row), Configuration Questions |
+| "Rename / reorder / remove steps" on an extracted genome | Workflow and Source Map, and `source/step-map.json` so execution still maps steps to source processes and rows |
+| "Drop the Source Map" on an extracted genome | Remove the section from every file and the `source/` artifacts folder — the genome is being shared as a blueprint; say that target and data migration will no longer be possible from it |

@@ -8,9 +8,11 @@ A Certify export is a folder of JSON tables (one file per database table) plus `
 python3 <SKILL_DIR>/scripts/certify-export-inventory.py profile "<EXPORT_DIR>" --out "<WORK_DIR>"
 python3 <SKILL_DIR>/scripts/certify-export-inventory.py cards   "<EXPORT_DIR>" --out "<WORK_DIR>"
 python3 <SKILL_DIR>/scripts/certify-export-inventory.py dump    "<EXPORT_DIR>" "<PROCESS_NAME>"
+python3 <SKILL_DIR>/scripts/certify-export-inventory.py targets "<EXPORT_DIR>" --out "<GENOME_DIR>/source"
+python3 <SKILL_DIR>/scripts/certify-export-inventory.py data    "<EXPORT_DIR>" --out "<GENOME_DIR>/source"
 ```
 
-`profile` writes the vocabulary, call graph, roots, root clusters, layouts, and screen map; `cards` writes one compact card per process (objective, inputs, callees, screens, phases, checks, branches); `dump` prints one process step by step in execution order. Read the profile and cards in full; dump only the processes whose card is not enough.
+`profile` writes the vocabulary, call graph, roots, root clusters, layouts, and screen map; `cards` writes one compact card per process (objective, inputs, callees, screens, phases, checks, branches); `dump` prints one process step by step in execution order. Read the profile and cards in full; dump only the processes whose card is not enough. `targets` and `data` write the source artifacts every Certify extraction ships with the genome (`certify-targets.json`, `certify-test-data.json`, `certify-process-data.json` plus readable `.md` twins) — see § UI Target Locators and § Test Data.
 
 ## Detection
 
@@ -30,8 +32,8 @@ Every JSON row omits null-valued keys, so every field read must tolerate absence
 | `Processes.json` | Processes with nested `TestSteps[]`, each with `TestStepActions[]` (parameters) and `TestStepResults[]` (branching) | Steps, control flow, call graph, data |
 | `ProcessFolders.json` | Folder tree (`ChildFolders` recursive) | Scope: Transaction / Utility / Integration / Sandbox / OutOfScope folders |
 | `Components.json`, `ComponentActions.json`, `ComponentActionParms.json` | The action vocabulary: component (control type) → actions → parameters | Translate every step to behaviour |
-| `Layouts.json`, `Variables.json`, `Recordsets.json`, `RecordsetFilters.json` | Data-driving: layout = variable schema, recordset = rows of values | Interface, Configuration Questions, data-driven variants |
-| `MapObjects.json` | Application map: windows (`Name`, `PhysicalName`) with `ChildTrackObjects[]` controls | Target Applications, screen names for Source Map |
+| `Layouts.json`, `Variables.json`, `Recordsets.json`, `RecordsetFilters.json` | Data-driving: layout = variable schema, recordset = rows of values | Interface, Configuration Questions, data-driven variants; **test data artifact** (§ Test Data) |
+| `MapObjects.json` | Application map: windows (`Name`, `PhysicalName`) with `ChildTrackObjects[]` controls, each carrying a Certify locator in `ObjectIdParmValues[].CertifyValue` | Target Applications, screen names for Source Map; **UI target catalog** (§ UI Target Locators) |
 | `Applications.json`, `InterfaceLibraries.json` | Applications under test and the technology libraries (Web, Silverlight, System) | Target Applications |
 | `Attributes.json` | Custom attributes (e.g. Process Type: Process / Sub-Process) | Rarely populated; do not rely on it for root detection |
 | `Users.json` | Author accounts | Source Map only; never in the genome body |
@@ -123,10 +125,41 @@ Certify has no queues, assets, or connections. Map:
 
 | Certify | Genome |
 |---|---|
-| Login recordset (username, URL; password value never copied) | Platform Dependencies → Credential asset per environment |
+| Login recordsets and every `Workday_Username`-style variable (user name + password + URL) | Platform Dependencies → **one credential asset per source account** (`<App>_Login_<USER>`); the account identity and its tenant URL migrate with the data rows, the password never (§ Test Data) |
 | Layout + recordset on a root process | Interface inputs; Configuration Questions with the recordset values as defaults; multi-row recordsets = data-driven test data table |
 | `Import RecordSet From Excel` / `Import RecordSet` file paths | Interface input `File Path`; Configuration Question for the data file location |
 | Result logs (`ResultLogStatusID`, `StatusTimeStamp`) | Deployment → test reporting via `uipath-test` |
+
+## UI Target Locators
+
+Certify learned every control; the recognition data is in `MapObjects.json` → `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue` as XML: `<tagname>`, `<instance>`, `<frame>` and a `<findby>` list of `<n>attribute</n><v criteria="…">value</v>` pairs (criteria `isequalto`, `contains`, `startswith`, case varies). Windows carry `title`/`caption`/`url` criteria. `targets` writes the catalog; execution turns it into Object Repository targets per [source-migration-guide.md](../source-migration-guide.md). Translation:
+
+| Certify (any case) | UiPath `webctrl` | Notes |
+|---|---|---|
+| `tagname` | `tag` | upper-case |
+| `instance` > 1 | `idx` | positional; keep strict, never anchored; analyzer flags large indexes |
+| `data-automation-id` | `data-automation-id` | Workday's developer identifier — high confidence |
+| `parentElement.data-automation-id` | preceding `<webctrl data-automation-id=…/>` tag | two-level selector |
+| `id`, `name`, `aria-label`, `type`, `title`, `href`, `alt`, `placeholder` | same attribute | skip numeric or hash-like ids |
+| `role` | `aria-role` | |
+| `classname` | `class` | wildcard both sides |
+| `innertext`, `normalizedinnertext`, `text`, `alltext`, `outertext` | `innertext` | never the primary identifier of a text field; move to the anchor for TypeInto/GetText |
+| `label`, `LeftTextAnchor`, `RightTextAnchor` | **anchor** on the visible label (`aaname`) and the semantic text | Certify's label is the associated caption, not an attribute of the control; skip numeric/one-character labels |
+| `isdisplayed`, `IsVisible`, `ControlType`, `value`, `innerhtml`, `outerHTML`, `XPath` | none | `innerhtml startswith <button` means the real control is a child button (trailing `BUTTON` tag); XPath/outerHTML go to the semantic text only |
+| window `title`/`caption` startswith / contains, `url` contains | `<html app='chrome.exe' title='X*' />`, `title='*X*'`, `url='*X*'` | the common window's caption is rewritten at run time by `Page.Set Attributes` (e.g. `Workday_Common` → `Workday`) |
+| `Set Attributes` with `REPLACEME`/`replaceme` | selector variable `{{Argument}}` | the process substitutes a person name, job title or requisition title at run time |
+
+Windows exist under duplicate names (two `View Worker`, two `Sign in to your account` for different apps); resolve by the control's own parent. Controls with no locator (Windows file dialog) become semantic-only targets.
+
+## Test Data
+
+`Layouts.json` is the schema (`LayoutVariables[]` ordered by `CertifySequence`, names via `Variables.json`), `Recordsets.json` the rows: `RecordSetDatas[]` cells keyed by `LayoutVariablesID`; a multi-row recordset repeats each variable's cell in row order. `data` decodes both into named rows plus the process → layout/recordset links (roots hold the data; wrapper roots with a `File Path` layout delegate to the inner process). Rules:
+
+1. Recordset names duplicate (two `NonProduction`, two `HR - I - 1437 …`, one of each empty): pick the copy with rows, or by id.
+2. `Workday_Username`, `Workday_Password`, `Workday_URL` (and any `*Password*`/`*PWD*`) are credentials: the user name becomes the credential asset name and, through the login recordset (`UTL_Workday_Login`: user → tenant URL), the environment URL of the row; the password is never copied. Scenarios sign in as different accounts on different tenants — keep that per row.
+3. `^` means "not provided"; `Org (Manager)` strings carry two values; `On`/`Off` are booleans; dates are the values of the last recorded run and go stale.
+4. Multi-row recordsets carry `ToBeExecuted` per row; the source flags win over any generated pattern.
+5. Certify quirks are carried over and flagged, not silently corrected (manager typed into an organisation prompt, hourly rate in a salary column, malformed amounts).
 
 ## Framework Pitfalls
 
@@ -137,4 +170,5 @@ Certify has no queues, assets, or connections. Map:
 5. `Set Attributes` steps rewrite locators at run time; they explain how one screen object serves many pages, not what the business does.
 6. Sandbox folders hold near-duplicates of library processes at different step counts; do not merge their content into the canonical description.
 7. `Description` sections drift from the steps (a Canada objective on a US process, a callee list that omits proxies); the steps are the truth.
-8. Plaintext credentials in `Recordsets.json`; count them, never copy them, and tell the user.
+8. Plaintext credentials in `Recordsets.json`; count them, never copy the passwords, keep the account identity per row (§ Test Data), and tell the user.
+9. The `Execute Process` actions of many roots carry no `ExecRecordSetID`; the data-driving recordset is the root's own `RecordSetID`.

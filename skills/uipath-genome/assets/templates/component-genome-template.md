@@ -40,6 +40,8 @@
 - **Outputs:** {values, files, records, or events it produces — name, type, consumer}
 - **Side effects:** {external state it changes — records created, emails sent, files moved}
 
+{Library component: replace the bullets with one table per public workflow — `Argument | Direction | Type | Description` — and the conventions consumers rely on. Test component: list the per-scenario row schema (≤ ~20 fields) and, separately, the constants held in a configuration workflow; credentials as asset names only.}
+
 ## Configuration Questions
 
 {Questions to answer before building. Extracted genomes carry the source value as the default.}

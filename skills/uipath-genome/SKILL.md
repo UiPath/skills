@@ -44,6 +44,9 @@ Every mode reads [genome-format-guide.md](references/genome-format-guide.md) for
 10. **Flag ambiguity, never leave gaps.** Write the best interpretation and append `*[Inferred]*`. Record the uncertainty in the Source Map.
 11. **Write immediately, offer edits after.** Write the file(s) to the working directory, then ask "Want to adjust anything?". No previews, no confirmation before writing. Edits are targeted, in place, never a regeneration.
 12. **Execution never edits the genome.** During Execute the genome is read-only; configuration questions are asked before any code is written; skill groups advance without pausing; every acceptance criterion is assessed at the end.
+13. **Extraction ships the source artifacts.** When the source guide has UI Target Locators and Test Data sections, extraction writes `<slug>-genome/source/targets.json`, `test-data.json` and `process-data.json` next to the genome. Recognition data and data rows never enter the genome body; they travel as artifacts for execution.
+14. **Execution migrates UI targets and test data by default.** With a target catalog present, every UI activity receives an Object Repository target inferred from it, labelled `INFERRED (<confidence>)`, and the first live run is a healing pass; placeholder selectors are the fallback only when neither a catalog nor a live application exists. With test data present, the test projects' data files are filled from it through mapping files. Account user names become credential asset names plus environment per row; secrets are never copied. Procedure: [source-migration-guide.md](references/source-migration-guide.md).
+15. **Build through the owning skill, verifiably.** Every build group invokes the skill named in Build With and performs its mandatory reads, including the installed package's per-activity docs; activity XML is never written from memory or from templates that were not derived from the skill's discovery commands. Subagents get the same obligation and report the reads they did.
 
 ## Workflows
 
@@ -55,7 +58,8 @@ Every mode reads [genome-format-guide.md](references/genome-format-guide.md) for
 4. Build the call graph per project and the handoff graph across projects.
 5. Infer complexity from the signal counts in the extraction guide.
 6. Map signals to genome sections per the extraction guide; write the process genome first, then each component genome with `Part of:`, Interface, and Source Map.
-7. Write, then offer edits. Common follow-ups: "remove the inferred flags", "drop the Source Map for sharing", "this step is wrong".
+7. Write the source artifacts (`source/targets.json`, `test-data.json`, `process-data.json`, `step-map.json`) with the source guide's script; record their counts in the Source Map.
+8. Write, then offer edits. Common follow-ups: "remove the inferred flags", "drop the Source Map for sharing", "this step is wrong".
 
 Full procedure: [extraction-guide.md](references/extraction-guide.md). UiPath signals: [sources/uipath-source-guide.md](references/sources/uipath-source-guide.md). Worksoft Certify exports: [sources/worksoft-certify-source-guide.md](references/sources/worksoft-certify-source-guide.md) with the bundled inventory script. Adding another framework: [sources/source-framework-contract.md](references/sources/source-framework-contract.md).
 
@@ -65,7 +69,7 @@ Receive → choose level → infer complexity → extract → suggest platform c
 
 ### Execute (genome → automation)
 
-Parse and validate the genome → ask every configuration question (`AskUserQuestion`, ≤4 per batch; autonomous runs take defaults) → resolve one project (component) or one solution with one project per component (process) → plan skill groups → build each group by invoking the owning skill with the assembled context → wire handoffs → assess every acceptance criterion → report. Full procedure: [execution-guide.md](references/execution-guide.md).
+Parse and validate the genome → ask every configuration question (`AskUserQuestion`, ≤4 per batch; autonomous runs take defaults) → preflight (login state, target framework, build location next to the genome) → resolve one project (component) or one solution with one project per component (process); libraries pack first and consumers install them from a local feed → plan skill groups → build each group by invoking the owning skill with the assembled context and its mandatory reads → migrate UI targets from `source/targets.json` into the Object Repository → migrate test data from `source/test-data.json` into the test projects (credential assets per account) → wire handoffs → assess every acceptance criterion → report. Full procedure: [execution-guide.md](references/execution-guide.md); target and data migration: [source-migration-guide.md](references/source-migration-guide.md).
 
 ## Reference Navigation
 
@@ -75,10 +79,11 @@ Parse and validate the genome → ask every configuration question (`AskUserQues
 | [references/skill-mapping-guide.md](references/skill-mapping-guide.md) | Filling Build With / Components or planning execution groups |
 | [references/extraction-guide.md](references/extraction-guide.md) | Extract mode — pipeline, signal→section mapping, complexity from signals |
 | [references/sources/uipath-source-guide.md](references/sources/uipath-source-guide.md) | Extract mode on a UiPath source — per-artifact signal tables |
-| [references/sources/worksoft-certify-source-guide.md](references/sources/worksoft-certify-source-guide.md) | Extract mode on a Worksoft Certify database export — run `scripts/certify-export-inventory.py` first, never read `Processes.json` raw |
+| [references/sources/worksoft-certify-source-guide.md](references/sources/worksoft-certify-source-guide.md) | Extract mode on a Worksoft Certify database export — run `scripts/certify-export-inventory.py` (`profile`, `cards`, `dump`, `targets`, `data`) first, never read `Processes.json` raw |
 | [references/sources/source-framework-contract.md](references/sources/source-framework-contract.md) | Adding extraction support for another automation framework |
 | [references/authoring-guide.md](references/authoring-guide.md) | Author and Edit modes |
 | [references/execution-guide.md](references/execution-guide.md) | Execute mode |
+| [references/source-migration-guide.md](references/source-migration-guide.md) | Execute mode on an extracted genome — building Object Repository targets from `source/targets.json`, filling test data from `source/test-data.json`, credential-asset-per-account rule |
 | [assets/templates/component-genome-template.md](assets/templates/component-genome-template.md) | Writing a component genome |
 | [assets/templates/process-genome-template.md](assets/templates/process-genome-template.md) | Writing a process genome |
 | [assets/examples/](assets/examples/) | Calibrating depth — one component (RPA, medium), one hybrid coded+XAML component, one process genome with components |
@@ -95,3 +100,6 @@ Parse and validate the genome → ask every configuration question (`AskUserQues
 8. **Process genome without Handoffs, or component Interface that disagrees with Handoffs.** The handoff table is the contract that makes the components composable.
 9. **Stopping between execution groups, or building before configuration answers exist.**
 10. **Producing a genome when the user brought a PDD/SDD or asked for a solution design.** That is `uipath-planner`.
+11. **Extracting behaviour but not the source artifacts**, then executing with placeholder selectors and invented test rows although the export carried locators and recordsets.
+12. **Copying passwords into data files, or collapsing every scenario onto one login.** Account identity per row, secret in a credential asset.
+13. **Authoring activity XML from memory or bespoke templates** instead of through the owning skill's discovery commands and package docs.

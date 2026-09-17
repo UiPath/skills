@@ -14,7 +14,9 @@ Every source guide has these sections, in this order, with these headings:
 6. **Call Graph Rules** — where the entry point is declared, how invocation edges are expressed, ordering rules for parallel branches, how to handle libraries and unreachable objects.
 7. **Expression Translation** — the framework's expression language(s) and how operators map to plain language (extends the table in [genome-format-guide.md § Business Rules](../genome-format-guide.md)).
 8. **Platform Resources** — where queues, credentials, assets, schedules, and connections are declared, and their UiPath equivalents for the Platform Dependencies section.
-9. **Framework Pitfalls** — anything that misleads a reader: designer metadata that looks like logic, generated code, duplicate definitions, version-specific quirks.
+9. **UI Target Locators** — where the framework stores the recognition data of the controls it automates (object maps, selectors, XPaths, image anchors), how to export it into the genome's `source/targets.json` catalog, and the attribute-by-attribute translation into UiPath selectors with a confidence tier. A framework that stores none says so; execution then falls back to capture or placeholders.
+10. **Test Data** — where data-driving rows live (recordsets, data sheets, variables), how to decode them into named rows and link them to the process that runs with them (`source/test-data.json`), which columns are credentials (identity migrates as a credential-asset name plus environment, secrets never), and the source's execution flags.
+11. **Framework Pitfalls** — anything that misleads a reader: designer metadata that looks like logic, generated code, duplicate definitions, version-specific quirks.
 
 ## Rules
 

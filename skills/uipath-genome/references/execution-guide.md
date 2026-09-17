@@ -23,6 +23,10 @@ Autonomous runs (user said not to ask, or no user available): take the default f
 
 Process genomes: ask the process-level questions first, then each component's questions in Components order.
 
+### 1.2b Preflight
+
+Before creating anything: run the platform login status check and record what an expired session blocks (resource refresh, publish, deploy — local init, validate, build and pack still work); confirm the runtime host and edit surface to fix the target framework and expression language for every project; choose the build location. The build location defaults to the folder that contains the genome file, never to the current working directory when that is a different repository; say where you are building.
+
 ### 1.3 Resolve the target project
 
 **Component genome:**
@@ -36,6 +40,15 @@ Process genomes: ask the process-level questions first, then each component's qu
 3. Verify with `uip solution projects list --output json` after all components exist.
 
 If the genome's Deployment section says "independent packages", skip the solution and treat each component as a standalone project.
+
+### 1.4 Library components and their consumers
+
+A component of type library is consumed by the other components as a package dependency, so it gates them:
+
+1. The library is built, validated and packed first (the owning skill's pack command; when analyzer rules configured as Error block the pack, decide with the user between lowering them and packing with the analyzer skipped, and record the decision).
+2. Consumers install the dependency from a local feed: a sources file listing the folder that holds the package, passed to install and build with the owning skill's sources flag. The feed folder lives outside every project.
+3. Repacking under the same version is ignored by the package cache: bump the library version, or clear the cached copy and reinstall, before rebuilding consumers.
+4. Consumers can be authored before the library packs when the library genome's Interface carries the per-workflow argument tables ([genome-format-guide.md § Interface](genome-format-guide.md)); they are validated once the package exists. Do not build an interface-only stand-in package unless the user asks for one, and delete it afterwards.
 
 ## Phase 2 — Build
 
@@ -57,7 +70,11 @@ Genome build plan:
 For each group, in order:
 
 1. **Assemble context:** the Workflow steps (with substeps) for this group, Business Rules and Error Handling entries under those steps plus General/Global, Platform Dependencies touched, Interface, Configuration Answers, the Overview, and for process genomes the Handoffs rows where this component is From or To.
-2. **Invoke the owning skill** named in the Build With / Components row and follow its workflow end to end, including its own validation loop. Pass `PROJECT_DIR` so it reuses the project from 1.3 instead of creating one. When the skill is not installed, build from the genome text using the CLI directly, mark the group "built without <skill>", and continue.
+2. **Invoke the owning skill** named in the Build With / Components row and follow its workflow end to end, including its mandatory reads and its own validation loop. Pass `PROJECT_DIR` so it reuses the project from 1.3 instead of creating one. When the skill is not installed, build from the genome text using the CLI directly, mark the group "built without <skill>", and continue.
+   - The skill's contract is not optional because the group is large or delegated: a subagent that builds a group receives the same instruction to invoke the skill and read what it mandates, and reports which reads it performed.
+   - Activity XML comes from the skill's discovery commands and the installed package's per-activity docs, never from memory. A code generator may repeat fragments that were obtained that way; it may not invent them.
+   - When a source target catalog exists (`source/targets.json`), the group's UI activities are built without targets and receive Object Repository targets in 2.2b; the placeholder-selector stub pattern applies only when no catalog and no live application exist.
+   - **Test components** follow the owning skill's testing guidance for shape and registration (Given-When-Then, data variations, test-case registration in the project manifest). Genome-specific rules on top: a source loop over data rows becomes runner-level data variations with an execute-flag skip gate inside the case; the row carries only fields that vary per scenario (workflows are capped by an analyzer rule at about 20 arguments; constants live in a shared configuration workflow or argument defaults); every case ends with a verification of the source's success criterion, records a one-line result the business consumer can read, and captures a screenshot in its exception handler through the library's screenshot workflow when the genome has one.
 3. **Verify the group:** every file the group needed exists, the owning skill's validate command passed, no unresolved errors remain.
 4. **Report and advance without pausing:**
 
@@ -69,6 +86,25 @@ Advancing to group 2/2…
 ```
 
 Never stop between groups to ask whether to continue.
+
+### 2.2a Delegating groups to subagents
+
+Groups may be built by parallel subagents, one project per agent, under these rules:
+
+1. Every agent receives the owning skill's contract (invoke it, perform its mandatory reads) and reports the reads it performed.
+2. One authoring host serves all agents: every CLI call carries the project directory; a busy or locked host is retried once after a pause; per-file mutations (validate, link, register) of one project run sequentially — never two agents on one project.
+3. Object Repository linking follows the owning skill's target-attachment guidance (screen first, then elements; never two link commands on one file at once; batch large element lists); the executor only orders the work.
+4. Agents write each artifact as soon as it is complete (one workflow, one mapping file, one report) so an interrupted run loses one item, not a group; the orchestrator inventories the disk before relaunching and relaunches only what is missing.
+5. Solution-level mutations (project registration, resources) are done by the orchestrator alone, after the agents finish.
+6. Before packing, remove designer recovery copies (`~<Workflow>.xaml`) that the host leaves in a project after rewrites; they would ship as workflows.
+
+### 2.2b Migrate UI targets (extracted genomes)
+
+After the UI groups exist, build their Object Repository targets from `source/targets.json` per [source-migration-guide.md § UI targets](source-migration-guide.md): map every UI activity to a source control, derive the selector with the source guide's translation table, create screens and elements through the owning skill's Object Repository CLI, link, validate. Every element is labelled `INFERRED (<confidence>)`. Report screens, elements, confidence counts and the fragile targets (positional indexes, semantic-only). Placeholder stubs remain only for activities the catalog cannot cover, and the report lists them.
+
+### 2.2c Migrate test data (extracted genomes)
+
+After the test projects exist, fill their data files from `source/test-data.json` per [source-migration-guide.md § Test data](source-migration-guide.md): one mapping file per project, coverage check, migration, rebuild. Account user names become credential asset names plus environment URLs per row; one credential asset per account is declared as a solution resource; secrets are never written. Report coverage, kept defaults, unmapped source values, and the quirks and stale values carried over.
 
 ### 2.3 Wire handoffs
 
@@ -84,7 +120,8 @@ For every criterion (component criteria first, then process criteria):
 
 | Verdict | Meaning |
 |---|---|
-| Met | Code directly implements the behaviour; cite file and location |
+| Met | Code directly implements the behaviour and a local run confirmed it; cite file and location |
+| Met (static) | Code directly implements the behaviour and validates, but the run needs a system that is not reachable in this session (live tenant, credentials); cite file and location and name the blocker once, in the report header |
 | Partial | Implemented with a gap; name the gap |
 | Not Met | Nothing addresses it |
 | Not Verifiable | Needs live systems or runtime data |
@@ -110,12 +147,16 @@ For each Partial or Not Met: state what is missing and the concrete change. Fix 
 Genome execution complete.
 Genome: <file>   Level: component | process
 Project/Solution: <name> at <path>
-Skills used: …
+Skills used: … (mandatory reads performed per skill)
 Files created: <count>
+UI targets: <screens>/<elements> from source catalog (high/medium/low), <n> placeholders left
+Test data: <files> filled from source rows, <n> credential assets declared (values to enter in Orchestrator)
 Acceptance criteria: N/total met
 Configuration answers: … (defaults marked)
 Run: <the owning skill's run command for the entry point>
 ```
+
+Extracted genomes add the healing-pass note: inferred targets are verified on the first run against the live application, and fixes go into the Object Repository element.
 
 ## Anti-patterns
 
@@ -126,3 +167,6 @@ Run: <the owning skill's run command for the entry point>
 5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code.
 6. **Editing the genome during execution.** It is read-only. Fixes to the spec are a separate authoring/extraction edit followed by re-execution.
 7. **Skipping acceptance validation** because "everything compiled". The criteria are the definition of done.
+8. **Shipping placeholder targets when the extraction produced a target catalog**, or generated test rows when it produced test data. Both are migrated by default (2.2b, 2.2c).
+9. **Building past the owning skill.** Emitting activity XML from memory or from templates nobody derived from the skill's discovery commands and package docs, or dispatching subagents without the skill's mandatory reads.
+10. **Copying credentials into data files, or flattening every scenario onto one login.** The asset name and environment per row are data; the secret is not.

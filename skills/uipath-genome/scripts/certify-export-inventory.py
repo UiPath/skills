@@ -5,9 +5,13 @@ Usage:
   certify-export-inventory.py profile <EXPORT_DIR> [--out DIR]   # vocabulary, results, call graph, roots, clusters, layouts, screens
   certify-export-inventory.py cards   <EXPORT_DIR> [--out DIR]   # one compact card per process
   certify-export-inventory.py dump    <EXPORT_DIR> <PROCESS_NAME> # one process, step by step, in execution order
+  certify-export-inventory.py targets <EXPORT_DIR> [--out DIR]   # UI target catalog: windows + controls with parsed Certify locators
+  certify-export-inventory.py data    <EXPORT_DIR> [--out DIR]   # test data: layouts + recordsets as named rows, process -> recordset links
 
-Writes certify-profile.txt / certify-cards.txt into --out (default: current directory); dump prints to stdout.
-Never prints values of variables whose name contains password/pwd/secret/token.
+Writes certify-profile.txt / certify-cards.txt / certify-targets.{json,md} / certify-test-data.{json,md} /
+certify-process-data.json into --out (default: current directory); dump prints to stdout.
+Never prints values of variables whose name contains password/pwd/secret/token (account user names are kept: they are
+identity, not secrets).
 """
 import argparse
 import collections
@@ -282,9 +286,90 @@ def dump(x: Export, name):
     return '\n'.join(L)
 
 
+def _parse_locator(v):
+    """Certify locator XML -> {tagname, instance, frame, findby:[{n, criteria, v}]}."""
+    import html
+    d = {}
+    for k in ('frame', 'tagname', 'instance'):
+        mm = re.search(rf'<{k}>(.*?)</{k}>', v or '', re.S)
+        if mm:
+            d[k] = html.unescape(mm.group(1))
+    fb = re.search(r'<findby>(.*?)</findby>', v or '', re.S)
+    d['findby'] = [{'n': html.unescape(n), 'criteria': c or 'isequalto', 'v': html.unescape(val)}
+                   for n, c, val in re.findall(r'<n>(.*?)</n>\s*<v(?: criteria="([^"]*)")?>(.*?)</v>', fb.group(1), re.S)] if fb else []
+    return d
+
+
+def targets(x: Export):
+    """UI target catalog: every window and control with its parsed locator (feeds execution's target migration)."""
+    cat = []
+    for w in x.M:
+        wl = [_parse_locator(p['CertifyValue']) for p in (w['ObjectIdParmValues'] or []) if p['CertifyValue']]
+        ctrls = [{'objectId': c['ObjectID'], 'name': c['Name'], 'physicalName': c['PhysicalName'], 'description': c['Description'],
+                  'type': (c['Component'] or {}).get('LogicalName'),
+                  'locators': [_parse_locator(p['CertifyValue']) for p in (c['ObjectIdParmValues'] or []) if p['CertifyValue']]}
+                 for c in (w['ChildTrackObjects'] or [])]
+        cat.append({'objectId': w['ObjectID'], 'app': x.appver.get(w['ApplicationVersionID']), 'name': w['Name'],
+                    'physicalName': w['PhysicalName'], 'description': w['Description'], 'locators': wl, 'controls': ctrls})
+    names = collections.Counter(p['n'].lower() for w in cat for c in w['controls'] for l in c['locators'] for p in l['findby'])
+    md = ["# Certify UI target catalog\n", f"{len(cat)} windows, {sum(len(w['controls']) for w in cat)} controls. "
+          f"Locator attributes: {', '.join(f'{k} ({v})' for k, v in names.most_common())}\n"]
+    for w in cat:
+        wsel = '; '.join(f"{p['n']} {p['criteria']} {p['v']!r}" for l in w['locators'] for p in l['findby']) or '(no window locator)'
+        md.append(f"\n## {w['name']} [{w['app']}] objectId={w['objectId']} — {wsel}\n")
+        for c in w['controls']:
+            locs = ' | '.join(f"{l.get('tagname')}#{l.get('instance') or 1}: " + ', '.join(f"{p['n']} {p['criteria']} {p['v'][:60]!r}" for p in l['findby']) for l in c['locators']) or '(no locator)'
+            md.append(f"- {c['objectId']} `{c['name']}` ({c['type']}) — {locs}")
+    return cat, '\n'.join(md)
+
+
+def data(x: Export):
+    """Layouts + recordsets as named rows; process -> layout/recordset links. Secrets redacted, user names kept."""
+    lv = {}
+    lay_vars = {}
+    for l in x.LY:
+        vs = sorted(l['LayoutVariables'] or [], key=lambda v: v['CertifySequence'] or 0)
+        lay_vars[l['LayoutID']] = [x.var.get(v['VariableID'], {}).get('Name') or f"var{v['VariableID']}" for v in vs]
+        for v in vs:
+            lv[v['LayoutVariablesID']] = x.var.get(v['VariableID'], {}).get('Name') or f"var{v['VariableID']}"
+    out = []
+    for r in x.RS:
+        cells = r['RecordSetDatas'] or []
+        n = max(collections.Counter(c['LayoutVariablesID'] for c in cells).values()) if cells else 0
+        rows, idx = [dict() for _ in range(n)], collections.Counter()
+        for c in cells:  # export order == row order per variable
+            k = c['LayoutVariablesID']; name = lv.get(k, f"lv{k}")
+            rows[idx[k]][name] = x.safe(name, c['CertifyValue']); idx[k] += 1
+        out.append({'id': r['RecordSetID'], 'name': r['Name'], 'layout': x.lay.get(r['LayoutID'], {}).get('Name'),
+                    'layoutId': r['LayoutID'], 'variables': lay_vars.get(r['LayoutID'], []), 'rows': rows})
+    pd = {}
+    for p in x.P:
+        calls = [{'callee': x.proc.get(ta['ExecProcessID'], {}).get('Name'), 'layout': x.lay.get(ta['ExecLayoutID'], {}).get('Name'),
+                  'recordset': x.rs.get(ta['ExecRecordSetID'], {}).get('Name'), 'mode': ta['RecordSetMode']}
+                 for s in x.ordered(p) if not s['Skip'] for ta in (s['TestStepActions'] or []) if ta['ExecProcessID']]
+        pd[p['Name']] = {'layout': x.lay.get(p['LayoutID'], {}).get('Name'), 'recordset': x.rs.get(p['RecordSetID'], {}).get('Name'),
+                         'recordsetId': p['RecordSetID'], 'status': p['ProcessStatusID'], 'folder': x.folder(p), 'calls': calls}
+    md = ["# Certify test data by layout (secrets redacted)\n"]
+    by_layout = collections.defaultdict(list)
+    for r in out:
+        by_layout[r['layout'] or '(no layout)'].append(r)
+    for lay, items in sorted(by_layout.items()):
+        md.append(f"\n## Layout `{lay}` — variables: {', '.join(items[0]['variables'])}\n")
+        for r in sorted(items, key=lambda q: q['name']):
+            md.append(f"\n### Recordset `{r['name']}` (id {r['id']}, {len(r['rows'])} row(s))")
+            for i, row in enumerate(r['rows'][:6], 1):
+                md.append(f"- row {i}: " + '; '.join(f"`{k}`={json.dumps(v, ensure_ascii=False)}" for k, v in row.items() if v not in (None, '')))
+            if len(r['rows']) > 6:
+                md.append(f"- … {len(r['rows']) - 6} more rows")
+    dup = [k for k, v in collections.Counter(r['name'] for r in out).items() if v > 1]
+    if dup:
+        md.append(f"\nDuplicate recordset names (pick the one with rows): {dup}")
+    return out, pd, '\n'.join(md)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('command', choices=['profile', 'cards', 'dump'])
+    ap.add_argument('command', choices=['profile', 'cards', 'dump', 'targets', 'data'])
     ap.add_argument('export_dir')
     ap.add_argument('process_name', nargs='?')
     ap.add_argument('--out', default='.')
@@ -294,6 +379,17 @@ def main():
         if not a.process_name:
             ap.error('dump requires PROCESS_NAME')
         print(dump(x, a.process_name))
+        return 0
+    os.makedirs(a.out, exist_ok=True)
+    W = lambda name, content: (open(os.path.join(a.out, name), 'w', encoding='utf-8').write(content), print(f"written {os.path.join(a.out, name)}"))
+    if a.command == 'targets':
+        cat, md = targets(x)
+        W('certify-targets.json', json.dumps(cat, indent=1, ensure_ascii=False)); W('certify-targets.md', md)
+        return 0
+    if a.command == 'data':
+        rs, pd, md = data(x)
+        W('certify-test-data.json', json.dumps(rs, indent=1, ensure_ascii=False))
+        W('certify-process-data.json', json.dumps(pd, indent=1, ensure_ascii=False)); W('certify-test-data.md', md)
         return 0
     text = profile(x) if a.command == 'profile' else cards(x)
     os.makedirs(a.out, exist_ok=True)

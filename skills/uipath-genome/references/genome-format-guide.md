@@ -36,10 +36,14 @@ Resolve infrastructure to the real system. "Integration Service" is not an appli
 One skill per row from [skill-mapping-guide.md](skill-mapping-guide.md). Rationale states why that skill and not the nearest alternative.
 
 ### Platform Dependencies
-Every Orchestrator or Integration Service resource the automation touches: queues, assets, credentials, storage buckets, connections, folders, triggers. Each row names the resource type and purpose. Extracted genomes keep the source resource name; authored genomes propose one.
+Every Orchestrator or Integration Service resource the automation touches: queues, assets, credentials, storage buckets, connections, folders, triggers. Each row names the resource type and purpose. Extracted genomes keep the source resource name; authored genomes propose one. Credentials: one credential asset per login account the automation signs in with (scenarios often use several accounts with different roles and tenants); the asset holds the secret, the data rows name the asset.
 
 ### Interface (component)
 Inputs, outputs, side effects. Mandatory content for a component inside a process genome (it is the contract the Handoffs table relies on). Standalone components may stub it: "Runs unattended with no arguments; outputs are the side effects listed in Workflow."
+
+**Library components** (a project other components consume as a package) carry, instead of the three bullets, one table per public workflow: `Argument | Direction | Type | Description`, plus the conventions the consumers rely on (naming, defaults, what a failed final check does). This table is the contract consumers are authored against before the library packs.
+
+**Test components** (a project of test cases over data rows) list the row schema per test case: the fields that vary per scenario (at most about 20 — an analyzer rule caps workflow arguments), separately from the constants that live in a configuration workflow. Credentials appear as the name of a credential asset per row, never as values.
 
 ### Configuration Questions
 Format: `N. {Question}? (default: {value})`. Every hardcoded value in the source or description becomes a question: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (default: Outlook)").
@@ -115,6 +119,9 @@ Comma-separated: business domain, target applications, platform features (docume
 
 ### Source Map (extraction only)
 One row per workflow step (component) or per component (process): the source framework and the file, object, or workflow it came from. Names files and workflow objects, never activity names or variables. Also records dead code found, unresolved invocations, and steps whose intent was inferred. Authored genomes have no Source Map. Remove the section on request when the genome is redistributed as a reusable blueprint.
+
+### Source Artifacts (extraction only)
+Extraction writes, next to the genome, `<slug>-genome/source/targets.json` (UI target catalog: windows and controls with the source's recognition data, translated per the source guide), `test-data.json` (data-driving rows as named rows, secrets redacted, account user names kept), `process-data.json` (which process runs with which rows) and `step-map.json` (genome step → source processes and recordsets), each JSON with a readable `.md` twin where useful. The Source Map names them with their counts. They are not part of the genome body and are removed together with the Source Map when the genome is shared as a blueprint. Execution builds UI targets and migrates test data from them ([source-migration-guide.md](source-migration-guide.md)).
 
 ## Population Matrix (component genomes)
 
