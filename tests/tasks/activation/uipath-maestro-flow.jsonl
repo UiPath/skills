@@ -55,3 +55,7 @@
 {"id": "uipath-maestro-flow-055", "prompt": "Build a UiPath Flow that pulls vendor name, invoice number, date, and total out of PDF invoices in a SharePoint folder, then posts the result to our accounting system", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-056", "prompt": "Add a document-extraction step to my flow that reads receipt images from a folder and pulls out merchant, date, and total", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-057", "prompt": "I have a Maestro flow. Add an IxP node that classifies incoming PDF forms and extracts their fields before the next step", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-058", "prompt": "Build me a Maestro Automate that pulls new Salesforce leads and posts them to Slack", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-059", "prompt": "Add an approval step to my Maestro Automate", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-060", "prompt": "My Maestro Automate fails on the second node, can you debug it", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-061", "prompt": "Publish my maestro automate to Orchestrator", "expected_skill": "uipath-maestro-flow"}

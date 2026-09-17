@@ -136,6 +136,7 @@ These requests fall outside the skill. Recognise the request, reply with the sta
 | "Monitor the deployed model" / "how many docs did it process?" / "runtime throughput or incidents" | "Runtime/operational monitoring of a deployed model lives in Orchestrator, not this skill: https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-monitoring. For design-time scores use `get-metrics` (see 'Show metrics')." |
 | "Replace / overwrite the taxonomy" / "import this file over the existing taxonomy" | "IXP has no replace-the-taxonomy operation — importing over an existing taxonomy merges into it and duplicates. I can apply the differences one by one with the targeted commands, or import the file into a **new** project if you want it clean (the existing project's documents and labels stay where they are)." Then list the differences you'd apply and let the user pick. |
 | "Edit a data type's values" / "add or remove a Choice option" | "The CLI can rename a data type, change its instructions (`data-types update-instructions`), or delete it — but it can't add or remove the **values** of an existing Choice data type. Do that by hand in-product on the Manage Taxonomy page: https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/managing-projects — then continue here." |
+| "What validation rules does this project have?" / "add a business rule" | "The CLI can't read or update validation (business) rules. View or edit them by hand in-product on the Manage Taxonomy page — then continue here." |
 
 ## Reference Navigation
 

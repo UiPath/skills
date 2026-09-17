@@ -166,7 +166,7 @@ Stable (`latest`) is **not** published automatically — the sprint cut publishe
    ```bash
    gh workflow run publish.yml --ref release/v<minor> -f channel=latest
    ```
-   This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`.
+   This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`. The run then waits until npmjs actually serves the version (`npm publish` returns as soon as the registry *accepts* the tarball; availability follows minutes later, or never if held for review) and posts the "Published to npm (stable)" announcement to `#team-coding-agents` as Skills Buddy (`announce-stable.yml`, skill list in the thread). A red `Announce stable publish` job means the version is still not installable — check npmjs before telling anyone. To (re)announce a line by hand: `gh workflow run announce-stable.yml --ref main -f ref=release/v<minor>` (the branch's committed `package.json` is the version).
 2. (Optional) Create a GitHub Release tagged `v<version>` as a durable changelog record. This is **just a record** — there is no `release:` trigger, so it does **not** publish anything to npm; the dispatch in step 1 is what publishes.
 
 > **Lockstep note.** The CLI resolves `@uipath/skills` from npm `latest` for its own minor line. Because stable is now manual, **promote the matching skills line to stable before the CLI cuts that minor**, or the CLI will resolve the previous skills minor.

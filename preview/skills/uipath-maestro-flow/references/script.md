@@ -1,6 +1,6 @@
 # Script
 
-*Exact signatures, fields, and defaults: [`script()`](api.md#script-function).*
+*Exact signatures, fields, and defaults: `script()`.*
 
 Script runs inline JavaScript for a computation that has no first-class Flow
 node. Upstream data is available through `$vars`; the result is read with

@@ -1,6 +1,6 @@
 # HTTP
 
-*Exact signatures, fields, and defaults: [`http()`](api.md#http-function).*
+*Exact signatures, fields, and defaults: `http()`.*
 
 The one factory selects two distinct product nodes:
 

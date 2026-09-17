@@ -1,6 +1,6 @@
 # Voice
 
-*Exact signatures, fields, and defaults: [`voiceTrigger()`](api.md#voicetrigger-function), [`createOutgoingCall()`](api.md#createoutgoingcall-function), [`endCall()`](api.md#endcall-function), [`voiceAgent()`](api.md#voiceagent-function).*
+*Exact signatures, fields, and defaults: `voiceTrigger()`, `createOutgoingCall()`, `endCall()`, `voiceAgent()`.*
 
 A voice call is a conversation with an audio front end. It is identified by a
 `callContext` OBJECT — not a bare conversation id — and that object is what
