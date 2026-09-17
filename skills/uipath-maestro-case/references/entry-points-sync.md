@@ -204,4 +204,23 @@ A `test_in_out` re-saved with two triggers — `trigger_1` (primary) and `StartE
 
 Each entry's `input` carries only the In-args whose `elementId` is that trigger; **every** entry carries **all** Out-args. An In-arg bound to a trigger with no entry — e.g. one still pointing at a `preview-node-id` ghost node (an uncommitted canvas preview that leaked into `caseplan.case`) — matches no entry and is silently dropped from the contract; the `elementId` filter skips it (Check 6's orphan guard catches it).
 
+## `filePath` shape — validated, not just stored
+
+`filePath` is `<prefix><plan filename>.bpmn#<triggerId>`, and the sidecar name is the plan's own full filename plus `.bpmn` (SKILL.md Rule 26). Two prefix forms resolve, and they resolve identically:
+
+| Form | Written by |
+|---|---|
+| `/content/caseplan.case.bpmn#<triggerId>` | the scaffold and this refresh |
+| `/caseplan.case.bpmn#<triggerId>` | `uip maestro case debug` |
+
+Any other directory does not resolve at all — `content/` is flat, so `/foo/caseplan.case.bpmn#t1` names a file that cannot be there even though its basename matches.
+
+From CLI 1.203, a malformed `entry-points.json` **fails before the upload** instead of uploading an empty entry point. Each of these is a hard failure, not a dropped entry:
+
+1. The document does not parse, or parses to something other than a JSON object.
+2. `entryPoints` is present but is not a list.
+3. Any entry's `filePath` is missing, is not a string, or resolves to no name — empty, a bare `#fragment`, or a directory other than `content/`.
+
+An entry naming a real file that is not a `.bpmn` is still dropped rather than failing. Keep every `filePath` in one of the two forms above, and never hand-edit this file into a shape that trips 1–3.
+
 <!-- END: entry-points-sync.md -->
