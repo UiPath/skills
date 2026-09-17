@@ -94,9 +94,9 @@ reason authoring runs out of time.
     <bpmn:extensionElements>
       <uipath:variables version="v1">
         <uipath:input id="input_Var_Amount" name="Amount" type="number" elementId="Start_1" />
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="double" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="double" elementId="Process_1" />
         <uipath:output id="output_Var_Echo" name="Echo" type="number" elementId="End_1" />
-        <uipath:inputOutput id="Var_Echo" name="Echo" type="double" />
+        <uipath:inputOutput id="Var_Echo" name="Echo" type="double" elementId="Process_1" />
       </uipath:variables>
       <uipath:bindings version="v1" />
     </bpmn:extensionElements>
