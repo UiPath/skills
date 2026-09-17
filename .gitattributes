@@ -1,0 +1,16 @@
+# Hook scripts are Authenticode-signed at publish time; signatures are never
+# committed.
+#
+# An Authenticode signature covers the file's exact bytes, so a checkout that
+# rewrites line endings produces a file whose signature no longer verifies. The
+# signing runner is Windows, where a clone with `core.autocrlf=true` would
+# convert LF to CRLF before signing — the signature would then cover content
+# that no Linux consumer ever receives, and the published package would carry a
+# signature valid for nobody.
+#
+# `-text` disables end-of-line conversion in both directions, so every checkout
+# on every platform sees the bytes exactly as committed. Scoped to the hook
+# scripts rather than set repo-wide: a blanket `* text=auto` would renormalize
+# every tracked file in the repository.
+hooks/*.ps1 -text
+hooks/*.sh  -text

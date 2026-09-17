@@ -5,6 +5,9 @@
 /.github/ @uipreliga @bai-uipath @akshaylive
 /tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
 
+# Azure Pipelines (nightly FOSSA scan, release gate that signs the hooks)
+/.pipelines/ @RaduAna-Maria @gabrielavaduva
+
 # Hooks
 /hooks/ @DragosUnguru @RaduAna-Maria
 

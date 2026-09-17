@@ -2,6 +2,12 @@
 
 The complete default tree is published as **`@uipath/skills`**, versioned in lockstep with **`@uipath/cli`** so a given CLI release always resolves to a compatible skills package. Every directory under `skill-flavors/` also builds a marker-free package at the same version. Flavor publication is deliberately separate from the established default-package release path.
 
+> **Hook signing.** Publishes to npmjs (`latest`, `preview`) are gated on an
+> Azure DevOps release gate, which Authenticode-signs `hooks/*.ps1` and runs
+> FOSSA before the tarball is packed and published with `--provenance` from
+> GitHub Actions. The `dev` channel and the flavor packages are not gated —
+> flavor packages ship no `hooks/` at all.
+
 ## Version model
 
 `package.json` `version` is the **single source of truth** for every generated npm package. `scripts/sync-version.mjs` derives these manifests from it (do not edit by hand):

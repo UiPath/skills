@@ -1541,12 +1541,26 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   );
 
   assert.match(publishDev, /^\s*run:\s*npm publish --tag dev\s*$/m);
+  // publish-npmjs packs the root default tarball, verifies it, and publishes
+  // that exact file. `--provenance` is the point of publishing from GitHub
+  // Actions at all -- npm mints attestations only for GitHub Actions and
+  // GitLab CI identities -- so it is guarded explicitly.
   assert.match(
     publishNpmjs,
-    /^\s*npm publish --access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m,
+    /npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}" \\\n\s*--access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}/,
+  );
+  assert.match(publishNpmjs, /^\s*npm pack --pack-destination \.\s*$/m);
+  assert.match(publishNpmjs, /TARBALL=\$\(ls uipath-skills-\*\.tgz\)/);
+  assert.match(
+    publishNpmjs,
+    /^\s*run: node scripts\/check-hook-signatures\.mjs "\$\{\{ steps\.pack\.outputs\.tarball \}\}"\s*$/m,
   );
   for (const job of [publishDev, publishNpmjs]) {
-    assert.doesNotMatch(job, /npm run skills:pack|build\/npm|\.tgz/);
+    // The default jobs must never run the all-flavor pack loop or publish a
+    // tarball the flavor composer staged. Packing the root default tarball in
+    // the working directory (publish-npmjs, above) is not that.
+    assert.doesNotMatch(job, /npm run skills:pack|build\/npm/);
+    assert.doesNotMatch(job, /uipath-skills-[a-z0-9-]+\.tgz/);
     assert.doesNotMatch(job, /ENABLE_SKILL_FLAVOR_PUBLISH/);
   }
   assert.doesNotMatch(defaultWorkflow, /npm run skills:pack|build\/npm\/\*\.tgz/);

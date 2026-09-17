@@ -14,6 +14,20 @@ name: Publish skills package
 #   - workflow_dispatch (channel: preview) -> `preview` : npmjs (pre-release)
 #   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
 #
+# npmjs publishes (`latest`, `preview`) are gated on the Azure DevOps release
+# gate (`sign-hooks` -> .pipelines/release-gate.yml): it Authenticode-signs
+# `hooks/*.ps1` with UiPath's official certificate and runs FOSSA, then hands
+# the signed scripts back as an artifact that `publish-npmjs` overlays before
+# packing. Signing cannot run here (the certificate is reachable only through an
+# Azure DevOps service connection and is never exported) and publishing cannot
+# run there (npm mints provenance only for GitHub Actions and GitLab CI
+# identities), so the two halves are split.
+#
+# The `dev` channel is deliberately NOT gated: it publishes on every push to
+# main, and a cross-system dependency on the most frequent publish buys little
+# for an internal prerelease channel. Flavor packages ship no `hooks/` at all,
+# so they need no signing.
+#
 # npmjs publishes (`latest`, `preview`) use OIDC trusted publishing +
 # `--provenance`. GitHub Packages publishes (`dev`) use the built-in
 # GITHUB_TOKEN and carry no provenance. `npm install @uipath/skills` (no tag,
@@ -113,9 +127,89 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  sign-hooks:
+    name: Sign hooks (Azure DevOps release gate)
+    needs: [guard]
+    # A separate job on purpose, not inlined into publish-npmjs. This job needs
+    # an `environment:` to pin its OIDC subject for Entra (see below), and
+    # publish-npmjs's OIDC subject is what npm's trusted publisher matches --
+    # adding an environment there would change that claim and require the npmjs
+    # publisher to be reconfigured. Keeping them apart leaves the publishing
+    # identity untouched. The signed scripts cross the boundary as an artifact.
+    #
+    # Exactly the condition on publish-npmjs below. They must stay identical: a
+    # skipped `needs` skips its dependents, so any divergence silently stops
+    # publishing rather than failing.
+    if: >-
+      github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+          || (github.event_name == 'workflow_dispatch'
+              && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
+    runs-on: uipath-ubuntu-latest
+    # Pins the OIDC subject claim to `repo:UiPath/skills:environment:release-gate`.
+    # Without an environment the subject is the triggering ref
+    # (`...:ref:refs/heads/release/v1.203`), so every new release line would
+    # need its own federated credential in Entra. One environment, one
+    # credential, stable across lines. Add no protection rules unless a manual
+    # approval before every preview publish is actually wanted.
+    environment: release-gate
+    permissions:
+      contents: read
+      # Exchanged for an Azure DevOps token through an Entra federated
+      # credential. No PAT is stored.
+      id-token: write
+    outputs:
+      signed: ${{ steps.sign.outputs.signed }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      # Starts .pipelines/release-gate.yml against this exact commit, waits for
+      # it, and overlays the signed hooks/*.ps1 onto the working tree. The
+      # script asserts the gate signed this commit and this exact set of
+      # scripts, so a moved branch tip cannot produce valid signatures over
+      # bytes nobody released.
+      #
+      # The ratchet: while REQUIRE_HOOK_SIGNING is unset, a gate failure warns
+      # and publishes unsigned hooks -- the status quo, so nothing breaks while
+      # the service connection is being provisioned. Once set, the same failure
+      # stops the publish instead of silently regressing.
+      - name: Sign hooks in Azure DevOps
+        id: sign
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_SIGNING_CLIENT_ID }}
+          ADO_ORGANIZATION: ${{ vars.ADO_ORGANIZATION || 'uipath' }}
+          ADO_PROJECT: ${{ vars.ADO_PROJECT || 'skills' }}
+          ADO_PIPELINE_ID: ${{ vars.ADO_RELEASE_GATE_PIPELINE_ID }}
+          GATE_CHANNEL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'latest') && 'latest' || 'preview' }}
+          GATE_REF: ${{ github.ref }}
+          GATE_COMMIT: ${{ github.sha }}
+          REQUIRE_SIGNING: ${{ vars.REQUIRE_HOOK_SIGNING }}
+        run: |
+          if node scripts/fetch-signed-hooks.mjs; then
+            exit 0
+          fi
+          if [ "$REQUIRE_SIGNING" = "true" ]; then
+            echo "::error::Hook signing failed and REQUIRE_HOOK_SIGNING is enabled; refusing to publish."
+            exit 1
+          fi
+          echo "::warning::Hook signing failed; publishing unsigned hooks because REQUIRE_HOOK_SIGNING is not enabled."
+
+      - name: Upload signed hooks
+        if: steps.sign.outputs.signed == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: signed-hooks
+          path: hooks/*.ps1
+          retention-days: 1
+          if-no-files-found: error
+
   publish-npmjs:
     name: Publish to npmjs (latest / preview)
-    needs: [guard]
+    needs: [guard, sign-hooks]
     # dispatch channel=latest              -> `latest`  (committed version).
     # release/v* push / dispatch preview   -> `preview` (stamped pre-release).
     if: >-
@@ -136,6 +230,20 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
+
+      # Overlay the Authenticode-signed hooks from the Azure DevOps gate onto
+      # the checkout, replacing the unsigned versions in git. This must happen
+      # before `npm pack`: a signature covers the file's exact bytes, so the
+      # signed file has to be the one that gets packed.
+      #
+      # Skipped when the gate could not sign (REQUIRE_HOOK_SIGNING unset), in
+      # which case the package ships the unsigned scripts -- the status quo.
+      - name: Overlay signed hooks
+        if: needs.sign-hooks.outputs.signed == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: signed-hooks
+          path: hooks
 
       # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
       #
@@ -201,15 +309,49 @@ jobs:
             echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
           fi
 
+      # Pack first, then publish that exact tarball, so the bytes that get
+      # verified below are the bytes that get published. `npm publish` on its
+      # own would pack again internally and there would be no artifact to
+      # inspect in between.
+      #
+      # `prepack`/`postpack` run here (composing the marker-free default tree
+      # and restoring canonical sources afterwards) exactly as they did under a
+      # direct `npm publish`. Publishing a tarball path does not re-run them.
+      - name: Pack the package
+        id: pack
+        run: |
+          rm -f uipath-skills-*.tgz
+          npm pack --pack-destination .
+          TARBALL=$(ls uipath-skills-*.tgz)
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "Packed $TARBALL"
+
+      # Structural check that the signature survived packing. The failure this
+      # catches is a signature applied correctly and then destroyed on the way
+      # into the tarball -- `prepack` rewriting a file, the flavor composer
+      # re-emitting one, a packer normalizing line endings. Such a package looks
+      # signed in CI and is unsigned on disk. Chain validation already happened
+      # on the Windows agent that applied the signature; what is left to prove
+      # is that the bytes made it.
+      - name: Verify signed hooks survived packing
+        if: needs.sign-hooks.outputs.signed == 'true'
+        run: node scripts/check-hook-signatures.mjs "${{ steps.pack.outputs.tarball }}"
+
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to
       # npmjs; credentials come from the OIDC exchange. `--provenance` attaches
       # a signed build attestation (allowed because the repo is public and the
       # job has id-token: write); package.json `repository.url` must match.
+      #
+      # Provenance attests to the publishing identity and source commit bound to
+      # this tarball's digest; it does not require the tarball to be derivable
+      # from source alone, so the overlaid signed hooks do not weaken or
+      # invalidate it.
       - name: Publish to npmjs (OIDC trusted publishing)
         run: |
           npm config set @uipath:registry https://registry.npmjs.org/
-          npm publish --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+          npm publish "${{ steps.pack.outputs.tarball }}" \
+            --access public --provenance --tag ${{ steps.dist.outputs.tag }}
 
   publish-studioweb-dev:
     name: Publish Studio Web dev to GitHub Packages
