@@ -1,18 +1,20 @@
 # uipath-ixp replace-taxonomy fixture
 
 Stages `new-taxonomy.json` at the sandbox root for tasks that hand the agent a
-taxonomy file and ask for the project to match it. Overlay it alongside
-[`mock_template`](../mock_template/README.md) and
-[`mock_template_taxonomy`](../mock_template_taxonomy/README.md), whose
-`get-taxonomy` serves the project state this file is a diff against:
+taxonomy file and ask for the project to match it. Contains no `mocks/` — the
+consuming task declares `sandbox.record_cli` and lets the framework generate
+its recorders:
 
 ```yaml
 sandbox:
-  mock_path_dirs: [mocks]
   template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
-    - {type: template_dir, path: ../_shared/mock_template_taxonomy}
     - {type: template_dir, path: ../_shared/replace_taxonomy_fixture}
+  record_cli:
+    - tool: uip
+      responses:
+        - when: {verb: "ixp projects get-taxonomy"}
+          exit_code: 0
+          stdout: '…the project taxonomy this file is a diff against…'
 ```
 
 ## What the file is
@@ -21,8 +23,9 @@ sandbox:
 `projects get-taxonomy | jq .Data.dataset` produces, i.e. exactly the shape a
 user lands on after dumping a taxonomy and hand-editing it.
 
-It carries the **same `field_id`s** as the live fixture taxonomy. That is what
-makes the two differences legible as an edit rather than a new taxonomy:
+It carries the **same `field_id`s** as the taxonomy the task's response rule
+serves. That is what makes the two differences legible as an edit rather than a
+new taxonomy:
 
 | vs. the project's current taxonomy | Difference | Targeted command |
 |---|---|---|
@@ -42,7 +45,10 @@ import reports `{"status":"ok"}`, which is what makes it worth grading against
 
 ## Constraints
 
-Contains no `mocks/` directory, so it can be listed in any order relative to
-the mock templates without shadowing their `uip`. Keep the `field_id` values in
-sync with `mock_template_taxonomy/mocks/uip` — a mismatch turns the graded
-rename into an add plus an orphan.
+Keep the `field_id` values in sync with the taxonomy the consuming task serves
+from its `get-taxonomy` response rule — a mismatch turns the graded rename into
+an add plus an orphan, and the task would grade a different behavior than it
+describes. The old field name (`Total Amount`) must appear **only** in that
+served response, never in this file or the prompt: a graded rename that asserts
+the old name is what proves the agent diffed rather than applied the file
+wholesale.
