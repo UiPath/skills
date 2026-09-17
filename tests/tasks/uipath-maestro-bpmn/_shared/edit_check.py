@@ -149,6 +149,54 @@ def assert_uipath_preserved(original: ET.Element, edited: ET.Element, local_name
         fail(f"uipath:{local_name} payload was modified (must round-trip untouched)")
 
 
+def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> None:
+    """Pristine variable declarations must round-trip untouched — attributes of
+    the ``uipath:variables`` block itself included, and in their pristine
+    relative order. Additions are allowed, but every added declaration needs a
+    non-empty ``name`` and ``type``, and its ``elementId`` (when present) must
+    reference a live BPMN element id."""
+    orig = _find_first(original, "variables")
+    new = _find_first(edited, "variables")
+    if orig is None:
+        fail("fixture bug: no uipath:variables in pristine original")
+    if new is None:
+        fail("uipath:variables was dropped by the edit (must be preserved)")
+    if sorted(orig.attrib.items()) != sorted(new.attrib.items()):
+        fail("uipath:variables attributes were modified (must round-trip untouched)")
+    ids = [child.attrib.get("id", "") for child in new]
+    if not all(ids) or len(ids) != len(set(ids)):
+        fail("all uipath:variables declarations must have unique non-empty ids")
+    edited_by_id = {child.attrib.get("id"): child for child in new}
+    for child in orig:
+        child_id = child.attrib.get("id")
+        match = edited_by_id.get(child_id)
+        if match is None:
+            fail(f"pristine variable {child_id!r} was removed (must be preserved)")
+        if canonical(child) != canonical(match):
+            fail(f"pristine variable {child_id!r} was modified (must round-trip untouched)")
+    pristine_order = [child.attrib.get("id") for child in orig]
+    pristine_set = set(pristine_order)
+    edited_pristine_order = [i for i in ids if i in pristine_set]
+    if edited_pristine_order != pristine_order:
+        fail("pristine variable declarations were reordered (must round-trip untouched)")
+    # Not `all_ids`: that accepts DI shape ids, which the canvas treats as
+    # orphans on import.
+    live_ids = {
+        el.attrib["id"]
+        for el in edited.iter()
+        if el.attrib.get("id") and el.tag.startswith("{" + BPMN_NS + "}")
+    }
+    for child in new:
+        child_id = child.attrib.get("id")
+        if child_id in pristine_set:
+            continue
+        if not child.attrib.get("name") or not child.attrib.get("type"):
+            fail(f"new variable {child_id!r} needs a non-empty name and type")
+        scope = child.attrib.get("elementId")
+        if scope and scope not in live_ids:
+            fail(f"new variable {child_id!r} has a dangling elementId {scope!r}")
+
+
 def flows(root: ET.Element) -> list[tuple[str, str, str]]:
     out = []
     for el in root.iter():
