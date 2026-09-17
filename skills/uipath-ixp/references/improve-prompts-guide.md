@@ -67,7 +67,7 @@ Every change to model inputs — labellings, instructions, document upload/delet
 1. Record `ModelVersion` from the last metrics read BEFORE the change.
 2. Wait 2 minutes, then read `uip ixp projects get-metrics <project-name> --output json`.
 3. `ModelVersion` **greater than** the recorded value → retrain is done, proceed. Any increment counts. Do NOT wait for a specific number: queued input changes can bump the version by more than one, so waiting for exactly *N*+1 polls until the budget dies when the version jumps straight to *N*+2.
-4. Otherwise repeat step 2 — **2 minutes between checks, 5 checks in total** (10 minutes). Do NOT use a single long sleep, and do NOT escalate or shorten the interval between checks.
+4. Otherwise repeat step 2 — **2 minutes between checks, 5 checks in total** (10 minutes). Do NOT use a single long sleep, and do NOT escalate or shorten the interval between checks. Issue one `uip` call per command, never a loop, never a chain — bundled checks hit the command timeout and get killed.
 5. Still unchanged after the 5th check → **stop polling** and report that the retrain did not complete. Metrics you carry forward predate the change: label them as such, never present them as the post-change measurement, and never roll back instructions on a comparison against them.
 
 A read that fails counts against the budget like any other attempt, and never restarts it.
