@@ -3,6 +3,10 @@ description: >
   Brownfield edit: insert a new script task into an existing, valid Maestro BPMN
   between two adjacent tasks, rewiring the sequence flow and diagram while
   preserving element ids, uipath:* payloads, and uipath:migrationVersion.
+  Grades insertion, rewiring, and preservation only — whether the inserted
+  node carries a mapping or declares variables is deliberately out of scope
+  (a bare node and a mapped one both pass; added declarations are validated,
+  not required).
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
 
 run_limits:

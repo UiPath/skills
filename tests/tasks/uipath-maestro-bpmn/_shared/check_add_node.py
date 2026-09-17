@@ -49,7 +49,6 @@ def main() -> None:
     assert_config_preserved(original, edited, ["Start_1", "Task_Validate", "Task_Notify", "End_1"])
     assert_uipath_preserved(original, edited, "migrationVersion")
     assert_uipath_preserved(original, edited, "caseManagement")
-    # Additions allowed: the inserted node may declare variables it maps.
     assert_variables_extended_only(original, edited)
 
     require_sequence_integrity(edited)
