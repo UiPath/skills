@@ -10,8 +10,13 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:business-rule", "feature:orchestrator"]
 
 run_limits:
+  # Claude nightlies show high variance: 09-15 SUCCESS 387s, 09-16 ERROR at
+  # the 1200s turn cap mid-work at 100 turns. The claude-code session streams
+  # as one turn, so turn_timeout is the effective wall budget; task_timeout
+  # must stay >= turn_timeout or it silently caps the turn.
+  task_timeout: 2400
+  turn_timeout: 1800
   expected_turns: 28
-  turn_timeout: 1200
 
 reference:
   directory: ..

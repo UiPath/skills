@@ -23,8 +23,13 @@ tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-nod
 run_limits:
   expected_turns: 55
   max_turns: 120
-  task_timeout: 3200
-  turn_timeout: 1200
+  # First claude nightly (09-16) killed the agent at the 1200s turn cap
+  # mid-work at 136 turns — the claude-code session streams as one turn, so
+  # turn_timeout is the effective agent wall budget. task_timeout additionally
+  # covers the graded criteria (180 + 180 + 1600s run_commands), so it is
+  # sized at turn_timeout + ~2000s.
+  task_timeout: 4400
+  turn_timeout: 2400
 
 sandbox:
   template_sources:
