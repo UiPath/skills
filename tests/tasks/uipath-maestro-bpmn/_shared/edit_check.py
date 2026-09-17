@@ -197,6 +197,64 @@ def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> 
             fail(f"new variable {child_id!r} has a dangling elementId {scope!r}")
 
 
+def _live_bpmn_ids(root: ET.Element) -> set[str]:
+    """Ids of real BPMN elements. Excludes DI shape ids, which the canvas
+    treats as orphans when a variable scopes to one."""
+    return {
+        el.attrib["id"]
+        for el in root.iter()
+        if el.attrib.get("id") and el.tag.startswith("{" + BPMN_NS + "}")
+    }
+
+
+def _declarations_anywhere(root: ET.Element) -> dict[str, ET.Element]:
+    """Every ``uipath:variables`` child in the file, keyed by id — the root
+    block plus any subprocess-level block."""
+    found: dict[str, ET.Element] = {}
+    for block in root.iter():
+        if local(block.tag) != "variables":
+            continue
+        for child in block:
+            child_id = child.attrib.get("id", "")
+            if not child_id:
+                fail("a uipath:variables declaration has no id")
+            if child_id in found:
+                fail(f"variable id {child_id!r} is declared more than once")
+            found[child_id] = child
+    return found
+
+
+def assert_variables_preserved_or_rescoped(original: ET.Element, edited: ET.Element) -> None:
+    """Every pristine declaration must survive with its kind, ``name`` and
+    ``type`` intact, anywhere in the file. Only ``elementId`` may change, and
+    it must still name a live BPMN element.
+
+    Looser than ``assert_variables_extended_only`` on purpose: an edit that
+    groups nodes into a subprocess may re-scope a variable into that
+    subprocess's own block, which the skill documents as importing cleanly.
+    Freezing the root block would fail that correct edit."""
+    pristine = _declarations_anywhere(original)
+    if not pristine:
+        fail("fixture bug: no uipath:variables declarations in pristine original")
+    current = _declarations_anywhere(edited)
+    live_ids = _live_bpmn_ids(edited)
+    for child_id, child in pristine.items():
+        match = current.get(child_id)
+        if match is None:
+            fail(f"pristine variable {child_id!r} was dropped by the edit")
+        for attribute in ("name", "type"):
+            if child.attrib.get(attribute) != match.attrib.get(attribute):
+                fail(
+                    f"pristine variable {child_id!r} changed its {attribute} "
+                    f"({child.attrib.get(attribute)!r} -> {match.attrib.get(attribute)!r})"
+                )
+        if local(child.tag) != local(match.tag):
+            fail(f"pristine variable {child_id!r} changed kind (input/output/inputOutput)")
+        scope = match.attrib.get("elementId")
+        if scope and scope not in live_ids:
+            fail(f"variable {child_id!r} has a dangling elementId {scope!r}")
+
+
 def flows(root: ET.Element) -> list[tuple[str, str, str]]:
     out = []
     for el in root.iter():
