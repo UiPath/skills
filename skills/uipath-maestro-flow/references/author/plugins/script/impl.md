@@ -40,6 +40,7 @@ See [Action Node Structure — Adding and editing procedures](../../../shared/ac
 6. **No external calls** — use the HTTP node or a connector node for API calls.
 7. **30-second timeout** — long-running computations will be killed.
 8. **Never name a variable `aggregate`** — reserved host global. On any `Identifier 'X' has already been declared`, rename `X`.
+9. **Never default an upstream output to `{}`.** `const ctx = $vars.x.output || {}` widens the type to `T | {}`, so every `ctx.field` read warns `Property 'field' does not exist on type '{}'`. Read the output directly; if the upstream node may not have run, guard the individual read: `const body = $vars.x?.output?.body ?? '';`
 
 ## Common patterns
 
@@ -93,5 +94,5 @@ Property access is **case-sensitive** — these casings resolve: `.FullName`, `.
 | Timeout after 30s | Script too expensive | Simplify logic or split into multiple scripts |
 | `console is not defined` | Used `console.log()` | Remove — use `return { debug: val }` instead |
 | `fetch is not defined` | Tried to make HTTP call | Use an HTTP node or connector node instead |
-| `[300501] Error invoking script task` with `Unexpected token` | Malformed JavaScript — `flow validate` does not parse script bodies, so syntax errors surface only at runtime. Common slip: one missing `)` in chained `(((a \|\| {}).b \|\| {}).c \|\| [])` guards | Balance parentheses; check with `node -e "new Function(<script>)"` before validate |
+| `[300501] Error invoking script task` with `Unexpected token` | Malformed JavaScript — `flow validate` does not parse script bodies, so syntax errors surface only at runtime | Balance parentheses; check with `node -e "new Function(<script>)"` before validate |
 | `Identifier 'X' has already been declared` | `X` collides with a runtime-injected global (known: `aggregate`) | Rename `X` (e.g. `agg`) |
