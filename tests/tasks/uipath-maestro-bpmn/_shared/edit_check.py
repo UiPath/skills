@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 import re
 import xml.etree.ElementTree as ET
+from enum import Enum
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
@@ -210,11 +211,19 @@ def _assert_addition_is_well_formed(
         fail(f"new variable {child_id!r} has a dangling elementId {scope!r}")
 
 
-def _declarations_anywhere(root: ET.Element, where: str) -> dict[str, ET.Element]:
+class Side(Enum):
+    """Which file a declaration set was read from. A defect on the ORIGINAL
+    side is a fixture bug, not an agent error."""
+
+    ORIGINAL = "pristine original"
+    EDITED = "edited file"
+
+
+def _declarations_anywhere(root: ET.Element, side: Side) -> dict[str, ET.Element]:
     """Every ``uipath:variables`` child in the file, keyed by id — the root
-    block plus any subprocess-level block. ``where`` names the side being read
-    so a defect in the pristine fixture is not reported as an agent error."""
-    prefix = "fixture bug: " if where == "pristine original" else ""
+    block plus any subprocess-level block."""
+    prefix = "fixture bug: " if side is Side.ORIGINAL else ""
+    where = side.value
     found: dict[str, ET.Element] = {}
     for block in root.iter():
         if local(block.tag) != "variables":
@@ -283,9 +292,9 @@ def _owning_element_id(
     current: ET.Element | None = element
     while current is not None:
         if current.attrib.get("id"):
-            return repr(current.attrib["id"])
+            return current.attrib["id"]
         current = parents.get(current)
-    return repr(local(element.tag))
+    return local(element.tag)
 
 
 def _referencing_elements(
@@ -302,7 +311,9 @@ def _referencing_elements(
             for node in block.iter():
                 declared.add(id(node))
             declared.add(id(block))
-    pattern = re.compile(r"vars\.%s(?![\w.-])" % re.escape(variable_id))
+    # A following "." is a property read (`vars.X.field`), which IS a reference;
+    # only more id characters mean a different variable.
+    pattern = re.compile(r"vars\.%s(?![\w-])" % re.escape(variable_id))
     matches: list[ET.Element] = []
     for element in edited.iter():
         if id(element) in declared:
@@ -327,10 +338,10 @@ def assert_variables_preserved_or_rescoped(original: ET.Element, edited: ET.Elem
     groups nodes into a subprocess may re-scope that subprocess's own
     variables, which structural-bpmn.md documents as importing cleanly.
     Freezing the root block would fail that correct edit."""
-    pristine = _declarations_anywhere(original, "pristine original")
+    pristine = _declarations_anywhere(original, Side.ORIGINAL)
     if not pristine:
         fail("fixture bug: no uipath:variables declarations in the pristine original")
-    current = _declarations_anywhere(edited, "edited file")
+    current = _declarations_anywhere(edited, Side.EDITED)
     live_ids = _live_bpmn_ids(edited)
     parents = _parents(edited)
 
@@ -369,7 +380,7 @@ def assert_variables_preserved_or_rescoped(original: ET.Element, edited: ET.Elem
                 continue
             fail(
                 f"variable {child_id!r} was re-scoped into subprocess "
-                f"{subprocess_id!r} while {_owning_element_id(element, parents)} "
+                f"{subprocess_id!r} while {_owning_element_id(element, parents)!r} "
                 "outside it still references it"
             )
 

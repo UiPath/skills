@@ -256,6 +256,57 @@ def test_rescope_with_an_outside_reference_fails() -> None:
         assert_variables_preserved_or_rescoped(original, edited)
 
 
+def test_rescope_with_an_outside_property_read_fails() -> None:
+    # `vars.X.field` is the documented way to read a structured variable
+    # (expression-authoring.md), so a property read counts as a reference.
+    original = grouped(ORDER_ID + "\n        " + LABEL)
+    edited = ET.fromstring(
+        SUBPROCESS_TEMPLATE.replace("{root_vars}", LABEL)
+        .replace(
+            "{sub_vars}",
+            '<uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" elementId="Sub_Pack" />',
+        )
+        .replace(
+            "</bpmn:process>",
+            """<bpmn:serviceTask id="Task_Ship">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:input name="args" type="json" target="bodyField">{"orderId":"=vars.Var_OrderId.id"}</uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+  </bpmn:process>""",
+        )
+    )
+    with pytest.raises(SystemExit, match="outside it still references it"):
+        assert_variables_preserved_or_rescoped(original, edited)
+
+
+def test_rescope_ignores_a_longer_id_prefix() -> None:
+    # `vars.Var_OrderIdExtra` is a different variable, not a reference to
+    # `Var_OrderId`, so the move is allowed.
+    original = grouped(ORDER_ID + "\n        " + LABEL)
+    edited = ET.fromstring(
+        SUBPROCESS_TEMPLATE.replace("{root_vars}", LABEL)
+        .replace(
+            "{sub_vars}",
+            '<uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" elementId="Sub_Pack" />',
+        )
+        .replace(
+            "</bpmn:process>",
+            """<bpmn:serviceTask id="Task_Ship">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:input name="args" type="json" target="bodyField">{"x":"=vars.Var_OrderIdExtra"}</uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+  </bpmn:process>""",
+        )
+    )
+    assert_variables_preserved_or_rescoped(original, edited)
+
+
 def test_rescope_validates_additions() -> None:
     with pytest.raises(SystemExit, match="non-empty name and type"):
         assert_variables_preserved_or_rescoped(
