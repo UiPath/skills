@@ -184,7 +184,7 @@ Common JMESPath patterns for `run list`; drop the `items` prefix where `Data` is
 
 ### Narrow before you page
 
-A tenant directory (Slack channels, Teams users, Drive files) runs to thousands of rows at up to 1000 per page, so cut the set with what the resource itself declares before looping:
+A tenant directory (Slack channels, Teams users, Drive files) runs to thousands of rows, many pages deep, so cut the set with what the resource itself declares before looping:
 
 1. **`reference.filterPattern`**, if the field declares one. That is one targeted call, no loop. See [reference-resolution.md — Search References](reference-resolution.md#search-references-filterpattern).
 2. **The operation's own query parameters.** `uip is resources describe "<key>" "<resource>" --operation List` lists every accepted `--query` key under `parameters`. Most are not a `filterPattern` and so are easy to miss: Slack `conversations` takes `exclude_archived`, `types` and `team_id`. Pass the ones that exclude rows you do not want. Keys the operation does not declare (`searchTerm=`, `where=`, `filter=`) are silently ignored.
@@ -233,24 +233,42 @@ Example response:
 }
 ```
 
-**Run the whole loop in one call.** A page per turn is the largest time sink in reference resolution: a target on page 8 costs eight turns of generation. One bounded shell loop costs one turn, short-circuits on the hit, and stops when the token stalls:
+**Run the whole loop in one call.** A page per turn is the largest time sink in reference resolution: a target on page 8 costs eight turns of generation. One bounded shell loop costs one turn. Every way the walk can end is a different instruction to you, so the loop names each one rather than just stopping:
 
 ```bash
-TOKEN=""
-for i in $(seq 1 20); do
+TOKEN=""; PAGE=0
+while :; do
+  PAGE=$((PAGE+1))
   page=$(uip is resources run list "<connector-key>" "<resource>" --connection-id "<id>" \
     ${TOKEN:+--query "nextPage=$TOKEN"} --output json \
     --output-filter "{hit: items[?name=='<target>'].id, next: Pagination}")
-  read -r ID NEXT <<< "$(printf '%s' "$page" | python3 -c \
-    'import json,sys; d=json.load(sys.stdin)["Data"]; print((d["hit"] or ["-"])[0], d["next"].get("NextPageToken","-"))')"
-  echo "page $i: id=$ID next=$NEXT"
-  [ "$ID" = "-" ] || break
-  [ "$NEXT" != "-" ] && [ "$NEXT" != "$TOKEN" ] || { echo "STOP: page $i did not advance"; break; }
+  read -r N ID NEXT <<< "$(printf '%s' "$page" | python3 -c 'import json,sys
+e = json.load(sys.stdin)
+if e.get("Result") != "Success": print("ERR - -"); raise SystemExit
+d = e.get("Data") or {}; hit = d.get("hit") or []
+print(len(hit), hit[0] if hit else "-", (d.get("next") or {}).get("NextPageToken", "-"))' 2>/dev/null)"
+  case $N in ''|*[!0-9]*) echo "FAILED on page $PAGE, stop and report, never treat as absent: $page"; break ;; esac
+  echo "page $PAGE: matches=$N id=$ID next=$NEXT"
+  [ "$N" -eq 0 ] || { [ "$N" -eq 1 ] || echo "AMBIGUOUS: $N matches, ask the user instead of picking one"; break; }
+  [ "$NEXT" != "-" ] || { echo "ABSENT: paged to the end without a match"; break; }
+  [ "$NEXT" != "$TOKEN" ] || { echo "STUCK: token repeated, connector paging is broken"; break; }
+  [ "$PAGE" -lt 20 ] || { echo "CAP: stopped early with pages left, NOT an exhaustive search"; break; }
   TOKEN=$NEXT
 done
 ```
 
-**A repeated `NextPageToken` means the connector's paging is broken, not that the loop should continue.** When the token comes back unchanged while `HasMore` stays `"true"`, every further page is the same page (observed on Slack `curated_users`: pages 2 and 3 byte-identical). Stop on the repeat and report the field as unresolvable. Do not spend the remaining budget re-reading one page, and do not write the display name instead.
+Act on the label, not on the absence of an id:
+
+| Label | What it means | What to do |
+|---|---|---|
+| `matches=1` | resolved | use `ID` |
+| `AMBIGUOUS` | several rows carry the name | ask the user with the candidates; never take the first |
+| `ABSENT` | `HasMore` reached `"false"` with no match | re-run against this connector's other Enabled connections, then ask |
+| `CAP` | the loop's own page ceiling, pages still remaining | not a not-found; narrow the query or raise the ceiling and re-run |
+| `STUCK` | `NextPageToken` came back unchanged while `HasMore` stayed `"true"` | connector paging is broken; report the field as unresolvable |
+| `FAILED` | the call errored | stop and report per [When the Lookup Call Fails](reference-resolution.md#when-the-lookup-call-fails-critical) |
+
+Two of those are silent-wrong-value traps, so never collapse them into "not found": a `FAILED` call proves nothing about the value, and a `CAP` exit leaves pages unread. Writing a display name or a remembered id after either passes `flow validate` and faults at runtime. This loop reads `Data.Pagination`; resources that page by `offset`/`limit` instead have their own section below.
 
 ### Anti-patterns
 
