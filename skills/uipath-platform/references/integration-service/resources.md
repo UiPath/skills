@@ -174,7 +174,7 @@ Common JMESPath patterns for `run list`; drop the `items` prefix where `Data` is
 | `items[?status=='active']` | Filter records by field value |
 | `items[0]` | Return only the first record |
 
-> **A filter sees one page.** The filter runs after a page is fetched, so a predicate matching nothing yields `Data: []`, which means "not on this page" and never "not in the collection". Project `Pagination` alongside the predicate (`"{hit: items[?name=='<target>'].id, next: Pagination}"`) so one call answers both questions.
+> **A filter sees one page.** The filter runs after a page is fetched, so a predicate matching nothing yields `Data: []`, which means "not on this page" and never "not in the collection". Project `Pagination` alongside the predicate (`"{hit: items[?<match-field>=='<target>'], next: Pagination}"`) so one call answers both questions.
 
 ---
 
@@ -233,7 +233,9 @@ Example response:
 }
 ```
 
-**Run the whole loop in one call.** A page per turn is the largest time sink in reference resolution: a target on page 8 costs eight turns of generation. One bounded shell loop costs one turn. Every way the walk can end is a different instruction to you, so the loop names each one rather than just stopping:
+**Run the whole loop in one call.** A page per turn is the largest time sink in reference resolution: a target on page 8 costs eight turns of generation. One bounded shell loop costs one turn. Every way the walk can end is a different instruction to you, so the loop names each one rather than just stopping.
+
+Take `<match-field>` and `<value-field>` from the reference's `lookupNames` and `lookupValue` in the Step 3 `describe`, never from the shape of the first row you happen to see: a Slack channel matches on `name`, a Slack user on `profile.real_name`, and `lookupNames` resolves dotted paths. A predicate on the wrong field matches nothing on every page and the loop reports `ABSENT` for a row that is there. Add any other field you need from the row to the projection while you are here, because a second walk costs another full pass. Escape an apostrophe inside `<target>` as `\'` or the filter is a lexer error.
 
 ```bash
 TOKEN=""; PAGE=0
@@ -241,12 +243,12 @@ while :; do
   PAGE=$((PAGE+1))
   page=$(uip is resources run list "<connector-key>" "<resource>" --connection-id "<id>" \
     ${TOKEN:+--query "nextPage=$TOKEN"} --output json \
-    --output-filter "{hit: items[?name=='<target>'].id, next: Pagination}")
+    --output-filter "{hit: items[?<match-field>=='<target>'].<value-field>, next: Pagination}")
   read -r N ID NEXT <<< "$(printf '%s' "$page" | python3 -c 'import json,sys
 e = json.load(sys.stdin)
 if e.get("Result") != "Success": print("ERR - -"); raise SystemExit
 d = e.get("Data") or {}; hit = d.get("hit") or []
-print(len(hit), hit[0] if hit else "-", (d.get("next") or {}).get("NextPageToken", "-"))' 2>/dev/null)"
+print(len(hit), hit[0] if hit else "-", (d.get("next") or {}).get("NextPageToken", "-"))')"
   case $N in ''|*[!0-9]*) echo "FAILED on page $PAGE, stop and report, never treat as absent: $page"; break ;; esac
   echo "page $PAGE: matches=$N id=$ID next=$NEXT"
   [ "$N" -eq 0 ] || { [ "$N" -eq 1 ] || echo "AMBIGUOUS: $N matches, ask the user instead of picking one"; break; }
@@ -263,7 +265,7 @@ Act on the label, not on the absence of an id:
 |---|---|---|
 | `matches=1` | resolved | use `ID` |
 | `AMBIGUOUS` | several rows carry the name | ask the user with the candidates; never take the first |
-| `ABSENT` | `HasMore` reached `"false"` with no match | re-run against this connector's other Enabled connections, then ask |
+| `ABSENT` | `HasMore` reached `"false"` with no match | re-check `<match-field>` against `lookupNames` first, then re-run against this connector's other Enabled connections, then ask |
 | `CAP` | the loop's own page ceiling, pages still remaining | not a not-found; narrow the query or raise the ceiling and re-run |
 | `STUCK` | `NextPageToken` came back unchanged while `HasMore` stayed `"true"` | connector paging is broken; report the field as unresolvable |
 | `FAILED` | the call errored | stop and report per [When the Lookup Call Fails](reference-resolution.md#when-the-lookup-call-fails-critical) |
