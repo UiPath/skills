@@ -36,23 +36,25 @@ def _mapping_outputs(element: ET.Element) -> list[ET.Element]:
 
 
 def test_minimal_example_scopes_every_declaration_to_a_live_element() -> None:
-    # The section's own rule: "Without an `elementId` the declaration does not
-    # exist to the canvas, and every `vars.<id>` reference to it fails on
-    # import." The example is what SKILL.md tells agents to author from, so an
-    # elementId-less declaration here ships the canvas-broken shape the rule
-    # forbids. Scope must name a live BPMN element, never a DI shape id.
+    # Scope must name a live BPMN element, never a DI shape id — a DI id is an
+    # orphan the canvas deletes on import.
     root = minimal_example()
     process = root.find("bpmn:process", NS)
     assert process is not None
 
+    # `process.iter()` yields `process` itself first, so the process id is
+    # already in the set.
     live_ids = {
         element.attrib["id"]
         for element in process.iter()
         if element.attrib.get("id")
         and element.tag.startswith("{" + NS["bpmn"] + "}")
-    } | {process.attrib["id"]}
+    }
 
-    for variable_id, variable in _variables(process).items():
+    variables = _variables(process)
+    assert variables, "the minimal example declares no variables"
+
+    for variable_id, variable in variables.items():
         scope = variable.attrib.get("elementId")
         assert scope, f"{variable_id} has no elementId"
         assert scope in live_ids, f"{variable_id} has a dangling elementId {scope!r}"

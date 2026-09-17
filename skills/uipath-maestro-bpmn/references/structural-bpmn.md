@@ -218,10 +218,11 @@ Public entry-point variables have a two-layer runtime contract:
 - Give each root StartEvent used as an entry point a stable unique UUID in
   `uipath:entryPointId` (generate a fresh value; do not reuse the example UUID).
   Declare each public `uipath:input` with `elementId` bound to its intended
-  StartEvent and a mutable internal `uipath:inputOutput` with the stable id used
-  by process expressions. Map `=vars.<public-input-id>` to the internal id on
-  that StartEvent.
-- Declare a mutable internal `uipath:inputOutput`, plus a public
+  StartEvent and a mutable internal `uipath:inputOutput` scoped to the process
+  (`elementId="<process id>"`) with the stable id used by process expressions.
+  Map `=vars.<public-input-id>` to the internal id on that StartEvent.
+- Declare a mutable internal `uipath:inputOutput` scoped to the process
+  (`elementId="<process id>"`), plus a public
   `uipath:output` bound with `elementId` to the root EndEvent that returns it.
   Map the internal value to the public output id on that EndEvent. If one
   public result must be returned on several normal routes, converge those
