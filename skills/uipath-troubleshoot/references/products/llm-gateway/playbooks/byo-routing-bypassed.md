@@ -38,7 +38,7 @@ What to look for:
 
    ```bash
    uip llm-configuration byo-connections list \
-     --output json --output-filter "[?product=='<product>' && operationGroupName=='<feature>']"
+     --output json --output-filter "[?Product=='<product>' && OperationGroupName=='<feature>']"
    ```
 
    If the result is empty — there is no BYO record for this feature. The platform default is expected behavior, not a bug.

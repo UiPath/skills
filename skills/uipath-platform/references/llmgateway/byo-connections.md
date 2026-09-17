@@ -173,7 +173,7 @@ When a BYO LLM configuration is in place but agent / product calls are failing o
 ```bash
 uip llm-configuration byo-connections list \
   --include-connection-details --output json \
-  --output-filter "[?connectionState!='Enabled'].{id: id, product: product, feature: operationGroupName, connectionState: connectionState}"
+  --output-filter "[?ConnectionState!='Enabled'].{id: Id, product: Product, feature: OperationGroupName, connectionState: ConnectionState}"
 ```
 
 ### Cross-checking with trace evidence

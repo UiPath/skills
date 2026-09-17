@@ -18,7 +18,7 @@ Resolve the wording to exact permission `name` values. If any token is ambiguous
 
 ```bash
 uip admin authorization permissions list --output json \
-  --output-filter "[?contains(name, '<TOKEN>')].{name:name,resourceType:resourceType,scopeType:scopeType}"
+  --output-filter "[?contains(Name, '<TOKEN>')].{name:Name,resourceType:ResourceType,scopeType:ScopeType}"
 ```
 
 If multiple candidates remain for any token, render a numbered Markdown menu and stop until the user disambiguates. End with one or more confirmed permission `name` strings.

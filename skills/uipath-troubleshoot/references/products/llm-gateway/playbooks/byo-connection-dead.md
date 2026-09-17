@@ -29,7 +29,7 @@ What to look for:
 
    ```bash
    uip llm-configuration byo-connections list \
-     --output json --output-filter "[?product=='<product>' && operationGroupName=='<feature>']"
+     --output json --output-filter "[?Product=='<product>' && OperationGroupName=='<feature>']"
    ```
 
 2. **Re-resolve the underlying IS connection state.** `--force-refresh` bypasses cached connection details and re-queries Integration Service:
@@ -56,4 +56,4 @@ What to look for:
 
   Expect `isAvailable: true` / `isCompatible: true` in the validation block.
 - If the external service revoked the app, re-authorize it in the vendor's settings before re-authenticating the connection.
-- For BYO configs used in production, audit periodically: `uip llm-configuration byo-connections list --include-connection-details --output-filter "[?connectionState!='Enabled']"`.
+- For BYO configs used in production, audit periodically: `uip llm-configuration byo-connections list --include-connection-details --output-filter "[?ConnectionState!='Enabled']"`.
