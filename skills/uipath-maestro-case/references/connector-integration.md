@@ -153,7 +153,7 @@ In Phase 3, the populated `caseShape` from `case spec --input-details` is droppe
 | Filter (activity, CEQL) | `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` → `essentialConfiguration.savedFilterTrees.<filterParamName>` (tree); `data.inputs[name="queryParameters"].body.<filterParamName>` (compiled CEQL string) |
 | Filter (trigger, JMESPath) | `data.context[name="metadata"].body.activityPropertyConfiguration.{configuration → essentialConfiguration.filter, filterExpression}` AND `data.inputs[name="body"].body.filters.expression` |
 
-The skill substitutes `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids before writing.
+For connector tasks `uip maestro case splice` resolves the `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders; for the event-trigger node and connector-bound rules the skill substitutes them in `caseShape.context[*].value` with minted binding ids before writing.
 
 ---
 
