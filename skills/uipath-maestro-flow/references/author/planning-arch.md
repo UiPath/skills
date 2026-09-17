@@ -335,7 +335,7 @@ Before presenting the plan, validate every rule:
 
 ## Node Selection Heuristics
 
-- **External service:** curated `uipath.connector.<key>.<operation>` -> [connector](plugins/connector/planning.md); connector without activity -> `core.action.http.v2` connector mode; no connector but REST API -> `core.action.http.v2` manual mode; no API -> [rpa](plugins/rpa/planning.md) or `core.logic.mock` if unpublished.
+- **External service:** curated `uipath.connector.<key>.<operation>` -> [connector](plugins/connector/planning.md); connector without the activity and `v4Compatible` -> generated non-catalog activity ([connector/impl-inline.md](plugins/connector/impl-inline.md)); connector without the activity and not `v4Compatible` -> `core.action.http.v2` connector mode; no connector but REST API -> `core.action.http.v2` manual mode; no API -> [rpa](plugins/rpa/planning.md) or `core.logic.mock` if unpublished.
 - **Branch:** two paths -> [decision](plugins/decision/planning.md); three or more -> [switch](plugins/switch/planning.md); HTTP response-status branch -> [http](plugins/http/planning.md) built-in branches.
 - **Transform:** map/filter/group-by -> [transform](plugins/transform/planning.md); custom computation or strings -> [script](plugins/script/planning.md).
 - **End:** normal completion -> [end](plugins/end/planning.md); fatal abort -> [terminate](plugins/terminate/planning.md).

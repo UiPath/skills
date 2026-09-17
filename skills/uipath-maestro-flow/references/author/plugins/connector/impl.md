@@ -4,6 +4,11 @@ Configure connector activity nodes after the generic node-add operation in [edit
 
 `uip maestro flow node configure` authors top-level `bindings[]` and `inputs.detail`. `bindings_v2.json` is regenerated from `bindings[]` at debug/pack time; never hand-edit it.
 
+| Node type | Walkthrough |
+| --- | --- |
+| `uipath.connector.<connector-key>.<activity>` — a catalog activity the registry carries | this file |
+| `uipath.connector.custom.<connector-key>.<slug>` — a non-catalog activity generated from vendor docs (Tier 2 of [planning.md](planning.md#decision-order)) | [impl-inline.md](impl-inline.md); it lists only what differs from this file |
+
 ## Requirements and data model
 
 Every connector node requires an Integration Service connection in top-level `bindings[]`. Run `registry get` with `--connection-id`; otherwise custom fields, dynamic enums, and reference metadata are absent. `registry get` accepts only `--connection-id` and `--local` — no `--activity-version` (it reads the node's own `configuration.version` and self-routes `4.0.0` activities; anything else fails `error: unknown option`). For `4.0.0` nodes `--connection-id` adds nothing (metadata not connection-scoped — see [§ 4.0.0 Activities](#400-activities)).

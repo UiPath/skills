@@ -156,7 +156,7 @@ execute anything before you have placed the operation on one side of that line.
 ```bash
 uip is resources run script \
   --connection-id <connectionId> \
-  --inline-script @$WORK/<Name>.js \
+  --inline-script $WORK/<Name>.js \
   --body '{ "channel": "C0A66HP9KKM" }' \
   --output json
 ```
@@ -209,7 +209,7 @@ for a read, with the agreed values:
 ```bash
 uip is resources run script \
   --connection-id <connectionId> \
-  --inline-script @$WORK/<Name>.js \
+  --inline-script $WORK/<Name>.js \
   --body '{ "name": "test-1756900000" }' \
   --output json
 ```
@@ -290,6 +290,17 @@ $WORK/<Lookup>.js          one per lookup field, each verified
 $WORK/<Name>.min.json      the reviewable contract
 $WORK/<Name>.json          the compiled activity metadata
 ```
+
+## Putting it in a flow
+
+The activity can be placed in a Maestro flow as a node of type
+`uipath.connector.custom.<connector-key>.<slug>`. Nothing is published: `uip maestro
+flow node add <file>.flow <type> --metadata $WORK/<Name>.json --scripts $WORK`
+builds the node definition from the metadata and embeds every script in the node,
+and `node configure` reads the metadata from the node. Keep `$WORK` until that
+has run. The flow-side steps are the `uipath-maestro-flow` skill's
+[connector/impl-inline.md](../../../uipath-maestro-flow/references/author/plugins/connector/impl-inline.md);
+hand off to it rather than authoring the node from here.
 
 ## Keep the scripts readable
 
