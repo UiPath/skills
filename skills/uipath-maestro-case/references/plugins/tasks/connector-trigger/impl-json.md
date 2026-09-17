@@ -63,7 +63,7 @@ Per [common § Step 3](../../../connector-trigger-impl.md#step-3--mint-binding-i
 
 ### Step 5 — Substitute placeholders in `caseShape.context`
 
-Per [common § Step 4](../../../connector-trigger-impl.md#step-4--substitute-placeholders-in-caseshapecontext). Three placeholders: `{{CONN_BINDING_ID}}`, `{{FOLDER_BINDING_ID}}` (when present), `{{TRIGGER_REGISTRATION_KEY}}` (when the trigger has event parameters).
+**Write this task with `uip maestro case splice`** — skeleton first, then one call, exactly as [connector-activity/impl-json.md § Step 5](../connector-activity/impl-json.md) (splice sets `serviceType: Intsvc.WaitForEvent` from the task type). The manual substitution below is for the connector-bound condition-rule and event-trigger-node targets only. Per [common § Step 4](../../../connector-trigger-impl.md#step-4--substitute-placeholders-in-caseshapecontext). Three placeholders: `{{CONN_BINDING_ID}}`, `{{FOLDER_BINDING_ID}}` (when present), `{{TRIGGER_REGISTRATION_KEY}}` (when the trigger has event parameters).
 
 ### Step 6 — Mint `var` / `id` / `elementId` on inputs and outputs
 
