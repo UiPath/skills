@@ -97,11 +97,11 @@ uip agent eval run results <eval_set_run_id> \
 ```bash
 # Print only test cases with a specific name
 uip agent eval run results <run_id> --set "Default Evaluation Set" --path ./my-agent \
-  --output json --output-filter 'Results[?TestCase==`greeting-test`]'
+  --output json --output-filter '[?TestCase==`greeting-test`]'
 
 # Print only the score field for each test case
 uip agent eval run results <run_id> --set "Default Evaluation Set" --path ./my-agent \
-  --output json --output-filter 'Results[*].{name: TestCase, score: Score}'
+  --output json --output-filter '[*].{name: TestCase, score: Score}'
 ```
 
 ### Failure detection
