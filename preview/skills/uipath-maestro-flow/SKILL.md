@@ -197,8 +197,8 @@ path is relative to that package's root:
 | `outcomePorts` | property | `HitlInputs` | `dist/core/actions.d.ts:583-597` |
 ```
 
-Each file's own header spells the full path its rows resolve against — written by
-the build, so a package rename cannot leave it lying.
+Each file's own header names the repo and generator it came from, and says not to
+edit it there — the rows are regenerated from the declarations on every build.
 
 **Match one name; do not read either file end to end.** Then read the span — it
 is the whole declaration including its doc comment, so one read answers the
@@ -787,12 +787,16 @@ document-validation station.
 Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipient?, fields?, outcomes, outcomePorts?, exposeError? })`.
 
 ```ts
+.var('status', types.string)
 .stepSwitch('review', hitl({ title: 'Review invoice',
   recipient: { assignee: { type: 'user', value: 'reviewer@acme.test' } },
   fields: [{ id: 'amount', type: 'number', direction: 'inOut', value: input('amount') }],
   outcomes: ['Approve', 'Reject'] }), [
-  { value: 'Approve', body: (b) => b.step('proceed', script({ code: 'return "approved";' })) },
-  { value: 'Reject', body: (b) => b.return({ status: 'rejected' }) }])
+  { value: 'Approve', body: (b) => b.step('proceed', script({ code: 'return "approved";' }),
+      { updates: { status: lit('approved') } }) },
+  { value: 'Reject', body: (b) => b.step('notify', script({ code: 'return "rejected";' }),
+      { updates: { status: lit('rejected') } }) }])
+.return({ status: v('status') })
 ```
 
 More than one outcome routes per outcome by DEFAULT (`outcome-<slug>` exits). `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns; `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. `outcomePorts: false` — or a variant, or `{ version: '1.0' }` — keeps the single `completed` exit instead, where you route on `out('review', 'Action')`.
