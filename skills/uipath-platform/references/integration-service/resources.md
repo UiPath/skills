@@ -248,7 +248,7 @@ Example response:
 
 Build the predicate from the reference, not from the shape of the first row you see. Match against **every** entry in `lookupNames`, one clause per entry (`items[?<f1>=='<target>' || <f2>=='<target>']`), take the value you write from `lookupValue`, and resolve dotted entries as paths (`profile.email`). A predicate on the wrong field matches nothing on every page, which reads as absence for a row that is there. Escape an apostrophe in the target as `\'`, or the filter is a lexer error.
 
-**Stop on the first hit only when the field is unique.** A by-key resource or an exact `lookupValue` is. A display name is not: `run list` can return a global row and a project-scoped row carrying the same name, on different pages, and taking the first silently picks a scope ([Scope Filtering](reference-resolution.md#scope-filtering-critical)). For a name match, collect every hit before deciding, paging until `HasMore: "false"` or the pages start repeating — otherwise "one match" is only ever "the first match I happened to see".
+**Stop on the first hit only when the field is unique.** A by-key resource or an exact `lookupValue` is. A display name is not: `run list` can return a global row and a project-scoped row carrying the same name, on different pages, and taking the first silently picks a scope ([Scope Filtering](reference-resolution.md#scope-filtering-critical)). For a name match, collect every hit before deciding, paging until `HasMore: "false"` or a page stops adding rows you have not seen — otherwise "one match" is only ever "the first match I happened to see".
 
 How the walk ends decides what you do next, and only the first ending below is a resolved value:
 
@@ -257,7 +257,7 @@ How the walk ends decides what you do next, and only the first ending below is a
 | exactly one match, walk complete | write its `lookupValue` |
 | several matches | ask the user with the candidates; never take the first |
 | `HasMore: "false"` and no match | re-check the predicate against `lookupNames`, then re-run against this connector's other Enabled connections, then ask |
-| the same page keeps coming back, or `HasMore` never reaches `"false"` | first re-check the page param: it is `nextPage`, and an undeclared name like `pageToken` is silently ignored, so every call returns page one. If the name is right and pages still repeat, the collection is cycling — take the distinct rows you have seen and stop, rather than looping to the turn limit |
+| a page adds no rows you have not already seen, or `HasMore` never reaches `"false"` | first re-check the page param: it is `nextPage`, and an undeclared name like `pageToken` is silently ignored, so every call re-serves page one. If the name is right, the collection is exhausted and the connector is re-serving it: keep the distinct rows and stop. Do not wait for `HasMore` or for a repeated page token — some resources advance the token forever (Slack `curated_users`: 5984 users exhausted by page 6, `HasMore` still `"true"` at page 12) |
 | you bounded the walk yourself and stopped before `HasMore: "false"` | not a not-found; narrow the query and walk again |
 | the call errored | stop and report per [When the Lookup Call Fails](reference-resolution.md#when-the-lookup-call-fails-critical) |
 
