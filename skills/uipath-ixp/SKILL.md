@@ -132,6 +132,7 @@ These requests fall outside the skill. Recognise the request, reply with the sta
 | "Mine these emails / communications" / "set up Communications Mining" | "Communications Mining is a separate IXP capability this skill doesn't cover (this skill is document extraction). See https://docs.uipath.com/ixp/automation-cloud/latest/cm-user-guide/introduction-to-uipath-communication-mining." |
 | "Monitor the deployed model" / "how many docs did it process?" / "runtime throughput or incidents" | "Runtime/operational monitoring of a deployed model lives in Orchestrator, not this skill: https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-monitoring. For design-time scores use `get-metrics` (see 'Show metrics')." |
 | "Edit a data type's values" / "add or remove a Choice option" | "The CLI can rename a data type, change its instructions (`data-types update-instructions`), or delete it — but it can't add or remove the **values** of an existing Choice data type. Do that by hand in-product on the Manage Taxonomy page: https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/managing-projects — then continue here." |
+| "What validation rules does this project have?" / "add a business rule" | "The CLI can't read or update validation (business) rules. View or edit them by hand in-product on the Manage Taxonomy page — then continue here." |
 
 ## Reference Navigation
 
