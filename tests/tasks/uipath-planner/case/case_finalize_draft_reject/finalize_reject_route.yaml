@@ -24,6 +24,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I have a draft design document for our GrantReview case-management solution —
   it's saved as `sdd.draft.md` in this folder. Please finalize it into the final
@@ -101,7 +104,7 @@ success_criteria:
 
   - type: run_command
     description: "Application Rejected is entered from the reviewDecision fact, not user-selected-stage"
-    command: "python3 $TASK_DIR/check_reject_route.py --scope lane"
+    command: "python3 $REFERENCE_DIR/case/case_finalize_draft_reject/check_reject_route.py --scope lane"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -112,7 +115,7 @@ success_criteria:
   # the diverting-exit behavior is fixed on its own.
   - type: run_command
     description: "Advisory: Eligibility Review carries a gated diverting exit whose guard is the complement of its completion exit"
-    command: "python3 $TASK_DIR/check_reject_route.py --scope origin"
+    command: "python3 $REFERENCE_DIR/case/case_finalize_draft_reject/check_reject_route.py --scope origin"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

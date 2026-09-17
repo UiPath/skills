@@ -20,6 +20,9 @@ run_limits:
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 
+reference:
+  directory: ../..
+
 simulation:
   enabled: true
 
@@ -79,7 +82,7 @@ success_criteria:
   # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -90,7 +93,7 @@ success_criteria:
   # node, and a $vars. reference consuming the extraction output downstream.
   - type: run_command
     description: "Flow has IxP extraction + SharePoint + HTTP nodes and a $vars downstream reference"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.' --regex '(?i)(uipath\\.ixp|core\\.logic\\.mock)' --regex '(?i)sharepoint' --regex '(?i)\"type\"\\s*:\\s*\"[^\"]*http'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '$vars.' --regex '(?i)(uipath\\.ixp|core\\.logic\\.mock)' --regex '(?i)sharepoint' --regex '(?i)\"type\"\\s*:\\s*\"[^\"]*http'"
     timeout: 15
     expected_exit_code: 0
     weight: 6.0
@@ -103,7 +106,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named InvoiceProcessing (elicited from the user)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceProcessing"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceProcessing"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

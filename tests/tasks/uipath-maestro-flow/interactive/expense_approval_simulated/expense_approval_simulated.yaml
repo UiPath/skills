@@ -20,6 +20,9 @@ run_limits:
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 
+reference:
+  directory: ../..
+
 simulation:
   enabled: true
 
@@ -76,7 +79,7 @@ success_criteria:
   # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -89,7 +92,7 @@ success_criteria:
   # placeholder), and is read downstream via $vars.<hitl>.output.
   - type: run_command
     description: "Flow has a correct inline HITL schema, decision capture, outcome-port wiring, and downstream .output access"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py expense"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py expense"
     timeout: 15
     expected_exit_code: 0
     weight: 6.0
@@ -102,7 +105,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named ExpenseApproval (elicited from the user)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ExpenseApproval"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

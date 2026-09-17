@@ -11,9 +11,14 @@ run_limits:
   expected_turns: 8
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/antipattern_build_system/_fixtures/legacy-port ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/legacy-port
+      mount_point: legacy-port
+
+reference:
+  directory: .
 
 initial_prompt: |
   I have an existing UiPath coded agent project under `legacy-port`
@@ -38,7 +43,7 @@ success_criteria:
 
   - type: run_command
     description: "pyproject.toml has no [build-system] section after the fix"
-    command: "python3 $TASK_DIR/check_antipattern_build_system.py"
+    command: "python3 $REFERENCE_DIR/check_antipattern_build_system.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

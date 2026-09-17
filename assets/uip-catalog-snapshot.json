@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-13T04:06:09Z",
-  "cli_version": "1.203.0-dev.8651",
+  "generated_at": "2026-09-17T04:08:20Z",
+  "cli_version": "1.203.0-dev.8703",
   "verbs": [
     "admin",
     "admin audit",
@@ -343,6 +343,7 @@
     "codedagent run",
     "codedagent setup",
     "codedapp",
+    "codedapp delete",
     "codedapp deploy",
     "codedapp init",
     "codedapp pack",
@@ -822,6 +823,7 @@
     "maestro case job",
     "maestro case job status",
     "maestro case job traces",
+    "maestro case merge",
     "maestro case pack",
     "maestro case process",
     "maestro case process get",
@@ -1547,6 +1549,7 @@
     "tm testsets delete",
     "tm testsets list",
     "tm testsets list-testcases",
+    "tm testsets playwright-context",
     "tm testsets run",
     "tm testsets update",
     "tm teststeplog",

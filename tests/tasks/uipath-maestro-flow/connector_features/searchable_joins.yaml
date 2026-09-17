@@ -13,6 +13,9 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a Flow project called "SearchableJoinsTest" with a manual trigger. 
   Build a flow that pulls Salesforce accounts and, for each account, also brings 
@@ -34,7 +37,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SearchableJoinsTest '\"nodes\"' '\"edges\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SearchableJoinsTest '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -42,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has a connector node referencing uipath-salesforce-sfdc"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SearchableJoinsTest 'uipath-salesforce-sfdc'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SearchableJoinsTest 'uipath-salesforce-sfdc'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -50,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

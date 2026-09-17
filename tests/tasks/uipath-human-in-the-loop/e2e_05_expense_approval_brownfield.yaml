@@ -14,9 +14,16 @@ run_limits:
   max_turns: 70
   turn_timeout: 1200
 
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
-  I have a UiPath Flow project. First, create this starting flow by writing
-  it to ExpenseApproval/ExpenseApproval/ExpenseApproval.flow:
+  I have a UiPath Flow project. First, create ExpenseApproval/ExpenseApproval/project.uiproj:
+
+  { "ProjectType": "Flow" }
+
+  Then create this starting flow by writing it to
+  ExpenseApproval/ExpenseApproval/ExpenseApproval.flow:
 
   {
     "nodes": [
@@ -63,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node's outcome port is wired, not the outcome-completed placeholder"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

@@ -18,11 +18,18 @@ description: >
   and a non-timer (process) skeleton task in a multi-stage flow.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger, feature:registry]
 max_iterations: 1
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build a UiPath Case Management solution named "TaskDependencyChain"
@@ -256,7 +263,6 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
-
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
@@ -268,12 +274,12 @@ success_criteria:
 
   - type: run_command
     description: "Process exit=required-tasks-completed; Finalize exit=required-tasks-completed with no exit-only hand-off; Finalize entry=selected-stage-completed; Done entry=selected-stage-completed on Finalize; tasks carry runs-sequentially/current-stage-entered/selected-tasks-completed/adhoc task-entry rules; First Step and Second Step are consecutive single-task runs-sequentially task sets in Process data.tasks; First Step timer is non-repeating timeDuration (PT2S, no repeat); Second Step timer is non-repeating timeDuration (PT5S, no repeat); Region Check fires on current-stage-entered; root has string variable 'region' AND number variable 'priorityScore'; 'Optional Audit' is an adhoc-only process-typed skeleton task in Finalize"
-    command: "python3 $TASK_DIR/check_task_dependency_chain.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_task_dependency_chain.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

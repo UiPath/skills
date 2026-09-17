@@ -17,6 +17,9 @@ run_limits:
   max_turns: 130
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Build a UiPath Case Management solution named "EntryPointsIOCase" containing
   a project also named "EntryPointsIOCase" from the sdd.md below. Write the
@@ -114,7 +117,7 @@ success_criteria:
 
   - type: run_command
     description: "entry-points.json input/output is projected from the In/Out args (Step 6.3)"
-    command: "python3 $TASK_DIR/check_entry_points_io.py EntryPointsIOCase/EntryPointsIOCase/entry-points.json"
+    command: "python3 $REFERENCE_DIR/check_entry_points_io.py EntryPointsIOCase/EntryPointsIOCase/entry-points.json"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

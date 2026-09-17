@@ -6,7 +6,7 @@ description: >
   Tests the multiselect IS feature — configures a Slack group direct message
   node whose members field takes multiple values, using an existing tenant
   connection.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, ipe, mode:build, uipath-salesforce-slack]
 
 run_limits:
   expected_turns: 37
@@ -14,9 +14,13 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a flow file to create a Slack group direct message between
   Coder Evals, IS-sandboxes@uipath.com and E2E-testing.
+  Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Use the connection present in Shared/uipath-maestro-flow.
 
   This run is headless. No user is present and nobody will answer a question or
@@ -34,7 +38,7 @@ success_criteria:
   # Name-agnostic: the prompt doesn't fix a project name.
   - type: run_command
     description: "A .flow file exists and is valid JSON with nodes and edges"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"nodes\"' '\"edges\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -44,7 +48,7 @@ success_criteria:
   # field has exactly 3 entries (the three group-DM recipients).
   - type: run_command
     description: "Slack group-DM node present with 3 entries in the users multiselect"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_multiselect_flow.py"
+    command: "python3 $REFERENCE_DIR/connector_features/check_multiselect_flow.py"
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
@@ -52,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

@@ -1,6 +1,3 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-outlook-trigger-inbox
 description: >
   Regression test for PR #348: verifies the agent freshly resolves the
@@ -15,10 +12,17 @@ description: >
   trigger lookback). Adding a debug E2E requires a dedicated service
   mailbox with no rules; tracked as follow-up.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector, mode:build, ipe]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 61
   turn_timeout: 1200
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a UiPath Flow named "OutlookTriggerInbox" with a Microsoft Outlook 365
@@ -45,14 +49,14 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-microsoft-outlook365=uipath-maestro-flow'
+  - command: 'python3 "_setup/preflight_connections.py" uipath-microsoft-outlook365=uipath-maestro-flow'
     timeout: 120
 
 success_criteria:
   # ── Structural: flow builds and validates ──────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 2.0
@@ -60,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has a uipath-microsoft-outlook365 email-received trigger node"
-    command: "python3 $TASK_DIR/check_outlook_trigger_inbox.py check_trigger_node"
+    command: "python3 $REFERENCE_DIR/single_node/outlook_trigger_inbox/check_outlook_trigger_inbox.py check_trigger_node"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -84,7 +88,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow carries a MailFolder reference on its bound Outlook connection"
-    command: "python3 $TASK_DIR/check_outlook_trigger_inbox.py check_folder_binding"
+    command: "python3 $REFERENCE_DIR/single_node/outlook_trigger_inbox/check_outlook_trigger_inbox.py check_folder_binding"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -92,7 +96,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow's parentFolderId is a live MailFolder ID on the bound Outlook connection"
-    command: "python3 $TASK_DIR/check_outlook_trigger_inbox.py check_folder_id_fresh"
+    command: "python3 $REFERENCE_DIR/single_node/outlook_trigger_inbox/check_outlook_trigger_inbox.py check_folder_id_fresh"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

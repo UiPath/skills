@@ -226,6 +226,8 @@ def test_billing_gates_use_the_shared_entity_hints():
     gates = (
         "multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py",
         "multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py",
+        "multi_node/billing_dispute_resolution/"
+        "check_structure_billing_dispute_resolution.py",
     )
     for relative in gates:
         with open(os.path.join(suite, relative), encoding="utf-8") as handle:
@@ -1181,7 +1183,8 @@ def test_cleanup_solutions_deletes_rotated_ids_from_the_sidecar(monkeypatch, tmp
         "22222222-2222-4222-8222-222222222222\n\n11111111-1111-4111-8111-111111111111\n"
     )
     spec = importlib.util.spec_from_file_location(
-        "cleanup_solutions", os.path.join(os.path.dirname(flow_check.__file__), "cleanup_solutions.py")
+        "cleanup_solutions",
+        os.path.join(os.path.dirname(flow_check.__file__), "..", "_setup", "cleanup_solutions.py"),
     )
     cleanup = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cleanup)

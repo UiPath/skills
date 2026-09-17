@@ -13,6 +13,9 @@ run_limits:
   max_turns: 40
   turn_timeout: 1200
 
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
   Create a new UiPath Flow project called "InvoiceApproval" that processes
   invoices. The flow must pause so a finance manager can review and approve
@@ -43,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node is present in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -51,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "Both Approve and Reject outcome ports are wired, not the outcome-completed placeholder"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py outcome-wiring"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

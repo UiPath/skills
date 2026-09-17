@@ -8,12 +8,19 @@ description: >
   finalStatus is `Completed`.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 97
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ProcessSingleCase" containing
@@ -100,7 +107,6 @@ initial_prompt: |
   fixture contains the exact entry there. Use `process-index.json` only as a
   fallback, and do not write a placeholder — use the resolved `entityKey` as
   the task's `taskTypeId`.
-
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
@@ -112,12 +118,12 @@ success_criteria:
 
   - type: run_command
     description: "Caseplan has a process task and debug completes successfully"
-    command: "python3 $TASK_DIR/check_process_case.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_process_case.py"
     timeout: 900
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

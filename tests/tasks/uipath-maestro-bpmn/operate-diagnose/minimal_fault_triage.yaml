@@ -42,7 +42,8 @@ initial_prompt: |
   Do NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,
   publish, deploy, ask for approval, confirmation, or feedback.
   Use the `uip maestro bpmn ... --output json` commands for diagnostic reads;
-  do not inspect `mocks/`, `fixtures/`, or response JSON files directly.
+  do not inspect `mocks/` or `fixtures/` directly. Capturing a CLI response to
+  your own file and reading it back is fine.
 
 success_criteria:
   - type: command_executed
@@ -90,6 +91,7 @@ success_criteria:
 
   - type: llm_judge
     description: "Agent diagnosed only and avoided BPMN lifecycle mutations"
+    include_reference: false
     weight: 2.0
     pass_threshold: 0.7
     include_agent_output: true
@@ -103,7 +105,10 @@ success_criteria:
       without running retry, cancel, pause, resume, migrate, goto, debug,
       process run, upload, publish, or deploy commands. Fail if tool calls or
       the final answer show (a) a lifecycle mutation or a request to perform
-      one, or (b) reading the mock/fixture inputs directly — `mocks/`,
-      `fixtures/`, or response JSON files — instead of the mocked `uip` CLI. Do
-      NOT fail merely for running additional read-only `uip maestro bpmn`
-      diagnostic commands beyond the minimum.
+      one, or (b) reading the mock/fixture inputs directly — any path under
+      `mocks/` or `fixtures/` — instead of the mocked `uip` CLI. Do NOT fail
+      merely for running additional read-only `uip maestro bpmn` diagnostic
+      commands beyond the minimum, and do NOT fail for redirecting a CLI
+      response to the agent's own file and reading it back with jq or similar:
+      that capture-then-filter loop is the uipath-troubleshoot raw-data rule,
+      not mock inspection.

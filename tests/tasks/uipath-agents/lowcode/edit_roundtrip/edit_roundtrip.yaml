@@ -17,9 +17,14 @@ run_limits:
   max_turns: 60
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/edit_roundtrip/_fixtures/GreetSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/GreetSol
+      mount_point: GreetSol
+
+reference:
+  directory: .
 
 initial_prompt: |
   Your working directory contains a solution "GreetSol" with an existing
@@ -84,7 +89,7 @@ success_criteria:
 
   - type: run_command
     description: "Final state: both inputs in schema, schema synced, user message inlines both placeholders with matching contentTokens"
-    command: "python3 $TASK_DIR/check_edit_roundtrip.py"
+    command: "python3 $REFERENCE_DIR/check_edit_roundtrip.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
@@ -100,7 +105,7 @@ success_criteria:
   # not repair the state the criterion above grades. Runs last regardless.
   - type: run_command
     description: "Derived files match a fresh `uip agent refresh` — no hand-authored drift (Critical Rule LC7)"
-    command: "python3 $TASK_DIR/check_refresh_idempotent.py"
+    command: "python3 $REFERENCE_DIR/check_refresh_idempotent.py"
     timeout: 240
     expected_exit_code: 0
     weight: 3.0

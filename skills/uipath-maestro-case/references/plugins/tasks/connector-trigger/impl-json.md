@@ -48,10 +48,10 @@ Single CLI call replaces the legacy `get-connection` + `case tasks describe --ty
 
 ### Step 3 — Required-event-param validation (HARD GATE)
 
-This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
+This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="body"].body.queryParams`.
 
 1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
-2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
+2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="body"].body.queryParams` and verify every required event parameter has a value.
 3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
 4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 8 if user declines to provide a value.
 
@@ -80,6 +80,8 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 
 ### Step 7 — Build task and write to caseplan.json
 
+Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache) — placeholders and minted ids are the only permitted modifications.
+
 ```json
 {
   "id": "<taskId>",
@@ -88,6 +90,7 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
   "elementId": "<stageId>-<taskId>",
   "isRequired": "<from sdd.md Required, default true>",
   "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
+  "description": "<the task's **Description:** line from sdd.md, word for word>",
   "data": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted in Step 5>",
@@ -97,6 +100,8 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
   }
 }
 ```
+
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 

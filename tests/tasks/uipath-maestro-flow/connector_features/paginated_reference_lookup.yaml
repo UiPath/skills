@@ -26,11 +26,15 @@ run_limits:
   max_turns: 80
   turn_timeout: 900
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new Flow project called "SlackPaginationTest" with a manual
   trigger. It should send a Slack message saying "hello from coder-eval"
   to the channel named `simple` using Slack's "Send Message to Channel"
   activity.
+  Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   For Slack, use the connection name `is-sandboxes`. If more than one
   connection matches that name, use any enabled one.
   Validate the flow when you're done.
@@ -83,7 +87,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file exists (path-agnostic discovery)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SlackPaginationTest"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SlackPaginationTest"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -91,7 +95,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow wires the Slack send-message-to-channel node with the resolved Slack id for channel `simple` (C083AN4E61E)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SlackPaginationTest 'uipath.connector.uipath-salesforce-slack.send-message-to-channel' '\"C083AN4E61E\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SlackPaginationTest 'uipath.connector.uipath-salesforce-slack.send-message-to-channel' '\"C083AN4E61E\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -2,12 +2,22 @@ task_id: skill-bpmn-business-rule-task
 description: >
   Author a Maestro BPMN process that uses a dedicated business rule task,
   proving the Orchestrator.BusinessRules row is covered by an eval and not
-  only by static fixtures.
+  only by static fixtures. The package-metadata assertions accept either
+  shape that ships today: `uip maestro bpmn refresh` output (operate.json
+  main as /content/<bpmn>#<start>, package-descriptor.json as a files map)
+  or hand-authored synthetic metadata using bare names and a content array
+  — this task does not mandate the CLI generators.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:business-rule", "feature:orchestrator"]
 
 run_limits:
+  # 09-15 SUCCESS 387s, 09-16 ERROR at 1200s mid-work. task_timeout was
+  # missing, so the inherited 1200s was the real turn cap.
+  task_timeout: 2400
+  turn_timeout: 1800
   expected_turns: 28
-  turn_timeout: 1200
+
+reference:
+  directory: ..
 
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project at:
@@ -43,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Business rule task uses bpmn:businessRuleTask with Orchestrator.BusinessRules"
-    command: "python3 $TASK_DIR/check_business_rule_task.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_business_rule_task.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -11,9 +11,13 @@ description: >
   alone. Auth/404 responses are acceptable outcomes — the graded behavior is
   command shape.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 pre_run:
-  - command: "sh $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_feedback_metadata.sh"
+  - command: "sh _setup/seed_feedback_metadata.sh"
     timeout: 15
 
 run_limits:
@@ -36,7 +40,6 @@ initial_prompt: |
   directly rather than looking the records up first. They may not resolve
   against this tenant; that is expected and is not a reason to stop. Report what
   each command returns.
-
 success_criteria:
   # Segment idiom per tests/README.md: (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*
   # confines every lookahead to THIS command, so a chained second `uip` call

@@ -11,6 +11,9 @@ tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:gen
 run_limits:
   expected_turns: 29
   max_turns: 75
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Flow named "VendorPOReview" for purchase order review:
 
@@ -43,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -51,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has input-direction fields (read-only context for reviewer)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"input\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"input\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -59,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has output-direction fields (reviewer fills in)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"output\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"output\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has Approve and Reject outcomes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview 'Approve' 'Reject'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorPOReview 'Approve' 'Reject'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -75,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Priority is set to High"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"High\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorPOReview '\"High\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

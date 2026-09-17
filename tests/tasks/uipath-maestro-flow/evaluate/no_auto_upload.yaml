@@ -15,6 +15,9 @@ run_limits:
   expected_turns: 26
   max_turns: 50
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Setup the agent must perform first:
   1. Create a Flow project named `LocalOnly` inside a solution of the same
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "LocalOnly Flow artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name LocalOnly"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name LocalOnly"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -75,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Exact-match evaluator artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_no_auto_upload.py --check evaluator"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py --check evaluator"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -83,7 +86,7 @@ success_criteria:
 
   - type: run_command
     description: "Smoke eval-set artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_no_auto_upload.py --check eval-set"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py --check eval-set"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -91,7 +94,7 @@ success_criteria:
 
   - type: run_command
     description: "Smoke contains a data point with inputs and expected output"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_no_auto_upload.py --check data-point"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py --check data-point"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -105,7 +108,7 @@ success_criteria:
 
   - type: run_command
     description: "report.json shows refusal + Studio Web reason + ran_solution_upload=false"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_no_auto_upload.py"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py"
     timeout: 10
     expected_exit_code: 0
     weight: 5.0

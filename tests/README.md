@@ -152,7 +152,8 @@ tests/
 │   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
 ├── tasks/
 │   └── <skill-name>/             # One folder per skill (must match skills/<name>/)
-│       ├── _shared/              # Optional — helpers, cleanup scripts, per-skill pytest
+│       ├── _shared/              # Optional — grading helpers/checkers, per-skill pytest; reached only via $REFERENCE_DIR, never staged into the agent's sandbox
+│       ├── _setup/                # Optional — pre_run/post_run tooling (seed/cleanup/scaffold scripts); staged into the agent's sandbox via sandbox.template_sources
 │       ├── smoke/                # Tier: smoke
 │       ├── single_node/          # Tests isolating a single node type (optional)
 │       ├── multi_node/           # Composite-flow tests (optional)
@@ -286,6 +287,33 @@ Running these tasks (locally, or a docker-driven experiment) requires:
 - The `coder-eval[litellm]` extra installed wherever the checker actually executes: on the **host** for `driver: tempdir` (`make install` includes it — see `tests/Makefile`), or **baked into the agent image** for `driver: docker` (coder_eval's own `coder-eval-agent` image bakes `--extra litellm` in as of 0.11.4; a custom overlay image needs it too if built from an older pin).
 - `CODEX_BASE_URL`/`CODEX_API_KEY` set in the environment the checker runs in — exported to the job for `tempdir`, or listed under `sandbox.docker.env_passthrough_extra` for `docker` (see `smoke.yaml`/`nightly.yaml`).
 
+### Running a judge-free task locally with no credentials
+
+The two requirements above apply to tasks that actually resolve a checker
+route — i.e. those with an `llm_judge` or `agent_judge` criterion. A task with
+**neither** needs no credentials at all and runs against your own logged-in
+`claude` CLI:
+
+```bash
+cd tests && make install          # once
+SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run <task.yaml> \
+  -e experiments/default.yaml -v
+```
+
+With no judge criteria nothing resolves a checker route, so the agent and the
+simulated user both run as plain Claude Code subprocesses on your cached CLI
+auth — no key is injected.
+
+Two traps:
+
+- **Do not set `ANTHROPIC_API_KEY` or `AWS_BEARER_TOKEN_BEDROCK`** to "help".
+  Either one overrides the cached auth, and a stale or wrong value then fails
+  at call time rather than falling back.
+- **Pinning the same route explicitly does not work.** A task-level
+  `checker_context.api_route.route: direct` goes through
+  `_resolve_backend_route`, which *does* demand `ANTHROPIC_API_KEY`. Absent
+  and inherited succeeds where explicit and identical fails.
+
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
@@ -297,13 +325,32 @@ the exception — they inline their fixture key instead of reading an env var.
 
 ### Shape
 
+Task sandboxes don't have access to a full host repo checkout, so setup/
+cleanup scripts are staged via `sandbox.template_sources` (agent-visible,
+used for pre_run/post_run tooling) and grading scripts are reached via
+`$REFERENCE_DIR` (mirrors `reference.directory` on disk, used by
+`run_command`/`llm_judge` criteria, invisible to the agent):
+
 ```yaml
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 pre_run:
-  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 _setup/seed.py"
     timeout: 60
+post_run:
+  - command: "python3 _setup/cleanup.py"
+    timeout: 60
+success_criteria:
+  - type: run_command
+    command: "python3 $REFERENCE_DIR/check_asset_scoping.py"
 ```
 
-A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
+A single helper script (`tests/tasks/uipath-platform/_setup/seed.py`) writes
 `seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
 `process_key` + `folder_path` (resolved via `uip or processes list`, matched by Key — the `get` endpoint doesn't populate FolderPath). Tests
 that don't need a process omit the env var assignment; the script just
