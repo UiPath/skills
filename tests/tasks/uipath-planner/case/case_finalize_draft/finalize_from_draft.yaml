@@ -36,6 +36,14 @@ run_limits:
   max_turns: 150
   turn_timeout: 3600
 
+# Inherit agent from the experiment; override only allowed_tools. The lane's
+# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Agent tool is present, keeping the read-only verdict out of the authoring
+# context on the two tasks where wall-clock is the measured failure. The other
+# three finalize tasks stay on the experiment default (no Agent) as controls.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
 # Stage the ready-made interview draft into the sandbox root as sdd.draft.md.
 # The planner's draft-finalization path (sdd.draft.md present, no sdd.md) picks it up.
 sandbox:
