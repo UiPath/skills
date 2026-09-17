@@ -34,11 +34,43 @@ Build order follows the table unless **Handoffs** requires otherwise.
 1. **{Stage}** — {component #}: {what happens}; exits when {condition}.
 2. **{Stage}** — {component #}: …
 
+BPMN-style process view — one lane per actor or system; circles are start and end events, rectangles tasks (prefixed with the component number), diamonds gateways, dashed arrows message or data flows across lanes.
+
+```mermaid
+flowchart TB
+  subgraph L1["{Automation lane}"]
+    S(("Start: {trigger}")) --> T1["[1] {task}"]
+    T1 --> G1{"{decision}?"}
+    G1 -- yes --> T2["[2] {task}"]
+    G1 -- no --> E1((("{outcome}")))
+    T2 --> E2((("{outcome}")))
+  end
+  subgraph L2["{Human actor lane}"]
+    H1["{human task}"]
+  end
+  subgraph L3["{System lane}"]
+    X1["{system event or record}"]
+  end
+  T1 -.->|"{data passed}"| X1
+  T2 -.->|"{request}"| H1
+  H1 -.->|"{decision}"| T2
+```
+
+Component view — build-time dependencies only; never mix them into the process view:
+
 ```mermaid
 flowchart LR
-  A[{Component 1}] -->|{trigger / data}| B[{Component 2}]
-  B -->|{trigger / data}| C[{Component 3}]
+  subgraph SOL["Solution: {name}"]
+    C1["[1] {Component}"]
+    C2["[2] {Component}"]
+  end
+  C2 -->|"depends on / invokes"| C1
+  C1 -.->|"{data passed}"| C2
+  RES["{shared platform resource}"]
+  C1 & C2 --> RES
 ```
+
+*When the customer needs a formal model, add a BPMN 2.0 sidecar `{process-slug}-process.bpmn` authored from this Process Map with `uipath-maestro-bpmn`, and link it here.*
 
 ## Handoffs
 

@@ -95,6 +95,12 @@ Banned: "completes successfully", "handles errors properly", and anything code-l
 | "Uses ReadPDF to process InvoiceFile" | "Given an invoice PDF, extracts vendor_name, invoice_number, line items (description, qty, unit_price), tax, and total" |
 | "SendMail sends to admin@company.com" | "When processing fails after retries, sends a notification to the configured administrator with invoice_number and failure reason" |
 
+### Process Map diagrams (process)
+Two diagrams, never merged into one:
+- **Process view:** a BPMN-style swimlane rendered as a Mermaid `flowchart TB`. One `subgraph` per actor or system lane (automation, each human actor, each system, any party outside the automation). BPMN shapes: `((Start))` and `(((End)))` events, `[Task]` rectangles prefixed with the component number in brackets, `{Gateway?}` diamonds with labelled yes/no edges, solid arrows for sequence flow inside a lane, dashed arrows (`-.->`) with a label for message or data flow across lanes. Every gateway must have a corresponding rule under Business Rules or Error Handling.
+- **Component view:** a `flowchart LR` with the solution as a subgraph; solid arrows for build-time dependencies ("depends on / invokes"), dashed arrows for run-time data passed between components, shared platform resources as plain nodes.
+Mermaid cannot render BPMN 2.0 itself; when the customer wants a formal model, add a sidecar `<process-slug>-process.bpmn` authored from the Process Map (the `uipath-maestro-bpmn` skill knows the format) and link it from this section.
+
 ### Handoffs (process)
 One row per edge between components: mechanism (queue item, start job, Flow invoke, event, file drop, Action Center task), the data schema passed, and what happens when the receiving side fails. This table is the data contract; component Interface sections must agree with it.
 

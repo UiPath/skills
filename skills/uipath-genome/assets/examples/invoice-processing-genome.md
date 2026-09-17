@@ -44,17 +44,68 @@ Build order follows the table: the BPMN process references the robot's entry poi
 5. **Human review** — component 1 creates an Action Center task for the AP clerk carrying the invoice, the discrepancies, and the agent's proposal; exits when the clerk submits `Approve proposal`, `Override`, or `Reject`.
 6. **Resolve** — component 1 routes: approved or overridden `repost-with-correction` → step 3 with the corrected fields; `request-supplier-credit-note` or `reject` → supplier notification and close.
 
+BPMN-style process view — one lane per actor or system; circles are start and end events, rectangles tasks prefixed with the component number, diamonds gateways, dashed arrows message or data flows across lanes.
+
+```mermaid
+flowchart TB
+  subgraph ORCH["[1] Invoice Orchestration - one instance per invoice"]
+    S((Start: queue item)) --> T1["[2] Extract fields and<br/>three-way match"]
+    T1 --> G1{Matched and total<br/>below ceiling?}
+    G1 -- yes --> T5["[2] Post to ERP"]
+    G1 -- no --> T2["[3] Triage exception"]
+    T2 --> G2{Confidence >= 0.4?}
+    G2 -- no --> T3["Set proposal = manual"]
+    G2 -- yes --> T4["Create review task"]
+    T3 --> T4
+    T4 --> G3{Clerk decision}
+    G3 -- approve or override<br/>correction --> T5
+    G3 -- reject or<br/>credit note --> T6["Notify supplier"]
+    T5 --> G4{ERP accepted?}
+    G4 -- yes --> E1(((Posted)))
+    G4 -- "no, first time" --> T2
+    G4 -- "no, second time" --> T6
+    T6 --> E2(((Rejected)))
+  end
+  subgraph CLERK[AP clerk]
+    H1[Review invoice, discrepancies<br/>and agent proposal]
+  end
+  subgraph SAP[SAP S/4HANA]
+    X1[Purchase order]
+    X2[Posted invoice document]
+  end
+  subgraph MAIL[Supplier mailbox]
+    M1[Invoice PDF received]
+    M2[Rejection email]
+  end
+  M1 -.->|queue item| S
+  T1 -.->|read PO| X1
+  T4 -.->|Action Center task| H1
+  H1 -.->|decision| G3
+  T5 -.->|post| X2
+  X2 -.->|document number| G4
+  T6 -.->|email| M2
+```
+
+Component view — build-time dependencies and run-time data between the three projects:
+
 ```mermaid
 flowchart LR
-  M[Mailbox] -->|queue item| O[1 Invoice Orchestration]
-  O -->|start job: extract+match| R[2 Extraction and Matching]
-  R -->|matched / exception| O
-  O -->|agent job| A[3 Exception Triage Agent]
-  A -->|proposal + confidence| O
-  O -->|Action Center task| H[AP clerk]
-  H -->|decision| O
-  O -->|start job: post| R
-  R -->|ERP document number| O
+  subgraph SOL[Solution: InvoiceProcessing]
+    O["[1] Invoice Orchestration<br/>BPMN process"]
+    R["[2] Extraction and Matching<br/>RPA process"]
+    A["[3] Exception Triage Agent<br/>agent"]
+  end
+  O -->|start job| R
+  O -->|agent job| A
+  R -.->|invoice record, match result| O
+  A -.->|proposal, confidence| O
+  Q[AP_InvoiceIntake queue]
+  B[AP_Invoices bucket]
+  AC[Action Center app]
+  R --> Q
+  Q --> O
+  O & R & A --> B
+  O --> AC
 ```
 
 ## Handoffs
