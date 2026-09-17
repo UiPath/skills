@@ -294,13 +294,11 @@ projects through the UiPath CLI.
   lifecycle actions): see [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a
   failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
-  Every piece of diagnostic evidence comes from a `uip maestro bpmn ... --output
-  json` read. Where response, mock, or fixture files back that CLI on disk, they
-  are its backing data, not a shortcut — do NOT read them directly (no `cat`,
-  `grep`, `head`, or editor read of a `mocks/`, `fixtures/`, or response-cache
-  path) unless you were asked to debug the harness itself. Reading the backing
-  files yields values the CLI would have reported anyway while skipping the
-  folder-context and staleness checks the commands enforce.
+  Runtime evidence — incidents, variables, element executions, cursors, the
+  deployed asset — comes only from a `uip maestro bpmn ... --output json` read;
+  local `.bpmn` source and generated package files are read from disk as usual.
+  Never substitute the files backing that CLI for the CLI itself — see rule 3
+  in that reference.
 
 Any cloud-side change (upload, publish, deploy, run, pause, resume, cancel,
 retry, migrate) requires explicit user consent, and local validation should pass
