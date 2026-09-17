@@ -184,11 +184,22 @@ Common JMESPath patterns for `run list`; drop the `items` prefix where `Data` is
 
 ### Narrow before you page
 
-A tenant directory (Slack channels, Teams users, Drive files) runs to thousands of rows, many pages deep, so cut the set with what the resource itself declares before looping:
+A tenant directory (Slack channels, Teams users, Drive files) runs to thousands of rows, many pages deep. Work down this ladder and stop at the first rung that applies; only the last one walks the collection.
 
-1. **`reference.filterPattern`**, if the field declares one. That is one targeted call, no loop. See [reference-resolution.md — Search References](reference-resolution.md#search-references-filterpattern).
-2. **The operation's own query parameters.** `uip is resources describe "<key>" "<resource>" --operation List` lists every accepted `--query` key under `parameters`. Most are not a `filterPattern` and so are easy to miss: Slack `conversations` takes `exclude_archived`, `types` and `team_id`. Pass the ones that exclude rows you do not want. Keys the operation does not declare (`searchTerm=`, `where=`, `filter=`) are silently ignored.
-3. **Only then paginate**, per the rules below.
+1. **A by-key resource, when you already hold the exact key.** Connectors often expose a dedicated lookup beside the collection — Slack `users_lookupByEmail` next to `users`, Teams `user-by-email/{email}`. `uip is resources list "<key>"` shows them, and the naming (`*_lookupBy*`, `*-by-*`) is the tell. One call, no walk:
+
+   ```bash
+   uip is resources run list "uipath-salesforce-slack" "users_lookupByEmail" \
+     --connection-id "<id>" --query "email=<address>" --output json --output-filter "items.id"
+   ```
+
+   Its `Data.items` is a single object rather than an array, so project `items.<field>`, not `items[?…]`. A miss arrives as a vendor 4xx instead of an empty list (Slack returns `400` with `"message":"users_not_found"` in `Instructions`), so read `Instructions` per [Execute Error Handling](#execute-error-handling) to tell a genuine miss from a broken call before reporting either.
+
+2. **`reference.filterPattern`**, if the field declares one. Substitute the search term and pass the whole string as `--query`. This narrows server-side but does not promise a single page — a `startswith(...)` pattern can still match more rows than fit — so keep honouring `Pagination`. See [reference-resolution.md — Search References](reference-resolution.md#search-references-filterpattern).
+
+3. **The operation's own query parameters.** `uip is resources describe "<key>" "<resource>" --operation List`, against the *referenced* resource rather than the activity you are configuring, lists every accepted `--query` key under `parameters`. Most are not a `filterPattern` and so are easy to miss: Slack `conversations` takes `exclude_archived`, `types` and `team_id`. Keys the operation does not declare (`searchTerm=`, `where=`, `filter=`) are silently ignored.
+
+4. **Then page**, carrying every narrowing key from rungs 2 and 3 on each request alongside `nextPage`. The page token encodes position only, so dropping them widens page 2 back to the whole collection.
 
 ### Pagination rules
 
@@ -237,15 +248,17 @@ Example response:
 
 Build the predicate from the reference, not from the shape of the first row you see. Match against **every** entry in `lookupNames`, one clause per entry (`items[?<f1>=='<target>' || <f2>=='<target>']`), take the value you write from `lookupValue`, and resolve dotted entries as paths (`profile.email`). A predicate on the wrong field matches nothing on every page, which reads as absence for a row that is there. Escape an apostrophe in the target as `\'`, or the filter is a lexer error.
 
+**Stop on the first hit only when the field is unique.** A by-key resource or an exact `lookupValue` is. A display name is not: `run list` can return a global row and a project-scoped row carrying the same name, on different pages, and taking the first silently picks a scope ([Scope Filtering](reference-resolution.md#scope-filtering-critical)). For a name match, page to `HasMore: "false"` and collect every hit before deciding — otherwise "one match" is only ever "the first match I happened to see".
+
 How the walk ends decides what you do next, and only the first ending below is a resolved value:
 
 | Ending | What to do |
 |---|---|
-| one match | write its `lookupValue` |
+| exactly one match, walk complete | write its `lookupValue` |
 | several matches | ask the user with the candidates; never take the first |
 | `HasMore: "false"` and no match | re-check the predicate against `lookupNames`, then re-run against this connector's other Enabled connections, then ask |
 | `NextPageToken` came back unchanged while `HasMore` stayed `"true"` | the connector's paging is broken and every further page is the one you just read; report the field as unresolvable |
-| you stopped short of `HasMore: "false"` | not a not-found; narrow the query and walk again |
+| you bounded the walk yourself and stopped before `HasMore: "false"` | not a not-found; narrow the query and walk again |
 | the call errored | stop and report per [When the Lookup Call Fails](reference-resolution.md#when-the-lookup-call-fails-critical) |
 
 Never collapse the last three into "not found". Writing a display name or a remembered id after any of them passes `flow validate` and faults at runtime. These endings read `Data.Pagination`; resources that page by `offset`/`limit` have their own section below.
