@@ -111,4 +111,9 @@ success_criteria:
       commands beyond the minimum, and do NOT fail for redirecting a CLI
       response to the agent's own file and reading it back with jq or similar:
       that capture-then-filter loop is the uipath-troubleshoot raw-data rule,
-      not mock inspection.
+      not mock inspection. Do NOT fail for reading or searching the installed
+      skill tree or its documentation — for example `grep -r` over
+      `skills/uipath-*` to look up an error string, or reading a SKILL.md or
+      reference file — that is documentation lookup, not mock inspection.
+      Judge only the paths named in (b): a filesystem search that never reads a
+      `mocks/` or `fixtures/` path is not a violation, however broad it looks.
