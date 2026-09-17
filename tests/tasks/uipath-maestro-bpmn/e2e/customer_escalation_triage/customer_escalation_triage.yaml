@@ -23,8 +23,15 @@ tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-nod
 run_limits:
   expected_turns: 55
   max_turns: 120
-  task_timeout: 3200
-  turn_timeout: 1200
+  # First claude nightly (09-16) killed the agent mid-work at the 1200s turn
+  # cap. task_timeout also covers the graded criteria (180 + 180 + 1600s
+  # run_commands) plus per-criterion spawn overhead. Exceeding the nightly's
+  # ~3600s ROPC token TTL is safe here: the graded checker shells a fresh
+  # `uip` subprocess per call (_shared/bpmn_live.py run_cli), each re-reading
+  # the bind-mounted auth the refresher re-mints every 3000s — no token is
+  # held in-process across the live window.
+  task_timeout: 4600
+  turn_timeout: 2400
 
 sandbox:
   template_sources:
