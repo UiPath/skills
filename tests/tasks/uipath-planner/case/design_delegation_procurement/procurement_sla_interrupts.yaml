@@ -5,7 +5,7 @@ description: >
   Verifies that global events enter interrupting secondary stages instead of
   being duplicated across every primary stage.
 tags:
-  - uipath-maestro-case
+  - uipath-planner
   - integration
   - lifecycle:generate
   - mode:build
