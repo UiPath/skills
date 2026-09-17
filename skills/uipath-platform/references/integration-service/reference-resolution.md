@@ -184,12 +184,12 @@ The response is the vendor's own answer, so the envelope differs from `run list`
 
 - `Data.Status` — the **vendor's** HTTP status. A vendor `4xx`/`5xx` still returns `Result: "Success"`; check `Data.Status`, never assume success from the envelope.
 - `Data.Body` — the vendor's response, parsed. For `list_*` scripts it is an array of records.
-- `--output-filter` reaches into `Data.Body` like any other field:
+- `--output-filter` reaches into the body as `Body`, not `Data.Body`. The expression is evaluated against `Data`, so a `Data.`-prefixed path resolves to null:
 
 ```bash
 uip is resources run script --connection-id "<id>" \
   --connector-key "uipath-salesforce-slack" --script-ref "list_usergroups" --output json \
-  --output-filter "Data.Body[?name=='<user input>'].id"
+  --output-filter "Body[?name=='<user input>'].id"
 ```
 
 Match against every entry in `lookupNames`, resolving dotted paths (`profile.email` → `row.profile.email`). Zero matches, multiple matches, and failed calls follow the same rules as `run list`: ask with candidates, or stop and report — see [When the Lookup Call Fails](#when-the-lookup-call-fails-critical). There is no `Data.Pagination` block; the script returns its complete result set.
