@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER for authoring or editing UiPath Maestro Flow sources as `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`) and running the `uip maestro flow` check/compile/validate loop. Covers graph structure, expressions, nodes, bindings, connectors, brownfield edits, and emitted `.flow` validation. Case plans (`caseplan.json`, reference-mode) → uipath-maestro-case; structural-core BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
+description: "TRIGGER for authoring or editing UiPath Maestro Flow sources as `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`) and running the `uip maestro flow` check/compile/validate loop. Covers graph structure, expressions, nodes, bindings, connectors, brownfield edits, and emitted `.flow` validation. Also operating a deployed flow: upload or publish it, deploy to Orchestrator, debug a real end-to-end run, trigger a deployed process, check job status or traces, and pause, resume, cancel or retry an instance. Case plans (`caseplan.json`, reference-mode) → uipath-maestro-case; structural-core BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -586,6 +586,14 @@ Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, so
 `tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
 **Reference: [`references/inline-agent.md`](references/inline-agent.md)** — resource families: [`references/agent-resources.md`](references/agent-resources.md)
+
+## Operating a deployed flow
+
+Upload, deploy, debug, trigger, inspect a job, and drive an instance's
+lifecycle. All of it needs `uip login`, and `uip solution resources refresh`
+comes before every upload, publish or debug. `flow debug` is a REAL run, not a
+validation step. Read
+**[`references/operate.md`](references/operate.md)**.
 
 ## Evaluation assets
 
