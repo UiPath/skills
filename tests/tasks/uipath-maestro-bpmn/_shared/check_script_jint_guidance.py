@@ -173,16 +173,17 @@ def variables_mapping(element: ET.Element) -> ET.Element:
 def bridge_target(
     element: ET.Element,
     *,
-    name: str,
     source: str,
     output_type: str,
 ) -> str:
+    # Matched by source + type + a non-empty target var. The output's `name`
+    # (and the internal variable's) is display metadata — expressions resolve
+    # ids, so pinning internal names would grade naming style, not behaviour.
     output = exactly_one(
         [
             candidate
             for candidate in mapping_outputs(element)
-            if candidate.attrib.get("name") == name
-            and candidate.attrib.get("source") == source
+            if candidate.attrib.get("source") == source
             and candidate.attrib.get("type") == output_type
             and candidate.attrib.get("var")
         ],
@@ -434,16 +435,16 @@ def main() -> None:
 
     internal_amount_id = bridge_target(
         start,
-        name="amount",
         source=f"=vars.{attr(public_amount, 'id')}",
         output_type="double",
     )
     internal_days_id = bridge_target(
         start,
-        name="daysOverdue",
         source=f"=vars.{attr(public_days, 'id')}",
         output_type="integer",
     )
+    if internal_amount_id == internal_days_id:
+        fail("the amount and daysOverdue bridges must target distinct variables")
     end_output = exactly_one(
         [
             output
@@ -460,26 +461,16 @@ def main() -> None:
     )
     result_variable_id = attr(end_output, "source").removeprefix("=vars.")
 
-    for variable_id, expected_name, expected_type in (
-        (internal_amount_id, "amount", "double"),
-        (internal_days_id, "daysOverdue", "integer"),
+    # The bridges are resolved by id from the StartEvent mapping, so the
+    # internal variables' display names are not pinned — only their kind,
+    # type, and process scope carry runtime meaning.
+    for variable_id, expected_type in (
+        (internal_amount_id, "double"),
+        (internal_days_id, "integer"),
     ):
         variable = variable_by_id(variables, variable_id)
-        named_variable = one_variable(
-            variables,
-            name=expected_name,
-            kind="inputOutput",
-            element_id=process_id,
-        )
-        if named_variable is not variable:
-            fail(
-                f"{expected_name!r} bridge must target the uniquely scoped "
-                "mutable variable"
-            )
         if local_name(variable) != "inputOutput":
             fail(f"{variable_id!r} must be a mutable inputOutput variable")
-        if variable.attrib.get("name") != expected_name:
-            fail(f"{variable_id!r} must be named {expected_name!r}")
         if variable.attrib.get("type") != expected_type:
             fail(f"{variable_id!r} must use type {expected_type!r}")
         if variable.attrib.get("elementId") != process_id:
@@ -588,35 +579,36 @@ def main() -> None:
                 "the two standard ScriptTask outputs"
             )
     else:
+        # Resolved by id from the EndEvent bridge; the display name is not
+        # pinned. Scope must name an owning element (task or process) — an
+        # elementId-less declaration does not exist to the canvas (#3211).
         business_result = variable_by_id(variables, result_variable_id)
-        named_business_result = one_variable(
-            variables,
-            name="riskScore",
-            kind="inputOutput",
-            element_id=task_id,
-        )
-        if business_result is not named_business_result:
-            fail("the optional business result must be the scoped riskScore variable")
+        if local_name(business_result) != "inputOutput":
+            fail("the optional business result must be a mutable inputOutput variable")
         if business_result.attrib.get("type") != "double":
-            fail("the optional mutable riskScore variable must use type='double'")
+            fail("the optional mutable business result must use type='double'")
+        if business_result.attrib.get("elementId") not in {task_id, process_id}:
+            fail(
+                "the optional business result must carry elementId of the "
+                "script task or the process (#3211)"
+            )
         if len(task_outputs) != 3:
             fail(
-                "a distinct riskScore variable requires exactly one custom "
-                "output in addition to scriptResponse and Error"
+                "a distinct business-result variable requires exactly one "
+                "custom output in addition to scriptResponse and Error"
             )
         risk_mapping = exactly_one(
             [
                 output
                 for output in task_outputs
-                if output.attrib.get("name") == "riskScore"
-                and output.attrib.get("var") == result_variable_id
+                if output.attrib.get("var") == result_variable_id
                 and output.attrib.get("source") == f"=vars.{response_id}"
                 and output.attrib.get("type") == "double"
             ],
-            "optional scriptResponse-to-riskScore output mapping",
+            "optional scriptResponse-to-business-result output mapping",
         )
         if risk_mapping.attrib.get("custom") != "true":
-            fail("the optional riskScore mapping must be marked custom=true")
+            fail("the optional business-result mapping must be marked custom=true")
 
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
