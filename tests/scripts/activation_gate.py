@@ -69,6 +69,12 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-case": 90,
     "uipath-api-workflow": 90,
     "uipath-functions": 95,
+    # Seeded at 0 to bootstrap the measurement, not because recall is 0.
+    # main() returns early on a missing key, so the gate could never measure
+    # this skill; at 0 the threshold is -10% and no recall can fail it, while
+    # completion_rate < 1.0 still errors. Replace with the measured rounded
+    # recall from the first full run.
+    "uipath-insights": 0,
 }
 
 DROP_PP = 10
