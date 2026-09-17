@@ -1,0 +1,204 @@
+{
+  "$comment": [
+    "Topics maintained in both the GA and preview Flow skills while preview is",
+    "not yet GA. A PR that changes one side of a topic and not the other fails",
+    "the pairing gate (scripts/check-skill-pairing.mjs), because a fix that",
+    "lands in one tree and not the other is the divergence this window exists",
+    "to manage.",
+    "",
+    "Adding a topic: both sides must describe the same subject. Only exact-name",
+    "correspondences are listed today. These renames are real but unconfirmed,",
+    "and belong here once each is checked: decision/branch, merge/parallel-merge,",
+    "rpa/rpa-workflow, connector/connector-params, connector-trigger/event-trigger,",
+    "conversational-agent/conversational, loop/loops, end/return,",
+    "inline-voice-agent/voice.",
+    "",
+    "Removing a topic: only when preview goes GA and the GA tree is retired.",
+    "An override for a genuinely one-sided change is the `single-tree-ok` PR",
+    "label, not an edit here."
+  ],
+  "pairs": [
+    {
+      "topic": "agent",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/agent/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/agent/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/agent.md"
+      ]
+    },
+    {
+      "topic": "agentic-process",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/agentic-process/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/agentic-process/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/agentic-process.md"
+      ]
+    },
+    {
+      "topic": "api-workflow",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/api-workflow/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/api-workflow/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/api-workflow.md"
+      ]
+    },
+    {
+      "topic": "batch-transform",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/batch-transform/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/batch-transform/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/batch-transform.md"
+      ]
+    },
+    {
+      "topic": "data-fabric",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/data-fabric/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/data-fabric/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/data-fabric.md"
+      ]
+    },
+    {
+      "topic": "delay",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/delay/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/delay/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/delay.md"
+      ]
+    },
+    {
+      "topic": "hitl",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/hitl/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/hitl/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/hitl.md"
+      ]
+    },
+    {
+      "topic": "http",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/http/impl-connector.md",
+        "skills/uipath-maestro-flow/references/author/plugins/http/impl-manual.md",
+        "skills/uipath-maestro-flow/references/author/plugins/http/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/http/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/http.md"
+      ]
+    },
+    {
+      "topic": "inline-agent",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/inline-agent/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/inline-agent/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/inline-agent.md"
+      ]
+    },
+    {
+      "topic": "ixp",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/ixp/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/ixp/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/ixp.md"
+      ]
+    },
+    {
+      "topic": "queue",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/queue/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/queue/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/queue.md"
+      ]
+    },
+    {
+      "topic": "scheduled-trigger",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/scheduled-trigger/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/scheduled-trigger/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/scheduled-trigger.md"
+      ]
+    },
+    {
+      "topic": "script",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/script/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/script/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/script.md"
+      ]
+    },
+    {
+      "topic": "subflow",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/subflow/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/subflow/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/subflow.md"
+      ]
+    },
+    {
+      "topic": "summarize",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/summarize/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/summarize/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/summarize.md"
+      ]
+    },
+    {
+      "topic": "switch",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/switch/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/switch/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/switch.md"
+      ]
+    },
+    {
+      "topic": "terminate",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/terminate/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/terminate/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/terminate.md"
+      ]
+    },
+    {
+      "topic": "transform",
+      "ga": [
+        "skills/uipath-maestro-flow/references/author/plugins/transform/impl.md",
+        "skills/uipath-maestro-flow/references/author/plugins/transform/planning.md"
+      ],
+      "preview": [
+        "preview/skills/uipath-maestro-flow/references/transform.md"
+      ]
+    }
+  ]
+}
