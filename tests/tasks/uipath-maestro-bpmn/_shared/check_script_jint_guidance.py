@@ -108,26 +108,22 @@ def one_variable(
     *,
     name: str,
     kind: str,
-    element_id: str | None,
+    element_id: str,
 ) -> ET.Element:
-    scope = (
-        f"scoped to {element_id!r}"
-        if element_id is not None
-        else "at process scope"
-    )
+    # Scope is expressed by elementId for EVERY root declaration — the process
+    # id for a process-scoped variable, the owning node's id otherwise. A
+    # declaration without one does not exist to the canvas and every vars.<id>
+    # reference to it fails on import (#3211, verified in Studio Web against
+    # PO.Frontend VariableValidationUtils.ts).
     return exactly_one(
         [
             variable
             for variable in variables
             if local_name(variable) == kind
             and variable.attrib.get("name") == name
-            and (
-                variable.attrib.get("elementId") == element_id
-                if element_id is not None
-                else "elementId" not in variable.attrib
-            )
+            and variable.attrib.get("elementId") == element_id
         ],
-        f"{kind} variable named {name!r} {scope}",
+        f"{kind} variable named {name!r} scoped to {element_id!r}",
     )
 
 
@@ -262,6 +258,9 @@ def main() -> None:
     process = root.find("bpmn:process", NS)
     if process is None:
         fail("missing bpmn:process")
+    process_id = attr(process, "id")
+    if not process_id:
+        fail("bpmn:process must have a non-empty id")
     # `isExecutable` is not graded: nothing in the CLI reads it, so grading it
     # would grade doc style rather than behaviour (same call as
     # check_simple_approval_bpmn.py; see .claude/rules/test-writing.md).
@@ -470,7 +469,7 @@ def main() -> None:
             variables,
             name=expected_name,
             kind="inputOutput",
-            element_id=None,
+            element_id=process_id,
         )
         if named_variable is not variable:
             fail(
@@ -483,8 +482,12 @@ def main() -> None:
             fail(f"{variable_id!r} must be named {expected_name!r}")
         if variable.attrib.get("type") != expected_type:
             fail(f"{variable_id!r} must use type {expected_type!r}")
-        if "elementId" in variable.attrib:
-            fail(f"{variable_id!r} must remain a process-scoped mutable variable")
+        if variable.attrib.get("elementId") != process_id:
+            fail(
+                f"{variable_id!r} must be process-scoped via "
+                f"elementId={process_id!r} — a root variable without an "
+                "elementId does not exist to the canvas (#3211)"
+            )
 
     response_id = attr(response, "id")
 
