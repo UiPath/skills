@@ -233,44 +233,22 @@ Example response:
 }
 ```
 
-**Run the whole loop in one call.** A page per turn is the largest time sink in reference resolution: a target on page 8 costs eight turns of generation. One bounded shell loop costs one turn. Every way the walk can end is a different instruction to you, so the loop names each one rather than just stopping.
+**Chain the pages into one call, rather than a turn per page.** Put the successive `run list` calls in a single shell invocation, and project the predicate and `Pagination` together so each page answers "is it here" and "is there more" at once. `--output-filter` expresses this whole projection, so it needs no external parser.
 
-Take `<match-field>` and `<value-field>` from the reference's `lookupNames` and `lookupValue` in the Step 3 `describe`, never from the shape of the first row you happen to see: a Slack channel matches on `name`, a Slack user on `profile.real_name`, and `lookupNames` resolves dotted paths. A predicate on the wrong field matches nothing on every page and the loop reports `ABSENT` for a row that is there. Add any other field you need from the row to the projection while you are here, because a second walk costs another full pass. Escape an apostrophe inside `<target>` as `\'` or the filter is a lexer error.
+Build the predicate from the reference, not from the shape of the first row you see. Match against **every** entry in `lookupNames`, one clause per entry (`items[?<f1>=='<target>' || <f2>=='<target>']`), take the value you write from `lookupValue`, and resolve dotted entries as paths (`profile.email`). A predicate on the wrong field matches nothing on every page, which reads as absence for a row that is there. Escape an apostrophe in the target as `\'`, or the filter is a lexer error.
 
-```bash
-TOKEN=""; PAGE=0
-while :; do
-  PAGE=$((PAGE+1))
-  page=$(uip is resources run list "<connector-key>" "<resource>" --connection-id "<id>" \
-    ${TOKEN:+--query "nextPage=$TOKEN"} --output json \
-    --output-filter "{hit: items[?<match-field>=='<target>'].<value-field>, next: Pagination}")
-  read -r N ID NEXT <<< "$(printf '%s' "$page" | python3 -c 'import json,sys
-e = json.load(sys.stdin)
-if e.get("Result") != "Success": print("ERR - -"); raise SystemExit
-d = e.get("Data") or {}; hit = d.get("hit") or []
-print(len(hit), hit[0] if hit else "-", (d.get("next") or {}).get("NextPageToken", "-"))')"
-  case $N in ''|*[!0-9]*) echo "FAILED on page $PAGE, stop and report, never treat as absent: $page"; break ;; esac
-  echo "page $PAGE: matches=$N id=$ID next=$NEXT"
-  [ "$N" -eq 0 ] || { [ "$N" -eq 1 ] || echo "AMBIGUOUS: $N matches, ask the user instead of picking one"; break; }
-  [ "$NEXT" != "-" ] || { echo "ABSENT: paged to the end without a match"; break; }
-  [ "$NEXT" != "$TOKEN" ] || { echo "STUCK: token repeated, connector paging is broken"; break; }
-  [ "$PAGE" -lt 20 ] || { echo "CAP: stopped early with pages left, NOT an exhaustive search"; break; }
-  TOKEN=$NEXT
-done
-```
+How the walk ends decides what you do next, and only the first ending below is a resolved value:
 
-Act on the label, not on the absence of an id:
+| Ending | What to do |
+|---|---|
+| one match | write its `lookupValue` |
+| several matches | ask the user with the candidates; never take the first |
+| `HasMore: "false"` and no match | re-check the predicate against `lookupNames`, then re-run against this connector's other Enabled connections, then ask |
+| `NextPageToken` came back unchanged while `HasMore` stayed `"true"` | the connector's paging is broken and every further page is the one you just read; report the field as unresolvable |
+| you stopped short of `HasMore: "false"` | not a not-found; narrow the query and walk again |
+| the call errored | stop and report per [When the Lookup Call Fails](reference-resolution.md#when-the-lookup-call-fails-critical) |
 
-| Label | What it means | What to do |
-|---|---|---|
-| `matches=1` | resolved | use `ID` |
-| `AMBIGUOUS` | several rows carry the name | ask the user with the candidates; never take the first |
-| `ABSENT` | `HasMore` reached `"false"` with no match | re-check `<match-field>` against `lookupNames` first, then re-run against this connector's other Enabled connections, then ask |
-| `CAP` | the loop's own page ceiling, pages still remaining | not a not-found; narrow the query or raise the ceiling and re-run |
-| `STUCK` | `NextPageToken` came back unchanged while `HasMore` stayed `"true"` | connector paging is broken; report the field as unresolvable |
-| `FAILED` | the call errored | stop and report per [When the Lookup Call Fails](reference-resolution.md#when-the-lookup-call-fails-critical) |
-
-Two of those are silent-wrong-value traps, so never collapse them into "not found": a `FAILED` call proves nothing about the value, and a `CAP` exit leaves pages unread. Writing a display name or a remembered id after either passes `flow validate` and faults at runtime. This loop reads `Data.Pagination`; resources that page by `offset`/`limit` instead have their own section below.
+Never collapse the last three into "not found". Writing a display name or a remembered id after any of them passes `flow validate` and faults at runtime. These endings read `Data.Pagination`; resources that page by `offset`/`limit` have their own section below.
 
 ### Anti-patterns
 
