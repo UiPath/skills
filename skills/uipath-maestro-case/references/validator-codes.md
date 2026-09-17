@@ -8,13 +8,13 @@ For codes whose *names mislead* — the four that have sent repairs at the wrong
 uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json
 ```
 
-An unknown-option response means the installed CLI predates `--strict`/`--sdd` — see SKILL.md Rule 15's version guard.
+An unknown-option response means the installed CLI predates `--strict`/`--sdd` — see [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202).
 
 ## The catalog
 
 ### Check 4
 
-After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), **first run `uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json`** (unknown-option response → SKILL.md Rule 15 version guard). Its `STRICT_*` codes are the machine-checked half of this pass: `CASE_MGMT_XREF_UNRESOLVED` (an error on every profile, as is `CASE_MGMT_PLANNING_NOTATION` for a `<-`/`->` input value) is Check 4
+After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), **first run `uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json`** (unknown-option response → [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202)). Its `STRICT_*` codes are the machine-checked half of this pass: `CASE_MGMT_XREF_UNRESOLVED` (an error on every profile, as is `CASE_MGMT_PLANNING_NOTATION` for a `<-`/`->` input value) is Check 4
 
 ### Check 1 — input bindings
 
