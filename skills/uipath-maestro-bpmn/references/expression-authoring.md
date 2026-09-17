@@ -115,7 +115,8 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.
 - Entry point inputs that must later be updated need a separate mutable
-  `uipath:inputOutput` variable and an explicit mapping from the entry input.
+  `uipath:inputOutput` variable scoped to the process
+  (`elementId="<process id>"`) and an explicit mapping from the entry input.
 - Trigger-bound values are `uipath:inputOutput` variables scoped to the trigger
   node, so the trigger can write them during execution.
 
