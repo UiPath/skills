@@ -149,6 +149,31 @@ def assert_uipath_preserved(original: ET.Element, edited: ET.Element, local_name
         fail(f"uipath:{local_name} payload was modified (must round-trip untouched)")
 
 
+def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> None:
+    """Every pristine variable declaration must round-trip untouched; new
+    declarations are allowed. An inserted node's mapped output NEEDS a new
+    declaration (a root variable without one does not exist to the canvas,
+    #3211), so freezing the whole block forces a choice between a canvas-broken
+    file and a red check."""
+    orig = _find_first(original, "variables")
+    new = _find_first(edited, "variables")
+    if orig is None:
+        fail("fixture bug: no uipath:variables in pristine original")
+    if new is None:
+        fail("uipath:variables was dropped by the edit (must be preserved)")
+    edited_by_id = {child.attrib.get("id"): child for child in new}
+    for child in orig:
+        child_id = child.attrib.get("id")
+        match = edited_by_id.get(child_id)
+        if match is None:
+            fail(f"pristine variable {child_id!r} was removed (must be preserved)")
+        if canonical(child) != canonical(match):
+            fail(f"pristine variable {child_id!r} was modified (must round-trip untouched)")
+    ids = [child.attrib.get("id", "") for child in new]
+    if not all(ids) or len(ids) != len(set(ids)):
+        fail("all uipath:variables declarations must have unique non-empty ids")
+
+
 def flows(root: ET.Element) -> list[tuple[str, str, str]]:
     out = []
     for el in root.iter():

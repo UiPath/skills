@@ -31,8 +31,9 @@ initial_prompt: |
   and update the diagram so the new node and its flows render.
 
   Make a SURGICAL edit: preserve everything you did not author — the existing
-  element ids, the uipath:* extension payloads, uipath:migrationVersion, and the
-  process variables must round-trip untouched.
+  element ids, the uipath:* extension payloads, uipath:migrationVersion, and
+  every existing process variable declaration must round-trip untouched. You
+  may declare new variables for the node you add.
 
   Validate the edited file locally before finishing. Do not upload, publish,
   deploy, debug, run, or pack anything, and do not pause for approval — make the
