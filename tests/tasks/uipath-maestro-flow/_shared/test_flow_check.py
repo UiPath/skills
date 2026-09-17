@@ -961,6 +961,25 @@ def test_run_debug_does_not_retry_real_fault(monkeypatch):
     assert calls["n"] == 1
 
 
+def test_run_debug_names_a_studio_web_handoff(monkeypatch):
+    """A chat-driven flow is uploaded and handed off, never run, so it returns
+    Success with no finalStatus. Reporting that as "did not complete" reads as a
+    broken flow; it is a task-shape problem (skill-flow-cli-dice-roller-simulated,
+    2026-09-17). One attempt only — a Success envelope is not transient."""
+    handoff = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebugStudioWebHandoff",\n'
+        '  "Data": {"solutionId": "bcb9354a", "studioWebUrl": "https://example/designer/609b",\n'
+        '           "handedOff": true},\n'
+        '  "Instructions": "This flow can only be driven from a chat UI"\n}'
+    )
+    calls = _stub_debug(monkeypatch, [_cp(0, handoff)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert calls["n"] == 1
+    assert "chat-driven" in str(excinfo.value)
+    assert "did not complete" not in str(excinfo.value)
+
+
 def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
     """A non-5xx / non-RetryLater failure (e.g. bad input) is returned on the
     first attempt."""
