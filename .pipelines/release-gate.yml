@@ -63,10 +63,15 @@ resources:
     - repository: signing
       type: github
       name: UiPath/AzurePipelinesTemplates
+      # 2.0.18 is the highest tag this repository publishes -- there is no
+      # 2.1.x or 2.2.x, despite what the version list in the signing wiki page
+      # implies, and pinning one fails the run with "No commit found for SHA".
+      #
       # >= 2.0.7 is mandatory: earlier tags use the retired local-PFX signtool
       # that stopped working when the DigiCert certificate was replaced. `.ps1`
-      # support landed in 1.6.0.
-      ref: refs/tags/uipath.package-signing.2.2.0
+      # support landed in 1.6.0, and 2.0.18's `excludedFileTypes` default does
+      # not exclude it.
+      ref: refs/tags/uipath.package-signing.2.0.18
       endpoint: github.com_UiPath
     - repository: fossa
       type: github
