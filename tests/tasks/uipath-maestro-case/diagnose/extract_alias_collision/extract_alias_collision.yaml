@@ -2,11 +2,13 @@ task_id: skill-case-diagnose-extract-alias-collision
 description: >
   Diagnose mode — the staged case PASSES `uip maestro case validate` with zero
   findings, but the Decision stage never enters at runtime: its gate reads
-  `vars.route`, which is declared but produced by nothing, while the value the
-  case actually produces lands in `route2` (Review's task element). That is the
-  signature of an extract alias that auto-suffixed on an id collision — the
-  declared companion and the written variable drift apart and the validator
-  cannot see it, because both names exist. Grades the trap: re-declaring or
+  `vars.route`, which is declared but written by nothing, while the value the
+  case actually produces is written to `route2` by Review's task output. That is
+  the signature of an alias that auto-suffixed on an id collision — the declared
+  companion and the written variable drift apart and the validator cannot see
+  it, because both names exist and both are declared identically at case level
+  (`elementId: "root"`, `custom: true`). The only discriminator is which name a
+  task's `data.outputs[]` actually writes. Grades the trap: re-declaring or
   defaulting `route` keeps validate green and leaves the gate dead. The fix must
   make the gate and the producer name the same variable.
 tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:conditions]
