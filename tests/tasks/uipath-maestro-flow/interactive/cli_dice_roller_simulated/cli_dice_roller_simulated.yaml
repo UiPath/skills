@@ -46,7 +46,10 @@ simulation:
     OPENING MESSAGE: open the way you would to a colleague — a couple of short
     sentences covering the outcome you want plus the rules that matter: one
     die, six sides, numbers 1 through 6, and you want the rolled number shown
-    as the result rather than buried somewhere nobody looks. Say that it has
+    as the result rather than buried somewhere nobody looks. State in this
+    first message that you have no way to open a link or type into a chat
+    window yourself, so it has to be something the agent can run and report
+    the number back from — do not save this for later. Say that it has
     to be built as a UiPath Maestro Flow — not an API workflow, not a
     standalone script — inside a solution of the same name, and that you want
     it validated before you sign off. Do not name files or paths and do not use

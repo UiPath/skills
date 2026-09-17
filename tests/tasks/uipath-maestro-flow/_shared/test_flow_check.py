@@ -980,6 +980,34 @@ def test_run_debug_names_a_studio_web_handoff(monkeypatch):
     assert "did not complete" not in str(excinfo.value)
 
 
+def test_run_debug_names_a_handoff_without_the_code_label(monkeypatch):
+    """`handedOff` is the semantic signal; the `Code` label is a string that can
+    be renamed. The observed envelope carries both, which short-circuits the
+    `Code` arm, so this covers the payload-only arm on its own."""
+    handoff = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebugSomeFutureName",\n'
+        '  "Data": {"solutionId": "bcb9354a", "handedOff": true}\n}'
+    )
+    _stub_debug(monkeypatch, [_cp(0, handoff)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert "chat-driven" in str(excinfo.value)
+
+
+def test_run_debug_keeps_the_generic_message_for_a_real_fault(monkeypatch):
+    """Neither handoff signal present: the pre-existing wording must survive, so
+    a faulted run is not misreported as a chat-driven design."""
+    faulted = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebug",\n'
+        '  "Data": {"finalStatus": "Faulted", "handedOff": false}\n}'
+    )
+    _stub_debug(monkeypatch, [_cp(0, faulted)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert "did not complete" in str(excinfo.value)
+    assert "chat-driven" not in str(excinfo.value)
+
+
 def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
     """A non-5xx / non-RetryLater failure (e.g. bad input) is returned on the
     first attempt."""
