@@ -297,6 +297,8 @@ On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector ta
 
 One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholder tasks entirely — they have no inputs.
 
+**First, type every resource task's rows with the CLI, not by hand.** For each non-placeholder resource task (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`), save `uip maestro case tasks describe --type <taskType> --id <selected.EntityKey> --output json` and run `uip maestro case splice "<caseplan.json>" --node "<taskId>" --described "<that file>" --output json`. That supplies `type` / `_jsonSchema` / `options` on inputs and outputs and closes every `output-type` entry `sdd convert` reported. Never Edit a `type` onto a row you could have spliced. Then bind values below.
+
 Per-task composition (in reasoning, before that task's Edit) per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
 1. Literals / expressions (`input = "<value>"`): write `<value>` to `input.value`.
