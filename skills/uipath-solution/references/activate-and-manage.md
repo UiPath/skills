@@ -63,6 +63,11 @@ uip solution deploy status <pipeline-deployment-id> --output json
 uip solution deploy list --output json
 ```
 
+> `deploy status` reads the pipeline run against the **tenant** feed and takes
+> no feed flag, so it cannot see a run in a Personal Workspace or a folder
+> feed. For those, use `uip solution deploy list --personal-workspace` or
+> `--feed <name-or-key>`, which do scope.
+
 ## Upgrade a Deployment In Place
 
 `deploy run` fails with HTTP 400 when a deployment for the solution **already exists** — you can't redeploy over it, you have to upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
@@ -78,16 +83,16 @@ uip solution deploy upgrade <deployment-key> --personal-workspace --output json
 uip solution deploy upgrade <deployment-key> --no-wait --output json
 ```
 
-Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, DeploymentName, FromVersion, ToVersion, VersionChangeKey }`. `Status` is the deployment operation status — `Successful` once the upgrade landed, or `Draft` with `--no-wait`.
+Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, DeploymentName, FromVersion, ToVersion, PipelineDeploymentId, DeploymentKey }`. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `DeploymentKey` is absent, because no run has finished to report one). `PipelineDeploymentId` is what `uip solution deploy status` reads.
 
 **Behavior and limits:**
-- The deployment's **existing configuration is preserved** — values already set on the deployment carry over instead of being reset to the package defaults, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
-- **The upgrade takes two server steps, and the command does both.** The upgrade call only *queues* the move: it creates a second deployment record (operation `VersionChange`, status `Draft`) and leaves the live version alone. Nothing advances that draft on its own — it sits in `Draft` indefinitely — so the command then installs it. `VersionChangeKey` in the output is that new record's key; it is **not** the key you passed in.
+- The deployment's **existing configuration is preserved** — the server carries each unchanged resource's configuration forward and takes only changed specs from the new package, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
+- **The package is validated against the target before anything is installed.** The upgrade goes through the same Pipelines install as `deploy run`, which the server treats as an in-place upgrade when the deployment name already exists with the same package and a different version. Validation runs first, so a configuration the target rejects ends the run at `Status: ValidationFailed` with the per-resource errors in `Instructions` and **the deployment still on its current version** — nothing is half-installed. Earlier CLI versions installed straight away and a late validation failure could strand the deployment in a state that offered only *Uninstall*.
 - By default the command **waits** for the install to reach a terminal state (`--timeout <seconds>`, default 300; `--poll-interval <ms>`, default 5000). Pass `--no-wait` to return as soon as the install is accepted.
-- A failed install reports the server's reason (for example `Solution folder not found` when the deployment's solution folder was deleted), not a bare `Failed`.
+- A failure reports the server's reason (for example `Solution folder not found` when the deployment's solution folder was deleted), not a bare status. The reason normally comes from the pipeline run itself; when the run record has already been recycled the CLI reads the deployment's validation result instead, and says `the server reported no reason.` only when the server genuinely gives none.
 - After a successful upgrade the deployment can land in `ReadyToActivate` rather than `Active`. Check with `uip solution deploy list` and run `uip solution deploy activate <deployment-name>` if activation is pending.
-- Only the **latest** published version is a valid target today. Omit `--version` to take the newest; passing an older `--version` is rejected.
-- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server. Re-running an upgrade that is already queued fails with `Another upgrade has already started for this deployment`.
+- **Any published version of the same package is a valid target.** Omit `--version` to take the newest, or pass `--version <version>` for a specific one — including an older version, to step back. The one target refused is the version already deployed (`already at version …`), because that is a configuration change rather than an upgrade.
+- The server decides what may be upgraded, and refuses synchronously — before any `PipelineDeploymentId` exists — when an operation is already in progress on the deployment, when the name belongs to a different package, or when the deployment is not in an upgradeable state. A deployment whose validation failed *is* upgradeable on current Orchestrator, which is how you fix its configuration and move on; on an older Automation Solutions build the same deployment is refused, and uninstall-and-redeploy is the only way out.
 
 ## Step 3: Uninstall a Deployment
 
