@@ -22,7 +22,7 @@ All commands assume the user is already logged in (`uip login status --output js
 
 | Flag | Purpose |
 |------|---------|
-| `--output-filter <expr>` | JMESPath filter on the JSON response (e.g. `"Data[?contains(Name, 'Invoice')].Key"`). |
+| `--output-filter <expr>` | JMESPath filter on the JSON response (e.g. `"[?contains(Name, 'Invoice')].Key"`). |
 | `--all-fields` | Returns the full DTO instead of the curated summary — use when you need a field not shown by default (e.g. confirming the exact `ProcessType` string). |
 | `--tenant <name>` | Override the tenant selected during `uip login`. Rarely needed. |
 
