@@ -8,7 +8,7 @@ with two deliberate defects that `uip maestro case validate` reports:
      (`selectedStageIds: ["Stage_Ghost404"]`) — Decision is unreachable / orphaned
      and the reference dangles.
   B. Intake's task carries `type: "wait-for-event"` — not one of the 9 closed
-     task-type enum values (Critical Rule 16).
+     task-type enum values (Critical Rule 17).
 
 This grader confirms the agent fixed the ACTUAL root causes rather than
 deleting stages/tasks to silence the validator:
@@ -45,7 +45,7 @@ from _shared.case_check import (  # noqa: E402
     read_caseplan,
 )
 
-# Critical Rule 16 — the closed task-type enum (schema-kebab).
+# Critical Rule 17 — the closed task-type enum (schema-kebab).
 VALID_TASK_TYPES = {
     "process",
     "agent",
@@ -132,7 +132,7 @@ def main():
     if bad_types:
         _fail(
             f"task type(s) {bad_types} are not in the closed 9-value enum "
-            f"(Rule 16); 'wait-for-event' was the planted defect and must be "
+            f"(Rule 17); 'wait-for-event' was the planted defect and must be "
             f"replaced with a valid type"
         )
 

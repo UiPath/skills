@@ -4,7 +4,7 @@ description: >
   staged on disk with two deliberate defects that `uip maestro case validate`
   reports: Decision's stage-entry condition references a non-existent stage
   (unreachable / dangling reference) and Intake's task carries an invalid
-  `type: "wait-for-event"` outside the closed 9-value enum (Rule 16). Exercises
+  `type: "wait-for-event"` outside the closed 9-value enum (Rule 17). Exercises
   the skill's validate → read-structured-errors → fix → re-validate loop on a
   pre-broken caseplan.json. Local-only (validate, no debug) — the agent must
   fix the actual root causes, not delete stages to silence the validator.

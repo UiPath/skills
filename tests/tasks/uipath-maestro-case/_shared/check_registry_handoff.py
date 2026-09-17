@@ -12,7 +12,7 @@ def g(obj, *names, default=None):
 
     `selected` and `matches[]` are registry cache entries copied through by the agent,
     and `uip maestro case registry search` returns PascalCase (`Name`, `EntityKey`)
-    while the skill's own examples show camelCase. SKILL.md Rule 9 pins the ledger's
+    while the skill's own examples show camelCase. SKILL.md Rule 10 pins the ledger's
     OUTER keys and says nothing about the shape inside them, so both spellings are
     legal and runs alternate: suite7 wrote `name`, suite8 wrote `Name`, and asserting
     on one spelling failed a correct resolution. Read either.
@@ -89,7 +89,7 @@ for name, expected in EXPECTED.items():
     selected = entry.get("selected") or entry.get("resourceIdentity")
     assert isinstance(selected, dict), f"missing selected result for {name}"
     # `selected` is the registry cache entry copied through, and `registry search` returns
-    # PascalCase (`Name`), while the skill's own examples show camelCase. SKILL.md Rule 9
+    # PascalCase (`Name`), while the skill's own examples show camelCase. SKILL.md Rule 10
     # pins the ledger's OUTER keys and says nothing about the shape inside `selected`, so
     # both spellings are legal and runs alternate between them: suite7 wrote `name`,
     # suite8 wrote `Name` and this assertion failed a correct resolution. Accept either.
