@@ -9,8 +9,10 @@ Everything here is a coordination fact the agent could not guess and that
 teardown needs to find this run's objects again. Every tenant object this run
 creates must carry `folderName` / `solutionName` (or embed `runId`), so
 teardown can delete by prefix and a same-named leftover from an earlier run
-can never satisfy this run's checks (see composition.py's folder-pinning
-check).
+can never satisfy this run's checks (see check_shape.py's
+`live_folder_key_resolver` / `live_release_key_resolver` -- the cross-tenant
+pinning checks that compare a submission's `releaseKey`/`folderKey` against
+this run's real, seeded folder and deployed process).
 """
 import json
 import subprocess

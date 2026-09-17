@@ -1,5 +1,116 @@
 {
   "document": {
-    "name": "Workflow"
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "tags": {
+      "projectId": "2a5af6a4-84f2-4056-a43d-b07970293d32"
+    },
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "format": "json",
+          "document": {
+            "type": "object",
+            "properties": {},
+            "title": "Variables"
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" }
+        },
+        "required": ["name"],
+        "title": "Inputs"
+      }
+    }
+  },
+  "output": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" }
+        },
+        "title": "Outputs"
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${ { ...Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}), ...($workflow.input || {}) } }",
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
+            }
+          },
+          {
+            "BuildGreeting": {
+              "run": {
+                "script": {
+                  "code": "return `Hello, ${$workflow.input.name}!`;",
+                  "language": "javascript",
+                  "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+                }
+              },
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"BuildGreeting\": $output } }"
+              },
+              "metadata": {
+                "activityType": "JsInvoke",
+                "displayName": "Build greeting",
+                "fullName": "JavaScript"
+              }
+            }
+          },
+          {
+            "Response_1": {
+              "response": "${{ message: $context.outputs.BuildGreeting }}",
+              "markJobAsFailed": false,
+              "then": "end",
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }"
+              },
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
+            }
+          }
+        ],
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
+      }
+    }
+  ],
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
   }
 }

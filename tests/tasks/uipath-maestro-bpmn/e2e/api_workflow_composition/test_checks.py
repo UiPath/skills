@@ -44,7 +44,7 @@ FOLDER_KEY_GOOD = "1efad159-0c94-46d7-ad7a-4bdd22b4720b"
 
 def matching_resolvers():
     return dict(
-        resolve_release_key_for_row=lambda row, project_dir: (lambda binding: RELEASE_KEY_GOOD),
+        resolve_release_key_for_row=lambda row, project_dir: (lambda binding: {RELEASE_KEY_GOOD}),
         resolve_folder_key=lambda: FOLDER_KEY_GOOD,
     )
 
@@ -175,11 +175,111 @@ class ShapeCheckMutationTests(unittest.TestCase):
         self.assertIn("input does not publish", joined)
         self.assertIn("output does not publish 'message'", joined)
 
+    def test_script_overwrites_node_output(self):
+        # Vector 1's shape-side half: a decoy scriptTask also writes the
+        # invoking node's own output variable (Var_Message) downstream --
+        # the BPMN wiring is otherwise gold-identical.
+        self.assert_rejected(
+            "script_overwrites_node_output",
+            r"also written by .*Task_Decoy.*only 'Task_InvokeGreeting' may write",
+        )
+
+    def test_unauthored_scaffold(self):
+        # Vector 2: gold-correct BPMN wiring around an untouched
+        # `uip api-workflow init` scaffold must not earn shape credit.
+        self.assert_rejected("unauthored_scaffold", "declares no output for 'message'")
+        problems = shape_problems(MUTATIONS / "unauthored_scaffold")
+        joined = " | ".join(problems)
+        self.assertIn("declares no input.schema.document.properties", joined)
+        self.assertIn('no task with a "response" key', joined)
+
+    def test_js_literal_input(self):
+        # Vector 4: a `=js:` value with no `vars.` reference at all must not
+        # pass just because it starts with `=js:`.
+        self.assert_rejected("js_literal_input", "must reference a process variable")
+
 
 class ShapeCheckAcceptsUnlikeGoldTests(unittest.TestCase):
     def test_valid_unlike_gold_is_accepted(self):
         problems = shape_problems(MUTATIONS / "valid_unlike_gold")
         self.assertEqual(problems, [], f"a structurally-different-but-valid shape must pass, got: {problems}")
+
+
+# ---------------------------------------------------------------------------
+# Vector 3 -- live resolvers fail CLOSED: abstention (never_resolves) still
+# skips the comparison, but a resolver that raises (a real tenant hiccup)
+# must surface as a problem, never a silent WARN-and-skip. Exercised as unit
+# tests against check_resource_row directly (not main()'s real `uip` calls).
+# ---------------------------------------------------------------------------
+
+class LiveResolverFailClosedTests(unittest.TestCase):
+    def setUp(self):
+        self.bpmn_path = composition.find_bpmn(GOLD)
+        self.process = composition.parse_process(self.bpmn_path)
+        self.uipx_path = composition.find_uipx(GOLD)
+        self.row = composition.RESOURCES[0]
+
+    def _check(self, resolve_release_key=None, resolve_folder_key=None):
+        return check_shape.check_resource_row(
+            root=GOLD,
+            uipx_path=self.uipx_path,
+            process=self.process,
+            row=self.row,
+            resolve_release_key=resolve_release_key or (lambda binding: {RELEASE_KEY_GOOD}),
+            resolve_folder_key=resolve_folder_key or (lambda: FOLDER_KEY_GOOD),
+        )
+
+    def test_folder_resolver_raising_is_recorded_as_a_problem(self):
+        def boom():
+            raise composition.CompositionError("folders get: tenant timeout")
+
+        problems = self._check(resolve_folder_key=boom)
+        self.assertTrue(
+            any("could not resolve the seeded folder's real Key" in p for p in problems),
+            problems,
+        )
+
+    def test_release_resolver_raising_is_recorded_as_a_problem(self):
+        def boom(_binding):
+            raise composition.CompositionError("processes list: tenant timeout")
+
+        problems = self._check(resolve_release_key=boom)
+        self.assertTrue(
+            any("could not resolve the resource's real process Key" in p for p in problems),
+            problems,
+        )
+
+    def test_release_resolver_two_keys_default_among_them_is_clean(self):
+        problems = self._check(
+            resolve_release_key=lambda binding: {RELEASE_KEY_GOOD, "OTHER-DEPLOYED-KEY"}
+        )
+        self.assertEqual(problems, [], problems)
+
+    def test_release_resolver_default_in_neither_is_a_problem(self):
+        problems = self._check(
+            resolve_release_key=lambda binding: {"AAAA-KEY", "BBBB-KEY"}
+        )
+        self.assertTrue(
+            any("does not match the resource's real process Key" in p for p in problems),
+            problems,
+        )
+
+    def test_release_resolver_empty_set_is_a_problem(self):
+        problems = self._check(resolve_release_key=lambda binding: set())
+        self.assertTrue(
+            any("no deployed process found" in p for p in problems),
+            problems,
+        )
+
+    def test_none_still_abstains(self):
+        # composition.never_resolves (or an equivalent) legitimately opts out
+        # of the live comparison -- structural-only mode -- and must not be
+        # treated as a failure.
+        problems = self._check(
+            resolve_release_key=lambda binding: None,
+            resolve_folder_key=lambda: None,
+        )
+        self.assertEqual(problems, [], problems)
 
 
 class ValidateCleanTests(unittest.TestCase):
@@ -307,6 +407,26 @@ class RowProvenanceTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(CheckFailure, "produced no runtime Outputs"):
             check_behavior.assert_row_provenance(self.row, self.process, variables_data, TOKEN)
+
+    def test_echo_resource_with_bpmn_side_transform_passes(self):
+        """Vector 1, CORRECTED per explicit product direction: a hello-world
+        API workflow that echoes its raw input, composed with a BPMN-side
+        output mapping that embeds the token in a fixed string
+        (`=js:'Hello, ' + result.message`), is the INTENDED shape, not a
+        cheat -- the checker must not require the resource itself to have
+        transformed the token. The invoking node's own runtime Outputs still
+        carry the (untransformed) token, which is all assert_row_provenance
+        requires of Outputs; the "Hello, " concatenation lives in the
+        published global, not in Outputs, and is unaffected either way."""
+
+        variables_data = _variables_data(
+            elements=[
+                {"ElementId": "Task_InvokeGreeting", "Outputs": {"response": {"message": TOKEN}}},
+            ],
+            globals_map={"out_message": f"Hello, {TOKEN}!"},
+        )
+        # Should not raise.
+        check_behavior.assert_row_provenance(self.row, self.process, variables_data, TOKEN)
 
     def test_missing_wrapper_node_fails(self):
         no_wrapper = BEHAVIOR_BPMN.replace(

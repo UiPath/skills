@@ -277,6 +277,37 @@ def output_mappings_of(task_element: ET.Element) -> list[dict[str, str]]:
     ]
 
 
+def all_output_writes(process: ET.Element) -> list[dict[str, str]]:
+    """Every `uipath:output` write anywhere in the process, each tagged with
+    the id of the element that owns it -- activity-level (a connector or
+    API-workflow result, via `output_mappings_of`) and event-mapping-level
+    (a start/end event's `uipath:mapping/uipath:output`) alike.
+
+    Lets a shape check catch a second element silently overwriting a
+    resource's node-scoped output variable: a decoy scriptTask (or any other
+    element) that also declares `uipath:output var="<the invoking node's own
+    var>"` would fake per-node provenance without ever calling the resource.
+    """
+
+    writes: list[dict[str, str]] = []
+    for element in process.iter():
+        owner_id = element.attrib.get("id")
+        if not owner_id:
+            continue
+        for mapping in output_mappings_of(element):
+            writes.append({**mapping, "owner": owner_id})
+        extension = element.find(f"./{q(BPMN_NS, 'extensionElements')}")
+        if extension is None:
+            continue
+        mapping_el = extension.find(q(UIPATH_NS, "mapping"))
+        if mapping_el is None:
+            continue
+        for child in mapping_el:
+            if child.tag.rsplit("}", 1)[-1] == "output":
+                writes.append({**dict(child.attrib), "owner": owner_id})
+    return writes
+
+
 def end_event_mappings(process: ET.Element) -> list[dict[str, str]]:
     mappings: list[dict[str, str]] = []
     for end in process.iter(q(BPMN_NS, "endEvent")):
@@ -341,9 +372,16 @@ def entry_point_output_properties(entry_points: Optional[dict]) -> dict:
 # type aliases document the contract so tests can inject stand-ins).
 # ---------------------------------------------------------------------------
 
-# resolve_release_key(binding: dict[str, str]) -> str | None
-ReleaseKeyResolver = Callable[[dict[str, str]], Optional[str]]
+# resolve_release_key(binding: dict[str, str]) -> set[str] | None
+# Returns None only to ABSTAIN (structural-only mode, e.g. never_resolves);
+# a live resolver that cannot reach the tenant must raise CompositionError
+# instead of returning None, and a live resolver that reaches the tenant but
+# finds no matching deployed process must return an EMPTY set, never None --
+# only a genuine abstention may look like "nothing to compare".
+ReleaseKeyResolver = Callable[[dict[str, str]], Optional[set[str]]]
 # resolve_folder_key() -> str | None
+# None means the same abstention contract as above; a live resolver raises
+# CompositionError on failure rather than returning None.
 FolderKeyResolver = Callable[[], Optional[str]]
 
 
