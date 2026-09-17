@@ -104,7 +104,7 @@ uip maestro case spec --type activity \
 
 The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full `caseShape` populated with values from `--input-details`.
 
-**Save the whole response envelope, verbatim, to `tasks/spec-cache.<elementId>.json`** — one file per task. That file is the input to `uip maestro case splice` in Step 5; do not unwrap, re-case, or edit it. The envelope key is `Data.CaseShape` (PascalCase, like every `Data` wrapper); the shape inside it is camelCase (`context` / `inputs` / `outputs`). Read paths:
+**Save the whole response envelope, verbatim, to `tasks/spec-cache.<elementId>.json`** with the Write tool (Rule 14 — not `cp` from `/tmp`, not a redirect) — one file per task. That file is the input to `uip maestro case splice` in Step 5; do not unwrap, re-case, or edit it. The envelope key is `Data.CaseShape` (PascalCase, like every `Data` wrapper); the shape inside it is camelCase (`context` / `inputs` / `outputs`). Read paths:
 
 | Variable | Source |
 |---|---|
@@ -178,7 +178,7 @@ uip maestro case splice "<caseplan.json>" \
 
 It writes `data.serviceType`, `data.context` with the two sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId` minted, and the ConnectionId + FolderKey root bindings (each with its `default`; reused, not duplicated, when the connection already has a pair). Keys inside `body` are copied untouched. Re-running with the same arguments is byte-identical, so a Phase 4 repair may splice again after a fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`.
 
-Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings for a connector task — every field `splice` writes is CLI-authoritative. Never edit the spec envelope to make `splice` accept it; a rejected spec means it was saved without `caseShape` (run `case spec` again without `--skip-case-shape`). `--connection-id` must be the connection the spec was fetched for: a different id splices cleanly and fails `--strict` with `CASE_MGMT_CONNECTOR_RESOURCE_KEY_MISMATCH`.
+Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings for a connector task — every field `splice` writes is CLI-authoritative. **Do not open `connector-trigger-impl.md`, `connector-trigger/impl-json.md`, `case-spec-input-details.md`, or `bindings/impl-json.md` for this task after splicing: nothing in them applies to a spliced task.** They describe the manual transport for the event-trigger node and connector-bound rules, and the binding shape splice already wrote. Never edit the spec envelope to make `splice` accept it; a rejected spec means it was saved without `caseShape` (run `case spec` again without `--skip-case-shape`). `--connection-id` must be the connection the spec was fetched for: a different id splices cleanly and fails `--strict` with `CASE_MGMT_CONNECTOR_RESOURCE_KEY_MISMATCH`.
 
 **5.c — What stays with the agent after splice**, each as a narrow Edit on the spliced task:
 
