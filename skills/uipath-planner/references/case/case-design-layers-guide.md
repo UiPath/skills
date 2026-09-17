@@ -144,16 +144,24 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 **`wait-for-user` ↔ `user-selected-stage` pairing.** Validate enforces the pair both ways: a `wait-for-user` exit with no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
 
-**Diagnose before repairing a `user-selected-stage` lane — the source says which defect you have, and the two repairs are opposites.**
+**Repairing a `user-selected-stage` lane — diagnose first; the two repairs are opposites.**
 
-- **A person launches it** — the source says the lane is pulled aside by hand, chosen from the stage picker, that nothing triggers it automatically. The lane is CORRECT and its other half is missing: give every eligible upstream primary stage a completing `required-tasks-completed` / `wait-for-user` / `Marks Stage Complete: Yes` exit ("any active case" means every primary stage). This REPLACES that stage's existing `required-tasks-completed | exit-only | Yes` row — never a second completion row, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
-- **A decision, event, or SLA routes it** — the source says entry is automatic from a decision, that the decision itself does the routing, that nobody picks the lane by hand. The picker rule IS the defect. All four edits, or the branch dual-fires or deadlocks:
-  1. **Lane entry** — REPLACE the `user-selected-stage` row (never keep it alongside) with `selected-stage-completed("<origin stage>")` (or `selected-stage-exited(...)`), `IF` the affirmative guard on the deciding variable — `=js:(vars.<decisionVar> === "<Value>")` — and `Interrupting: Yes`.
-  2. **Origin diverting exit** — ADD a row carrying that same affirmative guard with `Marks Stage Complete: No`, so taking the branch does not also complete the stage. Its WHEN is `selected-tasks-completed("<deciding task>")` or `wait-for-connector`: `Marks Complete: No` pairs with nothing else, and `required-tasks-completed | No` is a schema error (§ Lifecycle gates). Stage exit evaluates before stage completion, so an UNguarded diverting row would fire first and the stage would never complete.
-  3. **Origin completion exit** — its guard becomes the COMPLEMENT, `=js:(vars.<decisionVar> !== "<Value>")`. Unguarded, it fires on the diverted case too; repeating the affirmative guard on both rows fires both. With more than one diverted outcome the complement excludes every diverted value.
-  4. **Orphaned picker exposure** — once no `user-selected-stage` entry remains anywhere, DROP any upstream `wait-for-user` exit that existed only to expose this lane; the pairing above fails a `wait-for-user` with no picker entry.
+| The source says | Defect | Repair |
+|---|---|---|
+| Pulled aside by hand, picked from the stage picker, nothing triggers it | The lane is correct; its other half is missing | Person-launched |
+| Entry is automatic from a decision, event, or SLA | The picker rule itself | Decision-routed |
+| Nothing either way | Assume person-launched — re-keying on an unstated fact invents a business rule | Person-launched |
 
-  A sibling outcome of the same decision already keyed this way is the shape to copy verbatim — the approve branch usually is. Source silent on who launches the lane ⟹ treat it as person-launched and keep what is authored: re-keying on an unstated fact invents a business rule.
+**Person-launched.** Give every eligible upstream primary stage a completing `required-tasks-completed` / `wait-for-user` / `Marks Stage Complete: Yes` exit ("any active case" means every primary stage). This REPLACES that stage's existing `required-tasks-completed | exit-only | Yes` row — never a second completion row, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+
+**Decision-routed.** All four edits, or the branch dual-fires or deadlocks:
+
+1. **Lane entry** — REPLACE the `user-selected-stage` row (never keep it alongside) with `selected-stage-completed("<origin stage>")` (or `selected-stage-exited(...)`), `IF` the affirmative guard on the deciding variable — `=js:(vars.<decisionVar> === "<Value>")` — and `Interrupting: Yes`.
+2. **Origin diverting exit** — ADD a row carrying that same affirmative guard with `Marks Stage Complete: No`, so taking the branch does not also complete the stage. Its WHEN is `selected-tasks-completed("<deciding task>")` or `wait-for-connector`: `Marks Complete: No` pairs with nothing else, and `required-tasks-completed | No` is a schema error (§ Lifecycle gates). Stage exit evaluates before stage completion, so an UNguarded diverting row would fire first and the stage would never complete.
+3. **Origin completion exit** — its guard becomes the COMPLEMENT, `=js:(vars.<decisionVar> !== "<Value>")`. Unguarded, it fires on the diverted case too; repeating the affirmative guard on both rows fires both. With more than one diverted outcome the complement excludes every diverted value.
+4. **Orphaned picker exposure** — once no `user-selected-stage` entry remains anywhere, DROP any upstream `wait-for-user` exit that existed only to expose this lane; the pairing above fails a `wait-for-user` with no picker entry.
+
+Copy a sibling outcome of the same decision already keyed this way verbatim — usually the approve branch.
 
 ### Secondary-lane entry shapes
 
