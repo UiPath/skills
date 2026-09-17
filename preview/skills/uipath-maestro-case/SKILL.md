@@ -3,15 +3,7 @@ name: uipath-maestro-case
 description: "TRIGGER for authoring UiPath Maestro Case plans as `<Name>.case.ts` with the reference-mode TypeScript builder SDK (`@uipath/maestro-builder-sdk/case`), compiling to `caseplan.json`, and running the `uip maestro case` check/compile/validate loop. Covers stages, tasks, rules, bindings, published-resource references, and brownfield decompile/edit/recompile. Flow builder authoring → uipath-maestro-flow; structural-core BPMN → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
-<!--
-This file is CANONICAL. Edit it here. It was a snapshot of
-UiPath/flow-builder-sdk `typescript/sdk/skill/SKILL-case.md` until
-flow-builder-sdk@b543763; the nightly re-sync that maintained it is gone
-(UiPath/flow-builder-sdk docs/SKILLS_PROMOTION_PLAN.md, phase 2).
-
-It is no longer generated either: flow-builder-sdk#737 retired the
-`gen-case-skill.mjs` template it used to be rendered from.
--->
+<!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 # UiPath Case Management — TypeScript Builder SDK
 
 Author a Case plan as TypeScript and compile it to schema V30 `caseplan.json`; a Case plan declares stages and conditions, not control-flow edges.
@@ -29,21 +21,30 @@ Use this as a router: read only the capability reference you need, then let Type
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.
 
+## API index
+
+Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
+true of the build that emitted it. `@uipath/maestro-builder-sdk` ships
+`dist/api-members.md` (keyed by field or method — `sla`) and `dist/api-index.md`
+(keyed by exported symbol — `CaseBuilder`). Match one name, not the whole file,
+then read the span: the whole declaration, doc comment included. Both cover all
+three entry points; each file's header spells the paths its rows resolve against.
+
 ## Capability router
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
-| Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](references/api.md#casebuilder-class) | `examples/ClaimReviewSLA.case.ts` |
-| Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](references/api.md#casebuilder-class) | `examples/IntakeBinding.case.ts` |
+| Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
-| Entry, exit, and data gates | `rule`, `when` | [Rules](references/api.md#rule-function) | `examples/ClaimReviewSLA.case.ts` |
-| Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](references/api.md#taskbuilder-class) | `examples/ClaimReviewSLA.case.ts` |
+| Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Human work | `action` | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
-| Timers | `waitForTimer` | [TimerSpecData](references/api.md#timerspecdata-type) | `examples/NightlyRollup.case.ts` |
+| Timers | `waitForTimer` | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
-| Case App and layout | `caseApp`, `layout` | [CaseBuilder](references/api.md#casebuilder-class) | `examples/ClaimReviewSLA.case.ts` |
+| Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile` and generated pipeline | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
 
 ## Minimal shape

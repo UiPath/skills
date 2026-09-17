@@ -3,15 +3,7 @@ name: uipath-maestro-flow
 description: "TRIGGER for authoring or editing UiPath Maestro Flow sources as `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`) and running the `uip maestro flow` check/compile/validate loop. Covers graph structure, expressions, nodes, bindings, connectors, brownfield edits, and emitted `.flow` validation. Case plans (`caseplan.json`, reference-mode) → uipath-maestro-case; structural-core BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
-<!--
-This file is CANONICAL. Edit it here. It was a snapshot of
-UiPath/flow-builder-sdk `typescript/sdk/skill/SKILL.md` until
-flow-builder-sdk@b543763; the nightly re-sync that maintained it is gone
-(UiPath/flow-builder-sdk docs/SKILLS_PROMOTION_PLAN.md, phase 2).
-
-This file is deliberately a router. Node-specific detail belongs in
-`references/`; statically checkable rules belong in the SDK's own `check`.
--->
+<!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 
 # UiPath Flow — TypeScript Builder SDK
 
