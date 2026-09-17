@@ -91,7 +91,7 @@ The procedure, per lookup field:
 3. **Run it (step 4) and filter the array yourself** for the target entity:
    ```
    uip is resources run script --connection-id "$CONN" \
-     --inline-script @./listConversations.js --output json | jq -r '.Data.Body'
+     --inline-script ./listConversations.js --output json | jq -r '.Data.Body'
    # → [ { "id": "C0A66...", "name": "...", ... }, ... ]
    # filter for name === "sanjeet-test" → its id
    ```

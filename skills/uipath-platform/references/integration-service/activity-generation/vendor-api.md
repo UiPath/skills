@@ -59,7 +59,7 @@ and send again (`run script` has no script-less mode, so the probe is the script
 
 ```bash
 uip is resources run script --connection-id <id> \
-  --inline-script @$WORK/<Name>.js --body '{}' --output json
+  --inline-script $WORK/<Name>.js --body '{}' --output json
 ```
 
 Read `Data.Body` — the vendor's own response, parsed, not an IS wrapper — and

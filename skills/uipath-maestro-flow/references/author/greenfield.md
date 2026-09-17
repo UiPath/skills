@@ -252,9 +252,10 @@ uip maestro flow registry search "<service>" --output json --output-filter "[*].
 Then pick the first match down this ladder:
 
 1. **Curated connector activity** (`uipath.connector.<key>.<op>` in the results) → use it.
-2. **Connector exists but no activity for what you need** → `core.action.http.v2` (connector mode).
-3. **No connector at all** → `core.action.http.v2` (manual mode).
-4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
+2. **Connector exists but no activity for what you need, and `uip is connectors metadata <key>` reports `v4Compatible: true`** → a generated non-catalog activity ([connector/planning.md — decision order](plugins/connector/planning.md#decision-order), authored per [connector/impl-inline.md](plugins/connector/impl-inline.md)).
+3. **Connector exists but no activity, not `v4Compatible`** → `core.action.http.v2` (connector mode).
+4. **No connector at all** → `core.action.http.v2` (manual mode).
+5. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../SKILL.md#critical-rules-universal).
 

@@ -115,7 +115,7 @@ export CONN=<connectionId>
 
 run() {   # run <script.js> <json-body>
   uip is resources run script --connection-id "$CONN" \
-    --inline-script "@$1" --body "$2" --output json | jq -r '.Data.Body'
+    --inline-script "$1" --body "$2" --output json | jq -r '.Data.Body'
 }
 
 run ./listUserGroups.js '{}'

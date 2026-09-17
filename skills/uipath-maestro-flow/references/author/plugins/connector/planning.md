@@ -13,7 +13,7 @@ Prefer higher tiers when connecting to external services:
 | Tier | Approach | When to Use |
 | --- | --- | --- |
 | 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
-| 2 | **Non-catalog activity generation** | A connector exists but lacks the curated activity, **and the connector reports `v4Compatible`** — uses the connector's IS connection for auth |
+| 2 | **Non-catalog activity generation** | A connector exists but lacks the curated activity, **and the connector reports `v4Compatible`** — uses the connector's IS connection for auth. Generate the activity with the `uipath-platform` skill, then author the node per [impl-inline.md](impl-inline.md) |
 | 3 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the curated activity, and does **not** report `v4Compatible` — uses the connector's IS connection for auth |
 | 4 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
 | 5 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
@@ -160,7 +160,10 @@ URL and payload.
 
 If the connector *does* report `v4Compatible`, prefer Tier 2 instead: a
 generated non-catalog activity keeps the operation as a first-class activity
-node rather than a hand-supplied URL.
+node rather than a hand-supplied URL. The activity comes from the
+`uipath-platform` skill's [activity-generation.md](../../../../../uipath-platform/references/integration-service/activity-generation.md)
+(hand off; never invoke it yourself), and the node is authored per
+[impl-inline.md](impl-inline.md).
 
 > **Do NOT use individual connector HTTP request nodes** (e.g., `uipath.connector.<key>.http-request`). Always use the unified `core.action.http.v2` Managed HTTP Request node for non-curated API calls.
 
