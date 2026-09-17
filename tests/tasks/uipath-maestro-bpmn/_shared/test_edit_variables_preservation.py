@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for assert_variables_extended_only (edit_check.py)."""
+"""Unit tests for the edit_check variable guards."""
 
 from __future__ import annotations
 
@@ -217,10 +217,111 @@ def test_rescope_to_a_nonexistent_element_fails() -> None:
         )
 
 
+def test_rescope_losing_the_elementid_fails() -> None:
+    # Deleting the attribute is not "only elementId changed": the canvas drops
+    # the declaration and every vars reference to it.
+    with pytest.raises(SystemExit, match="lost its elementId"):
+        assert_variables_preserved_or_rescoped(
+            grouped(ORDER_ID + "\n        " + LABEL),
+            grouped(
+                ORDER_ID
+                + '\n        <uipath:inputOutput id="Var_Label" name="Label" type="string" />'
+            ),
+        )
+
+
+def test_rescope_with_an_outside_reference_fails() -> None:
+    # A variable may follow its logic into the subprocess only when nothing
+    # outside still reads or writes it.
+    original = grouped(ORDER_ID + "\n        " + LABEL)
+    edited = ET.fromstring(
+        SUBPROCESS_TEMPLATE.replace("{root_vars}", ORDER_ID)
+        .replace(
+            "{sub_vars}",
+            '<uipath:inputOutput id="Var_Label" name="Label" type="string" elementId="Sub_Pack" />',
+        )
+        .replace(
+            "</bpmn:process>",
+            """<bpmn:serviceTask id="Task_Ship">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:output name="label" type="string" var="Var_Label" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+  </bpmn:process>""",
+        )
+    )
+    with pytest.raises(SystemExit, match="outside it still references it"):
+        assert_variables_preserved_or_rescoped(original, edited)
+
+
+def test_rescope_validates_additions() -> None:
+    with pytest.raises(SystemExit, match="non-empty name and type"):
+        assert_variables_preserved_or_rescoped(
+            grouped(ORDER_ID + "\n        " + LABEL),
+            grouped(
+                ORDER_ID
+                + "\n        "
+                + LABEL
+                + '\n        <uipath:inputOutput id="Var_Junk" elementId="Sub_Pack" />'
+            ),
+        )
+
+
+def test_rescope_addition_with_a_dangling_scope_fails() -> None:
+    with pytest.raises(SystemExit, match="dangling elementId"):
+        assert_variables_preserved_or_rescoped(
+            grouped(ORDER_ID + "\n        " + LABEL),
+            grouped(
+                ORDER_ID
+                + "\n        "
+                + LABEL
+                + '\n        <uipath:inputOutput id="Var_Junk" name="junk" type="string" elementId="Nope" />'
+            ),
+        )
+
+
+def test_rescope_body_change_fails() -> None:
+    # Everything except elementId is frozen, so a jsonSchema CDATA body cannot
+    # be emptied.
+    schema = '<uipath:inputOutput id="Var_Err" name="Error" type="jsonSchema" elementId="Process_1">{"type":"object"}</uipath:inputOutput>'
+    emptied = '<uipath:inputOutput id="Var_Err" name="Error" type="jsonSchema" elementId="Process_1"></uipath:inputOutput>'
+    with pytest.raises(SystemExit, match="only its elementId may change"):
+        assert_variables_preserved_or_rescoped(
+            grouped(ORDER_ID + "\n        " + schema),
+            grouped(ORDER_ID + "\n        " + emptied),
+        )
+
+
+def test_declaration_without_an_id_is_a_fixture_bug_on_the_original() -> None:
+    with pytest.raises(SystemExit, match="fixture bug.*has no id"):
+        assert_variables_preserved_or_rescoped(
+            grouped('<uipath:inputOutput name="OrderId" type="string" elementId="Process_1" />'),
+            grouped(ORDER_ID),
+        )
+
+
+def test_declaration_without_an_id_in_the_edit_fails() -> None:
+    with pytest.raises(SystemExit, match="edited file has no id"):
+        assert_variables_preserved_or_rescoped(
+            grouped(ORDER_ID),
+            grouped(
+                ORDER_ID
+                + '\n        <uipath:inputOutput name="Label" type="string" elementId="Process_1" />'
+            ),
+        )
+
+
+def test_empty_pristine_block_is_a_fixture_bug() -> None:
+    with pytest.raises(SystemExit, match="fixture bug"):
+        assert_variables_preserved_or_rescoped(grouped(""), grouped(ORDER_ID))
+
+
 def test_rescope_duplicating_an_id_across_blocks_fails() -> None:
     # A variable left in the root block AND copied into the subprocess is two
     # declarations of one id, which does not import.
-    with pytest.raises(SystemExit, match="declared more than once"):
+    with pytest.raises(SystemExit, match="declared more than once in the edited file"):
         assert_variables_preserved_or_rescoped(
             grouped(ORDER_ID + "\n        " + LABEL),
             grouped(

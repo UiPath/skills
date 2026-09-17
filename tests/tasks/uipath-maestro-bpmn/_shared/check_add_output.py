@@ -34,8 +34,8 @@ def main() -> None:
     _path, edited = parse_bpmn("Invoicing")
     original = load_original("edit/add_output", "Invoicing.bpmn")
 
-    # This task REQUIRES an addition; the shared guard covers the other half —
-    # pristine declarations round-trip untouched and additions are well-formed.
+    # This task REQUIRES an addition; the shared guard covers the other half:
+    # pristine declarations round-trip untouched.
     assert_variables_extended_only(original, edited)
     orig_vars = variable_ids(original)
     added_vars = variable_ids(edited) - orig_vars

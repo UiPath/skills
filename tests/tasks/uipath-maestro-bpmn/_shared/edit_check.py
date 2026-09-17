@@ -16,6 +16,7 @@ to a preserved subtree fails the check.
 from __future__ import annotations
 
 import os
+import re
 import xml.etree.ElementTree as ET
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -179,22 +180,12 @@ def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> 
     edited_pristine_order = [i for i in ids if i in pristine_set]
     if edited_pristine_order != pristine_order:
         fail("pristine variable declarations were reordered (must round-trip untouched)")
-    # Not `all_ids`: that accepts DI shape ids, which the canvas treats as
-    # orphans on import.
-    live_ids = {
-        el.attrib["id"]
-        for el in edited.iter()
-        if el.attrib.get("id") and el.tag.startswith("{" + BPMN_NS + "}")
-    }
+    live_ids = _live_bpmn_ids(edited)
     for child in new:
         child_id = child.attrib.get("id")
         if child_id in pristine_set:
             continue
-        if not child.attrib.get("name") or not child.attrib.get("type"):
-            fail(f"new variable {child_id!r} needs a non-empty name and type")
-        scope = child.attrib.get("elementId")
-        if scope and scope not in live_ids:
-            fail(f"new variable {child_id!r} has a dangling elementId {scope!r}")
+        _assert_addition_is_well_formed(child, child_id, live_ids)
 
 
 def _live_bpmn_ids(root: ET.Element) -> set[str]:
@@ -207,9 +198,23 @@ def _live_bpmn_ids(root: ET.Element) -> set[str]:
     }
 
 
-def _declarations_anywhere(root: ET.Element) -> dict[str, ET.Element]:
+def _assert_addition_is_well_formed(
+    child: ET.Element,
+    child_id: str,
+    live_ids: set[str],
+) -> None:
+    if not child.attrib.get("name") or not child.attrib.get("type"):
+        fail(f"new variable {child_id!r} needs a non-empty name and type")
+    scope = child.attrib.get("elementId")
+    if scope and scope not in live_ids:
+        fail(f"new variable {child_id!r} has a dangling elementId {scope!r}")
+
+
+def _declarations_anywhere(root: ET.Element, where: str) -> dict[str, ET.Element]:
     """Every ``uipath:variables`` child in the file, keyed by id — the root
-    block plus any subprocess-level block."""
+    block plus any subprocess-level block. ``where`` names the side being read
+    so a defect in the pristine fixture is not reported as an agent error."""
+    prefix = "fixture bug: " if where == "pristine original" else ""
     found: dict[str, ET.Element] = {}
     for block in root.iter():
         if local(block.tag) != "variables":
@@ -217,42 +222,161 @@ def _declarations_anywhere(root: ET.Element) -> dict[str, ET.Element]:
         for child in block:
             child_id = child.attrib.get("id", "")
             if not child_id:
-                fail("a uipath:variables declaration has no id")
+                fail(f"{prefix}a uipath:variables declaration in the {where} has no id")
             if child_id in found:
-                fail(f"variable id {child_id!r} is declared more than once")
+                fail(f"{prefix}variable id {child_id!r} is declared more than once in the {where}")
             found[child_id] = child
     return found
 
 
+def _frozen_view(element: ET.Element):
+    """Everything about a declaration except the one thing a re-scope may
+    move: its ``elementId``."""
+    return (
+        local(element.tag),
+        tuple(sorted((k, v) for k, v in element.attrib.items() if k != "elementId")),
+        (element.text or "").strip(),
+    )
+
+
+def _parents(root: ET.Element) -> dict[ET.Element, ET.Element]:
+    return {child: parent for parent in root.iter() for child in parent}
+
+
+def _enclosing_subprocess_ids(
+    element: ET.Element,
+    parents: dict[ET.Element, ET.Element],
+) -> list[str]:
+    """Subprocess ids containing ``element``, innermost first."""
+    ids: list[str] = []
+    current = parents.get(element)
+    while current is not None:
+        if local(current.tag) == "subProcess" and current.attrib.get("id"):
+            ids.append(current.attrib["id"])
+        current = parents.get(current)
+    return ids
+
+
+def _owning_subprocess(
+    scope: str,
+    edited: ET.Element,
+    parents: dict[ET.Element, ET.Element],
+) -> str | None:
+    """The subprocess a scope id sits in: the id itself when it names a
+    subprocess, otherwise the subprocess containing the scoped element."""
+    for element in edited.iter():
+        if element.attrib.get("id") != scope:
+            continue
+        if local(element.tag) == "subProcess":
+            return scope
+        enclosing = _enclosing_subprocess_ids(element, parents)
+        return enclosing[0] if enclosing else None
+    return None
+
+
+def _owning_element_id(
+    element: ET.Element,
+    parents: dict[ET.Element, ET.Element],
+) -> str:
+    """The nearest ancestor-or-self carrying an id — the flow node a mapping
+    child belongs to, which is what an author needs named."""
+    current: ET.Element | None = element
+    while current is not None:
+        if current.attrib.get("id"):
+            return repr(current.attrib["id"])
+        current = parents.get(current)
+    return repr(local(element.tag))
+
+
+def _referencing_elements(
+    variable_id: str,
+    edited: ET.Element,
+) -> list[ET.Element]:
+    """Elements whose own attributes or text reference ``variable_id`` —
+    ``var="<id>"`` or a ``vars.<id>`` expression, including inside a CDATA
+    mapping body. Declarations are not references, so ``uipath:variables``
+    blocks are skipped."""
+    declared: set[int] = set()
+    for block in edited.iter():
+        if local(block.tag) == "variables":
+            for node in block.iter():
+                declared.add(id(node))
+            declared.add(id(block))
+    pattern = re.compile(r"vars\.%s(?![\w.-])" % re.escape(variable_id))
+    matches: list[ET.Element] = []
+    for element in edited.iter():
+        if id(element) in declared:
+            continue
+        if element.attrib.get("var") == variable_id:
+            matches.append(element)
+            continue
+        blob = " ".join(list(element.attrib.values()) + [element.text or ""])
+        if pattern.search(blob):
+            matches.append(element)
+    return matches
+
+
 def assert_variables_preserved_or_rescoped(original: ET.Element, edited: ET.Element) -> None:
-    """Every pristine declaration must survive with its kind, ``name`` and
-    ``type`` intact, anywhere in the file. Only ``elementId`` may change, and
-    it must still name a live BPMN element.
+    """Every pristine declaration must survive somewhere in the file, frozen
+    except for its ``elementId``. A re-scope must keep the variable reachable:
+    the new scope must name a live BPMN element, and moving a variable into a
+    subprocess is allowed only when nothing outside that subprocess still
+    references it.
 
     Looser than ``assert_variables_extended_only`` on purpose: an edit that
-    groups nodes into a subprocess may re-scope a variable into that
-    subprocess's own block, which the skill documents as importing cleanly.
+    groups nodes into a subprocess may re-scope that subprocess's own
+    variables, which structural-bpmn.md documents as importing cleanly.
     Freezing the root block would fail that correct edit."""
-    pristine = _declarations_anywhere(original)
+    pristine = _declarations_anywhere(original, "pristine original")
     if not pristine:
-        fail("fixture bug: no uipath:variables declarations in pristine original")
-    current = _declarations_anywhere(edited)
+        fail("fixture bug: no uipath:variables declarations in the pristine original")
+    current = _declarations_anywhere(edited, "edited file")
     live_ids = _live_bpmn_ids(edited)
+    parents = _parents(edited)
+
     for child_id, child in pristine.items():
         match = current.get(child_id)
         if match is None:
             fail(f"pristine variable {child_id!r} was dropped by the edit")
-        for attribute in ("name", "type"):
-            if child.attrib.get(attribute) != match.attrib.get(attribute):
-                fail(
-                    f"pristine variable {child_id!r} changed its {attribute} "
-                    f"({child.attrib.get(attribute)!r} -> {match.attrib.get(attribute)!r})"
-                )
-        if local(child.tag) != local(match.tag):
-            fail(f"pristine variable {child_id!r} changed kind (input/output/inputOutput)")
+        if _frozen_view(child) != _frozen_view(match):
+            for attribute in ("name", "type"):
+                if child.attrib.get(attribute) != match.attrib.get(attribute):
+                    fail(
+                        f"pristine variable {child_id!r} changed its {attribute} "
+                        f"({child.attrib.get(attribute)!r} -> {match.attrib.get(attribute)!r})"
+                    )
+            if local(child.tag) != local(match.tag):
+                fail(f"pristine variable {child_id!r} changed kind (input/output/inputOutput)")
+            fail(
+                f"pristine variable {child_id!r} was modified — only its "
+                "elementId may change"
+            )
         scope = match.attrib.get("elementId")
+        if child.attrib.get("elementId") and not scope:
+            fail(
+                f"pristine variable {child_id!r} lost its elementId (the canvas "
+                "drops the declaration and every vars reference to it)"
+            )
         if scope and scope not in live_ids:
             fail(f"variable {child_id!r} has a dangling elementId {scope!r}")
+        if not scope or scope == child.attrib.get("elementId"):
+            continue
+        subprocess_id = _owning_subprocess(scope, edited, parents)
+        if subprocess_id is None:
+            continue
+        for element in _referencing_elements(child_id, edited):
+            if subprocess_id in _enclosing_subprocess_ids(element, parents):
+                continue
+            fail(
+                f"variable {child_id!r} was re-scoped into subprocess "
+                f"{subprocess_id!r} while {_owning_element_id(element, parents)} "
+                "outside it still references it"
+            )
+
+    for child_id, child in current.items():
+        if child_id in pristine:
+            continue
+        _assert_addition_is_well_formed(child, child_id, live_ids)
 
 
 def flows(root: ET.Element) -> list[tuple[str, str, str]]:
