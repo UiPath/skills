@@ -83,8 +83,7 @@ def test_removed_pristine_fails() -> None:
 
 
 def test_duplicate_ids_fail() -> None:
-    # Byte-identical duplicate: the pristine round-trip loop passes, so the
-    # unique-ids branch is what fires.
+    # Duplicate ids fail before the pristine round-trip loop runs.
     with pytest.raises(SystemExit, match="unique non-empty ids"):
         assert_variables_extended_only(
             tree(),
