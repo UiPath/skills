@@ -154,29 +154,41 @@ Exactly one of `--script-ref` or `--inline-script` is accepted; `--connector-key
 
 Use the global `--output-filter` flag with a JMESPath expression to extract specific fields from large responses if possible via JMESPath.
 
+Expressions are evaluated against `Data`, so they start at `Data` and never carry a `Data.` prefix; a `Data`-prefixed path resolves to null. `run list` returns `Data` as an object (`items`, `Pagination`), while `resources list` returns a flat array. Probe once with `--output-filter "type(@)"`, then `"keys(@)"` on an object, before writing a projection.
+
 ```bash
 # Extract only id, name, and email from a user list
 uip is resources run list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
   --connection-id "<CONNECTION_ID>" \
   --output json \
-  --output-filter "Data[].{id: id, name: name, email: profile.email}"
+  --output-filter "items[].{id: id, name: name, email: profile.email}"
 ```
 
-Common JMESPath patterns:
+Common JMESPath patterns for `run list`; drop the `items` prefix where `Data` is already an array:
 
 | Pattern | Effect |
 |---|---|
-| `Data[]` | Return all records (unwrap the Data envelope) |
-| `Data[].name` | Return just the `name` field from each record |
-| `Data[].{id: id, name: name}` | Return selected fields as objects |
-| `Data[?status=='active']` | Filter records by field value |
-| `Data[0]` | Return only the first record |
+| `items[]` | Return every record on this page |
+| `items[].name` | Return just the `name` field from each record |
+| `items[].{id: id, name: name}` | Return selected fields as objects |
+| `items[?status=='active']` | Filter records by field value |
+| `items[0]` | Return only the first record |
+
+> **A filter sees one page.** The filter runs after a page is fetched, so a predicate matching nothing yields `Data: []`, which means "not on this page" and never "not in the collection". Project `Pagination` alongside the predicate (`"{hit: items[?name=='<target>'].id, next: Pagination}"`) so one call answers both questions.
 
 ---
 
 ## Pagination
 
 `uip is resources run list` may not return all results in a single call. **Always check for pagination** when searching for a specific item or listing all items.
+
+### Narrow before you page
+
+A tenant directory (Slack channels, Teams users, Drive files) runs to thousands of rows at up to 1000 per page, so cut the set with what the resource itself declares before looping:
+
+1. **`reference.filterPattern`**, if the field declares one. That is one targeted call, no loop. See [reference-resolution.md — Search References](reference-resolution.md#search-references-filterpattern).
+2. **The operation's own query parameters.** `uip is resources describe "<key>" "<resource>" --operation List` lists every accepted `--query` key under `parameters`. Most are not a `filterPattern` and so are easy to miss: Slack `conversations` takes `exclude_archived`, `types` and `team_id`. Pass the ones that exclude rows you do not want. Keys the operation does not declare (`searchTerm=`, `where=`, `filter=`) are silently ignored.
+3. **Only then paginate**, per the rules below.
 
 ### Pagination rules
 
@@ -220,6 +232,25 @@ Example response:
   }
 }
 ```
+
+**Run the whole loop in one call.** A page per turn is the largest time sink in reference resolution: a target on page 8 costs eight turns of generation. One bounded shell loop costs one turn, short-circuits on the hit, and stops when the token stalls:
+
+```bash
+TOKEN=""
+for i in $(seq 1 20); do
+  page=$(uip is resources run list "<connector-key>" "<resource>" --connection-id "<id>" \
+    ${TOKEN:+--query "nextPage=$TOKEN"} --output json \
+    --output-filter "{hit: items[?name=='<target>'].id, next: Pagination}")
+  read -r ID NEXT <<< "$(printf '%s' "$page" | python3 -c \
+    'import json,sys; d=json.load(sys.stdin)["Data"]; print((d["hit"] or ["-"])[0], d["next"].get("NextPageToken","-"))')"
+  echo "page $i: id=$ID next=$NEXT"
+  [ "$ID" = "-" ] || break
+  [ "$NEXT" != "-" ] && [ "$NEXT" != "$TOKEN" ] || { echo "STOP: page $i did not advance"; break; }
+  TOKEN=$NEXT
+done
+```
+
+**A repeated `NextPageToken` means the connector's paging is broken, not that the loop should continue.** When the token comes back unchanged while `HasMore` stays `"true"`, every further page is the same page (observed on Slack `curated_users`: pages 2 and 3 byte-identical). Stop on the repeat and report the field as unresolvable. Do not spend the remaining budget re-reading one page, and do not write the display name instead.
 
 ### Anti-patterns
 
