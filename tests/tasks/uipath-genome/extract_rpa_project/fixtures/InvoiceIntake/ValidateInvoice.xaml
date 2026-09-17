@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="ValidateInvoice" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_VendorName" Type="InArgument(x:String)" />
+    <x:Property Name="in_Amount" Type="InArgument(x:Double)" />
+    <x:Property Name="in_ApprovedVendors" Type="InArgument(sd:DataTable)" />
+    <x:Property Name="out_IsApproved" Type="OutArgument(x:Boolean)" />
+    <x:Property Name="out_Reason" Type="OutArgument(x:String)" />
+  </x:Members>
+  <Sequence DisplayName="Validate Invoice">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:Boolean" Name="vendorKnown" />
+      <Variable x:TypeArguments="x:Double" Name="vendorLimit" />
+    </Sequence.Variables>
+    <Assign DisplayName="Vendor in approved list?">
+      <Assign.To><OutArgument x:TypeArguments="x:Boolean">[vendorKnown]</OutArgument></Assign.To>
+      <Assign.Value><InArgument x:TypeArguments="x:Boolean">[in_ApprovedVendors.AsEnumerable().Any(Function(r) r("VendorName").ToString.Trim.ToLower = in_VendorName.Trim.ToLower)]</InArgument></Assign.Value>
+    </Assign>
+    <If Condition="[Not vendorKnown]" DisplayName="Unknown vendor">
+      <If.Then>
+        <Sequence>
+          <Assign><Assign.To><OutArgument x:TypeArguments="x:Boolean">[out_IsApproved]</OutArgument></Assign.To><Assign.Value><InArgument x:TypeArguments="x:Boolean">False</InArgument></Assign.Value></Assign>
+          <Assign><Assign.To><OutArgument x:TypeArguments="x:String">[out_Reason]</OutArgument></Assign.To><Assign.Value><InArgument x:TypeArguments="x:String">["Vendor not in approved vendor list"]</InArgument></Assign.Value></Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence>
+          <Assign DisplayName="Read vendor credit limit">
+            <Assign.To><OutArgument x:TypeArguments="x:Double">[vendorLimit]</OutArgument></Assign.To>
+            <Assign.Value><InArgument x:TypeArguments="x:Double">[CDbl(in_ApprovedVendors.AsEnumerable().First(Function(r) r("VendorName").ToString.Trim.ToLower = in_VendorName.Trim.ToLower)("CreditLimit"))]</InArgument></Assign.Value>
+          </Assign>
+          <If Condition="[in_Amount &lt;= 0 OrElse in_Amount &gt; vendorLimit OrElse in_Amount &gt; 25000]" DisplayName="Amount within limits?">
+            <If.Then>
+              <Sequence>
+                <Assign><Assign.To><OutArgument x:TypeArguments="x:Boolean">[out_IsApproved]</OutArgument></Assign.To><Assign.Value><InArgument x:TypeArguments="x:Boolean">False</InArgument></Assign.Value></Assign>
+                <Assign><Assign.To><OutArgument x:TypeArguments="x:String">[out_Reason]</OutArgument></Assign.To><Assign.Value><InArgument x:TypeArguments="x:String">[If(in_Amount &lt;= 0, "Amount must be positive", If(in_Amount &gt; 25000, "Amount exceeds auto-approval ceiling of 25000", "Amount exceeds vendor credit limit of " &amp; vendorLimit.ToString))]</InArgument></Assign.Value></Assign>
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <Sequence>
+                <Assign><Assign.To><OutArgument x:TypeArguments="x:Boolean">[out_IsApproved]</OutArgument></Assign.To><Assign.Value><InArgument x:TypeArguments="x:Boolean">True</InArgument></Assign.Value></Assign>
+                <Assign><Assign.To><OutArgument x:TypeArguments="x:String">[out_Reason]</OutArgument></Assign.To><Assign.Value><InArgument x:TypeArguments="x:String">[""]</InArgument></Assign.Value></Assign>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+  </Sequence>
+</Activity>

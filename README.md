@@ -112,6 +112,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
+| `uipath-genome` | Preview |
 | `uipath-governance` | In-development |
 | `uipath-human-in-the-loop` | In-development |
 | `uipath-insights` | Preview |
@@ -131,9 +132,9 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-troubleshoot` | Preview |
 
 **Status legend:**
-- **Stable** â€” Stable, production-ready surface; safe for production.
-- **Preview** â€” Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change.
-- **In-development** â€” Skill itself is incomplete or unstable; coverage is partial.
+- **Stable** — Stable, production-ready surface; safe for production.
+- **Preview** — Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change.
+- **In-development** — Skill itself is incomplete or unstable; coverage is partial.
 <!-- END GENERATED SKILL STATUS -->
 
 ## Agents

@@ -97,9 +97,10 @@
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
-# Genome skill
-/skills/uipath-genome-authoring/ @danmunteanu1
-/skills/uipath-genome-extraction/ @danmunteanu1
+# Genome skill (extract / author / execute automation blueprints)
+/skills/uipath-genome/ @danmunteanu1
+/tests/tasks/uipath-genome/ @danmunteanu1
+/tests/tasks/activation/uipath-genome.jsonl @danmunteanu1
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team

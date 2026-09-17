@@ -1,0 +1,14 @@
+{"id": "uipath-genome-001", "prompt": "Extract a genome from the UiPath project in ./InvoiceIntake", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-002", "prompt": "We inherited this UiPath solution from a vendor. Document what it actually does at the process level and per project before we touch it.", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-003", "prompt": "Reverse-engineer this Studio project into a blueprint we could rebuild from without the source", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-004", "prompt": "Create a genome for an automation that reads supplier invoices from a mailbox, validates them against SAP, and posts approved ones", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-005", "prompt": "Build this genome: ./artemis-2-mission-monitor-genome.md", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-006", "prompt": "Implement the automation described in invoice-processing-genome.md", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-007", "prompt": "I want a written spec of what this .flow and the two processes it calls do, with the business rules and the data passed between them", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-008", "prompt": "Turn this description into a UiPath automation genome: every Monday pull the open tickets from ServiceNow, summarize them, and email the team lead", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-009", "prompt": "Document the InvoiceOps.uipx solution as a genome so we can migrate it later", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-010", "prompt": "Update the genome in ./order-to-cash-genome.md: add a step for credit checks and split the ERP posting into its own component", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-011", "prompt": "What does this BPMN process and its agents do? Give me a high-level and low-level blueprint I can hand to another team", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-012", "prompt": "Execute this genome file and validate the acceptance criteria when you're done", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-013", "prompt": "Generate a genome blueprint from these XAML workflows, generalizing the hardcoded paths and queue names into configuration questions", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-014", "prompt": "Extract a genome from this coded agent project and the API workflow it calls", "expected_skill": "uipath-genome"}

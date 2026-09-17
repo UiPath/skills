@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:snm="clr-namespace:System.Net.Mail;assembly=System.Net.Mail" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_MailboxFolder" Type="InArgument(x:String)" />
+  </x:Members>
+  <Sequence DisplayName="Invoice Intake" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:List(snm:MailMessage)" Name="mailMessages" />
+      <Variable x:TypeArguments="sd:DataTable" Name="dt_ApprovedVendors" />
+      <Variable x:TypeArguments="sd:DataTable" Name="dt_Results" />
+      <Variable x:TypeArguments="x:String" Name="attachmentPath" />
+      <Variable x:TypeArguments="x:Boolean" Name="isApproved" />
+      <Variable x:TypeArguments="x:String" Name="rejectionReason" />
+      <Variable x:TypeArguments="x:Double" Name="invoiceAmount" />
+      <Variable x:TypeArguments="x:String" Name="vendorName" />
+      <Variable x:TypeArguments="x:String" Name="invoiceNumber" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log start" Level="Info" Message="[&quot;Invoice intake started for folder &quot; &amp; in_MailboxFolder]" />
+    <ui:ReadRange DisplayName="Read approved vendor list" WorkbookPath="[&quot;C:\Finance\Config\ApprovedVendors.xlsx&quot;]" SheetName="Vendors" Range="" AddHeaders="True" DataTable="[dt_ApprovedVendors]" />
+    <ui:RetryScope DisplayName="Fetch invoices from mailbox" NumberOfRetries="3" RetryInterval="00:00:30">
+      <ui:RetryScope.ActivityBody>
+        <ui:GetIMAPMailMessages DisplayName="Get unread AP mail" Server="imap.contoso.com" Port="993" Email="ap-invoices@contoso.com" MailFolder="[in_MailboxFolder]" OnlyUnreadMessages="True" Top="50" Messages="[mailMessages]" />
+      </ui:RetryScope.ActivityBody>
+    </ui:RetryScope>
+    <ForEach x:TypeArguments="snm:MailMessage" DisplayName="For each invoice email" Values="[mailMessages]">
+      <ActivityAction x:TypeArguments="snm:MailMessage">
+        <ActivityAction.Argument>
+          <DelegateInArgument x:TypeArguments="snm:MailMessage" Name="mail" />
+        </ActivityAction.Argument>
+        <TryCatch DisplayName="Process one invoice email">
+          <TryCatch.Try>
+            <Sequence DisplayName="Handle attachments">
+              <If Condition="[mail.Attachments.Count = 0]" DisplayName="Has attachment?">
+                <If.Then>
+                  <Sequence>
+                    <ui:LogMessage Level="Warn" Message="[&quot;No attachment on mail from &quot; &amp; mail.From.Address &amp; &quot; - skipping&quot;]" />
+                    <ui:SendMail DisplayName="Notify sender: attachment missing" To="[mail.From.Address]" Subject="Invoice not processed - attachment missing" Body="Your email did not contain a PDF invoice. Please resend with the invoice attached." />
+                  </Sequence>
+                </If.Then>
+                <If.Else>
+                  <Sequence>
+                    <ui:SaveAttachments DisplayName="Save PDF attachment" Message="[mail]" FolderPath="C:\Finance\Invoices\Inbox" Filter="*.pdf" Attachments="[{attachmentPath}]" />
+                    <InvokeWorkflowFile DisplayName="Extract invoice fields" WorkflowFileName="ExtractInvoiceFields.xaml">
+                      <InvokeWorkflowFile.Arguments>
+                        <InArgument x:TypeArguments="x:String" x:Key="in_PdfPath">[attachmentPath]</InArgument>
+                        <OutArgument x:TypeArguments="x:String" x:Key="out_VendorName">[vendorName]</OutArgument>
+                        <OutArgument x:TypeArguments="x:String" x:Key="out_InvoiceNumber">[invoiceNumber]</OutArgument>
+                        <OutArgument x:TypeArguments="x:Double" x:Key="out_Amount">[invoiceAmount]</OutArgument>
+                      </InvokeWorkflowFile.Arguments>
+                    </InvokeWorkflowFile>
+                    <InvokeWorkflowFile DisplayName="Validate invoice" WorkflowFileName="ValidateInvoice.xaml">
+                      <InvokeWorkflowFile.Arguments>
+                        <InArgument x:TypeArguments="x:String" x:Key="in_VendorName">[vendorName]</InArgument>
+                        <InArgument x:TypeArguments="x:Double" x:Key="in_Amount">[invoiceAmount]</InArgument>
+                        <InArgument x:TypeArguments="sd:DataTable" x:Key="in_ApprovedVendors">[dt_ApprovedVendors]</InArgument>
+                        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_IsApproved">[isApproved]</OutArgument>
+                        <OutArgument x:TypeArguments="x:String" x:Key="out_Reason">[rejectionReason]</OutArgument>
+                      </InvokeWorkflowFile.Arguments>
+                    </InvokeWorkflowFile>
+                    <If Condition="[isApproved]" DisplayName="Approved?">
+                      <If.Then>
+                        <ui:AddQueueItem DisplayName="Queue for ERP posting" QueueName="ERP_InvoicePosting" Reference="[invoiceNumber]" Priority="Normal">
+                          <ui:AddQueueItem.ItemInformation>
+                            <InArgument x:TypeArguments="x:String" x:Key="VendorName">[vendorName]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="InvoiceNumber">[invoiceNumber]</InArgument>
+                            <InArgument x:TypeArguments="x:Double" x:Key="Amount">[invoiceAmount]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="PdfPath">[attachmentPath]</InArgument>
+                          </ui:AddQueueItem.ItemInformation>
+                        </ui:AddQueueItem>
+                      </If.Then>
+                      <If.Else>
+                        <ui:SendMail DisplayName="Notify AP lead of rejection" To="ap-lead@contoso.com" Subject="[&quot;Invoice &quot; &amp; invoiceNumber &amp; &quot; rejected&quot;]" Body="[&quot;Vendor: &quot; &amp; vendorName &amp; vbCrLf &amp; &quot;Amount: &quot; &amp; invoiceAmount.ToString &amp; vbCrLf &amp; &quot;Reason: &quot; &amp; rejectionReason]" />
+                      </If.Else>
+                    </If>
+                    <ui:AppendRange DisplayName="Log result row" WorkbookPath="C:\Finance\Invoices\IntakeLog.xlsx" SheetName="Log" DataTable="[dt_Results]" />
+                  </Sequence>
+                </If.Else>
+              </If>
+            </Sequence>
+          </TryCatch.Try>
+          <TryCatch.Catches>
+            <Catch x:TypeArguments="ui:BusinessRuleException">
+              <ActivityAction x:TypeArguments="ui:BusinessRuleException">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="ui:BusinessRuleException" Name="bre" />
+                </ActivityAction.Argument>
+                <ui:LogMessage Level="Warn" Message="[&quot;Business rule failure for &quot; &amp; invoiceNumber &amp; &quot;: &quot; &amp; bre.Message]" />
+              </ActivityAction>
+            </Catch>
+            <Catch x:TypeArguments="s:Exception" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+              <ActivityAction x:TypeArguments="s:Exception">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+                </ActivityAction.Argument>
+                <Sequence>
+                  <ui:LogMessage Level="Error" Message="[&quot;Failed to process mail from &quot; &amp; mail.From.Address &amp; &quot;: &quot; &amp; ex.Message]" />
+                  <ui:MoveFile DisplayName="Move PDF to failed folder" Path="[attachmentPath]" Destination="C:\Finance\Invoices\Failed" Overwrite="True" />
+                </Sequence>
+              </ActivityAction>
+            </Catch>
+          </TryCatch.Catches>
+        </TryCatch>
+      </ActivityAction>
+    </ForEach>
+    <ui:LogMessage DisplayName="Log end" Level="Info" Message="[&quot;Invoice intake finished. Emails processed: &quot; &amp; mailMessages.Count.ToString]" />
+  </Sequence>
+</Activity>
