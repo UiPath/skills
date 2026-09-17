@@ -230,6 +230,16 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 
 Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` fallback checks structure only, so conditions/SLA remain covered by authoritative full validation in Phase 4.
 
+### Which profile in which phase
+
+Section-end validates in Phases 2–3 use the plain profile — a half-built plan fails strict by design. The Phase 3 exit and every Phase 4 validate carry `--strict --sdd sdd.md --output json`, and no plain-profile result after Phase 3 entry is ever quoted as a close: a `Valid` without `"Profile": "strict"` does not close the build (SKILL.md Rule 7).
+
+**Run the strict validate alone — never chained with another validate in one command.** Two response envelopes on one stdout get read as the first one, so the second result is silently discarded.
+
+### Version guard — `--strict` / `--sdd` require CLI 1.202
+
+Fall back to plain `validate` only when the response is `invalid_argument` naming `--strict` or `--sdd` as an unknown option. Exit 3 alone is insufficient, and a strict *failure* is never a reason to drop the flags. On fallback, record `strict profile unavailable on CLI <version>` in `build-issues.md` and in the completion report, and run [implementation.md § Step 12](implementation.md#step-12--end-of-phase-3-validator-pass) Checks 1–15 by hand.
+
 ---
 
 ## uip maestro case format
