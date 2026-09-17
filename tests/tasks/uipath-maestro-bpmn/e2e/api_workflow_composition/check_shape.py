@@ -4,22 +4,33 @@ resource into the BPMN through the REAL runtime contract, not the
 resolvable-looking-but-broken registry template.
 
 Per row in composition.RESOURCES:
+  0. (API-workflow row only) The resource's own Workflow.json is actually
+     authored -- non-empty input schema, an output schema that declares the
+     row's output, and at least one task that sends a `response` -- so an
+     untouched `uip api-workflow init` scaffold cannot earn shape credit
+     just because the BPMN wiring around it happens to be correct.
   1. The resource's project is present inside the submitted solution AND
      registered in its `.uipx`.
   2. The wrapper serviceTask carries exactly the row's required context
      fields, correctly shaped -- for the API-workflow row (SKILL.md rule 18 /
      references/registry-workflow.md): `releaseKey` bound via
      `=bindings.<id>` to a `resource="process" propertyAttribute="Key"`
-     binding whose `default` matches the resource's REAL process Key, and a
-     LITERAL `folderKey` matching the seeded folder's REAL FolderKey GUID.
-     None of the broken template's `folderId`/`folderPath`/`name` fields
-     survive.
-  3. `JobArguments` passes the caller's value by reference (`=vars.<id>` or
-     `=js:`), never a literal.
+     binding whose `default` matches the resource's REAL process Key
+     (cross-tenant match: fails CLOSED -- a resolver that cannot reach the
+     tenant raises rather than abstaining, and "no deployed process found"
+     is itself a problem, not a skip), and a LITERAL `folderKey` matching
+     the seeded folder's REAL FolderKey GUID. None of the broken template's
+     `folderId`/`folderPath`/`name` fields survive.
+  3. `JobArguments` passes the caller's value BY REFERENCE: at least one
+     value is `=vars.<id>` or `=js:...vars.<id>...` naming an id actually
+     declared in the process -- never a literal, and never a `=js:` escape
+     with no `vars.` reference in it at all.
   4. Every `vars.<id>` read anywhere in the process is declared.
   5. The invoking node's own output variable is the one an end event maps
-     out, and that end-event mapping publishes the row's declared output --
-     so the exposed value cannot come from an unrelated node.
+     out, that end-event mapping publishes the row's declared output, and no
+     OTHER element (a decoy scriptTask, say) also writes to that same
+     node-scoped variable -- so the exposed value cannot come from an
+     unrelated node.
   6. `entry-points.json` publishes the process's declared input(s) and every
      row's declared output.
   7. LIVE: `uip maestro bpmn validate` reports `Status: "Valid"` with no
@@ -72,6 +83,61 @@ PROCESSES_LIST_TIMEOUT = 60
 # the resolvers the caller supplies)
 # ---------------------------------------------------------------------------
 
+def check_api_workflow_authored(
+    project_dir: Optional[Path], row: dict[str, Any]
+) -> list[str]:
+    """The API-workflow row's own resource contract: an untouched `uip
+    api-workflow init` scaffold (input/output schemas both `{}`, no `do[]`
+    task ever calling `response`) must not earn shape credit just because
+    the BPMN wiring around it is correct. Only meaningful for this row's
+    kind -- a future non-API-workflow row must define its own contract
+    rather than reuse this one (see composition.py's module docstring)."""
+
+    if row["kind"] != "API workflow" or project_dir is None:
+        return []
+
+    workflow_path = project_dir / "Workflow.json"
+    if not workflow_path.is_file():
+        return [f"{row['kind']}: {workflow_path} not found"]
+    try:
+        workflow = json.loads(workflow_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        return [f"{row['kind']}: {workflow_path} is not valid JSON: {error}"]
+
+    def schema_properties(section: str) -> dict[str, Any]:
+        node = workflow.get(section) or {}
+        schema = node.get("schema") or {}
+        document = schema.get("document") or {}
+        return document.get("properties") or {}
+
+    def has_response_task(node: Any) -> bool:
+        if isinstance(node, dict):
+            if "response" in node:
+                return True
+            return any(has_response_task(value) for value in node.values())
+        if isinstance(node, list):
+            return any(has_response_task(item) for item in node)
+        return False
+
+    problems: list[str] = []
+    if not schema_properties("input"):
+        problems.append(
+            f"{row['kind']}: {workflow_path} declares no input.schema.document.properties "
+            "-- looks like an unauthored `uip api-workflow init` scaffold"
+        )
+    if row["output"] not in schema_properties("output"):
+        problems.append(
+            f"{row['kind']}: {workflow_path} declares no output for {row['output']!r} "
+            "-- looks like an unauthored `uip api-workflow init` scaffold"
+        )
+    if not has_response_task(workflow.get("do") or []):
+        problems.append(
+            f"{row['kind']}: {workflow_path} has no task with a \"response\" key "
+            "anywhere in do[] -- the workflow never sends a Response, looks unauthored"
+        )
+    return problems
+
+
 def check_resource_row(
     *,
     root: Path,
@@ -96,6 +162,8 @@ def check_resource_row(
             f"{row['kind']}: project at {project_dir} is not registered in "
             f"{uipx_path.name}"
         )
+
+    problems += check_api_workflow_authored(project_dir, row)
 
     if process is None:
         problems.append(f"{row['kind']}: BPMN process element not found")
@@ -148,13 +216,27 @@ def check_resource_row(
                     f"propertyAttribute={binding.get('propertyAttribute')!r}"
                 )
             default = binding.get("default", "") or ""
-            resolved = resolve_release_key(binding)
-            if resolved is not None and default.casefold() != resolved.casefold():
+            try:
+                resolved = resolve_release_key(binding)
+            except composition.CompositionError as error:
                 problems.append(
-                    f"{row['kind']}: binding {binding_id} default {default!r} "
-                    f"does not match the resource's real process Key "
-                    f"{resolved!r}"
+                    f"{row['kind']}: could not resolve the resource's real "
+                    f"process Key: {error}"
                 )
+            else:
+                if resolved is None:
+                    pass  # abstained -- structural-only mode (never_resolves)
+                elif not resolved:
+                    problems.append(
+                        f"{row['kind']}: no deployed process found for "
+                        f"binding {binding_id!r} in the seeded folder"
+                    )
+                elif default.casefold() not in {str(key).casefold() for key in resolved}:
+                    problems.append(
+                        f"{row['kind']}: binding {binding_id} default {default!r} "
+                        f"does not match the resource's real process Key(s) "
+                        f"{sorted(resolved)!r}"
+                    )
         elif spec["mode"] == "literal_guid":
             if value.startswith("="):
                 problems.append(
@@ -164,12 +246,19 @@ def check_resource_row(
             elif not composition.GUID_RE.match(value):
                 problems.append(f"{row['kind']}: {field_name} is not a GUID: {value!r}")
             else:
-                resolved = resolve_folder_key()
-                if resolved is not None and value.casefold() != resolved.casefold():
+                try:
+                    resolved = resolve_folder_key()
+                except composition.CompositionError as error:
                     problems.append(
-                        f"{row['kind']}: {field_name} {value!r} does not match "
-                        f"the seeded folder's real FolderKey {resolved!r}"
+                        f"{row['kind']}: could not resolve the seeded folder's "
+                        f"real Key: {error}"
                     )
+                else:
+                    if resolved is not None and value.casefold() != resolved.casefold():
+                        problems.append(
+                            f"{row['kind']}: {field_name} {value!r} does not match "
+                            f"the seeded folder's real FolderKey {resolved!r}"
+                        )
         else:  # pragma: no cover - table author error, not a submission defect
             raise composition.CompositionError(f"unknown context-field mode {spec['mode']!r}")
 
@@ -185,11 +274,30 @@ def check_resource_row(
     if not job_args:
         problems.append(f"{row['kind']}: {node_id!r} has no JobArguments input")
     else:
-        refs = composition.var_refs_in(job_args)
-        if not refs and "=js:" not in job_args:
+        # A legitimate `=vars.<id>` or `=js:` value must both look like a
+        # reference AND actually name a declared process variable -- a bare
+        # `=js:'literal'` (no `vars.` anywhere) or a `=vars.` typo pointing at
+        # nothing must not pass just because SOME string in the JSON blob
+        # happens to contain "vars." (rule 18 / this suite's vector 4).
+        try:
+            parsed = json.loads(job_args)
+        except json.JSONDecodeError:
+            parsed = None
+        candidates = (
+            [v for v in parsed.values() if isinstance(v, str)]
+            if isinstance(parsed, dict)
+            else [job_args]
+        )
+        by_reference = any(
+            (value.startswith("=vars.") or value.startswith("=js:"))
+            and (composition.var_refs_in(value) & set(declared))
+            for value in candidates
+        )
+        if not by_reference:
             problems.append(
                 f"{row['kind']}: JobArguments must reference a process "
-                f"variable (=vars.<id> or =js:), got {job_args!r}"
+                f"variable (=vars.<id>, or =js: containing vars.<declared-id>), "
+                f"got {job_args!r}"
             )
 
     node_output_var_ids = {
@@ -203,6 +311,22 @@ def check_resource_row(
             f"scoped to {node_id!r} (elementId must match the invoking node)"
         )
     else:
+        # A decoy element (a scriptTask, another connector, ...) could write
+        # to this SAME node-scoped variable itself, faking per-node
+        # provenance without the resource ever having produced the value.
+        # Only the invoking node may write its own output var.
+        foreign_writes = [
+            write
+            for write in composition.all_output_writes(process)
+            if write.get("var") in node_output_var_ids and write.get("owner") != node_id
+        ]
+        if foreign_writes:
+            problems.append(
+                f"{row['kind']}: variable(s) {sorted(node_output_var_ids)} are "
+                f"also written by {sorted({w['owner'] for w in foreign_writes})} "
+                f"-- only {node_id!r} may write its own output"
+            )
+
         end_mappings = composition.end_event_mappings(process)
         end_sources = {m.get("source", "") for m in end_mappings}
         matched_targets = {
@@ -267,7 +391,7 @@ def check_published_contract(
 
     if not start_input_names:
         problems.append("no process input is declared at all")
-    if not out_props and not any(row["output"] for row in resources):
+    if not out_props:
         problems.append("entry-points.json declares no output at all")
 
     return problems
@@ -341,21 +465,41 @@ def assert_validate_clean(validate_payload: dict) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def live_folder_key_resolver(folder_path: str) -> composition.FolderKeyResolver:
+    """Never abstains on a live-tenant hiccup: a failed `folders get` (or a
+    non-string `Key` in its response) raises CompositionError, which
+    check_resource_row turns into a hard problem rather than a printed
+    `WARN` nobody reads and a silently-skipped comparison."""
+
     def resolve() -> Optional[str]:
         completed = run_cli(["uip", "or", "folders", "get", folder_path], timeout=FOLDERS_GET_TIMEOUT)
         try:
             _payload, data = payload_data(completed, "folders get", require_success=True)
         except CheckFailure as error:
-            print(f"WARN: could not resolve the seeded folder's real Key: {error}")
-            return None
+            raise composition.CompositionError(
+                f"could not resolve the seeded folder's real Key: {error}"
+            ) from error
         key = get_ci(data, "Key")
-        return key if isinstance(key, str) else None
+        if not isinstance(key, str):
+            raise composition.CompositionError(
+                f"folders get returned a non-string Key: {key!r}"
+            )
+        return key
 
     return resolve
 
 
 def live_release_key_resolver(folder_path: str, project_name_hint: str) -> composition.ReleaseKeyResolver:
-    def resolve(_binding: dict[str, str]) -> Optional[str]:
+    """Never abstains on a live-tenant hiccup (raises CompositionError
+    instead), and never silently skips the comparison merely because more
+    than one process matches. Matches on the exact project name first
+    (casefold); only falls back to a substring match when the exact match
+    finds nothing. Returns the SET of every matching process's Key -- an
+    empty set is a genuine "no deployed process found" (not an abstention),
+    which check_resource_row treats as a problem in its own right, and a
+    multi-match set is accepted as long as the binding's default is one of
+    its members."""
+
+    def resolve(_binding: dict[str, str]) -> set[str]:
         completed = run_cli(
             [
                 "uip", "or", "processes", "list",
@@ -368,25 +512,27 @@ def live_release_key_resolver(folder_path: str, project_name_hint: str) -> compo
         try:
             _payload, data = payload_data(completed, "processes list", require_success=True)
         except CheckFailure as error:
-            print(f"WARN: could not resolve the resource's real process Key: {error}")
-            return None
+            raise composition.CompositionError(
+                f"could not resolve the resource's real process Key: {error}"
+            ) from error
         rows = data if isinstance(data, list) else []
         needle = project_name_hint.casefold()
-        matches = [
+
+        def name_of(row: Any) -> str:
+            return str(get_ci(row, "Name", "") or "").casefold()
+
+        exact = [row for row in rows if name_of(row) == needle]
+        matches = exact or [
             row
             for row in rows
-            if needle in str(get_ci(row, "Name", "") or "").casefold()
+            if needle in name_of(row)
             or needle in str(get_ci(row, "ProcessKey", "") or get_ci(row, "ProcessName", "") or "").casefold()
         ]
-        if len(matches) != 1:
-            print(
-                f"WARN: expected exactly one deployed process matching "
-                f"{project_name_hint!r} in {folder_path!r}, found {len(matches)}; "
-                "skipping the cross-tenant Key match"
-            )
-            return None
-        key = get_ci(matches[0], "Key")
-        return key if isinstance(key, str) else None
+        return {
+            key
+            for row in matches
+            if isinstance((key := get_ci(row, "Key")), str)
+        }
 
     return resolve
 

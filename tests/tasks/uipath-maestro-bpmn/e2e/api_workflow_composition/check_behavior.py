@@ -12,6 +12,17 @@ copied through), AND the token must appear in the invoking node's OWN
 ScriptTask or an unrelated node cannot cover for the resource never having
 been reached at runtime. This is the anti-cheat core of the suite.
 
+Deliberately does NOT require the RESOURCE itself to have transformed the
+token -- an echo-only API workflow composed with a BPMN-side output mapping
+that embeds the token in a fixed string (a "hello world" shape) is valid,
+not a cheat; see assert_row_provenance's own docstring. The Outputs check
+is a leaf walk (every string leaf reachable from the node's Outputs), not a
+`json.dumps(...)` substring test over the whole blob, so a token that only
+appears in a key name or an unrelated field cannot pass. The complementary
+guard against a decoy node forging the published value -- no OTHER element
+may write to the invoking node's own output variable -- lives in
+check_shape.py (a structural, offline-checkable rule), not here.
+
 `assert_row_provenance` is pure (BPMN Element + a variables-all payload in,
 problems raised out) and is unit-tested in test_checks.py with synthetic
 payloads, including the "one node cannot cover for another" case. main()
@@ -60,6 +71,23 @@ DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
 STEP_TIMEOUTS = (DEBUG_TIMEOUT_SECONDS, INCIDENTS_TIMEOUT, VARIABLES_ALL_TIMEOUT)
 
 
+def _string_leaves(value: Any) -> list[str]:
+    """Every string leaf reachable from `value` by descending dicts/lists.
+
+    Used instead of a whole-blob `json.dumps(...)` substring test: the token
+    must actually appear as (part of) some scalar the resource produced, not
+    merely somewhere in the serialized JSON (a key name, a coincidental
+    substring of an unrelated field, ...)."""
+
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [leaf for item in value.values() for leaf in _string_leaves(item)]
+    if isinstance(value, list):
+        return [leaf for item in value for leaf in _string_leaves(item)]
+    return []
+
+
 def assert_row_provenance(
     row: dict[str, Any],
     process,
@@ -67,7 +95,19 @@ def assert_row_provenance(
     token: str,
 ) -> None:
     """Raise CheckFailure unless the token round-tripped through the row's
-    OWN invoking node -- never through some other node's output."""
+    OWN invoking node -- never through some other node's output.
+
+    Deliberately does NOT require the resource to have transformed the token
+    into something other than itself -- a hello-world API workflow that
+    echoes its input, composed with a BPMN-side output mapping that embeds
+    the token in a fixed string (`=js:'Hello, ' + result.message`), is a
+    valid, intended shape, not a cheat. What this DOES still guard: (a) the
+    token must appear somewhere in the invoking node's own runtime Outputs
+    (a leaf walk, not a substring-of-the-whole-blob test), and (b) no other
+    element may have written the node-scoped output variable itself (see
+    check_shape.py's "foreign write" scan) -- so a decoy cannot fake having
+    produced the published value.
+    """
 
     task = composition.find_wrapper_task(process, row["wrapper"])
     if task is None:
@@ -90,12 +130,16 @@ def assert_row_provenance(
     if not isinstance(globals_map, dict):
         raise CheckFailure("variables-all root scope Globals is not a map")
 
-    published_value = None
+    _unset = object()
+    published_value = _unset
     for vid in output_var_ids:
-        if vid in globals_map:
-            published_value = globals_map[vid]
+        try:
+            published_value = bpmn_live.resolve_runtime_key(globals_map, vid, "runtime Globals")
+        except CheckFailure:
+            continue
+        else:
             break
-    if published_value is None:
+    if published_value is _unset:
         raise CheckFailure(
             f"{row['kind']}: declared output {row['output']!r} never appears "
             "in the runtime Globals"
@@ -117,7 +161,8 @@ def assert_row_provenance(
             f"{row['kind']}: invoking node {node_id!r} produced no runtime "
             "Outputs -- was it ever executed?"
         )
-    if not any(token in json.dumps(output) for output in node_outputs):
+    leaves = [leaf for output in node_outputs for leaf in _string_leaves(output)]
+    if not any(token in leaf for leaf in leaves):
         raise CheckFailure(
             f"{row['kind']}: token {token!r} never appears in invoking node "
             f"{node_id!r}'s own Outputs -- another node may be covering for it"
