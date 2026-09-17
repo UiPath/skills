@@ -45,7 +45,7 @@ All `jobs` subcommands return:
 }
 ```
 
-A successful jobs response never carries `Pagination`. It carries `Instructions` on `top-failures`, `failures-by-reason`, `process-details`, and `failure-details`, because each of those projections owes the caller a caveat. Any read invoked with `--output-file` carries one too. `summary`, `completed-timeline`, and `uncompleted-timeline` carry `Instructions` only in that `--output-file` form. Quote the text in the answer wherever it is present. The `filter-*` and alert commands carry `Instructions` as well, and their list subcommands also carry `Pagination`.
+A successful jobs response never carries `Pagination`. It carries `Instructions` on `top-failures`, `failures-by-reason`, `process-details`, and `failure-details`, because each of those projections owes the caller a caveat. Any read invoked with `--output-file` carries one too. `summary`, `completed-timeline`, and `uncompleted-timeline` carry `Instructions` only in that `--output-file` form. Quote the text in the answer wherever it is present. The `filter-*`, `queues`, and alert commands carry `Instructions` as well; `filter-*`, every `queues` command except `summary`, `alerts list`, and `alert-history list` also carry `Pagination`.
 
 `Code` identifies the subcommand that produced the response:
 
