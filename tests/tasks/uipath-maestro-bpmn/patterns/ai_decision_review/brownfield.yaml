@@ -8,12 +8,13 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
 
 run_limits:
-  # Claude nightlies ride the inherited 900s turn cap as a coin flip: 09-14
-  # ERROR 910s, 09-15 SUCCESS 897s (3s margin), 09-16 ERROR 904s — the whole
-  # claude-code session streams as one turn, so turn_timeout is the effective
-  # wall budget. 2x the observed ~900s working time.
-  task_timeout: 2400
-  turn_timeout: 1800
+  # Claude nightlies rode the inherited 900s turn cap: 09-14 ERROR 910s,
+  # 09-15 SUCCESS 897s, 09-16 ERROR 904s — all cap-censored kill points.
+  # Verify run 35177570730 completed the same task in 1223s, so the sibling
+  # pattern-task budget (external_wait, high_volume_batch,
+  # contract_variant_wrappers) is ~2.2x the slowest good run.
+  task_timeout: 3600
+  turn_timeout: 2700
   expected_turns: 24
   max_turns: 70
 
