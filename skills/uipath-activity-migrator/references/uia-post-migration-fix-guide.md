@@ -134,7 +134,7 @@ After each edited file:
 uip rpa validate --project-dir "<MIGRATED_DIR>" --file-path "<project-relative.xaml>" --min-severity error --output json
 ```
 
-Must report 0 errors. `<MIGRATED_DIR>` must be absolute; `--file-path` is relative to the project directory; `--min-severity error` matters, migrated projects routinely carry pre-existing warnings. Validation is also the safety net that catches a structurally wrong edit (e.g. an action left without a required scope). Rebuild the project afterwards with the build and fix loop in the verification guide.
+Must report 0 errors. `<MIGRATED_DIR>` must be absolute; `--file-path` is relative to the project directory; `--min-severity error` matters, migrated projects routinely carry pre-existing warnings. Validation is also the safety net that catches a structurally wrong edit (e.g. an action left without a required scope). Rebuild the project afterwards with the build and fix loop in the build verification guide.
 
 ## Not auto-fixable (pre-existing)
 
@@ -152,7 +152,7 @@ Build <passed|failed>. <N> findings: fixed ×<a>, manual-review ×<b>, pre-exist
 - <file>: <activity> — <result> — <what was changed, or what the user must do>
 
 ### Next steps
-- Open <MIGRATED_DIR> with Studio 2024.10 or later and run the affected workflows once in Debug.
+- Open <MIGRATED_DIR> with Studio 2024.10 or later and run the affected workflows once in Debug.   <- drop the Debug clause when the runtime check passed
 ```
 
-Omit result kinds with a zero count. Healthy constructions get no line: their annotations were rewritten under Fix so Studio shows the verdict, and nothing "left alone" is narrated. When annotations were rewritten, add one line under Findings: "<k> annotations rewritten to Verified healthy (no structural change)". When this procedure runs inside the migration workflow, its `fixed` lines go into the report's "Fixes applied" block and everything else that is not `healthy` goes under "Needs attention"; do not produce this shape a second time there. The two transforms above double as manual recipes for the user when a finding is left to them.
+Omit result kinds with a zero count. When the run of the runtime verification guide happened, add its block between Findings and Next steps, in the shape the Step 6 template gives it. Healthy constructions get no line: their annotations were rewritten under Fix so Studio shows the verdict, and nothing "left alone" is narrated. When annotations were rewritten, add one line under Findings: "<k> annotations rewritten to Verified healthy (no structural change)". When this procedure runs inside the migration workflow, its `fixed` lines go into the report's "Fixes applied" block and everything else that is not `healthy` goes under "Needs attention"; do not produce this shape a second time there. The two transforms above double as manual recipes for the user when a finding is left to them.

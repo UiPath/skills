@@ -1,6 +1,6 @@
-# Verification Guide
+# Build Verification Guide
 
-Step 5 of the workflow. The migrated project is a Windows project, so the modern RPA CLI applies. Verification proves the output compiles; it does not prove runtime behavior.
+Step 5 of the workflow. The migrated project is a Windows project, so the modern RPA CLI applies. The build proves the output compiles; whether it runs is Step 6, [runtime-verification-guide.md](runtime-verification-guide.md).
 
 ## Prerequisites
 
@@ -61,11 +61,3 @@ At most 3 iterations. Each iteration:
 When the RPA authoring skill is available in this plugin, delegate the XAML edit of iteration 2 to it and continue with its result. When it is unavailable, apply the minimal fix directly under the same rules.
 
 After 3 iterations, or when a fix would change what the migrator produced beyond the failing construct, stop and list the remaining errors per file as manual work.
-
-## Runtime checks the user should run
-
-Report these; do not run them unattended:
-
-- Open `<OUTPUT_DIR>` in Studio 2024.10 or later and let it restore.
-- Run the main workflow once in Debug against the real applications.
-- Package-specific runtime prerequisites are listed in each package guide's Hook 3 (for example Integration Service connections for Mail).

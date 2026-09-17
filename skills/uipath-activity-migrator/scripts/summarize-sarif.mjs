@@ -124,7 +124,7 @@ const packages = [];
 const effectiveVersions = {};
 const typeIssues = [];
 const actionRequired = [];
-const uia = { migrated: 0, migratedByType: {}, notMigrated: [], partial: [], warnings: [], workflow: [] };
+const uia = { migrated: 0, migratedByType: {}, migratedItems: [], notMigrated: [], partial: [], warnings: [], workflow: [] };
 const productivity = { migrated: 0, notMigrated: [], warnings: [] };
 let frameworkChanged = false;
 let hasCriticalError = false;
@@ -177,6 +177,8 @@ for (const r of results) {
       const fullType = propsOf(r).activityType || id.replace(/^UIAUTOMATION-ACTIVITY-/, '').replace(/-MIGRATION-SUCCESS$/, '');
       const type = fullType.split('.').pop();
       uia.migratedByType[type] = (uia.migratedByType[type] || 0) + 1;
+      // Ledger for the runtime check: which activities the tool rewrote, so a failing run can be attributed.
+      uia.migratedItems.push({ file: entry.file, activity: entry.activity, guid: entry.guid, type });
     } else if (id.startsWith('UIAUTOMATION-ACTIVITY-MIGRATION-ERROR')) {
       uia.notMigrated.push(entry);
     } else if (id === 'UIAUTOMATION-ACTIVITY-MIGRATION-PARTIAL') {

@@ -36,13 +36,14 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 5. **Never write into the source project.** `upgrade` writes to a fresh sibling folder. Never point `--output-path` at `<PROJECT_DIR>`, never copy the output back over the source, never delete the source. The tool's own `.upgrade/` report folder inside the source is the only thing it writes there.
 6. **Never pass secrets through the agent.** Do not type `--orchestrator-pat` or `--orchestrator-application-secret` values yourself. When a tenant feed is required, rely on the tool's fallback to the local Studio or Robot connection; if that fails, hand the user the complete command with `<PLACEHOLDER>` values to run themselves.
 7. **Resolve the target UIAutomation package line explicitly.** When the project uses `UiPath.UIAutomation.Activities`, resolve the latest stable patch of a release line per [Step 2](#step-2--resolve-the-target-package-line) and pass it as `--uia-package-version=<UIA_VERSION>`. Extension options bind only in the `--name=value` form; the space-separated form parses without error and is silently ignored. Accept the tool default only when the feed is unreachable, and say so in the report. The target version is settled before the migration runs; the skill never edits package versions on the output afterwards to reach it.
-8. **Verify with the modern CLI.** Migration is not done until `uip rpa build` passes on `<OUTPUT_DIR>`, or the remaining errors are reported as manual work after the bounded fix loop in [verification-guide.md](references/verification-guide.md).
+8. **Verify with the modern CLI.** Migration is not done until `uip rpa build` passes on `<OUTPUT_DIR>`, or the remaining errors are reported as manual work after the bounded fix loop in [build-verification-guide.md](references/build-verification-guide.md).
 9. **Libraries first.** When analyze reports `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED`, stop. Tell the user to migrate and publish that library to the feed before migrating this project. The tool cannot order dependencies.
 10. **Bounded loops.** At most 3 build-fix iterations in Step 5. Then report what remains.
+11. **Never run the migrated project unasked.** The runtime check of Step 6 runs only after the user answers yes to its one question, and it only observes: no edits, no selector repair, no rerun with changes.
 
 ## Workflow
 
-**Fix-only entry.** When the user asks to fix or scan a project that was already migrated (its XAML carries `.ToStringWithDelimiter()` markers or `[PostMigration Action Required]` annotations), none of the steps below apply. Run [uia-post-migration-fix-guide.md](references/uia-post-migration-fix-guide.md) with that project as `<MIGRATED_DIR>`, then build it with the build and fix loop in [verification-guide.md](references/verification-guide.md), and report in the shape given by the guide's Output section. Do not resolve a package version, do not run package-guide hooks, and do not use the Step 6 template: nothing was analyzed or upgraded.
+**Fix-only entry.** When the user asks to fix or scan a project that was already migrated (its XAML carries `.ToStringWithDelimiter()` markers or `[PostMigration Action Required]` annotations), none of the steps below apply. Run [uia-post-migration-fix-guide.md](references/uia-post-migration-fix-guide.md) with that project as `<MIGRATED_DIR>`, then build it with the build and fix loop in [build-verification-guide.md](references/build-verification-guide.md), offer the runtime check per [runtime-verification-guide.md](references/runtime-verification-guide.md) with `<MIGRATED_DIR>` as its `<OUTPUT_DIR>`, and report in the shape given by the fix guide's Output section. Do not resolve a package version, do not run package-guide hooks, and do not use the Step 6 template: nothing was analyzed or upgraded.
 
 ### Step 0 — Preflight and acquire the tool
 
@@ -134,7 +135,7 @@ Confirm `<OUTPUT_DIR>/project.json` exists and its `targetFramework` is `Windows
 
 ### Step 5 — Verify
 
-Follow [verification-guide.md](references/verification-guide.md). In short, with `<OUTPUT_DIR>` absolute (never `.`):
+Follow [build-verification-guide.md](references/build-verification-guide.md). In short, with `<OUTPUT_DIR>` absolute (never `.`):
 
 ```bash
 uip rpa build "<OUTPUT_DIR>" --output json
@@ -145,7 +146,8 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 ### Step 6 — Post-migration and report
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
-2. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. For an activity left classic, the manual step is "still runs as classic; rebuild with modern activities if wanted"; name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. Shape:
+2. Offer the runtime check when the conditions in [runtime-verification-guide.md](references/runtime-verification-guide.md) hold: one yes/no question, default no, no time limit proposed. On yes, run it as the guide says, attribute a failure with its table, and fill the Runtime check block below.
+3. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. For an activity left classic, the manual step is "still runs as classic; rebuild with modern activities if wanted"; name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. Shape:
 
 ```markdown
 ## Migration result: <status>
@@ -161,8 +163,12 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 - <file>: <activity> — <what was changed>
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
+### Runtime check                    <- only when the user said yes
+<Passed in <duration> | Failed at <file>: <activity> — <exception type>: <first line of message> | Stopped at <last logged step> | Not started: <reason>>
+- <migration-related | not migration-related>: <why>. <what to do>     <- only when failed
+
 ### Next steps
-- Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.
+- Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.   <- drop the Debug clause when the runtime check passed
 - <package-specific runtime prerequisites, only when a package guide lists one>
 ```
 
@@ -186,7 +192,8 @@ The framework flip, package restore, reference fixing, and type checking are cor
 | [acquisition-guide.md](references/acquisition-guide.md) | Step 0 fails, the machine is offline or behind a proxy, or the user asks where the tool lives or how to update it |
 | [tool-behavior-guide.md](references/tool-behavior-guide.md) | Behavior `--help` cannot tell you: option binding, exit code, output streams, the `.upgrade` and output folders, restore version selection, the Orchestrator hand-off template, `bulk` |
 | [sarif-triage-guide.md](references/sarif-triage-guide.md) | Every analyze and upgrade run: status mapping, core rule IDs, stop conditions, summarizer usage |
-| [verification-guide.md](references/verification-guide.md) | Step 5: build and validate loop, expected warnings, fix policy, Studio version requirements |
+| [build-verification-guide.md](references/build-verification-guide.md) | Step 5: build and validate loop, expected warnings, fix policy |
+| [runtime-verification-guide.md](references/runtime-verification-guide.md) | Step 6: the opt-in run of the migrated project, its verdict and attribution rules |
 | [uia-post-migration-fix-guide.md](references/uia-post-migration-fix-guide.md) | The migrated output carries `.ToStringWithDelimiter()` markers (UIA Hook 3), or the user asks for a post-migration fix on an already-migrated project |
 | [packages/uia-guide.md](references/packages/uia-guide.md) | Project depends on `UiPath.UIAutomation.Activities` |
 | [packages/mail-guide.md](references/packages/mail-guide.md) | Project depends on `UiPath.Mail.Activities` |
@@ -210,5 +217,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Pre-scanning the XAML for classic activities (`grep` on `<ui:` prefixes) before or after `analyze`; the SARIF is the only complete inventory, and the `ui:` prefix also covers System and Excel activities
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
+- Running the migrated project without the user's yes, or repairing selectors and rerunning after that run fails; the runtime check observes and attributes, nothing more
+- Passing `--skip-build` to the runtime check, or probing it with `debug break` / `debug continue`; the first fails on a headless Studio that has not built the project itself, the second returns `Success` with or without a session
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
 - Padding the report with checks that found nothing, a classic-to-modern mapping table, or guesses about how the migrated activities will behave at runtime. Typical offenders: "both edited files validate with 0 errors", "left alone (valid cross-window probes)", "the project now mixes two package lines", "the framework step was a no-op"
