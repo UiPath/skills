@@ -7,6 +7,7 @@ Read the source, then write a genome that reads as if authored: behavioural, gen
 | Framework | Guide | Detection summary |
 |---|---|---|
 | UiPath (Studio, Studio Web, Maestro, Agents, API workflows, Coded apps, Functions, Solutions) | [sources/uipath-source-guide.md](sources/uipath-source-guide.md) | `.uipx`, `project.json`, `project.uiproj`, `.xaml`, `.cs`, `.flow`, `.bpmn`, `caseplan.json`, `agent.json`, `Workflow.json`, `uipath.json` |
+| Worksoft Certify (database export) | [sources/worksoft-certify-source-guide.md](sources/worksoft-certify-source-guide.md) | Folder with `Manifest.txt` (`Certify Version:`), `Processes.json`, `Layouts.json`, `MapObjects.json`, `ComponentActions.json`; run `scripts/certify-export-inventory.py` before reading |
 
 No guide matches → tell the user which framework the files appear to be from, that no source guide exists yet, and point to [sources/source-framework-contract.md](sources/source-framework-contract.md). Do not improvise an extraction from an unknown framework.
 

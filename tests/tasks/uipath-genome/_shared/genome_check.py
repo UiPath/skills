@@ -19,6 +19,11 @@ VALID_SKILLS = {
     "uipath-connector-builder", "uipath-ixp", "uipath-process-mining", "uipath-mcp-servers",
     "uipath-solution", "uipath-human-in-the-loop",
 }
+OPERATE_SKILLS = {  # allowed in Platform Dependencies / Deployment, never in Build With or Components
+    "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
+    "uipath-troubleshoot", "uipath-governance", "uipath-review", "uipath-planner", "uipath-aops",
+    "uipath-automationhub", "uipath-automation-discovery", "uipath-feedback",
+}
 RETIRED_SKILLS = {"uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"}
 
 COMPONENT_SECTIONS = [
@@ -77,8 +82,12 @@ def common_checks(text: str, level: str, sections: list[str]) -> list[str]:
         if name in text:
             errors.append(f"retired skill name '{name}' present")
     for name in set(re.findall(r"`(uipath-[a-z-]+)`", text)):
-        if name not in VALID_SKILLS and name != "uipath-genome":
+        if name not in VALID_SKILLS and name not in OPERATE_SKILLS and name != "uipath-genome":
             errors.append(f"unknown skill name '{name}' referenced")
+    for heading in ("Build With", "Components"):
+        for name in set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading))):
+            if name in OPERATE_SKILLS:
+                errors.append(f"operate-only skill '{name}' used in {heading}; it belongs under Platform Dependencies")
     criteria = re.findall(r"^- \[[ x]\] ", section_body(text, "Acceptance Criteria"), re.M)
     if len(criteria) < MIN_CRITERIA:
         errors.append(f"acceptance criteria: {len(criteria)} found, expected >= {MIN_CRITERIA}")

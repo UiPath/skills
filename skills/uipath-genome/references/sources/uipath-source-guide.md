@@ -34,8 +34,10 @@ Read § Detection through § Component Detection, § Call Graph Rules, § Platfo
 | `uipath.json` `functions` map + `*.py` or `functions/*.ts` | Coded Function | § Signals — Coded Function |
 | `webAppManifest.json`, `action-schema.json`, `src/**/*.ts(x)` | Coded app | § Signals — Coded App |
 | `bindings_v2.json`, `entry-points.json`, `project.json` `dependencies` | Platform resources and interfaces | § Platform Resources |
+| `.objects/**` (Object Repository) | Application, screen, and element **names** only — never selectors | read for Target Applications and Source Map notes |
+| `AGENTS.md`, `README.md`, `.claude/rules/project-context.md` | Author-written intent, known gotchas, run instructions | evidence for Overview and Error Handling; verify every claim against the code before using it |
 
-Skip entirely: `.local/`, `.objects/`, `.codedworkflows/`, `.settings/`, `.tmh/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `resources/solution_folder/`, `userProfile/`, `.git/`, `.app/` (generated trigger XAML), `*.Generated.xaml`.
+Skip entirely: `.local/`, `.codedworkflows/`, `.settings/`, `.tmh/`, `.screenshots/`, `.project/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `resources/solution_folder/`, `userProfile/`, `.git/`, `.app/` (generated trigger XAML), `*.Generated.xaml`.
 
 Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `ConnectionsManager.cs`, `ConnectionsFactory.cs`, `ObjectRepository.cs`, `WorkflowRunnerService.cs`, `Triggers.Generated.xaml`, `AppsRequestTrigger.xaml`.
 
@@ -73,7 +75,10 @@ Test projects (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outp
 | `ConnectionId` attribute, `<isactr:ConnectorActivity UiPathActivityTypeId>` | body | Integration Service connector call; resolve the service from the namespace or type id | `uipath-salesforce-sfdc` |
 | Queue activities (`AddQueueItem`, `GetTransactionItem`, `SetTransactionStatus`), asset activities (`GetAsset`, `GetCredential`), `StartJob`, `CreateFormTask` / `WaitForFormTaskAndResume`, `Persistence` activities | body | Platform resources and HITL waits | queue name attribute |
 | `<Variable x:TypeArguments Name>` | `.Variables` blocks | Data flow hints only — never in the genome body | |
-| Object Repository references (`ui:TargetAnchorable`, `Descriptor` elements) | body | UI targets; name the screen and application, never the selector | |
+| Object Repository references (`uix:TargetAnchorable`, `uix:TargetApp`, `Descriptor` elements) | body | UI targets; name the screen and application, never the selector. `TargetApp Url` / `ScopeSelectorArgument url=` give the target system's base URL → Configuration Question | `Url="https://<org>.lightning.force.com/…"` |
+| `uix:NApplicationCard` / `ui:OpenBrowser` / `ui:OpenApplication` | body | The application scope: browser type, attach vs launch, one scope per application session | `BrowserType="Chrome" AttachMode="ByInstance"` |
+| `DelayBefore` / `DelayAfter`, `WaitForReadyArgument`, `EmptyFieldMode` | UIA activity attributes | Timing and field-clearing behaviour → Error Handling wording ("waits for the dialog to settle", "replaces the pre-filled value") — never the attribute names | `EmptyFieldMode="SingleLine"` |
+| `SearchSteps="SemanticSelector"` with `SemanticSelectorArgument` | target | Element located by a natural-language description, usually because no stable selector exists → Source Map note | |
 
 Skip `<sap2010:WorkflowViewState.ViewStateManager>` and every `sap:VirtualizedContainerService.HintSize` — designer layout, not logic.
 

@@ -1,6 +1,6 @@
 ---
 name: uipath-genome
-description: "UiPath automation genome — portable markdown blueprint (`*-genome.md`) that documents an automation at process and component level: purpose, workflow steps, business rules, data handoffs, platform resources, acceptance criteria, and the UiPath skill that builds each part. EXTRACT a genome from an existing UiPath project or solution (`.xaml`/`.cs`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `.uipx`) as ground truth for documentation or migration; AUTHOR one from a described idea; EXECUTE one to build the automation. Triggers: 'genome', 'blueprint', 'document this automation/solution/process', 'reverse-engineer what this project does', 'build/implement this genome'. PDD/SDD design & task derivation→uipath-planner. Build without a genome→the artifact's skill (uipath-rpa, uipath-maestro-flow, uipath-agents…). Quality review→uipath-review. Finding what to automate→uipath-automation-discovery."
+description: "UiPath automation genome — portable markdown blueprint (`*-genome.md`) that documents an automation at process and component level: purpose, workflow steps, business rules, data handoffs, platform resources, acceptance criteria, and the UiPath skill that builds each part. EXTRACT a genome from an existing UiPath project or solution (`.xaml`/`.cs`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `.uipx`) or from a Worksoft Certify export, as ground truth for documentation or migration; AUTHOR one from a described idea; EXECUTE one to build the automation. Triggers: 'genome', 'blueprint', 'document this automation/solution/process', 'reverse-engineer what this project does', 'build/implement this genome'. PDD/SDD design & task derivation→uipath-planner. Build without a genome→the artifact's skill (uipath-rpa, uipath-maestro-flow, uipath-agents…). Quality review→uipath-review. Finding what to automate→uipath-automation-discovery."
 when_to_use: "User says 'genome', 'blueprint', 'document what this automation does', 'extract a spec from this project/solution', 'reverse-engineer this process', 'describe this solution at high and low level', 'I want a spec before we build', or points at a *-genome.md and asks to build/execute/implement it. NOT for PDD/SDD (→uipath-planner), not for building or fixing an automation without a genome (→the artifact's skill), not for code review (→uipath-review)."
 ---
 
@@ -22,7 +22,7 @@ A genome is a markdown specification of an automation that an AI agent can consu
 Determine the mode from the input, in this order:
 
 1. **A `*-genome.md` path plus build intent** ("build", "execute", "implement", "follow") → **Execute**. Read [execution-guide.md](references/execution-guide.md).
-2. **A directory, project file, or solution manifest** (`project.json`, `project.uiproj`, `.uipx`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `uipath.json`) → **Extract**. Read [extraction-guide.md](references/extraction-guide.md) and the matching source guide it names.
+2. **A directory, project file, solution manifest, or another framework's export** (`project.json`, `project.uiproj`, `.uipx`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `uipath.json`; a Worksoft Certify export folder with `Manifest.txt` and `Processes.json`) → **Extract**. Read [extraction-guide.md](references/extraction-guide.md) and the matching source guide it names.
 3. **A description, idea, SOP, or process narrative** with no source project → **Author**. Read [authoring-guide.md](references/authoring-guide.md).
 4. **A `*-genome.md` path plus edit intent** ("update", "add a step", "split", "remove the inferred flags") → **Edit** in place per the edit tables in the authoring guide; re-extract instead when the user says the source changed.
 
@@ -57,7 +57,7 @@ Every mode reads [genome-format-guide.md](references/genome-format-guide.md) for
 6. Map signals to genome sections per the extraction guide; write the process genome first, then each component genome with `Part of:`, Interface, and Source Map.
 7. Write, then offer edits. Common follow-ups: "remove the inferred flags", "drop the Source Map for sharing", "this step is wrong".
 
-Full procedure: [extraction-guide.md](references/extraction-guide.md). UiPath signals: [sources/uipath-source-guide.md](references/sources/uipath-source-guide.md). Adding another framework: [sources/source-framework-contract.md](references/sources/source-framework-contract.md).
+Full procedure: [extraction-guide.md](references/extraction-guide.md). UiPath signals: [sources/uipath-source-guide.md](references/sources/uipath-source-guide.md). Worksoft Certify exports: [sources/worksoft-certify-source-guide.md](references/sources/worksoft-certify-source-guide.md) with the bundled inventory script. Adding another framework: [sources/source-framework-contract.md](references/sources/source-framework-contract.md).
 
 ### Author (description → genome)
 
@@ -75,6 +75,7 @@ Parse and validate the genome → ask every configuration question (`AskUserQues
 | [references/skill-mapping-guide.md](references/skill-mapping-guide.md) | Filling Build With / Components or planning execution groups |
 | [references/extraction-guide.md](references/extraction-guide.md) | Extract mode — pipeline, signal→section mapping, complexity from signals |
 | [references/sources/uipath-source-guide.md](references/sources/uipath-source-guide.md) | Extract mode on a UiPath source — per-artifact signal tables |
+| [references/sources/worksoft-certify-source-guide.md](references/sources/worksoft-certify-source-guide.md) | Extract mode on a Worksoft Certify database export — run `scripts/certify-export-inventory.py` first, never read `Processes.json` raw |
 | [references/sources/source-framework-contract.md](references/sources/source-framework-contract.md) | Adding extraction support for another automation framework |
 | [references/authoring-guide.md](references/authoring-guide.md) | Author and Edit modes |
 | [references/execution-guide.md](references/execution-guide.md) | Execute mode |
