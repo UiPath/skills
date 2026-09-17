@@ -50,7 +50,7 @@ Omit `,version=<MIN_VERSION>` to resolve the latest compatible build (at or abov
 1. **Record the window baseline** — list top-level windows via the UIA snapshot CLI and note which w-refs and titles are already present. Procedure: the package guide's § Window Baseline (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`).
 2. **Run the workflow** — no `--output-filter`; the envelope is the verdict, and the workflow's own `Log Message` output streams above it (Helm) or sits in `Data.logEntries` (Studio Desktop) — shapes and verdict rules in [cli-reference.md § Capturing the verdict](cli-reference.md#capturing-the-verdict):
    ```bash
-   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
    ```
    If the run fails, follow [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **cancel the debug session:**
@@ -67,7 +67,7 @@ Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a st
 For advanced debugging, add `--profiling` to collect insightful per-activity execution data, timings, and before- and after-execution screenshots:
 
 ```bash
-uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --profiling
+uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json --profiling
 ```
 
 Use the before-execution screenshot to confirm the application/element started in the correct state, and the after-execution one to validate the expected outcome. Each screenshot's filename is recorded in the run's `.uistat` file; the image sits in the `Screenshots` folder in the same directory as that `.uistat` file. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance) for details.
