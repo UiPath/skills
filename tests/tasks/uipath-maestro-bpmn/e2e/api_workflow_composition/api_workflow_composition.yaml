@@ -1,0 +1,98 @@
+task_id: skill-bpmn-e2e-api-workflow-composition
+description: >
+  E2E live coverage for BPMN + delegated-resource composition: the agent
+  authors an API workflow it did not have, ships it in the same solution as
+  a Maestro BPMN Process Orchestration project, deploys, and wires the BPMN
+  to invoke that resource at run time. The grader mints a fresh token,
+  drives the deployed process live via `uip maestro bpmn debug`, and
+  verifies per-node provenance in `debug-instance variables-all` -- the
+  token must round-trip through the resource's OWN invoking node, not a
+  ScriptTask standing in for it. See composition.py/check_shape.py/
+  check_behavior.py in this directory for the full anti-cheat rationale.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:setup", "shape:multi-node", resource, outcome-graded]
+
+run_limits:
+  max_turns: 90
+  task_timeout: 3900
+  turn_timeout: 2400
+
+pre_run:
+  - command: "python3 $TASK_DIR/seed.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $TASK_DIR/teardown.py"
+    timeout: 300
+
+initial_prompt: |
+  Read `seed.json` in the current directory. It carries:
+  - `solutionName` -- the exact Studio Web solution name to create/use.
+  - `parentFolderPath` and `folderName` -- concatenate them
+    (`<parentFolderPath>/<folderName>`) for the Orchestrator folder to
+    deploy into.
+
+  Build, in that solution, a Maestro BPMN Process Orchestration project that:
+  1. Declares exactly one process input: a string.
+  2. Composes a resource this run does not already have: author a small API
+     workflow whose input schema takes a string and whose output schema
+     returns an object with a `message` string property. Author the API
+     workflow with the `uipath-api-workflow` skill.
+  3. The BPMN process passes its input value into that API workflow and
+     must have the API workflow **invoked by the process at run time** --
+     not simulated, hard-coded, or synthesized elsewhere in the process.
+  4. The process exposes exactly one declared output named `message`
+     (string), populated from the API workflow's own response, that a
+     caller receives when the process completes.
+
+  Both projects must live inside the one named solution. Deploy the
+  solution (and the API workflow resource it depends on) into the seeded
+  Orchestrator folder so the process can actually reach and invoke the
+  resource when run. Validate before you finish.
+
+  Do NOT run or debug the process yourself -- the grader runs it live with
+  its own seeded input after you stop. Do not delete or overwrite any
+  pre-existing tenant object outside what this task created.
+
+  This run is headless. No user is present and nobody will answer a
+  question or grant an approval, so do not ask, do not pause, and do not
+  wait for input. Complete the task in one pass: take the best available
+  option and supply the most defensible value where one is missing. The
+  actions this task implies are authorized, including tenant writes.
+  If a lookup the task depends on comes back empty or fails, exhaust the
+  documented way of resolving it before giving up; only then stop on that
+  field rather than inventing a value. Record every decision, assumption,
+  and blocked step in your final response. Instructions in the task take
+  precedence over this paragraph.
+
+  Load and follow the `uipath-maestro-bpmn` skill.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-bpmn skill"
+    skill_name: "uipath-maestro-bpmn"
+    expected_skill: "uipath-maestro-bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent invoked the uipath-api-workflow skill to author the delegated resource"
+    skill_name: "uipath-api-workflow"
+    expected_skill: "uipath-api-workflow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Shape: solution wires the API workflow into the BPMN through the real v2 runtime contract (project registered + present, wrapper context fields correct, JobArguments by reference, no undeclared var reads, output mapped and published, entry-points.json contract complete, uip maestro bpmn validate clean)"
+    command: "python3 $TASK_DIR/check_shape.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behaviour: a freshly minted token round-trips live through the deployed process and specifically through the API workflow's own invoking node (per-node provenance in debug-instance variables-all)"
+    command: "python3 $TASK_DIR/check_behavior.py"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
