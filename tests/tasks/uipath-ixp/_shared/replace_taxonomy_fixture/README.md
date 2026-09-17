@@ -37,11 +37,24 @@ commands and "apply the file" has one unambiguous correct path.
 
 ## Why the rename is the point
 
-`import-taxonomy` merges and ignores the file's `field_id`, so importing this
-file mints a **new** field called `Invoice Total` and leaves `Total Amount`
-exactly where it was — two fields where the user asked for one renamed. The
-import reports `{"status":"ok"}`, which is what makes it worth grading against
-(SKILL.md Critical Rule 22).
+`import-taxonomy` merges and matches entries **by name**, re-minting a posted
+`field_id` that collides with an existing one. So importing this file adds a
+**new** field called `Invoice Total` and leaves `Total Amount` exactly where it
+was — two fields where the user asked for one renamed. The import reports
+`{"status":"ok"}`, which is what makes it worth grading against (SKILL.md
+Critical Rule 22).
+
+Verified against the service, not inferred — `UiPath/ixp-platform`:
+
+- `backend/api/reinfer_api/ixp_projects.py` → `import_taxonomy` calls
+  `deduplicate_field_ids(reserved_field_ids=existing_field_ids)`, then
+  `merge_field_groups(...)`.
+- `backend/api/reinfer_api/resources/taxonomy_merge.py` →
+  `_aggregate_extraction_fields` keeps an existing field when no incoming field
+  shares its **name**, and appends unmatched incoming fields; nothing is ever
+  removed.
+- Their tests: `test_import_taxonomy_remints_field_ids_colliding_with_existing_fields`,
+  `test_import_taxonomy_install_field_groups_overwrite_enabled_succeeds`.
 
 ## Constraints
 
