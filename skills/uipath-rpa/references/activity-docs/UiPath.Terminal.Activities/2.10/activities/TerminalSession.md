@@ -82,7 +82,7 @@ Connection-level timing. Defaults work for typical LAN hosts; raise both when co
 | Name | Display Name | Kind | Type | Default | Description |
 |------|-------------|------|------|---------|-------------|
 | `TimeoutMS` | TimeoutMS | `InArgument` | `int` | `50000` | Milliseconds to wait for the terminal connection to be established. |
-| `DelayMS` | DelayMS | `InArgument` | `int` | `1000` | Milliseconds to wait after the connection is established before scheduling child activities. **Raise to 3000–5000 ms for TLS hosts** to let TN3270/TN5250 protocol negotiation finish before the first child activity runs — otherwise a leading `WaitScreenReady` can throw `ErrorWaitReady` against an otherwise-healthy connection. |
+| `DelayMS` | DelayMS | `InArgument` | `int` | `1000` | Milliseconds to wait after the connection is established before scheduling child activities. **Raise to between 3000 and 5000 ms for TLS hosts** to let TN3270/TN5250 protocol negotiation finish before the first child activity runs — otherwise a leading `WaitScreenReady` can throw `ErrorWaitReady` against an otherwise-healthy connection. |
 
 ### Output
 
