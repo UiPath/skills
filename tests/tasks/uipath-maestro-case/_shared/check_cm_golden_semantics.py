@@ -26,7 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import find_stages, read_caseplan, selected_stage_ids  # noqa: E402
 
-EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.json")
+EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.case")
 # Resolved against the REFERENCE mirror (this file's own family root:
 # $REFERENCE_DIR == .../uipath-maestro-case, per cm_golden_expense.yaml's
 # `reference.directory: ../..`), never the sandbox copy staged by

@@ -2,7 +2,7 @@ task_id: skill-case-hitl-smoke-action-task-placed
 description: >
   Smoke test: agent builds a minimal Case Management project with a manual
   trigger and a single stage that contains one HITL `action` task. Verifies
-  the action task is written into caseplan.json with type "action" and the
+  the action task is written into caseplan.case with type "action" and the
   case validates. Action-app likely unresolved in test env — skeleton task
   (empty data) is acceptable.
 tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:single-node, node:hitl]
@@ -19,7 +19,7 @@ initial_prompt: |
 
   Use this sdd.md as the sole input — write it to sdd.md first, then build
   from it. Use the same name for the solution and the project so the case
-  file lives at InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json.
+  file lives at InvoiceApprovalCase/InvoiceApprovalCase/caseplan.case.
 
   ```
   # SDD — InvoiceApprovalCase
@@ -98,7 +98,7 @@ initial_prompt: |
   **REQUIRED — before finishing, write report.json at the sandbox root** with
   exactly these keys:
   {
-    "caseplan_path": "<relative path to the caseplan.json file>",
+    "caseplan_path": "<relative path to the caseplan.case file>",
     "action_task_id": "<id of the action task>",
     "skeleton": <true|false — true if action-app was unresolved>,
     "validation_passed": true
@@ -108,14 +108,14 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "caseplan.json was created at the conventional path"
-    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json"
+    description: "caseplan.case was created at the conventional path"
+    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.case"
     weight: 2.0
     pass_threshold: 1.0
 
   - type: json_check
     description: "Caseplan contains an action-typed task"
-    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json"
+    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -125,7 +125,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json --output json"
+    command: "uip maestro case validate InvoiceApprovalCase/InvoiceApprovalCase/caseplan.case --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

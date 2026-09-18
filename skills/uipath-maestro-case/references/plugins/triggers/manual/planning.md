@@ -33,9 +33,9 @@ A manual trigger has no registry dependency, so it produces **no `tasks/registry
 manual trigger "Start Manually"
 - display-name: "Start Manually"
 - description: "Operator kicks off a case from the portal"
-- verify: Confirm node appended to caseplan.json.nodes and matching entry appended to entry-points.json.entryPoints; capture TriggerId
+- verify: Confirm node appended to caseplan.case.nodes and matching entry appended to entry-points.json.entryPoints; capture TriggerId
 ```
 
-Both `display-name` and `description` are carried through to execution. `description` is always emitted into `caseplan.json.nodes[].data.description` (deliberate divergence from CLI which emits conditionally — the LLM ensures the key is present on every skill run so downstream tooling can rely on it).
+Both `display-name` and `description` are carried through to execution. `description` is always emitted into `caseplan.case.nodes[].data.description` (deliberate divergence from CLI which emits conditionally — the LLM ensures the key is present on every skill run so downstream tooling can rely on it).
 
 <!-- END: planning.md -->

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rule + variable mapping integrity check for a generated caseplan.json.
+"""Rule + variable mapping integrity check for a generated caseplan.case.
 
 Goes beyond `uip maestro case validate` (which is schema-shape only) and
 asserts semantic correctness against the V20 contract defined in

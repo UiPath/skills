@@ -1,5 +1,5 @@
 <!--skill-flavor:cli-bookends:start-->
-Project creation (`uip maestro case init "<ProjectName>"` from `/solution`) is CLI — see [implementation.md Step 6](../../implementation.md); the open Studio Web solution is the only solution and Studio Web owns its manifest, so there is no registration step. Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+Project creation (`uip maestro case init "<ProjectName>"` from `/solution`) is CLI — see [implementation.md Step 6](../../implementation.md); the open Studio Web solution is the only solution and Studio Web owns its manifest, so there is no registration step. Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.case`.
 <!--skill-flavor:cli-bookends:end-->
 
 <!--skill-flavor:preflight-solution-exists:start-->
@@ -7,7 +7,7 @@ Project creation (`uip maestro case init "<ProjectName>"` from `/solution`) is C
 <!--skill-flavor:preflight-solution-exists:end-->
 
 <!--skill-flavor:purpose-intro:start-->
-Complete the project on disk in a single plugin invocation — whichever of the 5 scaffold files Studio Web did not seed at Step 6.0 (`uip maestro case init`), plus `caseplan.json`. Runs exactly once per project, right after Step 6.0. Two sections:
+Complete the project on disk in a single plugin invocation — whichever of the 5 scaffold files Studio Web did not seed at Step 6.0 (`uip maestro case init`), plus `caseplan.case`. Runs exactly once per project, right after Step 6.0. Two sections:
 <!--skill-flavor:purpose-intro:end-->
 
 <!--skill-flavor:purpose-scaffold-item:start-->
@@ -15,11 +15,11 @@ Complete the project on disk in a single plugin invocation — whichever of the 
 <!--skill-flavor:purpose-scaffold-item:end-->
 
 <!--skill-flavor:scaffold-intro:start-->
-Runs before § Write caseplan.json. Studio Web seeds some or all of the 5 static JSON files when `uip maestro case init` creates the project; write only the ones that are missing, directly. All substitution is name-for-name — no subprocess.
+Runs before § Write caseplan.case. Studio Web seeds some or all of the 5 static JSON files when `uip maestro case init` creates the project; write only the ones that are missing, directly. All substitution is name-for-name — no subprocess.
 <!--skill-flavor:scaffold-intro:end-->
 
 <!--skill-flavor:preflight-target-clean:start-->
-3. **Inventory the seeded scaffold.** List `<SolutionDir>/<ProjectName>/`. Every one of the 5 scaffold files that already exists was seeded by Studio Web at Step 6.0 — keep it untouched and skip its entry under § Files to write. Write only the missing ones. Do not merge into a seeded file. `caseplan.json` is governed by § Pre-write checks (an existing one is overwritten there), not by this item.
+3. **Inventory the seeded scaffold.** List `<SolutionDir>/<ProjectName>/`. Every one of the 5 scaffold files that already exists was seeded by Studio Web at Step 6.0 — keep it untouched and skip its entry under § Files to write. Write only the missing ones. Do not merge into a seeded file. `caseplan.case` is governed by § Pre-write checks (an existing one is overwritten there), not by this item.
 <!--skill-flavor:preflight-target-clean:end-->
 
 <!--skill-flavor:preflight-distinct-child:start-->
@@ -31,5 +31,5 @@ Use the Write tool for each file Step 6.0 did not seed. All 5 files live directl
 <!--skill-flavor:files-to-write-intro:end-->
 
 <!--skill-flavor:verify-not-solution-dir:start-->
-- **Project dir is not the solution dir.** `caseplan.json` lives at `/solution/<ProjectName>/caseplan.json`, never directly under `/solution/`. If the 6 project files landed at the solution root, halt and move them into `/solution/<ProjectName>/`.
+- **Project dir is not the solution dir.** `caseplan.case` lives at `/solution/<ProjectName>/caseplan.case`, never directly under `/solution/`. If the 6 project files landed at the solution root, halt and move them into `/solution/<ProjectName>/`.
 <!--skill-flavor:verify-not-solution-dir:end-->

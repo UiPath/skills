@@ -71,14 +71,14 @@ initial_prompt: |
   - Do NOT publish the solution and do NOT run `uip maestro case debug`
     (the case suspends on timers, HITL actions, and a webhook event).
   - Persist each connector's `case spec` response before writing it into
-    `caseplan.json` - never reconstruct it from memory.
-  - Finish with `uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json --output json`
-    passing on the resulting caseplan.json.
+    `caseplan.case` - never reconstruct it from memory.
+  - Finish with `uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.case --output json`
+    passing on the resulting caseplan.case.
 
 success_criteria:
   - type: run_command
-    description: "uip maestro case validate passes on the generated CMGoldenExpense caseplan.json"
-    command: "uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json --output json"
+    description: "uip maestro case validate passes on the generated CMGoldenExpense caseplan.case"
+    command: "uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -87,7 +87,7 @@ success_criteria:
   - type: run_command
     description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the golden"
     command: >-
-      uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json
+      uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.case
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
@@ -134,7 +134,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not edit caseplan.json in place with a script (Rule 13: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
+    description: "Agent did not edit caseplan.case in place with a script (Rule 13: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
     tool_name: "Bash"
     command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.json|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.json'
     weight: 2.0

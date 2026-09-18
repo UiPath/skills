@@ -1,5 +1,5 @@
 <!--skill-flavor:t01-preconditions:start-->
-   - **For the `case` plugin (T01)**: `uip maestro case init "<ProjectName>"` (Step 6.0, CLI) creates the project in the open Studio Web solution at `/solution/<ProjectName>/` and seeds its scaffold. T01 then writes `caseplan.json` there (§ Write caseplan.json) and any of the 5 boilerplate files Studio Web did not seed (§ Scaffold). See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `/solution/<ProjectName>/` exists and `caseplan.json` is not yet authored.
+   - **For the `case` plugin (T01)**: `uip maestro case init "<ProjectName>"` (Step 6.0, CLI) creates the project in the open Studio Web solution at `/solution/<ProjectName>/` and seeds its scaffold. T01 then writes `caseplan.case` there (§ Write caseplan.case) and any of the 5 boilerplate files Studio Web did not seed (§ Scaffold). See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `/solution/<ProjectName>/` exists and `caseplan.case` is not yet authored.
 <!--skill-flavor:t01-preconditions:end-->
 
 <!--skill-flavor:bash-usage:start-->

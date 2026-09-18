@@ -77,7 +77,7 @@ plugin; everything else exits silently. A call qualifies when:
 | `Skill` | skill name starts with `uipath:` / `uipath-` |
 | `Agent` / `spawn_agent` | spawned type is a UiPath agent (`uipath:` / `uipath-`) or a built-in/generic type (Claude's `general-purpose`, `Explore`, `Plan`, `claude`, `claude-code-guide`, `statusline-setup`, `fork`, or Codex's `default`) — **not** other plugins' (`<plugin>:<name>`) or user-defined custom agents. Claude spawns via `Agent` + `tool_input.subagent_type`; Codex via `spawn_agent` + `tool_input.agent_type` |
 | `Bash` / `PowerShell` (Autopilot / Delegate: `ExecuteBashCommand` / `ExecutePowershellCommand`) | command invokes the `uip` CLI or `rpa-tool` |
-| `Edit` / `Write` / `Read` / `Glob` / `Grep` (Autopilot / Delegate: `ReadFile` / `WriteFile` / `EditFile` / `LsDirectory`) | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
+| `Edit` / `Write` / `Read` / `Glob` / `Grep` (Autopilot / Delegate: `ReadFile` / `WriteFile` / `EditFile` / `LsDirectory`) | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.case`, `project.json`, `app.config.json`, `action-schema.json` |
 
 ## How it works
 

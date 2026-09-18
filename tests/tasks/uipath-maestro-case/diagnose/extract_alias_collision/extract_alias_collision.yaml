@@ -46,7 +46,7 @@ initial_prompt: |
   Scope — this is a targeted single-line repair, not a build:
 
   - The defect and its fix are both inside
-    LinearThreeStages/LinearThreeStages/caseplan.json. Nothing else changes.
+    LinearThreeStages/LinearThreeStages/caseplan.case. Nothing else changes.
   - Read the case definition and the skill's variable/binding rules only. You do
     NOT need to read the reference set exhaustively — the read-to-EOF rule is
     lifted for this repair.
@@ -65,7 +65,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate still passes after the repair"
-    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

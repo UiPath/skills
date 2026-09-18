@@ -20,7 +20,7 @@ CHECKER = HERE.parent / "_shared" / "check_sla_from_sdd.py"
 
 
 def sla(title: str, count: int, unit: str = "d", expr: str = "=js:true") -> dict:
-    """Real shape from sla_response/templates/.../caseplan.json: flat count/unit plus
+    """Real shape from sla_response/templates/.../caseplan.case: flat count/unit plus
     `expression`, where the sentinel `=js:true` marks the default (ungated) row."""
     return {
         "id": f"sla_{title.replace(' ', '')[:8]}",
@@ -128,7 +128,7 @@ def good_plan() -> dict:
 
 
 def run(tmp_path: Path, plan: dict) -> subprocess.CompletedProcess[str]:
-    (tmp_path / "caseplan.json").write_text(json.dumps(plan), encoding="utf-8")
+    (tmp_path / "caseplan.case").write_text(json.dumps(plan), encoding="utf-8")
     return subprocess.run([sys.executable, str(CHECKER)], cwd=tmp_path,
                           capture_output=True, text=True)
 

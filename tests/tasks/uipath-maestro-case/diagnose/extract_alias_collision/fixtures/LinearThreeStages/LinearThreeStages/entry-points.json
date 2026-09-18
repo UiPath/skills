@@ -3,7 +3,7 @@
     "$id": "entry-points.json",
     "entryPoints": [
         {
-            "filePath": "/content/caseplan.json.bpmn#trigger_1",
+            "filePath": "/content/caseplan.case.bpmn#trigger_1",
             "uniqueId": "d48f410c-d60d-4ff6-aefd-7c29bee96d39",
             "type": "CaseManagement",
             "input": { "type": "object", "properties": {} },

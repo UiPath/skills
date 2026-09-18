@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ExpenseReimbursementRunnable — structural audit of the generated caseplan.
 
-Grades that the generated caseplan.json encodes the adapted (fully-automated)
+Grades that the generated caseplan.case encodes the adapted (fully-automated)
 employee expense reimbursement process, not just a structurally valid case:
 
   - 5 primary stages exist (Submission -> Manager Approval -> Finance Approval
@@ -39,7 +39,7 @@ from _shared.case_check import (  # noqa: E402
 )
 
 EXPECTED_CASEPLAN = os.path.join(
-    "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "caseplan.json"
+    "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "caseplan.case"
 )
 EXPECTED_BINDINGS_V2 = os.path.join(
     "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "bindings_v2.json"

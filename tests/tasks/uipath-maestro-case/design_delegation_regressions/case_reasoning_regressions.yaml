@@ -22,7 +22,7 @@ reference:
 
 initial_prompt: |
   Design a "CaseReasoningRegression" Maestro case and produce `sdd.md`. Stop
-  after the SDD — do not create caseplan.json. This is a design-only exercise:
+  after the SDD — do not create caseplan.case. This is a design-only exercise:
   do not query tenant registry, connections, schemas, or users. Use concrete
   intended resource and system names, leave identities unresolved, and defer
   authoritative tenant resolution to the later build run. Do not inspect plugin
@@ -48,7 +48,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The SDD was produced without building the case"
-    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.case -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -100,5 +100,5 @@ simulation:
   constraints:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, routes, or deadlines."
     - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
-    - "Do not authorize creating caseplan.json, running, publishing, or deploying."
+    - "Do not authorize creating caseplan.case, running, publishing, or deploying."
   max_turns: 35

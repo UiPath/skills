@@ -34,7 +34,7 @@ initial_prompt: |
     `required-tasks-completed` (exit-only, Marks Stage Complete: Yes).
   - The case completes via `required-stages-completed`.
   - Use the same name for solution and project so the case file lives at
-    LeaveRequestCase/LeaveRequestCase/caseplan.json.
+    LeaveRequestCase/LeaveRequestCase/caseplan.case.
 
   Write this sdd.md to sdd.md first, then build from it:
 
@@ -162,7 +162,7 @@ initial_prompt: |
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
   {
-    "caseplan_path": "<relative path to caseplan.json>",
+    "caseplan_path": "<relative path to caseplan.case>",
     "action_task_id": "<id of the action task>",
     "review_stage_id": "<id of the Review stage>",
     "approve_branch_expression": "<IF expression used on the approved exit, e.g. approved == true>",
@@ -173,7 +173,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate LeaveRequestCase/LeaveRequestCase/caseplan.json --output json"
+    command: "uip maestro case validate LeaveRequestCase/LeaveRequestCase/caseplan.case --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -181,7 +181,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains an action task"
-    path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    path: "LeaveRequestCase/LeaveRequestCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -191,7 +191,7 @@ success_criteria:
 
   - type: file_contains
     description: "Caseplan uses selected-tasks-completed exits and selected-stage-exited entries"
-    path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    path: "LeaveRequestCase/LeaveRequestCase/caseplan.case"
     includes:
       - "selected-tasks-completed"
       - "selected-stage-exited"
@@ -200,7 +200,7 @@ success_criteria:
 
   - type: run_command
     description: "Both semantic boolean branches are present on Review's exits"
-    command: "python3 $REFERENCE_DIR/check_boolean_routing.py LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    command: "python3 $REFERENCE_DIR/check_boolean_routing.py LeaveRequestCase/LeaveRequestCase/caseplan.case"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

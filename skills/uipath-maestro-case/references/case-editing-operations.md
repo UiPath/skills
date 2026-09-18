@@ -1,12 +1,12 @@
 # Case Editing Operations
 
-All mutations to `caseplan.json` performed via direct read/write/edit of the file. This document covers cross-cutting mechanics; per-node JSON shapes live in each plugin's `impl-json.md`.
+All mutations to `caseplan.case` performed via direct read/write/edit of the file. This document covers cross-cutting mechanics; per-node JSON shapes live in each plugin's `impl-json.md`.
 
 ---
 
 ## Responsibilities of Direct JSON Authoring
 
-When editing `caseplan.json` directly, the agent is responsible for these mechanics:
+When editing `caseplan.case` directly, the agent is responsible for these mechanics:
 
 | Concern | Requirement |
 |---|---|
@@ -18,7 +18,7 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 | Root-level bindings cleanup | Prune entries from top-level `bindings` no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
 | `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
-| `caseplan.json` file creation | T01 (case plugin) writes the file from scratch; downstream plugins mutate in place |
+| `caseplan.case` file creation | T01 (case plugin) writes the file from scratch; downstream plugins mutate in place |
 | Layout fields | Do NOT emit node-level `position`, `style`, `measured`, `width`, `height`, `zIndex`. Do NOT emit edge `data.waypoints`. Emit top-level `layout: {}` — FE auto-layouts on canvas load (Rule 18). |
 
 ---
@@ -35,13 +35,13 @@ Skill emits empty `layout: {}` at top level — never populates `layout.nodes` o
 
 ## Pre-flight Checklist
 
-Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents.
+Before every write to `caseplan.case`, confirm each item. These are the failure modes the CLI normally prevents.
 
-1. **Canonical `caseplan.json` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory.
+1. **Canonical `caseplan.case` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.case` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory.
 <!--skill-flavor:t01-preconditions:start-->
-   - **For the `case` plugin (T01)**: neither `caseplan.json` nor the 5 scaffold files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) exist before the plugin runs. `uip solution init` (Step 6.0, CLI) creates the solution dir + `.uipx` only. T01 creates the project dir and writes all 6 files directly — § Scaffold writes the 5 boilerplate files, § Write caseplan.json writes the root placeholder. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `<SolutionDir>/<SolutionName>.uipx` exists AND none of the 5 scaffold files exist yet in `<SolutionDir>/<ProjectName>/`.
+   - **For the `case` plugin (T01)**: neither `caseplan.case` nor the 5 scaffold files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) exist before the plugin runs. `uip solution init` (Step 6.0, CLI) creates the solution dir + `.uipx` only. T01 creates the project dir and writes all 6 files directly — § Scaffold writes the 5 boilerplate files, § Write caseplan.case writes the root placeholder. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `<SolutionDir>/<SolutionName>.uipx` exists AND none of the 5 scaffold files exist yet in `<SolutionDir>/<ProjectName>/`.
 <!--skill-flavor:t01-preconditions:end-->
-   - **For every other plugin**: `caseplan.json` must already exist (the `case` plugin always runs first as T01). If absent, run the `case` plugin first; do not attempt to synthesize a different JSON shape.
+   - **For every other plugin**: `caseplan.case` must already exist (the `case` plugin always runs first as T01). If absent, run the `case` plugin first; do not attempt to synthesize a different JSON shape.
 
 2. **IDs match CLI format.** Generate IDs using the `prefixedId` algorithm (see "ID Generation" below). The frontend's `generateNextId(prefix, count)` expects this exact format — deviation risks Studio Web rejection.
 
@@ -66,7 +66,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 10. **Entry conditions are SDD-driven — never auto-injected by task type.** A task's `entryConditions[]` are written solely by the task-entry-conditions plugin (Step 10) from the SDD's authored Entry Condition rows — including a connector task's `current-stage-entered`, which the SDD declares as an explicit first row like any ungated task. Do NOT inject a default entry condition at task-creation time based on task type: it produces a duplicate condition and breaks `displayName` indexing (the index is the 1-based position within `entryConditions[]`). Connector and non-connector tasks are treated identically here.
 
-11. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
+11. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.case`.
 
 12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each element-class section batch completes (the closing validate at Phase 3 exit and in Phase 4 adds `--strict`; section boundaries use the default profile because mid-build state is legitimately incomplete) (per § Per-section batch write contract below). One validate per section, not one per element. Fixing errors at the section boundary is cheaper than chasing a cascade.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes, so the case cannot be entered). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
@@ -107,7 +107,7 @@ Steps:
 2. Pick `count` chars from `[A-Za-z0-9]` (62 chars). Constraints:
    - **Mix uppercase, lowercase, and digits** in every ID. Pure-letter or pure-digit suffixes look like patterns, not IDs.
    - **No sequential alphabet** (`abcdef`, `xyz123`) and no obvious dictionary words (`secret`, `loginX`).
-   - **No reuse within the same caseplan.** Before embedding the ID, scan all existing `id` values in the just-Read `caseplan.json` (and `id-map.json` if loaded). If collision, pick again.
+   - **No reuse within the same caseplan.** Before embedding the ID, scan all existing `id` values in the just-Read `caseplan.case` (and `id-map.json` if loaded). If collision, pick again.
    - **Different IDs in the same write must differ from each other**, not just from existing IDs.
 3. Concatenate prefix + chars. Embed via Write/Edit.
 
@@ -119,11 +119,11 @@ Every skill run generates fresh IDs — no determinism.
 
 ### Sidecar `id-map.json`
 
-`id-map.json` is built up incrementally during the run, flushed adjacent to `caseplan.json`. Lifecycle:
+`id-map.json` is built up incrementally during the run, flushed adjacent to `caseplan.case`. Lifecycle:
 
 1. **T01 (case plugin)** creates the file with the literal root entry: `{ "T01": { "kind": "case", "id": "root" } }`. No trigger is emitted at T01 — the triggers plugin records its entry at T02.
 2. **Downstream plugins** read the file, append entries for generated IDs (stage, task, condition, etc.), write back. Each plugin writes the map before handing off to the next so cross-plugin references can resolve via the on-disk file.
-3. **End of run:** the file is complete and lives alongside `caseplan.json`.
+3. **End of run:** the file is complete and lives alongside `caseplan.case`.
 
 Mapping build steps to generated IDs (`T<n>` is the execution-order label, not a file reference):
 
@@ -143,7 +143,7 @@ Used for: debugging, downstream cross-task reference resolution within the same 
 
 ## Expression Prefixes
 
-Every `=`-prefixed value written into `caseplan.json` (`data.inputs[].value`, condition/rule `conditionExpression`, connector body fields) must use the wrap form its **sink** dispatches to — wrong wrap is a silent runtime fault. The two-line rule:
+Every `=`-prefixed value written into `caseplan.case` (`data.inputs[].value`, condition/rule `conditionExpression`, connector body fields) must use the wrap form its **sink** dispatches to — wrong wrap is a silent runtime fault. The two-line rule:
 
 - **Value lookup** (`data.inputs[].value` referencing one identifier): `=vars.<id>` or `=bindings.<id>` — no dots, no operators.
 - **JS eval** (everything else — `conditionExpression`, connector body fields, dotted access, operators, `=metadata.*`): `=js:<expr>`. Conditions reference only `vars.X` and `metadata` (no `event` namespace).
@@ -156,7 +156,7 @@ Full sink-to-form table, the lookup-vs-JS-eval dispatch, and connector-trigger f
 
 ### Tool usage — mandatory
 
-All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `id-map.json`) MUST go through Claude's built-in tools only:
+All mutations to `caseplan.case` (and sibling files like `entry-points.json`, `id-map.json`) MUST go through Claude's built-in tools only:
 
 - **Read** to load the file.
 - **Edit** for narrowly-scoped, unambiguous in-place replacements — default for all mutations after T01, and required for sections with <10 elements.
@@ -169,10 +169,10 @@ This is a hard constraint — it keeps every mutation reviewable in the tool-cal
 **Anti-patterns that count as file mutation (forbidden — write the file via the Write/Edit tool instead):**
 
 - `node -e "const fs=require('fs'); ... fs.writeFileSync(...)"` — the `node -e` permission is for stdout-only helpers, not file I/O.
-- `node -e "..."` / `python -c "..."` / `jq '...' caseplan.json` followed by `> caseplan.json`, `>> caseplan.json`, or `| tee caseplan.json` — shell redirection onto a skill artifact is mutation, regardless of which interpreter ran.
-- `cat caseplan.json | jq '...'` even if you only "intend to print" — `jq` is forbidden; use Read.
-- `sed -i` / `awk -i inplace` / `python -c "open('caseplan.json','w')..."` — same family, all forbidden.
-- `bash -c "...>caseplan.json..."` — wrapping the redirection in another shell does not exempt it.
+- `node -e "..."` / `python -c "..."` / `jq '...' caseplan.case` followed by `> caseplan.case`, `>> caseplan.case`, or `| tee caseplan.case` — shell redirection onto a skill artifact is mutation, regardless of which interpreter ran.
+- `cat caseplan.case | jq '...'` even if you only "intend to print" — `jq` is forbidden; use Read.
+- `sed -i` / `awk -i inplace` / `python -c "open('caseplan.case','w')..."` — same family, all forbidden.
+- `bash -c "...>caseplan.case..."` — wrapping the redirection in another shell does not exempt it.
 
 Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issues.append(...)`, `existingTriggers = schema.nodes.filter(...)`, etc.) are **specifications of intent**, not commands to execute. Read them, apply the logic in-head, then use Read/Write/Edit to realize the mutation.
 
@@ -184,11 +184,11 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 ### Per-section batch write contract — canonical
 
-`caseplan.json` mutations follow a **per-section batched Edit** contract. The unit is one SDD element class (variables, triggers, stages, task-shapes, conditions, SLA), not one element.
+`caseplan.case` mutations follow a **per-section batched Edit** contract. The unit is one SDD element class (variables, triggers, stages, task-shapes, conditions, SLA), not one element.
 
 Procedure per section:
 
-1. **One Read** of `caseplan.json` at section entry — authoritative state.
+1. **One Read** of `caseplan.case` at section entry — authoritative state.
 2. **Section-sized writes** — pick by element count:
    - **Small sections (<10 elements)** — N Edits in sequence, one per element. Edit targets the smallest unambiguous slice of JSON the element mutates (one node, one array field, one task's `data.inputs`).
    - **Large sections (≥10 elements)** — single whole-section write replacing the section's container (e.g., entire `schema.nodes` array for stages, a stage's full `data.tasks` array for tasks within that stage). Compose the complete post-section state in reasoning from the Read snapshot, then emit via one Edit (replacing the container slice) or one Write (whole-file rewrite) — Write only when the per-section Edit slice is too large to express as a single unambiguous `old_string`/`new_string` pair.
@@ -196,7 +196,7 @@ Procedure per section:
 4. **One `validate`** at section boundary (Pre-flight Item 12 above).
 5. **Repair preservation.** Before a whole-file Write used to repair a validation error, record from the section-entry Read the stage IDs, task IDs, root binding IDs, and selected-resource task IDs that are outside the repair target. Immediately re-Read after the Write and verify that every recorded item remains. A repair may not remove or replace unrelated topology, bindings, or a resolved task merely to make `validate` pass; use a targeted Edit when the reported error identifies an individual binding or task.
 
-**Same-file sequential Edits — anchoring.** N Edits against `caseplan.json` in one section serialize in order; each later Edit runs against the text the earlier ones already changed. `caseplan.json` has keys that recur across nodes (`"tasks"`, `"data"`, `"entryConditions"`, `"exitConditions"`, `"inputs"`) — a bare recurring key is NOT a safe anchor.
+**Same-file sequential Edits — anchoring.** N Edits against `caseplan.case` in one section serialize in order; each later Edit runs against the text the earlier ones already changed. `caseplan.case` has keys that recur across nodes (`"tasks"`, `"data"`, `"entryConditions"`, `"exitConditions"`, `"inputs"`) — a bare recurring key is NOT a safe anchor.
 
 - **Anchor each Edit on a unique value** — the target stage/task's `"id": "<Stage_… | t…>"` — then extend `old_string` to the slice you mutate. Never anchor on a bare `"tasks": [` or `"entryConditions": [`.
 - **Extend until the match is unique within the whole file**, not just within the intended node.
@@ -206,7 +206,7 @@ Procedure per section:
 
 **Status text bundling.** Any progress text the agent emits before a section's first Edit/Write MUST share the same assistant turn as the tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference latency + full prompt cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. Per-element audit lives in TaskUpdate, NOT in narration.
 
-**Planning monologues forbidden.** Pre-Write/pre-Edit text turns that announce intent ("Caveman push:", "Approach:", "Strategy:", "Big single Write:", "Writing full caseplan.json structurally", "Now I'll batch all stages") are forbidden, whether bundled or standalone. The tool call itself IS the announcement — TaskUpdate carries the T-by-T narrative, the Edit/Write tool input is self-describing. If the status text the agent wants to emit exceeds one short sentence, the correct action is to cut it, not to bundle it. Multi-paragraph status text is always a violation.
+**Planning monologues forbidden.** Pre-Write/pre-Edit text turns that announce intent ("Caveman push:", "Approach:", "Strategy:", "Big single Write:", "Writing full caseplan.case structurally", "Now I'll batch all stages") are forbidden, whether bundled or standalone. The tool call itself IS the announcement — TaskUpdate carries the T-by-T narrative, the Edit/Write tool input is self-describing. If the status text the agent wants to emit exceeds one short sentence, the correct action is to cut it, not to bundle it. Multi-paragraph status text is always a violation.
 
 **Hard token cap on any single text block.** Outside the allow-list below, no text block may exceed **200 tokens**. Inside the allow-list, no text block may exceed **500 tokens**, ever. A text block >200 tokens outside the allow-list, or >500 inside it, is by definition a planning monologue regardless of content or framing. Allow-list (and only this list): the once-per-run kickoff flow overview, hard-stop AskUserQuestion preambles, Phase 5/6 completion reports, `Publish for review` DesignerUrl print, post-validate result summaries.
 
@@ -216,19 +216,19 @@ Procedure per section:
 
 **CLI-gated sections — gather-then-write.** Where each element needs its own CLI call before its JSON shape is known (Phase 2 non-connector `tasks describe`; Phase 3 Step 9.7 connector `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
 
-**Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `sdd.md`, then resume at the first element of the in-progress class that has no matching `displayName` (stage `data.label`, task `displayName`, variable `name`) in `caseplan.json`. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
+**Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.case` + `sdd.md`, then resume at the first element of the in-progress class that has no matching `displayName` (stage `data.label`, task `displayName`, variable `name`) in `caseplan.case`. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
 
-**Scope.** This contract applies to **`caseplan.json`**. Phase 1's `registry-resolved.json` follows the mirror section-batched contract in [planning.md Step 4](planning.md) — same one-Read-per-section + N-Edit-appends shape, with a single Edit splicing each entry object into the ledger array as the primitive (no whole-section Write needed; one-object appends are cheap regardless of count).
+**Scope.** This contract applies to **`caseplan.case`**. Phase 1's `registry-resolved.json` follows the mirror section-batched contract in [planning.md Step 4](planning.md) — same one-Read-per-section + N-Edit-appends shape, with a single Edit splicing each entry object into the ledger array as the primitive (no whole-section Write needed; one-object appends are cheap regardless of count).
 
 **Whole-file Write outside the initial scaffold.** Permitted only at section boundaries for sections with ≥10 elements, per the procedure above. Forbidden mid-section (between elements within the same section) — that bypasses the Read snapshot and risks field drops.
 
-**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — preserve the per-section cadence: Phase 2 writes root, nodes, variables, task shapes, SLA/escalations, and conditions (connector-backed rules use the canonical stub); Phase 3 fills connector context/input/output and other task values, then upgrades resolved connector-rule stubs. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk. For a case with ≥40 tasks or ≥8 stages, never emit the fully populated `caseplan.json` in one Write — use the Phase 2 sections followed by Phase 3 detail Edits.
+**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — preserve the per-section cadence: Phase 2 writes root, nodes, variables, task shapes, SLA/escalations, and conditions (connector-backed rules use the canonical stub); Phase 3 fills connector context/input/output and other task values, then upgrades resolved connector-rule stubs. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk. For a case with ≥40 tasks or ≥8 stages, never emit the fully populated `caseplan.case` in one Write — use the Phase 2 sections followed by Phase 3 detail Edits.
 
 **Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 13 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 13 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and Phase 2 → Phase 3 split above. There is no helper-script escape hatch.
 
 ### Generate a fresh ID
 
-**Inline — no subprocess.** Per § ID Generation § Algorithm above. Pick chars in-head following the constraints (mixed case + digits, no sequential, no dictionary words), scan existing IDs in the just-Read `caseplan.json` for collisions, embed via Write/Edit.
+**Inline — no subprocess.** Per § ID Generation § Algorithm above. Pick chars in-head following the constraints (mixed case + digits, no sequential, no dictionary words), scan existing IDs in the just-Read `caseplan.case` for collisions, embed via Write/Edit.
 
 Examples — agent picks these directly when writing JSON:
 
@@ -242,11 +242,11 @@ Rule_   + "jdBFrJ"  → "Rule_jdBFrJ"
 
 ### Add a node (Trigger / Stage)
 
-1. Read `caseplan.json`.
+1. Read `caseplan.case`.
 2. Determine `data` fields per plugin's JSON Recipe. Do not emit `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
 3. Generate a fresh node ID.
 4. Append the node to `schema.nodes` (stages use `.unshift()` in the CLI — prepend — but either position works for the frontend; prepend to match CLI output exactly).
-5. Edit `caseplan.json` — narrow slice targeting `schema.nodes`. Never whole-file Write.
+5. Edit `caseplan.case` — narrow slice targeting `schema.nodes`. Never whole-file Write.
 
 ### Add an edge — RETIRED
 
@@ -254,7 +254,7 @@ Not authored (Rule 20). To make a stage reachable, add a `stage-entry-conditions
 
 ### Add a task to a stage
 
-1. Read `caseplan.json`.
+1. Read `caseplan.case`.
 2. Locate the stage node by ID.
 3. Ensure `stageNode.data.tasks` exists. Use the task's activation mode and entry rule before honoring lane placement: strict sequential / `runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone tasks append as new single-task inner arrays. Reuse an existing `stageNode.data.tasks[laneIndex]` only for tasks explicitly planned as `parallel` or `parallel-after-predecessor` siblings with same-lane intent and rationale.
 4. Generate a task ID.
@@ -271,7 +271,7 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 
 ### Delete a node
 
-1. Read `caseplan.json`.
+1. Read `caseplan.case`.
 2. Remove the node from `schema.nodes` by ID.
 3. **If the deleted node is a stage with successors, repoint them — do NOT skip.** Edges are retired, so a successor reaches only via an entry-condition rule naming the deleted stage in `selectedStageIds`. Find every stage whose `data.entryConditions[].rules[][]` has a `selected-stage-completed` / `selected-stage-exited` rule whose `selectedStageIds` contains `<removedStageId>`, and repoint each to a surviving predecessor (the deleted stage's own predecessor, or `case-entered` if the deleted stage was first). Leaving them unrepointed orphans every successor — the case can validate structurally yet the successors never execute. Inverse of § Insert a stage between two existing stages.
 4. `schema.edges` is `[]` (Rule 20) — nothing to remove. Defensive: drop any stray edge referencing the removed node's ID.
@@ -289,7 +289,7 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 
 Remove a task from a stage. Tasks live in `stageNode.data.tasks[laneIndex][]` — **never** in `schema.nodes` — so § Delete a node cannot reach them. Deleting a task also dangles every reference to its `TaskId`; sweep them all, then re-pack lanes.
 
-1. Read `caseplan.json`. Locate the task in its owning `stageNode.data.tasks[laneIndex]` and note its `id` (the `TaskId`) and `elementId`.
+1. Read `caseplan.case`. Locate the task in its owning `stageNode.data.tasks[laneIndex]` and note its `id` (the `TaskId`) and `elementId`.
 2. **Remove the task** from `data.tasks[laneIndex]`.
 3. **Re-pack task sets.** Removing the only task in an inner `data.tasks` array leaves an empty task set. Drop the empty task set and preserve the remaining task-set order; never infer execution semantics from lane placement.
 4. **Prune conditions that reference the dead `TaskId`:**
@@ -306,7 +306,7 @@ Remove a task from a stage. Tasks live in `stageNode.data.tasks[laneIndex][]` �
 
 Remove a single rule from a condition (without deleting the parent stage / task / case-exit). Applies to **any** rule scope — stage entry/exit, task entry, case exit — and to both plain and connector-bound rules. The generic DNF removal (steps 1–3) is all a **plain** rule needs; the binding cascade (steps 4–6) is **connector-only** and a no-op for plain rules.
 
-1. Read `caseplan.json`.
+1. Read `caseplan.case`.
 2. Locate the rule by `id`. **FE composes one rule per condition** (OR-style across multiple condition objects), so the target is almost always a condition object that contains exactly this one rule. The underlying shape is DNF (`rules[][]`), so honor it: if other rules share the inner AND-array, remove just the rule; if the rule is the sole entry, remove the entire condition object.
 3. Remove the rule (or the parent condition object when it becomes empty). **Plain (non-connector) rules stop here** — skip steps 4–6. **For case-exit completion rules, first run the ≥1-completion-rule guard** in § Delete a case-exit completion rule below.
 4. **(Connector rules only)** Walk all remaining tasks/triggers/rules; prune root `bindings[]` entries whose `resourceKey` is no longer referenced.
@@ -318,7 +318,7 @@ Remove a single rule from a condition (without deleting the parent stage / task 
 
 Change a rule's behavior without removing it — keep the rule `id` so any reference stays valid.
 
-1. Read `caseplan.json`; locate the rule by `id` in its `rules[][]` DNF array.
+1. Read `caseplan.case`; locate the rule by `id` in its `rules[][]` DNF array.
 2. Edit the rule fields in place:
    - **Operator / expression:** rewrite `conditionExpression` (`=js:<expr>`) — use strict `===` / `!==`, parenthesize each sub-clause of a combined boolean ([bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink)). Re-validate any `=vars.<id>` referenced still type-checks.
    - **`rule` type:** swap the `rule` value (e.g., `selected-stage-completed` ↔ `selected-stage-exited`) and add/drop the side field the new type requires (`selectedStageIds`, `selectedTasksIds`). For case-exit, honor the rule-type × `marksCaseComplete` matrix ([case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md#rule-type--markscasecomplete-matrix)).
@@ -330,7 +330,7 @@ Change a rule's behavior without removing it — keep the rule `id` so any refer
 
 Remove a plain completion / exit rule from `metadata.caseExitRules[]`. **Guard: a case must keep ≥1 rule with `marksCaseComplete: true`** — `validate` rejects an all-`marksCaseComplete:false` case ("Case has no completion rules").
 
-1. Read `caseplan.json`; locate the rule in `metadata.caseExitRules[]`.
+1. Read `caseplan.case`; locate the rule in `metadata.caseExitRules[]`.
 2. **Before removing, check the invariant.** If the rule being removed is the only entry with `marksCaseComplete: true`, removing it leaves the case with no completion path. Do NOT silently remove — AskUserQuestion: `Replace it with a different completion rule` / `Keep it` / `Remove anyway (case will fail validation)`. Removing the last completer is almost always a mistake; surfacing it here avoids the After-edits retry thrash (validate would reject it on the next loop).
 3. Remove the condition object from `metadata.caseExitRules[]` (DNF removal per § Delete a condition rule steps 2–3). Connector-bound case-exit rules also run the connector cascade (steps 4–6).
 4. Edit — narrow slice targeting `metadata.caseExitRules`. Never whole-file Write. Validate at the section boundary.
@@ -362,7 +362,7 @@ The task's source resource (action-app / agent / process / api-workflow / connec
 1. **Re-fetch the current schema** (read-only CLI — never hand-author, per § Responsibilities):
    - Non-connector task: `uip maestro case registry pull --force`, then `uip maestro case tasks describe ... --output json`.
    - Connector activity / trigger: `uip maestro case spec --type ... --output json` (unified endpoint — see [connector-integration.md](connector-integration.md)).
-2. Read `caseplan.json`; locate the task by `id`.
+2. Read `caseplan.case`; locate the task by `id`.
 3. Edit the task's `data` slice to match the fetched schema: update `taskTypeId` if it changed; add / remove / rename `data.inputs[]` and `data.outputs[]`. Keep `id` and `elementId = ${stageId}-${taskId}` unchanged.
 4. **Re-bind affected inputs.** For each added / renamed / retyped input, fix its `data.inputs[i]` entry (literal/expression `value` or cross-task `sourceStage`/`sourceTask`/`sourceOutput`) per [bindings-and-expressions.md](bindings-and-expressions.md). Prefix: `=vars.X` / `=bindings.X` for a single lookup, `=js:...` for dotted access or operators.
 5. **Repoint consumers of removed/renamed outputs.** Any other task input or condition referencing a dropped output now dangles — repoint or remove it. Prune top-level `bindings` entries no longer referenced.
@@ -386,7 +386,7 @@ Swap which process / agent / RPA / api-workflow / case-management resource a tas
 
 Relocate a task within the case. **Keep the task `id`** so conditions and cross-task bindings referencing it stay valid — but every `elementId` is stage-scoped and MUST be recomputed.
 
-1. Read `caseplan.json`. Locate the task in its source `stageNode.data.tasks[oldLane]`.
+1. Read `caseplan.case`. Locate the task in its source `stageNode.data.tasks[oldLane]`.
 2. **Recompute every stage-scoped `elementId` — the step most easily missed** (a move looks like layout, but `elementId` encodes the owning stage):
    - the task itself: `elementId = ${destStageId}-${taskId}`
    - any `wait-for-connector` entry-condition rule on the task, and each entry in that rule's `uipath.outputs[]`: `elementId = ${destStageId}-${ruleId}`
@@ -405,7 +405,7 @@ Relocate a task within the case. **Keep the task `id`** so conditions and cross-
 
 The runtime resolver matches `=vars.<id>` by **exact string equality on `Variable.id`** ([global-vars impl-json](plugins/variables/global-vars/impl-json.md)). Renaming or removing a variable dangles every consumer, and `validate` does not reliably catch a dangling `=vars.*` — sweep them by hand.
 
-1. Read `caseplan.json`. Note the variable's `id` (the resolver key) and its owning array: top-level `variables.{inputs,outputs,inputOutputs}[]`, a `task.data.outputs[]` self-declaration, or a trigger output.
+1. Read `caseplan.case`. Note the variable's `id` (the resolver key) and its owning array: top-level `variables.{inputs,outputs,inputOutputs}[]`, a `task.data.outputs[]` self-declaration, or a trigger output.
 2. **Sweep every consumer of `=vars.<id>` / `=bindings.<id>`:**
    - task `data.inputs[].value`
    - condition / rule `conditionExpression` (stage entry/exit, task entry, case exit) — including `=js:...` expressions that reference `vars.<id>` inside a larger expression
@@ -420,7 +420,7 @@ The runtime resolver matches `=vars.<id>` by **exact string equality on `Variabl
 
 Mutate a variable's `type` / `body` / `default` in place — keep its `id` so every `=vars.<id>` reference stays valid. **Cannot be faked by delete + re-add**: re-adding re-mints a fresh `id` and dangles every consumer (§ Rename or delete). The `type` is duplicated across several coordinated slots ([global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md)); change all of them in one pass or the FE picker and runtime disagree.
 
-1. Read `caseplan.json`. Identify the variable's category and every slot that carries its `type`:
+1. Read `caseplan.case`. Identify the variable's category and every slot that carries its `type`:
    - **Internal variable** (`variables.inputOutputs[]`): the single companion entry's `type` (+ `body` when `type == "jsonSchema"`).
    - **Out argument** (`variables.outputs[]` formal + `inputOutputs[]` companion): both entries' `type`; the companion's `body` for `jsonSchema`.
    - **In argument** (three entries — `root.inputs[]` formal slot, `root.inputOutputs[]` companion, `triggerNode.data.inputs.outputs[]` bridge): change `type` on **all three**. The bridge's `type` must match or the fire-time copy mis-types.
@@ -433,7 +433,7 @@ Mutate a variable's `type` / `body` / `default` in place — keep its `id` so ev
 
 The add path is [plugins/sla/impl-json.md](plugins/sla/impl-json.md); this is the in-place modify / remove. SLA rules live in `metadata.slaRules[]` (root target) or `node.data.slaRules[]` (stage target); each rule carries an `escalationRule[]`. Each rule has a **required** `id` (`sla_` + 8 chars, schema v26); escalations carry an `esc_` id. Address a rule by `id` or array index.
 
-1. Read `caseplan.json`. Locate the SLA array — `metadata.slaRules[]` for the root target, else the stage node's `data.slaRules[]` (find by `data.label`).
+1. Read `caseplan.case`. Locate the SLA array — `metadata.slaRules[]` for the root target, else the stage node's `data.slaRules[]` (find by `data.label`).
 2. **Modify a rule:** edit the target rule's `count` / `unit` / `expression` in place. Keep the default rule (`expression == "=js:true"`) **last**; never reorder it ahead of a conditional rule.
 3. **Remove a rule:** delete the rule object from `slaRules[]` (its nested `escalationRule[]` goes with it — drop those `esc_` ids from `id-map.json`). If removing leaves the target with **no** SLA rules, remove the `slaRules` key entirely ([sla/impl-json.md](plugins/sla/impl-json.md) emission rule 5) — do not leave an empty array or an orphan default. If conditional rules remain, the `=js:true` default must still be present and last.
 4. **Modify an escalation:** edit its `action.recipients[]`, `triggerInfo.type`, or `atRiskPercentage` in place. `atRiskPercentage` is present only when `triggerInfo.type == "at-risk"` — drop the field when switching to `sla-breached`. Omit `displayName` entirely rather than emitting `undefined`.
@@ -444,7 +444,7 @@ The add path is [plugins/sla/impl-json.md](plugins/sla/impl-json.md); this is th
 
 Swap a trigger's type in place (e.g., manual → timer, or manual → event) — keep the node `id` so `id-map.json` and any references stay valid.
 
-1. Read `caseplan.json`.
+1. Read `caseplan.case`.
 2. Locate the Trigger node by `id`. Rewrite its `data.inputs` to the target type's shape per the target plugin's recipe — [triggers/manual](plugins/triggers/manual/impl-json.md), [triggers/timer](plugins/triggers/timer/impl-json.md), [triggers/event](plugins/triggers/event/impl-json.md). The target type dictates the move:
    - **→ manual:** **delete the `data.inputs` key entirely** — a manual trigger has no `data.inputs` ([manual/impl-json.md](plugins/triggers/manual/impl-json.md) "No `data.inputs` key"). Do not leave an empty or stale block.
    - **→ timer:** set `data.inputs = { serviceType: "timer", … }` per the timer recipe.
@@ -462,7 +462,7 @@ Swap a trigger's type in place (e.g., manual → timer, or manual → event) —
 Keep an event trigger as an event trigger but point it at a different connector event (different object / operation / filter). Distinct from § Replace a trigger with a different type (which changes the *type*). Keep the node `id`.
 
 1. **Re-fetch the case-spec** for the new event — `uip maestro case spec --type trigger --output json` (never hand-author connector schemas; see [connector-integration.md](connector-integration.md) and [plugins/triggers/event/impl-json.md](plugins/triggers/event/impl-json.md)).
-2. Read `caseplan.json`; locate the Trigger node by `id`. Rebuild `data.inputs` (`serviceType: "Intsvc.EventTrigger"` + the new `context[]` / `inputs[]` / `outputs[]` / `bindings[]`) from the fetched spec.
+2. Read `caseplan.case`; locate the Trigger node by `id`. Rebuild `data.inputs` (`serviceType: "Intsvc.EventTrigger"` + the new `context[]` / `inputs[]` / `outputs[]` / `bindings[]`) from the fetched spec.
 3. **Regenerate the trigger's root bindings + variable bridges.** A different event changes the Connection/Folder bindings and the trigger-output → companion wiring. Re-run the trigger-output dispatch ([global-vars/impl-json.md Loop A](plugins/variables/global-vars/impl-json.md)): drop bridges/companions for outputs the old event produced and the new event no longer does (sweep `=vars.*` consumers per § Rename or delete a global variable or argument), add the new ones.
 4. **Update `entry-points.json`** `input`/`output` if the event's io shape changed; the `#<triggerId>` fragment stays.
 5. **Regenerate `bindings_v2.json`** + repopulate the IS connection cache ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14) — the new event needs its own Connection resource declaration. Then prune the orphaned Connection ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)).
@@ -474,7 +474,7 @@ Keep an event trigger as an event trigger but point it at a different connector 
 
 An exception (secondary) stage is **not** a distinct node type — it is a regular `case-management:Stage` node carrying `data.stageType: "secondary"`. `stageType` is the enum `["primary", "secondary"]`; primary stages **omit** the field entirely. So the node `type` never changes — the **only** JSON delta is the presence/value of `data.stageType`. Keep the node `id` so tasks, conditions, and `=vars.*` references stay valid (delete + re-add is forbidden, [brownfield.md](brownfield.md) "preserve IDs").
 
-1. Read `caseplan.json`; locate the stage node by `id` (always `type: "case-management:Stage"`).
+1. Read `caseplan.case`; locate the stage node by `id` (always `type: "case-management:Stage"`).
 2. **Primary → Secondary (exception):** add `data.stageType: "secondary"`. Leave `data.entryConditions` / `data.exitConditions` as they are — a secondary stage is condition-entered, so ensure it has ≥1 entry condition (add one per [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) if it has none).
 3. **Secondary → Primary:** **remove the `data.stageType` key** (primary stages omit it — do not set `"primary"` explicitly unless the file already does). Re-check the stage's reachability: a primary stage still needs ≥1 entry condition (`case-entered` if first, else `selected-stage-completed` / `selected-stage-exited`).
 4. `isInterrupting` is **not** part of this delta — it lives on the entry-condition *rule*, not the stage node. Leave it alone.
@@ -496,7 +496,7 @@ On failure: fix the reported issue (usually a missing field, malformed ID, or or
 
 ## Anti-Patterns
 
-- **Do NOT shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other subprocess to mutate `caseplan.json` or its siblings.** Use Read + Write/Edit only. Subprocess scripts bypass the tool-call audit trail and make the mutation invisible in the transcript. See "Tool usage — mandatory" above.
+- **Do NOT shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other subprocess to mutate `caseplan.case` or its siblings.** Use Read + Write/Edit only. Subprocess scripts bypass the tool-call audit trail and make the mutation invisible in the transcript. See "Tool usage — mandatory" above.
 - **Do NOT write helper scripts (`.py`, `.js`, `.sh`) that open / parse / modify / save JSON files.** Even one-shot scripts are forbidden — the agent is the processor, Read/Write/Edit are the only I/O primitives.
 - **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects CLI's format.
 - **Do NOT emit node-level layout fields** (`position`, `style`, `measured`, `width`, `height`, `zIndex`) — these belong in top-level `layout`, not on the node (Rule 18).

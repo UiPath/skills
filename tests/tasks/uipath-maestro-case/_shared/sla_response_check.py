@@ -1,6 +1,6 @@
 """Shared assertions for the SLA-response battery (``tests/tasks/uipath-maestro-case/sla_response``).
 
-The battery grades how an SLA requirement is *shaped* in ``caseplan.json``:
+The battery grades how an SLA requirement is *shaped* in ``caseplan.case``:
 
 - ``notify-only``  — escalation only; no stage, no task, no entry condition.
 - ``start-task``   — a follow-up task in the breached stage carries an ``sla-status-change``
@@ -30,7 +30,7 @@ from typing import Iterator
 SLA_RULE = "sla-status-change"
 
 # The battery edits a staged solution, so the caseplan is always at this path.
-CASEPLAN = "SlaResponse/SlaResponse/caseplan.json"
+CASEPLAN = "SlaResponse/SlaResponse/caseplan.case"
 
 
 def fail(msg: str) -> None:

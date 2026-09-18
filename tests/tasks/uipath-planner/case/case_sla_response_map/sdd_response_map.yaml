@@ -20,7 +20,7 @@ reference:
 
 initial_prompt: |
   Design an "OrderExceptionReview" Maestro case and write the design document to `sdd.md`.
-  Design only: stop before creating caseplan.json, and do not scaffold a solution.
+  Design only: stop before creating caseplan.case, and do not scaffold a solution.
 
   The design is settled — do not redesign it or re-interview me on the timing rules below.
   Do not query the tenant registry, connections, schemas, or users; use concrete intended
@@ -44,8 +44,8 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "sdd.md was produced and no caseplan.json was built"
-    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    description: "sdd.md was produced and no caseplan.case was built"
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.case -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -75,6 +75,6 @@ simulation:
   constraints:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, SLA targets, or the three SLA responses."
     - "When shown the design confirmation, approve it on the first pass and ask the assistant to stop at the approved sdd.md."
-    - "Do not authorize creating caseplan.json, scaffolding a solution, running, publishing, or deploying."
+    - "Do not authorize creating caseplan.case, scaffolding a solution, running, publishing, or deploying."
     - "Decline any optional HTML-preview offer."
   max_turns: 12

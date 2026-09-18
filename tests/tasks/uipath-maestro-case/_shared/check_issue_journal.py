@@ -63,7 +63,7 @@ def carries_unresolved(root: Path) -> tuple[bool, str]:
         except OSError:
             pass
 
-    caseplan = find_one(root, "caseplan.json")
+    caseplan = find_one(root, "caseplan.case")
     if caseplan is not None:
         try:
             case = json.loads(caseplan.read_text())
@@ -113,7 +113,7 @@ def main() -> int:
     print(f"unresolved work: {why or 'none'}")
 
     issues = find_one(root, "build-issues.md")
-    reached_phase2 = find_one(root, "caseplan.json") is not None
+    reached_phase2 = find_one(root, "caseplan.case") is not None
 
     if issues is None:
         if not reached_phase2:

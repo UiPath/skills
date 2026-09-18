@@ -8,8 +8,8 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../
 
 Append one secondary manual trigger to the schema. This plugin performs **two file writes as an atomic pair**:
 
-1. Append a `uipath.case.trigger` node to `caseplan.json.nodes`.
-2. Append a matching entry to `entry-points.json.entryPoints` (sibling of `caseplan.json`).
+1. Append a `uipath.case.trigger` node to `caseplan.case.nodes`.
+2. Append a matching entry to `entry-points.json.entryPoints` (sibling of `caseplan.case`).
 
 The sibling-file sync is the main reason this plugin needs a dedicated JSON recipe rather than reusing a generic "add node" primitive — orchestrator discovers entry points via `entry-points.json`, so a trigger node without a matching entry is invisible to runtime.
 
@@ -24,8 +24,8 @@ Position is not a user input. It is computed statefully (see below).
 
 ## Pre-flight
 
-1. **`caseplan.json` exists** at `<SolutionDir>/<ProjectName>/caseplan.json`. Created by the `case` plugin at T01. If absent, run that plugin first — do not synthesize.
-2. **`entry-points.json` exists** in the same directory (sibling of `caseplan.json`). Written by the `case` plugin's § Scaffold at T01. If absent, hard-fail (`entry-points.json not found in <dir>. Run the case plugin first to scaffold the project.`). Do not lazily create it — a missing `entry-points.json` indicates an incomplete project scaffold, not a recoverable state.
+1. **`caseplan.case` exists** at `<SolutionDir>/<ProjectName>/caseplan.case`. Created by the `case` plugin at T01. If absent, run that plugin first — do not synthesize.
+2. **`entry-points.json` exists** in the same directory (sibling of `caseplan.case`). Written by the `case` plugin's § Scaffold at T01. If absent, hard-fail (`entry-points.json not found in <dir>. Run the case plugin first to scaffold the project.`). Do not lazily create it — a missing `entry-points.json` indicates an incomplete project scaffold, not a recoverable state.
 3. Both files must be parseable JSON. Read → validate → modify → write.
 
 ## ID generation
@@ -50,7 +50,7 @@ displayName = `Trigger ${existingTriggers.length + 1}`
 
 With `trigger_1` pre-seeded, the first secondary trigger without a display name becomes `"Trigger 2"`, the second `"Trigger 3"`, etc.
 
-## Recipe — `caseplan.json` (append to `schema.nodes`)
+## Recipe — `caseplan.case` (append to `schema.nodes`)
 
 Append (not prepend) the trigger node:
 
@@ -85,7 +85,7 @@ Read the file, parse, append:
 }
 ```
 
-Where `basename(caseplanFile)` is the schema file's base name including extension (typically `caseplan.json`), yielding a `filePath` fragment like `/content/caseplan.json.bpmn#trigger_xY2mNp`.
+Where `basename(caseplanFile)` is the schema file's base name including extension (typically `caseplan.case`), yielding a `filePath` fragment like `/content/caseplan.case.bpmn#trigger_xY2mNp`.
 
 Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
 
@@ -95,16 +95,16 @@ Write back with **4-space indent** (`JSON.stringify(obj, null, 4)`).
 
 Write both files atomically in this order:
 
-1. `caseplan.json` — node appended.
+1. `caseplan.case` — node appended.
 2. `entry-points.json` — entry appended.
 
-If the second write fails, the `caseplan.json` mutation must be rolled back to avoid a half-written state. Simplest rollback: re-read the `caseplan.json` that existed pre-mutation (kept in memory), write it back. Prefer fail-fast: verify `entry-points.json` exists BEFORE the first write.
+If the second write fails, the `caseplan.case` mutation must be rolled back to avoid a half-written state. Simplest rollback: re-read the `caseplan.case` that existed pre-mutation (kept in memory), write it back. Prefer fail-fast: verify `entry-points.json` exists BEFORE the first write.
 
 ## Post-write validation
 
 After writing, confirm:
 
-- `caseplan.json.nodes` contains the new node with the generated `trigger_XXXXXX` id, at the end of the array.
+- `caseplan.case.nodes` contains the new node with the generated `trigger_XXXXXX` id, at the end of the array.
 - `nodes[].type === "uipath.case.trigger"`.
 - `nodes[].data.display.label` matches the resolved `displayName`.
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
@@ -114,6 +114,6 @@ After writing, confirm:
 - **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
-Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.
+Run `uip maestro case validate <caseplan.case> --output json` after all triggers for this plugin's batch are added.
 
 <!-- END: impl-json.md -->

@@ -2,7 +2,7 @@ task_id: skill-case-timer-connector-from-sdd
 description: >
   GREENFIELD TIMER TRIGGER AND CONNECTOR SHAPES — build the ScheduledComplianceSweep case
   from a staged sdd.md and assert the declared trigger and task types survive into
-  caseplan.json. Across the 11 greenfield SDD fixtures in this suite the declared trigger
+  caseplan.case. Across the 11 greenfield SDD fixtures in this suite the declared trigger
   is Manual 8 times and an event trigger twice; a TIMER trigger is declared zero times, so
   no task exercised projecting one from an SDD. Timer triggers are covered elsewhere
   (multi_trigger, in_arg_trigger_bind) but only in prompt-driven builds. wait-for-connector
@@ -48,7 +48,7 @@ initial_prompt: |
   unresolved and emit placeholders per the skill's rules. Do NOT query the tenant
   registry, connections, or users.
 
-  Not complete until `uip maestro case validate` passes on the generated caseplan.json.
+  Not complete until `uip maestro case validate` passes on the generated caseplan.case.
   Stop there — do not publish, upload, or run a debug session.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and
@@ -57,16 +57,16 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "a caseplan.json was generated"
-    command: "find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    description: "a caseplan.case was generated"
+    command: "find . -name caseplan.case -not -path '*/.venv/*' | grep -q ."
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "p=$(find . -name caseplan.json -not -path '*/.venv/*' | head -1); uip maestro case validate \"$p\" --output json"
+    description: "uip maestro case validate passes on the generated caseplan.case"
+    command: "p=$(find . -name caseplan.case -not -path '*/.venv/*' | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -85,7 +85,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "no mutating case CLI verbs — caseplan.json is authored directly per the skill's invariant"
+    description: "no mutating case CLI verbs — caseplan.case is authored directly per the skill's invariant"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+case\s+(cases|stages|tasks|[a-z-]*conditions)\s+(add|update|remove)'
 

@@ -342,7 +342,9 @@ derive_fields() {
       file_ext="$(printf '%s' "$file_path" | grep -oE '\.[A-Za-z0-9]+$' | head -1)"
       case "$file_path" in
         *agent.json)    file_ext="agent.json" ;;
-        *caseplan.json) file_ext="caseplan.json" ;;
+        # Studio Web saves the plan as caseplan.case; `case init` still scaffolds
+        # caseplan.json. Both are a case plan: collapse to one dimension value.
+        *caseplan.case|*caseplan.json) file_ext="caseplan.case" ;;
       esac
       ;;
   esac

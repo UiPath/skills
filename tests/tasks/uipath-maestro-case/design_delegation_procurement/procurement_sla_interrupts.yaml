@@ -35,7 +35,7 @@ reference:
 
 initial_prompt: |
   Design a "SupplierApplication" Maestro case and produce `sdd.md`. Stop after
-  the SDD — do not create caseplan.json. This is a design-only exercise: do not
+  the SDD — do not create caseplan.case. This is a design-only exercise: do not
   query tenant registry, connections, schemas, or users. Use concrete intended
   resource and system names, leave identities unresolved, and defer
   authoritative tenant resolution to the later build run. Do not inspect plugin
@@ -64,7 +64,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The SDD was produced without building the case"
-    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.case -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -112,13 +112,13 @@ success_criteria:
       artifact (a "status note", a specific activity type) that the
       requirement never asks for.
 
-      This is a DESIGN-ONLY run: there is no `caseplan.json` and no plan file,
+      This is a DESIGN-ONLY run: there is no `caseplan.case` and no plan file,
       so sequencing is expressed only in the SDD's own **Activation Mode** and
       **Entry Condition** rows. A deterministic criterion already verifies exactly
       that and owns it. Treat an explicit `sequential` activation with a
       `runs-sequentially` entry rule on each of the three Supplier Setup tasks as
       satisfying the Supplier Setup bullet in full; do not re-derive it, and do not
-      require caseplan.json-level `data.tasks` structure this task forbids building.
+      require caseplan.case-level `data.tasks` structure this task forbids building.
 
       Grade routing SEMANTICS, not table presentation. The SLA Response Map is
       authoritative for breach routing: when it correctly routes a breach to
@@ -148,5 +148,5 @@ simulation:
   constraints:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, owners, timing, or global-event behavior."
     - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
-    - "Do not authorize creating caseplan.json, running, publishing, or deploying."
+    - "Do not authorize creating caseplan.case, running, publishing, or deploying."
   max_turns: 30

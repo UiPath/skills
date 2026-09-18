@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """ScheduledComplianceSweep: did the SDD's timer trigger, connector waits, ordered
-chains, and run-once hold survive into caseplan.json?
+chains, and run-once hold survive into caseplan.case?
 
 Why this check exists
 ---------------------
 Across the greenfield SDD fixtures in this suite, the trigger declared in the SDD's
 `### Case Triggers` table is `Manual` 8 times and an event trigger twice. A TIMER
 trigger is declared zero times, so no task ever exercised projecting one from an SDD
-into `caseplan.json`. Timer triggers ARE covered elsewhere (`multi_trigger`,
+into `caseplan.case`. Timer triggers ARE covered elsewhere (`multi_trigger`,
 `in_arg_trigger_bind`), but only in prompt-driven builds — never through the SDD.
 
 `wait-for-connector` had the same problem for a different reason: exactly one
@@ -25,7 +25,7 @@ real emitted plan, not inferred:
     `isRequired`, `entryConditions`. case-schema.md warns an envelope field misplaced
     inside `data` passes `validate` silently and is dead config.
   * the emitted run-once field is `shouldRunOnlyOnce`; `runOnlyOnce` is the sdd.md
-    spelling and never appears in caseplan.json.
+    spelling and never appears in caseplan.case.
 
 Read-only. Exit 0 clean, 1 on findings.
 """

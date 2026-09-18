@@ -38,7 +38,7 @@ from _shared.case_check import (  # noqa: E402
 )
 
 EXPECTED_CASEPLAN = os.path.join(
-    "AgedInvoiceResolution", "AgedInvoiceResolution", "caseplan.json"
+    "AgedInvoiceResolution", "AgedInvoiceResolution", "caseplan.case"
 )
 PRIMARY_PATTERNS = [
     ("Intake", r"intake|registration"),

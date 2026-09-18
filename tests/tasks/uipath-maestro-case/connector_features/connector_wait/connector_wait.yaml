@@ -5,7 +5,7 @@ description: >
   `wait-for-connector` task (the 2nd previously-untested task type) that
   suspends until an external Integration Service connector event arrives.
   Exercises the connector-trigger plugin: `case spec --type trigger
-  --input-details`, direct caseplan.json write of a resolved
+  --input-details`, direct caseplan.case write of a resolved
   `type: "wait-for-connector"` node (`data.serviceType:
   "Intsvc.WaitForEvent"`, real `data.typeId` + `data.connectionId`), and the
   frontend event-triggered task mode where a first task keeps only
@@ -149,7 +149,7 @@ initial_prompt: |
   steps. Do NOT run `uip maestro case debug` (a wait-for-connector suspends on a
   real event). Do NOT ask for approval, confirmation, or feedback. Build
   end-to-end in a single pass and finish with `uip maestro case validate`
-  passing on the resulting caseplan.json.
+  passing on the resulting caseplan.case.
 
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 
@@ -178,8 +178,8 @@ success_criteria:
     pass_threshold: 0
 
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate ConnectorWaitCase/ConnectorWaitCase/caseplan.json --output json"
+    description: "uip maestro case validate passes on the generated caseplan.case"
+    command: "uip maestro case validate ConnectorWaitCase/ConnectorWaitCase/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

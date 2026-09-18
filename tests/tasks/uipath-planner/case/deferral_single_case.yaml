@@ -1,7 +1,7 @@
 task_id: skill-planner-smoke-deferral-single-case
 description: >
   Negative / boundary coverage: a single self-contained Case Management
-  process (one caseplan.json project) must route to ONE specialist
+  process (one caseplan.case project) must route to ONE specialist
   (uipath-maestro-case), NOT fan out through the multi-project planner. Guards
   the SKILL.md single-project deferral rule against planner over-triggering.
 tags: [uipath-planner, smoke, mode:build, lifecycle:discover]

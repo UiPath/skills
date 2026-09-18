@@ -82,7 +82,7 @@ def good_plan() -> dict:
 
 
 def run(tmp_path: Path, plan: dict) -> subprocess.CompletedProcess[str]:
-    (tmp_path / "caseplan.json").write_text(json.dumps(plan), encoding="utf-8")
+    (tmp_path / "caseplan.case").write_text(json.dumps(plan), encoding="utf-8")
     return subprocess.run([sys.executable, str(CHECKER)], cwd=tmp_path,
                           capture_output=True, text=True)
 

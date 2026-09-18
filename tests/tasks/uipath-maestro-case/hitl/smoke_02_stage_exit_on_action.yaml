@@ -27,7 +27,7 @@ initial_prompt: |
   required stages complete.
 
   Use the same name for solution and project so the case file lives at
-  PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json.
+  PurchaseApprovalCase/PurchaseApprovalCase/caseplan.case.
 
   Write this sdd.md to sdd.md first, then build from it:
 
@@ -143,7 +143,7 @@ initial_prompt: |
   **REQUIRED — before finishing, write report.json at the sandbox root** with
   exactly these keys:
   {
-    "caseplan_path": "<relative path to caseplan.json>",
+    "caseplan_path": "<relative path to caseplan.case>",
     "action_task_id": "<id of the action task>",
     "review_stage_id": "<id of the Review stage>",
     "exit_rule_type": "<the WHEN value used on Review's exit, e.g. selected-tasks-completed>",
@@ -152,14 +152,14 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "caseplan.json was created"
-    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    description: "caseplan.case was created"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.case"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: json_check
     description: "Caseplan contains an action task"
-    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.case"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -169,7 +169,7 @@ success_criteria:
 
   - type: file_contains
     description: "Review stage exits via selected-tasks-completed"
-    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.case"
     includes:
       - "selected-tasks-completed"
     weight: 3.0
@@ -177,7 +177,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json --output json"
+    command: "uip maestro case validate PurchaseApprovalCase/PurchaseApprovalCase/caseplan.case --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

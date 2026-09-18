@@ -20,7 +20,7 @@ Connection selection mechanics (`--refresh` retry, ping verification, BYOA workf
 
 ## Resolution Pipeline
 
-For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
+For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.case` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
 
 > **Empty `Connections[]` is not terminal.** When `get-connection` returns no connections, Step 2 offers to create one (`uip is connections create`) before falling back to `<UNRESOLVED>` — see [§ Creating a Connection](#creating-a-connection).
 
@@ -111,7 +111,7 @@ Spec output carries the full operation contract:
 | `outputs.pagination` | `null` for non-list; `{ maxPageSize: N }` for list ops |
 | `filter` | Structured FilterBuilder contract (`ceql` activity / `jmes` trigger); `undefined` means no structured authoring. Plain filter fields remain native-syntax query/body inputs |
 | `references[]` | Cross-references with pre-built `discoverCommand` runnable strings |
-| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
+| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.case` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
 | `diagnostics` | Per-endpoint `fetched` / `fallbacks` |
 
 Full input-details contract (the `--input-details` JSON shape): [`case-spec-input-details.md`](case-spec-input-details.md).
@@ -141,7 +141,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 
 ---
 
-## Applying Results to caseplan.json
+## Applying Results to caseplan.case
 
 In Phase 3, the populated `caseShape` from `case spec --input-details` is dropped into the task's `data` after binding-id substitution. Per-class wiring lives in each plugin's `impl-json.md` — the table below is a quick reference.
 

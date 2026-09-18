@@ -9,7 +9,7 @@ resolved against them instead of emitting skeletons or placeholder stubs:
   - every non-connector resource is bound by its SDD name + folder in both
     caseplan and bindings_v2 (tenant GUIDs are discovery inputs, not runtime
     binding fields, so their placement is deliberately not graded)
-  - both connection IDs and both activity type IDs land in caseplan.json
+  - both connection IDs and both activity type IDs land in caseplan.case
   - connector tasks carry the right serviceType + connectorKey
   - the Stage 5 connector ENTRY RULE is resolved (real webhook typeId +
     connectionId, not the minimal stub)
@@ -36,7 +36,7 @@ from _shared.case_check import (  # noqa: E402
     task_is_skeleton,
 )
 
-EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.json")
+EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.case")
 # Resolved against the REFERENCE mirror (this file's own family root:
 # $REFERENCE_DIR == .../uipath-maestro-case, per cm_golden_expense.yaml's
 # `reference.directory: ../..`), never the sandbox copy staged by
@@ -145,7 +145,7 @@ def main():
     ):
         absent = sorted(g for g in ids if g not in caseplan_text)
         if absent:
-            _fail(f"{kind}(s) not found in caseplan.json: {absent}")
+            _fail(f"{kind}(s) not found in caseplan.case: {absent}")
     # -- no skeleton tasks ------------------------------------------------------
     skeletons, timer_empty = [], []
     for task in iter_tasks(plan):
@@ -163,7 +163,7 @@ def main():
 
     # -- name/folder resource bindings + bindings_v2 -----------------------------
     if bindings_text is None:
-        _fail("bindings_v2.json missing next to caseplan.json")
+        _fail("bindings_v2.json missing next to caseplan.case")
     try:
         bindings_doc = json.loads(bindings_text)
     except ValueError:

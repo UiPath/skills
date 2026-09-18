@@ -1,6 +1,6 @@
 """Shared helpers for uipath-maestro-case single-node e2e checks.
 
-Locates the generated `caseplan.json`, runs ``uip maestro case validate``,
+Locates the generated `caseplan.case`, runs ``uip maestro case validate``,
 and asserts that a task of the expected ``type`` exists somewhere in the
 case definition. ``case-management`` tasks are allowed to land as skeletons
 (empty ``data``) when the referenced sub-case isn't published on the tenant
@@ -26,12 +26,12 @@ import time
 from typing import Any, Iterable, NoReturn, Sequence
 
 
-def find_caseplan(pattern: str = "**/caseplan.json") -> str:
+def find_caseplan(pattern: str = "**/caseplan.case") -> str:
     matches = sorted(
         p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
     )
     if not matches:
-        _fail(f"No caseplan.json found matching {pattern}")
+        _fail(f"No caseplan.case found matching {pattern}")
     if len(matches) == 1:
         return matches[0]
 
@@ -70,7 +70,7 @@ def find_caseplan(pattern: str = "**/caseplan.json") -> str:
             )
 
     joined = "\n  - ".join(matches)
-    _fail(f"Multiple distinct caseplan.json files match {pattern!r}:\n  - {joined}")
+    _fail(f"Multiple distinct caseplan.case files match {pattern!r}:\n  - {joined}")
 
 
 def read_caseplan(path: str | None = None) -> dict:
@@ -514,7 +514,7 @@ def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
     turn those into ``FinalStatus``/``Variables``/… and silently break every
     lowercase read. Routing runtime-payload reads through this accessor tolerates
     either casing and any future CLI normalization. Use it ONLY for the debug
-    RUNTIME payload — NOT for ``caseplan.json`` SOURCE readers, whose camelCase
+    RUNTIME payload — NOT for ``caseplan.case`` SOURCE readers, whose camelCase
     keys are stable and intentional.
 
     Candidates are tried in order; the first whose lowercased form matches a key
@@ -630,7 +630,7 @@ def _caseplan_node_count(root: str) -> int | None:
     """Return the node count for one unambiguous Case plan under ``root``."""
     plans = sorted(
         path
-        for path in glob.glob(os.path.join(root, "**/caseplan.json"), recursive=True)
+        for path in glob.glob(os.path.join(root, "**/caseplan.case"), recursive=True)
         if "/.venv/" not in path
     )
     if len(plans) != 1:

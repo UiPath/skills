@@ -39,7 +39,7 @@ def _write_caseplan(path, nodes):
 
 def _write_case_project(root, solution, project, nodes):
     project_dir = root / solution / project
-    _write_caseplan(project_dir / "caseplan.json", nodes)
+    _write_caseplan(project_dir / "caseplan.case", nodes)
     (project_dir / "project.uiproj").write_text(
         json.dumps({"ProjectType": "CaseManagement"}), encoding="utf-8"
     )
@@ -48,32 +48,32 @@ def _write_case_project(root, solution, project, nodes):
 
 
 def test_find_caseplan_prefers_one_substantive_plan_over_scaffold_husk(tmp_path, monkeypatch):
-    authored = tmp_path / "Case" / "Case" / "caseplan.json"
-    husk = tmp_path / "CaseSolution" / "Case" / "caseplan.json"
+    authored = tmp_path / "Case" / "Case" / "caseplan.case"
+    husk = tmp_path / "CaseSolution" / "Case" / "caseplan.case"
     _write_caseplan(authored, [{"id": "trigger"}, {"id": "stage"}])
     _write_caseplan(husk, [{"id": "trigger"}])
     monkeypatch.chdir(tmp_path)
 
-    assert find_caseplan() == os.path.join("Case", "Case", "caseplan.json")
+    assert find_caseplan() == os.path.join("Case", "Case", "caseplan.case")
 
 
 def test_find_caseplan_accepts_identical_packaging_copy(tmp_path, monkeypatch):
-    authored = tmp_path / "caseplan.json"
-    packaged = tmp_path / "CaseSolution" / "Case" / "caseplan.json"
+    authored = tmp_path / "caseplan.case"
+    packaged = tmp_path / "CaseSolution" / "Case" / "caseplan.case"
     nodes = [{"id": "trigger"}, {"id": "stage"}]
     _write_caseplan(authored, nodes)
     _write_caseplan(packaged, nodes)
     monkeypatch.chdir(tmp_path)
 
-    assert find_caseplan() == "caseplan.json"
+    assert find_caseplan() == "caseplan.case"
 
 
 def test_find_caseplan_rejects_distinct_substantive_plans(tmp_path, monkeypatch):
-    _write_caseplan(tmp_path / "First" / "caseplan.json", [{"id": "trigger"}, {"id": "first"}])
-    _write_caseplan(tmp_path / "Second" / "caseplan.json", [{"id": "trigger"}, {"id": "second"}])
+    _write_caseplan(tmp_path / "First" / "caseplan.case", [{"id": "trigger"}, {"id": "first"}])
+    _write_caseplan(tmp_path / "Second" / "caseplan.case", [{"id": "trigger"}, {"id": "second"}])
     monkeypatch.chdir(tmp_path)
 
-    with pytest.raises(SystemExit, match="Multiple distinct caseplan.json"):
+    with pytest.raises(SystemExit, match="Multiple distinct caseplan.case"):
         find_caseplan()
 
 
@@ -251,7 +251,7 @@ def test_timeout_reports_fail_not_traceback(monkeypatch):
 
     monkeypatch.setattr(case_check.subprocess, "run", timing_out)
     with pytest.raises(SystemExit) as excinfo:
-        case_check.assert_validate_passes("caseplan.json", timeout=7)
+        case_check.assert_validate_passes("caseplan.case", timeout=7)
 
     msg = str(excinfo.value)
     assert "uip maestro case validate timed out after 7s" in msg

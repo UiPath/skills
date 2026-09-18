@@ -230,7 +230,7 @@ closes on required-stages-completed.
             "edges": [],
             "layout": {},
         }
-        caseplan = self.workdir / "AthenaCMEventCase" / "AthenaCMEventCase" / "caseplan.json"
+        caseplan = self.workdir / "AthenaCMEventCase" / "AthenaCMEventCase" / "caseplan.case"
         caseplan.parent.mkdir(parents=True)
         caseplan.write_text(json.dumps(plan), encoding="utf-8")
 
@@ -281,7 +281,7 @@ closes on required-stages-completed.
 
     def test_case_checker_rejects_completion_mark_on_a_different_rule(self) -> None:
         self.write_caseplan()
-        caseplan = self.workdir / "AthenaCMEventCase" / "AthenaCMEventCase" / "caseplan.json"
+        caseplan = self.workdir / "AthenaCMEventCase" / "AthenaCMEventCase" / "caseplan.case"
         plan = json.loads(caseplan.read_text(encoding="utf-8"))
         stage_b = next(node for node in plan["nodes"] if node["id"] == "stage-b")
         stage_b["data"]["exitConditions"][0]["marksStageComplete"] = False

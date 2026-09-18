@@ -1,6 +1,6 @@
 # Variables — Implementation
 
-No CLI command exists for variable declaration. Edit `caseplan.json` directly (Read → reason → Write/Edit).
+No CLI command exists for variable declaration. Edit `caseplan.case` directly (Read → reason → Write/Edit).
 
 ## § Terminology + Resolution Semantics (read this first)
 
@@ -93,7 +93,7 @@ The `source` and `name` fields keep the original value. Independently minted `va
 
 ### Pool composition (what to scan)
 
-Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. The pool is global — minting in any one location must consult ALL of the following:
+Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.case`. The pool is global — minting in any one location must consult ALL of the following:
 
 | Source | JSON path | Notes |
 |---|---|---|
@@ -121,7 +121,7 @@ Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input
 1. **`sdd.md` Case Variables rows** — for category, type, default, sourceTrigger(s), sourceField(s). On `Category=In` rows, `sourceTriggers` is a single T-number selecting the bound trigger (blank → primary trigger)
 2. **`tasks/trigger-spec-cache.json`** — for each trigger's `caseShape.outputs[]` (un-minted), keyed by T-number. Written by trigger plugin at Step 6.1; see [`../../triggers/event/impl-json.md` § Step 8](../../triggers/event/impl-json.md) for the writer-side schema. Top-level keys are T-numbers (e.g., `T02`, `T03`); values have `context`, `inputs`, `outputs` from the trigger's `caseShape`, un-minted (no `var` / `id` / `elementId` synthesized).
 3. **`id-map.json`** — for `T<N> → trigger_xxxxxx` lookup when writing trigger.outputs[] and resolving an `In`-arg's bound trigger node (row's `sourceTriggers`; blank → `id-map["T02"].id`, the primary trigger)
-4. **`caseplan.json`** — to locate trigger nodes (by triggerId from id-map) and existing root variable arrays
+4. **`caseplan.case`** — to locate trigger nodes (by triggerId from id-map) and existing root variable arrays
 
 ## Dispatcher — two loops
 
@@ -131,7 +131,7 @@ The plugin runs **two iterations** at Phase 3 Step 6.2. Both write into the same
 
 For each trigger in `trigger-spec-cache.json`:
 1. Look up triggerId from `id-map.json[T<N>].id`
-2. Find the trigger node in `caseplan.json` by id
+2. Find the trigger node in `caseplan.case` by id
 3. For each spec output in cache's `outputs[]`:
 
 | Spec output state | SDD reference | `triggerNode.outputs[]` write | `root.inputs[]` | `root.outputs[]` | `root.inputOutputs[]` |

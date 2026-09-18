@@ -48,7 +48,7 @@ initial_prompt: |
 
   Get the build ready from that SDD, then stop before any tenant work: do not
   query tenant registry, connections, schemas, or users, and do not create
-  caseplan.json. Tell me in your reply what stays unresolved until the build
+  caseplan.case. Tell me in your reply what stays unresolved until the build
   machine is online.
 
   Work from the SDD exactly as written — do not redesign it, do not rewrite,
@@ -127,8 +127,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Stopped before the build — no solution scaffold, no caseplan.json"
-    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    description: "Stopped before the build — no solution scaffold, no caseplan.case"
+    command: "! find . -name caseplan.case -not -path '*/.venv/*' | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

@@ -504,7 +504,7 @@ def main() -> None:
         assert_runs_sequentially_after(task, predecessor, tasks)
 
     if "$xref(" in json.dumps(plan):
-        fail("caseplan.json still contains an unresolved $xref marker")
+        fail("caseplan.case still contains an unresolved $xref marker")
     all_output_ids = [
         row.get("id")
         for task in tasks

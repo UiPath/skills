@@ -2,7 +2,7 @@ task_id: skill-case-connection-emission-parity
 description: >
   Regression guard: a case that calls an Integration Service connector must
   declare that connector as a *solution* resource, not only resolve it inside
-  caseplan.json. The declaration is a chain of projections — caseplan
+  caseplan.case. The declaration is a chain of projections — caseplan
   `bindings[]` -> `bindings_v2.json` `resources[]` -> emitted
   `resources/*/connection/<connectorKey>/*.json` — and each link is regenerated
   by a separate command. When a link is skipped the case still packs and
@@ -117,7 +117,7 @@ initial_prompt: |
   Resolve the connector activity against the Integration Service registry and a
   live Slack connection on the tenant. Leave the solution in a state that is
   ready to publish — every resource the case depends on must be declared at the
-  solution level, not only inside caseplan.json.
+  solution level, not only inside caseplan.case.
 
   Treat all build gates as pre-approved — do NOT block on the HARD
   STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug` and
@@ -135,8 +135,8 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate ConnectionParityCase/ConnectionParityCase/caseplan.json --output json"
+    description: "uip maestro case validate passes on the generated caseplan.case"
+    command: "uip maestro case validate ConnectionParityCase/ConnectionParityCase/caseplan.case --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5

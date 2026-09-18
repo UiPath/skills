@@ -46,12 +46,12 @@ def out_props(entry):
 
 
 def load_sibling_caseplan(ep_path):
-    cp = os.path.join(os.path.dirname(os.path.abspath(ep_path)), "caseplan.json")
+    cp = os.path.join(os.path.dirname(os.path.abspath(ep_path)), "caseplan.case")
     if not os.path.isfile(cp):
-        hits = glob.glob(os.path.join(os.path.dirname(ep_path) or ".", "**", "caseplan.json"), recursive=True)
+        hits = glob.glob(os.path.join(os.path.dirname(ep_path) or ".", "**", "caseplan.case"), recursive=True)
         cp = hits[0] if hits else None
     if not cp or not os.path.isfile(cp):
-        fail(f"sibling caseplan.json not found next to {ep_path} (needed to verify each entry's trigger type)")
+        fail(f"sibling caseplan.case not found next to {ep_path} (needed to verify each entry's trigger type)")
     try:
         return json.load(open(cp))
     except (OSError, json.JSONDecodeError) as e:
@@ -64,7 +64,7 @@ def trigger_service_type(caseplan, node_id):
         if n.get("id") == node_id:
             up = n.get("data", {}).get("inputs")
             return up.get("serviceType") if isinstance(up, dict) else None
-    fail(f"trigger node {node_id!r} (from an entry-point filePath fragment) not found in caseplan.json")
+    fail(f"trigger node {node_id!r} (from an entry-point filePath fragment) not found in caseplan.case")
 
 
 def main():
@@ -97,7 +97,7 @@ def main():
     claim_entry = next(e for e in entries if in_keys(e) == {"claimId"})
     prio_entry = next(e for e in entries if in_keys(e) == {"priority"})
 
-    # Map each entry back to its trigger node in the sibling caseplan.json and assert the binding
+    # Map each entry back to its trigger node in the sibling caseplan.case and assert the binding
     # DIRECTION — claimId on the MANUAL trigger (T02), priority on the TIMER trigger (T03). The
     # partition check above passes even if T-resolution swapped the two; this catches that.
     caseplan = load_sibling_caseplan(path)

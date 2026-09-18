@@ -34,7 +34,7 @@ def branch_values(value: Any) -> set[bool]:
 
 def main() -> None:
     if len(sys.argv) != 2:
-        sys.exit("usage: check_boolean_routing.py <caseplan.json>")
+        sys.exit("usage: check_boolean_routing.py <caseplan.case>")
     path = Path(sys.argv[1])
     plan = json.loads(path.read_text(encoding="utf-8"))
     found = branch_values(plan)

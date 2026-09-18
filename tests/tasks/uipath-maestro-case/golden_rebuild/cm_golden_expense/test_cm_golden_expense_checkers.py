@@ -227,7 +227,7 @@ def run_topology_checker(plan: dict) -> subprocess.CompletedProcess[str]:
             Path(temporary)
             / "CMGoldenExpense"
             / "CMGoldenExpense"
-            / "caseplan.json"
+            / "caseplan.case"
         )
         caseplan.parent.mkdir(parents=True)
         caseplan.write_text(json.dumps(plan), encoding="utf-8")
