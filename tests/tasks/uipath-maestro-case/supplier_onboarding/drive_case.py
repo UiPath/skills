@@ -149,6 +149,22 @@ BANK_STATUS = "BankVerificationStatus"
 
 FINISHED = {"Completed", "Successful", "Faulted", "Cancelled"}
 
+
+def sign_off_vars(g: dict) -> str:
+    """Every case variable whose name carries `DirectorSignOff`, with its Python type.
+
+    The build under test is authored fresh each run, so the gate variable's name is not
+    fixed: one run declared `DirectorSignOffRequired` and `DirectorSignOffDecision` side
+    by side. Matching on the prefix reports whichever names that run chose. The type is
+    the discriminator the value alone does not give: `False` and `'false'` and `None`
+    read alike in a dict dump, and only the first satisfies `=== false`.
+    """
+    hits = {k: v for k, v in g.items() if "DirectorSignOff" in k}
+    if not hits:
+        return "(no DirectorSignOff* variable in this build)"
+    return "  ".join(f"{k}={v!r} type={type(v).__name__}" for k, v in sorted(hits.items()))
+
+
 # The intake phase's deadline is 16 minutes, so its escalation cannot open before then. Waiting is
 # the whole point of that route, and the budget has to clear the deadline with room for the platform
 # to notice it, so it is set well above the deadline rather than at it.
@@ -487,8 +503,12 @@ def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str
     print(f"  watermark {watermark}, instance {instance_id}, {len(rows)} task(s) carry this title")
     # The gate is conditional on a case variable, so whether the case ever had to raise it is
     # decided by the values at this moment. Five candidate causes were each ruled out on the
-    # artifacts alone, and every one of them would have been settled by this line.
-    print(f"  case variables now: {globals_of(instance_id)}")
+    # artifacts alone, and every one of them would have been settled by this line. The gate
+    # variable goes first, on its own line: the harness keeps only the first ~4100 characters
+    # of the output, and the full dict runs past that.
+    now = globals_of(instance_id)
+    print(f"  sign-off vars: {sign_off_vars(now)}")
+    print(f"  case variables now: {now}")
     mine = [r for r in rows
             if r.get("CreatorJobKey") == instance_id or int(r.get("Id") or 0) > watermark]
     print(f"  {len(mine)} of them are this instance's or postdate the watermark:")
@@ -1252,6 +1272,9 @@ def main() -> int:
     # waits for is conditional on `directorSignOffRequired`, and three stalls in forty-two runs
     # were each explained away with a shape in the caseplan because the value was never printed.
     # A route that passes is the control: it says what the value looks like when the gate opens.
+    # Ahead of the dict: the harness keeps only the first ~4100 characters of a command's
+    # output, and the dict runs past that.
+    print(f"  sign-off vars: {sign_off_vars(g)}")
     print(f"  all case variables: {g}")
 
     if status not in {"Completed", "Successful"}:
