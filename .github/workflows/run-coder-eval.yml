@@ -361,7 +361,9 @@ jobs:
           export PATH="$HOME/.bun/bin:$PATH"
           bun --version
           bun install --frozen-lockfile
-          bunx nx build maestro-tool
+          # `bun x`, not `bunx`: the installer puts only `bun` on PATH and the eval
+          # runner has no `bunx` shim, which answered `command -v bunx` with exit 127.
+          bun x nx build maestro-tool
           cd packages/maestro-tool
           npm pack --pack-destination "$GITHUB_WORKSPACE"
           cd "$GITHUB_WORKSPACE"
