@@ -44,7 +44,7 @@ First **enumerate the tenant's actual required set from the schema file**: every
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by label, send its `answer_option` code. |
 | **Owner email** | **`uip ah auth-info get`** → `Data.User.Email` is the signed-in identity and the default owner. That call is the authority; do not substitute an address from any list. |
 | **Submitter email** | Same as owner; usually the same person. |
-| **Application questions** (when tenant-required) | `uip ah applications list` → match the material's systems. Missing ones: **create them** (below). If creation is refused, pick from the listed entries and record the real systems in the description — never block the publish on applications. |
+| **Application questions** (when tenant-required) | `uip ah applications list` → match the material's systems. Missing ones: **create them** (below). If creating fails for any reason, pick from the listed entries and record the real systems in the description — never block the publish on applications. |
 
 The discovery commands are independent — run the ones you need (`auth-info get`, `categories get`, `applications list`) **in a single shell invocation** rather than one per turn; each is fast, the round-trips between them are not.
 
@@ -54,7 +54,7 @@ The discovery commands are independent — run the ones you need (`auth-info get
 uip ah users list --search "<owner-email>" --invite-status all
 ```
 
-`--search` is server-side, so it is not subject to the default page size; `--invite-status all` is required, because without it a not-invited user returns zero rows. Both flags or neither — search alone still hides them.
+`--search` is server-side, so it is not subject to the default page size; `--invite-status all` is required, because without it a not-invited user returns zero rows. **Pass both or the lookup is worse than useless** — search alone reports "no such user" for exactly the users this guidance is about.
 
 Whatever that returns, use the `auth-info` email verbatim, submit, and let the API decide. Only a real `Cannot identify owner by email` from the create is an owner problem (Step 5).
 
@@ -84,7 +84,7 @@ Then re-read `uip ah applications list` and use the new ids in the answer.
 {"Result":"Failure","Message":"This user is not permitted to perform this action based on their role. (403 Forbidden)"}
 ```
 
-That 403 is expected, not an error to report. Fall through: pick the closest entries from `applications list` to satisfy the required field, and name the real systems in `OVERVIEW_DESCRIPTION` (e.g. "Systems per PDD: Salesforce, CREDILEX, SUNAT Portal — not in tenant inventory"). The process record is what matters; applications are editable afterwards. **Never abandon a publish because an application is missing, and never silently pass off an unrelated application as the real one — say what you substituted.**
+**If creating fails for any reason — 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Pick the closest entries from `applications list` to satisfy the required field, and name the real systems in `OVERVIEW_DESCRIPTION` (e.g. "Systems per PDD: Salesforce, CREDILEX, SUNAT Portal — not in tenant inventory"). The process record is what matters; applications are editable afterwards. **Never abandon a publish because an application is missing or uncreatable, and never silently pass off an unrelated application as the real one — say what you substituted.**
 
 Write the answers to `./ah-answers.json` as the filled `user_inputs` structure (the CLI accepts the whole schema-get document or just the answers map). Wrapping rules unchanged: most fields `{ "value": <v> }`; owner/submitter are **direct strings**; enum codes from that field's own `enum`; integers as numbers. Show the user a concise preview and get a confirm before writing.
 
@@ -102,7 +102,7 @@ uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah
   https://cloud.uipath.com/<org>/<tenant>/automationhub_
   ```
 
-  Build that URL from the org/tenant already in the authenticated CLI context, never from the error output. Nothing was created, so the retry is safe. (Tenants carrying the RPANAV-19110 fix accept these users without the sign-in.)
+  Build that URL from the org/tenant already in the authenticated CLI context, never from the error output. Nothing was created, so the retry is safe. Newer Automation Hub versions accept these users with no sign-in at all, so on an up-to-date tenant this error should not appear.
 
 ## Step 6: Attach documents (PDD/SDD)
 
