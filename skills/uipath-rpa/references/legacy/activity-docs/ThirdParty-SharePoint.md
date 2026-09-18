@@ -77,9 +77,9 @@ All activities must be inside this scope. Authentication container.
 
 ### Authentication (MAJOR ISSUES)
 1. **Microsoft deprecating legacy auth** - App-Only with client secret may stop working for SharePoint Online. Consider Azure AD certificate auth or Microsoft Graph.
-2. **401 Unauthorized common** - [Forum reports](https://forum.uipath.com/t/uipathteam-sharepoint-activities-sharepoint-application-scope-401-unauthorized/515006): check tenant settings, app permissions, and auth mode compatibility
-3. **Windows auth failure on robots** - [Forum](https://forum.uipath.com/t/windows-authentication-failure-uipathteam-sharepoint-activities/332491): service account must have SharePoint access
-4. **"Sign-in name or password does not match"** - [Forum](https://forum.uipath.com/t/uipathteam-sharepoint-activities-authentication-exception/578289): common with MFA-enabled tenants; use WebLogin or AzureApp auth instead
+2. **401 Unauthorized common** - [Forum reports](https://forum.uipath.com/t/515006): check tenant settings, app permissions, and auth mode compatibility
+3. **Windows auth failure on robots** - [Forum](https://forum.uipath.com/t/332491): service account must have SharePoint access
+4. **"Sign-in name or password does not match"** - [Forum](https://forum.uipath.com/t/578289): common with MFA-enabled tenants; use WebLogin or AzureApp auth instead
 5. **WebLogin prompts user** on first run - not suitable for unattended robots
 
 ### QueryGrouping / Batch Queries

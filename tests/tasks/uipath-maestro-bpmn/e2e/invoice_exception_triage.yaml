@@ -17,8 +17,11 @@ sandbox:
     - type: template_dir
       path: ../../../../skills/uipath-maestro-bpmn
 
+# The check imports _shared/bpmn_check.py, so the reference mirror must span
+# the whole uipath-maestro-bpmn task tree, not just e2e/. This yaml sits
+# directly in e2e/ (no per-task subdir), so one `..` reaches the tree root.
 reference:
-  directory: .
+  directory: ..
 
 initial_prompt: |
   Create a new local Maestro BPMN Process Orchestration project named
@@ -41,27 +44,37 @@ initial_prompt: |
   Build the complete local project end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  # The prompt names only the project, not its directory layout. `uip maestro
+  # bpmn init` nests the project under a `<Name>Solution/` wrapper unless the
+  # agent passes --skip-solution-registration, so grade the project wherever
+  # the agent placed it (rglob), like the other BPMN e2e tasks.
+  - type: run_command
     description: "BPMN source file was created"
-    path: "InvoiceExceptionTriage/InvoiceExceptionTriage.bpmn"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('InvoiceExceptionTriage.bpmn')) else 'InvoiceExceptionTriage.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Project metadata file was created"
-    path: "InvoiceExceptionTriage/project.uiproj"
+  - type: run_command
+    description: "Project metadata file was created beside the BPMN source"
+    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('InvoiceExceptionTriage.bpmn'), None); sys.exit(0 if b and (b.parent / 'project.uiproj').is_file() else 'project.uiproj missing beside InvoiceExceptionTriage.bpmn')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Package operate metadata was created"
-    path: "InvoiceExceptionTriage/operate.json"
+  - type: run_command
+    description: "Package operate metadata was created beside the BPMN source"
+    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('InvoiceExceptionTriage.bpmn'), None); sys.exit(0 if b and (b.parent / 'operate.json').is_file() else 'operate.json missing beside InvoiceExceptionTriage.bpmn')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Generated BPMN project has the required process structure and package references"
-    command: "python3 $REFERENCE_DIR/check_invoice_exception_triage.py"
+    command: "python3 $REFERENCE_DIR/e2e/check_invoice_exception_triage.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -1,6 +1,6 @@
 # Data Fabric
 
-*Exact signatures, fields, and defaults: [`connector()`](api.md#connector-function) for every entity operation, and — for the transitional native family — [`dataFabricRead()`](api.md#datafabricread-function) and [`dataFabricUpdate()`](api.md#datafabricupdate-function).*
+*Exact signatures, fields, and defaults: `connector()` for every entity operation, and — for the transitional native family — `dataFabricRead()` and `dataFabricUpdate()`.*
 
 ## One product, one surface
 

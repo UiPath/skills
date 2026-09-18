@@ -25,7 +25,7 @@ from _shared.edit_check import (  # noqa: E402
 
 def main() -> None:
     _path, edited = parse_bpmn("Onboarding")
-    original = load_original(__file__, "Onboarding.bpmn")
+    original = load_original("edit/move_node", "Onboarding.bpmn")
 
     if not has_flow(edited, "Start_1", "Task_Welcome"):
         fail("expected reordered flow Start_1 -> Task_Welcome")

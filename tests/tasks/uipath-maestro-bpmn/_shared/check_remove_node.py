@@ -27,7 +27,7 @@ from _shared.edit_check import (  # noqa: E402
 
 def main() -> None:
     _path, edited = parse_bpmn("ShipmentReview")
-    original = load_original(__file__, "ShipmentReview.bpmn")
+    original = load_original("edit/remove_node", "ShipmentReview.bpmn")
 
     assert_id_absent(edited, "Task_Enrich")
     for fid, source, target in flows(edited):

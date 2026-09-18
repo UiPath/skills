@@ -162,9 +162,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Deploy ran non-interactively into the provisioned folder via --folder-key"
+    description: "Deploy ran non-interactively into the provisioned folder — key passed as --folder-key or as the UIPATH_FOLDER_KEY env-var prefix (the prefix skips the flag's folder pre-check)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+deploy\b.*--folder-key'
+    command_pattern: '(?s)(UIPATH_FOLDER_KEY=\S+.*\buip\s+codedapp\s+deploy\b|uip\s+codedapp\s+deploy\b.*--folder-key)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

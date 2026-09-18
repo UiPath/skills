@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 NS = {
     "bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL",
@@ -32,6 +33,27 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
     if len(paths) == 1:
         return paths[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")
+
+
+def resolve_project(bpmn_name: str) -> Path:
+    """Locate the project directory containing ``bpmn_name``.
+
+    Grades the project wherever the agent placed it (top level or nested under
+    a ``<Name>Solution/`` wrapper -- ``uip maestro bpmn init`` creates the
+    wrapper unless --skip-solution-registration is passed), but picks the real
+    project unambiguously: exactly one ``bpmn_name`` with project.uiproj beside
+    it, so a stray draft copy is never graded (``find_bpmn_file`` would
+    silently return the alphabetically-first match).
+    """
+    candidates = [
+        p for p in Path.cwd().rglob(bpmn_name) if (p.parent / "project.uiproj").is_file()
+    ]
+    if len(candidates) != 1:
+        fail(
+            f"expected exactly one {bpmn_name} with project.uiproj beside it, "
+            f"found {[str(p) for p in candidates]}"
+        )
+    return candidates[0].parent
 
 
 def parse_bpmn(name_hint: str | None = None) -> tuple[str, ET.Element]:

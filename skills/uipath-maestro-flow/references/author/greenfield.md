@@ -108,6 +108,14 @@ uip solution init "<SolutionName>" --output json \
 
 > **One creation path — never drop the `cd`.** `uip solution init "<SolutionName>"` → `cd "<SolutionName>"` → `uip maestro flow init "<ProjectName>"`, one chain. Without the `cd`, `flow init` runs in the old directory and auto-scaffolds a duplicate `<ProjectName>Solution/` (1-node husk). Never let auto-scaffold create the solution. Finish with exactly one `project.uiproj` — delete strays.
 
+> **Building a Maestro Automate?** Add `--automate` to the `flow init` segment and change nothing else:
+>
+> ```bash
+> && uip maestro flow init "<ProjectName>" --automate --output json \
+> ```
+>
+> Only when the request names **Maestro Automate** as the product. The bare verb does not count — "automate invoice intake with a Flow" asks for a Flow. Anything else, including no signal, leaves the flag off. Steps 3-6 are identical either way — the flag changes the packaged `runtimeOptions.profile`, not how you author the `.flow`. See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal).
+
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
@@ -131,6 +139,8 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 ```bash
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
+
+Append `--automate` for a Maestro Automate project (SKILL.md rule #6). The rest of this step, and Steps 3-6, are unchanged.
 
 The `cd` puts the project inside the solution you just created. Skip it and `flow init` won't find that solution (discovery walks **up**, not down into `<SolutionName>/`) — it auto-scaffolds a **second, separate** `<ProjectName>Solution/` beside your empty `<SolutionName>/`, leaving two solutions. The project no longer single-nests, but `cd` first to land in the right one.
 
@@ -280,13 +290,16 @@ Run from inside the flow project directory. Returns the same manifest format as 
 <!--skill-flavor:greenfield-t2-read-source:start-->
 1. **One `Read`** of `<ProjectName>.flow` — required before any Edit/Write; T1's chained Bash mutated the file and Claude Code's file-state tracker does not auto-refresh on external mutations.
 <!--skill-flavor:greenfield-t2-read-source:end-->
-2. **A batch of parallel `Edit` calls** — one per top-level array you're modifying. Same-file Edits serialize in execution order, so each `old_string` must anchor to text NO OTHER parallel Edit modifies. Use the **per-array anchor pattern** below.
-   - Edit `nodes[]` — add the End node (and any other user-owned nodes).
-   - Edit `definitions[]` — paste the End definition verbatim from T1's `registry get core.control.end` output.
-   - Edit `edges[]` — wire `trigger → <httpNode> → end`. End-node `outputs` mapping goes here too if you declared an `out` variable in `variables.globals`.
+2. **A batch of parallel `Edit` calls** — **exactly one per top-level array you touch**, each carrying EVERY new entry for that array. Never one `Edit` per node; node count does not change the call count. Same-file Edits serialize in execution order, so each `old_string` must anchor to text NO OTHER parallel Edit modifies. Use the **per-array anchor pattern** below.
+   - Edit `nodes[]` — every user-owned node in one call, End included.
+   - Edit `definitions[]` — one entry per unique `type:typeVersion`, pasted verbatim from T1's `registry get` output.
+   - Edit `edges[]` — the whole wiring in one call.
+   - Edit `variables.globals` — every `in` / `out` variable the flow declares. Needed before an End node can map an output to one.
    - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites both position and size (by node shape) in T3.
 
-   `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)). **Never `Write` a flow that already has connector / connector-trigger / managed-HTTP nodes** — the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail` (invisible to `flow validate`); `Edit` in place, or re-run `node configure` as the last write. See [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node).
+   **≥70% of `nodes[]` new → one `Write` of the whole file instead.** That is the normal greenfield shape, and neither node count nor file size disqualifies it (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)). Below that threshold the per-array `Edit` batch is cheaper, because a whole-file `Write` re-emits the file.
+
+   Two conditions when T1 ran `node add`. First, carry forward **verbatim** from the `Read` every key `node add` touched for each CLI-owned node — the node object, its `definitions[]` entry, its `bindings[]` rows, its `layout.nodes` entry, and its `variables.nodes` bindings ([CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node) tabulates them). `variables.nodes` is the one `node configure` does not regenerate, and `flow validate` reports `Valid` without it, so a `Write` that drops it leaves the flow silently missing what makes `$vars.<id>.output` resolve until T3's trailing `format` regenerates it ([CAPABILITY.md](CAPABILITY.md#critical-rules) rule 14). Carry it forward rather than relying on that repair. Second, leave T3's `node configure` as the last write to touch `inputs.detail` / `bindings[]` — T3's `validate && format` still chain after it, and `format` touches neither. `node add` leaves `inputs.detail` empty and the `bindings[]` rows unresolved (`resourceKey: ""`), so a `Write` before `configure` costs nothing as long as those keys survive it. A `Write` AFTER `configure` clobbers the filled values, invisibly to `flow validate` — `Edit` in place there, or re-run `configure`. See [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node).
 
 #### Anchoring parallel `.flow` Edits — anchor on what you Read, not on key order
 
@@ -299,6 +312,7 @@ Anchor each Edit using its target array's own opening key, located in the text y
 | Append to `nodes[]` | The **2-space-indented** `\n  "nodes": [` (the top-level array — deeper-indented `"nodes": ["` inside definitions do not match the two-leading-space prefix) plus the `start` node's opening `{ "id": "start"`. | Insert the new node object as the first element, immediately after the `[`: `\n    { new node JSON },`. Head-insertion keeps `old_string` clear of the array's closing `]`. |
 | Append to `edges[]` | The **2-space-indented** `\n  "edges": [`. A newly generated scaffold commonly has `\n  "edges": []`; the 2-space prefix distinguishes it from nested `edges` arrays. | When empty, replace `\n  "edges": []` with `\n  "edges": [\n    { new edge JSON }\n  ]`. When non-empty, anchor through the first edge and insert the new edge as the first element. |
 | Append to `definitions[]` | `"definitions": [` plus the first definition's opening bytes. Top-level `definitions[]` is the only one in the file, so this is reliably unique. | Insert the new definition right after the opening `[`, as the first element. Never anchor on whatever key follows `definitions` — that key varies (`runtime`, `bindings`, `variables`, `layout`, depending on CLI version and what the flow contains). |
+| Add to `variables.globals` | `"variables": {` — the only top-level occurrence. `globals` may be absent on a fresh scaffold, in which case anchor on `"variables": {\n    "nodes": [` and insert `"globals": [ ... ],\n    ` before it. | Insert each variable object at the array head. `node add` writes `variables.nodes`, never `globals`, so the two never collide. |
 | Add an entry to `layout.nodes` | `"layout": {\n    "nodes": {\n      "start":` — `start` is the always-present trigger and the first key under `layout.nodes` in newly generated flows. The top-level `"layout": {` is the only one. | `"layout":` + `"start":` jointly disambiguate. Insert `"<newId>": { ... },\n      ` before `"start":`. CLI-owned nodes added via `node add` already have a `layout.nodes` entry — only add entries for nodes you author by hand (e.g. End). |
 
 **Why head-insertion.** Inserting the new element right after the array's opening `[` means the `old_string` never includes the array's closing `]` — so it cannot collide with a closing `]` from a nested object (`form.sections[].fields[]`), and it never references a sibling top-level key whose position is not guaranteed. JSON array element order is not semantically significant for `nodes` / `edges` / `definitions`, so head vs. tail insertion is equivalent; `flow format` normalizes layout regardless.
@@ -319,7 +333,7 @@ See [shared/file-format.md — Top-level structure](../shared/file-format.md#top
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change **and the flow has no CLI-owned nodes** (a full-file `Write` over connector / managed-HTTP nodes clobbers their `bindings[]` — see the Step 4 `Write` note above). For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
+> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` when ≥70% of nodes change **and `node configure` has not run yet** (a full-file `Write` after it clobbers connector / managed-HTTP `bindings[]` — see the Step 4 `Write` note above). For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 
@@ -343,7 +357,15 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
 
-> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. The connector-keyword warning (`node "…" mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding`) means the flow took the brand-name shortcut and will run against an undefined endpoint at debug time — resolve it by switching to the connector before reporting the flow complete (see [SKILL.md rule #3](../../SKILL.md#critical-rules-universal) and the anti-pattern list). Treat this class of warning as a build failure for your own definition of "done."
+> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. Three classes are build failures, not advisories:
+>
+> | Warning | What it means at debug time | Resolve by |
+> | --- | --- | --- |
+> | `mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding` | The flow took the brand-name shortcut and runs against an undefined endpoint | Switch to the connector node (see [SKILL.md rule #3](../../SKILL.md#critical-rules-universal) and the anti-pattern list) |
+> | `declares no inputs in its agent.json \`inputSchema\`, but the flow node binds N inputs … these bindings are silently dropped` | The inline agent never receives the flow's data, so its output is unrelated to the run. Nothing faults, and with an empty `outputSchema` the fields downstream nodes read come back `undefined` | Add the warning's named keys to `inputSchema.properties` **and** read each one as `{{input.<key>}}` in `messages[].content` — a key no prompt token reads never reaches the model, and `refresh` regenerates `contentTokens` without adding the reference. Then `uip agent refresh --inline-in-flow` and `uip agent validate --inline-in-flow` ([inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts)) |
+> | `Expression at this field is not valid JavaScript` / `[EXPRESSION_DIAGNOSTIC] Cannot find name '…'` | The expression throws or evaluates to garbage | Fix the syntax before debug |
+>
+> Treat all three as a build failure for your own definition of "done."
 
 ### Common error categories
 
