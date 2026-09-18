@@ -24,7 +24,9 @@ uip or knowledge-bundles --help
 
 ## Every command is folder-scoped
 
-Bundles live in a folder and are not addressable without one. Pass `--folder-path <path>` (or `--folder-key <guid>`) on **every** command. `uip or folders list` finds one.
+Bundles live in a folder and are not addressable without one. Pass `--folder-path <path>` (or `--folder-key <guid>`) on **every** command.
+
+`uip or folders list` finds one. Pass its `Path` field to `--folder-path` (a top-level folder is just `Shared`, a nested one `Shared/Finance`) or its `Key` to `--folder-key` — `Name` is the display name and is not what either option wants.
 
 Bundles are identified by a GUID (`Key`). Get it from `list`, never construct it.
 
@@ -43,22 +45,22 @@ Bundles are identified by a GUID (`Key`). Get it from `list`, never construct it
 | Remove from a folder | `uip or knowledge-bundles delete <bundle-id> --folder-path <p> --yes` |
 | Share into / out of folders | `uip or knowledge-bundles share <bundle-id> --folder-path <p> [--add-folders <f...>] [--remove-folders <f...>]` |
 | Version history | `uip or knowledge-bundles versions <bundle-id> --folder-path <p>` |
-| Unpack a version into a workspace | `uip or knowledge-bundles download <bundle-id> --folder-path <p> --output <dir> [--version <n>]` |
-| Whole version as a zip | `uip or knowledge-bundles archive <bundle-id> --folder-path <p> --output <file>.zip [--version <n>]` |
-| One file's content | `uip or knowledge-bundles file <bundle-id> <path> --folder-path <p> [--version <n>] [--output <file>]` |
+| Unpack a version into a workspace | `uip or knowledge-bundles download <bundle-id> --folder-path <p> --destination <dir> [--version <n>]` |
+| Whole version as a zip | `uip or knowledge-bundles archive <bundle-id> --folder-path <p> --destination <file>.zip [--version <n>]` |
+| One file's content | `uip or knowledge-bundles file <bundle-id> <path> --folder-path <p> [--version <n>] [--destination <file>]` |
 | One file across versions | `uip or knowledge-bundles history <bundle-id> <path> --folder-path <p>` |
 | A version's derived artifact | `uip or knowledge-bundles build <bundle-id> graph.json --folder-path <p>` |
 | What a local copy needs | `uip or knowledge-bundles sync <bundle-id> <dir> --folder-path <p>` |
 
-Add `--output json` when you parse the result.
+Add `--output json` when you parse the result. It is the CLI's global output-format flag, and it is separate from `--destination`, which is where a command writes files.
 
 ## Reading a bundle as context
 
 ```bash
-uip or knowledge-bundles download <bundle-id> --folder-path <p> --output ./kb
+uip or knowledge-bundles download <bundle-id> --folder-path <p> --destination ./kb
 ```
 
-That unpacks the version's files plus `./kb/.okf/base.json`, a marker recording the bundle, the version and its manifest. Read the markdown directly from disk. To check whether the copy is current, `sync` it — the report is **pull-direction**: `Changed` is what to download to match the published version, `Deleted` is what to remove locally. A file you deleted locally shows up in `Changed`, not `Deleted`.
+That unpacks the version's files plus `./kb/.okf/base.json`, a marker recording the bundle, the version and its manifest. Read the markdown directly from disk. To check whether the copy is current, `sync` it — with no `--version` it compares against `latest`, and the report is **pull-direction**: `Changed` is what to download to match the published version, `Deleted` is what to remove locally. A file you deleted locally shows up in `Changed`, not `Deleted`.
 
 ## Publishing
 
@@ -73,10 +75,10 @@ Both walk the directory, hash every file, upload only what the store lacks, then
 
 `Failure` envelopes carry `Context.HttpStatus`. Two worth recognizing:
 
-- **409 on `create`** → that name is already used in the folder. Pick another; do not retry.
+- **409 on `create`** → that name is already used in the folder. Pick another; do not retry. Names are unique per folder and other agents publish into the same folders, so give a generated bundle a distinguishing suffix rather than a bare word.
 - **409 on `publish`** → the bundle already has content. Stop; this needs a change proposal.
 
-`file` returns the content inline when it decodes as UTF-8 text, and refuses binary without `--output <file>` — pass it rather than trying to read bytes from the envelope.
+`file` returns the content inline when it decodes as UTF-8 text, and refuses binary without `--destination <file>` — pass it rather than trying to read bytes from the envelope.
 
 ## Not available yet
 
