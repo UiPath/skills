@@ -7,6 +7,17 @@ import xml.etree.ElementTree as ET
 from bpmn_doc_example import NS, minimal_example
 
 
+# The two layers use different vocabularies: a public declaration reaches
+# entry-point schema derivation and must use `number`, while a node-scoped
+# inputOutput uses the canvas float type `double`. They correspond; they are
+# not identical strings.
+_NODE_SCOPED = {"number": "double"}
+
+
+def _corresponds(public_type: str, mutable_type: str) -> bool:
+    return mutable_type == _NODE_SCOPED.get(public_type, public_type)
+
+
 def _variables(process: ET.Element) -> dict[str, ET.Element]:
     items = process.findall(
         "bpmn:extensionElements/uipath:variables/*",
@@ -22,6 +33,31 @@ def _mapping_outputs(element: ET.Element) -> list[ET.Element]:
     assert mapping_type is not None
     assert mapping_type.attrib["value"] == "BPMN.Variables"
     return mapping.findall("uipath:output", NS)
+
+
+def test_minimal_example_scopes_every_declaration_to_a_live_element() -> None:
+    # Scope must name a live BPMN element, never a DI shape id — a DI id is an
+    # orphan the canvas deletes on import.
+    root = minimal_example()
+    process = root.find("bpmn:process", NS)
+    assert process is not None
+
+    # `process.iter()` yields `process` itself first, so the process id is
+    # already in the set.
+    live_ids = {
+        element.attrib["id"]
+        for element in process.iter()
+        if element.attrib.get("id")
+        and element.tag.startswith("{" + NS["bpmn"] + "}")
+    }
+
+    variables = _variables(process)
+    assert variables, "the minimal example declares no variables"
+
+    for variable_id, variable in variables.items():
+        scope = variable.attrib.get("elementId")
+        assert scope, f"{variable_id} has no elementId"
+        assert scope in live_ids, f"{variable_id} has a dangling elementId {scope!r}"
 
 
 def test_minimal_example_bridges_public_input_to_mutable_state() -> None:
@@ -48,7 +84,9 @@ def test_minimal_example_bridges_public_input_to_mutable_state() -> None:
         assert len(matches) == 1
         mutable = variables[matches[0].attrib["var"]]
         assert mutable.tag.endswith("}inputOutput")
-        assert mutable.attrib["type"] == public_input.attrib["type"]
+        assert _corresponds(public_input.attrib["type"], mutable.attrib["type"]), (
+            public_input.attrib["type"], mutable.attrib["type"]
+        )
 
 
 def test_minimal_example_bridges_mutable_state_to_public_output() -> None:
@@ -78,4 +116,6 @@ def test_minimal_example_bridges_mutable_state_to_public_output() -> None:
         assert source.startswith("=vars.")
         mutable = variables[source.removeprefix("=vars.")]
         assert mutable.tag.endswith("}inputOutput")
-        assert mutable.attrib["type"] == public_output.attrib["type"]
+        assert _corresponds(public_output.attrib["type"], mutable.attrib["type"]), (
+            public_output.attrib["type"], mutable.attrib["type"]
+        )

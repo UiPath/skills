@@ -93,7 +93,7 @@ initial_prompt: |
   ### 1.5 Case Variables
   | Variable | Category | Type | Default | Description |
   |---|---|---|---|---|
-  | - | - | - | - | No case-level variables declared. |
+  | priority | Variable | string | - | Case priority ("Urgent" or "Standard"); read by the case-level and Resolve-stage conditional SLA predicates. |
 
   ## Section 2: Stages & Tasks
 
@@ -121,6 +121,27 @@ initial_prompt: |
   |---|---|---|---|---|---|---|
   | 1 | Conditional | priority is Urgent | 2 | w | Resolve Urgent SLA | - |
   | 2 | Default | - | 1 | m | Resolve Default SLA | - |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `process.resolveHold` | Resolve Hold | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Resolve Hold (`process.resolveHold`)
+
+  **Type:** wait-for-timer
+  **Description:** Non-repeating fixed-delay timer that holds Resolve open while the case-level and stage-level SLA clocks run. Fires once after 5 seconds.
+
+  **Entry Condition**
+
+  | WHEN | IF | Display Name |
+  |---|---|---|
+  | current-stage-entered | - | Resolve Hold Entry |
+
+  ###### Timer Task Detail (type: `wait-for-timer`)
+
+  **Timer:** timeDuration
+  **Value:** PT5S
+  **Business Calendar:** —
   ```
 
   Treat all build gates as pre-approved — do NOT block on the

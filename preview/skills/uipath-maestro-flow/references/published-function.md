@@ -1,6 +1,6 @@
 # Published function
 
-*Exact signatures, fields, and defaults: [`publishedFunction()`](api.md#publishedfunction-function).*
+*Exact signatures, fields, and defaults: `publishedFunction()`.*
 
 A **Function** is a small, single-purpose unit of code deployed to Orchestrator
 as its own resource. `publishedFunction()` invokes one as a single step

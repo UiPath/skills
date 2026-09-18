@@ -94,8 +94,10 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
   variable scoped to a node is bound to that node and is not surfaced as a
   process-level runtime variable.
 - Keep a mutable root `uipath:inputOutput` for each value used by decisions,
-  tasks, or diagnostics, and leave it root-scoped — no `elementId`. A variable
-  scoped to an element is bound to that element and is not surfaced as a root
+  tasks, or diagnostics, scoped to the process — `elementId="<process id>"`,
+  never absent (see
+  [Structural BPMN: Variables](structural-bpmn.md#variables)). A variable
+  scoped to a node is bound to that node and is not surfaced as a root
   runtime variable, so `debug-instance variables-all` cannot show it. Process
   expressions reference that mutable variable as `vars.<id>`, not the
   caller-facing declaration.
@@ -113,7 +115,8 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.
 - Entry point inputs that must later be updated need a separate mutable
-  `uipath:inputOutput` variable and an explicit mapping from the entry input.
+  `uipath:inputOutput` variable scoped to the process
+  (`elementId="<process id>"`) and an explicit mapping from the entry input.
 - Trigger-bound values are `uipath:inputOutput` variables scoped to the trigger
   node, so the trigger can write them during execution.
 

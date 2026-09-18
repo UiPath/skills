@@ -440,13 +440,13 @@ jobs:
       - name: Mint UiPath Alpha bot token (ROPC)
         env:
           UIPATH_URL:               https://alpha.uipath.com
-          UIPATH_ORGANIZATION_NAME: ${{ secrets.UIPATH_ORG_NAME }}
-          UIPATH_ORGANIZATION_ID:   ${{ secrets.UIPATH_ORG_ID }}
-          UIPATH_TENANT_NAME:       ${{ secrets.UIPATH_TENANT_NAME }}
-          UIPATH_TENANT_ID:         ${{ secrets.UIPATH_TENANT_ID }}
-          CLIENT_ID:                ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          UIPATH_ORGANIZATION_NAME: ${{ vars.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ vars.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ vars.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ vars.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ vars.UIPATH_ROPC_CLIENT_ID }}
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
-          CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_USERNAME:              ${{ vars.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: |
           set -euo pipefail
@@ -500,14 +500,14 @@ jobs:
           # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
           # Codex auth: the key + the endpoint the codex binary talks to. Same secrets
           # the nightly and run-coder-eval.yml use.
           CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
-          CODEX_BASE_URL: ${{ secrets.CODEX_BASE_URL }}
+          CODEX_BASE_URL: ${{ vars.CODEX_BASE_URL }}
           # The gate's agent model, passed explicitly on the command line rather than
           # pinned in experiments/smoke.yaml — one repo variable moves every gate here,
           # and the experiment file stays harness-agnostic (the nightly runs the same

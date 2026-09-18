@@ -32,6 +32,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import flow_check  # noqa: E402
+import validate_flow  # noqa: E402
 
 _SUITE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Split on ANY criterion so a block ends at its neighbour, and stop at the next
@@ -1369,3 +1370,69 @@ def test_while_condition_runs_once_more_than_the_body(tmp_path):
     it. Charging N left the criterion short by a whole debug_budget."""
     src = f"def main():\n    while {_ONE}:\n        {_ONE}\n"
     assert _price(src, tmp=str(tmp_path)) == 485 * 2 + 485 * 1
+
+
+# ── validate_flow.py budget ─────────────────────────────────────────────────
+#
+# `flow validate` refetches the tenant node manifest on every call: 8-14s
+# typical, 60-67s on the tail. validate_flow.py budgets itself at
+# `_DEFAULT_BUDGET_SECONDS` because the harness exports no criterion timeout,
+# so a criterion granting less is SIGKILLed on a tail hit (exit -1, empty
+# stdout) before the script can retry or name the file that stalled.
+#
+#     criterion timeout >= validate_flow._DEFAULT_BUDGET_SECONDS
+#
+# Every suite that runs the script is held to it. uipath-human-in-the-loop
+# reaches it through `reference: {directory: ../uipath-maestro-flow}`.
+
+_TASKS_ROOT = os.path.dirname(_SUITE_ROOT)
+_VALIDATE_SCRIPT = os.path.join(_SUITE_ROOT, "_shared", "validate_flow.py")
+
+
+def _validate_criteria():
+    """(yaml, timeout) per run_command criterion, in any suite, whose script
+    resolves to validate_flow.py."""
+    for root, _dirs, files in os.walk(_TASKS_ROOT):
+        for name in files:
+            if not name.endswith((".yaml", ".yml")):
+                continue
+            path = os.path.join(root, name)
+            text = open(path).read()
+            for block in _criterion_blocks(text, "run_command"):
+                command = _COMMAND.search(block)
+                if not command:
+                    continue
+                resolved = _script_path(root, command.group(1), text)
+                if resolved and os.path.samefile(resolved, _VALIDATE_SCRIPT):
+                    yield os.path.relpath(path, _TASKS_ROOT), _criterion_seconds(block)
+
+
+_VALIDATE_CASES = sorted(_validate_criteria())
+
+
+def test_every_validate_criterion_is_discovered():
+    """Counted a second way so a parser regression cannot quietly shrink the set."""
+    mentions = 0
+    for root, _dirs, files in os.walk(_TASKS_ROOT):
+        for name in files:
+            if not name.endswith((".yaml", ".yml")):
+                continue
+            with open(os.path.join(root, name)) as f:
+                mentions += sum(1 for ln in f if "command:" in ln and "validate_flow.py" in ln)
+    assert len(_VALIDATE_CASES) == mentions, (
+        f"{mentions - len(_VALIDATE_CASES)} validate_flow.py criteria went undiscovered"
+    )
+    assert len(_VALIDATE_CASES) > 40, f"only {len(_VALIDATE_CASES)} validate_flow.py criteria found"
+
+
+@pytest.mark.parametrize(
+    "yaml_path,criterion", _VALIDATE_CASES, ids=[y for y, _t in _VALIDATE_CASES]
+)
+def test_validate_criterion_funds_the_manifest_budget(yaml_path, criterion):
+    required = validate_flow._DEFAULT_BUDGET_SECONDS
+    assert criterion >= required, (
+        f"{yaml_path} grants {criterion}s to validate_flow.py, which budgets itself at "
+        f"{required}s. `flow validate` refetches the tenant manifest on every call "
+        "(8-14s typical, 60-67s tail), so a tail hit is SIGKILLed with exit -1 and an "
+        f"empty stdout. Raise the criterion to {required}s."
+    )

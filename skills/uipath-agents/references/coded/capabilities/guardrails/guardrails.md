@@ -33,9 +33,13 @@ When available, the `langchain/guardrails/` page documents three actions — **`
 parameters, supported scopes, and stages; the operational wiring it doesn't cover (the suspend->resume UX, the
 Action-App prerequisite, `bindings.json`, recipient routing) is in [Escalation action (HITL)](#escalation-action-human-in-the-loop) below.
 
-If the fetched SDK docs do **not** expose `EscalateAction` or its constructor parameters, stop and report that the
-installed/published SDK documentation does not currently support HITL guardrail escalation. Do not generate
-`EscalateAction` code from memory or from this operational section alone.
+Availability is a binary check on the fetched page: if it mentions `EscalateAction`, the fetched page plus this
+reference are **sufficient** — write the code immediately from the [Escalation action (HITL)](#escalation-action-human-in-the-loop)
+example, adapting the values. Do not spend further turns re-verifying: never run `inspect.getsource`/`inspect.signature`
+probes or read `site-packages` sources to confirm the constructor — that is the reverse-engineering this section already
+forbids; verify AFTER editing via [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails). Only if the fetched page has **no**
+`EscalateAction` mention, stop and report that the installed/published SDK documentation does not currently support
+HITL guardrail escalation — never invent the class, import path, or arguments from memory.
 
 ---
 
@@ -485,7 +489,7 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.
 13. **Do not delegate the import-source decision (or guardrail authoring) to a subagent.** A dispatched subagent does not carry this skill's context and will report the module where the symbols physically live (`uipath.platform.guardrails`) — the no-op path for LangChain agents (Rule 8). It looks authoritative and silently overrides the correct `uipath_langchain.guardrails` choice. Fetch the docs and write the imports inline, where this skill's import rule still applies.
-14. **`EscalateAction` must come from the fetched SDK docs** — if the docs do not expose the class or constructor parameters, stop and report that HITL guardrail escalation is not available in the current SDK docs/runtime. Never invent the class, import path, or arguments.
+14. **`EscalateAction` availability is a binary check on the fetched docs** — if the fetched `langchain/guardrails/` page mentions `EscalateAction`, write the code immediately from this reference's escalation example; do not re-verify the constructor with `inspect` probes or `site-packages` reads (the Overview's no-reverse-engineering rule applies to escalation too). Only if the page has no `EscalateAction` mention, stop and report that HITL guardrail escalation is not available in the current SDK docs/runtime. Never invent the class, import path, or arguments from memory.
 15. **`EscalateAction` requires a deployed Action App** referenced by `app_name` + `app_folder_path` and declared as an `app` resource in **`bindings.json`** — discover it with `uip solution resources list --kind App`, resolve duplicate names by folder, pass the literal name/folder in code (not env vars), and sync bindings with [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Route the task with `TaskRecipient` when the user names a reviewer. See [Escalation action (HITL)](#escalation-action-human-in-the-loop).
 16. **Verify the escalation app schema when tenant access is available** — the app must expose the guardrail review inputs/outputs/outcomes listed in the prerequisite section. If the schema cannot be verified in a local smoke task, say that runtime readiness is unverified.
 17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails)).

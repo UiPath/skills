@@ -3,7 +3,7 @@ description: >
   Smoke: confirming reviewed documents must be done per-document (a
   `<document-id>` is always passed). The agent must NOT run `confirm` with only
   the project and no document-id, which confirms every document at once and
-  bypasses per-document review (Critical Rule 15).
+  bypasses per-document review (Critical Rule 14).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -31,7 +31,7 @@ initial_prompt: |
 
 success_criteria:
   - type: file_matches_regex
-    description: "Agent confirmed EACH of doc-001/002/003 by id, every one pinning the reviewed -m/--model-version (Critical Rules 15, 19)"
+    description: "Agent confirmed EACH of doc-001/002/003 by id, every one pinning the reviewed -m/--model-version (Critical Rules 14, 18)"
     path: "mocks/calls.log"
     pattern: >-
       (?m)\A(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-001\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-002\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-003\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))

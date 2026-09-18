@@ -1,6 +1,6 @@
 # Form trigger
 
-*Exact signatures, fields, and defaults: [`formTrigger()`](api.md#formtrigger-function).*
+*Exact signatures, fields, and defaults: `formTrigger()`.*
 
 A person starts the flow by submitting a form (`core.trigger.form`). The
 submitted values ARE the flow's inputs — read them exactly like any other
