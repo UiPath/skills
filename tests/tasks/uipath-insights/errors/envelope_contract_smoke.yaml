@@ -1,0 +1,318 @@
+task_id: skill-insights-smoke-error-envelopes
+description: >
+  Smoke test: agent uses the uipath-insights skill to exercise the failure
+  envelopes the guides document, on purpose, and read them the way the skill
+  teaches. Given a prompt that asks for five deliberately wrong reads, the
+  agent should run each once, save each envelope, and report Result,
+  ErrorCode, exit code, and the Retry verdict per failure, then answer two
+  guidance questions without running anything: how to switch tenant, and
+  which HTTP failures are worth retrying. The CLI is authenticated but no
+  read here reaches the backend: every one is rejected locally, so the task
+  is tenant-agnostic by construction.
+
+  Covers the error branches no other task grades: the jobs family's local
+  "time range is required" Failure with exit 1 (and its unknown_error code,
+  which the jobs guide says carries no HTTP status), the jobs family's
+  rejected --limit, the filter family's rejected time flag, the alert
+  family's missing time selection, and the RBAC family's local GUID check.
+  Also covers Critical Rule 8 (branch on Retry, never retry automatically)
+  and the Shared Workflow's tenant-switch guidance, which SKILL.md says to
+  hand to the user rather than run.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  Before I automate on top of `uip insights`, I want to see exactly how it
+  fails. Run these five reads once each, exactly as wrong as written, and
+  save each one's full JSON output to the file named, by redirecting stdout:
+
+  1. A jobs summary with no time range at all, to `no-window.json`.
+  2. A jobs summary for the last 60 minutes with `--limit 5` added, to
+     `jobs-limit.json`.
+  3. A folder discovery list with `--time-range 60` added, to
+     `filter-time.json`.
+  4. An alert history list with no time selection, to `alert-window.json`.
+  5. A role lookup with the id `not-a-guid`, to `bad-guid.json`.
+
+  Then write `errors.md` in the working directory with one section per
+  read: the `Result`, the `ErrorCode`, the process exit code, the `Retry`
+  value, whether the request reached the backend or was rejected locally,
+  and the one change that would make the read valid.
+
+  Two more questions for `errors.md`, answered without running anything:
+  if I later need to point the same session at a tenant called "Finance"
+  in this organization, what exact command would I run? And if a live read
+  came back with an HTTP 403, an HTTP 404, or an HTTP 429, which of those
+  would be worth retrying later and which would not, according to the CLI's
+  own retry guidance?
+
+  Run each read once. Do not retry, do not fix and re-run, and do not log
+  in or switch tenants yourself.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Read 1: a jobs summary with neither --time-range nor the absolute pair.
+  # The negative lookahead keeps a correctly windowed summary from earning
+  # this. Flag scan is bounded to the invocation (see rbac drilldown task).
+  #
+  # Critical Rule 8's "do not retry" is NOT gated by a max_count here, for
+  # the reason rbac/drilldown_smoke.yaml records: this prompt asks the report
+  # to name the change each read needs, so a command_executed count cannot
+  # tell a second run from a documented one. The prompt asks for one read
+  # each, and the reporting-discipline task is where retry discipline is
+  # graded.
+  - type: command_executed
+    description: "Agent ran jobs summary with no time range"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary(?!(?:(?!uip\s)[^&;|])*--(time-range|started-after|started-before|help)\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a jobs command with --limit"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary(?:(?!uip\s)[^&;|])*--limit\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a filter-* list with a time flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-folders\s+list(?:(?!uip\s)[^&;|])*--time-range\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran alert-history list with no time selection"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+list(?!(?:(?!uip\s)[^&;|])*--(time-range|since|until|help)\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran roles get with a non-GUID id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+roles\s+get\s+["'']?not-a-guid\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The five exit codes, re-run at grading time against the installed CLI.
+  # All five are local rejections and never build a request. Verified
+  # 2026-09-14 against @uipath/cli 1.203.0-dev.8671 with insights-tool
+  # 1.203.0-dev.8669 on a logged-in session:
+  #   jobs summary (no window)        -> Failure, unknown_error, exit 1
+  #   jobs summary --limit            -> ValidationError, exit 3
+  #   filter-folders --time-range     -> ValidationError, exit 3
+  #   alert-history list (no window)  -> ValidationError, exit 3
+  #   roles get not-a-guid            -> ValidationError, exit 3
+  # The jobs guide's own sentence: "A missing time range cannot reach the
+  # server. The command rejects it locally and exits 1".
+  - type: run_command
+    description: "jobs summary without a time range is a local Failure with exit 1"
+    command: "uip insights jobs summary --output json"
+    timeout: 60
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "jobs commands reject --limit with exit 3"
+    command: "uip insights jobs summary --time-range 60 --limit 5 --output json"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "filter-* commands reject time flags with exit 3"
+    command: "uip insights filter-folders list --time-range 60 --output json"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "alert-history list without a time selection exits 3"
+    command: "uip insights alert-history list --output json"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The saved envelopes prove the agent captured the CLI's own words rather
+  # than paraphrasing. no-window.json is the jobs-family failure shape the
+  # jobs guide documents: Result Failure, ErrorCode always unknown_error on a
+  # failure the command emits itself, Retry RetryWillNotFix, and no Code.
+  - type: json_check
+    description: "no-window.json is the jobs local-failure envelope"
+    path: "no-window.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Failure"
+      - expression: "ErrorCode"
+        operator: equals
+        expected: "unknown_error"
+      - expression: "Retry"
+        operator: equals
+        expected: "RetryWillNotFix"
+      - expression: "Message"
+        operator: regex
+        expected: "time range is required"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The parse-time shape is different: ValidationError with invalid_argument.
+  - type: json_check
+    description: "jobs-limit.json is a ValidationError with invalid_argument"
+    path: "jobs-limit.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "ValidationError"
+      - expression: "ErrorCode"
+        operator: equals
+        expected: "invalid_argument"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Read 3, the filter family. The other four saved envelopes are asserted
+  # here, so this one was the gap. A time flag on a filter-* list is an
+  # unknown option, so it takes the same commander parse path as jobs-limit
+  # above: ValidationError / invalid_argument, exit 3.
+  - type: json_check
+    description: "filter-time.json is the filter family's unknown-option ValidationError"
+    path: "filter-time.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "ValidationError"
+      - expression: "ErrorCode"
+        operator: equals
+        expected: "invalid_argument"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "alert-window.json is the alert family's missing-time-selection ValidationError"
+    path: "alert-window.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "ValidationError"
+      - expression: "ErrorCode"
+        operator: equals
+        expected: "invalid_argument"
+      - expression: "Retry"
+        operator: equals
+        expected: "RetryWillNotFix"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "bad-guid.json is the RBAC local GUID rejection"
+    path: "bad-guid.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "ValidationError"
+      - expression: "Message"
+        operator: regex
+        expected: "must be a GUID"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The write-up names the CLI's own tokens. These three strings are the
+  # vocabulary Critical Rule 8 and the guides' error tables branch on, so a
+  # report that paraphrased them away would not be usable as a runbook.
+  - type: file_contains
+    description: "errors.md reports the Retry verdict and both error codes by their CLI names"
+    path: "errors.md"
+    includes:
+      - "RetryWillNotFix"
+      - "invalid_argument"
+      - "unknown_error"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Shared Workflow: "Give the user the command to run rather than running
+  # it yourself" for a tenant switch. The bare `uip login` form is Critical
+  # Rule 9. The allowlist matches the five sibling tasks verbatim.
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The tenant switch itself, anchored to a command position. `tenant set` is
+  # the one string this task REQUIRES in errors.md (see the file_contains
+  # below), so an unanchored guard fails a compliant agent that authors the
+  # report with a Bash heredoc. The class carries `\n` because coder_eval
+  # compiles command_pattern with re.DOTALL and NOT re.MULTILINE, so a bare
+  # `^` would match only the first command of a batched call and miss a real
+  # switch on any later line. What the anchor still rejects is the prose form
+  # a report uses ("Run: uip login tenant set ..."), because that line does
+  # not begin with the command. A heredoc line holding nothing but the bare
+  # command is the remaining false positive, and it is narrower than the
+  # unanchored guard's, which matched every mention.
+  - type: command_not_executed
+    description: "Agent did not switch tenant itself"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[\n;&|]\s*)uip\s+login\s+tenant\s+set\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Shared Workflow: the tenant-switch command is handed to the user, so it
+  # must appear in the written report. Deterministic on purpose: on eval run
+  # 34885630300 a judge reading the chat reply scored this zero while
+  # errors.md carried the exact command, because the reply only pointed at
+  # the file. The command_not_executed guard above covers the "never run it"
+  # half.
+  - type: file_contains
+    description: "errors.md hands the user the uip login tenant set command"
+    path: "errors.md"
+    includes:
+      - "uip login tenant set"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 8 and the guides' error tables: 403 is a permission
+  # boundary (RetryWillNotFix), 404 is tenant- or visibility-scoped
+  # (RetryWillNotFix), 429 is the one branch with RetryLater.
+  - type: llm_judge
+    description: "Rule 8: the retry verdicts for 403, 404, and 429 match the guides"
+    include_agent_output: false
+    include_reference: false
+    files: ["errors.md"]
+    prompt: |
+      The uipath-insights skill branches on the CLI's Retry field:
+      RetryWillNotFix means fix the cause and RetryLater means report and
+      stop, trying again later. Its guides say an HTTP 403 is a permission
+      boundary and an HTTP 404 means the resource is not in the active
+      tenant or not visible, neither of which a retry fixes, while an HTTP
+      429 (rate limited) carries RetryLater and is the one case where a
+      later retry is right. Read errors.md.
+
+      Score 1.0 if the report says 429 is the one worth retrying later and
+      says 403 and 404 are not worth retrying (any phrasing that conveys
+      "fix the cause / permission / not visible" for those two is fine).
+      Score 0.0 if it recommends retrying a 403 or 404, says 429 should not
+      be retried, or does not answer the question.
+    weight: 2.0
+    pass_threshold: 1.0
