@@ -9,8 +9,12 @@ description: >
 tags: [uipath-maestro-bpmn, smoke, "mode:build", lifecycle:generate, shape:multi-node, node:script, node:subprocess]
 
 run_limits:
-  task_timeout: 2400
-  turn_timeout: 1800
+  # Claude nightlies rode the 1800s turn cap as a coin flip: 09-14 SUCCESS
+  # 1763s (37s margin), 09-15 SUCCESS 1259s, 09-16 killed mid-work at 1803s.
+  # Budget matches external_wait/greenfield and
+  # nodes/contract_variant_wrappers (heavy single-turn BPMN authoring).
+  task_timeout: 3600
+  turn_timeout: 2700
   expected_turns: 22
   max_turns: 80
 

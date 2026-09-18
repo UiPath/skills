@@ -1,6 +1,6 @@
 # Integration Service Connectors
 
-*Exact signatures, fields, and defaults: [`connector()`](api.md#connector-function).*
+*Exact signatures, fields, and defaults: `connector()`.*
 
 Call a curated or generic Integration Service operation.
 
@@ -38,7 +38,8 @@ source. The loop is:
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
 4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
    invocation, and it finds the connection itself and writes `bindings.json`.
-   Switch to the generated descriptor import where it printed one.
+   `prepare` repoints the import itself; it only asks when two flows
+   import the same connector, or you passed `--no-source-rewrite`.
 5. **Check again, then compile.**
 
 Every prepare command below is the one `check` prints at step 3 — shown here
@@ -450,7 +451,33 @@ both the connection id AND its folder key into `bindings.json`. So one command
 covers the lookup, the connection binding and the folder binding. Pass
 `--connection <name>` only when several connections match the same connector;
 it reports the candidates rather than guessing, because connections for one
-connector are not interchangeable. When the candidates share a name, pick one
+connector are not interchangeable.
+
+**And you do not need to find the RIGHT connection first either.** A value can
+exist on one connection and not another — a project in a team's Jira but not in
+your personal workspace — so when a `--resolve` reads a collection to the end
+without a match, `prepare` tries the other enabled connections for that
+connector before failing, and re-runs itself against the one that resolves
+everything:
+
+```
+fields.project.key: not on this connection; trying 1 other uipath-atlassian-jira connection(s)
+connection: is-sandboxes-test@…-sandbox-380 (uipath-maestro-flow) resolves fields.project.key;
+  re-running against it (--connection-id f5273a4d-…)
+```
+
+`bindings.json` ends up naming the connection that was actually used. Three
+things it will not do: it does not retry a connection you PINNED with
+`--connection-id` / `--connection` (your choice stands, and the message names
+the alternatives so you can re-run), it does not retry a transport or permission
+failure (that says nothing about whether the value exists), and it does not pick
+between two connections that both resolve — the ids they return differ per
+connection, so that is reported for you to choose.
+
+**So do not go crawling Integration Service when a lookup fails.** The failure
+message names the connection it read and, once every candidate has been tried,
+the one command that shows what the collection holds. Tenant discovery is still
+not a phase of this loop. When the candidates share a name, pick one
 by the `--connection-id <id>` each candidate line prints; `bindings.json` is
 written on that route too. The entries are named `<connector's last segment>`
 (`slack`) and `shared` unless you pass `--bind-connection` / `--bind-folder`;

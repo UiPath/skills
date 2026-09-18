@@ -17,6 +17,7 @@ from _shared.edit_check import (  # noqa: E402
     assert_config_preserved,
     assert_no_orphan_di,
     assert_uipath_preserved,
+    assert_variables_extended_only,
     elements_local,
     fail,
     flow_node_ids,
@@ -27,7 +28,7 @@ from _shared.edit_check import (  # noqa: E402
 
 def main() -> None:
     _path, edited = parse_bpmn("OrderIntake")
-    original = load_original(__file__, "OrderIntake.bpmn")
+    original = load_original("edit/add_node", "OrderIntake.bpmn")
 
     added = flow_node_ids(edited) - flow_node_ids(original)
     inserted = [
@@ -48,7 +49,7 @@ def main() -> None:
     assert_config_preserved(original, edited, ["Start_1", "Task_Validate", "Task_Notify", "End_1"])
     assert_uipath_preserved(original, edited, "migrationVersion")
     assert_uipath_preserved(original, edited, "caseManagement")
-    assert_uipath_preserved(original, edited, "variables")
+    assert_variables_extended_only(original, edited)
 
     require_sequence_integrity(edited)
     require_di_for_visible_elements(edited)

@@ -1,6 +1,6 @@
 # Queue Item
 
-*Exact signatures, fields, and defaults: [`queueItem()`](api.md#queueitem-function).*
+*Exact signatures, fields, and defaults: `queueItem()`.*
 
 Create work on an Orchestrator queue, optionally waiting for another automation
 to process it.

@@ -19,6 +19,7 @@ from _shared.edit_check import (  # noqa: E402
     assert_config_preserved,
     assert_no_orphan_di,
     assert_uipath_preserved,
+    assert_variables_preserved_or_rescoped,
     elements_local,
     fail,
     has_flow,
@@ -29,7 +30,7 @@ from _shared.edit_check import (  # noqa: E402
 
 def main() -> None:
     _path, edited = parse_bpmn("Fulfillment")
-    original = load_original(__file__, "Fulfillment.bpmn")
+    original = load_original("edit/group_to_subflow", "Fulfillment.bpmn")
 
     subs = elements_local(edited, "subProcess")
     if not subs:
@@ -59,6 +60,7 @@ def main() -> None:
     assert_config_preserved(original, edited, ["Task_Ship"])
     assert_uipath_preserved(original, edited, "migrationVersion")
     assert_uipath_preserved(original, edited, "caseManagement")
+    assert_variables_preserved_or_rescoped(original, edited)
 
     require_sequence_integrity(edited)
     require_di_for_visible_elements(edited)

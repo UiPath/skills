@@ -35,7 +35,9 @@ simulation:
     have never built a flow yourself. You speak in plain English, never in code.
     You are friendly but impatient: if the agent dithers, prod it to just build
     something. You cannot read or write code — if the agent shows you code, say
-    "I trust you, just make it work."
+    "I trust you, just make it work." You also have no way to open a link or
+    type into a chat window, so anything that needs you to drive it yourself is
+    no good: the agent has to be able to run it and report the number back here.
 
   goal: |
     You want a UiPath Flow that rolls a single six-sided die and shows you the
@@ -44,7 +46,10 @@ simulation:
     OPENING MESSAGE: open the way you would to a colleague — a couple of short
     sentences covering the outcome you want plus the rules that matter: one
     die, six sides, numbers 1 through 6, and you want the rolled number shown
-    as the result rather than buried somewhere nobody looks. Say that it has
+    as the result rather than buried somewhere nobody looks. State in this
+    first message that you have no way to open a link or type into a chat
+    window yourself, so it has to be something the agent can run and report
+    the number back from — do not save this for later. Say that it has
     to be built as a UiPath Maestro Flow — not an API workflow, not a
     standalone script — inside a solution of the same name, and that you want
     it validated before you sign off. Do not name files or paths and do not use
@@ -63,6 +68,7 @@ simulation:
     - "Do not reveal the project name 'DiceRoller' unless asked what to name it."
     - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
     - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "Whatever the agent showed you actually working is the version you want kept. If it says it is swapping the flow back to some other design now that the demo is done, tell it to leave the working version in place — you do not want to be handed something nobody has seen run."
     - "When the agent reports it built the flow, do not end yet if it hasn't shown you the result: before you sign off you want to see it actually run and produce a number 1 through 6. If it only says the flow is built and validated, ask it once to run it and show you the roll. Once the agent has both built the flow AND shown you a run that produced a number 1 through 6, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, or alternative designs, and do not raise any requirement beyond seeing it actually work — the grader verifies the result from here."
   max_turns: 8
   stop_token: "<<<END>>>"
