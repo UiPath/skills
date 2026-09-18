@@ -89,6 +89,8 @@ Then build `user_inputs` using the template's **structure** but the **collected 
 
 Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
 
+**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is rejected as an unnamed required-field error); no template placeholders left. Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
+
 ## Step 5: Create the process
 
 ```bash
