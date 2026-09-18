@@ -43,6 +43,7 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | `uip ah idea-flows list` | flow names → ids | entries carry `Id`, `Name`, `Phases` |
 | `uip ah automations schema get --idea-flow-id <id> --destination <file>` | write the flow's schema + `user_inputs` template to a file | same document as the raw `/idea-schema` |
 | `uip ah categories get` | category tree | `Data.Levels` + `Data.Categories` (nested `subcategories`; pick `category_is_active: 1` only) |
+| `uip ah users list` | list tenant users | entries carry `Email`, `IsActive`, `InviteStatus`; paged (default 20); filters: `--search`, `--invite-status`, `--limit` |
 | `uip ah users list --search <email> --invite-status all` | optional owner lookup | both flags needed; a miss is **no signal** — never block on it |
 | `uip ah applications update --file f.json` | create **or** update an application | `application_id: null` inserts; needs `MANAGE_APP_INVENTORY` (403 otherwise) |
 | `uip ah applications list` | app inventory (tenant-required application questions) | entries carry `Id`, `Name` |
