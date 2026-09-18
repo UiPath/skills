@@ -48,15 +48,13 @@ First **enumerate the tenant's actual required set from the schema file**: every
 
 The discovery commands are independent — run the ones you need (`auth-info get`, `categories get`, `applications list`) **in a single shell invocation** rather than one per turn; each is fast, the round-trips between them are not.
 
-**Never block the publish on an owner lookup.** `uip ah users list` defaults to activated users only, so a user who has only ever used the API or CLI is *absent from it despite existing and being able to own a process*. Looking them up is optional and informational; if you do it, scope it and treat a miss as no signal:
+**Never block the publish on an owner lookup.** If you look the owner up at all, do a targeted search and treat a miss as no signal:
 
 ```bash
 uip ah users list --search "<owner-email>" --invite-status all
 ```
 
-`--search` is server-side, so it is not subject to the default page size; `--invite-status all` is required, because without it a not-invited user returns zero rows. **Pass both or the lookup is worse than useless** — search alone reports "no such user" for exactly the users this guidance is about.
-
-Whatever that returns, use the `auth-info` email verbatim, submit, and let the API decide. Only a real `Cannot identify owner by email` from the create is an owner problem (Step 5).
+Both flags: `--search` keeps it server-side and off the page limit; `--invite-status all` is required because the default filter hides users who can still own a process. Whatever it returns, use the `auth-info` email verbatim, submit, and let the API decide — only a real `Cannot identify owner by email` from the create is an owner problem (Step 5).
 
 ### Creating a missing application
 
