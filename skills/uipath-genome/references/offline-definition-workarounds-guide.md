@@ -36,6 +36,18 @@ Sibling `.xaml.metadata`: `{"ActivityType": "Click", "Anchor0": null, "Anchor1":
 
 No `xmlns` declarations are needed — the undeclared `uix:`, `scg:` and `x:` prefixes are what the CLI itself writes. Set `ActivityType` through `--activity-type`, not by hand: a hand-written value does not persist, and it drives the selector reliability rules (a `GetText` target avoids content-reflecting attributes, a `Check` target avoids state attributes).
 
+Field semantics that decide whether an offline file behaves:
+
+| Field | What to write |
+|---|---|
+| `Version` | `V6`. It is not decorative: **at V6 the runtime no longer expands a fuzzy selector itself**, so `FuzzySelectorArgument` must already carry its `matching:`/`fuzzylevel:` prefixes. Omitting `Version` falls back to legacy semantics (no anchor-alignment factor, no image scale factor) |
+| `SearchSteps` | `Selector`, `FuzzySelector`, `SemanticSelector`, `CV`, `Image`, `TextNative` — combinable, but set only the step whose argument is filled |
+| `FullSelectorArgument` | the **partial** strict selector, relative to the scope. The full selector is scope + partial, computed at runtime and never written |
+| `ScopeSelectorArgument` | the window selector. Only the main target carries one; anchors inherit it |
+| `DesignTimeRectangle` | **load-bearing wherever anchors, CV or Image are used**: it is the reference geometry anchor scoring measures against, so zeros silently degrade an anchored fuzzy target. Zeros are fine only for a strict, unanchored target |
+| `Guid` | one per element, never shared (it is also the id sent with a semantic request) |
+| `ElementType` | cosmetic — logging and design-time hints only; `None` is harmless |
+
 **Seed leakage.** `update-definition` writes only the options passed and leaves everything else untouched, so every field the seed carried survives into each copy — its `FullSelectorArgument` and its `Guid`. Pass `--full-selector` on every element (a fuzzy-only element otherwise keeps the seed's strict selector), and give each element its own `Guid`. `update-definition` exposes no `--guid`, so a shared `Guid` can only be changed by writing the file; Object Repository identity is the `referenceId`, so it appears cosmetic.
 
 **Kind conversion.** `--full-selector` on a definition whose search step is `FuzzySelector` also flips `SearchSteps` to `Selector, SemanticSelector`. The old `FuzzySelectorArgument` stays as inert, disabled residue; no command clears it — re-copy the seed and re-apply to purge it. `fuzzify` is one-way (strict → fuzzy); there is no de-fuzzify.
@@ -50,9 +62,13 @@ Semantics first, because they constrain when an anchor is worth authoring at all
 |---|---|
 | `FuzzySelector`, `CV`, `TextNative`, `Image` | `Selector`, `SemanticSelector` |
 
-- An anchor is a plain `uix:Target`, never a `TargetAnchorable` — anchors cannot have anchors. Up to four, slots `0..3`.
+- An anchor is a plain `uix:Target`, never a `TargetAnchorable` — anchors cannot have anchors. **Up to four**, slots `0..3`; a fifth is rejected.
+- An anchor has no scope of its own: it inherits the main target's `ScopeSelectorArgument`. Never give an anchor one.
 - A **strict** target ignores any anchor present. `add-anchor` on a strict target atomically converts the main target to `FuzzySelector` first; removing its last anchor reverses the conversion. So offline, adding an anchor means also moving the main target to `FuzzySelector`.
-- `idx` is **not supported** on `FuzzySelector`. A target that needs a positional index must stay strict, and therefore can never be anchored.
+- `idx` is **stripped when a selector is fuzzified** (with `tableRow`, `tableCol` and `css-selector`). A target that needs a positional index must stay strict, and therefore can never be anchored.
+- **An anchor that matches nothing at run time fails the whole search**, not just that candidate. Anchor only on something that is reliably present; a caption that appears conditionally is worse than no anchor.
+- Anchor scoring is geometric, relative to `DesignTimeRectangle`: direction (which side the anchor sits on), edge-to-edge distance, angle and overlap. The score peaks at the design-time distance and falls off in **both** directions, so a candidate much closer than at capture is penalised as much as one much further. `fuzzylevel` plays no part in it.
+- Fuzzifying a selector leaves `cls`/`class`, `app`, `role`, `tag`, `type`, `css-selector` and `hasTableAncestor` as exact ("hard") attributes and fuzzifies the rest (`id`, `name`, `aaname`, `automationid`, title and text attributes), each written as the triple `name='value'`, `matching:name='fuzzy'`, `fuzzylevel:name='0.0'`. An attribute whose value already holds a `*`, or that is matched by regex, gets only `fuzzylevel:name='0.0'` and keeps its own matching.
 - This is the mechanical reason for the targeting-method policy in [source-migration-guide.md](source-migration-guide.md): fuzzy without an anchor has nothing to disambiguate with, and an anchor on a strict target is dead weight.
 
 Shape of a populated anchor list (one anchor). Working examples in this repo: `tests/tasks/uipath-review/rpa/selector-brittle/fixture/BrittleBot/Main.xaml`, `tests/tasks/uipath-troubleshoot/activity-packages/uia-application-open-failed/process/EditorLink.xaml`.
