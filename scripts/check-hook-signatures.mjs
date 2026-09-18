@@ -3,20 +3,11 @@
  * Verify that every PowerShell hook in a built package carries an Authenticode
  * signature block.
  *
- * Checks the artifact consumers actually receive, not the working tree. The
- * failure this exists to catch is a signature that was applied correctly and
- * then destroyed on the way into the tarball -- `prepack` rewriting a file, the
- * flavor composer re-emitting one, a packer normalizing line endings. Each of
- * those ships a package whose hooks look signed in CI and are not signed on
- * disk, which is indistinguishable from the unsigned status quo until a
- * customer's endpoint policy rejects it.
+ * Checks the packed artifact, not the working tree: it catches a signature that
+ * was applied correctly and then destroyed on the way into the tarball.
  *
- * Structural, not cryptographic: chain validation needs the Windows crypto
- * stack, and the publish jobs run on Linux. The signing step
- * (`scripts/sign-hooks.ps1`) already verifies each signature cryptographically
- * on the Windows runner where it is applied, so what remains to prove here is
- * that the bytes survived the trip. The two checks are complementary and
- * neither replaces the other.
+ * Structural, not cryptographic -- chain validation needs the Windows crypto
+ * stack and the publish jobs run on Linux.
  *
  * Usage:
  *   node scripts/check-hook-signatures.mjs <package.tgz>
