@@ -105,9 +105,14 @@ got an answer (network, login), and 3 on a bad argument — so `set -e` will not
 stop you on a vendor rejection; branch on `Data.Status` and `Data.Body` yourself.
 
 Returning an `intsvc.http` result **untouched** relays the vendor's original
-bytes verbatim (status, ordered/duplicate headers, body). Returning a fabricated
-object re-encodes it — the right call for a list whose envelope is noise, the
-wrong one when fidelity matters.
+bytes verbatim (status, ordered/duplicate headers, body). Anything else is
+re-encoded from `{ status, headers, body }`, and how the caller receives `body`
+depends on the `content-type` among those headers: a JSON content type arrives
+parsed, no content type arrives as a UTF-8 string. So for a list whose envelope
+is noise, swap `body` on the vendor's response and return that
+(`listed.body = listed.body.users ?? []; return listed;`) — the vendor's headers
+keep the body parsed. A fabricated `{ status: 200, headers: [], body }` carries
+no content type and hands the caller a JSON string.
 
 ## Detecting vendor failure
 

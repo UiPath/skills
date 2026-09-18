@@ -51,6 +51,7 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 - **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`, the `cd` included as its own segment. Same for `node configure && validate && format`.
 - **Sequential `registry get`s.** Emit every `registry get` as a parallel `Bash` in one message alongside the T1 scaffold chain.
 <!--skill-flavor:greenfield-init-batching:end-->
+- **Pre-reading a fallback walkthrough before the ladder resolves.** T1's "parallel `Read` (plugin `impl.md`s)" covers node types the Step 3 ladder has already selected. A connector gap is not selected until `uip is connectors metadata` returns; See [Select the node type for each external service](#select-the-node-type-for-each-external-service-runs-even-when-full-planning-is-skipped).
 - **Validating after every Edit.** Validate once at the end of T3 (or after a recovery Edit). Intermediate states are expected to be invalid.
 - **Re-reading the `.flow` every turn.** `Read` once at the start of T2; subsequent `Edit`s in the same conversation don't need re-reading unless an external command (e.g., `node configure`, `format`) rewrites the file between Edits.
 - **`Edit` in the same turn as a `Bash` that mutates the same file.** Parallel tool calls race — separate them across turns.
@@ -116,7 +117,7 @@ uip solution init "<SolutionName>" --output json \
 >
 > Only when the request names **Maestro Automate** as the product. The bare verb does not count — "automate invoice intake with a Flow" asks for a Flow. Anything else, including no signal, leaves the flag off. Steps 3-6 are identical either way — the flag changes the packaged `runtimeOptions.profile`, not how you author the `.flow`. See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal).
 
-Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
+Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only. `core.action.http.v2` in the example stands in for whichever CLI-owned type the Step 3 ladder selected — for a connector that has no curated activity, that is the generated `uipath.connector.custom.<key>.<slug>` node when the connector reports `V4Compatible: true`, and Managed HTTP only when it does not.
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
 
@@ -252,11 +253,20 @@ uip maestro flow registry search "<service>" --output json --output-filter "[*].
 Then pick the first match down this ladder:
 
 1. **Curated connector activity** (`uipath.connector.<key>.<op>` in the results) → use it.
-2. **Connector exists but no activity for what you need** → `core.action.http.v2` (connector mode).
-3. **No connector at all** → `core.action.http.v2` (manual mode).
-4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
+2. **Connector exists but no activity for what you need, and `uip is connectors metadata <key>` reports `V4Compatible: true`** → a generated non-catalog activity ([connector/planning.md — decision order](plugins/connector/planning.md#decision-order), authored per [connector/impl-inline.md](plugins/connector/impl-inline.md)).
+3. **Connector exists but no activity, not `V4Compatible`** → `core.action.http.v2` (connector mode).
+4. **No connector at all** → `core.action.http.v2` (manual mode).
+5. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../SKILL.md#critical-rules-universal).
+
+**Resolve rung 2 vs 3 before you open either walkthrough.** When the search shows the connector but no activity for the operation, the fallback is undecided until one more discovery call returns. Emit it in T1 alongside the search and the connections list:
+
+```bash
+uip is connectors metadata <connector-key> --output json --output-filter "[0].Flags"
+```
+
+Read the flag off the `Flags` object the filter returns — the CLI emits it as **`V4Compatible`** (capital `V`), so a filter that names `V4Compatible` returns `Data: []` and reads as "flag absent", which misroutes a rung-2 connector to Managed HTTP. Then open only the walkthrough the flag selects — [connector/impl-inline.md](plugins/connector/impl-inline.md) when it is `true`, [http/impl-connector.md](plugins/http/impl-connector.md) when it is `false` or absent. Do not pre-read the Managed HTTP guide on the guess that the gap will land at rung 3: a fallback doc already in context steers the build toward that node type before the flag has been read. The `core.action.http.v2` in the [canonical T1 chain](#canonical-t1-chain--issue-this-as-one-bash-call) is a placeholder for whichever CLI-owned node the ladder selected, not the default fallback.
 
 **Branching is a node, not a Script.** A requirement phrased as *if … otherwise …* (two outcomes) is a `core.logic.decision` node with both `true`/`false` ports wired ([decision/planning.md](plugins/decision/planning.md)); three or more outcomes → `core.logic.switch`. Do not fold the branch into a Script ternary — the branch must exist as a node in the graph.
 

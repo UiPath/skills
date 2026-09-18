@@ -14,7 +14,7 @@ Scan the approved architectural-plan node table and connector summary. Classify 
 
 | Category | Identification | Action |
 |---|---|---|
-| Connector | Type starts with `uipath.connector.*`, or Notes say `connector:` | Run Step 2 with [connector/impl.md](plugins/connector/impl.md). |
+| Connector | Type starts with `uipath.connector.*`, or Notes say `connector:` | Run Step 2 with [connector/impl.md](plugins/connector/impl.md); for a non-catalog `uipath.connector.custom.*` type use [connector/impl-inline.md](plugins/connector/impl-inline.md). |
 | Resource | Type starts with `uipath.core.*`, or Notes say `resource:` | Run Step 3 with the relevant plugin: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [agentic-process](plugins/agentic-process/impl.md), [flow](plugins/flow/impl.md), [api-workflow](plugins/api-workflow/impl.md), or [hitl](plugins/hitl/impl.md). |
 | Mock | Type is `core.logic.mock` | Run Step 4. |
 | OOTB | All other nodes, including Script, HTTP, Decision, and Loop | Run Step 1a with the relevant plugin `impl.md`. |
@@ -65,6 +65,7 @@ Use these plugin mappings:
 | `uipath.core.api-workflow.*` | [api-workflow/impl.md](plugins/api-workflow/impl.md) |
 | `uipath.core.hitl.*` | [hitl/impl.md](plugins/hitl/impl.md) |
 | `uipath.ixp.*` | [ixp/impl.md](plugins/ixp/impl.md) |
+| `uipath.connector.custom.*` | [connector/impl-inline.md](plugins/connector/impl-inline.md) |
 | `uipath.connector.*` | [connector/impl.md](plugins/connector/impl.md) |
 | `uipath.connector.trigger.*` | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 

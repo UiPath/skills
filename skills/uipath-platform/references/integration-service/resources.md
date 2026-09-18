@@ -148,7 +148,7 @@ credential. Two script sources, exactly one per call:
 | flag | runs |
 |---|---|
 | `--script-ref <name>` | a published script; needs `--connector-key` |
-| `--inline-script <src\|@file\|->` | a local script — source directly, `@path` to read a file, `-` for stdin |
+| `--inline-script <source>` | a local script — the source text, or a path ending in `.js` that is read from disk (no `@` prefix, no stdin) |
 
 A **published** script is how `4.0.0` reference fields (`reference.scriptRef`)
 are resolved:
@@ -165,7 +165,7 @@ A **local** script is how a generated activity is run before it is published
 
 ```bash
 uip is resources run script --connection-id "<CONNECTION_ID>" \
-  --inline-script @<path-to-script>.js \
+  --inline-script <path-to-script>.js \
   --body '{"field": "value"}' --output json
 ```
 
