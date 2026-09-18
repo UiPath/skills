@@ -70,7 +70,7 @@ No row matches → say which framework the files appear to come from and that no
 4. Build the call graph per project and the handoff graph across projects.
 5. Infer complexity from the signal counts in the extraction guide.
 6. Map signals to genome sections per the extraction guide; write the process genome first, then each component genome with `Part of:`, Interface, and Source Map.
-7. Write the source artifacts (`source/targets.json`, `test-data.json`, `process-data.json`, `step-map.json`) with the source guide's script; record their counts in the Source Map.
+7. Write the source artifacts: `source/targets.json`, `test-data.json` and `process-data.json` with the source guide's script, then `source/step-map.json` with `scripts/genome-step-map.py <genome.md>` (it reads the written genomes' Source Map tables and `process-data.json`). Record their counts in the Source Map.
 8. Write, then offer edits. Common follow-ups: "remove the inferred flags", "drop the Source Map for sharing", "this step is wrong".
 
 Full procedure: [extraction-guide.md](references/extraction-guide.md); framework guides and scripts: § Source Frameworks.

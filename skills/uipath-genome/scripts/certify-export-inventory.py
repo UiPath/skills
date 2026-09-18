@@ -24,6 +24,7 @@ META = {'UniqueKey', 'CreatedDt', 'CreatedBy', 'ModifiedDt', 'ModifiedBy', 'EF6S
 SENSITIVE = re.compile(r'passw|pwd|secret|token', re.I)
 SYS_PREFIXES = ('Execution.', 'Operating System.', 'Variable.', 'Text.', 'Number.', 'Date.', 'Record Set.', 'Browser.', 'Window.')
 NOISE_ACTIONS = ('Execution.Wait', 'Operating System.Capture Screen Image')
+CAPTURE = 'Operating System.Capture Screen Image'  # not a workflow step, but the run's evidence: counted per process
 
 
 class D(dict):
@@ -46,6 +47,7 @@ class Export:
         self.P = L('Processes.json'); self.C = L('Components.json'); self.A = L('ComponentActions.json'); self.PR = L('ComponentActionParms.json')
         self.V = L('Variables.json'); self.LY = L('Layouts.json'); self.RS = L('Recordsets.json'); self.M = L('MapObjects.json')
         self.AT = L('Attributes.json'); self.IL = L('InterfaceLibraries.json'); self.AP = L('Applications.json'); self.PF = L('ProcessFolders.json')
+        self.RF = L('RecordsetFilters.json')
         self.comp = {c['ComponentID']: c for c in self.C}
         self.act = {a['ComponentActionID']: a for a in self.A}
         self.parm = {p['ComponentActionParmsID']: p for p in self.PR}
@@ -55,6 +57,11 @@ class Export:
         self.rs = {r['RecordSetID']: r for r in self.RS}
         self.il = {i['InterfaceLibraryID']: i['Name'] for i in self.IL}
         self.appver = {v['ApplicationVersionID']: a['Name'] for a in self.AP for v in (a['ApplicationVersions'] or [])}
+        self.filt = {}  # RecordFilterID -> "Column Is Equal To" (the value compared is the caller's variable)
+        for f in self.RF:
+            self.filt[f['RecordFilterID']] = ' AND '.join(
+                f"{(self.var.get(c['VariableID']) or {}).get('Name')} {(c['FilterOperator'] or {}).get('Name')}"
+                for c in (f['RecordFilterCriterias'] or [])) or None
         self.objwin, self.objname = {}, {}
         for m in self.M:
             self.objwin[m['ObjectID']] = m['Name']; self.objname[m['ObjectID']] = m['Name']
@@ -73,6 +80,28 @@ class Export:
                     if t in self.proc and t != p['ProcessID']:
                         self.edges[p['ProcessID']].append(t)
         self.called = set(t for ts in self.edges.values() for t in ts)
+        self.secrets = self._secrets()
+
+    def _secrets(self):
+        """Literal secret values, so a password is redacted wherever it appears — not only under a field Certify named
+        'Password'. Certify reuses a learned control for another purpose and types the same literal into it."""
+        out, lvname = set(), {}
+        for l in self.LY:
+            for v in l['LayoutVariables'] or []:
+                lvname[v['LayoutVariablesID']] = (self.var.get(v['VariableID']) or {}).get('Name') or ''
+        take = lambda v: out.add(str(v)) if v and str(v) not in ('None', 'True', 'False', 'N/A', '^') and len(str(v)) > 3 else None
+        for r in self.RS:  # recordset cells of a password/secret/token variable
+            for c in r['RecordSetDatas'] or []:
+                if SENSITIVE.search(lvname.get(c['LayoutVariablesID'], '')):
+                    take(c['CertifyValue'])
+        for p in self.P:  # literals typed into a control Certify learned as a password field
+            for s in p['TestSteps'] or []:
+                if not s['ObjectID'] or not SENSITIVE.search(self.objname.get(s['ObjectID']) or ''):
+                    continue
+                for ta in s['TestStepActions'] or []:
+                    if (self.parm.get(ta['ComponentActionParmsID'], {}).get('Name') or '').startswith(('Value', 'Typed Value')):
+                        take(ta['CertifyValue'])
+        return out
 
     def _walk(self, f, path):
         self.fpath[f['FolderID']] = path + '\\' + f['Name']
@@ -91,7 +120,9 @@ class Export:
         return sorted(p['TestSteps'] or [], key=lambda x: (x['CertifySequence'] or 0, x['TestStepID']))
 
     def safe(self, name, value):
-        return '***' if name and SENSITIVE.search(str(name)) else value
+        if name and SENSITIVE.search(str(name)):
+            return '***'
+        return '***' if value is not None and str(value) in self.secrets else value
 
     def parms(self, step):
         out = {}
@@ -199,6 +230,9 @@ def cards(x: Export):
         if l:
             vn = [x.var.get(v['VariableID'], {}).get('Name') for v in sorted(l['LayoutVariables'] or [], key=lambda v: v['CertifySequence'] or 0)]
             pr(f"  layout: {l['Name']} vars={vn} | recordset: {x.rs.get(p['RecordSetID'], {}).get('Name')} records={x.records(p['RecordSetID'])}")
+        shots = sum(1 for s in live if x.aname(s['ComponentActionID']) == CAPTURE)
+        if shots:
+            pr(f"  evidence: {shots} screen captures ({100 * shots // len(live)}% of its steps) — state the policy in the genome, never as steps")
         calls, wins, phases, labels, checks, sets, finds, branches, data_in = [], [], [], [], [], [], [], [], []
         for i, s in enumerate(live, 1):
             an = x.aname(s['ComponentActionID'])
@@ -417,31 +451,75 @@ def _parse_locator(v):
     return d
 
 
-INTERACTION_PARMS = ('Typed Value', 'List Item Caption', 'List Item Caption Criteria', 'List Item Number', 'Selection Type', 'Follow-Up Key',
-                     'NodePath', 'Node Path', 'Item', 'Criteria', 'Index', 'Input Type', 'Column Caption', 'Column Number', 'Row Number',
-                     'Follow-up Keystroke', 'Store Type', 'Verify Type', 'Key', 'Keys', 'State', 'Click Type', 'ClickType', 'Property',
-                     'Row Matching String 1', 'Match Value 1', 'Column Caption 1', 'Column Number 1', 'Match Criteria 1', 'Matching Row Instance',
-                     'ControlType', 'Name', 'Name Criteria')
+# Every parameter of a step is part of the interaction contract except Certify engine mechanics: find caching,
+# scroll and search options, and the Execute Process plumbing that travels in certify-process-data.json (click
+# offsets are kept when off-centre, see _prune_offsets). This is a denylist on purpose — an allowlist of
+# known-interesting names silently dropped the typed value of every Input, the row variable of every Find Row and
+# the asserted value of every Verify, which is the whole contract of those steps.
+MECHANIC_PARMS = {p.lower() for p in  # matched case-insensitively: the same parm is 'Ver' on one component, 'ver' on another
+                  ('Mask', 'Click Mask', 'LastFind', 'UseLastFind', 'Restore', 'Single Row Scroll', 'Start',
+                   'WaitForResult', 'Alignment Threshold', 'SearchCurrentPageOnly',
+                   'Reset Horizontal Scrollbar After Search', 'Reset Vertical Scrollbar After Search',
+                   'Start Search From Current Page', 'Comment', 'Step', 'Process', 'RecordSetMode')}
+OFFSET_PARMS = {'ver', 'hor', 'percentvertical', 'percenthorizontal'}  # where inside the control the click lands, in %
+CATALOG_SKIP_ACTIONS = NOISE_ACTIONS + ('Execution.Execute Process', 'Execution.Comment', 'Execution.Label')
+MODIFIER_FLAGS = {'Ctrl', 'Shift', 'Alt', 'Win'}
+SLOT = re.compile(r'^(?P<base>.+?) ?(?P<n>\d+)$')  # 'Match Value 2', 'Criteria3', 'Cell Object Instance 10'
+SLOT_VALUE_BASES = ('Match Value', 'Row Matching String', 'Value')
+
+
+def _prune_offsets(ex):
+    """A centred click offset is Certify's default and says nothing; an off-centre one is the behaviour — `hor` 10 on a
+    Workday date field lands the caret in the month segment so the typed date fills the whole field, and a centred
+    click would land in the day segment instead. Keep the pair only when the recorder clicked away from the centre."""
+    off = {k: v for k, v in ex.items() if k.lower() in OFFSET_PARMS}
+    centred = True
+    for v in off.values():
+        try:
+            centred &= abs(float(v) - 50) <= 15
+        except (TypeError, ValueError):
+            centred = False
+    if centred:
+        for k in off:
+            ex.pop(k, None)
+    return ex
+
+
+def _prune_slots(ex):
+    """Certify writes its defaults into all ten match slots of Find Row (Advanced) and all four of the legacy
+    signature; a slot whose value field is empty was never used, so drop the whole slot."""
+    slots = collections.defaultdict(dict)
+    for k in ex:
+        m = SLOT.match(k)
+        if m:
+            slots[m.group('n')][m.group('base')] = k
+    for members in slots.values():
+        if not any(b in SLOT_VALUE_BASES for b in members):
+            for k in members.values():
+                ex.pop(k, None)
+    return ex
 
 
 def control_actions(x: Export):
     """ObjectID -> [{action, uses, examples:[{parm: value}]}]: which Certify actions touch each control and with which
-    interaction parameters (variable-bound values appear as T[Name]; secrets redacted). Feeds the composite-action rules."""
+    parameters (variable-bound values appear as T[Name]; secrets redacted). Feeds the composite-action rules, so the
+    contract is kept whole — typed value, match rule, confirm key, row variable, asserted value."""
     per = collections.defaultdict(lambda: collections.defaultdict(list))
     for p in x.P:
         for s in x.ordered(p):
-            if s['Skip'] or not s['ObjectID']:
-                continue
             an = x.aname(s['ComponentActionID'])
+            if s['Skip'] or not s['ObjectID'] or an in CATALOG_SKIP_ACTIONS:
+                continue
             ex = {}
             for ta in s['TestStepActions'] or []:
-                pn = x.parm.get(ta['ComponentActionParmsID'], {}).get('Name')
-                if pn not in INTERACTION_PARMS:
+                pn = (x.parm.get(ta['ComponentActionParmsID'], {}).get('Name') or '').strip()
+                if not pn or pn.lower() in MECHANIC_PARMS:
                     continue
                 v = f"T[{x.var.get(ta['VariableID'], {}).get('Name')}]" if ta['VariableID'] else x.safe(pn, ta['CertifyValue'])
-                if v not in (None, ''):
-                    ex[pn] = v
-            per[s['ObjectID']][an].append(ex)
+                if v in (None, '', 'N/A') or (pn in MODIFIER_FLAGS and str(v).lower() == 'false'):
+                    continue
+                ex[pn] = v
+            per[s['ObjectID']][an].append(_prune_offsets(_prune_slots(ex)))
     out = {}
     for oid, acts in per.items():
         rows = []
@@ -488,7 +566,7 @@ def targets(x: Export):
             md.append(f"- {c['objectId']} `{c['name']}` ({c['type']}) — {locs}")
             for a in c['actions']:
                 ex = '; '.join(', '.join(f"{k}={v!r}" for k, v in e.items()) for e in a['examples'][:3]) or '-'
-                md.append(f"    - {a['action']} ×{a['uses']}: {ex[:220]}")
+                md.append(f"    - {a['action']} ×{a['uses']}: {ex[:600]}")
     return cat, '\n'.join(md)
 
 
@@ -511,13 +589,35 @@ def data(x: Export):
             rows[idx[k]][name] = x.safe(name, c['CertifyValue']); idx[k] += 1
         out.append({'id': r['RecordSetID'], 'name': r['Name'], 'layout': x.lay.get(r['LayoutID'], {}).get('Name'),
                     'layoutId': r['LayoutID'], 'variables': lay_vars.get(r['LayoutID'], []), 'rows': rows})
-    pd = {}
-    for p in x.P:
-        calls = [{'callee': x.proc.get(ta['ExecProcessID'], {}).get('Name'), 'layout': x.lay.get(ta['ExecLayoutID'], {}).get('Name'),
-                  'recordset': x.rs.get(ta['ExecRecordSetID'], {}).get('Name'), 'mode': ta['RecordSetMode']}
-                 for s in x.ordered(p) if not s['Skip'] for ta in (s['TestStepActions'] or []) if ta['ExecProcessID']]
-        pd[p['Name']] = {'layout': x.lay.get(p['LayoutID'], {}).get('Name'), 'recordset': x.rs.get(p['RecordSetID'], {}).get('Name'),
-                         'recordsetId': p['RecordSetID'], 'status': p['ProcessStatusID'], 'folder': x.folder(p), 'calls': calls}
+    pd = []  # a list, not a name-keyed map: process names repeat across folders (canonical copy vs sandbox copy) and
+    for p in x.P:  # the id is what tells them apart — keying by name dropped every duplicate silently
+        calls, shots = [], 0
+        for s in x.ordered(p):
+            if s['Skip']:
+                continue
+            if x.aname(s['ComponentActionID']) == CAPTURE:
+                shots += 1  # the evidence the run produces: a count per process, never a step
+                continue
+            b = {}  # one Execute Process step spreads its bindings over its parm rows: the callee sits on 'Process',
+            for ta in s['TestStepActions'] or []:  # the data on 'RecordSet' / 'Layout' / 'RecordSetMode' / 'RecordSetFilter'
+                pn = x.parm.get(ta['ComponentActionParmsID'], {}).get('Name')
+                for k in ('ExecProcessID', 'ExecLayoutID', 'ExecRecordSetID'):
+                    if ta[k]:
+                        b[k] = ta[k]
+                if pn == 'RecordSetMode' and ta['CertifyValue'] not in (None, '', 'None'):
+                    b['mode'] = ta['CertifyValue']
+                if pn == 'RecordSetFilter' and str(ta['CertifyValue'] or '').isdigit():
+                    b['filter'] = x.filt.get(int(ta['CertifyValue'])) or f"filter {ta['CertifyValue']}"
+            if not b.get('ExecProcessID'):
+                continue
+            calls.append({'calleeId': b['ExecProcessID'], 'callee': x.proc.get(b['ExecProcessID'], {}).get('Name'),
+                          'layout': (x.lay.get(b.get('ExecLayoutID')) or {}).get('Name'),
+                          'recordset': (x.rs.get(b.get('ExecRecordSetID')) or {}).get('Name'),
+                          'mode': b.get('mode'), 'filter': b.get('filter')})
+        pd.append({'id': p['ProcessID'], 'name': p['Name'], 'folder': x.folder(p), 'status': p['ProcessStatusID'],
+                   'layout': x.lay.get(p['LayoutID'], {}).get('Name'), 'recordset': x.rs.get(p['RecordSetID'], {}).get('Name'),
+                   'recordsetId': p['RecordSetID'], 'screenshots': shots, 'calls': calls})
+    pd.sort(key=lambda q: (q['name'] or '', q['id']))
     md = ["# Certify test data by layout (secrets redacted)\n"]
     by_layout = collections.defaultdict(list)
     for r in out:

@@ -12,7 +12,7 @@ python3 <SKILL_DIR>/scripts/certify-export-inventory.py targets "<EXPORT_DIR>" -
 python3 <SKILL_DIR>/scripts/certify-export-inventory.py data    "<EXPORT_DIR>" --out "<GENOME_DIR>/source"
 ```
 
-`profile` writes the vocabulary, call graph, roots, root clusters, layouts, and screen map; `cards` writes one compact card per process (objective, inputs, callees, screens, phases, checks, branches); `dump` prints one process step by step in execution order. Read the profile and cards in full; dump only the processes whose card is not enough. `targets` and `data` write the source artifacts every Certify extraction ships with the genome (`certify-targets.json`, `certify-test-data.json`, `certify-process-data.json` plus readable `.md` twins) — see § UI Target Locators and § Test Data.
+`profile` writes the vocabulary, call graph, roots, root clusters, layouts, and screen map; `cards` writes one compact card per process (objective, inputs, callees, screens, phases, checks, branches); `dump` prints one process step by step in execution order. Read the profile and cards in full; dump only the processes whose card is not enough. `targets` and `data` write the source artifacts every Certify extraction ships with the genome (`certify-targets.json`, `certify-test-data.json`, `certify-process-data.json` plus readable `.md` twins) — see § UI Target Locators and § Test Data. `certify-process-data.json` is a **list**, one entry per process with its id, folder, status, data links and call edges: process names repeat across folders (the canonical copy and its sandbox copies), so anything keyed by name silently loses them. Rename the three files to `targets.json`, `test-data.json` and `process-data.json` in the genome's `source/` folder, then write `step-map.json` with `scripts/genome-step-map.py`.
 
 ## Detection
 
@@ -39,7 +39,9 @@ Every JSON row omits null-valued keys, so every field read must tolerate absence
 | `Users.json` | Author accounts | Source Map only; never in the genome body |
 | `Requirements*.json`, `Groups.json`, `ExceptionHandlers.json`, `DataTypeMasks.json` | Usually empty | Skip when empty |
 
-Excluded from logic: metadata keys `UniqueKey`, `CreatedDt`, `CreatedBy`, `ModifiedDt`, `ModifiedBy`, `EF6State`; steps with `Skip: true`; `Execution.Wait` and `Operating System.Capture Screen Image` steps (timing and evidence capture, not behaviour); processes in personal sandbox folders unless a root outside the sandbox calls them.
+Excluded from logic: metadata keys `UniqueKey`, `CreatedDt`, `CreatedBy`, `ModifiedDt`, `ModifiedBy`, `EF6State`; steps with `Skip: true`; `Execution.Wait` steps (timing, not behaviour — they become element waits); processes in personal sandbox folders unless a root outside the sandbox calls them.
+
+`Operating System.Capture Screen Image` is **not** in that list. It is not a workflow step either: it is the evidence the run produces, and a Certify regression suite exists to produce it. Excluded from the step count, recorded as a policy — § Evidence.
 
 ## Component Detection
 
@@ -74,7 +76,8 @@ Test execution and reporting of the resulting test project belongs to `uipath-te
 | `TestSteps[].Narrative` | step | Certify's generated sentence for the step | Fast reading aid; never copy into the genome |
 | `TestStepActions[].ComponentActionParmsID` → parm `Name`, `CertifyValue` | action | Parameter values: literals or variable references | `Value='Awaiting Action'` |
 | `TestStepActions[].VariableID` | action | Parameter bound to a variable (input) or the variable a `Store`/`Set`/`Math` result goes to (output) | |
-| `TestStepActions[].ExecProcessID`, `ExecLayoutID`, `ExecRecordSetID` | action of `Execution.Execute Process` | **Call-graph edge** and the data passed (layout + recordset, `RecordSetMode` Read Only, `RecordSetFilter`) | The `Process` parm text is a folder path and may not match a process name; use the ID |
+| `TestStepActions[].ExecProcessID`, `ExecLayoutID`, `ExecRecordSetID` | action of `Execution.Execute Process` | **Call-graph edge** and the data passed (layout + recordset, `RecordSetMode` Read Only, `RecordSetFilter`) | One edge is spread over the step's parm rows — `ExecProcessID` on `Process`, `ExecRecordSetID` on `RecordSet`, `ExecLayoutID` on `Layout`, the mode and the filter id as `CertifyValue` on `RecordSetMode` / `RecordSetFilter`. Merge the rows per step; reading them per action loses every data binding. The `Process` parm text is a folder path and may not match a process name; use the ID |
+| `RecordsetFilters.json` `RecordFilterID` (the `RecordSetFilter` value) | call | Which rows the callee sees: criteria of `LayoutVariables` + `FilterOperator`, compared against the caller's variable of the same name | `Workday_Username Is Equal To` = "the login row of the account this scenario signs in as" |
 | `TestStepResults[]` (`Name` True/False, `ResultLogStatusID`, `ExecutionStatusID`, `ExecTestStepID`) | step | **Control flow.** `ExecutionStatusID` 1 = continue; 5 = jump to the `Execution.Label` step named in `ExecTestStepID`; 6 = stop `*[Inferred]*`. `ResultLogStatusID` 2 = pass, 1 = fail, 4 = not logged (a silent decision, not a defect) | `False(log4)→exec5:Skip Close Tour` |
 
 ### Step vocabulary → behaviour
@@ -85,7 +88,7 @@ Test execution and reporting of the resulting test project belongs to `uipath-te
 | `Execution.Comment`, `Execution.Label` | Phase headings and branch targets; comments are the author's section names — use them to name substeps |
 | `EditBox.Input` (Key = None), `PasswordBox.Input` | Enter {value} into {field} |
 | `EditBox.Input` (Key = `{ENTER}` / `{TAB}`), `EditBox.Input Autocomplete`, `EditBox.Type Keys` | **Composite** — type-ahead pick or type-and-confirm; wording per § Composite actions |
-| `PushButton.Press` / `Send Click`, `Link.Press` / `Send Click`, `Cell.Send Click`, `htmlHeader.Send Click` | Click {control} (`Ver`/`Hor` are click offsets in %, ignore unless far from 50/50) |
+| `PushButton.Press` / `Send Click`, `Link.Press` / `Send Click`, `Cell.Send Click`, `htmlHeader.Send Click` | Click {control}. `Ver`/`Hor` are the click position inside the control in %: a centred pair (50/50, ±15) is Certify's default and says nothing, an off-centre pair is the behaviour and belongs in the substep — `Hor` 10 on a Workday date field puts the caret in the month segment so the typed date fills all three, where a centred click would land in the day segment. The catalog keeps the off-centre pairs and drops the centred ones |
 | `Page.Click`, `Window.Mouse Click At`, `Active Window Actions.Click Object` | **Composite** — click without a mapped control; wording per § Composite actions |
 | `CheckBox.Set` (`State` On/Off), `RadioButton.Press` | Ensure {box} is ticked/unticked (state, not toggle); select {option} |
 | `ListBox.Select`, `ListBox.Select Item`, `DropDown.Select`, `DropDown.Send Click`, `ComboBox.[Select]`, `Tree.Select Node` | **Composite** — option list or menu path; wording per § Composite actions |
@@ -99,6 +102,7 @@ Test execution and reporting of the resulting test project belongs to `uipath-te
 | `Browser.Set Input Options` (`Input Type` Send Keys / Set Value) | Input-method hint for the fields that follow (§ Composite actions → keystrokes); never a step |
 | `Window.Send Keys`, `Window.Send Input Key`, `Window.[SendVKey]`, `*.Key Press`, `*.Type Keys` | **Composite** — keystrokes to the focused element; wording per § Composite actions |
 | `Browser.Load Browser`, `Close Browser`, `Close Tab`, `Load URL` | Open/close the browser → session steps |
+| `Operating System.Capture Screen Image` (`Type` Desktop / Active Window) | Evidence, not a step and not noise: the run's audit trail. Count it per process and state the policy once per component (§ Evidence); never one activity per capture |
 
 ### Value syntax
 
@@ -161,13 +165,23 @@ Certify has no queues, assets, or connections. Map:
 | Login recordsets and every `Workday_Username`-style variable (user name + password + URL) | Platform Dependencies → **one credential asset per source account** (`<App>_Login_<USER>`); the account identity and its tenant URL migrate with the data rows, the password never (§ Test Data) |
 | Layout + recordset on a root process | Interface inputs; Configuration Questions with the recordset values as defaults; multi-row recordsets = data-driven test data table |
 | `Import RecordSet From Excel` / `Import RecordSet` file paths | Interface input `File Path`; Configuration Question for the data file location |
-| Result logs (`ResultLogStatusID`, `StatusTimeStamp`) | Deployment → test reporting via `uipath-test` |
+| Result logs (`ResultLogStatusID`, `StatusTimeStamp`) and the `Capture Screen Image` steps | Deployment → test execution, evidence and reporting via `uipath-test` (§ Evidence) |
 
 ## UI Target Locators
 
 Certify learned every control; the recognition data is in `MapObjects.json` → windows (`ObjectIdParmValues[].CertifyValue`) and `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue`. One export mixes several locator formats — web XML, an SAP GUI scripting string, UI Automation properties for desktop windows, Java object descriptors, and class-only template objects — and the format, not the application's interface library, decides the UiPath technology. `targets` parses every format into one normalized catalog (`technology`, `class`/`tagname`, `instance`, `findby`, `volatile`, `parentpath`, `anchor`); the per-format attribute translation is [worksoft-certify-selectors-guide.md](worksoft-certify-selectors-guide.md), the UiPath-side vocabulary and rules (criteria → wildcards, captions → anchors, position → strict `idx`, confidence tiers) [selector-translation-guide.md](../selector-translation-guide.md), and execution turns the result into Object Repository targets per [source-migration-guide.md](../source-migration-guide.md).
 
-Each control in the catalog carries `actions`: the Certify actions applied to it with their interaction parameters (`Typed Value`, `List Item Caption`, `NodePath`, `Item`/`Criteria`, `Column Caption`/`Row Number`, `Key`, …; variable-bound values as `T[Name]`). Execution reads them to decide the pattern (§ Composite actions) and to derive the elements Certify never mapped: suggestion entries, menu items, option rows, table cells. Those derived elements have no locator of their own — they are built from the anchor control plus the typed or matched text and start at low confidence. "No locator of their own" is literal: no `id` or `data-automation-id` is carried across from a control that merely looks related (§ Framework Pitfalls 11).
+Each control in the catalog carries `actions`: the Certify actions applied to it with **every** parameter those steps carry — `Value`, `Typed Value`, `List Item Caption`, `NodePath`, `Item`/`Criteria`, `Column Caption`/`Row Number`, `Match Value n`, `Variable` (the row index later steps consume), `Key`, the asserted `Value`/`Condition` of a Verify — minus Certify engine mechanics (find caching, scrollbar resets, page-search options, `WaitForResult`), centred click offsets, and the unused slots of the ten-slot match signature; variable-bound values appear as `T[Name]`. What is dropped is dropped for good — nothing reads it later — so only parameters with no counterpart in a UiPath activity are denied. The script keeps parameters by denylist for a reason: an allowlist of names that looked interesting dropped the typed value of every Input, the row variable of every Find Row and the asserted value of every Verify, leaving a catalog that named the control but not what the step did to it. Execution reads them to decide the pattern (§ Composite actions) and to derive the elements Certify never mapped: suggestion entries, menu items, option rows, table cells. Those derived elements have no locator of their own — they are built from the anchor control plus the typed or matched text and start at low confidence. "No locator of their own" is literal: no `id` or `data-automation-id` is carried across from a control that merely looks related (§ Framework Pitfalls 11).
+
+## Evidence
+
+`Operating System.Capture Screen Image` is how a Certify suite proves what happened; the result log alone says pass or fail. The steps are dense (a tenth of a suite's steps is normal) and follow one idiom: `Execution.Wait` to let the screen settle, then a full-desktop capture, then the next interaction. That is a blanket policy, not a set of chosen verification points, and it must survive extraction as a policy:
+
+1. **Count, do not transcribe.** `data` records `screenshots` per process in `process-data.json` and `cards` prints it per process. Never write a capture as a workflow step and never emit one activity per capture — 700 Take Screenshot activities is a faithful transcription of the wrong thing.
+2. **State it once per component**, in Error Handling (or Deployment for a process genome): the source's density, and what the rebuilt automation does instead — a screenshot attached to the test result at each verification point and on every failure, which is what a reviewer comparing a Certify run to a UiPath run needs.
+3. **Give it an acceptance criterion.** Evidence that is not asserted is evidence nobody notices is missing.
+4. **Where the captures sit tells you who owns the evidence.** Captures inside the reusable sub-processes and none in the roots means the library produces the evidence and the test cases only collect it; captures in the roots mean the opposite.
+5. **Platform mapping:** `uipath-test` owns execution evidence (screenshots and attachments per test case in Test Manager); the robot's own screenshot-on-failure covers the failure half. Both belong in Platform Dependencies / Deployment, not in Build With.
 
 ## Test Data
 
@@ -184,11 +198,11 @@ Each control in the catalog carries `actions`: the Certify actions applied to it
 1. `TestSteps` is not in execution order; sort by `CertifySequence`.
 2. The `Process` parameter of Execute Process holds a folder path (often stale, e.g. pointing at a Sandbox path while `ExecProcessID` resolves to the Transaction copy); trust `ExecProcessID`.
 3. Roots are not marked; the `Process Type` attribute is unreliable (every process may be "Sub-Process"). Derive roots from the call graph.
-4. `Wait` and `Capture Screen Image` are ~30% of all steps; exclude them before counting complexity.
+4. `Wait` and `Capture Screen Image` are ~30% of all steps; exclude them before counting complexity. Excluding them from the count is not discarding them: the waits become element waits and the captures become the evidence policy (§ Evidence). A genome that mentions screenshots only in an unhandled-exception handler has dropped the suite's whole audit trail.
 5. `Set Attributes` steps rewrite locators at run time; they explain how one screen object serves many pages, not what the business does.
 6. Sandbox folders hold near-duplicates of library processes at different step counts; do not merge their content into the canonical description.
 7. `Description` sections drift from the steps (a Canada objective on a US process, a callee list that omits proxies); the steps are the truth.
-8. Plaintext credentials in `Recordsets.json`; count them, never copy the passwords, keep the account identity per row (§ Test Data), and tell the user.
+8. Plaintext credentials in `Recordsets.json`; count them, never copy the passwords, keep the account identity per row (§ Test Data), and tell the user. Redaction by field name is not enough: the same literal is typed into fields Certify learned as `Last Name` or `Value`, and password literals sit in step parameters, not only in recordsets. Collect the secret *values* (cells of a `*password*`/`*pwd*`/`*secret*`/`*token*` variable, literals typed into a control learned as a password field) and redact those values wherever they appear in any artifact.
 9. The `Execute Process` actions of many roots carry no `ExecRecordSetID`; the data-driving recordset is the root's own `RecordSetID`.
 10. **One step is not one activity.** `Input Autocomplete`, `Select Node`, `ListBox.Select`, `Find Row` + `Select Row`, `Input Into Cell` and the `Send Keys` family bundle multi-step interactions into parameters (§ Composite actions). Translating them to the nearest single UiPath activity produces workflows that validate and do nothing right: the first attempt clicked the first popup entry instead of the matching one, drove custom lists with a native select action, and collapsed a two-level menu into one click.
 11. The map holds only what Certify learned: the input, the menu root, the table. Suggestion entries, menu items, option rows and cells were never learned, so the target catalog cannot cover them; execution derives them from the anchor control and the matched text (§ UI Target Locators). Never source a missing element's identifier by searching the catalog for an attribute whose *name* looks related: nothing ties a neighbour's attribute to the element, and a value occurring once against a pattern several sibling controls share is an outlier, not a convention.
