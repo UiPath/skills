@@ -1,6 +1,6 @@
 # Runtime Eval Commands
 
-Manage and run runtime evaluations for agents published as Orchestrator packages. All commands are scoped by `--process-key` (process key GUID) and hit the agents runtime API.
+Manage and run runtime evaluations for published agents. All commands are scoped by `--process-key` (process key GUID) and hit the agents runtime API.
 
 ## Command Structure
 
@@ -22,7 +22,7 @@ uip eval
 
 ## execute-and-evaluate
 
-Submit a runtime eval run for a published Orchestrator package. Two modes:
+Submit a runtime eval run for a published agent. Two modes:
 
 ### Eval-set mode (recommended)
 
