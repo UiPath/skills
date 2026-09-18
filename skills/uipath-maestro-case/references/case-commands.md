@@ -331,6 +331,25 @@ Returns input/output schema with names, types, and IDs. The schema is the source
 
 ---
 
+## uip maestro case tasks enrich
+
+Same input/output schema fetch as `tasks describe`, and the only one that takes an element. Use it when the agent, process, or RPA resource has more than one element binding; `describe` has no element option.
+
+```bash
+uip maestro case tasks enrich --type <type> --id <id> --output json
+uip maestro case tasks enrich --type agent --id <entityKey> --element-id <elementId> --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `flow-process` |
+| `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
+| `--element-id <id>` | The element binding to read, when the resource declares more than one |
+
+`Data` carries `inputs` and `outputs` under the same names `tasks describe` uses, plus the resolved `name`, `type` and `folderPath`. Connector tasks are out of scope here: use [`uip maestro case spec`](#uip-maestro-case-spec).
+
+---
+
 ## uip maestro case registry
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
