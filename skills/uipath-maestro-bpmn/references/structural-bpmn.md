@@ -703,7 +703,25 @@ each with its rule code (gateway/condition, fake-join, superfluous-gateway,
 error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,
 input-type, event-object, and IS-connector checks). Warnings are reported but do
-not block. If `validate` is unknown or runs only deploy-readiness checks, update
+not block — that does not mean ignore them; read `Data.Warnings` and triage by
+code:
+
+- **`VARIABLE_DOES_NOT_EXIST`** — a reference with no matching declaration.
+  Always a defect; fix it.
+- **`VARIABLE_NOT_SET`** on the node reading a caller-supplied input —
+  **expected by construction, not a defect**, whenever that input is correctly
+  scoped to the start event (see [Variables](#variables)). Canvas availability
+  recognizes only process-scoped variables and upstream nodes'
+  `uipath:output` mappings; a start-event input is neither, so any process
+  whose node consumes a caller value carries this warning. Scoping the input
+  to the process instead silences the warning by emptying the published input
+  contract (`entry-points.json`'s `input` becomes `[]`) — nothing can then
+  invoke the process with that value, and a `debug --inputs` run still
+  succeeds, which is exactly what hides the break. Judge correctness by the
+  published contract (`entry-points.json` declares the input and every
+  output), not by whether the warning is gone.
+
+If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
 If the CLI is unavailable, fall back to a well-formed-XML parse plus the

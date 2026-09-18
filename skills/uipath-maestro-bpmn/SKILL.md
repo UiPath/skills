@@ -257,9 +257,15 @@ For registry-evidence-only tasks, follow the command-first recipe in
    ```
 
    Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
-   with its rule code). Warnings are reported but do not fail the run. Validate
-   once; fix only error-severity findings. Do not re-validate in a loop chasing
-   warnings.
+   with its rule code). `Status: "Valid"` is not the whole verdict: also read
+   `Data.Warnings`. Fix every `VARIABLE_DOES_NOT_EXIST` warning — it names a
+   reference with no declaration and is a real defect. A `VARIABLE_NOT_SET`
+   warning on the node reading a start-event-scoped caller input is expected by
+   construction, not a defect — see
+   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation)
+   for why the canvas cannot recognize that variable as available. Do not
+   re-validate in a loop chasing warnings once every `VARIABLE_DOES_NOT_EXIST`
+   is resolved.
 
    Validation is structural preflight, not runtime proof — see
    [references/cli-conventions.md](references/cli-conventions.md). When
@@ -397,6 +403,53 @@ and honestly surfaced to the user as gaps when asked.
    generate them — never the deprecated `update-metadata`. An
    Integration Service draft or boundary handoff asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
+17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
+   workflow, agent) is a five-step sequence, in this order — stopping after
+   handing the resource to its owning skill and getting hand-back notes is not
+   done.** (1) Create or open the solution **first** (`uip solution init`), and
+   author the resource's project **inside** it, so it registers in the
+   `.uipx` — a project created outside any solution has no path to deployment.
+   (2) Delegate authoring to the resource's owning skill (e.g.
+   `uipath-api-workflow`, `uipath-rpa`) with an explicit argument contract —
+   declared inputs and outputs, not an unauthored scaffold. (3) Deploy the
+   resource (pack, publish, `solution deploy run`) **before** binding it into
+   the BPMN node — the invoking node's context needs the resource's real
+   release key and folder key, which exist only once deployed; re-read the
+   deployment key from `deploy list` after an upgrade, since upgrading rotates
+   it and reusing the stale key gives `4005`. (4) Discover the deployed
+   resource's identity with `uip or processes list --folder-path <path>
+   --all-fields --output json` and bind the invoking node to it — rule 18's
+   verified contract — never a fabricated or placeholder key. (5) Verify by
+   running the process (`uip maestro bpmn debug`) and reading the invoking
+   node's own output in `debug-instance variables-all` — a clean
+   `validate`/`pack` proves nothing about whether the resource was ever
+   reached at runtime.
+18. **Job-wrapper registry templates ship a resolvable-looking but broken
+   context; do not paste it as served.** `Orchestrator.StartJob`,
+   `Orchestrator.ExecuteApiWorkflowAsync`, `Orchestrator.BusinessRules`, and
+   `Orchestrator.StartAgenticProcess[Async]` / `StartCaseMgmtProcess[Async]`
+   all serve the same template: a hidden, unbound `releaseKey` context field
+   plus a **misnamed** `folderId` field. Pasted verbatim it passes `validate`
+   and packs clean, then faults at runtime because nothing ever resolves
+   `releaseKey` (`170005` for `StartJob`, `170009` for
+   `ExecuteApiWorkflowAsync` — `Could not get value for key:ReleaseKey from
+   context in input`). Populating `releaseKey` alone is not enough either: the
+   runtime then reports `Could not get value for key:FolderKey`, because the
+   context field the runtime actually reads is `folderKey` (the folder's
+   `FolderKey` GUID) — **not** the template's own `folderId` field, and not
+   `folderPath`. Verified end-to-end for `Orchestrator.ExecuteApiWorkflowAsync`:
+   `<uipath:context>` with **only** `releaseKey` (bound via `=bindings.<id>` to
+   the resource's real `Key`, per the existing resource-binding contract) and
+   a literal `folderKey` (the target folder's real `FolderKey` GUID) —
+   discover both with `uip or processes list --all-fields` after deploying —
+   runs to completion; `name`/`folderPath` context fields are not needed for
+   this type. `Orchestrator.ExecuteApiWorkflowAsync` **waits** for the result
+   despite its name — there is no separate fire-and-forget API-workflow
+   wrapper. The other types in this family share the identical template bug
+   (same misnamed field, same blank placeholders); apply the same
+   `releaseKey` + `folderKey` fix and re-verify with a live run before trusting
+   it — do not assume without checking. Full contract and fault codes:
+   [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
 
 ## References
 
