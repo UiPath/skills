@@ -149,34 +149,6 @@ stages:
               pathsToSign:
                 - '$(Build.SourcesDirectory)/hooks/*.ps1'
 
-          - pwsh: |
-              Set-StrictMode -Version Latest
-              $ErrorActionPreference = 'Stop'
-              $path = Join-Path $env:AGENT_BUILDDIRECTORY 'ProvisionKeyVaultPermissions.ps1'
-              $exists = (Test-Path -LiteralPath $path).ToString().ToLowerInvariant()
-              Write-Host "ProvisionKeyVaultPermissions.ps1 present: $exists"
-              Write-Host "##vso[task.setvariable variable=shouldPublishOurProvisionScript;]$exists"
-            displayName: 'Look for a generated Key Vault permission script'
-            condition: succeededOrFailed()
-
-          # The signing template checks for ProvisionKeyVaultPermissions.ps1 and
-          # publishes it, but that check sits in its setup steps -- before
-          # Sign-Package.ps1 has had a chance to write the file. On a
-          # Microsoft-hosted agent, which starts from a clean VM every run, the
-          # file therefore never exists yet and the artifact never appears. The
-          # documented "download the script from the pipeline logs" flow
-          # silently assumes a persistent self-hosted agent.
-          #
-          # Publish it ourselves, after the template, so a permission failure
-          # actually hands over the remediation script it generated.
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish ProvisionKeyVaultPermissions if the signer wrote one'
-            condition: and(failed(), eq(variables['shouldPublishOurProvisionScript'], 'true'))
-            inputs:
-              targetPath: '$(Agent.BuildDirectory)/ProvisionKeyVaultPermissions.ps1'
-              artifact: 'ProvisionKeyVaultPermissions'
-              publishLocation: 'pipeline'
-
           # Cryptographic verification, on the only platform that can do it.
           # `Get-AuthenticodeSignature` validates the chain and the timestamp
           # against the Windows trust store; the publish job on Linux can only
