@@ -18,10 +18,14 @@ run_limits:
 reference:
   directory: ..
 
+# Each recipient must match exactly one Slack user, or the populated check below
+# cannot pass. "Coder Eval" is deliberately NOT used: it is a prefix of "Coder
+# Eval Test", so a substring lookup returns two rows and the agent is then
+# required to stop and ask. Re-verify uniqueness before changing a name.
 initial_prompt: |
   Create a new Flow project called "ComplexArrayTest" with a manual trigger that
-  creates a Slack group direct message between the users "coder evals" and
-  "e2e-testing". Use the connection present in Shared/uipath-maestro-flow.
+  creates a Slack group direct message between the users "Coder Eval Test" and
+  "E2E Nightly Summary". Use the connection present in Shared/uipath-maestro-flow.
   Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Validate the final flow file.
 
@@ -54,8 +58,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Advisory: group DM participants referenced in the project (names may resolve to Slack user IDs on a live connection)"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ComplexArrayTest 'coder evals' 'e2e-testing'"
+    description: "Advisory: both recipients resolved to their Slack user IDs (Coder Eval Test, E2E Nightly Summary) rather than written as display names"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ComplexArrayTest 'U0B7Y855WGG' 'U05Q882RHFZ'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
