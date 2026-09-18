@@ -693,6 +693,16 @@ def fail_with_diagnosis(instance_id: str, msg: str):
         rows = executions(instance_id)
         stages = [r.get("ElementId") for r in rows if r.get("ElementType") == "CaseStage"]
         print(f"  no incident; the case reached stages {stages}")
+        # The stage list cannot tell a case that stalled from a case that took the other
+        # branch. `Obtain procurement director sign-off` opens on
+        # `directorSignOffRequired === true` and `Record compliance review decision` on
+        # `=== false`, so a value that is neither leaves both dead and the case sitting in
+        # the stage with nothing to do. Which of the two ran, or neither, is the answer, and
+        # the stage filter above was throwing those rows away.
+        for row in rows:
+            if row.get("ElementType") != "CaseStage":
+                print(f"    {row.get('ElementType')} {row.get('ElementId')} "
+                      f"{row.get('DisplayName')} {row.get('Status')}")
         # Where it stopped, not only how far it got. Sixteen routes have ended
         # `Cancelled` with no incident, five of them with every concurrent run's artifact
         # on hand and no shared instance, so the cause is not another driver and is not
