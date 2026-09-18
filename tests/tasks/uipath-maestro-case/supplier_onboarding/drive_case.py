@@ -1238,6 +1238,11 @@ def main() -> int:
     print(f"instance {instance_id} run={status!r} CaseOutcome={outcome!r} "
           f"BankVerificationStatus={bank!r} {BUYER_DECISION}={buyer!r} "
           f"{COMPLIANCE_DECISION}={compliance!r}")
+    # Every variable, on every route, not the four the assertions read. The gate this route
+    # waits for is conditional on `directorSignOffRequired`, and three stalls in forty-two runs
+    # were each explained away with a shape in the caseplan because the value was never printed.
+    # A route that passes is the control: it says what the value looks like when the gate opens.
+    print(f"  all case variables: {g}")
 
     if status not in {"Completed", "Successful"}:
         # A Faulted case records why it faulted, and post_run deletes the instance with
