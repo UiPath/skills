@@ -24,7 +24,7 @@ The CLI is the source of truth for shapes and flags. Use it instead of guessing:
 - `uip agenthub mcp template <type> --output json` — ready-to-edit `--file` skeleton.
 - `uip agenthub mcp-tools template resource --output json` — resource-tool payload skeleton.
 - `uip agenthub mcp-tools candidates --category <kind> --output json` — discover bindable targets. `<kind>` ∈ `automation | agent | agentic-process | api-workflow`.
-- `--output-filter <JMESPath>` on every command — extract specific fields without walking JSON by hand (e.g. `--output-filter "Data.items[].slug" --output plain`).
+- `--output-filter <JMESPath>` on every command — extract specific fields without walking JSON by hand (e.g. `--output-filter "Items[].Slug" --output plain`).
 - `--dry-run` on every mutating call — resolve and inspect the body before POST. Note: `--dry-run` skips some server-side validation, so a clean dry-run is not a guaranteed real POST.
 
 ## Critical Rules

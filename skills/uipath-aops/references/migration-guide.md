@@ -99,13 +99,13 @@ uip aops pipeline update <pipeline-id> --file ./edit.json --output json
 `--output-filter` runs client-side over only the records the command fetched. When a filter is active and `--limit` resolved from its declared default, the CLI refuses to run rather than filter a silently capped page. Pass `--limit` explicitly:
 
 ```bash
-uip aops pipeline list --search "my-pipeline" --limit 50 --output json --output-filter "Data[].PipelineId"
+uip aops pipeline list --search "my-pipeline" --limit 50 --output json --output-filter "[].PipelineId"
 ```
 
 Commands with no declared `--limit` default — `pipeline create`, `pipeline save-and-run`, `pipeline get` — are unaffected:
 
 ```bash
-uip aops pipeline save-and-run --file ./pipeline.json --output json --output-filter "Data.ExecutionId"
+uip aops pipeline save-and-run --file ./pipeline.json --output json --output-filter "ExecutionId"
 ```
 
 ### 7. `repo project-files` closes the standalone `projectPath` gap
