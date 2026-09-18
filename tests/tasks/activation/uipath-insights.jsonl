@@ -51,3 +51,8 @@
 {"id": "uipath-insights-051", "prompt": "Build me an Insights dashboard that shows which process runs are failing.", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-052", "prompt": "Set up a monitoring dashboard for the order intake process in Maestro.", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-053", "prompt": "Add a dashboard to Insights showing incidents for this agentic process.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-054", "prompt": "Change the charts on Insights dashboard 644 to use the file I edited.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-055", "prompt": "Rename my Insights dashboard and put the failures chart first.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-056", "prompt": "Delete the test Insights dashboard I made yesterday, but keep a copy of it.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-057", "prompt": "Why did my Insights dashboard update fail?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-058", "prompt": "Give the new order process the same Insights dashboard the old one has.", "expected_skill": "uipath-insights"}
