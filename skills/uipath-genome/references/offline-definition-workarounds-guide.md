@@ -74,11 +74,11 @@ Checklist when authoring one offline:
 
 - **`Capacity` is not load-bearing — don't compute it.** The CLI normalizes whatever you write to `Capacity="4"`.
 - **Anchor `Guid` is optional** — omit it and `create-elements` assigns one.
-- **Anchor `SearchSteps`** follows the same model as a target: `FuzzySelector` alone or `Selector, FuzzySelector`, carrying `FullSelectorArgument`, `FuzzySelectorArgument`, or both.
+- **Anchor `SearchSteps`: set exactly one step** and fill the argument that matches it (`FuzzySelector` → `FuzzySelectorArgument`). Only one targeting method is used at runtime, so a second step or a second populated argument is never evaluated — files carrying both exist, but the extra one is dead weight, not a fallback.
 - **The main target's `SearchSteps` must include `FuzzySelector`**, or the anchor is ignored. `Selector, FuzzySelector` together is valid — the strict step runs first and the anchor serves the fuzzy step.
 - `DesignTimeRectangle` / `ElementType` are design-time only; zeros are fine offline.
 
-Source-catalog input: a framework whose recognition data records an associated caption (Certify's `label` / `LeftTextAnchor` / `RightTextAnchor`) is describing an anchor, not an attribute of the target — see the Certify guide's translation table. Folding that caption into the target's own `aaname` instead asserts the caption's text is the target's accessible name; true for a button whose text *is* its name, unreliable for a caption that is merely positioned nearby.
+When the source guide's translation table sends a recorded caption to an anchor, the catalog gives that caption's **text**, never a selector for the caption element. That is enough: put the caption text on the attribute that table names for the criteria that recorded it, under that criteria's own matching, and add nothing else — inventing the caption's tag or class would be exactly the fabrication the derivation rule forbids. Where the chosen attribute is an inner-text one, keep the match exact: inner text is inherited by every ancestor, so a wildcarded caption matches the container chain. The target then keeps only its non-caption attributes; where the caption was the *only* thing the source recorded, the target is tag-only and the anchor carries the identification. Parametrised captions need the stored expression form (`[string.Format("…{0}…", arg)]`), because `{{var}}` is CLI input sugar that a hand-injected anchor never passes through.
 
 Leave `.metadata`'s `Anchor0`–`Anchor3` as `null` — an anchor persists and round-trips without them; they hold only the `--name`/`--description` labels `add-anchor` attaches.
 
