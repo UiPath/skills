@@ -1,12 +1,12 @@
 ---
 name: uipath-knowledge-bundles
-description: "Read and publish UiPath knowledge bundles via `uip or knowledge-bundles` — versioned sets of markdown documents (Open Knowledge Format) that live in an Orchestrator folder and that an agent reads from as context. Download a version into a local workspace, read one file or a whole version, publish a directory as version 1, and ask what a local copy needs to match a published version. PREVIEW: these commands exist only on a prerelease `uip` build and only on tenants with the knowledge-bundles feature enabled — Step 0 below is how you find out, and a miss means stopping, not improvising. Changing published content needs a reviewed change proposal, which has no CLI surface yet. For Orchestrator assets, queues, buckets, jobs→uipath-platform. For context grounding / semantic search indexes→uipath-platform. For `uip solution` lifecycle→uipath-solution."
-when_to_use: "User says 'knowledge bundle', 'knowledge bundles', 'OKF', 'Open Knowledge Format', 'download the knowledge bundle', 'publish docs to Orchestrator', 'what version of the bundle', 'bundle manifest', 'change proposal on a bundle', 'give the agent its knowledge', 'where does the agent read its documentation from'. Also when a task needs the documents an agent reads as context and those documents are said to live in Orchestrator rather than in the repo."
+description: "Read and publish UiPath knowledge bundles via `uip or kb` — versioned sets of markdown documents (Open Knowledge Format) that live in an Orchestrator folder and that an agent reads from as context. Download a version into a local workspace, read one file or a whole version, publish a directory as version 1, and ask what a local copy needs to match a published version. PREVIEW: these commands exist only on a prerelease `uip` build and only on tenants with the knowledge-bundles feature enabled — Step 0 below is how you find out, and a miss means stopping, not improvising. Changing published content goes through a reviewed change proposal: `uip or kb change-proposal` opens one from an edited workspace, carries the review comments, and merges it to publish the next version. For Orchestrator assets, queues, buckets, jobs→uipath-platform. For context grounding / semantic search indexes→uipath-platform. For `uip solution` lifecycle→uipath-solution."
+when_to_use: "User says 'knowledge bundle', 'knowledge bundles', 'OKF', 'Open Knowledge Format', 'download the knowledge bundle', 'publish docs to Orchestrator', 'what version of the bundle', 'bundle manifest', 'change proposal on a bundle', 'open a change proposal', 'merge the proposal', 'review the bundle change', 'comment on the proposal', 'give the agent its knowledge', 'where does the agent read its documentation from'. Also when a task needs the documents an agent reads as context and those documents are said to live in Orchestrator rather than in the repo."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
 
-# UiPath Knowledge Bundles — `uip or knowledge-bundles`
+# UiPath Knowledge Bundles — `uip or kb`
 
 A knowledge bundle is a folder-scoped Orchestrator entity holding a versioned tree of markdown documents. Versions are immutable and numbered (v1, v2, …); reads accept a number or the literal `latest`. Content is addressed by hash, so transfers move only what changed.
 
@@ -15,7 +15,7 @@ A knowledge bundle is a folder-scoped Orchestrator entity holding a versioned tr
 Run once per session:
 
 ```bash
-uip or knowledge-bundles --help
+uip or kb --help
 ```
 
 - **Succeeds** → continue.
@@ -36,35 +36,35 @@ Bundles are identified by a GUID (`Key`). Get it from `list`, never construct it
 
 | Goal | Command |
 |---|---|
-| Find bundles | `uip or knowledge-bundles list --folder-path <p> [--search <text>] [--limit <n>] [--offset <n>] [--all-fields]` |
-| One bundle's record | `uip or knowledge-bundles get <bundle-id> --folder-path <p>` |
-| Create, empty | `uip or knowledge-bundles create <name> --folder-path <p> [-d <text>]` |
-| Create + publish v1 from a directory | `uip or knowledge-bundles create <name> --folder-path <p> --input <dir> -m <message>` |
-| Publish v1 into an existing empty bundle | `uip or knowledge-bundles publish <bundle-id> <dir> --folder-path <p> -m <message>` |
-| Rename / re-describe | `uip or knowledge-bundles update <bundle-id> --folder-path <p> [-n <name>] [-d <text>]` |
-| Remove from a folder | `uip or knowledge-bundles delete <bundle-id> --folder-path <p> --yes` |
-| Share into / out of folders | `uip or knowledge-bundles share <bundle-id> --folder-path <p> [--add-folders <f...>] [--remove-folders <f...>]` |
-| Version history | `uip or knowledge-bundles versions <bundle-id> --folder-path <p>` |
-| Unpack a version into a workspace | `uip or knowledge-bundles download <bundle-id> --folder-path <p> --destination <dir> [--version <n>]` |
-| Whole version as a zip | `uip or knowledge-bundles archive <bundle-id> --folder-path <p> --destination <file>.zip [--version <n>]` |
-| One file's content | `uip or knowledge-bundles file <bundle-id> <path> --folder-path <p> [--version <n>] [--destination <file>]` |
-| One file across versions | `uip or knowledge-bundles history <bundle-id> <path> --folder-path <p>` |
-| A version's derived artifact | `uip or knowledge-bundles build <bundle-id> graph.json --folder-path <p>` |
-| What a local copy needs | `uip or knowledge-bundles sync <bundle-id> <dir> --folder-path <p>` |
+| Find bundles | `uip or kb list --folder-path <p> [--search <text>] [--limit <n>] [--offset <n>] [--all-fields]` |
+| One bundle's record | `uip or kb get <bundle-key> --folder-path <p>` |
+| Create, empty | `uip or kb create <name> --folder-path <p> [-d <text>]` |
+| Create + publish v1 from a directory | `uip or kb create <name> --folder-path <p> --input <dir> -m <message>` |
+| Publish v1 into an existing empty bundle | `uip or kb publish <bundle-key> --folder-path <p> --input <dir> -m <message>` |
+| Rename / re-describe | `uip or kb update <bundle-key> --folder-path <p> [-n <name>] [-d <text>]` |
+| Remove from a folder | `uip or kb delete <bundle-key> --folder-path <p> --yes` |
+| Share into / out of folders | `uip or kb share <bundle-key> --folder-path <p> [--add-folders <f...>] [--remove-folders <f...>]` |
+| Version history | `uip or kb versions <bundle-key> --folder-path <p>` |
+| Unpack a version into a workspace | `uip or kb download <bundle-key> --folder-path <p> --destination <dir> [--version <n>]` |
+| Whole version as a zip | `uip or kb archive <bundle-key> --folder-path <p> --destination <file>.zip [--version <n>]` |
+| One file's content | `uip or kb file <bundle-key> --folder-path <p> --path <file> [--version <n>] [--destination <file>]` |
+| One file across versions | `uip or kb history <bundle-key> --folder-path <p> --path <file>` |
+| A version's derived artifact | `uip or kb build <bundle-key> --folder-path <p> --artifact graph.json` |
+| What a local copy needs | `uip or kb sync <bundle-key> --folder-path <p> --input <dir>` |
 
 Add `--output json` when you parse the result. It is the CLI's global output-format flag, and it is separate from `--destination`, which is where a command writes files.
 
 ## Reading a bundle as context
 
 ```bash
-uip or knowledge-bundles download <bundle-id> --folder-path <p> --destination ./kb
+uip or kb download <bundle-key> --folder-path <p> --destination ./kb
 ```
 
 That unpacks the version's files plus `./kb/.okf/base.json`, a marker recording the bundle, the version and its manifest. Read the markdown directly from disk. To check whether the copy is current, `sync` it — with no `--version` it compares against `latest`, and the report is **pull-direction**: `Changed` is what to download to match the published version, `Deleted` is what to remove locally. A file you deleted locally shows up in `Changed`, not `Deleted`.
 
 ## Publishing
 
-`publish` and `create --input` only ever produce **version 1**, and only for a bundle with no content. Every later version comes from merging a change proposal, which has **no CLI surface yet** — if the user wants to change published content, say that and stop rather than deleting and re-creating the bundle. There is no hidden command for it: do not try `knowledge-proposals`, `propose`, or a variation, and do not read a 409 as a sign you used the wrong command name.
+`publish` and `create --input` only ever produce **version 1**, and only for a bundle with no content. A 409 from either means the bundle already has content: every later version comes from merging a change proposal (below). Never delete and re-create a bundle to work around it — that destroys the version history and the review record.
 
 Both walk the directory, hash every file, upload only what the store lacks, then publish the manifest. Two rules the walk obeys:
 
@@ -80,6 +80,30 @@ Both walk the directory, hash every file, upload only what the store lacks, then
 
 `file` returns the content inline when it decodes as UTF-8 text, and refuses binary without `--destination <file>` — pass it rather than trying to read bytes from the envelope.
 
+## Changing published content: `uip or kb change-proposal`
+
+Every change after version 1 goes through a reviewed proposal. The loop, from an edited workspace:
+
+```bash
+uip or kb download <bundle-key> --folder-path <p> --destination ./kb   # writes .okf/base.json
+# ...edit files under ./kb...
+uip or kb change-proposal create --folder-path <p> --bundle-key <key> --input ./kb --title "<what changed>"
+uip or kb change-proposal list-comments <proposal-id> --folder-path <p> --bundle-key <key> --since <last id> --unresolved
+# ...address the feedback in the same workspace...
+uip or kb change-proposal update <proposal-id> --folder-path <p> --bundle-key <key> --input ./kb
+uip or kb change-proposal resolve-thread <thread-id> --folder-path <p> --bundle-key <key> --proposal <proposal-id> --body "Fixed in rev 2"
+uip or kb change-proposal merge <proposal-id> --folder-path <p> --bundle-key <key>
+```
+
+Four things to know:
+
+- **`create` and `update` need a workspace, not any directory.** They diff the files against `.okf/base.json`, which only a `download` writes, and that marker's version becomes the proposal's base. A directory without it is refused rather than proposed against a guessed version.
+- **The proposal is the direct object, the bundle is scope.** So the proposal id is positional and the bundle is `--bundle-key`. Proposal ids are small integers (`1`, `7`), not GUIDs.
+- **Resolving a thread is itself a comment.** Give `--body` something useful ("Fixed in rev 2"); a later reply reopens the thread.
+- **`merge` can come back conflicted**, meaning the files moved in a newer version. Recovery is to download again, re-apply the edit, and open a new proposal — not to force anything.
+
+Also available: `get` (one proposal with its change set), `diff` (against the base, or `--from-revision`/`--to-revision` for the interdiff), `close` (abandon without merging), `add-comment` (`--path` and `--line` to anchor it, `--reply-to` to thread it).
+
 ## Not available yet
 
-Do not attempt these, and do not tell the user they exist: change proposals and their comments (no commands), cross-bundle references expanded under `_refs/` (the server does not build them yet, so a downloaded workspace holds only this bundle's files), and reading a file out of a proposal rather than a published version.
+Cross-bundle references expanded under `_refs/` — the server does not build them yet, so a downloaded workspace holds only this bundle's own files. There is also no CLI surface for the bundle event feed; poll a proposal's comments with `--since` instead.
