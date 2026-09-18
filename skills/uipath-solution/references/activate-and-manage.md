@@ -73,10 +73,14 @@ uip solution deploy list --output json
 `deploy run` fails with HTTP 400 when a deployment for the solution **already exists** — you can't redeploy over it, you have to upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
 
 ```bash
-# Upgrade to the newest published version (default), waiting for it to finish
+# By key (the Key from `deploy list`): name, package and feed are read from
+# the deployment, so nothing else is needed
+uip solution deploy upgrade <deployment-key> --output json
+
+# By name, to the newest published version (default), waiting for it to finish
 uip solution deploy upgrade --name <deployment-name> --package-name <pkg> --output json
 
-# A specific version — the CI/CD form: one install call, no lookups
+# A specific version — the lookup-free CI/CD form: one install call
 uip solution deploy upgrade --name <deployment-name> --package-name <pkg> \
   --version 2.0.0 --output json
 
@@ -89,11 +93,12 @@ uip solution deploy upgrade --name <deployment-name> --package-name <pkg> \
   --no-wait --output json
 ```
 
-Find the deployment name and its package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey }`. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation` and `DeploymentKey` are absent, because no run has finished to report them). `PipelineDeploymentId` is what `uip solution deploy status` reads.
+Find the deployment's key, name and package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey }`; the key form adds `FromVersion` (the version left behind) and `InstallDeploymentKey` — the key that stays the same across upgrades, so a pipeline that comes back later should store that one, not `DeploymentKey`, which changes with every upgrade. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation` and `DeploymentKey` are absent, because no run has finished to report them). `PipelineDeploymentId` is what `uip solution deploy status` reads.
 
 **Behavior and limits:**
 - The deployment's **existing configuration is preserved** — the server carries each unchanged resource's configuration forward and takes only changed specs from the new package, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
-- **It takes a deployment name, not a key, and that is what makes it usable from CI/CD.** The Pipelines route addresses a deployment by name; the only thing that could translate a key is an Automation Solutions read that accepts user tokens only. So an upgrade addressed by key cannot run under an external app (client-credentials) at all. Addressed by name, every call on the path is external-app capable. `--package-name` is required for the same reason: nothing in the platform maps a deployment name to its package. Supply `--version` as well and the whole upgrade is a single install call plus its status poll — no lookups.
+- **Both forms work from CI/CD.** The key form resolves the key through a Pipelines lookup that external apps (client-credentials) can call, so it needs neither `--package-name` nor `--personal-workspace`: name, package and feed come from the deployment itself, and a key stored before an earlier upgrade still resolves to the deployment's current generation. The name form is the lookup-free path: `--package-name` is required because nothing name-keyed in Pipelines reports the package, and with `--version` as well the whole upgrade is a single install call plus its status poll. On a server that predates the lookup, a key answers `ErrorCode: not_found` and the message points at the name form.
+- **An external app can only upgrade tenant-feed deployments.** The server ignores the feed header on client-credentials requests, so a Personal Workspace or folder-feed deployment addressed by key is refused (`ErrorCode: permission_denied`) rather than silently creating a new tenant-feed deployment under the same name. Run those upgrades with a user session.
 - **`Operation` is what tells you a version moved.** The install endpoint is unified, so asking for the version *already* deployed is a configuration change, not an upgrade. `Operation: "VersionChange"` means the version moved; `"ConfigurationChange"` means it did not and the configuration was re-applied instead. Read it rather than treating `DeploymentSucceeded` as proof of a new version — there is no pre-flight refusal, because comparing the deployed version would need the user-token-only read above.
 - **The package is validated against the target before anything is installed.** The upgrade goes through the same Pipelines install as `deploy run`, which the server treats as an in-place upgrade when the deployment name already exists with the same package and a different version. Validation runs first, so a configuration the target rejects ends the run at `Status: ValidationFailed` with the per-resource errors in `Instructions` and **the deployment still on its current version** — nothing is half-installed. Earlier CLI versions installed straight away and a late validation failure could strand the deployment in a state that offered only *Uninstall*.
 - By default the command **waits** for the install to reach a terminal state (`--timeout <seconds>`, default 300; `--poll-interval <ms>`, default 5000). Pass `--no-wait` to return as soon as the install is accepted.
