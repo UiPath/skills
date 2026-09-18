@@ -485,6 +485,15 @@ def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str
     rows = [r for r in run_list(TASKS_LIST)
             if (r.get("Title") or "") == title]
     print(f"  watermark {watermark}, instance {instance_id}, {len(rows)} task(s) carry this title")
+    # The gate is conditional on a case variable, so whether the case ever had to raise it is
+    # decided by the values at this moment. Five candidate causes were each ruled out on the
+    # artifacts alone, and every one of them would have been settled by this line.
+    print(f"  case variables now: {globals_of(instance_id)}")
+    mine = [r for r in rows
+            if r.get("CreatorJobKey") == instance_id or int(r.get("Id") or 0) > watermark]
+    print(f"  {len(mine)} of them are this instance's or postdate the watermark:")
+    for row in sorted(mine, key=lambda r: int(r.get("Id") or 0)):
+        print(f"    {row}")
     for row in sorted(rows, key=lambda r: int(r.get("Id") or 0))[-6:]:
         tid = int(row.get("Id") or 0)
         # Every filter it fails, not the first one. Reporting only the first read a task
