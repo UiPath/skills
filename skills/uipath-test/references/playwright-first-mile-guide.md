@@ -16,7 +16,7 @@ There is **no link step**. Do **NOT** run `uip tm testcases link-automation` on 
 
 For `--output json`, parse the JSON envelope from the first `{` through its matching final `}` (or read the last balanced JSON object). Auto-updater chatter, `Update completed with failures.`, `Resolved project …` lines, and telemetry warnings may occur on either side. Judge the command only by the envelope's `Result` field.
 
-`testsets playwright-context` and `run --playwright-project` are hidden from `--help`. Older CLIs may return `unknown command` / `unknown option`: if the probe is missing, skip Step 5 and continue; if `--playwright-project` is rejected, run without it so every project in the package config runs, and do not retry the flag. Project scoping still works without the probe.
+`testsets playwright-context` and `run --playwright-project` need a recent CLI. Older ones may return `unknown command` / `unknown option`: if the probe is missing, skip Step 5 and continue; if `--playwright-project` is rejected, run without it so every project in the package config runs, and do not retry the flag. Project scoping still works without the probe.
 
 ## Prerequisites
 
