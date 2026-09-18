@@ -38,11 +38,16 @@ def _output_var_ids(script) -> set[str]:
     return ids
 
 
-def _input_text(script) -> str:
+def _read_text(script) -> str:
+    # The args input is a fixed {vars, metadata} envelope; reads live in the
+    # script body as vars.<id>.
     parts = []
     for inp in script.findall(".//uipath:input", NS):
         parts.append(text_content(inp))
         parts.append(" ".join(inp.attrib.values()))
+    body = script.find("bpmn:script", NS)
+    if body is not None:
+        parts.append(text_content(body))
     return " ".join(parts)
 
 
@@ -56,9 +61,9 @@ def main() -> None:
     if len(scripts) < 3:
         fail(f"expected a pipeline of at least 3 script tasks, found {len(scripts)}")
 
-    # Variable passing: some script's input references a variable id that another
-    # script declares as an output.
-    outputs = [(_output_var_ids(s), _input_text(s)) for s in scripts]
+    # Variable passing: some script reads a variable id that another script
+    # declares as an output.
+    outputs = [(_output_var_ids(s), _read_text(s)) for s in scripts]
     passed = False
     for i, (_, in_text) in enumerate(outputs):
         for j, (out_ids, _) in enumerate(outputs):
