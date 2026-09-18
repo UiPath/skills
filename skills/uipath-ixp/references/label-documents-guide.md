@@ -52,7 +52,7 @@ Use the **Read tool** to view the document file (read the whole document in one 
 2. **For each predicted field**, assign one of four verdicts:
    - **CONFIRMED** — the predicted value matches what is in the document, literally or in its data type's normalized form. Minor OCR-level differences (capitalization, whitespace) are acceptable, as is any difference that is purely the type's normalization — a `Date` reads back as `2022-06-21T00:00:00Z` for a page showing `21-JUN-22`, a `Monetary Quantity` as `114.91 AUD` for a page showing `114.91`. Compare the values by reading them; do not write a script to convert or check formats. See [CLI Reference § Normalized output formats](cli-reference.md#normalized-output-formats).
    - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`, or a misread digit in a number — page `£7,300.00` predicted as `£730.00`). The reference is correct, only the literal characters need fixing. **A number whose magnitude differs from the page is OCR garble, never type normalization** (Rule 8). Do NOT use CORRECTED to restore a page's date or amount formatting, for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
-   - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
+   - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 11 forbids overriding a non-empty prediction with "missing".
    - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
 3. **Report your verdict for every field.** Print a table per document:
 
@@ -130,7 +130,7 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-**Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it).
+**Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 11. If IXP predicted a wrong value, omit the field entirely (don't list it).
 
 Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to record a genuinely-missing field. It marks the listed fields directly, so it also handles the case where `confirm --fields` no-ops — a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain), which `confirm` can't reach. Either records the missing marker; only do so when `get-predictions` shows IXP predicted no value for the field — never to override a wrong prediction.
 
@@ -157,9 +157,9 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 13.
+See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 12.
 
-**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 13.
 
 ```bash
 # Roll back only occurrence 2 of Line Items (every field in that line):
@@ -175,7 +175,7 @@ Repeat steps 2a–2d for all documents in the list.
 
 ### Occurrence numbers are read-scoped
 
-`get-predictions` does not return a repeatable group's rows in a fixed order. The server pairs each annotation with its prediction and lists the **matched pairs first**, then the still-unmatched predictions. So on a partly-confirmed group:
+`get-predictions` does not return a repeatable group's rows in a fixed order. It lists **annotated occurrences first**, then the still-unannotated ones. So on a partly-confirmed group:
 
 - confirmed rows sort to the front — confirm the third row of four and it reads back as `Occurrence` 0, with the other three shifted to 1, 2, 3;
 - the same holds in the IXP UI, which shows the confirmed row first;

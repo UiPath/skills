@@ -15,6 +15,8 @@
 <!--skill-flavor:project-creation:end-->
 
 <!--skill-flavor:upload-scope-bullets:start-->
+  - Publish the active solution with `uip solution publish` (the destination is the user's choice).
+  - Deploy the published package into an Orchestrator folder with `uip solution deploy run`.
 <!--skill-flavor:upload-scope-bullets:end-->
 
 <!--skill-flavor:upload-eval-scope-bullet:start-->

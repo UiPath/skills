@@ -1110,11 +1110,7 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 ### Step 0 — Fetch available validators (mandatory for `builtInValidator` guardrails; skip for custom-only)
 
-```bash
-uip agent guardrails list --output json
-```
-
-Build a lookup of `{ validatorId: status }` from `Data`. Required before adding any built-in validator — confirms the correct parameter shapes and scope/stage constraints. Skip this step when the guardrail is purely custom (deterministic rules); the validator catalog does not apply to custom rules.
+Run `uip agent guardrails list --output json` and apply the four availability outcomes in [Step 0 — Fetch Available Validators (Mandatory First Step)](#step-0--fetch-available-validators-mandatory-first-step) before configuring anything. Skip this step when the guardrail is purely custom (deterministic rules); the validator catalog does not apply to custom rules.
 
 ### Step 1 — Verify existing agent
 
@@ -1138,66 +1134,15 @@ For each tool name you plan to put in `matchNames`:
 
 > `uip agent validate` enforces this: it fails with an error if a Tool-scoped guardrail references a tool that has not been added to the agent.
 
-### Step 3 — Fetch and verify available validators (mandatory)
-
-```bash
-uip agent guardrails list --output json
-```
-
-Before adding any built-in validator, check the `Data` array for the requested validator:
-
-1. **Not found in list** — validator does not exist on this tenant. Inform user and stop. Do NOT generate a custom guardrail as a fallback.
-2. **`Status: "Available"`** — proceed with configuration.
-3. **`Status: "Unauthorised"`** — user is not entitled to use guardrails. Inform user they can view the configuration but cannot apply it to agents. Stop.
-4. **Scope not supported** — if the requested scope is not in `AllowedScopes`, inform the user which scopes are valid. Do NOT auto-generate a custom guardrail as a workaround (custom guardrails only support `Tool` scope). You may suggest a custom guardrail alternative, but only generate it after explicit user confirmation.
-
-Only add guardrails for validators with `Status: "Available"`. Use the output to determine `validatorType` values, allowed scopes, stages, and required parameters. Do not hardcode assumptions.
-
-### Step 4 — Add a guardrail to agent.json
+### Step 3 — Add a guardrail to agent.json
 
 For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–5, 8).
 
 For custom rules (word/number/boolean/always), see [Custom Guardrails](#custom-guardrails-guardrailtype-custom) for the full schema and worked examples (Examples 6, 7, 9, 10).
 
-Quick template — built-in PII validator:
+Copy the complete example that matches the request and adapt the values — e.g., [Example 1](#example-1-block-pii-in-agent-and-tool-outputs) for a built-in PII block guardrail. Generate a fresh UUID for `id`. Placement in `agent.json` is shown in [agent.json with Guardrails](#agentjson-with-guardrails).
 
-```json
-"guardrails": [
-  {
-    "$guardrailType": "builtInValidator",
-    "id": "<GENERATE_UUID>",
-    "name": "PII detection guardrail",
-    "description": "Detects personally identifiable information using Azure Cognitive Services",
-    "validatorType": "pii_detection",
-    "validatorParameters": [
-      {
-        "$parameterType": "enum-list",
-        "id": "entities",
-        "value": ["Email", "PhoneNumber", "CreditCardNumber"]
-      },
-      {
-        "$parameterType": "map-enum",
-        "id": "entityThresholds",
-        "value": {
-          "Email": 0.5,
-          "PhoneNumber": 0.5,
-          "CreditCardNumber": 0.5
-        }
-      }
-    ],
-    "action": {
-      "$actionType": "block",
-      "reason": "PII detected in output."
-    },
-    "enabledForEvals": true,
-    "selector": {
-      "scopes": ["Agent"]
-    }
-  }
-]
-```
-
-### Step 5 — Refresh and validate
+### Step 4 — Refresh and validate
 
 ```bash
 uip agent refresh  "<AGENT_NAME>" --output json

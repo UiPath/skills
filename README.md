@@ -103,11 +103,11 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | Skill | Status |
 |-------|--------|
 | `uipath-admin` | Stable |
-| `uipath-agents` | In-development |
+| `uipath-agents` | Stable |
 | `uipath-aops` | Preview |
-| `uipath-api-workflow` | In-development |
+| `uipath-api-workflow` | Stable |
 | `uipath-automation-discovery` | Preview |
-| `uipath-automationhub` | In-development |
+| `uipath-automationhub` | Stable |
 | `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
@@ -120,14 +120,14 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-maestro-case` | Preview |
 | `uipath-maestro-flow` | Stable |
 | `uipath-mcp-servers` | In-development |
-| `uipath-planner` | Preview |
+| `uipath-planner` | Stable |
 | `uipath-platform` | Stable |
 | `uipath-process-mining` | Preview |
 | `uipath-review` | Preview |
 | `uipath-rpa` | Stable |
-| `uipath-solution` | Preview |
+| `uipath-solution` | Stable |
 | `uipath-tasks` | Stable |
-| `uipath-test` | In-development |
+| `uipath-test` | Preview |
 | `uipath-troubleshoot` | Preview |
 
 **Status legend:**

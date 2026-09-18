@@ -226,6 +226,8 @@ def test_billing_gates_use_the_shared_entity_hints():
     gates = (
         "multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py",
         "multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py",
+        "multi_node/billing_dispute_resolution/"
+        "check_structure_billing_dispute_resolution.py",
     )
     for relative in gates:
         with open(os.path.join(suite, relative), encoding="utf-8") as handle:
@@ -957,6 +959,53 @@ def test_run_debug_does_not_retry_real_fault(monkeypatch):
     with pytest.raises(SystemExit):
         run_debug()
     assert calls["n"] == 1
+
+
+def test_run_debug_names_a_studio_web_handoff(monkeypatch):
+    """A chat-driven flow is uploaded and handed off, never run, so it returns
+    Success with no finalStatus. Reporting that as "did not complete" reads as a
+    broken flow; it is a task-shape problem (skill-flow-cli-dice-roller-simulated,
+    2026-09-17). One attempt only — a Success envelope is not transient."""
+    handoff = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebugStudioWebHandoff",\n'
+        '  "Data": {"solutionId": "bcb9354a", "studioWebUrl": "https://example/designer/609b",\n'
+        '           "handedOff": true},\n'
+        '  "Instructions": "This flow can only be driven from a chat UI"\n}'
+    )
+    calls = _stub_debug(monkeypatch, [_cp(0, handoff)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert calls["n"] == 1
+    assert "chat-driven" in str(excinfo.value)
+    assert "did not complete" not in str(excinfo.value)
+
+
+def test_run_debug_names_a_handoff_without_the_code_label(monkeypatch):
+    """`handedOff` is the semantic signal; the `Code` label is a string that can
+    be renamed. The observed envelope carries both, which short-circuits the
+    `Code` arm, so this covers the payload-only arm on its own."""
+    handoff = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebugSomeFutureName",\n'
+        '  "Data": {"solutionId": "bcb9354a", "handedOff": true}\n}'
+    )
+    _stub_debug(monkeypatch, [_cp(0, handoff)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert "chat-driven" in str(excinfo.value)
+
+
+def test_run_debug_keeps_the_generic_message_for_a_real_fault(monkeypatch):
+    """Neither handoff signal present: the pre-existing wording must survive, so
+    a faulted run is not misreported as a chat-driven design."""
+    faulted = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebug",\n'
+        '  "Data": {"finalStatus": "Faulted", "handedOff": false}\n}'
+    )
+    _stub_debug(monkeypatch, [_cp(0, faulted)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert "did not complete" in str(excinfo.value)
+    assert "chat-driven" not in str(excinfo.value)
 
 
 def test_run_debug_does_not_retry_nontransient_error(monkeypatch):

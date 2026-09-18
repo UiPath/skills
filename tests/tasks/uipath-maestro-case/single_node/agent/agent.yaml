@@ -99,12 +99,12 @@ initial_prompt: |
   **Input Schema**
   | Field | Type | Binding | Required |
   |---|---|---|---|
-  | word | string | "arrow" | Yes |
+  | inputString | string | "arrow" | Yes |
 
   **Output Schema**
   | Field | Type | Binding |
   |---|---|---|
-  | letterCount | number | -> count |
+  | count | number | -> letterCount |
   ```
 
   Treat all build gates as pre-approved — do NOT block on the
