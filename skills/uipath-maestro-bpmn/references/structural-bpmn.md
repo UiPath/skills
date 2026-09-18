@@ -146,6 +146,17 @@ reason authoring runs out of time.
 
 ## Variables
 
+A `bpmn:task` carrying a `BPMN.Variables` mapping is the assignment node: it
+writes the variables that mapping's `uipath:output` elements declare, and does
+nothing else. With an empty mapping it performs no work at all. A step that
+fetches, calls a system, scores, settles, aggregates, or notifies is the typed
+task for that work — `bpmn:serviceTask`, `bpmn:sendTask`, `bpmn:userTask`,
+`bpmn:businessRuleTask`, `bpmn:scriptTask` — carrying its registry payload.
+No rule catches a bare task. `validate` warns `read but never assigned` only
+where a later expression reads a variable nothing wrote, so a task whose result
+nothing reads is silent and a clean warning list is not proof. Read back each
+node's element and mapping.
+
 Declare variables in the process's own `<uipath:variables>` block. Every
 declaration needs a stable, unique `id`, a non-empty user-facing `name`, and its
 documented `type`; do not use the name as a substitute for the id. Expressions
