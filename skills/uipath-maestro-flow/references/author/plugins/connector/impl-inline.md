@@ -6,8 +6,8 @@ Everything **not** listed here is identical to [impl.md](impl.md): follow its Co
 
 ## When this applies
 
-- Tier 2 of the [decision order](planning.md#decision-order): the connector exists, lacks the curated activity, and reports `v4Compatible: true`.
-- The activity is **already generated** — you have `<Name>.json` (the compiled activity metadata) and one `<scriptRef>.js` per action and lookup. If you do not, stop here: identify the gap and hand the user off to the `uipath-platform` skill's activity generation ([SKILL.md rule #4](../../../../SKILL.md#critical-rules-universal) — never invoke it yourself), then resume with the artifacts.
+- Tier 2 of the [decision order](planning.md#decision-order): the connector exists, lacks the curated activity, and reports `V4Compatible: true`.
+- The activity is **already generated** — you have `<Name>.json` (the compiled activity metadata) and one `<scriptRef>.js` per action and lookup. If you do not, invoke the `uipath-platform` skill's activity generation ([activity-generation.md](../../../../../uipath-platform/references/integration-service/activity-generation.md)) to produce them, then resume here with the artifacts. This is a sanctioned exception to [SKILL.md rule #4](../../../../SKILL.md#critical-rules-universal): no user prompt is needed once the connector gap is confirmed and `V4Compatible` is `true`. Follow the sibling's guide end to end (vendor-docs grounding, `metadata generate`, `script update`, script validation) — do not reproduce its commands from memory. Only if that skill is unavailable in the session do you fall back to Managed HTTP connector mode ([http/impl-connector.md](../http/impl-connector.md)) and report the downgrade.
 
 ## Inputs
 
@@ -99,7 +99,7 @@ What `node configure` does differently for an inline node:
 
 - reads the metadata from `inputs.inlineActivityConfiguration` — no Integration Service request;
 - writes `inputs.detail.activityContext` as `{ "version": "4.0.0", "source": "inline", "scriptRef": "<main scriptRef>" }` — `source: "inline"` is how the runtime knows to run the embedded activity, and `scriptRef` is the main action, not the `objectName`;
-- builds `configuration` (`essentialConfiguration`) with `objectName` = the metadata's `name` and `path` = the vendor path;
+- builds `configuration` (`essentialConfiguration`) with `objectName` = the metadata's `name`, `path` = the vendor path, `operation` = the verb slot's operation lowercased, and `instanceParameters.activitySource: "inline"` — the design-time marker that the activity package reads metadata and scripts from the node, not the catalog;
 - copies `uiPathActivityTypeId` from the definition, so re-running configure never changes it;
 - keeps `inputs.inlineActivityConfiguration` across re-runs. Re-configure with the complete intended `--detail`, exactly as for any connector node.
 
