@@ -20,7 +20,7 @@ uip df entities create "MyEntity" \
 ```
 
 - `fields` array is **required**. Each entry must include `name`.
-- `displayName`, `description`, and `isRbacEnabled` are optional top-level keys.
+- `displayName`, `description`, `isRbacEnabled`, and `isAnalyticsEnabled` are optional top-level keys. `isAnalyticsEnabled` is **immutable after creation** — set it here; it cannot be changed on `entities update`.
 - Response: `{ Code: "EntityCreated", Data: { Id: "<entity-id>" } }` — save `Data.Id` for subsequent operations.
 - Alternatively use `--file <path>` pointing to a JSON file with the same structure.
 
@@ -307,7 +307,7 @@ uip df entities update <entity-id> \
   --output json
 ```
 
-> A metadata update (`description`, `isRbacEnabled`, `isAnalyticsEnabled`) must also include the current `displayName` — the backend requires it, so the CLI rejects a metadata body without it. Read it from `entities get` and pass it even when only the description changes (as the metadata-only example above does). Field-only updates (`addFields` / `updateFields` / `removeFields`) don't need it.
+> A metadata update (`description`, `isRbacEnabled`) must also include the current `displayName` — the backend requires it, so the CLI rejects a metadata body without it. Read it from `entities get` and pass it even when only the description changes (as the metadata-only example above does). Field-only updates (`addFields` / `updateFields` / `removeFields`) don't need it. `isAnalyticsEnabled` is immutable after creation — the CLI rejects it in an update body; set it on `entities create`.
 
 ### Updating Existing Field Metadata (`updateFields`)
 
