@@ -276,10 +276,13 @@ For registry-evidence-only tasks, follow the command-first recipe in
    Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
    with its rule code). Warnings do not fail the run: validate once, fix only
    error-severity findings, and do not re-validate in a loop chasing warnings.
-   Two warnings are defects in new source rather than noise, because no error
-   covers them. `read but never assigned` says nothing writes a value the
-   process reads, so a step that should produce it does not. `MISSING_RESOURCE`
-   says a node has no target selected. Fix both before finishing.
+   Two warnings are defects rather than noise, because no error covers them.
+   `read but never assigned` says nothing writes a value the process reads, so
+   a step that should produce it does not. `MISSING_RESOURCE` says a node has
+   no target selected; in a runnable deliverable, bind it. For a draft or
+   boundary handoff the user asked for, an unresolved node warns
+   `MISSING_RESOURCE` by design: keep its public placeholder, never invent an
+   identifier (Rule 2), and report the warning rather than clearing it.
 
    Validation is structural preflight, not runtime proof — see
    [references/cli-conventions.md](references/cli-conventions.md). When

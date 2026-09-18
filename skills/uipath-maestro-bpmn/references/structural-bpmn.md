@@ -152,9 +152,10 @@ nothing else. With an empty mapping it performs no work at all. A step that
 fetches, calls a system, scores, settles, aggregates, or notifies is the typed
 task for that work — `bpmn:serviceTask`, `bpmn:sendTask`, `bpmn:userTask`,
 `bpmn:businessRuleTask`, `bpmn:scriptTask` — carrying its registry payload.
-Neither `validate` nor `refresh` reports a bare task as an error: the only
-signal is a `read but never assigned` warning on whichever variable the missing
-step was supposed to write.
+No rule catches a bare task. `validate` warns `read but never assigned` only
+where a later expression reads a variable nothing wrote, so a task whose result
+nothing reads is silent and a clean warning list is not proof. Read back each
+node's element and mapping.
 
 Declare variables in the process's own `<uipath:variables>` block. Every
 declaration needs a stable, unique `id`, a non-empty user-facing `name`, and its
