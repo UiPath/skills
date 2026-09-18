@@ -126,7 +126,6 @@ The first and last bucket each cover only the part of their interval inside the 
 
 Because every bucket comes back even when its counts are zero, an empty `Data[]` here is not a quiet window. It means the warehouse returned nothing at all, which is the one extra cause Rule 11 asks for on these two commands.
 
-
 Both take two extra flags, and no other queue command accepts either.
 
 `--time-event` picks which queue item timestamp the buckets are built from and defaults to `latest`. The choices differ per command: `completed-timeline` takes `latest`, `creation`, `start`, or `end`, and `uncompleted-timeline` takes `latest`, `creation`, or `start`. Passing `--time-event end` to `uncompleted-timeline` is rejected before any request, because `end` maps to the end-of-processing column that a New or InProgress item has not reached.
