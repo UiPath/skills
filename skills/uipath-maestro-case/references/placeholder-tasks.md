@@ -81,7 +81,7 @@ When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit
 
 ## `registry-resolved.json` Entry Shape
 
-A placeholder-bound entry is an ordinary ledger object — Rule 10's keys with `selected: null`, the unresolved reason in the identity slot, and the wiring that had no schema to bind against captured in `wiringNotes`:
+A placeholder-bound entry is an ordinary ledger object — Rule 10's keys with `selected: null`, the unresolved reason in the identity slot, and the wiring that had no schema to bind against captured in `wiringNotes`. The object below is **one element of the file's bare top-level array** (Rule 10) — the file is never an envelope object wrapping the entries under a key:
 
 ```json
 {
@@ -111,12 +111,21 @@ Rules:
 
 ## What Validation Catches
 
-`uip maestro case validate` on a caseplan with placeholders emits warnings, not errors:
+`uip maestro case validate` on a caseplan with placeholders emits warnings, not errors, under the **default and `--strict` profiles**:
 
-- `Stage "<name>" has a task with no configuration` — one per placeholder.
+- `Task "<name>" (type "<type>") has an empty "data" block, so no other check can run on it.` — one per placeholder.
 - `Stage "<name>" has no tasks` — if every task in a stage is absent (not even a placeholder).
 
-These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids fabricated task mocks (except the sanctioned connector-rule stub — see § Connector condition rules).
+**Under `--sdd`, the ledger decides whether a placeholder warns or fails.** The SDD says the resource resolved, so an empty `data: {}` is a contradiction the audit must judge, and `tasks/registry-resolved.json` is the only evidence that settles it:
+
+| Ledger evidence for the task | Code | Severity |
+|---|---|---|
+| Entry present with `matches: []` / `selected: null` | `STRICT_SDD_PLACEHOLDER_UNRESOLVABLE` | warning — the placeholder is correct; the tenant lacks the resource |
+| No entry found (missing file, or entries the reader cannot locate) | `STRICT_SDD_PLACEHOLDER_RESOLVED` | **error** — validation fails |
+
+This is why Rule 10's container shape is not cosmetic: a ledger written as an envelope the reader cannot locate turns every justified placeholder into a hard `--sdd` failure. Write the bare top-level array.
+
+Warnings are **expected** and do not block the build. Other errors appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids fabricated task mocks (except the sanctioned connector-rule stub — see § Connector condition rules).
 
 ## Upgrade Procedure — Placeholder → Full Task
 
