@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cancel case instances this task started that its own solution cleanup cannot reach.
 
-`_shared/cleanup_solutions.py` deletes the Studio Web solution the run uploaded, and the
+`_setup/cleanup_solutions.py` deletes the Studio Web solution the run uploaded, and the
 instances of that solution go with it. It cannot touch `SupplierContractNegotiation`: the
 happy path starts that as a child case, it belongs to a different solution, and it is
 started fire-and-forget, so nothing ever closes it. Left alone, every run that reaches

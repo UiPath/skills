@@ -366,5 +366,5 @@ post_run:
   # leaving the package unknown and every child case behind.
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/supplier_onboarding/cleanup_child_cases.py"
     timeout: 180
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_setup/cleanup_solutions.py"
     timeout: 120
