@@ -477,7 +477,17 @@ jobs:
           # Args appended to `coder-eval run`, ONE PER LINE, each verbatim — no
           # word splitting, no pathname expansion. That is what the delegate `-D`
           # override needs: to bash its `[...]` list is a character class.
-          args=(-e experiments/nightly.yaml)
+          #
+          # The claude arm gets its own experiment file: identical to
+          # nightly.yaml except run_limits (the claude-code session streams as
+          # one turn, so turn_timeout is its wall budget — #3376). A sync guard
+          # (tests/scripts/test_nightly_claude_experiment_sync.py) pins the two
+          # files identical outside that delta.
+          if [ "$AGENT" = "claude" ]; then
+            args=(-e experiments/nightly-claude.yaml)
+          else
+            args=(-e experiments/nightly.yaml)
+          fi
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
           # antigravity via GEMINI_API_KEY (SDK baked into the agent image),
