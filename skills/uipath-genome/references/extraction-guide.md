@@ -4,12 +4,7 @@ Read the source, then write a genome that reads as if authored: behavioural, gen
 
 ## Source Guides
 
-| Framework | Guide | Detection summary |
-|---|---|---|
-| UiPath (Studio, Studio Web, Maestro, Agents, API workflows, Coded apps, Functions, Solutions) | [sources/uipath-source-guide.md](sources/uipath-source-guide.md) | `.uipx`, `project.json`, `project.uiproj`, `.xaml`, `.cs`, `.flow`, `.bpmn`, `caseplan.json`, `agent.json`, `Workflow.json`, `uipath.json` |
-| Worksoft Certify (database export) | [sources/worksoft-certify-source-guide.md](sources/worksoft-certify-source-guide.md) | Folder with `Manifest.txt` (`Certify Version:`), `Processes.json`, `Layouts.json`, `MapObjects.json`, `ComponentActions.json`; run `scripts/certify-export-inventory.py` before reading |
-
-No guide matches → tell the user which framework the files appear to be from, that no source guide exists yet, and point to [sources/source-framework-contract.md](sources/source-framework-contract.md). Do not improvise an extraction from an unknown framework.
+The frameworks with a source guide, their detection signals, selectors guides and scripts are listed once, in [SKILL.md § Source Frameworks](../SKILL.md). Select the row whose detection matches, run its script if it has one, and read its source guide in full before Step 1. No row matches → tell the user which framework the files appear to be from, that no source guide exists yet, and point to [sources/source-framework-contract.md](sources/source-framework-contract.md). Do not improvise an extraction from an unknown framework.
 
 ## Pipeline
 
@@ -42,7 +37,7 @@ Per artifact, in inventory order, using the source guide's signal tables. Collec
 | Hardcoded literals: paths, URLs, addresses, names, thresholds, columns | Configuration Questions |
 | Test cases, eval sets, assertions | Acceptance Criteria evidence |
 | Prompts and instructions (agents) | Business Rules (paraphrased) |
-| UI control recognition data (object maps, selectors, XPaths) | **Source artifact** `source/targets.json` (source guide § UI Target Locators) — never the genome body |
+| UI control recognition data (object maps, selectors, XPaths) | **Source artifact** `source/targets.json` (source guide § UI Target Locators and its selectors companion; UiPath side in [selector-translation-guide.md](selector-translation-guide.md)) — never the genome body |
 | Composite UI actions (type-ahead picks, menu paths, option lists, find-row-then-act, keystrokes to the focused element) | Workflow substeps carrying the **full interaction contract** in behavioural words: typed value, match rule, confirm key, path levels, row rule (source guide § Composite actions). Per-control actions travel in `source/targets.json` |
 | Data-driving rows (recordsets, data sheets) | **Source artifact** `source/test-data.json` + `source/process-data.json` (source guide § Test Data); literals also feed Configuration Questions |
 | Login accounts used per scenario | Platform Dependencies: one credential asset per account; the account identity stays in the test data, the secret never |

@@ -286,17 +286,134 @@ def dump(x: Export, name):
     return '\n'.join(L)
 
 
-def _parse_locator(v):
-    """Certify locator XML -> {tagname, instance, frame, findby:[{n, criteria, v}]}."""
+_XMLNAME = re.compile(r'_x([0-9A-Fa-f]{4})_')
+_PAIR = re.compile(r'<n>(.*?)</n>\s*<v(?: criteria="([^"]*)")?\s*(?:/>|>(.*?)</v>)', re.S)
+_PROP = re.compile(r'<property\s+([^>]*?)/?>', re.S)
+_ATTR = re.compile(r'(\w+)="([^"]*)"')
+_VOLATILE = 'DynamicValue'
+
+
+def _decode(s):
+    """Certify XML-name encoding used by desktop locators: _x0020_ = space, _x0023_ = '#'."""
+    return _XMLNAME.sub(lambda m: chr(int(m.group(1), 16)), s or '')
+
+
+def _pairs(xml, decode):
+    """<n>attr</n><v criteria="…">value</v> pairs -> (findby, volatile names). Empty and DynamicValue values are dropped."""
     import html
-    d = {}
-    for k in ('frame', 'tagname', 'instance'):
-        mm = re.search(rf'<{k}>(.*?)</{k}>', v or '', re.S)
-        if mm:
-            d[k] = html.unescape(mm.group(1))
-    fb = re.search(r'<findby>(.*?)</findby>', v or '', re.S)
-    d['findby'] = [{'n': html.unescape(n), 'criteria': c or 'isequalto', 'v': html.unescape(val)}
-                   for n, c, val in re.findall(r'<n>(.*?)</n>\s*<v(?: criteria="([^"]*)")?>(.*?)</v>', fb.group(1), re.S)] if fb else []
+    fb, vol = [], []
+    for n, c, val in _PAIR.findall(xml):
+        n = html.unescape(n).lower(); val = html.unescape(val or '')
+        if decode:
+            val = _decode(val)
+        if val == _VOLATILE:
+            vol.append(n)
+        elif val != '':
+            fb.append({'n': n, 'criteria': (c or 'isequalto').lower(), 'v': val})
+    return fb, vol
+
+
+def _certifyobject(xml):
+    """One <certifyobject …>…</certifyobject> (format 3 findby or format 4 properties) -> normalized object."""
+    head = re.search(r'<certifyobject([^>]*)>', xml, re.S)
+    attrs = dict(_ATTR.findall(head.group(1))) if head else {}
+    body = xml[head.end():] if head else xml
+    d = {'class': attrs.get('certifyclass'), 'frameworkid': attrs.get('frameworkid'), 'iswindow': attrs.get('windowflag') == 'Yes' or attrs.get('iswindow') == 'true'}
+    inst = re.search(r'<findby instance="(\d+)"', body) or (attrs.get('instance') and re.match(r'(\d+)', attrs['instance']))
+    if inst:
+        d['instance'] = inst.group(1)
+    if '<properties>' in body:
+        d['findby'], d['volatile'] = [], []
+        for p in _PROP.findall(body.split('<parentpath>')[0]):
+            a = dict(_ATTR.findall(p)); val = _decode(a.get('value', ''))
+            if val == _VOLATILE:
+                d['volatile'].append(a.get('name', '').lower())
+            elif val != '':
+                d['findby'].append({'n': a.get('name', '').lower(), 'criteria': a.get('criterion', 'isequalto').lower(), 'v': val,
+                                    **({'ignorecase': True} if a.get('ignorecase') == 'true' else {})})
+    else:
+        d['findby'], d['volatile'] = _pairs(body.split('<parentpath>')[0].split('<anchor>')[0], True)
+    return d
+
+
+def _parse_locator(v):
+    """Any Certify locator -> normalized {technology, format, tagname|class, instance, frame, findby:[{n, criteria, v}], volatile:[names],
+    parentpath:[ancestors], anchor, parent}. Formats: web XML (<version>3.0</version>…<findby>), SAP GUI '!~' string, <certifyobject>
+    (UIA properties as findby or <properties>), Java <object platform="Java">, class-only templates, Office automation objects."""
+    import html
+    v = v or ''
+    d = {'findby': [], 'volatile': [], 'parentpath': [], 'anchor': None}
+    if v.startswith('v') and '!~' in v:  # SAP GUI scripting
+        d['technology'] = d['format'] = 'sapgui'
+        parts = [p for p in v.split('!~')[1:] if p]
+        kv = {}
+        for p in parts:
+            if p.startswith('PARENT~'):
+                pp = dict(x.partition('=')[::2] for x in p[7:].split('~') if '=' in x)
+                if not pp and '~' in p[7:]:  # v8.x: PARENT~GuiToolbar~wnd[0]/tbar[0]/btn[11]
+                    cls, _, pid = p[7:].partition('~'); pp = {'CLASS': cls, 'ID': pid}
+                d['parent'] = {k.lower(): val for k, val in pp.items()}
+            elif p.startswith('COORDINATES~'):
+                kv['coordinates'] = p[12:]
+            elif '=' in p:
+                k, _, val = p.partition('='); kv[k.lower()] = val
+            elif p in ('OBJECT', 'BODY', 'CONTAINER', 'MODAL', 'HEADER'):
+                kv['type'] = p
+            elif '~' in p:  # v8.x: GuiButton~wnd[0]/tbar[0]/btn[11]
+                cls, _, sid = p.partition('~'); kv['class'] = cls; kv['id'] = sid
+        d['class'] = kv.get('class')
+        d['findby'] = [{'n': k, 'criteria': 'isequalto', 'v': val} for k, val in kv.items() if k != 'class' and val]
+        return d
+    if '<object platform="Java"' in v:
+        d['technology'] = d['format'] = 'java'
+        head = re.search(r'<object([^>]*)>', v)
+        d['iswindow'] = 'type="window"' in (head.group(1) if head else '')
+        for tag in ('class', 'caption', 'certifyclass', 'logicalname', 'learnname', 'physicalname', 'path', 'parent'):
+            mm = re.search(rf'<{tag}[^>]*>(.*?)</{tag}>', v, re.S)
+            if mm:
+                d['findby'].append({'n': tag, 'criteria': 'isequalto', 'v': html.unescape(mm.group(1))})
+        d['class'] = next((f['v'] for f in d['findby'] if f['n'] == 'certifyclass'), None)
+        return d
+    if '<certifyobject' in v:
+        anchor = re.search(r'<anchor>(.*?)</anchor>', v, re.S)
+        pp = re.search(r'<parentpath>(.*?)</parentpath>', v, re.S)
+        top = v
+        for blk in (anchor, pp):
+            if blk:
+                top = top.replace(blk.group(0), '')
+        d.update(_certifyobject(top))
+        d['parentpath'] = [_certifyobject(o) for o in re.findall(r'<certifyobject.*?</certifyobject>', pp.group(1), re.S)] if pp else []
+        d['anchor'] = _certifyobject(anchor.group(1)) if anchor else None
+        fw = d.get('frameworkid') or ''
+        d['technology'] = 'image' if fw in ('ImageObjects', 'GenericApplicationSupport') else 'uia'
+        d['format'] = 'uia-properties' if '<properties>' in v else 'certifyobject'
+        return d
+    if '<findby' in v:  # web
+        d['technology'] = d['format'] = 'web'
+        anchor = re.search(r'<anchor>(.*?)</anchor>', v, re.S)
+        top = v.replace(anchor.group(0), '') if anchor else v
+        for k in ('frame', 'tagname', 'instance'):
+            mm = re.search(rf'<{k}>(.*?)</{k}>', top, re.S)
+            if mm:
+                d[k] = html.unescape(mm.group(1))
+        d['findby'], d['volatile'] = _pairs(top, False)
+        if anchor:
+            a = _parse_locator(anchor.group(1)); a.pop('anchor', None); a.pop('parentpath', None); d['anchor'] = a
+        if not d['findby']:
+            d['technology'] = 'none'; d['format'] = 'template'
+        return d
+    if v.endswith('_Automation_Object'):
+        d['technology'] = d['format'] = 'office'; d['class'] = v
+        return d
+    d['technology'] = 'none'; d['format'] = 'template'
+    if '<version>' in v:  # web object learned without attributes: tag + instance only
+        for k in ('frame', 'tagname', 'instance'):
+            mm = re.search(rf'<{k}>(.*?)</{k}>', v, re.S)
+            if mm:
+                d[k] = html.unescape(mm.group(1))
+        d['format'] = 'web'
+    else:
+        d['class'] = v[:80]  # 'GuiCTextField.(GuiCTextField)', 'Dynamic_DataGrid', 'Scripting.(Scripting)'
     return d
 
 
@@ -352,14 +469,22 @@ def targets(x: Export):
                  for c in (w['ChildTrackObjects'] or [])]
         cat.append({'objectId': w['ObjectID'], 'app': x.appver.get(w['ApplicationVersionID']), 'name': w['Name'],
                     'physicalName': w['PhysicalName'], 'description': w['Description'], 'locators': wl, 'controls': ctrls})
-    names = collections.Counter(p['n'].lower() for w in cat for c in w['controls'] for l in c['locators'] for p in l['findby'])
+    names = collections.Counter(f"{l['technology']}:{p['n']}" for w in cat for c in w['controls'] for l in c['locators'] for p in l['findby'])
+    techs = collections.Counter(l['technology'] for w in cat for c in w['controls'] for l in c['locators'])
     md = ["# Certify UI target catalog\n", f"{len(cat)} windows, {sum(len(w['controls']) for w in cat)} controls. "
+          f"Technologies: {', '.join(f'{k} ({v})' for k, v in techs.most_common())}. "
           f"Locator attributes: {', '.join(f'{k} ({v})' for k, v in names.most_common())}\n"]
     for w in cat:
         wsel = '; '.join(f"{p['n']} {p['criteria']} {p['v']!r}" for l in w['locators'] for p in l['findby']) or '(no window locator)'
-        md.append(f"\n## {w['name']} [{w['app']}] objectId={w['objectId']} — {wsel}\n")
+        wtech = ','.join(sorted({l['technology'] for l in w['locators']})) or '?'
+        md.append(f"\n## {w['name']} [{w['app']}] ({wtech}) objectId={w['objectId']} — {wsel}\n")
         for c in w['controls']:
-            locs = ' | '.join(f"{l.get('tagname')}#{l.get('instance') or 1}: " + ', '.join(f"{p['n']} {p['criteria']} {p['v'][:60]!r}" for p in l['findby']) for l in c['locators']) or '(no locator)'
+            locs = ' | '.join(f"{l['technology']} {l.get('tagname') or l.get('class') or ''}#{l.get('instance') or 1}: "
+                              + ', '.join(f"{p['n']} {p['criteria']} {p['v'][:60]!r}" for p in l['findby'])
+                              + (f" [volatile: {','.join(l['volatile'])}]" if l.get('volatile') else '')
+                              + (f" [ancestors: {len(l['parentpath'])}]" if l.get('parentpath') else '')
+                              + (' [anchor]' if l.get('anchor') else '')
+                              for l in c['locators']) or '(no locator)'
             md.append(f"- {c['objectId']} `{c['name']}` ({c['type']}) — {locs}")
             for a in c['actions']:
                 ex = '; '.join(', '.join(f"{k}={v!r}" for k, v in e.items()) for e in a['examples'][:3]) or '-'

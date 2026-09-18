@@ -14,7 +14,7 @@ Every source guide has these sections, in this order, with these headings:
 6. **Call Graph Rules** — where the entry point is declared, how invocation edges are expressed, ordering rules for parallel branches, how to handle libraries and unreachable objects.
 7. **Expression Translation** — the framework's expression language(s) and how operators map to plain language (extends the table in [genome-format-guide.md § Business Rules](../genome-format-guide.md)).
 8. **Platform Resources** — where queues, credentials, assets, schedules, and connections are declared, and their UiPath equivalents for the Platform Dependencies section.
-9. **UI Target Locators** — where the framework stores the recognition data of the controls it automates (object maps, selectors, XPaths, image anchors), how to export it into the genome's `source/targets.json` catalog, and the attribute-by-attribute translation into UiPath selectors with a confidence tier. A framework that stores none says so; execution then falls back to capture or placeholders.
+9. **UI Target Locators** — where the framework stores the recognition data of the controls it automates (object maps, selectors, XPaths, image anchors), which locator formats occur and how each maps to a UiPath technology, and how to export it into the genome's `source/targets.json` catalog. The attribute-by-attribute translation lives in a companion `references/sources/<framework>-selectors-guide.md` with one table per technology the framework records (`source field | UiPath tag.attribute | transform | confidence | notes`), whose right-hand side uses only the vocabulary of [selector-translation-guide.md](../selector-translation-guide.md) — the UiPath-side rules (criteria, anchors, position, purpose, confidence tiers) are stated there once and never restated in a source guide. A framework that stores none says so; execution then falls back to capture or placeholders.
 10. **Test Data** — where data-driving rows live (recordsets, data sheets, variables), how to decode them into named rows and link them to the process that runs with them (`source/test-data.json`), which columns are credentials (identity migrates as a credential-asset name plus environment, secrets never), and the source's execution flags.
 11. **Framework Pitfalls** — anything that misleads a reader: designer metadata that looks like logic, generated code, duplicate definitions, version-specific quirks.
 
@@ -29,6 +29,7 @@ Every source guide has these sections, in this order, with these headings:
 
 1. Copy the section skeleton above into `references/sources/<framework>-source-guide.md`.
 2. Fill Detection first; the pipeline cannot select the guide without it.
-3. Add the guide to the **Source Guides** table in `extraction-guide.md` with its detection summary.
-4. Add one worked example under `assets/examples/` extracted from a real project of that framework, with a Source Map.
-5. Add a smoke task under `tests/tasks/uipath-genome/` with a fixture project of that framework.
+3. Add a row to the **Source Frameworks** table in `SKILL.md` (detection, source guide, selectors guide or "none", script) — the single place both Extract and Execute look up a framework's guides.
+4. When the framework records UI locators, add `references/sources/<framework>-selectors-guide.md` (formats, then one translation table per technology) and survey real exports before writing it — attribute names come from the data, not from the vendor's documentation.
+5. Add one worked example under `assets/examples/` extracted from a real project of that framework, with a Source Map.
+6. Add a smoke task under `tests/tasks/uipath-genome/` with a fixture project of that framework.

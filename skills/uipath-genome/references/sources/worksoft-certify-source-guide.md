@@ -134,9 +134,10 @@ Workday specifics worth knowing while reading: `responsiveMonikerInput` / `promp
 ## Target Resolution
 
 1. `MapObjects[].ApplicationVersionID` → `Applications[].ApplicationVersions[]` → `Applications[].Name` gives the application (e.g. Workday, JIRA_Cloud); `Applications[].Name == "System"` is the automation engine, not a target.
-2. `InterfaceLibraries[].Platform` (Web, Silverlight, System) tells the technology; `MapObjects[].PhysicalName` often ends with `_LT` (learned page title).
-3. Login URLs live in the login recordset (`Workday_URL`) → Configuration Question "Which environment URL?" with the host only as default.
-4. Third-party systems appear as separate applications (a Microsoft sign-in page, a Conga table) → Target Applications rows.
+2. `InterfaceLibraries[].Platform` (Web, SAP, Silverlight, UIA, Java, NetUI, Office, Mainframe, System, Utilities) lists the engines an application version was learned with, but the **locator format** of each map object decides its UiPath technology — the library called Silverlight is Certify's UI Automation desktop engine, and one application mixes web pages, SAP GUI screens and Windows dialogs ([worksoft-certify-selectors-guide.md](worksoft-certify-selectors-guide.md)). `MapObjects[].PhysicalName` often ends with `_LT` (learned page title).
+3. The browser is the `Browser` parameter of the process's `Browser.Load Browser` step (`Chrome`, `Edge`, `Internet Explorer`) → Configuration Question "Which browser runs the automation?" with that value as default; SAP GUI sessions come from `Window.Launch SAP`.
+4. Login URLs live in the login recordset (`Workday_URL`) → Configuration Question "Which environment URL?" with the host only as default.
+5. Third-party systems appear as separate applications (a Microsoft sign-in page, a Conga table) → Target Applications rows.
 
 ## Call Graph Rules
 
@@ -164,24 +165,7 @@ Certify has no queues, assets, or connections. Map:
 
 ## UI Target Locators
 
-Certify learned every control; the recognition data is in `MapObjects.json` → `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue` as XML: `<tagname>`, `<instance>`, `<frame>` and a `<findby>` list of `<n>attribute</n><v criteria="…">value</v>` pairs (criteria `isequalto`, `contains`, `startswith`, case varies). Criteria map onto wildcards and are preserved as set: `isequalto` → verbatim, `startswith` → `value*`, `contains` → `*value*`. Windows carry `title`/`caption`/`url` criteria. `targets` writes the catalog; execution turns it into Object Repository targets per [source-migration-guide.md](../source-migration-guide.md). Translation:
-
-| Certify (any case) | UiPath `webctrl` | Notes |
-|---|---|---|
-| `tagname` | `tag` | upper-case |
-| `instance` > 1 | `idx` | positional; keep strict, never anchored; analyzer flags large indexes |
-| `data-automation-id` | `data-automation-id` | Workday's developer identifier — high confidence |
-| `parentElement.data-automation-id` | preceding `<webctrl data-automation-id=…/>` tag | two-level selector |
-| `id`, `name`, `aria-label`, `type`, `title`, `href`, `alt`, `placeholder` | same attribute | keep numeric or hash-like ids, can be improved live |
-| `role` | `aria-role` | |
-| `classname` | `class` | wildcard both sides |
-| `innertext`, `normalizedinnertext`, `text`, `alltext`, `outertext` | `visibleinnertext` | never the primary identifier of a text field; move to the anchor for TypeInto/GetText. Inherited by every ancestor, so a match on a broad tag also hits the container chain, outermost first — pin the leaf by tag and class |
-| `label`, `LeftTextAnchor`, `RightTextAnchor` | **anchor** on the caption, plus the semantic text — `label` → `aaname`, `LeftTextAnchor`/`RightTextAnchor` → `visibleinnertext` | Certify's label is the associated caption, not an attribute of the control; skip numeric/one-character labels. Pick the anchor's attribute by which criteria recorded it: a `label` is a programmatic association, so the caption is the element's accessible name; a `LeftTextAnchor` is only *positional* text, and such an element is typically a bare div/span with no accessible name at all, so `aaname` would match nothing there — match its inner text instead, exactly, never wildcarded (inner text is inherited by every ancestor). A control with both recorded takes `label`. The target keeps only its non-caption attributes — when the caption was the sole attribute recorded, the target is tag-only and the anchor identifies it. Folding the caption into the target's own `aaname` instead asserts it is the control's accessible name: fair for a button whose text *is* its name, unreliable for a caption merely positioned nearby, wrong for a `LeftTextAnchor`, which is positional with no programmatic association. A control carrying a positional `instance` cannot be anchored at all (`idx` is unsupported on a fuzzy target) — keep it strict. Offline mechanics: [offline-definition-workarounds-guide.md](../offline-definition-workarounds-guide.md) |
-| `isdisplayed`, `IsVisible`, `ControlType`, `value`, `innerhtml`, `outerHTML`, `XPath` | none | `innerhtml startswith <button` means the real control is a child button (trailing `BUTTON` tag); XPath/outerHTML go to the semantic text only |
-| window `title`/`caption` startswith / contains, `url` contains | `<html app='chrome.exe' title='X*' />`, `title='*X*'`, `url='*X*'` | the common window's caption is rewritten at run time by `Page.Set Attributes` (e.g. `Workday_Common` → `Workday`) |
-| `Set Attributes` with `REPLACEME`/`replaceme` | selector variable `{{Argument}}` | the process substitutes a person name, job title or requisition title at run time |
-
-Windows exist under duplicate names (two `View Worker`, two `Sign in to your account` for different apps); resolve by the control's own parent. Controls with no locator (Windows file dialog) become semantic-only targets.
+Certify learned every control; the recognition data is in `MapObjects.json` → windows (`ObjectIdParmValues[].CertifyValue`) and `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue`. One export mixes several locator formats — web XML, an SAP GUI scripting string, UI Automation properties for desktop windows, Java object descriptors, and class-only template objects — and the format, not the application's interface library, decides the UiPath technology. `targets` parses every format into one normalized catalog (`technology`, `class`/`tagname`, `instance`, `findby`, `volatile`, `parentpath`, `anchor`); the per-format attribute translation is [worksoft-certify-selectors-guide.md](worksoft-certify-selectors-guide.md), the UiPath-side vocabulary and rules (criteria → wildcards, captions → anchors, position → strict `idx`, confidence tiers) [selector-translation-guide.md](../selector-translation-guide.md), and execution turns the result into Object Repository targets per [source-migration-guide.md](../source-migration-guide.md).
 
 Each control in the catalog carries `actions`: the Certify actions applied to it with their interaction parameters (`Typed Value`, `List Item Caption`, `NodePath`, `Item`/`Criteria`, `Column Caption`/`Row Number`, `Key`, …; variable-bound values as `T[Name]`). Execution reads them to decide the pattern (§ Composite actions) and to derive the elements Certify never mapped: suggestion entries, menu items, option rows, table cells. Those derived elements have no locator of their own — they are built from the anchor control plus the typed or matched text and start at low confidence. "No locator of their own" is literal: no `id` or `data-automation-id` is carried across from a control that merely looks related (§ Framework Pitfalls 11).
 
