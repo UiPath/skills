@@ -182,11 +182,14 @@ For registry-evidence-only tasks, follow the command-first recipe in
    edit at the returned `Data.Path`, and preserve its generated metadata. For a
    source-only draft the user has not asked to package or operate, pass
    `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
-   created. `init` takes a project name, not a path, and writes
-   `./<ProjectName>/` (or `./<ProjectName>Solution/<ProjectName>/` without the
-   flag) under the current directory. When the user names the project
-   directory, `mkdir -p` its parent, run `init` from there with the leaf as the
-   name, and check `Data.Path` against the requested path before editing. The
+   created. `init` takes a project name, not a path, and writes under the
+   current directory: `./<ProjectName>/` with that flag or inside an existing
+   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise. To land a
+   project at a path the user named, `mkdir -p` its parent and run `init` there
+   with the leaf as the name — and either pass `--skip-solution-registration`
+   or make that parent a solution first, because default `init` inserts a
+   `<ProjectName>Solution/` level the requested path does not have. Check
+   `Data.Path` against the requested path before editing. The
    init scaffold declares no `xsi` namespace: add
    `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` to
    `bpmn:definitions` before writing any `xsi:type` attribute. See
@@ -263,7 +266,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    event-object checks) offline, plus deploy-readiness checks:
 
    ```bash
-   python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
+   python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn>
    uip maestro bpmn validate <file.bpmn> --output json
    ```
 

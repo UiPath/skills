@@ -152,7 +152,8 @@ documented `type`; do not use the name as a substitute for the id. Expressions
 reference the id as `vars.<id>`. Variable schema bodies are JSON text or CDATA.
 
 The canvas rejects these `name`s on a `uipath:input` or `uipath:inputOutput`,
-case-insensitive (`RESERVED_VARIABLE_NAME`): `vars`, `iterator`, `metadata`,
+matched trimmed and case-insensitive (`RESERVED_VARIABLE_NAME`), so ` Result `
+is rejected too: `vars`, `iterator`, `metadata`,
 `bindings`, `datafabric`, `instanceglobals`, `orchestrator`, `outputs`,
 `result`, `runtime`, `senderinfo`, `this`. A public `uipath:output` may still
 be named `result`; bridge it from a mutable variable with another name.
@@ -382,9 +383,9 @@ The registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway
 
 ## Gateways
 
-Author these gateway types for new BPMN: `bpmn:ExclusiveGateway`,
-`bpmn:ParallelGateway`, `bpmn:InclusiveGateway`, `bpmn:EventBasedGateway`.
-`bpmn:ComplexGateway` round-trips structurally but is **preserve-only** — do not
+Author these gateway types for new BPMN: `bpmn:exclusiveGateway`,
+`bpmn:parallelGateway`, `bpmn:inclusiveGateway`, `bpmn:eventBasedGateway`.
+`bpmn:complexGateway` round-trips structurally but is **preserve-only** — do not
 generate it for new authoring (see [Do not generate for new
 authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
 
@@ -421,6 +422,9 @@ marks definitions that the skill keeps but does not author for new files.
 | `bpmn:IntermediateCatchEvent` | Message, Timer | Escalation, Signal, Conditional, Link, Compensate |
 | `bpmn:EndEvent` | none, Message, Error, Terminate | Escalation, Compensate, Signal |
 | `bpmn:BoundaryEvent` | Message, Timer, Error | Escalation, Conditional, Signal, Compensate |
+
+Those rows name the spec's model types, as `bpmn-spec.json` keys them. Write the
+lower-camel tag: `<bpmn:startEvent>`, `<bpmn:boundaryEvent>`, and so on.
 
 Payload shapes the canvas serializes:
 
@@ -528,15 +532,15 @@ container.
 
 ## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
 
-- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+- **SubProcess** (`bpmn:subProcess`): a container with its own nested
   `flowElements` (start event, nodes, end event) and its own scoped
   `<uipath:variables>`. Variants: `collapsed`, `expanded`, `eventSubprocess`.
   The shape carries `isExpanded` for the collapsed/expanded distinction.
-- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent="true"`. It
+- **Event subprocess**: a `bpmn:subProcess` with `triggeredByEvent="true"`. It
   must have **exactly one** start event, and that start event **must carry an
   event definition** (with `isInterrupting`) — a blank start event is invalid for
   an event subprocess.
-- **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro
+- **Call activity** (`bpmn:callActivity`): invokes a *separate* Maestro
   instance. The registry provides the `uipath:activity` payload for the
   Orchestrator agentic/case-management call-activity types
   (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A
@@ -720,7 +724,7 @@ Run the well-formed-XML parse before `validate` every time; the validator's
 tokenizer does not report an unbound namespace prefix:
 
 ```bash
-python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
+python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn>
 ```
 
 If the CLI is unavailable, also walk the structural checklist below; it mirrors
