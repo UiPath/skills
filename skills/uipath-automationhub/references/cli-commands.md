@@ -43,7 +43,9 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | `uip ah idea-flows list` | flow names → ids | entries carry `Id`, `Name`, `Phases` |
 | `uip ah automations schema get --idea-flow-id <id> --destination <file>` | write the flow's schema + `user_inputs` template to a file | same document as the raw `/idea-schema` |
 | `uip ah categories get` | category tree | `Data.Levels` + `Data.Categories` (nested `subcategories`; pick `category_is_active: 1` only) |
-| `uip ah users list --limit 50` | owner/submitter discovery | entries carry `Email`, `IsActive` |
+| `uip ah auth-info get` | the signed-in identity = default owner/submitter | `Data.User.Email`, `IsActive`, `Roles`; the authority |
+| `uip ah users list --search <email> --invite-status all` | optional owner lookup | both flags needed; a miss is **no signal** — never block on it |
+| `uip ah applications update --file f.json` | create **or** update an application | `application_id: null` inserts; needs `MANAGE_APP_INVENTORY` (403 otherwise) |
 | `uip ah applications list` | app inventory (tenant-required application questions) | entries carry `Id`, `Name` |
 | `uip ah automations create --from-schema --idea-flow-id <id> --file <answers.json>` | **create the process** | `Data.Id` is the new process id |
 | `uip ah documents create <automation-id> --title <t> --description <d> --document-type-id <n> --file <path>` | **upload a document's bytes** | `Data.Id` (document id) + `Data.FileId`; use `--embed-link <url>` *instead of* `--file` for link-only docs (exactly one of the two) |
