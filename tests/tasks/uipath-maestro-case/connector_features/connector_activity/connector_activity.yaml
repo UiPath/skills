@@ -7,7 +7,7 @@ description: >
   caseplan.json write of a resolved `type: "execute-connector-activity"` node
   (real `data.typeId` + `data.connectionId`, no fabricated IDs). Stops at
   validate + resolution assertions — NOT debug: executing a connector activity
-  has real side effects (Rule 12), so this task verifies the BUILD, not runtime.
+  has real side effects (Rule 13), so this task verifies the BUILD, not runtime.
   Requires cloud auth + a healthy Integration Service connection for the named
   connector on the test tenant.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, connector, feature:connector-activity]

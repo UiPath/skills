@@ -19,6 +19,10 @@ For connector tasks, input values are written directly to `caseplan.json` — se
 
 When using the literal/expression mode, the `--value` string can start with one of these prefixes to resolve dynamically at runtime. Plain strings without a prefix are treated as literals.
 
+> **Why `=vars.` may be bare and `=metadata.` may not.** Two different things wear a leading `=`. A **path prefix** has a resolver — `=vars.`, `=bindings.`, `=datafabric.`, `=response`, `=orchestrator.JobAttachments` — and resolves on its own. A **scope namespace** is a name visible *inside* a `=js:` expression: `vars`, `iterator`, `metadata`. `vars` is registered as both, which is why bare `=vars.X` is correct and is the dominant form in every reference plan. `metadata` is **only** a namespace: there is no `=metadata.` resolver, so a bare `=metadata.X` names nothing and reads empty at run time. Do not generalise from `=vars.` to the others — the list of path prefixes above is closed, and `iterator` has the same shape as `metadata`.
+>
+> **This table is the `--value` sink. `=metadata.` does not travel to every slot.** In a task or rule **output** — `value` and `source` on a `custom: true` entry — write **`=js:metadata.<Field>`**, never the bare `=metadata.` form. `metadata` is a namespace resolved *inside* an expression (alongside `vars` and `iterator`), not a prefix that routes one, which is why the product's own constant carries no leading `=`. The canvas normalises a bare `=` value to `=js:` + body, so the two are not alternatives: one is the input to that normalisation and the other is its output, and a plan carrying the bare form in an output source has an un-normalised value in a slot that expects the normalised one. Validated by nothing on any profile — `validate` returns `Valid` either way and the expression simply reads nothing at run time.
+
 | Prefix | Meaning | Example |
 |--------|---------|---------|
 | `=metadata.` | Runtime case metadata — exactly four fields: `FolderKey`, `ProcessKey`, `InstanceId`, `ExternalId`; anything else reads `undefined` at runtime. NOT for arbitrary SDD "Case Metadata" business fields (e.g. Priority) — those are case variables, use `=vars.<id>` | `=metadata.ExternalId` |
@@ -39,6 +43,8 @@ When using the literal/expression mode, the `--value` string can start with one 
 > **Variable / binding ids are always letter-leading.** Formal-arg slots use a `v` prefix, bindings use `b`, and companion ids inherit the (letter-leading) variable name — so `<id>` in `=vars.<id>` / `=bindings.<id>` is always a valid C# identifier. Dot notation is always safe; bracket notation (`vars["…"]`) is never needed. A digit-leading id would fail the case BPMN with `illegal ID` — see [global-vars § Formal-arg slot ID format](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format).
 
 ## Canonical form per sink
+
+> **Inside `=js:`, every identifier is namespace-qualified.** Write `=js:vars.<variableName>`, `=js:metadata.<field>`, `=js:response.<field>`, `=js:bindings.<id>`, `=js:iterator.<field>`. A bare identifier — `=js:priority`, `=js:amount > 100` — is an undefined global: it evaluates to `undefined`, throws nothing, and `validate` returns `Valid`. Use the variable's `name`, not its formal-arg `id`.
 
 Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime evaluators based on the sink it lands in. **The wrap form must match the sink** — wrong wrap is a silent runtime fault (the literal string arrives at the consumer instead of the resolved value).
 
@@ -112,7 +118,9 @@ Cross-task references wire the output of an earlier task into an input of a late
 input_name <- "Stage Name"."Task Name".output_name
 ```
 
-- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task)
+- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task). A heading like `### Stage 2: Underwriting (`stage-underwriting`)` makes that stage referenceable three ways: by its **name** (`"Underwriting"`), by its **slug** (`"stage-underwriting"`), and by its **ordinal** (`"Stage 2"`). A WHEN cell may carry both halves — `selected-stage-completed("Underwriting" (`stage-underwriting`))` — and is read name half first.
+  **Resolve in that order: display name, then slug, then ordinal — each accepted only where nothing stronger already claims the reference, whatever order the stages appear in.** A stage actually titled "Stage 2" therefore beats the second stage's ordinal either way round, and a stage named `Alpha` beats another stage's slug `alpha`. Comparison is case-insensitive and trimmed, nothing more: `stage-1` and `stage 1` are different keys, so a hyphenated slug can never collide with an ordinal and only the name-versus-slug collision is reachable in a normal document.
+  The ordinal and the slug are positional or generated, so a reordered or re-slugged SDD silently re-points them, while the name is what the author wrote — resolve any of the three, and never rewrite a reference from one spelling to another.
 - `Task Name` — the `display-name` of the source task (exactly as written in an `Add <type> task "<name>"` task)
 - `output_name` — a named output field from the source task
 
@@ -227,10 +235,11 @@ action task "Review Classification" in stage "Triage"
 - **Plain-string where expression was intended.** `"metadata.amount"` (no `=`) is the literal string `metadata.amount`, not a reference. Always include the `=` prefix for dynamic values.
 - **Nesting expressions inside literals.** `"$metadata.amount"` or `"{{ amount }}"` do not work. Use `=metadata.amount` directly as the full value.
 - **Plain `=vars.X` inside connector body JSON.** The runtime does NOT evaluate plain prefix refs in connector body sinks — they arrive at the API as literal strings. Wrap as `=js:(vars.X)`. See [§ Canonical form per sink](#canonical-form-per-sink).
+- **Namespace-less identifier inside `=js:`.** `=js:priority === 'Urgent'` reads an undefined global and the rule never fires. Qualify it: `=js:vars.priority === 'Urgent'`.
 - **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
 - **Trailing default instead of a guard.** `vars.X.Y || '{}'` guards nothing — the throw lands on `.Y`, before `||` is reached. Guard the object: `vars.X?.Y`.
 - **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user?.email`.
-- **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
+- **`=js:(...)` outer parens on `conditionExpression`.** Conditions take `=js:<expr>` with no outer parentheses per FE convention. "No outer parentheses" never means "no namespace" — the identifiers inside stay qualified. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
 - **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-planning.md](connector-trigger-planning.md).
 
 <!-- END: bindings-and-expressions.md -->

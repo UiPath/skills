@@ -52,17 +52,26 @@ _KEY_CONTEXT = re.compile(
 
 
 def _caseplan_connections(plan):
-    """Distinct connectionIds declared in caseplan bindings[].
+    """Distinct connection ids declared in caseplan bindings[].
 
-    Each connection contributes two binding entries (ConnectionId + folderKey),
-    so count distinct ConnectionId defaults rather than raw entries.
+    Read the way the consumer reads it. `case-bindings-service.ts` writes the
+    sidecar's ConnectionId as `attributeDefault(group, "ConnectionId") ?? key`,
+    so a ConnectionId binding with no `default` falls back to its own
+    `resourceKey` — which for a connection IS the connection id, and the
+    sidecar comes out correct. Requiring `default` here counted a working
+    binding as zero and reported a parity break that did not exist.
+
+    Not checked here: a folder-key binding with no `default` has no such
+    fallback and silently drops the folder key. That is a real defect, and
+    `uip maestro case validate --strict` reports it as
+    STRICT_CONNECTION_FOLDER_KEY_NO_DEFAULT — this script does not duplicate it.
     """
     return {
-        b.get("default")
+        b.get("default") or b.get("resourceKey")
         for b in plan.get("bindings", []) or []
         if b.get("resource") == "Connection"
         and str(b.get("propertyAttribute", "")).lower() == "connectionid"
-        and b.get("default")
+        and (b.get("default") or b.get("resourceKey"))
     }
 
 

@@ -2,7 +2,7 @@
 """ConnectorWaitCase: a RESOLVED wait-for-connector task and entry rule are wired.
 
 Asserts the connector-trigger plugin resolved a real Integration Service event
-into the caseplan (Rule 8 — no fabricated IDs) with the correct serviceType,
+into the caseplan (Rule 9 — no fabricated IDs) with the correct serviceType,
 rather than leaving a `data: {}` skeleton. Does NOT run debug: a
 wait-for-connector suspends waiting for a real external event.
 
