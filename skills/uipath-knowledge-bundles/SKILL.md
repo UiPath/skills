@@ -28,11 +28,13 @@ Bundles live in a folder and are not addressable without one. Pass `--folder-pat
 
 Bundles are identified by a GUID (`Key`). Get it from `list`, never construct it.
 
+`--search` matches the bundle's **`Name` only** — not its description, and not the `title` inside its documents. A bundle named `ops-handbook-7` can hold a document titled "Contoso Operations Handbook", so searching what the user called it often returns an empty `Data: []` that reads like "no such bundle". When a descriptive search comes up empty, list the folder unfiltered and look at the names and descriptions; page with `--limit` / `--offset` rather than trusting the first page.
+
 ## Commands
 
 | Goal | Command |
 |---|---|
-| Find bundles | `uip or knowledge-bundles list --folder-path <p> [--search <text>]` |
+| Find bundles | `uip or knowledge-bundles list --folder-path <p> [--search <text>] [--limit <n>] [--offset <n>] [--all-fields]` |
 | One bundle's record | `uip or knowledge-bundles get <bundle-id> --folder-path <p>` |
 | Create, empty | `uip or knowledge-bundles create <name> --folder-path <p> [-d <text>]` |
 | Create + publish v1 from a directory | `uip or knowledge-bundles create <name> --folder-path <p> --input <dir> -m <message>` |
@@ -60,7 +62,7 @@ That unpacks the version's files plus `./kb/.okf/base.json`, a marker recording 
 
 ## Publishing
 
-`publish` and `create --input` only ever produce **version 1**, and only for a bundle with no content. Every later version comes from merging a change proposal, which has **no CLI surface yet** — if the user wants to change published content, say that and stop rather than deleting and re-creating the bundle.
+`publish` and `create --input` only ever produce **version 1**, and only for a bundle with no content. Every later version comes from merging a change proposal, which has **no CLI surface yet** — if the user wants to change published content, say that and stop rather than deleting and re-creating the bundle. There is no hidden command for it: do not try `knowledge-proposals`, `propose`, or a variation, and do not read a 409 as a sign you used the wrong command name.
 
 Both walk the directory, hash every file, upload only what the store lacks, then publish the manifest. Two rules the walk obeys:
 
