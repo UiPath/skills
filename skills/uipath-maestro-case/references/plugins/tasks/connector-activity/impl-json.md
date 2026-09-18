@@ -100,7 +100,7 @@ uip maestro case spec --type activity \
 
 **The redirect is the only way this file is created.** It holds the CLI's raw response envelope (`Result` / `Code` / `Data`) byte-for-byte. Do NOT author it, and do NOT invent a wrapper of your own around `caseShape` — a hand-built cache is not a cache, and every downstream check compares against it.
 
-**Do not hand-write this file.** The response reaches tens of KB (68 KB for Slack `send_message_to_channel_v2`). A copy written from reasoning drops subtrees silently — observed: an 8.4 KB cache holding 4 of 102 `ResponseFields`, leaving the built node with 4 of 13 response properties while `validate` stayed green. This `>` is the one redirect [SKILL.md](../../../../SKILL.md) Rule 13 permits.
+**Do not hand-write this file.** The response reaches tens of KB (68 KB for Slack `send_message_to_channel_v2`). A copy written from reasoning drops subtrees silently — observed: an 8.4 KB cache holding 4 of 102 `ResponseFields`, leaving the built node with 4 of 13 response properties while `validate` stayed green. This `>` is the one redirect [SKILL.md](../../../../SKILL.md) Rule 14 permits.
 
 The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full `caseShape` populated with values from `--input-details`.
 
