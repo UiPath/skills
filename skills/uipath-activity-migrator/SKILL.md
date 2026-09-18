@@ -39,7 +39,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 8. **Verify with the modern CLI.** Migration is not done until `uip rpa build` passes on `<OUTPUT_DIR>`, or the remaining errors are reported as manual work after the bounded fix loop in [build-verification-guide.md](references/build-verification-guide.md).
 9. **Libraries first.** When analyze reports `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED`, stop. Tell the user to migrate and publish that library to the feed before migrating this project. The tool cannot order dependencies.
 10. **Bounded loops.** At most 3 build-fix iterations in Step 5. Then report what remains.
-11. **Never run the migrated project unasked.** The runtime check of Step 6 runs only after the user answers yes to its one question, and it only observes: no edits, no selector repair, no rerun with changes.
+11. **Never run the migrated project unasked.** The runtime check of Step 6 runs only after the user answers yes to its one question, and it only observes: no edits, no selector repair, no rerun with changes. It runs in the headless Studio, never in the Studio the user has open: every command of that check clears `UIPATH_STUDIO_PID`.
 
 ## Workflow
 
@@ -219,5 +219,6 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
 - Running the migrated project without the user's yes, or repairing selectors and rerunning after that run fails; the runtime check observes and attributes, nothing more
 - Passing `--skip-build` to the runtime check, or probing it with `debug break` / `debug continue`; the first fails on a headless Studio that has not built the project itself, the second returns `Success` with or without a session
+- Running or cancelling the migrated project from Studio's integrated terminal without clearing `UIPATH_STUDIO_PID`; the rpa tool opens the migrated project in the user's Studio, which closes their project and ends the terminal session
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
 - Padding the report with checks that found nothing, a classic-to-modern mapping table, or guesses about how the migrated activities will behave at runtime. Typical offenders: "both edited files validate with 0 errors", "left alone (valid cross-window probes)", "the project now mixes two package lines", "the framework step was a no-op"
