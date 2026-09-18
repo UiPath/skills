@@ -161,7 +161,9 @@ uip solution deploy run -n "InvoiceAutomation-v2" \
   --folder-name "MySolutionFolder" --output json
 ```
 
-A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. If the package requires configuration before it can activate, deploy still succeeds but activation surfaces an explicit error pointing at `deploy activate <name>` — fix the config and retry the activate.
+A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`, along with `DeploymentKey`, `PipelineDeploymentId` and `InstanceId`. If the package requires configuration before it can activate, deploy still succeeds but activation surfaces an explicit error pointing at `deploy activate <name>` — fix the config and retry the activate.
+
+This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects ends the run at `Status: ValidationFailed` with the per-resource errors in `Instructions`, and nothing is provisioned. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
 
 To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
 
