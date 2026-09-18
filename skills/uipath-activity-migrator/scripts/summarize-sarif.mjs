@@ -207,44 +207,57 @@ else if (!sawValidation && !results.some((r) => (r.ruleId || '') === 'PROJECT-CO
 else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'partial';
 else status = 'success';
 
-// Everything that needs a human decision or hand, grouped for the short summary.
-// Everything that needs a human decision or hand: activities left classic or partially migrated,
-// activity/property warnings (they become [PostMigration Action Required] annotations in the XAML),
-// productivity warnings, and per-file type issues. One SARIF result may sit in several lists; dedupe.
-const attentionResults = [...new Set([
+// Two report sets. "Left classic": UIA activities the tool did not migrate; they compile and run as
+// classic, so the report carries them as a count and the --out file holds the inventory. "Needs attention":
+// everything that needs a human decision or hand: partial migrations, activity/property warnings (they
+// become [PostMigration Action Required] annotations in the XAML), productivity results left unmigrated or
+// warned, action-required items, and per-file type issues. One SARIF result may sit in several lists; dedupe.
+// The tool stamps every result about one activity with the same activityGuid; the display name is the fallback.
+const activityKey = (e) => `${e.file}::${e.guid || e.activity || e.rule}`;
+// An activity left classic may also carry property-level results that hold its reason; every result about
+// such an activity goes to its left-classic slot, so the activity is counted once and keeps its reason.
+const leftClassicKeys = new Set(uia.notMigrated.map(activityKey));
+const flagged = [...new Set([
   ...uia.notMigrated, ...uia.partial, ...uia.warnings, ...productivity.notMigrated, ...productivity.warnings,
   ...actionRequired, ...typeIssues,
 ])];
+const leftClassicResults = flagged.filter((e) => leftClassicKeys.has(activityKey(e)));
+const attentionResults = flagged.filter((e) => !leftClassicKeys.has(activityKey(e)));
 const countBy = (items, keyFn) => {
   const m = new Map();
   for (const it of items) { const k = keyFn(it); m.set(k, (m.get(k) || 0) + 1); }
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 };
-// Headline count is per activity: an activity with an activity-level and a property-level result is one item.
+// Headline counts are per activity: an activity with an activity-level and a property-level result is one item.
 // The tool emits two results per finding: an activity-level one with a bare rule id carrying the prose,
 // and a property-level one carrying the reason suffix. Group per activity; a bare result is the prose
 // companion of a suffixed result with the same outcome and adds no reason of its own. It keeps its label
 // only when it is the sole result for that activity.
-const activityMap = new Map();
-for (const e of attentionResults) {
-  // The tool stamps every result about one activity with the same activityGuid; the display name is the fallback.
-  const key = `${e.file}::${e.guid || e.activity || e.rule}`;
-  const slot = activityMap.get(key) || { file: e.file, activity: e.activity, reasons: [], bareByOutcome: {}, suffixedOutcomes: new Set(), messages: [] };
-  if (e.bare) slot.bareByOutcome[e.outcome] = e.reason || e.rule;
-  else {
-    slot.suffixedOutcomes.add(e.outcome);
-    if (!slot.reasons.includes(e.reason || e.rule)) slot.reasons.push(e.reason || e.rule);
+const groupByActivity = (results) => {
+  const map = new Map();
+  for (const e of results) {
+    const key = activityKey(e);
+    const slot = map.get(key) || { file: e.file, activity: e.activity, reasons: [], bareByOutcome: {}, suffixedOutcomes: new Set(), messages: [] };
+    if (e.bare) slot.bareByOutcome[e.outcome] = e.reason || e.rule;
+    else {
+      slot.suffixedOutcomes.add(e.outcome);
+      if (!slot.reasons.includes(e.reason || e.rule)) slot.reasons.push(e.reason || e.rule);
+    }
+    if (e.message && !slot.messages.includes(e.message)) slot.messages.push(e.message);
+    map.set(key, slot);
   }
-  if (e.message && !slot.messages.includes(e.message)) slot.messages.push(e.message);
-  activityMap.set(key, slot);
-}
-for (const slot of activityMap.values()) {
-  for (const [outcome, label] of Object.entries(slot.bareByOutcome)) if (!slot.suffixedOutcomes.has(outcome) && !slot.reasons.includes(label)) slot.reasons.push(label);
-  delete slot.bareByOutcome;
-  delete slot.suffixedOutcomes;
-}
-const attention = [...activityMap.values()];
+  for (const slot of map.values()) {
+    for (const [outcome, label] of Object.entries(slot.bareByOutcome)) if (!slot.suffixedOutcomes.has(outcome) && !slot.reasons.includes(label)) slot.reasons.push(label);
+    delete slot.bareByOutcome;
+    delete slot.suffixedOutcomes;
+  }
+  return map;
+};
+const leftClassic = [...groupByActivity(leftClassicResults).values()];
+const attention = [...groupByActivity(attentionResults).values()];
 // Per activity, one count per distinct reason: sums to the activity count unless an activity has several reasons.
+const leftClassicByReason = countBy(leftClassic.flatMap((a) => a.reasons), (x) => x);
+const leftClassicByFile = countBy(leftClassic, (e) => e.file || '(project)');
 const attentionByReason = countBy(attention.flatMap((a) => a.reasons), (x) => x);
 const attentionByFile = countBy(attention, (e) => e.file || '(project)');
 const migratedTotal = uia.migrated + productivity.migrated;
@@ -254,11 +267,12 @@ const summary = {
   file,
   status,
   outputPath: (run.properties && run.properties.outputPath) || null,
-  totals: { results: results.length, ...byLevel, migrated: migratedTotal, attention: attention.length, attentionResults: attentionResults.length },
+  totals: { results: results.length, ...byLevel, migrated: migratedTotal, leftClassic: leftClassic.length, attention: attention.length, attentionResults: attentionResults.length },
   frameworkChanged,
   packages,
   effectiveVersions,
   blockers,
+  leftClassic: { total: leftClassic.length, results: leftClassicResults.length, byReason: Object.fromEntries(leftClassicByReason), byFile: Object.fromEntries(leftClassicByFile), items: leftClassic },
   attention: { total: attention.length, results: attentionResults.length, byReason: Object.fromEntries(attentionByReason), byFile: Object.fromEntries(attentionByFile), items: attention },
   byFamily,
   uia,
@@ -283,9 +297,10 @@ const pkgLine = Object.entries(effectiveVersions).map(([p, v]) => `${p} ${v.from
 const out = [];
 out.push(`# Migration summary — ${basename(file)}`);
 out.push('');
-out.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
+out.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${leftClassic.length} left classic | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
 if (frameworkChanged) out.push('Framework: Legacy → Windows');
 if (pkgLine) out.push(`Packages: ${pkgLine}`);
+if (leftClassic.length) out.push(`Left classic (${leftClassic.length}): still run as classic; listed under "UIA not migrated" in ${outFile || 'the --out file'}`);
 if (blockers.length) {
   out.push('', `## Blockers (${blockers.length})`);
   for (const b of blockers) out.push(`- **${b.rule}** — ${b.message}${b.file ? ` (${b.file})` : ''}`);
@@ -312,7 +327,7 @@ if (outFile) {
     for (const it of items) md.push(fmt(it));
   };
   md.push(`# Migration report — ${basename(file)}`, '');
-  md.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
+  md.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${leftClassic.length} left classic | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
   if (frameworkChanged) md.push('Framework: Legacy → Windows');
   if (pkgLine) md.push(`Packages: ${pkgLine}`);
   if (Object.keys(uia.migratedByType).length) md.push(`Migrated by classic type: ${Object.entries(uia.migratedByType).map(([t, n]) => `${t} ×${n}`).join(', ')}`);

@@ -147,16 +147,16 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
 2. Offer the runtime check when the conditions in [runtime-verification-guide.md](references/runtime-verification-guide.md) hold: one yes/no question, default no, no time limit proposed. On yes, run it as the guide says, attribute a failure with its table, and fill the Runtime check block below.
-3. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. For an activity left classic, the manual step is "still runs as classic; rebuild with modern activities if wanted"; name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. The report is these blocks and nothing else: no sentences between or after them. Shape:
+3. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Activities the tool left classic are not defects: they compile and run as classic, so they appear as the `<L>` count on the status line and in the full list, never as lines. `<M>` is the summarizer's needs-attention count minus every finding the fix guide reported as fixed or healthy; fixed findings appear under Fixes applied, healthy ones nowhere, and the by-reason and by-file lines are derived from the remaining items only. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. Name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. The report is these blocks and nothing else: no sentences between or after them. Shape:
 
 ```markdown
 ## Migration result: <status>
-<N> activities migrated, <M> need attention, build <passed|failed|not verified>. Output: <OUTPUT_DIR>. UIAutomation <from> → <UIA_VERSION>.
+<N> activities migrated, <L> left classic, <M> need attention, build <passed|failed|not verified>. Output: <OUTPUT_DIR>. UIAutomation <from> → <UIA_VERSION>.
+Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR>/.upgrade/<name>-<id>.html   <- only when L + M > 0; left-classic activities still run as classic and are listed there
 
 ### Needs attention (<M>)            <- only when M > 0
 - By reason: <reason> ×<n>, <reason> ×<n>
 - By file: <file> (<n>), <file> (<n>), … <k> more files
-- Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR>/.upgrade/<name>-<id>.html
 <items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
 ### Fixes applied (<F>)              <- only when the post-migration fix edited the output
