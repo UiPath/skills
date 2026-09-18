@@ -62,7 +62,7 @@ Whatever that returns, use the `auth-info` email verbatim, submit, and let the A
 
 `uip ah applications` has no `create` verb — **creation happens through `update`**, by sending an element whose `application_id` is `null`. The service upserts: an element with a real id updates that application, an element with `null` inserts a new one. (The CLI's own `update --help` claims it cannot add one; that is wrong, and it is why agents give up here.)
 
-All five fields are required by the request schema, and `categoryIds` needs at least one valid id from `uip ah categories get`:
+All five fields are required by the request schema, and `categoryIds` needs at least one **real** category id from `uip ah categories get` — the `1` below is a placeholder for a real id, not a literal to send (same rule as `OVERVIEW_CATEGORY`):
 
 ```bash
 cat > ./new-apps.json <<'JSON'
