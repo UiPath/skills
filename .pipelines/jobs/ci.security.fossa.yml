@@ -10,13 +10,15 @@ stages:
     jobs:
       - job: Skills
         pool: ${{ parameters.poolName }}
+        variables:
+          - group: skills-security
         steps:
           - checkout: self
           - task: AzureKeyVault@2
-            displayName: '[FOSSA] Download secrets from devopsprodauthtokenswekv'
+            displayName: '[FOSSA] Download FOSSA API secrets'
             inputs:
               azureSubscription: ${{ parameters.azureServiceConnection }}
-              keyVaultName: devopsprodauthtokenswekv
+              keyVaultName: $(fossaKeyVaultName)
               SecretsFilter: 'FossaApiKey,FossaApiIntegrationKey'
               RunAsPreJob: false
           - template: Security/fossa.steps.yml@fossa
