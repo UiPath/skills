@@ -10,6 +10,17 @@ user-invocable: true
 
 A knowledge bundle is a folder-scoped Orchestrator entity holding a versioned tree of markdown documents. Versions are immutable and numbered (v1, v2, …); reads accept a number or the literal `latest`. Content is addressed by hash, so transfers move only what changed.
 
+## Critical Rules
+
+1. **Preflight before anything else.** `uip or kb --help` decides whether this surface exists at all. `unknown command` means a stable build and no amount of retrying changes it; a command that runs but is refused by the platform means the tenant's feature flag is off. Both are stop conditions — say so and stop, never substitute bucket, asset or context-grounding commands.
+2. **Every command needs a folder.** `--folder-path <path>` or `--folder-key <guid>` on all of them. There is no tenant-wide listing to fall back on.
+3. **Bundle keys come from `list`, never from you.** Same for proposal ids, which come from `change-proposal list`. Do not construct, guess, or carry one over from another folder.
+4. **`publish` and `create --input` only ever make version 1.** Every later version comes from merging a change proposal. A 409 means the bundle already has content — never delete and re-create to get around it, that destroys the version history and the review record.
+5. **A 403 or a feature refusal is not a login problem.** Do not "fix" it by re-running `uip login`; only an administrator can change it.
+6. **`diff` before `merge`.** A merge publishes a version that cannot be edited afterwards.
+7. **Paths are bundle-relative and cannot climb.** A `--path` or `--artifact` containing a `.` or `..` segment is refused before any request is sent; pass the path as the manifest lists it.
+
+
 ## Step 0: Preflight — is this surface available?
 
 Run once per session:
