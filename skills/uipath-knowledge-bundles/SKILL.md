@@ -26,11 +26,13 @@ uip or kb --help
 
 Bundles live in a folder and are not addressable without one. Pass `--folder-path <path>` (or `--folder-key <guid>`) on **every** command.
 
-`uip or folders list` finds one. Pass its `Path` field to `--folder-path` (a top-level folder is just `Shared`, a nested one `Shared/Finance`) or its `Key` to `--folder-key` — `Name` is the display name and is not what either option wants.
+`uip or folders list --all` finds one — its flags are its own (`--all`, `--path <prefix>`, `--name`), not `kb list`'s `--search`. Pass its `Path` field to `--folder-path` (a top-level folder is just `Shared`, a nested one `Shared/Finance`) or its `Key` to `--folder-key` — `Name` is the display name and is not what either option wants.
 
 Bundles are identified by a GUID (`Key`). Get it from `list`, never construct it.
 
-`--search` matches the bundle's **`Name` only** — not its description, and not the `title` inside its documents. A bundle named `ops-handbook-7` can hold a document titled "Contoso Operations Handbook", so searching what the user called it often returns an empty `Data: []` that reads like "no such bundle". When a descriptive search comes up empty, list the folder unfiltered and look at the names and descriptions; page with `--limit` / `--offset` rather than trusting the first page.
+On `share`, the scope (`--folder-path`) is the folder that already holds the bundle; `--add-folders` and `--remove-folders` name the folders being changed, and both apply in one call.
+
+`--search` matches the bundle's **`Name` only** — not its description, and not the `title` inside its documents. A bundle named `ops-handbook-7` can hold a document titled "Contoso Operations Handbook", so searching what the user called it often returns an empty `Data: []` that reads like "no such bundle". When a descriptive search comes up empty, list the folder unfiltered and look at the names and descriptions; page with `--limit` / `--offset` rather than trusting the first page. A folder often holds several bundles that all look plausible for a vague request — read `Description`, and if that is not enough, check one bundle's file names with `download` before answering from the wrong one.
 
 ## Commands
 
@@ -44,7 +46,9 @@ Bundles are identified by a GUID (`Key`). Get it from `list`, never construct it
 | Rename / re-describe | `uip or kb update <bundle-key> --folder-path <p> [-n <name>] [-d <text>]` |
 | Remove from a folder | `uip or kb delete <bundle-key> --folder-path <p> --yes` |
 | Share into / out of folders | `uip or kb share <bundle-key> --folder-path <p> [--add-folders <f...>] [--remove-folders <f...>]` |
+
 | Version history | `uip or kb versions <bundle-key> --folder-path <p>` |
+| Who changed one file, and when | `uip or kb history <bundle-key> --folder-path <p> --path <file>` |
 | Unpack a version into a workspace | `uip or kb download <bundle-key> --folder-path <p> --destination <dir> [--version <n>]` |
 | Whole version as a zip | `uip or kb archive <bundle-key> --folder-path <p> --destination <file>.zip [--version <n>]` |
 | One file's content | `uip or kb file <bundle-key> --folder-path <p> --path <file> [--version <n>] [--destination <file>]` |
@@ -72,6 +76,8 @@ Both walk the directory, hash every file, upload only what the store lacks, then
 - **`.okf/`, `.git/` and `_refs/` are never published**, whatever the flags say — the format reserves them, and `_refs/` is where a download materializes *other* bundles' content. Publishing from a downloaded workspace is therefore safe.
 
 ## What the output means
+
+`Author` on a version, a proposal or a comment is an opaque actor id — `user:<guid>` for a person, `agent/<producer>` for an agent. There is no CLI call that resolves it to a name or email, so report it as it comes rather than hunting for one.
 
 `Failure` envelopes carry `Context.HttpStatus`. Two worth recognizing:
 
@@ -102,7 +108,28 @@ Four things to know:
 - **Resolving a thread is itself a comment.** Give `--body` something useful ("Fixed in rev 2"); a later reply reopens the thread.
 - **`merge` can come back conflicted**, meaning the files moved in a newer version. Recovery is to download again, re-apply the edit, and open a new proposal — not to force anything.
 
-Also available: `get` (one proposal with its change set), `diff` (against the base, or `--from-revision`/`--to-revision` for the interdiff), `close` (abandon without merging), `add-comment` (`--path` and `--line` to anchor it, `--reply-to` to thread it).
+`diff` before you merge — it is the only cheap check that the proposal contains what you think it does, and a merge publishes a version that cannot be edited afterwards.
+
+### Reviewing someone else's proposal
+
+The other half of the loop, and the one you land in when the proposal is not yours:
+
+```bash
+uip or kb change-proposal list --folder-path <p> --bundle-key <key> --status open
+uip or kb change-proposal get <proposal-id> --folder-path <p> --bundle-key <key>
+uip or kb change-proposal diff <proposal-id> --folder-path <p> --bundle-key <key>
+uip or kb change-proposal add-comment <proposal-id> --folder-path <p> --bundle-key <key> \
+  --body "Chargeback is not a refund — see the published definition" \
+  --path concepts/chargeback.md --line 7
+uip or kb change-proposal resolve-thread <root comment id> --folder-path <p> --bundle-key <key> \
+  --proposal <proposal-id> --body "Rejected: contradicts v1"
+uip or kb change-proposal merge <proposal-id> --folder-path <p> --bundle-key <key>   # accept
+uip or kb change-proposal close <proposal-id> --folder-path <p> --bundle-key <key>   # reject
+```
+
+`list` is where you start: proposal ids come from it and from nowhere else. `--line` counts lines on the **proposal's new side**, not the published version — two proposals editing the same file will not agree on line numbers. Judge a proposal against the published content (`download` it, or `file` the documents it touches); a proposal that contradicts what is published needs evidence, not brevity.
+
+A proposal with no reviewer is fine to `create` and `merge` yourself — comments are a record, not a gate.
 
 ## Not available yet
 
