@@ -14,6 +14,11 @@ import builtins
 import contextlib
 import importlib.util
 import io
+import json
+import os
+import pathlib
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -158,6 +163,57 @@ class AlreadyCompletedTests(unittest.TestCase):
             "Error completing task | The task is not in a state that allows completion",
         ):
             self.assertNotIn(drive_case._ALREADY_COMPLETED, detail.lower(), detail)
+
+
+
+class SolutionNameTests(unittest.TestCase):
+    """The solution name has to be unique per run and stable across its routes."""
+
+    def setUp(self):
+        self.work = tempfile.mkdtemp()
+        self.project = pathlib.Path(self.work, "SupplierOnboarding", "SupplierOnboarding")
+        self.project.mkdir(parents=True)
+        (self.project / "project.uiproj").write_text(
+            json.dumps({"Name": "SupplierOnboarding", "ProjectType": "CaseManagement"}),
+            encoding="utf-8")
+        self.previous = os.getcwd()
+        os.chdir(self.work)
+
+    def tearDown(self):
+        os.chdir(self.previous)
+        shutil.rmtree(self.work, ignore_errors=True)
+
+    def name(self) -> str:
+        return json.loads((self.project / "project.uiproj").read_text(encoding="utf-8"))["Name"]
+
+    def test_every_route_of_one_run_gets_the_same_name(self):
+        first = drive_case.name_solution_for_this_run(str(self.project))
+        again = drive_case.name_solution_for_this_run(str(self.project))
+        third = drive_case.name_solution_for_this_run(str(self.project))
+        self.assertEqual(first, again)
+        self.assertEqual(first, third)
+        self.assertEqual(self.name(), first)
+        self.assertRegex(first, r"^SupplierOnboarding--run-[0-9a-f]{8}$")
+
+    def test_two_runs_get_different_names(self):
+        """Two runs in one tenant must not both import `SupplierOnboarding`."""
+        first = drive_case.name_solution_for_this_run(str(self.project))
+        drive_case.RUN_TAG_FILE.unlink()
+        second = drive_case.name_solution_for_this_run(str(self.project))
+        self.assertNotEqual(first, second)
+
+    def test_the_suffix_never_stacks(self):
+        """A sandbox reused by a later run must not end up `...--run-a--run-b`."""
+        drive_case.name_solution_for_this_run(str(self.project))
+        drive_case.RUN_TAG_FILE.unlink()
+        again = drive_case.name_solution_for_this_run(str(self.project))
+        self.assertEqual(again.count("--run-"), 1)
+        self.assertTrue(again.startswith("SupplierOnboarding--run-"))
+
+    def test_a_missing_manifest_is_not_fatal(self):
+        """A build that wrote no project.uiproj still gets to fail on its own terms."""
+        (self.project / "project.uiproj").unlink()
+        self.assertEqual(drive_case.name_solution_for_this_run(str(self.project)), "")
 
 
 if __name__ == "__main__":

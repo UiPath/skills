@@ -22,6 +22,7 @@ import datetime
 import json
 import os
 import re
+import secrets
 import subprocess
 import sys
 import threading
@@ -971,6 +972,59 @@ def clear_solution_id(solution_dir: str) -> None:
     print(f"cleared SolutionId {stale} from {manifest.name}; debug will import a fresh copy")
 
 
+RUN_TAG_FILE = Path(".supplier-onboarding-run-tag")
+
+
+def run_tag() -> str:
+    """One short random tag per eval run, shared by all seven routes.
+
+    Two runs on this tenant import a solution of the same name and then both look for
+    "the instance that just appeared" in a tenant-wide `instance list`. When their builds
+    agree, which they usually do, the stage-id guard cannot tell them apart and one run
+    drives the other's case. Measured over the corpus: a route that runs alone cancels at
+    1 in 73, a route with another run in flight at 19 in 153.
+
+    The tag lands in the sandbox working directory, so it is minted by whichever route
+    runs first and read by the rest. Per route would give one solution per route.
+    """
+    if RUN_TAG_FILE.exists():
+        existing = RUN_TAG_FILE.read_text(encoding="utf-8").strip()
+        if existing:
+            return existing
+    tag = secrets.token_hex(4)
+    RUN_TAG_FILE.write_text(tag, encoding="utf-8")
+    return tag
+
+
+def name_solution_for_this_run(project_dir: str) -> str:
+    """Give the project a name no other run on this tenant is using, and report it.
+
+    Only `project.uiproj`'s `Name` decides what the tenant calls the imported solution:
+    the `.uipx` carries no name, and it points at the project by relative path. So the
+    directory names stay as they are and every checker path keeps working.
+    """
+    manifest = Path(project_dir) / "project.uiproj"
+    if not manifest.exists():
+        print(f"no project.uiproj under {project_dir}; leaving the solution name alone")
+        return ""
+    try:
+        doc = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"could not read {manifest} to name this run's solution: {exc}")
+        return ""
+    base = str(doc.get("Name") or "").split("--run-")[0]
+    if not base:
+        print(f"{manifest} carries no Name; leaving the solution name alone")
+        return ""
+    named = f"{base}--run-{run_tag()}"
+    if doc.get("Name") == named:
+        return named
+    doc["Name"] = named
+    manifest.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+    print(f"this run's solution is named {named} on the tenant")
+    return named
+
+
 DEBUG_IMPORT_RETRIES = 1
 
 
@@ -1111,6 +1165,7 @@ def main() -> int:
     project_dir = find_project_dir()
     solution_dir = find_solution_dir()
     clear_solution_id(solution_dir)
+    name_solution_for_this_run(project_dir)
 
     refresh = subprocess.run(
         ["uip", "solution", "resources", "refresh", "--solution-folder", solution_dir, "--output", "json"],

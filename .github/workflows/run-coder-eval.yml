@@ -327,6 +327,48 @@ jobs:
       # Build the skills extension image (`@uipath/cli`, its tool plugins, and
       # `@uipath/maestro-builder-sdk` on top of coder-eval-agent). Matches
       # smoke-skills.yml + daily.sh.
+      # Build `@uipath/maestro-tool` from an open UiPath/cli PR and leave the tarball in
+      # the docker build context, so the image installs it over its feed copy. Every eval
+      # command in this job runs inside that image, so an overlay applied on the runner
+      # would never be visible to the agent.
+      #
+      # The cli repo publishes only from `main` and `release/*` (its ci.yml `publish` job)
+      # and its PR workflow uploads no artifact, so `cli_version` cannot name a PR build.
+      # `packages/maestro-tool` is the published plugin and bundles `packages/case-tool`.
+      #
+      # GH_PAT is the repo-read token; GH_PACKAGES_TOKEN is packages-only. The cli repo's
+      # own .npmrc ships a placeholder token, so the feed line is rewritten before
+      # `bun install` can resolve the private @uipath dependencies.
+      - name: Pack @uipath/maestro-tool from a UiPath/cli PR
+        if: inputs.cli_pr != ''
+        env:
+          CLI_PR:         ${{ inputs.cli_pr }}
+          GH_PAT:         ${{ secrets.GH_PAT }}
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          git clone --filter=blob:none --no-checkout \
+            "https://x-access-token:${GH_PAT}@github.com/UiPath/cli.git" "$work/cli"
+          cd "$work/cli"
+          git fetch --depth 1 origin "pull/${CLI_PR}/head"
+          git checkout -q FETCH_HEAD
+          echo "cli PR ${CLI_PR} at $(git rev-parse --short HEAD)"
+          grep -v 'npm.pkg.github.com/:_authToken' .npmrc > .npmrc.new || true
+          printf '//npm.pkg.github.com/:_authToken=%s\n' "$NPM_AUTH_TOKEN" >> .npmrc.new
+          mv .npmrc.new .npmrc
+          curl -fsSL https://bun.sh/install | bash
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun --version
+          bun install --frozen-lockfile
+          bunx nx build maestro-tool
+          cd packages/maestro-tool
+          npm pack --pack-destination "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE"
+          mv uipath-maestro-tool-*.tgz maestro-tool-pr.tgz
+          ls -la maestro-tool-pr.tgz
+          rm -rf "$work"
+
       - name: Build skills Docker image
         env:
           DOCKER_BUILDKIT: "1"
@@ -1062,51 +1104,6 @@ jobs:
           npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
           echo "--- uip tools list ---"
           uip tools list --output json
-
-      # Overlay `@uipath/maestro-tool` with a build of an open UiPath/cli PR, so a skills
-      # branch can be evaluated against CLI changes that are not on the feed yet. The cli
-      # repo publishes only from `main` and `release/*` (its ci.yml `publish` job), and its
-      # PR workflow uploads no artifact, so the build has to happen here.
-      #
-      # `packages/maestro-tool` is the published plugin and bundles `packages/case-tool`.
-      # The CLI finds plugins by scanning $(npm root -g)/@uipath/*, so installing the packed
-      # tarball globally replaces the image's copy with no registry work.
-      #
-      # GH_PAT is the repo-read token (GH_PACKAGES_TOKEN is packages-only), and the cli
-      # repo's own .npmrc ships a placeholder token, so the feed line is rewritten with
-      # NPM_AUTH_TOKEN before `bun install` can resolve the private @uipath deps.
-      - name: Build @uipath/maestro-tool from a UiPath/cli PR
-        if: inputs.cli_pr != ''
-        env:
-          CLI_PR:         ${{ inputs.cli_pr }}
-          GH_PAT:         ${{ secrets.GH_PAT }}
-          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
-        run: |
-          set -euo pipefail
-          work="$(mktemp -d)"
-          git clone --filter=blob:none --no-checkout \
-            "https://x-access-token:${GH_PAT}@github.com/UiPath/cli.git" "$work/cli"
-          cd "$work/cli"
-          git fetch --depth 1 origin "pull/${CLI_PR}/head"
-          git checkout -q FETCH_HEAD
-          echo "cli PR ${CLI_PR} at $(git rev-parse --short HEAD)"
-          # Drop the placeholder feed token and write the real one.
-          grep -v 'npm.pkg.github.com/:_authToken' .npmrc > .npmrc.new || true
-          printf '//npm.pkg.github.com/:_authToken=%s\n' "$NPM_AUTH_TOKEN" >> .npmrc.new
-          mv .npmrc.new .npmrc
-          curl -fsSL https://bun.sh/install | bash
-          export PATH="$HOME/.bun/bin:$PATH"
-          bun --version
-          bun install --frozen-lockfile
-          bunx nx build maestro-tool
-          cd packages/maestro-tool
-          tgz="$(npm pack --pack-destination "$work" | tail -1)"
-          npm install -g "$work/$tgz"
-          rm -rf "$work/cli"
-          echo "--- maestro-tool after the overlay ---"
-          node -e "console.log(require('$(npm root -g)/@uipath/maestro-tool/package.json').version)"
-          echo "--- the PR's new verbs must be present ---"
-          uip maestro case sdd --help
 
       # Pre-auth uip as a real licensed Studio user via Studio's e2e helper.
       # Required for Helm's HelmLicenseSkuFeatureSourceService gate, which
