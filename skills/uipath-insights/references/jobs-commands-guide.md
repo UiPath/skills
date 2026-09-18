@@ -41,7 +41,7 @@ All `jobs` subcommands return:
 }
 ```
 
-There is no `Pagination` field and no `Instructions` field on a successful jobs response. The `filter-*` and alert commands carry `Instructions`, and their list subcommands also carry `Pagination`.
+There is no `Pagination` field and no `Instructions` field on a successful jobs response. The `filter-*`, `queues`, and alert commands carry `Instructions`; `filter-*`, every `queues` command except `summary`, `alerts list`, and `alert-history list` also carry `Pagination`.
 
 `Code` identifies the subcommand that produced the response:
 
