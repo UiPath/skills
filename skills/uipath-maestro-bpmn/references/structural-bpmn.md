@@ -528,7 +528,12 @@ order, so pick by intent:
 
 Unhandled failures propagate outward container by container, so one net at
 process level covers every nested subprocess. Do not author a net per
-container.
+container — except inside a multi-instance iteration or a queue performer,
+where per-item failures need per-item handling. There the process-level net
+would end the whole instance on the first bad item, so the iteration gets its
+own net, placed directly in it. An error boundary event is not a substitute:
+it resumes the main path rather than ending that item. See
+[composing-guide.md](patterns/composing-guide.md#scoping-the-failure-net).
 
 ## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
 
