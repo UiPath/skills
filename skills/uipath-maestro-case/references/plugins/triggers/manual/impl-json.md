@@ -2,9 +2,13 @@
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`.
+> **Layout-strip (Rule 19).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`.
 
 ## Purpose
+
+> **A manual trigger is spelled `data.inputs.serviceType: "None"`.** The absence of a real service type is what makes it manual, and `"None"` is how that absence is written — it is a named arm in the product's own `getTriggerType` switch (`"Intsvc.TimerTrigger"` → timer, `"None"` → manual), not a tolerated placeholder, and it has survived unchanged through every schema migration since v23. Measured across 542 trigger nodes in the artifact corpus, 503 carry it.
+>
+> **Any other spelling silently becomes a connector trigger.** That switch's `default` arm is `connector`, so a near-miss — PascalCase `Timer`, an invented token, the document's own wording — is classified as a connector with no error raised. It then receives neither a timer nor a message event definition, and the wrong word is baked into a runtime variable. Design-time clean, runtime wrong: nothing on any profile reports it. The three legal tokens are `"None"`, `"Intsvc.EventTrigger"`, and lowercase `"timer"`.
 
 Append one secondary manual trigger to the schema. This plugin performs **two file writes as an atomic pair**:
 
@@ -109,9 +113,9 @@ After writing, confirm:
 - `nodes[].data.display.label` matches the resolved `displayName`.
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
 - `nodes[].data.typeVersion === "1.0.0"`.
-- `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
+- `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 19).
 - `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
-- **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
+- **`schema.edges` is still `[]`** (Rule 21) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
 Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.
