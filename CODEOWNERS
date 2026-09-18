@@ -37,6 +37,9 @@
 /skills/uipath-platform/references/data-fabric/ @UiPath/DatafabricCodingAgent
 /skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /skills/uipath-platform/references/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
+
+# Knowledge bundles skill (preview — tracks `uip or knowledge-bundles`)
+/skills/uipath-knowledge-bundles/ @alexenica @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent @biftime
 /tests/tasks/uipath-platform/orchestrator/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/resources/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
