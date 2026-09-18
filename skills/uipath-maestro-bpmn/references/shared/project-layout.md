@@ -13,6 +13,9 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
   to the project directory.
 
 For a new local project, place source files under a single project directory.
+`uip maestro bpmn init <ProjectName>` takes a name, not a path, and writes under
+the current directory; to land the project at a requested path, run it from that
+path's parent with the leaf as the name.
 `uip maestro bpmn init <ProjectName> --output json` nests that directory inside
 a solution. Inside a solution it registers the project with the parent `.uipx`;
 outside any solution it auto-scaffolds `<ProjectName>Solution/` and nests the

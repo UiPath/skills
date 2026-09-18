@@ -151,6 +151,12 @@ declaration needs a stable, unique `id`, a non-empty user-facing `name`, and its
 documented `type`; do not use the name as a substitute for the id. Expressions
 reference the id as `vars.<id>`. Variable schema bodies are JSON text or CDATA.
 
+The canvas rejects these `name`s on a `uipath:input` or `uipath:inputOutput`,
+case-insensitive (`RESERVED_VARIABLE_NAME`): `vars`, `iterator`, `metadata`,
+`bindings`, `datafabric`, `instanceglobals`, `orchestrator`, `outputs`,
+`result`, `runtime`, `senderinfo`, `this`. A public `uipath:output` may still
+be named `result`; bridge it from a mutable variable with another name.
+
 Every declaration also carries an `elementId` naming the element that owns it:
 the `<bpmn:process>` id for a process-level variable, the start event id for a
 caller-supplied input, the end event id for a published output, the owning node's
@@ -367,6 +373,10 @@ The registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway
   for exactly these).
 - Conditional flow body: `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_X == "approved"</bpmn:conditionExpression>`.
   The canvas normalizes the body to start with `=` — always lead with `=`.
+- `xsi:type` needs `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` on
+  `bpmn:definitions`. The `init` scaffold does not declare it, and `validate`,
+  `format` and `refresh` accept the unbound prefix, so only a real XML parser
+  catches it: run the `ET.parse` check in [Validation](#validation).
 - Gateway default flow: set `default="Flow_else"` on the gateway element, and
   give that flow no condition.
 
@@ -706,14 +716,15 @@ input-type, event-object, and IS-connector checks). Warnings are reported but do
 not block. If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
-If the CLI is unavailable, fall back to a well-formed-XML parse plus the
-structural checklist below — it mirrors the same blocking rules:
+Run the well-formed-XML parse before `validate` every time; the validator's
+tokenizer does not report an unbound namespace prefix:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
 ```
 
-Then walk the structural checklist:
+If the CLI is unavailable, also walk the structural checklist below; it mirrors
+the same blocking rules:
 
 1. Root is `<…:definitions>` with the BPMN + `uipath` namespaces.
 2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.

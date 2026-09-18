@@ -182,7 +182,14 @@ For registry-evidence-only tasks, follow the command-first recipe in
    edit at the returned `Data.Path`, and preserve its generated metadata. For a
    source-only draft the user has not asked to package or operate, pass
    `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
-   created. See
+   created. `init` takes a project name, not a path, and writes
+   `./<ProjectName>/` (or `./<ProjectName>Solution/<ProjectName>/` without the
+   flag) under the current directory. When the user names the project
+   directory, `mkdir -p` its parent, run `init` from there with the leaf as the
+   name, and check `Data.Path` against the requested path before editing. The
+   init scaffold declares no `xsi` namespace: add
+   `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` to
+   `bpmn:definitions` before writing any `xsi:type` attribute. See
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
    The runnable BPMN/start-event path belongs in lowercase `operate.json.main`,
    never `project.uiproj.main`.
@@ -248,11 +255,15 @@ For registry-evidence-only tasks, follow the command-first recipe in
    returning one result on a single completion EndEvent — for the two-layer
    contract see
    [references/structural-bpmn.md](references/structural-bpmn.md#variables-bpmnvariables).
-4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
+4. **Validate.** Check well-formedness first. `validate` tokenizes with a
+   tolerant parser and reports `Valid` on XML with an unbound namespace
+   prefix, so a `ParseError` here is a source defect to fix before anything
+   else. Then run the CLI validator, which runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
 
    ```bash
+   python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
    uip maestro bpmn validate <file.bpmn> --output json
    ```
 
