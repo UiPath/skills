@@ -152,11 +152,13 @@ def assert_uipath_preserved(original: ET.Element, edited: ET.Element, local_name
 
 
 def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> None:
-    """Pristine variable declarations must round-trip untouched — attributes of
-    the ``uipath:variables`` block itself included, and in their pristine
-    relative order. Additions are allowed, but every added declaration needs a
-    non-empty ``name`` and ``type``, and its ``elementId`` (when present) must
-    reference a live BPMN element id."""
+    """Pristine variable declarations must round-trip untouched in their own
+    block — attributes of that ``uipath:variables`` block included, and in
+    their pristine relative order. Additions are allowed anywhere in the file
+    (the root block or one the edit adds on a node), but every added
+    declaration needs a non-empty ``name`` and ``type``, its ``elementId``
+    (when present) must reference a live BPMN element id, and ids stay unique
+    across every block."""
     orig = _find_first(original, "variables")
     new = _find_first(edited, "variables")
     if orig is None:
@@ -181,9 +183,14 @@ def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> 
     edited_pristine_order = [i for i in ids if i in pristine_set]
     if edited_pristine_order != pristine_order:
         fail("pristine variable declarations were reordered (must round-trip untouched)")
+    # Additions can land in ANY uipath:variables block, not just the first —
+    # `_find_first` sees one block while `variable_ids` in the checkers scans
+    # them all, so an addition in a node-scoped block satisfied "an addition
+    # exists" without ever reaching these checks (#3384).
+    # _declarations_anywhere also enforces whole-file id uniqueness and
+    # rejects an id-less declaration in any block.
     live_ids = _live_bpmn_ids(edited)
-    for child in new:
-        child_id = child.attrib.get("id")
+    for child_id, child in _declarations_anywhere(edited, Side.EDITED).items():
         if child_id in pristine_set:
             continue
         _assert_addition_is_well_formed(child, child_id, live_ids)

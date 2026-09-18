@@ -380,3 +380,72 @@ def test_rescope_duplicating_an_id_across_blocks_fails() -> None:
                 '<uipath:inputOutput id="Var_Label" name="Label" type="string" elementId="Sub_Pack" />',
             ),
         )
+
+
+# --- assert_variables_extended_only across multiple blocks (#3384) ---
+
+TWO_BLOCK_TEMPLATE = """<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn">
+  <bpmn:process id="Process_1">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        {root_vars}
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:scriptTask id="Task_Calc" name="Calc">
+      <bpmn:extensionElements>
+        <uipath:variables version="v1">
+          {task_vars}
+        </uipath:variables>
+      </bpmn:extensionElements>
+    </bpmn:scriptTask>
+  </bpmn:process>
+</bpmn:definitions>
+"""
+
+
+def two_block(root_vars: str = PRISTINE_VARS, task_vars: str = "") -> ET.Element:
+    return ET.fromstring(
+        TWO_BLOCK_TEMPLATE.replace("{root_vars}", root_vars).replace("{task_vars}", task_vars)
+    )
+
+
+def test_extended_only_wellformed_addition_in_a_node_block_passes() -> None:
+    assert_variables_extended_only(
+        two_block(),
+        two_block(
+            task_vars='<uipath:inputOutput id="Var_CalcOut" name="calcOut" type="number" elementId="Task_Calc" />'
+        ),
+    )
+
+
+def test_extended_only_validates_additions_in_a_node_block() -> None:
+    # The #3384 gap: an addition placed in a node-scoped uipath:variables block
+    # satisfied the checkers' "an addition exists" (variable_ids scans every
+    # block) while never reaching the name/type/dangling checks (the helper
+    # inspected only the first block).
+    with pytest.raises(SystemExit, match="non-empty name and type"):
+        assert_variables_extended_only(
+            two_block(),
+            two_block(task_vars='<uipath:inputOutput id="Var_Junk" elementId="Task_Calc" />'),
+        )
+
+
+def test_extended_only_dangling_scope_in_a_node_block_fails() -> None:
+    with pytest.raises(SystemExit, match="dangling elementId"):
+        assert_variables_extended_only(
+            two_block(),
+            two_block(
+                task_vars='<uipath:inputOutput id="Var_Junk" name="junk" type="string" elementId="Task_Calcc" />'
+            ),
+        )
+
+
+def test_extended_only_duplicate_id_across_blocks_fails() -> None:
+    # A pristine id duplicated into a node block is two declarations of one id.
+    with pytest.raises(SystemExit, match="declared more than once in the edited file"):
+        assert_variables_extended_only(
+            two_block(),
+            two_block(
+                task_vars='<uipath:inputOutput id="Var_Qty" name="Qty" type="number" elementId="Task_Calc" />'
+            ),
+        )
