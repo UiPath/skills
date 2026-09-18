@@ -41,7 +41,7 @@ Reason the shape from the process — never reach for the template first. Build 
 
 ### Task types
 
-<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 The enum is closed — exactly these nine literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
@@ -112,7 +112,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 ### Lifecycle gates
 
-<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
@@ -422,7 +422,7 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 
 ### Naming rules
 
-<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 Safe display characters for stage labels, task display names, and condition/SLA/escalation titles:
 
@@ -430,7 +430,7 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ^[A-Za-z0-9 _-]+$
 ```
 
-**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character the template's § Validation checklist (item 11) gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
+**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character the conformance checklist (item 11) gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
 
 Everything else in that set is a **minting preference, not a platform limit** — the auditor reports it as an advisory that does not gate. Apply it to names YOU mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **A name the user, the source document, or a draft supplied is kept verbatim, punctuation included** (`Credit & Document Verification` stays). Rewriting one to fit the charset is the domain-fidelity defect the lane's authoring policy forbids, and it costs repair rounds for a display preference.
 
@@ -449,7 +449,7 @@ Comparison exact — case-sensitive, untrimmed. Never normalize external lookup 
 
 ## Layer closure — the design checklist
 
-ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — the case SDD template's § Validation conformance checklist owns them; walk it against the written file.
+ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) owns them; walk it against the written file.
 
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 
