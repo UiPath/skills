@@ -30,12 +30,16 @@ then execute the script or keep the activity depends on how you were asked — s
 uip is connectors metadata <connector-key> --output json
 ```
 
-Read `Data[0].Flags.v4Compatible`. Generate only when it is `true`.
+Read `Data[0].Flags.V4Compatible`. Generate only when it is `true`.
+
+**The key is PascalCase in CLI output.** `--output-filter "[0].Flags.v4Compatible"`
+(lowercase `v`) returns `Data: []` and reads as "flag absent" — filter on `Flags`
+or `Flags.V4Compatible`.
 
 **Test the value, not the presence of `Flags`.** `Flags` is `{}` on most
 connectors rather than absent, so `Flags && …` passes while
-`Flags.v4Compatible` is `undefined`. Measured: `uipath-salesforce-slack`
-returns `{"v4Compatible": true}`; `uipath-atlassian-jira`,
+`Flags.V4Compatible` is `undefined`. Measured: `uipath-salesforce-slack`
+returns `{"V4Compatible": true}`; `uipath-atlassian-jira`,
 `uipath-microsoft-teams` and `uipath-google-drive` all return `{}`.
 
 This is a **capability check, not an authorization decision** — it says the

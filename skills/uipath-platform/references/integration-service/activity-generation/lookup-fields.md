@@ -76,12 +76,30 @@ The procedure, per lookup field:
      }
 
      // A LIST action returns the RELEVANT RECORDS ARRAY — the vendor envelope
-     // unwrapped, and nothing else. Mutate the intsvc.http result so its
-     // status and content-type header travel with it.
-     listed.body = listed.body.members ?? [];
+     // unwrapped, and nothing else. Drop records a designer would never pick
+     // from a dropdown (deactivated members, bots): they only crowd the one page.
+     const members = (listed.body.members ?? []).filter(m => !m.deleted && !m.is_bot);
+
+     // Swap the body on the vendor response and return it, rather than a
+     // fabricated `{ status: 200, headers: [], body }`: Slack's content-type
+     // header stays on the response, so the caller receives parsed JSON, not a
+     // string.
+     listed.body = members;
      return listed;
    }
    ```
+
+   **Filter out records nobody would pick.** A user lookup drops deactivated
+   members and bots (`deleted`, `is_bot` on Slack) before returning: they have no
+   usable display name and crowd the single page a dropdown shows. Apply the
+   same idea to other vendors' archived, disabled or system records.
+
+   **Return the vendor response with its body swapped, not a fabricated
+   object.** `/execute` decides how to hand back `body` from the response
+   headers: a JSON `content-type` yields parsed JSON, no `content-type` yields a
+   UTF-8 string. Fabricating `{ status: 200, headers: [], body }` loses the
+   vendor's header, so the caller gets the array as a string — see
+   [runtime.md — Reading the response](runtime.md#reading-the-response).
 
    **Do NOT loop inside the script.** An internal `do…while` over the cursor
    concatenates pages the caller did not ask for and dies mid-walk with

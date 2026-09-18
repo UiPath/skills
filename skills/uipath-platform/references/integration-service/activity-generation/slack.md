@@ -68,7 +68,9 @@ async function execute(context) {
   if (!listed?.body?.ok) {
     throw new Error('Failed to retrieve user groups' + JSON.stringify(listed?.body ?? listed?.raw));
   }
-  listed.body = listed.body.usergroups ?? [];   // mutate, never rebuild
+  // Swap the body on the vendor response and return it — Slack's content-type
+  // header stays on the response, so the caller receives parsed JSON, not a string.
+  listed.body = listed.body.usergroups ?? [];
   return listed;
 }
 ```
