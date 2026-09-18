@@ -69,7 +69,7 @@ The six baseline inputs:
    "categoryIds": [1] }]
 ```
 
-All five fields are required and `categoryIds` needs ≥1 real id. This needs the **`MANAGE_APP_INVENTORY`** permission; ordinary roles do not have it and get a `403 "This user is not permitted to perform this action based on their role."` That 403 is expected — fall through: pick the closest inventory entries to satisfy the required field and name the real systems in the description. **Never abandon a publish because an application is missing, and never pass off a substituted application as the real one without saying so.**
+All five fields are required and `categoryIds` needs ≥1 real id. This needs the **`MANAGE_APP_INVENTORY`** permission; ordinary roles do not have it and get a `403 "This user is not permitted to perform this action based on their role."` **If creating fails for any reason — that 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Pick the closest inventory entries to satisfy the required field and name the real systems in the description. **Never abandon a publish because an application is missing or uncreatable, and never pass off a substituted application as the real one without saying so.**
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
@@ -110,7 +110,7 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
     https://cloud.uipath.com/<org>/<tenant>/automationhub_
     ```
 
-    Build that URL from the org/tenant you are already authenticated against — never from the error response. Nothing was created, so the retry is safe. (Tenants carrying the RPANAV-19110 fix accept these users with no sign-in.)
+    Build that URL from the org/tenant you are already authenticated against — never from the error response. Nothing was created, so the retry is safe. Newer Automation Hub versions accept these users with no sign-in at all, so on an up-to-date tenant this error should not appear.
   - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
   - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → an enum field carries an invalid `answer_option` code (you left a template placeholder in). Use a code from that field's `enum`.
 - **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
