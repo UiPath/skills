@@ -17,6 +17,15 @@ run_limits:
   max_turns: 150
   turn_timeout: 2700
 
+# Inherit agent from the experiment; override only allowed_tools. The lane's
+# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Agent tool is present. Run 35267119510 measured the alternative: every task
+# without Agent was killed at exactly its turn wall (picker 1500.0s,
+# response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both
+# tasks with it scored 1.000 under wall. The walk is generation, not tooling.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
 reference:
   directory: .
 

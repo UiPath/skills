@@ -19,6 +19,15 @@ run_limits:
   max_turns: 60
   turn_timeout: 3600
 
+# Inherit agent from the experiment; override only allowed_tools. The lane's
+# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Agent tool is present. Run 35267119510 scored this task 0.882 FAILURE with
+# time to spare (770s of a 3600s wall) on the one criterion that reads the
+# gate's own stamp: `Template validation: passed` was absent. The gate was
+# skipped, not starved — the subagent makes running it cheap enough to do.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
 sandbox:
   template_sources:
     - type: template_dir
