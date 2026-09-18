@@ -72,24 +72,27 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Advisory, not gating. This task's prompt instructs the placeholder fallback
-  # when the registry has no match, and none of its seven named processes exist
-  # in the tenant. `--strict --sdd` reads an SDD that NAMES a resource as an SDD
-  # that RESOLVED it — it cannot see tenant state — so it reports every correct
-  # placeholder as `empty data: {} but the SDD resolved the resource to "X"`.
-  # Gating on it fails the agent for obeying the prompt. Completeness here is
-  # graded by the three topology/rule criteria below, which do not assume
-  # resolution. Do not re-gate this without also resolving the conflict in the
-  # prompt or seeding the processes.
+  # Gating as of CLI 1.203. This was advisory while `--strict --sdd` could not
+  # see tenant state: it read an SDD that NAMES a resource as an SDD that
+  # RESOLVED it, and reported every correct placeholder as an error. The audit
+  # now consults `tasks/registry-resolved.json`, so a placeholder the ledger
+  # justifies (`matches: []` / `selected: null`) is a warning
+  # (STRICT_SDD_PLACEHOLDER_UNRESOLVABLE) and validation passes. Both branches
+  # verified at 1.203: the suite11 and suite12 artifacts pass with exit 0 and
+  # zero errors, and a doctored artifact with an unresolvable placeholder plus
+  # its ledger entry also passes. Gating therefore grades two things — the
+  # caseplan is complete against the SDD, AND the Rule 10 ledger was persisted
+  # in the shape a consumer can read. Dropping the ledger flips this to
+  # STRICT_SDD_PLACEHOLDER_RESOLVED at error, which is the intended failure.
   - type: run_command
-    description: "Advisory: caseplan is complete against the staged sdd.md under validate --strict --sdd (placeholder tasks are expected here, so strict SDD-resolution findings do not gate)"
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd, and the Rule 10 registry ledger justifies any placeholder"
     command: >-
       uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 0.0
+    pass_threshold: 1.0
 
   - type: run_command
     description: "staged sdd.md retains the Athena caseplan topology contract"
