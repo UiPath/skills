@@ -164,7 +164,7 @@ Certify has no queues, assets, or connections. Map:
 
 ## UI Target Locators
 
-Certify learned every control; the recognition data is in `MapObjects.json` → `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue` as XML: `<tagname>`, `<instance>`, `<frame>` and a `<findby>` list of `<n>attribute</n><v criteria="…">value</v>` pairs (criteria `isequalto`, `contains`, `startswith`, case varies). Windows carry `title`/`caption`/`url` criteria. `targets` writes the catalog; execution turns it into Object Repository targets per [source-migration-guide.md](../source-migration-guide.md). Translation:
+Certify learned every control; the recognition data is in `MapObjects.json` → `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue` as XML: `<tagname>`, `<instance>`, `<frame>` and a `<findby>` list of `<n>attribute</n><v criteria="…">value</v>` pairs (criteria `isequalto`, `contains`, `startswith`, case varies). Criteria map onto wildcards and are preserved as set: `isequalto` → verbatim, `startswith` → `value*`, `contains` → `*value*`. Windows carry `title`/`caption`/`url` criteria. `targets` writes the catalog; execution turns it into Object Repository targets per [source-migration-guide.md](../source-migration-guide.md). Translation:
 
 | Certify (any case) | UiPath `webctrl` | Notes |
 |---|---|---|
@@ -175,7 +175,7 @@ Certify learned every control; the recognition data is in `MapObjects.json` → 
 | `id`, `name`, `aria-label`, `type`, `title`, `href`, `alt`, `placeholder` | same attribute | keep numeric or hash-like ids, can be improved live |
 | `role` | `aria-role` | |
 | `classname` | `class` | wildcard both sides |
-| `innertext`, `normalizedinnertext`, `text`, `alltext`, `outertext` | `visibleinnertext` | never the primary identifier of a text field; move to the anchor for TypeInto/GetText |
+| `innertext`, `normalizedinnertext`, `text`, `alltext`, `outertext` | `visibleinnertext` | never the primary identifier of a text field; move to the anchor for TypeInto/GetText. Inherited by every ancestor, so a match on a broad tag also hits the container chain, outermost first — pin the leaf by tag and class |
 | `label`, `LeftTextAnchor`, `RightTextAnchor` | **anchor** on the visible label (`aaname`) and the semantic text | Certify's label is the associated caption, not an attribute of the control; skip numeric/one-character labels |
 | `isdisplayed`, `IsVisible`, `ControlType`, `value`, `innerhtml`, `outerHTML`, `XPath` | none | `innerhtml startswith <button` means the real control is a child button (trailing `BUTTON` tag); XPath/outerHTML go to the semantic text only |
 | window `title`/`caption` startswith / contains, `url` contains | `<html app='chrome.exe' title='X*' />`, `title='*X*'`, `url='*X*'` | the common window's caption is rewritten at run time by `Page.Set Attributes` (e.g. `Workday_Common` → `Workday`) |
@@ -183,7 +183,7 @@ Certify learned every control; the recognition data is in `MapObjects.json` → 
 
 Windows exist under duplicate names (two `View Worker`, two `Sign in to your account` for different apps); resolve by the control's own parent. Controls with no locator (Windows file dialog) become semantic-only targets.
 
-Each control in the catalog carries `actions`: the Certify actions applied to it with their interaction parameters (`Typed Value`, `List Item Caption`, `NodePath`, `Item`/`Criteria`, `Column Caption`/`Row Number`, `Key`, …; variable-bound values as `T[Name]`). Execution reads them to decide the pattern (§ Composite actions) and to derive the elements Certify never mapped: suggestion entries, menu items, option rows, table cells. Those derived elements have no locator of their own — they are built from the anchor control plus the typed or matched text and start at low confidence.
+Each control in the catalog carries `actions`: the Certify actions applied to it with their interaction parameters (`Typed Value`, `List Item Caption`, `NodePath`, `Item`/`Criteria`, `Column Caption`/`Row Number`, `Key`, …; variable-bound values as `T[Name]`). Execution reads them to decide the pattern (§ Composite actions) and to derive the elements Certify never mapped: suggestion entries, menu items, option rows, table cells. Those derived elements have no locator of their own — they are built from the anchor control plus the typed or matched text and start at low confidence. "No locator of their own" is literal: no `id` or `data-automation-id` is carried across from a control that merely looks related (§ Framework Pitfalls 11).
 
 ## Test Data
 
@@ -207,6 +207,6 @@ Each control in the catalog carries `actions`: the Certify actions applied to it
 8. Plaintext credentials in `Recordsets.json`; count them, never copy the passwords, keep the account identity per row (§ Test Data), and tell the user.
 9. The `Execute Process` actions of many roots carry no `ExecRecordSetID`; the data-driving recordset is the root's own `RecordSetID`.
 10. **One step is not one activity.** `Input Autocomplete`, `Select Node`, `ListBox.Select`, `Find Row` + `Select Row`, `Input Into Cell` and the `Send Keys` family bundle multi-step interactions into parameters (§ Composite actions). Translating them to the nearest single UiPath activity produces workflows that validate and do nothing right: the first attempt clicked the first popup entry instead of the matching one, drove custom lists with a native select action, and collapsed a two-level menu into one click.
-11. The map holds only what Certify learned: the input, the menu root, the table. Suggestion entries, menu items, option rows and cells were never learned, so the target catalog cannot cover them; execution derives them from the anchor control and the matched text (§ UI Target Locators).
+11. The map holds only what Certify learned: the input, the menu root, the table. Suggestion entries, menu items, option rows and cells were never learned, so the target catalog cannot cover them; execution derives them from the anchor control and the matched text (§ UI Target Locators). Never source a missing element's identifier by searching the catalog for an attribute whose *name* looks related: nothing ties a neighbour's attribute to the element, and a value occurring once against a pattern several sibling controls share is an outlier, not a convention.
 12. `EditBox.Input`'s `Key` parameter is a confirm keystroke, and on a Workday prompt field it is the whole selection mechanism; a wording that drops it drops the pick.
 13. `Window.Send Keys` steps carry no control. Roughly half are page scrolling (`{PgDn}`, `{PgUp}`, `{Home}`, `{End}`) that UiPath does not need; the rest belong to the field clicked just before them. Read them in sequence context, never as standalone steps.
