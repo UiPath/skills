@@ -1,6 +1,6 @@
 # Human-in-the-Loop
 
-*Exact signatures, fields, and defaults: [`hitl()`](api.md#hitl-function).*
+*Exact signatures, fields, and defaults: `hitl()`.*
 
 Pause a Flow for a person using the default inline form, the quick-form node
 type, a deployed Action App, or a document-validation station.
@@ -11,13 +11,28 @@ document?, title?, priority?, labels?, recipient?, fields?, outcomes,
 outcomePorts?, exposeError? })`.
 
 ```ts
-.step('review', hitl({ title: 'Review invoice',
+.var('status', types.string)
+.stepSwitch('review', hitl({ title: 'Review invoice',
   fields: [{ id: 'comment', type: 'text', direction: 'output' }],
-  outcomes: ['Approve', 'Reject'] }))
-.switch('route', out('review', 'Action'), [
-  { value: 'Approve', body: (b) => b.return({ status: 'approved' }) },
-], (other) => other.return({ status: 'rejected' }))
+  outcomes: ['Approve', 'Reject'] }), [
+  { value: 'Approve', body: (b) => b.step('pay', script({ … }), { updates: { status: lit('approved') } }) },
+  { value: 'Reject', body: (b) => b.step('notify', script({ … }), { updates: { status: lit('rejected') } }) },
+])
+.return({ status: v('status') })
 ```
+
+More than one outcome routes per outcome by itself — there is no flag to
+remember and no decision node in the middle. `outcomePorts: false` is how you
+ask for the older single-exit shape instead.
+
+`.stepSwitch` is how you write that: one arm per outcome, none of them the tacit
+next step.
+Arms behave like `.switch()`'s — one that ends in `.return()` is terminal, and one
+that does not CONVERGES, so the step after the `.stepSwitch` fans in from every
+arm that reaches it.
+That is what makes the single `.return()` above correct, and what a flow VARIABLE
+is for: each arm assigns it with `{ updates }` and the one return reads it, instead
+of the return having to work out which arm ran.
 
 ## Delivery, fields, and routing
 
@@ -30,24 +45,56 @@ outcomePorts?, exposeError? })`.
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
   at the field's own id).
-- `outcomePorts: true` gives each outcome its own exit, `outcome-<slug>` (the
-  name lowercased, non-alphanumerics to `-`). The FIRST outcome continues the
-  main path; route the others with `.stepToList('outcome-<slug>', …)`. Base
-  variant only — the quick-form, action-app and document-validation variants have
-  no per-outcome version and the SDK refuses the option on them.
-  `exposeError: true` additionally exposes `out('<step>', 'error')` and implies
-  outcome-port routing.
+- **Per-outcome exits are the DEFAULT above one outcome.** Each outcome gets its
+  own exit, `outcome-<slug>` (the name lowercased, non-alphanumerics to `-`).
+  `exposeError: true` additionally exposes `out('<step>', 'error')` and selects
+  the 1.2 definition.
 
-  **Declaring `outcomes` is HALF the decision — the flag reads optional and is not.**
-  Outcomes on their own create no exits.
-  Without `outcomePorts` the node emits its 1.0 definition's single `completed` handle and EVERY outcome leaves on it, so the choice reaches the reviewer and `inputs.schema.outcomes` and never reaches the graph.
-  An approve/reject task wired that way compiles, and `flow validate` answers `Valid`.
-  So every task with more than one outcome needs one of the two shapes, deliberately: `outcomePorts: true` to fork in the graph, or `.switch()` on `out('<step>', 'Action')` to route the decision as data.
-  `check` warns `HITL_OUTCOMES_UNREACHABLE` when a task declares several outcomes and neither shape is present.
+  Two ways to route them, and prefer the first:
 
-  **It REPLACES the `completed` exit; it does not add to it.** The option selects
-  the node's 1.1 definition (1.2 for `exposeError`), and those declare exactly one
-  source handle — `outcome-{item.id}`, repeated over the outcomes. The 1.0
+  | | |
+  | --- | --- |
+  | `.stepSwitch(name, hitl({…}), arms)` | one arm per outcome, `value` naming the outcome. No tacit exit, arms converge, and a missing arm is a warning (STEP_SWITCH_EXIT_UNROUTED) rather than a port with no edge. |
+  | `.step()` + `.stepToList('outcome-<slug>', …)` | the FIRST outcome continues the main path and the rest are side arms. Those arms do NOT converge — each gets an End of its own. |
+
+  Do not route the FIRST outcome with `.stepToList`: its port is already taken by
+  the main path, and the second edge is emitted anyway
+  (flow-builder-sdk#741). `.stepSwitch` is the way to route all of them.
+
+  Four things stand the default down, and only these:
+
+  | | keeps the single `completed` exit because |
+  | --- | --- |
+  | `outcomePorts: false` | you asked for it |
+  | `variant: …` | the quick-form, action-app and document-validation node types have no per-outcome definition version to select |
+  | `{ version: '1.0' }` | an explicit pin wins, which is what makes `decompile` → `compile` byte-exact on a deployed 1.0 flow |
+  | every outcome `action: 'End'` | the run stops AT the node, so no exit distinguishes anything |
+
+  **Why it is the default.** Outcomes on their own create no exits: on the 1.0
+  definition the single `completed` handle is where every outcome leaves, so the
+  choice reaches the reviewer and `inputs.schema.outcomes` and never reaches the
+  graph. An approve/reject task wired that way compiles and `flow validate`
+  answers `Valid`, so the mistake surfaced at runtime or in a grader
+  (flow-builder-sdk#735). A warning was not enough — #739 measured it firing
+  three times while the unreachable artifact shipped anyway — so the shape
+  changed instead of the advice.
+
+  `check` still warns `HITL_OUTCOMES_UNREACHABLE`, now for the cases where the
+  single exit was CHOSEN and nothing reads `out('<step>', 'Action')`: a variant,
+  a pin, or `outcomePorts: false`.
+
+  **Route EVERY outcome.** With `.stepToList`, an unrouted one deploys and then
+  stalls the run when the reviewer picks it (`check` warns
+  HITL_OUTCOME_UNROUTED). With `.stepSwitch` it compiles to an End instead, so
+  the run finishes rather than hanging — but finishes without the flow's declared
+  outputs, which STEP_SWITCH_EXIT_UNROUTED says out loud. Either way the
+  exception is `action: 'End'`, which ends the process at the node and needs no
+  edge.
+
+  **It REPLACES the `completed` exit; it does not add to it.** Routing per
+  outcome selects the node's 1.1 definition (1.2 for `exposeError`), and those
+  declare exactly one source handle — `outcome-{item.id}`, repeated over the
+  outcomes. The 1.0
   definition's single `completed` handle is not part of them, so "the FIRST
   outcome continues the main path" means that continuation leaves on
   `outcome-<first>`; nothing leaves on `completed`, and an edge that tries is
@@ -69,20 +116,21 @@ outcomePorts?, exposeError? })`.
   even on the 1.0 definition. Measured, alongside the `completed`-on-1.1 refusal
   above.
 
-  So prefer `outcomePorts: true` when the task has real outcomes and something
-  downstream reads the graph — a consumer, a validator, the designer, a graded
-  check. Route EVERY outcome when you do: an unrouted one stalls the run
-  (`check` warns HITL_OUTCOME_UNROUTED, and the product warns
-  `HITL_COMPLETED_UNWIRED` — whose name says completed and whose text says
-  outcome, the platform's vocabulary being mid-migration here).
+  That is why the default went this way rather than the other: a consumer, a
+  validator, the designer and a graded check all read the per-outcome handles,
+  and the product warns `HITL_COMPLETED_UNWIRED` on the single exit — whose name
+  says completed and whose text says outcome, the platform's vocabulary being
+  mid-migration here.
 
-  The default shape — `completed` plus `.switch()` on `out('<step>', 'Action')`,
-  as in the example above — stays correct and is the ONLY shape available on the
-  quick-form, action-app and document-validation variants, which have no
-  per-outcome version for the SDK to select. Use it there, and when the decision
-  is read as data rather than forked in the graph — but do use one of the two:
-  a `completed` exit with nothing reading `Action` is the unreachable-outcomes
-  case above, not a third shape.
+  **The other shape — `completed` plus `.switch()` on `out('<step>', 'Action')` —
+  still works, and is the ONLY shape the quick-form, action-app and
+  document-validation variants have.** They carry no per-outcome definition
+  version for the SDK to select. On a base task it is now something you ask for
+  with `outcomePorts: false`, and the reason to ask is that the decision is
+  wanted as DATA — recorded in an output, compared in one place, or fanned into
+  something the graph cannot express. Reach for it deliberately: a single
+  `completed` exit with nothing reading `Action` is the unreachable-outcomes case
+  above, not a third shape.
 - `variant: 'document-validation'` takes `document: { extractionResult,
   storageBucket?, documentId?, render?, taxonomy? }` and no `fields`; bind
   `extractionResult` to the upstream extract step's `ExtractionResult`.

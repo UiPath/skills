@@ -243,7 +243,7 @@ Every edge requires `sourcePort` and `targetPort`.
 4. Every non-trigger node has at least one incoming edge.
 5. Every non-terminal node has at least one outgoing edge.
 6. Decisions have exactly one `true` and one `false` edge.
-7. Switches have one edge per case and optionally `default`.
+7. Switches have one edge per case, plus `default` unless the cases are provably exhaustive (an agent-authored discriminator never is).
 8. A loop's inner `start` feeds the body, the last body node returns to `continue`, and outer `success` continues after all iterations.
 9. Merge accepts one input per parallel path.
 10. Do not create cycles except through Loop's `continue` handle.
@@ -328,7 +328,7 @@ Before presenting the plan, validate every rule:
 9. Do not use semicolons.
 10. Do not put blank lines inside the mermaid block.
 11. Every defined node is connected; every node-table node appears in the diagram; every edge-table edge appears in the diagram.
-12. Decisions show `true` and `false`; switches show every case and optional `default`; loops show the body and `continue`; parallel branches fork and converge at Merge.
+12. Decisions show `true` and `false`; switches show every case plus `default` when the edge table has one; loops show the body and `continue`; parallel branches fork and converge at Merge.
 
 ## Node Selection Heuristics
 
@@ -346,7 +346,7 @@ Before presenting the plan, validate every rule:
 
 ## Handoff to Phase 2
 
-After explicit user approval, [Planning Phase 2: Implementation](planning-impl.md) must:
+Once the plan is approved, [Planning Phase 2: Implementation](planning-impl.md) must:
 
 1. Validate every node type with `uip maestro flow registry get`; read each plugin's `impl.md`.
 2. Resolve connector and resource nodes using relevant `impl.md` files, including [connector](plugins/connector/impl.md) and [rpa](plugins/rpa/impl.md).
@@ -356,8 +356,6 @@ After explicit user approval, [Planning Phase 2: Implementation](planning-impl.m
 6. Replace `core.logic.mock` nodes with real resources when available.
 7. Finalize implementation-ready details.
 
-**Do not proceed to Phase 2 until the user explicitly approves the architectural plan.**
+**Do not proceed to Phase 2 until the plan is approved, and route that approval through [SKILL.md](../../SKILL.md) rule #5 with the proceed option marked recommended.** Rule #5 then owns both branches: a user approves interactively, and its non-interactive fallback takes the marked option and records the unreviewed handoff. The mark is the whole mechanism — the fallback carries a headless run past a gate that has one and stops at a gate that does not.
 
-Non-interactively (CI/headless, no user available), this is a **review** gate, not one of [SKILL.md](../../SKILL.md) rule #5's consent gates — nothing destructive and no tenant write rides on approving a local markdown file. So write `<SolutionName>.uipath.flow.arch.plan.md`, proceed to Phase 2 on it, and record in the final report that it went unreviewed.
-
-**Never skip writing the file.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which is far more expensive than the plan it replaces.
+**Write the plan before asking, always.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which costs more than the plan it replaces.

@@ -294,6 +294,11 @@ projects through the UiPath CLI.
   lifecycle actions): see [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a
   failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
+  Runtime evidence — incidents, variables, element executions, cursors, the
+  deployed asset — comes only from a `uip maestro bpmn ... --output json` read;
+  local `.bpmn` source and generated package files are read from disk as usual.
+  Never substitute the files backing that CLI for the CLI itself — see rule 3
+  in that reference.
 
 Any cloud-side change (upload, publish, deploy, run, pause, resume, cancel,
 retry, migrate) requires explicit user consent, and local validation should pass

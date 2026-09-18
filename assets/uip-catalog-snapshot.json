@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-15T04:06:56Z",
-  "cli_version": "1.203.0-dev.8677",
+  "generated_at": "2026-09-18T04:07:17Z",
+  "cli_version": "1.203.0-dev.8733",
   "verbs": [
     "admin",
     "admin audit",
@@ -343,6 +343,7 @@
     "codedagent run",
     "codedagent setup",
     "codedapp",
+    "codedapp delete",
     "codedapp deploy",
     "codedapp init",
     "codedapp pack",
@@ -631,6 +632,7 @@
     "is resources run get",
     "is resources run list",
     "is resources run replace",
+    "is resources run script",
     "is resources run update",
     "is triggers",
     "is triggers describe",
@@ -1548,6 +1550,7 @@
     "tm testsets delete",
     "tm testsets list",
     "tm testsets list-testcases",
+    "tm testsets playwright-context",
     "tm testsets run",
     "tm testsets update",
     "tm teststeplog",

@@ -1,0 +1,130 @@
+task_id: skill-ixp-retrain-wait-one-call-per-command-smoke
+description: >
+  Smoke: an IXP retrain is in flight and the agent has to finish the bounded
+  wait — one `uip` call per command, no loop, no chain.
+
+  Why the wait exists: editing an extraction instruction retrains the model, and
+  metrics read mid-retrain are still the OLD scores. `ModelVersion` going up is
+  the only "it is done" signal, so the workflow polls `get-metrics` — 2 minutes
+  between checks, 5 checks, then give up.
+
+  Why bundling is the bug: packing several checks into one command puts minutes
+  of `sleep` inside it, the shell kills it on the command timeout, and the wait
+  is lost.
+
+  How bundling is caught: a loop leaves the same invocation records that separate
+  commands leave, so no log can see it. `cli_called` counts checks and
+  `command_executed` counts commands — a loop splits them (3 checks, 1 command),
+  separate calls do not (3 and 3).
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      responses:
+        # ModelVersion never moves, so the retrain never lands and the agent runs
+        # every check it has left.
+        - when:
+            verb: "ixp projects get-metrics"
+            positional: ["supplier_bills-9d41c6a2-ixp"]
+            value_flags: [output, model-version]
+          stdout: >-
+            {"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":12,"ValidatedDocuments":20,
+            "ProjectScore":0.7,"ProjectScoreQuality":"good","FieldGroups":[
+            {"FieldGroup":"Invoice","F1":0.7,"Precision":0.7,"Recall":0.7,"ErrorRate":0.3,"Documents":20}],"Fields":[
+            {"FieldGroup":"Invoice","FieldId":"aaaa000000000001","F1":0.8,"Precision":0.8,"Recall":0.8,"ErrorRate":0.2,"Documents":20,"Annotations":20,"Quality":"good"},
+            {"FieldGroup":"Invoice","FieldId":"aaaa000000000002","F1":0.6,"Precision":0.6,"Recall":0.6,"ErrorRate":0.4,"Documents":20,"Annotations":20,"Quality":"average"}]}}
+
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+# Two of the wait's five checks are spent in the premise: three are enough to
+# tell a loop from separate calls, and each check costs 2 real minutes of sleep.
+initial_prompt: |
+  Four minutes ago I changed the `Total Amount` extraction instruction on the IXP
+  project `supplier_bills-9d41c6a2-ixp`, which started a retrain.
+
+  `ModelVersion` was 12 before that change. I have checked twice since, two
+  minutes apart, and it still reads 12 — the retrain has not landed yet.
+
+  Finish the wait: run the checks I have left, then write `retrain.json` in the
+  working directory:
+
+      {"model_version": <the ModelVersion your last check returned>,
+       "project_score": <that same check's ProjectScore>,
+       "retrain_completed": <true or false>}
+
+  Important:
+  - The `uip` CLI here is NOT connected to a live IXP tenant. `get-metrics`
+    answers; every other command fails with an auth error — that is expected,
+    so do not retry those and do not attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Positive control — the checks actually ran. Without it, an agent that runs
+  # nothing passes every guard below.
+  - type: cli_called
+    description: "Ran the wait's three remaining checks against the project"
+    verb: "ixp projects get-metrics"
+    tool: "uip"
+    positional: ["supplier_bills-9d41c6a2-ixp"]
+    value_flags: [output, model-version]
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Where bundling shows: a loop is ONE Bash call holding all three checks, so it
+  # scores 1 of 3 here while `cli_called` above still reads 3.
+  - type: command_executed
+    description: "The three checks were three separate commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
+    min_count: 3
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The `do` must sit within 80 characters of the loop head, so prose like
+  # `echo "waiting for the retrain"` beside a check does not read as a loop.
+  - type: command_not_executed
+    description: "Did NOT wrap the checks in a loop"
+    tool_name: "Bash"
+    command_pattern: '\b(for|while|until)\b[\s\S]{0,80}\bdo\b[\s\S]*get-metrics'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did NOT chain the wait and a check into one command"
+    tool_name: "Bash"
+    command_pattern: '\bsleep\b[\s\S]*get-metrics|get-metrics[\s\S]*\bsleep\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Scoped to this verb, so batching unrelated orienting calls is not graded.
+  - type: command_not_executed
+    description: "Did NOT put two checks in one command"
+    tool_name: "Bash"
+    command_pattern: 'get-metrics[\s\S]*get-metrics'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # `project_score` is the anti-cheat: the prompt states the version, so 12 is
+  # writable without reading anything; 0.7 only comes from the served response.
+  - type: json_check
+    description: "Reported the wait's outcome — still ModelVersion 12, retrain not complete"
+    path: "retrain.json"
+    assertions:
+      - expression: "model_version"
+        operator: equals
+        expected: 12
+      - expression: "project_score"
+        operator: equals
+        expected: 0.7
+      - expression: "retrain_completed"
+        operator: equals
+        expected: false
+    weight: 2.0
+    pass_threshold: 1.0

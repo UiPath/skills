@@ -6,7 +6,7 @@ description: >
   Tests the multiselect IS feature — configures a Slack group direct message
   node whose members field takes multiple values, using an existing tenant
   connection.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, ipe, mode:build, uipath-salesforce-slack]
 
 run_limits:
   expected_turns: 37
@@ -17,9 +17,14 @@ run_limits:
 reference:
   directory: ..
 
+# Each recipient must match exactly one Slack user, or the 3-entry check below
+# cannot pass. "Coder Eval" is deliberately NOT used: it is a prefix of "Coder
+# Eval Test", so a substring lookup returns two rows and the agent is then
+# required to stop and ask. Re-verify uniqueness before changing a name.
 initial_prompt: |
   Create a flow file to create a Slack group direct message between
-  Coder Evals, IS-sandboxes@uipath.com and E2E-testing.
+  Coder Eval Test, IS-sandboxes@uipath.com and E2E Nightly Summary.
+  Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Use the connection present in Shared/uipath-maestro-flow.
 
   This run is headless. No user is present and nobody will answer a question or

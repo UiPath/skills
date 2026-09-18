@@ -108,6 +108,14 @@ uip solution init "<SolutionName>" --output json \
 
 > **One creation path — never drop the `cd`.** `uip solution init "<SolutionName>"` → `cd "<SolutionName>"` → `uip maestro flow init "<ProjectName>"`, one chain. Without the `cd`, `flow init` runs in the old directory and auto-scaffolds a duplicate `<ProjectName>Solution/` (1-node husk). Never let auto-scaffold create the solution. Finish with exactly one `project.uiproj` — delete strays.
 
+> **Building a Maestro Automate?** Add `--automate` to the `flow init` segment and change nothing else:
+>
+> ```bash
+> && uip maestro flow init "<ProjectName>" --automate --output json \
+> ```
+>
+> Only when the request names **Maestro Automate** as the product. The bare verb does not count — "automate invoice intake with a Flow" asks for a Flow. Anything else, including no signal, leaves the flag off. Steps 3-6 are identical either way — the flag changes the packaged `runtimeOptions.profile`, not how you author the `.flow`. See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal).
+
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
@@ -131,6 +139,8 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 ```bash
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
+
+Append `--automate` for a Maestro Automate project (SKILL.md rule #6). The rest of this step, and Steps 3-6, are unchanged.
 
 The `cd` puts the project inside the solution you just created. Skip it and `flow init` won't find that solution (discovery walks **up**, not down into `<SolutionName>/`) — it auto-scaffolds a **second, separate** `<ProjectName>Solution/` beside your empty `<SolutionName>/`, leaving two solutions. The project no longer single-nests, but `cd` first to land in the right one.
 
@@ -347,7 +357,15 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
 
-> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. The connector-keyword warning (`node "…" mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding`) means the flow took the brand-name shortcut and will run against an undefined endpoint at debug time — resolve it by switching to the connector before reporting the flow complete (see [SKILL.md rule #3](../../SKILL.md#critical-rules-universal) and the anti-pattern list). Treat this class of warning as a build failure for your own definition of "done."
+> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. Three classes are build failures, not advisories:
+>
+> | Warning | What it means at debug time | Resolve by |
+> | --- | --- | --- |
+> | `mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding` | The flow took the brand-name shortcut and runs against an undefined endpoint | Switch to the connector node (see [SKILL.md rule #3](../../SKILL.md#critical-rules-universal) and the anti-pattern list) |
+> | `declares no inputs in its agent.json \`inputSchema\`, but the flow node binds N inputs … these bindings are silently dropped` | The inline agent never receives the flow's data, so its output is unrelated to the run. Nothing faults, and with an empty `outputSchema` the fields downstream nodes read come back `undefined` | Add the warning's named keys to `inputSchema.properties` **and** read each one as `{{input.<key>}}` in `messages[].content` — a key no prompt token reads never reaches the model, and `refresh` regenerates `contentTokens` without adding the reference. Then `uip agent refresh --inline-in-flow` and `uip agent validate --inline-in-flow` ([inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts)) |
+> | `Expression at this field is not valid JavaScript` / `[EXPRESSION_DIAGNOSTIC] Cannot find name '…'` | The expression throws or evaluates to garbage | Fix the syntax before debug |
+>
+> Treat all three as a build failure for your own definition of "done."
 
 ### Common error categories
 

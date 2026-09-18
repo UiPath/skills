@@ -1,6 +1,6 @@
 # Placeholder
 
-*Exact signatures, fields, and defaults: [`mock()`](api.md#mock-function).*
+*Exact signatures, fields, and defaults: `mock()`.*
 
 A placeholder says that a real capability belongs at this point in the graph
 but does not exist yet.

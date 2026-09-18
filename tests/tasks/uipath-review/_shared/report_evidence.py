@@ -17,13 +17,19 @@ import subprocess
 SKIPPED_HEADING = re.compile(r"^#+\s*Rules Skipped\s*$", re.MULTILINE)
 
 # Phrasing varies a lot between agents; observed forms include "unavailable",
-# "does not provide the `review` command", and "unknown command". Keep this
-# alternation generous -- a missed phrasing turns an honest skip declaration
-# into a confusing failure, while a spurious match only relaxes a branch that
-# already fails on its own.
+# "does not provide the `review` command", and "unknown command". Keep the
+# alternation generous, but every term must PREDICATE the subject, never merely
+# co-occur with it: in the reachable branch a spurious match is a hard FAIL, not
+# a relaxation. Observed false positive (run 2026-09-16_04-18-03,
+# skill-review-agents-lowcode-guardrail-content-safety): bare `missing` matched
+# "the live guardrail catalog established a missing applicable safety control" --
+# a sentence saying the catalog WORKED. Hence `missing` requires a copula
+# ("is/was missing") or "missing from"; adjectival "a missing <finding>" no
+# longer counts.
 _UNAVAILABLE = (
     r"(unavailable|not\s+available|not\s+installed|could\s+not\s+be\s+(run|fetched|retrieved)|failed"
-    r"|does\s+not\s+(provide|support|have)|unknown\s+command|missing|unsupported)"
+    r"|does\s+not\s+(provide|support|have)|unknown\s+command"
+    r"|(?:is|was|are|were|be)\s+missing|missing\s+from|unsupported)"
 )
 
 
@@ -31,13 +37,18 @@ def declares_unavailable(text: str, subject: str) -> bool:
     """True if the report's 'Rules Skipped' section calls `subject` unavailable.
 
     `subject` is an alternation of names for the thing (e.g. the review CLI, the
-    guardrail catalog). Matching is confined to the section body so prose
-    elsewhere cannot satisfy the contract.
+    guardrail catalog). Matching is confined to the section body -- from the
+    'Rules Skipped' heading to the next Markdown heading -- so prose elsewhere
+    (findings tables, per-project summaries) cannot satisfy the contract or
+    trip the reachable-branch contradiction FAIL.
     """
     heading = SKIPPED_HEADING.search(text)
     if not heading:
         return False
     body = text[heading.end():]
+    next_heading = re.search(r"^#+\s", body, re.MULTILINE)
+    if next_heading:
+        body = body[: next_heading.start()]
     return bool(re.search(rf"({subject})[^.\n]*{_UNAVAILABLE}", body, re.IGNORECASE))
 
 
