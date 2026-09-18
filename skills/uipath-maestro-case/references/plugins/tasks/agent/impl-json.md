@@ -33,8 +33,6 @@
 
 ```bash
 uip maestro case tasks describe --type agent --id "<entityKey>" --output json
-# multi-element agents:
-uip maestro case tasks describe --type agent --id "<entityKey>" --element-id "<elementId>" --output json
 ```
 
 Fallback: planning-captured schema from `registry-resolved.json`. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
