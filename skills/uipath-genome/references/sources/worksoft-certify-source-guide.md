@@ -83,22 +83,53 @@ Test execution and reporting of the resulting test project belongs to `uipath-te
 |---|---|
 | `Execution.Execute Process` | Invoke sub-process (call-graph edge; in a UiPath library, invoke workflow) |
 | `Execution.Comment`, `Execution.Label` | Phase headings and branch targets; comments are the author's section names — use them to name substeps |
-| `EditBox.Input`, `EditBox.Type Keys`, `EditBox.Input Autocomplete`, `PasswordBox.Input` | Enter {value} into {field}; autocomplete = pick the matching suggestion |
-| `PushButton.Press` / `Send Click`, `Link.Press` / `Send Click`, `Cell.Send Click`, `Page.Click` | Click {control} |
-| `ListBox.Select`, `DropDown.Select`, `Tree.Select Node`, `CheckBox.Set`, `RadioButton.Press` | Choose {item}; tick/untick; pick tree path (`A|B` = menu path) |
-| `Table.Find Row`, `Table.Find Row (Advanced)`, `Table.Select Row`, `Table.Select Cell`, `Table.Store Cell`, `Table.Input Into Cell`, `Table.Verify Cell` | Locate the row whose cells match {values}; read or act on that row |
+| `EditBox.Input` (Key = None), `PasswordBox.Input` | Enter {value} into {field} |
+| `EditBox.Input` (Key = `{ENTER}` / `{TAB}`), `EditBox.Input Autocomplete`, `EditBox.Type Keys` | **Composite** — type-ahead pick or type-and-confirm; wording per § Composite actions |
+| `PushButton.Press` / `Send Click`, `Link.Press` / `Send Click`, `Cell.Send Click`, `htmlHeader.Send Click` | Click {control} (`Ver`/`Hor` are click offsets in %, ignore unless far from 50/50) |
+| `Page.Click`, `Window.Mouse Click At`, `Active Window Actions.Click Object` | **Composite** — click without a mapped control; wording per § Composite actions |
+| `CheckBox.Set` (`State` On/Off), `RadioButton.Press` | Ensure {box} is ticked/unticked (state, not toggle); select {option} |
+| `ListBox.Select`, `ListBox.Select Item`, `DropDown.Select`, `DropDown.Send Click`, `ComboBox.[Select]`, `Tree.Select Node` | **Composite** — option list or menu path; wording per § Composite actions |
+| `Table.Find Row`, `Table.Find Row (Advanced)`, `Table.[Find Row]`, `Table.Select Row`, `Table.Select Cell`, `Table.Store Cell`, `Table.Input Into Cell`, `Table.Verify Cell`, `Table.Store Property` | **Composite** — table row by content, table cell, read cell; wording per § Composite actions |
 | `*.Visible` (with `Timeout`) | Wait up to N seconds for {control}; a False branch means "if absent, skip to …" |
 | `*.Verify`, `Text.Compare`, `Cell.Verify Property` | Assertion → Acceptance Criteria; with a jump → decision → Business Rules |
 | `Variable.Set`, `Text.Concatenate`, `Text.Split Text And Extract`, `Text.Text Between`, `Number.Math`, `Number.Get Random Number`, `Date.DateMath` | Data preparation; random values = synthetic test data (names, IDs, emails) |
 | `Record Set.Clear RecordSet`, `Import RecordSet`, `Import RecordSet From Excel` | Load test data from a file at run time → Interface input `File Path` |
 | `Page.Set Attributes`, `Link.Set Attributes`, `*.Set Attributes` | Parameterise a screen or control locator at run time (e.g. replace `REPLACEME` with the employee name) → Source Map note only |
-| `Browser.Set Input Options`, `Set Busy Check`, `Set Scroll Into View`, `Set Object Context Timeout`, `Set Hidden Check` | Automation-engine settings → Error Handling wording ("waits for the page to settle"); never a step |
-| `Window.Send Keys`, `Window.Send Input Key` | Keyboard input to the window (Enter, shortcuts) |
+| `Browser.Set Busy Check`, `Set Scroll Into View`, `Set Object Context Timeout`, `Set Hidden Check` | Automation-engine settings → Error Handling wording ("waits for the page to settle"); never a step |
+| `Browser.Set Input Options` (`Input Type` Send Keys / Set Value) | Input-method hint for the fields that follow (§ Composite actions → keystrokes); never a step |
+| `Window.Send Keys`, `Window.Send Input Key`, `Window.[SendVKey]`, `*.Key Press`, `*.Type Keys` | **Composite** — keystrokes to the focused element; wording per § Composite actions |
 | `Browser.Load Browser`, `Close Browser`, `Close Tab`, `Load URL` | Open/close the browser → session steps |
 
 ### Value syntax
 
 Certify values embed variable references: `T[Name]` text, `N[Row_1]` number, `D[Date#1]` date, `D[(System)\Date]` = today; `&`-prefixed and `%` forms do not occur in the JSON export because the binding is carried by `VariableID`. Literal values are the defaults for Configuration Questions. Never copy values from variables named `*Password*`, `*PWD*`, `*Secret*`, `*Token*`; Certify stores them in plain text in `Recordsets.json`.
+
+### Composite actions (no single UiPath equivalent)
+
+A Certify step is one row, but several actions bundle a multi-step interaction into their parameters: type *and* pick a suggestion, open a menu *and* walk a path, find a row *and* act on it, send keys to *whatever has focus*. The first migration built these naively — type-ahead as "type, then click the first popup entry", custom Workday lists as a native select, a two-level menu as one click — and the result did nothing useful. Two obligations follow:
+
+1. **Extraction writes the full interaction contract into the Workflow substep.** Behavioural wording only, but complete: what is typed, how the suggestion is matched, which key confirms, the path levels, the row rule. "Enter Voluntary into Primary Reason" is a data loss; "type Voluntary into Primary Reason and pick the suggestion that equals Voluntary" is the step. The parameters below are what the wording must carry. The `targets` script records every action applied to each control (`actions` per control) so execution can see the contract next to the locator.
+2. **Execution builds the pattern named in the last column** ([source-migration-guide.md § Composite interactions](../source-migration-guide.md)), never the nearest single activity. The map holds only the anchor control (the input, the menu root, the table); the popup entries, menu items, and option rows Certify clicked are **not map objects** and must be derived.
+
+| Action | Parameters that define the interaction | Workflow substep wording | Pattern |
+|---|---|---|---|
+| `EditBox.Input Autocomplete` | `Typed Value`; `List Item Caption` + `List Item Caption Criteria` (Contains / Is Equal To; caption absent = match the typed value); `List Item Number` / `List Item Instance` (nth match); `Selection Type` (Left-click); `Follow-Up Key` | "Type {Typed Value} into {field}; in the suggestions pick the entry whose text {contains/equals} {caption} ({n}th match); press {Follow-Up Key}". Workday global search: caption `Task` is the suggestion's category label, so the wording is "pick the suggestion of type Task" | Type-ahead pick |
+| `EditBox.Input` with `Key` = `{ENTER}` / `{TAB}` on a prompt field (Workday `responsiveMonikerInput`, `promptInput`), `Table.Input Into Cell` with `Follow-up Keystroke` `{ENTER}` on a prompt cell (Country, ID Type) | `Value`, `Key` | "Type {value} into {field} and confirm with Enter — the prompt accepts the matching entry". On a plain text box the same action is "enter {value} and press Enter/Tab" | Type-ahead pick (keyboard confirm) / plain type |
+| `Tree.Select Node` | `NodePath` `A\|B` (Workday Related Actions fly-out: `Job Change\|Terminate Employee`), `ClickType`; second signature `Node Path`, `UseNodeText` (desktop tree) | "Open {menu} and follow Job Change > Terminate Employee" — one substep per level when levels reveal one another | Menu / tree path |
+| `ListBox.Select`, `ListBox.Select Item`, `DropDown.Select`, `ComboBox.[Select]` | `Item` + `Criteria` (Is Equal To / Contains / Starts With); `Index` (usually repeats `Item`; a number is a position); `Instance`; `CaseSensitive` | "Choose the option {criteria} {Item} in {list}" ("the first option starting with Hire" when the index is positional) | Option list |
+| `DropDown.Send Click` followed by `ListBox.Select` / `Active Window Actions.Click Object` | click, then a pick | One substep: "open {dropdown} and choose {item}" | Option list |
+| `Active Window Actions.Click Object` | `ControlType` (ListItem), `Name` + `Name Criteria`, `Instance` | "Pick the list entry named {Name}" — Certify searched the active window by accessible name; no control in the map | Option list (popup by accessible name) |
+| `Table.Find Row`, `Table.Find Row (Advanced)`, `Table.[Find Row]` | `Row Matching String 1..n` (any cell) or `Match Value n` + `Column Caption n` / `Column Number n` + `Match Criteria n`; `Matching Row Instance` (`1`, `Last`); `Variable` = row index consumed by later steps | "Locate the row of {table} whose {column} {criteria} {value} [and …]" — then every later step with `Row Number` = that variable acts **on that row**, never on a stored number. Tables named `activeListContainer*` are Workday prompt/suggestion popups: Find Row + Select Row there is an option pick and is worded as one | Table row by content |
+| `Table.Select Row`, `Table.Select Cell` | `Row Number` (literal, variable, `Last`), `Column Caption` / `Column Number`, `Click Type` (Single / Double), `Follow-up Keystroke` | "Click (double-click) the {column} cell of {row rule}" | Table cell |
+| `Table.Input Into Cell` | `Input Type` (Input Text / Set CheckBox / dropdown), `Value`, `Column Caption` / `Column Number`, `Row Number`, `Follow-up Keystroke` | "In the {column} cell of {row rule} enter {value} [and confirm with Enter] / tick the box" | Table cell (+ type-ahead pick when the cell is a prompt) |
+| `Table.Store Cell`, `Table.Verify Cell`, `Cell.Store`, `Link.Store`, `Table.Store Property` (`rows.Length`) | `Column Caption` / `Column Number`, `Row Number`, `Store Type` / `Verify Type` (Cell Text), `Property` | "Read the {column} cell of {row rule} into {output}" / "count the rows of {table}" / "read the text of {control}" | Read table cell / row count |
+| `Window.Send Keys` (`Caption`, `Keys`), `Window.Send Input Key` (`Key` + Ctrl/Shift/Alt/Win flags), `Window.[SendVKey]`, `*.Key Press`, `*.Type Keys` | key string (translation table below) | The keys go to **whatever has focus after the previous step**. Fold them into that step: a value typed right after a click on a date field is "enter {date} into {field}"; `{ENTER}` after a type is its confirm key; `{PgDn}`/`{PgUp}`/`{Home}`/`{End}` exist only to scroll the next target into view — drop them, UiPath scrolls on its own; `{F5}` is "refresh the page"; `^+{Delete}` in Chrome is "open Clear browsing data" | Keystrokes |
+| `Page.Click` (`Click Type`), `Window.Mouse Click At` (`X`, `Y`) | none / screen coordinates | "Click {what the surrounding steps show is being clicked}" — usually dismissing a popup or focusing the page; flag `*[Inferred]*` | Coordinate click |
+| `Browser.Set Input Options` `Input Type` = Send Keys | applies until the next Set Input Options | Not a step. The fields that follow need real key events (type-ahead, key handlers); carry "typed with key events" into the substep so execution does not use set-value input for them | Input-method hint |
+
+Certify key tokens (SendKeys convention): `{ENTER}` / `{Enter}` / `(ENTER)` = Enter; `{TAB}` = Tab; `{PgDn n}` / `PageDown` = Page Down n times; `{PgUp}`, `{Home}`, `{End}`, `{F5}`; `{BACKSPACE}` = Backspace; `{Delete}` = Delete; `(DOWN)` = Down arrow; `{A}` = the letter; prefixes `^` = Ctrl, `+` = Shift, `%` = Alt; `Send Input Key` carries the modifiers as booleans. The genome says the key names; execution encodes them in the owning skill's key syntax.
+
+Workday specifics worth knowing while reading: `responsiveMonikerInput` / `promptInput` controls are type-ahead prompts (every "Input + Enter" on them is a pick); `relatedActionsList` is the Related Actions fly-out menu (a tree with hover-revealed levels); `activeListContainer` is the suggestion popup rendered as a table; `Menu List`, `Item List`, `Archive` are custom list widgets, not native selects.
 
 ## Target Resolution
 
@@ -152,6 +183,8 @@ Certify learned every control; the recognition data is in `MapObjects.json` → 
 
 Windows exist under duplicate names (two `View Worker`, two `Sign in to your account` for different apps); resolve by the control's own parent. Controls with no locator (Windows file dialog) become semantic-only targets.
 
+Each control in the catalog carries `actions`: the Certify actions applied to it with their interaction parameters (`Typed Value`, `List Item Caption`, `NodePath`, `Item`/`Criteria`, `Column Caption`/`Row Number`, `Key`, …; variable-bound values as `T[Name]`). Execution reads them to decide the pattern (§ Composite actions) and to derive the elements Certify never mapped: suggestion entries, menu items, option rows, table cells. Those derived elements have no locator of their own — they are built from the anchor control plus the typed or matched text and start at low confidence.
+
 ## Test Data
 
 `Layouts.json` is the schema (`LayoutVariables[]` ordered by `CertifySequence`, names via `Variables.json`), `Recordsets.json` the rows: `RecordSetDatas[]` cells keyed by `LayoutVariablesID`; a multi-row recordset repeats each variable's cell in row order. `data` decodes both into named rows plus the process → layout/recordset links (roots hold the data; wrapper roots with a `File Path` layout delegate to the inner process). Rules:
@@ -173,3 +206,7 @@ Windows exist under duplicate names (two `View Worker`, two `Sign in to your acc
 7. `Description` sections drift from the steps (a Canada objective on a US process, a callee list that omits proxies); the steps are the truth.
 8. Plaintext credentials in `Recordsets.json`; count them, never copy the passwords, keep the account identity per row (§ Test Data), and tell the user.
 9. The `Execute Process` actions of many roots carry no `ExecRecordSetID`; the data-driving recordset is the root's own `RecordSetID`.
+10. **One step is not one activity.** `Input Autocomplete`, `Select Node`, `ListBox.Select`, `Find Row` + `Select Row`, `Input Into Cell` and the `Send Keys` family bundle multi-step interactions into parameters (§ Composite actions). Translating them to the nearest single UiPath activity produces workflows that validate and do nothing right: the first attempt clicked the first popup entry instead of the matching one, drove custom lists with a native select action, and collapsed a two-level menu into one click.
+11. The map holds only what Certify learned: the input, the menu root, the table. Suggestion entries, menu items, option rows and cells were never learned, so the target catalog cannot cover them; execution derives them from the anchor control and the matched text (§ UI Target Locators).
+12. `EditBox.Input`'s `Key` parameter is a confirm keystroke, and on a Workday prompt field it is the whole selection mechanism; a wording that drops it drops the pick.
+13. `Window.Send Keys` steps carry no control. Roughly half are page scrolling (`{PgDn}`, `{PgUp}`, `{Home}`, `{End}`) that UiPath does not need; the rest belong to the field clicked just before them. Read them in sequence context, never as standalone steps.

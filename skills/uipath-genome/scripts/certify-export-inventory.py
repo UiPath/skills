@@ -5,7 +5,7 @@ Usage:
   certify-export-inventory.py profile <EXPORT_DIR> [--out DIR]   # vocabulary, results, call graph, roots, clusters, layouts, screens
   certify-export-inventory.py cards   <EXPORT_DIR> [--out DIR]   # one compact card per process
   certify-export-inventory.py dump    <EXPORT_DIR> <PROCESS_NAME> # one process, step by step, in execution order
-  certify-export-inventory.py targets <EXPORT_DIR> [--out DIR]   # UI target catalog: windows + controls with parsed Certify locators
+  certify-export-inventory.py targets <EXPORT_DIR> [--out DIR]   # UI target catalog: windows + controls with parsed Certify locators and the actions applied to each control
   certify-export-inventory.py data    <EXPORT_DIR> [--out DIR]   # test data: layouts + recordsets as named rows, process -> recordset links
 
 Writes certify-profile.txt / certify-cards.txt / certify-targets.{json,md} / certify-test-data.{json,md} /
@@ -300,14 +300,55 @@ def _parse_locator(v):
     return d
 
 
+INTERACTION_PARMS = ('Typed Value', 'List Item Caption', 'List Item Caption Criteria', 'List Item Number', 'Selection Type', 'Follow-Up Key',
+                     'NodePath', 'Node Path', 'Item', 'Criteria', 'Index', 'Input Type', 'Column Caption', 'Column Number', 'Row Number',
+                     'Follow-up Keystroke', 'Store Type', 'Verify Type', 'Key', 'Keys', 'State', 'Click Type', 'ClickType', 'Property',
+                     'Row Matching String 1', 'Match Value 1', 'Column Caption 1', 'Column Number 1', 'Match Criteria 1', 'Matching Row Instance',
+                     'ControlType', 'Name', 'Name Criteria')
+
+
+def control_actions(x: Export):
+    """ObjectID -> [{action, uses, examples:[{parm: value}]}]: which Certify actions touch each control and with which
+    interaction parameters (variable-bound values appear as T[Name]; secrets redacted). Feeds the composite-action rules."""
+    per = collections.defaultdict(lambda: collections.defaultdict(list))
+    for p in x.P:
+        for s in x.ordered(p):
+            if s['Skip'] or not s['ObjectID']:
+                continue
+            an = x.aname(s['ComponentActionID'])
+            ex = {}
+            for ta in s['TestStepActions'] or []:
+                pn = x.parm.get(ta['ComponentActionParmsID'], {}).get('Name')
+                if pn not in INTERACTION_PARMS:
+                    continue
+                v = f"T[{x.var.get(ta['VariableID'], {}).get('Name')}]" if ta['VariableID'] else x.safe(pn, ta['CertifyValue'])
+                if v not in (None, ''):
+                    ex[pn] = v
+            per[s['ObjectID']][an].append(ex)
+    out = {}
+    for oid, acts in per.items():
+        rows = []
+        for an, exs in acts.items():
+            uniq = []
+            for e in exs:
+                if e not in uniq:
+                    uniq.append(e)
+            rows.append({'action': an, 'uses': len(exs), 'examples': uniq[:8]})
+        out[oid] = sorted(rows, key=lambda r: -r['uses'])
+    return out
+
+
 def targets(x: Export):
-    """UI target catalog: every window and control with its parsed locator (feeds execution's target migration)."""
+    """UI target catalog: every window and control with its parsed locator and the actions applied to it
+    (feeds execution's target migration and the composite-action derivation)."""
+    acts = control_actions(x)
     cat = []
     for w in x.M:
         wl = [_parse_locator(p['CertifyValue']) for p in (w['ObjectIdParmValues'] or []) if p['CertifyValue']]
         ctrls = [{'objectId': c['ObjectID'], 'name': c['Name'], 'physicalName': c['PhysicalName'], 'description': c['Description'],
                   'type': (c['Component'] or {}).get('LogicalName'),
-                  'locators': [_parse_locator(p['CertifyValue']) for p in (c['ObjectIdParmValues'] or []) if p['CertifyValue']]}
+                  'locators': [_parse_locator(p['CertifyValue']) for p in (c['ObjectIdParmValues'] or []) if p['CertifyValue']],
+                  'actions': acts.get(c['ObjectID'], [])}
                  for c in (w['ChildTrackObjects'] or [])]
         cat.append({'objectId': w['ObjectID'], 'app': x.appver.get(w['ApplicationVersionID']), 'name': w['Name'],
                     'physicalName': w['PhysicalName'], 'description': w['Description'], 'locators': wl, 'controls': ctrls})
@@ -320,6 +361,9 @@ def targets(x: Export):
         for c in w['controls']:
             locs = ' | '.join(f"{l.get('tagname')}#{l.get('instance') or 1}: " + ', '.join(f"{p['n']} {p['criteria']} {p['v'][:60]!r}" for p in l['findby']) for l in c['locators']) or '(no locator)'
             md.append(f"- {c['objectId']} `{c['name']}` ({c['type']}) — {locs}")
+            for a in c['actions']:
+                ex = '; '.join(', '.join(f"{k}={v!r}" for k, v in e.items()) for e in a['examples'][:3]) or '-'
+                md.append(f"    - {a['action']} ×{a['uses']}: {ex[:220]}")
     return cat, '\n'.join(md)
 
 

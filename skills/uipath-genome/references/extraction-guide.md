@@ -43,6 +43,7 @@ Per artifact, in inventory order, using the source guide's signal tables. Collec
 | Test cases, eval sets, assertions | Acceptance Criteria evidence |
 | Prompts and instructions (agents) | Business Rules (paraphrased) |
 | UI control recognition data (object maps, selectors, XPaths) | **Source artifact** `source/targets.json` (source guide § UI Target Locators) — never the genome body |
+| Composite UI actions (type-ahead picks, menu paths, option lists, find-row-then-act, keystrokes to the focused element) | Workflow substeps carrying the **full interaction contract** in behavioural words: typed value, match rule, confirm key, path levels, row rule (source guide § Composite actions). Per-control actions travel in `source/targets.json` |
 | Data-driving rows (recordsets, data sheets) | **Source artifact** `source/test-data.json` + `source/process-data.json` (source guide § Test Data); literals also feed Configuration Questions |
 | Login accounts used per scenario | Platform Dependencies: one credential asset per account; the account identity stays in the test data, the secret never |
 
@@ -122,3 +123,4 @@ Write all files, then ask "Want to adjust anything?". Common follow-ups:
 8. **Leaving a section empty because the source is ambiguous.** Write the best interpretation, flag it, note it in the Source Map.
 9. **Extracting the behaviour and leaving the recognition data and test rows behind.** The source artifacts are what makes the rebuilt automation runnable; without them execution ships placeholders and invented data.
 10. **Copying credentials, or dropping the account identity with them.** Passwords stay out; which account each scenario signs in as is part of the data.
+11. **Flattening a composite action to its data.** "Enter Voluntary into Primary Reason" for a type-ahead pick, "choose Terminate Employee" for a two-level menu path, "select row 2" for a row found by content: the builder cannot recover the interaction from that wording. Write the contract the source guide's composite-actions table demands.
