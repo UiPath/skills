@@ -18,9 +18,9 @@ tags:
 # Inherit agent from the experiment; override only allowed_tools — the Rule 15
 # design handoff loads the uipath-planner skill in the same conversation
 # (Skill tool); Agent/Task stay allowed for the Rule 17 inline-create path.
+
 agent:
   type: claude-code
-  permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent", "Task", "TodoWrite"]
 
 run_limits:
