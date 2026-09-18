@@ -52,7 +52,7 @@ Add these to the genome even when the user did not name them:
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in the coordinator, actor row in Actors and Systems |
 | Screen for end users, dashboard | `uipath-coded-apps` component |
 | Several automations or test suites drive the same application's screens | One `uipath-rpa` library component (screens and shared actions, Interface as per-workflow argument tables) plus consumer components; the process genome states that the library builds and packs first |
-| Regression or test scenarios, "per release", "verify that", data-driven cases | `uipath-rpa` test project component(s) with data variations; Test Manager under Platform Dependencies (`uipath-test`), never in Build With |
+| Regression or test scenarios, "per release", "verify that", data-driven cases | One `uipath-rpa` test-case-group component per business area with data variations, all folders of a single test project `<ProcessName>.Tests` (never one project per area; the process genome carries the Project layout table); Test Manager under Platform Dependencies (`uipath-test`), never in Build With |
 | Approvals performed as another user, "proxy as", "impersonate", "on behalf of" | A library step that switches user and stops the switch afterwards; one credential asset per persona that can be proxied |
 
 ## Step 6 — Ask follow-ups (bounded)

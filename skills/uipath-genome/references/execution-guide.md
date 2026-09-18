@@ -36,8 +36,9 @@ Before creating anything: run the platform login status check and record what an
 
 **Process genome:**
 1. Create or reuse a solution named after the process (`uip solution init "<NAME>" --output json` when none exists). Record `SOLUTION_DIR`.
-2. Each component becomes one project inside the solution: create it through its owning skill, then register it with `uip solution projects add <PROJECT_PATH> --output json`.
-3. Verify with `uip solution projects list --output json` after all components exist.
+2. Each non-test component becomes one project inside the solution: create it through its owning skill, then register it with `uip solution projects add <PROJECT_PATH> --output json`.
+3. **All test components share one test project.** Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step, register it once, and give every test component the same `PROJECT_DIR` with its own subfolder (`<ComponentSlug>/`) for test cases and data files, plus a shared `Config/` folder for the configuration workflow. The process genome's Project layout table names the folders; when an older genome lacks it, derive the folder names from the component names and say so. Never create one test project per component.
+4. Verify with `uip solution projects list --output json` after all components exist.
 
 If the genome's Deployment section says "independent packages", skip the solution and treat each component as a standalone project.
 
@@ -54,7 +55,7 @@ A component of type library is consumed by the other components as a package dep
 
 ### 2.1 Plan skill groups
 
-Component genome: read Build With top to bottom; merge consecutive rows with the same skill into one group. Process genome: one group per component in Components order, unless a Handoffs row requires a consumer to exist before its producer (queue definitions, entry points) — then reorder only as far as needed and say so.
+Component genome: read Build With top to bottom; merge consecutive rows with the same skill into one group. Process genome: one group per component in Components order, unless a Handoffs row requires a consumer to exist before its producer (queue definitions, entry points) — then reorder only as far as needed and say so. Test components remain separate groups (one folder each) but all target the single test project; the shared `Config/` workflow is built with the first test group.
 
 Report the plan before building:
 
@@ -89,7 +90,7 @@ Never stop between groups to ask whether to continue.
 
 ### 2.2a Delegating groups to subagents
 
-Groups may be built by parallel subagents, one project per agent, under these rules:
+Groups may be built by parallel subagents, one project per agent (test-component groups share one project and therefore one agent, or run sequentially), under these rules:
 
 1. Every agent receives the owning skill's contract (invoke it, perform its mandatory reads) and reports the reads it performed.
 2. One authoring host serves all agents: every CLI call carries the project directory; a busy or locked host is retried once after a pause; per-file mutations (validate, link, register) of one project run sequentially — never two agents on one project.
@@ -104,7 +105,7 @@ After the UI groups exist, build their Object Repository targets from `source/ta
 
 ### 2.2c Migrate test data (extracted genomes)
 
-After the test projects exist, fill their data files from `source/test-data.json` per [source-migration-guide.md § Test data](source-migration-guide.md): one mapping file per project, coverage check, migration, rebuild. Account user names become credential asset names plus environment URLs per row; one credential asset per account is declared as a solution resource; secrets are never written. Report coverage, kept defaults, unmapped source values, and the quirks and stale values carried over.
+After the test project exists, fill the data files of each of its folders from `source/test-data.json` per [source-migration-guide.md § Test data](source-migration-guide.md): one mapping file per folder (test component), coverage check, migration, one rebuild of the project. Account user names become credential asset names plus environment URLs per row; one credential asset per account is declared as a solution resource; secrets are never written. Report coverage, kept defaults, unmapped source values, and the quirks and stale values carried over.
 
 ### 2.3 Wire handoffs
 
@@ -162,7 +163,7 @@ Extracted genomes add the healing-pass note: inferred targets are verified on th
 
 1. **Building before the configuration questions are answered.** Produces placeholder values the user has to hunt down later.
 2. **Pausing between skill groups.** "Shall I continue with the RPA part?" is wrong. Advance.
-3. **One project per skill group.** A component genome is one project. A process genome is one solution with one project per component.
+3. **One project per skill group.** A component genome is one project. A process genome is one solution with one project per non-test component and exactly one test project holding every test component as a folder — never one test project per business area.
 4. **Reordering Build With or Components** except for the handoff-dependency case in 2.1.
 5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code.
 6. **Editing the genome during execution.** It is read-only. Fixes to the spec are a separate authoring/extraction edit followed by re-execution.

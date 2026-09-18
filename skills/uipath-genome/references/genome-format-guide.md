@@ -12,6 +12,7 @@ Rules for the content of a genome regardless of how it is produced (authored, ex
 Rules:
 
 1. **Choose the level before writing.** One project → component genome only. Two or more projects, or one coordinator plus anything it invokes → process genome plus one component genome per project. Never flatten a multi-project process into one component genome; never split a single project into a process genome.
+   - **Test components are the one exception to "one component = one project".** Every test component of a process (a group of test cases over data rows for one business area) lives in a *single* test project, `<ProcessName>.Tests`, as one folder per component with its own test cases and data file(s), plus a shared `Config/` workflow for constants. Each group keeps its own component genome (Interface, rules, criteria), so the process genome still lists them as components, but Deployment counts one test project, and the process genome carries a **Project layout** table (see § Build With / Components). Never emit one test project per business area.
 2. **Component genomes inside a process carry the `Part of:` line** immediately after the blueprint blockquote, linking back to the process genome. Standalone component genomes omit it.
 3. **Detail lives at the lowest level that owns it.** Component-specific workflow steps, business rules, error handling, and acceptance criteria go in the component genome. The process genome holds only what spans components: process map, handoffs, shared platform dependencies, cross-cutting rules, end-to-end criteria, deployment.
 4. **Every section present, always.** Each template section appears in every genome. A section that does not apply gets its stub line (below), never an omission.
@@ -35,6 +36,8 @@ Resolve infrastructure to the real system. "Integration Service" is not an appli
 ### Build With / Components
 One skill per row from [skill-mapping-guide.md](skill-mapping-guide.md). Rationale states why that skill and not the nearest alternative.
 
+**Process genomes with test components:** the Type column of every test component reads "Test-case group in project `<ProcessName>.Tests`", and a **Project layout** block follows the Components table: one sentence stating that the solution has N buildable projects (the non-test components plus one test project), then a table `Folder | Component | Test cases | Data file(s)` with one row per test component and one row for the shared `Config/` folder (constants from the Configuration Questions, credential-asset name → environment URL map). The component genomes' Build With rationale names their folder in that project. The component diagram nests the test components inside a subgraph for the test project.
+
 ### Platform Dependencies
 Every Orchestrator or Integration Service resource the automation touches: queues, assets, credentials, storage buckets, connections, folders, triggers. Each row names the resource type and purpose. Extracted genomes keep the source resource name; authored genomes propose one. Credentials: one credential asset per login account the automation signs in with (scenarios often use several accounts with different roles and tenants); the asset holds the secret, the data rows name the asset.
 
@@ -43,7 +46,7 @@ Inputs, outputs, side effects. Mandatory content for a component inside a proces
 
 **Library components** (a project other components consume as a package) carry, instead of the three bullets, one table per public workflow: `Argument | Direction | Type | Description`, plus the conventions the consumers rely on (naming, defaults, what a failed final check does). This table is the contract consumers are authored against before the library packs.
 
-**Test components** (a project of test cases over data rows) list the row schema per test case: the fields that vary per scenario (at most about 20 — an analyzer rule caps workflow arguments), separately from the constants that live in a configuration workflow. Credentials appear as the name of a credential asset per row, never as values.
+**Test components** (a group of test cases over data rows, one folder of the single test project) list the row schema per test case: the fields that vary per scenario (at most about 20 — an analyzer rule caps workflow arguments), separately from the constants that live in the project's shared configuration workflow. Credentials appear as the name of a credential asset per row, never as values.
 
 ### Configuration Questions
 Format: `N. {Question}? (default: {value})`. Every hardcoded value in the source or description becomes a question: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (default: Outlook)").
@@ -109,7 +112,7 @@ Mermaid cannot render BPMN 2.0 itself; when the customer wants a formal model, a
 One row per edge between components: mechanism (queue item, start job, Flow invoke, event, file drop, Action Center task), the data schema passed, and what happens when the receiving side fails. This table is the data contract; component Interface sections must agree with it.
 
 ### Deployment (process)
-Packaging (one solution vs independent packages), entry points and triggers, target folders or environments.
+Packaging (one solution vs independent packages), entry points and triggers, target folders or environments. Name the buildable projects explicitly; when test components exist, Deployment names exactly one test project and one Test Manager test set per folder of it.
 
 ### Complexity
 `simple | medium | complex`. Component genomes: inferred per [authoring-guide.md](authoring-guide.md) (from a description) or [extraction-guide.md](extraction-guide.md) (from source signals). Process genomes are `medium` with 2-3 components and no human lanes, otherwise `complex`.

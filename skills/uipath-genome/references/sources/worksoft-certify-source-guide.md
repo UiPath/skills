@@ -48,14 +48,15 @@ Certify has one artifact type, the process. Components come from the **call grap
 | Construct | Component type | Skill | Rationale |
 |---|---|---|---|
 | Processes called by other processes (sub-processes: login, proxy, create position, post job, …) | Shared **UI library** | `uipath-rpa` (Library project, one workflow per sub-process) | Reusable UI sequences invoked by many scenarios |
-| Root processes (called by nobody) that share one ordered callee signature and differ only by recordset | One **data-driven test case** with a data table | `uipath-rpa` (Test project) | Same behaviour, different data |
-| Root processes with distinct callee signatures in one business area | One **test project** with one test case per root | `uipath-rpa` (Test project) | Regression scenarios of one domain |
+| Root processes (called by nobody) that share one ordered callee signature and differ only by recordset | One **data-driven test case** with a data table, inside the business area's test-case group | `uipath-rpa` (folder of the single test project) | Same behaviour, different data |
+| Root processes with distinct callee signatures in one business area | One **test-case group** (component) with one test case per root | `uipath-rpa` (folder of the single test project) | Regression scenarios of one domain |
+| All test-case groups of the export together | One **test project** `<ProcessName>.Tests` with one folder per group and a shared `Config/` workflow | `uipath-rpa` (Test project) | One library dependency, one configuration, one set of asset names; documented in the process genome's Project layout table, never as one project per group |
 | Root leaf processes (call nothing, called by nobody) outside sandbox | Candidate orphans | Source Map note; include in the library only when their name matches a scenario need | Usually superseded copies |
 | `OutOfScope`, `Sandbox`, personal-name folders | Excluded | Source Map inventory only | Team convention for retired or in-progress work |
 
 Process **status** (`ProcessStatusID`) distinguishes approved from in-progress work in the customer's convention; report the distribution and flag the meaning `*[Inferred]*` unless the customer confirms it.
 
-Test execution and reporting of the resulting UiPath test projects belongs to `uipath-test` (Platform Dependencies), not to Build With.
+Test execution and reporting of the resulting test project belongs to `uipath-test` (Platform Dependencies, one test set per folder), not to Build With.
 
 ## Signals — Process
 
@@ -140,10 +141,10 @@ Certify learned every control; the recognition data is in `MapObjects.json` → 
 | `instance` > 1 | `idx` | positional; keep strict, never anchored; analyzer flags large indexes |
 | `data-automation-id` | `data-automation-id` | Workday's developer identifier — high confidence |
 | `parentElement.data-automation-id` | preceding `<webctrl data-automation-id=…/>` tag | two-level selector |
-| `id`, `name`, `aria-label`, `type`, `title`, `href`, `alt`, `placeholder` | same attribute | skip numeric or hash-like ids |
+| `id`, `name`, `aria-label`, `type`, `title`, `href`, `alt`, `placeholder` | same attribute | keep numeric or hash-like ids, can be improved live |
 | `role` | `aria-role` | |
 | `classname` | `class` | wildcard both sides |
-| `innertext`, `normalizedinnertext`, `text`, `alltext`, `outertext` | `innertext` | never the primary identifier of a text field; move to the anchor for TypeInto/GetText |
+| `innertext`, `normalizedinnertext`, `text`, `alltext`, `outertext` | `visibleinnertext` | never the primary identifier of a text field; move to the anchor for TypeInto/GetText |
 | `label`, `LeftTextAnchor`, `RightTextAnchor` | **anchor** on the visible label (`aaname`) and the semantic text | Certify's label is the associated caption, not an attribute of the control; skip numeric/one-character labels |
 | `isdisplayed`, `IsVisible`, `ControlType`, `value`, `innerhtml`, `outerHTML`, `XPath` | none | `innerhtml startswith <button` means the real control is a child button (trailing `BUTTON` tag); XPath/outerHTML go to the semantic text only |
 | window `title`/`caption` startswith / contains, `url` contains | `<html app='chrome.exe' title='X*' />`, `title='*X*'`, `url='*X*'` | the common window's caption is rewritten at run time by `Page.Set Attributes` (e.g. `Workday_Common` → `Workday`) |

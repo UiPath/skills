@@ -27,6 +27,15 @@
 
 Build order follows the table unless **Handoffs** requires otherwise.
 
+*Only when test components exist — otherwise delete this block:*
+
+**Project layout — {N} buildable projects.** Components {x–y} are test-case groups of the single test project `{ProcessName}.Tests`, one folder each; they are separate components for documentation, never separate projects.
+
+| Folder in `{ProcessName}.Tests` | Component | Test cases | Data file(s) |
+|---|---|---|---|
+| `{ComponentSlug}/` | {#} | {test case names} | `{ComponentSlug}.xlsx` ({n} rows) |
+| `Config/` | shared | — | configuration workflow: constants from Configuration Questions, credential-asset name → environment URL map |
+
 ## Process Map
 
 {Numbered high-level stages. Each names the component that runs it and the exit condition.}

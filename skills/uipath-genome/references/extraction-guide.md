@@ -75,7 +75,7 @@ Write the **process genome first** (when applicable), then each **component geno
 |---|---|
 | Overview | Purpose synthesised from names, targets, and data flow. Author's voice. Inferred intent gets `*[Inferred]*`. |
 | Target Applications / Actors and Systems | Resolved applications (source guide § Target Resolution). Human lanes, escalation recipients, task assignees become actors. |
-| Build With / Components | Source guide § Component Detection → skill per component; [skill-mapping-guide.md](skill-mapping-guide.md) decision tree for steps inside a hybrid component. |
+| Build With / Components | Source guide § Component Detection → skill per component; [skill-mapping-guide.md](skill-mapping-guide.md) decision tree for steps inside a hybrid component. Test components (test-case groups) all belong to one test project `<ProcessName>.Tests`: type them as "Test-case group in project …" and add the Project layout table ([genome-format-guide.md § Build With / Components](genome-format-guide.md)). |
 | Platform Dependencies | Source guide § Platform Resources. Keep the source resource name. One credential asset per login account the scenarios use, named after the account. |
 | Interface | Arguments, schemas, entry points. Must agree with the Handoffs rows that touch this component. |
 | Configuration Questions | Every hardcoded literal and every application choice: `N. {Question}? (default: {source value})`. |
@@ -84,7 +84,7 @@ Write the **process genome first** (when applicable), then each **component geno
 | Error Handling | Constructs translated to behaviour, attached to their step; `### Global` for global handlers and REFramework-style classification. |
 | Handoffs | One row per cross-component edge from Step 4. |
 | Acceptance Criteria | One per step, per transformation, per rule, per handler, plus edge cases. Existing test cases and eval sets become criteria directly (behavioural wording). |
-| Deployment | Solution vs independent packages, triggers, folders from the manifest and bindings. |
+| Deployment | Solution vs independent packages, triggers, folders from the manifest and bindings. Count the buildable projects: non-test components plus exactly one test project when test components exist. |
 | Complexity, Tags | Step 5; applications + domain + platform features. |
 | Source Map | Step → file / workflow / node label; component → project. Dead code, unresolved references, inferred steps. Names the source artifacts written in Step 6b. |
 
@@ -116,6 +116,7 @@ Write all files, then ask "Want to adjust anything?". Common follow-ups:
 3. **Code in the body:** activity names, node types, variable names, file names, selectors, expressions. Translate; provenance goes to the Source Map.
 4. **Integration Service as an application.** Resolve the connector to the vendor system.
 5. **Flattening a solution into one component genome**, or losing the handoffs between projects.
+5b. **One test project per business area.** Test-case groups are separate components but one project; the process genome must say so.
 6. **Treating designer metadata, generated files, or test projects as workflow logic.**
 7. **Sampling files.** Every non-generated artifact is read.
 8. **Leaving a section empty because the source is ambiguous.** Write the best interpretation, flag it, note it in the Source Map.
