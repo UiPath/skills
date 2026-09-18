@@ -24,7 +24,7 @@ This activity has only the standard timing/synchronization options — see [_com
 
 - This activity has `DelayMS = 0` by default (unlike most other activities which default to 300 ms).
 - Commonly placed after a **Send Control Key** (Transmit/Enter) to wait for the host to respond before reading or writing fields.
-- **Flaky in the first few seconds after a fresh TLS connect.** When placed as the very first child activity in a `TerminalSession.Body` (i.e. immediately after the session opens), this activity can intermittently throw `ErrorWaitReady` — identical XAML succeeds on one run and fails on the next. The cause appears to be a race against TN5250 protocol negotiation completing after the TLS handshake. Workarounds: rely on the parent `TerminalSession.DelayMS` (raise it to 3000–5000 ms for TLS hosts) to handle initial settling and omit the leading `WaitScreenReady`, OR retry the activity on failure. After the first interaction with the host, the activity is reliable.
+- **Flaky in the first few seconds after a fresh TLS connect.** When placed as the very first child activity in a `TerminalSession.Body` (i.e. immediately after the session opens), this activity can intermittently throw `ErrorWaitReady` — identical XAML succeeds on one run and fails on the next. The cause appears to be a race against TN5250 protocol negotiation completing after the TLS handshake. Workarounds: rely on the parent `TerminalSession.DelayMS` (raise it to between 3000 and 5000 ms for TLS hosts) to handle initial settling and omit the leading `WaitScreenReady`, OR retry the activity on failure. After the first interaction with the host, the activity is reliable.
 
 ## XAML Example
 
