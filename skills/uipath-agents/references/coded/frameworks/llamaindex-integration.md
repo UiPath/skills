@@ -13,7 +13,7 @@ uip codedagent new my-agent
 
 This generates `main.py` (with a Workflow template), `llama_index.json`, and `pyproject.toml`. Then modify `main.py` to implement your actual agent logic.
 
-> **Prerequisite:** `uipath-llamaindex` must be installed for the LlamaIndex template to be used.
+> **Prerequisite:** `uipath-llamaindex` must be installed in the active venv before `new` — `uipath new` defaults to `--type auto` and picks the LlamaIndex template from the installed package. Confirm `llama_index.json` exists after `new`; if `uipath.json` with a `functions` map appeared instead, the package was missing — recover per [../lifecycle/setup.md](../lifecycle/setup.md) § Verify the Scaffold.
 
 ## Project Structure
 
