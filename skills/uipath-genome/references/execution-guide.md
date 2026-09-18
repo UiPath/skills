@@ -10,39 +10,63 @@ Read the whole file. Identify the level from the preamble comment (`component` o
 
 Required sections (component): Overview, Target Applications, Build With, Workflow, Acceptance Criteria, Complexity. Optional (may be stubs): Platform Dependencies, Interface, Configuration Questions, Business Rules, Error Handling, Source Map. A genome missing a required section is malformed: report which section and stop.
 
-### 1.2 Configuration questions
+### 1.2 Preflight discovery
 
-Skip when the section is the stub line. Otherwise ask every question before writing any code:
+Before asking anything, gather the facts the scaffolding questions in 1.3 are built from. Discovery is silent; it never replaces the questions.
 
-1. Group questions by topic (notifications, data sources, behaviour, environment).
-2. For each question generate three concrete options. When the genome carries a default, it is option one with "(Recommended)". Labels 1-5 words; header ≤ 12 characters.
+1. Run the platform login status check and record what an expired session blocks (resource refresh, publish, deploy — local init, validate, build and pack still work).
+2. Confirm the runtime host and edit surface, and record which target frameworks and expression languages they support.
+3. For every skill named in Build With / Components, run that skill's discovery commands for installed packages and record the activity packages and versions available to the authoring host. When a project already exists in the build location, also record its declared dependencies and versions from its manifest.
+4. Determine the candidate build location: the folder that contains the genome file, never the current working directory when that is a different repository.
+
+### 1.3 Configuration questions — never skipped
+
+Ask before writing any code, creating any project, or installing any package. This step runs in every execution, including when the genome's Configuration Questions section is the stub line, because the scaffolding questions below do not come from the genome.
+
+Two sources of questions, asked in this order:
+
+**A. Genome questions** — every numbered question in the genome's Configuration Questions section. Absent only when that section is the stub line.
+
+**B. Scaffolding questions** — always asked, once per project the genome will create (per component for a process genome, once for the single test project):
+
+| Topic | Question | Options (first = Recommended) |
+|---|---|---|
+| Location | Where to create the project? | Folder next to the genome (1.2 step 4); reuse the existing project found there (only when one exists and matches the primary skill); another path |
+| Target framework (RPA projects) | Which target framework? | The one the host supports and an existing project uses; the alternatives the host supports |
+| Expression language (RPA projects) | Which expression language? | C#; VB |
+| Installed packages | Which activity packages and versions are installed where this automation will run (Studio / Robot / tenant feed)? | The set discovered in 1.2 step 3, listed by name and version; the versions declared by the existing project; user provides the list (free text) |
+| Package pinning | Pin the new project to those versions, or take the latest stable from the feed? | Pin to the installed versions; latest stable |
+| Runtime (non-RPA projects) | The owning skill's scaffold choices — runtime version, framework, template (Python version and agent framework, Node and SDK version, Flow or BPMN template) | The value the owning skill's init defaults to; the alternatives it lists |
+
+Rules:
+
+1. Group questions by topic (notifications, data sources, behaviour, environment, scaffolding).
+2. For each question generate three concrete options. When the genome carries a default, or discovery produced a value, it is option one with "(Recommended)". Labels 1-5 words; header ≤ 12 characters.
 3. Present with `AskUserQuestion`, at most four per batch; collect a batch before showing the next.
-4. Record answers as a `Configuration Answers` list; every later build step receives the answers relevant to it.
+4. Record answers as a `Configuration Answers` list with a `Scaffolding` group; the project-creation step in 1.4 receives the scaffolding answers, and every later build step receives the answers relevant to it.
+5. A default in the genome, a value found by discovery, or a "(Recommended)" option never licenses skipping the question. Only the user answers it.
+6. Process genomes: ask the process-level genome questions first, then each component's genome questions in Components order, then the scaffolding questions per project.
 
-Autonomous runs (user said not to ask, or no user available): take the default for every question, record "(default)" next to each answer, and list them in the completion report.
+Autonomous runs — only when the user's current request explicitly says not to ask (for example "take the defaults", "run unattended"): take the default for every question, record "(default)" next to each answer, and list them in the completion report. Absence of a reply, a long-running session, or a subagent context is not authorisation to run autonomously; the executor asks and waits.
 
-Process genomes: ask the process-level questions first, then each component's questions in Components order.
+### 1.4 Resolve the target project
 
-### 1.2b Preflight
-
-Before creating anything: run the platform login status check and record what an expired session blocks (resource refresh, publish, deploy — local init, validate, build and pack still work); confirm the runtime host and edit surface to fix the target framework and expression language for every project; choose the build location. The build location defaults to the folder that contains the genome file, never to the current working directory when that is a different repository; say where you are building.
-
-### 1.3 Resolve the target project
+Every project is created with the `Scaffolding` answers from 1.3: location, target framework, expression language, package set and versions. Pass them to the owning skill's project-creation step as its init flags and dependency list; when the answer was "pin to installed versions", install exactly those versions and never let the init command's defaults override them.
 
 **Component genome:**
-1. Look for an existing project in the working directory (`project.json`, `project.uiproj`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `uipath.json`). If one matches the genome's primary skill, confirm reuse with the user (autonomous: reuse).
-2. Otherwise create the project through the owning skill's project-creation step (that skill knows the init command and its mandatory flags). Name it after the genome.
+1. When the Location answer is "reuse the existing project" (`project.json`, `project.uiproj`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `uipath.json` matching the genome's primary skill), use it.
+2. Otherwise create the project through the owning skill's project-creation step (that skill knows the init command and its mandatory flags) at the chosen location. Name it after the genome.
 3. Record `PROJECT_DIR`. Every build step targets it. One project for the whole component genome; XAML and coded files coexist in one RPA project.
 
 **Process genome:**
 1. Create or reuse a solution named after the process (`uip solution init "<NAME>" --output json` when none exists). Record `SOLUTION_DIR`.
-2. Each non-test component becomes one project inside the solution: create it through its owning skill, then register it with `uip solution projects add <PROJECT_PATH> --output json`.
+2. Each non-test component becomes one project inside the solution: create it through its owning skill with that component's scaffolding answers, then register it with `uip solution projects add <PROJECT_PATH> --output json`.
 3. **All test components share one test project.** Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step, register it once, and give every test component the same `PROJECT_DIR` with its own subfolder (`<ComponentSlug>/`) for test cases and data files, plus a shared `Config/` folder for the configuration workflow. The process genome's Project layout table names the folders; when an older genome lacks it, derive the folder names from the component names and say so. Never create one test project per component.
 4. Verify with `uip solution projects list --output json` after all components exist.
 
 If the genome's Deployment section says "independent packages", skip the solution and treat each component as a standalone project.
 
-### 1.4 Library components and their consumers
+### 1.5 Library components and their consumers
 
 A component of type library is consumed by the other components as a package dependency, so it gates them:
 
@@ -71,7 +95,7 @@ Genome build plan:
 For each group, in order:
 
 1. **Assemble context:** the Workflow steps (with substeps) for this group, Business Rules and Error Handling entries under those steps plus General/Global, Platform Dependencies touched, Interface, Configuration Answers, the Overview, and for process genomes the Handoffs rows where this component is From or To.
-2. **Invoke the owning skill** named in the Build With / Components row and follow its workflow end to end, including its mandatory reads and its own validation loop. Pass `PROJECT_DIR` so it reuses the project from 1.3 instead of creating one. When the skill is not installed, build from the genome text using the CLI directly, mark the group "built without <skill>", and continue.
+2. **Invoke the owning skill** named in the Build With / Components row and follow its workflow end to end, including its mandatory reads and its own validation loop. Pass `PROJECT_DIR` so it reuses the project from 1.4 instead of creating one. When the skill is not installed, build from the genome text using the CLI directly, mark the group "built without <skill>", and continue.
    - The skill's contract is not optional because the group is large or delegated: a subagent that builds a group receives the same instruction to invoke the skill and read what it mandates, and reports which reads it performed.
    - Activity XML comes from the skill's discovery commands and the installed package's per-activity docs, never from memory. A code generator may repeat fragments that were obtained that way; it may not invent them.
    - When a source target catalog exists (`source/targets.json`), the group's UI activities are built without targets and receive Object Repository targets in 2.2b; the placeholder-selector stub pattern applies only when no catalog and no live application exist.
@@ -155,6 +179,7 @@ UI targets: <screens>/<elements> from source catalog (high/medium/low), <n> plac
 Test data: <files> filled from source rows, <n> credential assets declared (values to enter in Orchestrator)
 Acceptance criteria: N/total met
 Configuration answers: … (defaults marked)
+Scaffolding: <target framework>, <expression language>, <package@version, …> (pinned | latest) per project
 Run: <the owning skill's run command for the entry point>
 ```
 
@@ -162,7 +187,7 @@ Extracted genomes add the healing-pass note: inferred targets are verified on th
 
 ## Anti-patterns
 
-1. **Building before the configuration questions are answered.** Produces placeholder values the user has to hunt down later.
+1. **Building before the configuration questions are answered.** Produces placeholder values the user has to hunt down later. Variants: skipping 1.3 because the genome's section is a stub (the scaffolding questions are asked regardless); taking a "(Recommended)" or discovered value without asking; declaring the run autonomous because nobody replied yet; letting the init command pick target framework and package versions the user was never asked about.
 2. **Pausing between skill groups.** "Shall I continue with the RPA part?" is wrong. Advance.
 3. **One project per skill group.** A component genome is one project. A process genome is one solution with one project per non-test component and exactly one test project holding every test component as a folder — never one test project per business area.
 4. **Reordering Build With or Components** except for the handoff-dependency case in 2.1.

@@ -49,7 +49,7 @@ Inputs, outputs, side effects. Mandatory content for a component inside a proces
 **Test components** (a group of test cases over data rows, one folder of the single test project) list the row schema per test case: the fields that vary per scenario (at most about 20 — an analyzer rule caps workflow arguments), separately from the constants that live in the project's shared configuration workflow. Credentials appear as the name of a credential asset per row, never as values.
 
 ### Configuration Questions
-Format: `N. {Question}? (default: {value})`. Every hardcoded value in the source or description becomes a question: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (default: Outlook)").
+Format: `N. {Question}? (default: {value})`. Every hardcoded value in the source or description becomes a question: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (default: Outlook)"). Scaffolding choices (project location, target framework, expression language, installed package versions) belong to the executing environment, not to the automation: execution asks them itself ([execution-guide.md § 1.3](execution-guide.md)); do not write them into the genome.
 
 ### Workflow (component) / Process Map (process)
 Numbered steps in execution order. A step that involves several fields, a condition, validation, or a transformation gets substeps (a, b, c) and a data annotation `(input: …; output: …)`.
