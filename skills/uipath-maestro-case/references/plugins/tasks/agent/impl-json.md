@@ -70,4 +70,5 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `id` captured in `id-map.json`
 
+<!-- control baseline marker: no behavioural change -->
 <!-- END: impl-json.md -->
