@@ -11,7 +11,7 @@ Step 5 of the workflow. The migrated project is a Windows project, so the modern
 ## Build
 
 ```bash
-uip rpa build "<OUTPUT_DIR>" --output json
+env -u UIPATH_STUDIO_PID uip rpa build "<OUTPUT_DIR>" --output json
 ```
 
 Build compiles every workflow, applies project-scope analyzer rules, and restores packages.
@@ -40,7 +40,7 @@ At most 3 iterations. Each iteration:
 1. Take the first failing file from the build output and validate it alone:
 
    ```bash
-   uip rpa validate --project-dir "<OUTPUT_DIR>" --file-path "<REL_XAML>" --min-severity error --output json
+   env -u UIPATH_STUDIO_PID uip rpa validate --project-dir "<OUTPUT_DIR>" --file-path "<REL_XAML>" --min-severity error --output json
    ```
 
    `--min-severity error` matters: migrated projects routinely carry pre-existing warnings.

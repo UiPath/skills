@@ -131,7 +131,7 @@ A **healthy** construction whose annotation carries a migrator line about its ex
 After each edited file:
 
 ```bash
-uip rpa validate --project-dir "<MIGRATED_DIR>" --file-path "<project-relative.xaml>" --min-severity error --output json
+env -u UIPATH_STUDIO_PID uip rpa validate --project-dir "<MIGRATED_DIR>" --file-path "<project-relative.xaml>" --min-severity error --output json
 ```
 
 Must report 0 errors. `<MIGRATED_DIR>` must be absolute; `--file-path` is relative to the project directory; `--min-severity error` matters, migrated projects routinely carry pre-existing warnings. Validation is also the safety net that catches a structurally wrong edit (e.g. an action left without a required scope). Rebuild the project afterwards with the build and fix loop in the build verification guide.
