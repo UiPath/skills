@@ -303,7 +303,23 @@ def roots() -> list:
 
 def test_a_task_that_copies_root_bindings_onto_itself_is_reported():
     chk.check_bindings("T", block(bindings=[{"id": "b1"}]), roots())
-    assert "data.bindings must be []" in only()
+    assert "data.bindings must be empty or omitted" in only()
+
+
+def test_an_empty_data_bindings_array_is_allowed():
+    chk.check_bindings("T", block(bindings=[]), roots())
+    assert chk.FAILURES == []
+
+
+def test_an_omitted_data_bindings_key_is_allowed():
+    # Empty and omitted are the same state: the FE reads per-activity property
+    # bindings at data.context[name="metadata"].bindings and never reads
+    # data.bindings, and the CLI declares `bindings?:` optional and never emits
+    # `[]`. Requiring the key failed every real build this check ever graded.
+    blk = block()
+    blk.pop("bindings")
+    chk.check_bindings("T", blk, roots())
+    assert chk.FAILURES == []
 
 
 def test_a_missing_connection_context_entry_is_reported():

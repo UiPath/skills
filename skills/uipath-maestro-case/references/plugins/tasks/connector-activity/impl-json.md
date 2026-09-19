@@ -222,7 +222,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 5. `data.context[name="folderKey"].value` is `=bindings.<FolderBindingId from splice Summary>`; entry absent when `spec.connection.folderKey` was null
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
 7. Root bindings exist for ConnectionId + folderKey with the ids splice reported, each carrying `default`
-8. `data.bindings[]` is empty `[]`
+8. `data.bindings[]` carries no root-binding copies — omit the key or write `[]`; both are the same state
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` (written by splice; uniqueness rule applied for outputs in Step 5.c)
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
@@ -234,7 +234,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT add `operation` or `_label` to `data.context[]`.** The FE only adds `operation` for triggers; activity context must not have it.
 - **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
-- **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
+- **Do NOT copy root bindings into `data.bindings[]`.** Connection and folder bindings are managed centrally in the root `bindings[]` and are never duplicated per-task. Omitting the key and writing `[]` are equivalent — the FE reads per-activity property bindings at `data.context[name="metadata"].bindings`, never at `data.bindings`, and `bindings` is optional in the schema. Only a non-empty copy is the defect.
 - **Do NOT hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings.** `uip maestro case splice` writes them from the saved spec envelope (Step 5.b). Any agent-composed version is reconstruction from memory, which is where nested subtrees get dropped.
 - **Do NOT translate, drop, or reroute an SDD filter.** Use FilterTree only with `spec.filter`; otherwise preserve the exact SDD value in a declared plain sink or halt (Step 4).
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
