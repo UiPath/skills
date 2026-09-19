@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-18T04:07:17Z",
-  "cli_version": "1.203.0-dev.8733",
+  "generated_at": "2026-09-19T04:06:41Z",
+  "cli_version": "1.203.0-dev.8750",
   "verbs": [
     "admin",
     "admin audit",
@@ -447,6 +447,8 @@
     "eval schedule pause",
     "eval schedule resume",
     "eval schedule update",
+    "eval simulatable-components",
+    "eval simulatable-components list",
     "feedback",
     "feedback send",
     "function",
