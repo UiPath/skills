@@ -8,20 +8,15 @@
 - Inspecting tool calls, LLM interactions, and agent decisions during execution
 - Getting detailed observability data beyond what `uip or jobs logs` provides
 
-## Two tools, two levels of detail
-
-| Command | Tool | What it returns |
-|---------|------|-----------------|
-| `uip or jobs traces <job-key>` | orchestrator-tool | Lists trace IDs attached to a job |
-| `uip traces spans get` | traces-tool | Fetches detailed span data for a trace or job |
-
-**Typical flow:** Use `uip or jobs traces` to discover trace IDs, then `uip traces spans get` for the full span tree.
-
-Or skip straight to spans by job key:
+## One command, keyed by job or by trace
 
 ```bash
 uip traces spans get --job-key <job-key> --output json
 ```
+
+There is no separate discovery step: `--job-key` resolves the trace itself, so start here when all you have is a job. Pass a trace id positionally when you already have one.
+
+> `uip or jobs traces <job-key>` used to list a job's trace ids. It is removed — the command still parses but only prints a pointer here and exits non-zero. Replace it in any script that still calls it.
 
 ## Command: `uip traces spans get`
 
@@ -45,6 +40,6 @@ uip traces spans get --job-key <job-key> --output json
 
 ## Related
 
-- [Run Jobs](../orchestrator/run-jobs.md) — `uip or jobs traces` for trace discovery
+- [Run Jobs](../orchestrator/run-jobs.md) — the job lifecycle these traces come from
 - [Trace Feedback](feedback.md) — annotate spans with sentiment; includes span selection guidance for nested jobs
 - `uip traces spans get --help` for full option details

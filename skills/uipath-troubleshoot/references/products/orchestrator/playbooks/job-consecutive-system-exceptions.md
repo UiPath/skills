@@ -29,7 +29,7 @@ The threshold itself (`MaxConsecutiveSystemExceptions` in REFramework `Config.xl
 2. **Find the underlying recurring exception** — this is the real target:
    `uip or jobs logs <job-key> --level Error --output json` — look at the errors BEFORE the "max consecutive" line. The same System Exception (type + activity) repeated N times is the root cause.
 3. Confirm the repeated failing activity in traces:
-   `uip or jobs traces <job-key> --output json` — the same activity Faulted across consecutive transactions.
+   `uip traces spans get --job-key <job-key> --output json` — the same activity Faulted across consecutive transactions.
 4. Classify it: is the recurring error a **System** exception (environment/UI/dependency — retried and counted) or a mis-classified **Business** exception? Business rule violations should be thrown as `BusinessRuleException` so they do not consume the system-exception budget.
 
 ## Resolution
