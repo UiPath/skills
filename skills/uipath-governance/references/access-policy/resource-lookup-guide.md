@@ -22,7 +22,7 @@ All commands assume the user is already logged in (`uip login status --output js
 
 | Flag | Purpose |
 |------|---------|
-| `--output-filter <expr>` | JMESPath filter on the JSON response (e.g. `"Data[?contains(Name, 'Invoice')].Key"`). |
+| `--output-filter <expr>` | JMESPath filter on the JSON response (e.g. `"[?contains(Name, 'Invoice')].Key"`). |
 | `--all-fields` | Returns the full DTO instead of the curated summary — use when you need a field not shown by default (e.g. confirming the exact `ProcessType` string). |
 | `--tenant <name>` | Override the tenant selected during `uip login`. Rarely needed. |
 
@@ -152,7 +152,7 @@ Filter client-side with `--output-filter` when the tenant has many folders:
 ```bash
 uip or folders list \
   --output json \
-  --output-filter "Data[?contains(FullyQualifiedName, 'Prod')]"
+  --output-filter "[?contains(FullyQualifiedName, 'Prod')]"
 ```
 
 ---
@@ -191,12 +191,12 @@ If `uip admin robot-accounts list --search` returns nothing for the named robot,
 uip admin groups list --output json
 ```
 
-Response: `Data` is an array; each entry has `id` (UUID), `name`, `displayName`, `type` (numeric — `0` is custom, non-zero is built-in), `creationTime`. The command has **no `--search` flag** — filter client-side:
+Response: `Data` is an array; each entry has `Id` (UUID), `Name`, `DisplayName`, `Type` (numeric — `0` is custom, non-zero is built-in), `CreationTime`. The command has **no `--search` flag** — filter client-side:
 
 ```bash
 uip admin groups list \
   --output json \
-  --output-filter "Data[?contains(displayName, 'Ops')]"
+  --output-filter "[?contains(DisplayName, 'Ops')]"
 ```
 
 Take the matching record's `id` as the Group UUID for `actorRule.values[]`. See [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md) for the broader group workflow. Only surface as an Open question on the Phase 1 Spec when the admin lookup returns nothing and the user cannot supply a GUID. Never fabricate.

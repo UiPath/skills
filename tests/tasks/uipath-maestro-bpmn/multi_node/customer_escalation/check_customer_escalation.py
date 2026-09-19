@@ -29,6 +29,7 @@ from _shared.bpmn_check import (  # noqa: E402
     require_di_for_visible_elements,
     require_no_private_connector_values,
     require_sequence_integrity,
+    resolve_project,
 )
 
 BPMN_NAME = "CustomerEscalation.bpmn"
@@ -51,25 +52,8 @@ def load_json(project: Path, name: str):
         fail(f"{name} is not valid JSON: {exc}")
 
 
-def resolve_project() -> Path:
-    # Grade the project wherever the agent placed it (top level or nested under a
-    # Solution wrapper), but pick the real project unambiguously: exactly one
-    # CustomerEscalation.bpmn with project.uiproj beside it. This avoids grading a
-    # stray draft copy when two same-named files exist (find_bpmn_file matches on
-    # a substring and returns the alphabetically-first).
-    candidates = [
-        p for p in Path.cwd().rglob(BPMN_NAME) if (p.parent / "project.uiproj").is_file()
-    ]
-    if len(candidates) != 1:
-        fail(
-            f"expected exactly one {BPMN_NAME} with project.uiproj beside it, "
-            f"found {[str(p) for p in candidates]}"
-        )
-    return candidates[0].parent
-
-
 def main() -> None:
-    project = resolve_project()
+    project = resolve_project(BPMN_NAME)
     bpmn_file = project / BPMN_NAME
     try:
         root = ET.parse(bpmn_file).getroot()

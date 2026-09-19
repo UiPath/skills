@@ -3,16 +3,7 @@ name: uipath-maestro-case
 description: "TRIGGER for authoring UiPath Maestro Case plans as `<Name>.case.ts` with the reference-mode TypeScript builder SDK (`@uipath/maestro-builder-sdk/case`), compiling to `caseplan.json`, and running the `uip maestro case` check/compile/validate loop. Covers stages, tasks, rules, bindings, published-resource references, and brownfield decompile/edit/recompile. Flow builder authoring → uipath-maestro-flow; structural-core BPMN → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
-<!--
-Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ a82b640. Canonical source lives there;
-edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
-
-This is a snapshot of a generated file. In flow-builder-sdk,
-`typescript/sdk/scripts/gen-case-skill.mjs` renders it from
-`typescript/sdk/skill/SKILL-case.template.md` and the built `.d.ts`; edits
-belong upstream.
--->
+<!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 # UiPath Case Management — TypeScript Builder SDK
 
 Author a Case plan as TypeScript and compile it to schema V30 `caseplan.json`; a Case plan declares stages and conditions, not control-flow edges.
@@ -21,30 +12,39 @@ Use this as a router: read only the capability reference you need, then let Type
 
 ## Workflow
 
-1. Scaffold with `uip solution init <SolutionName>`, then run `uip maestro case init <CaseName>` inside it. Scaffold once: exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates. If a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
+1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
 2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
-5. Start from the closest staged `examples/*.case.ts`; change only scenario data.
+5. Seed the source by decompiling the stub `case init` wrote — `uip maestro case decompile <CaseName>/caseplan.json -o <Name>.case.ts --no-pipeline` — rather than hand-writing the skeleton: it carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned, and `entry-points.json` references that trigger id. Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
 6. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.
+
+## API index
+
+Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
+true of the build that emitted it. `@uipath/maestro-builder-sdk` ships
+`dist/api-members.md` (keyed by field or method — `sla`) and `dist/api-index.md`
+(keyed by exported symbol — `CaseBuilder`). Match one name, not the whole file,
+then read the span: the whole declaration, doc comment included. Both cover all
+three entry points; each file's header spells the paths its rows resolve against.
 
 ## Capability router
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
-| Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](references/api.md#casebuilder-class) | `examples/ClaimReviewSLA.case.ts` |
-| Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](references/api.md#casebuilder-class) | `examples/IntakeBinding.case.ts` |
+| Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
-| Entry, exit, and data gates | `rule`, `when` | [Rules](references/api.md#rule-function) | `examples/ClaimReviewSLA.case.ts` |
-| Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](references/api.md#taskbuilder-class) | `examples/ClaimReviewSLA.case.ts` |
+| Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Human work | `action` | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
-| Timers | `waitForTimer` | [TimerSpecData](references/api.md#timerspecdata-type) | `examples/NightlyRollup.case.ts` |
+| Timers | `waitForTimer` | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
-| Case App and layout | `caseApp`, `layout` | [CaseBuilder](references/api.md#casebuilder-class) | `examples/ClaimReviewSLA.case.ts` |
+| Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile` and generated pipeline | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
 
 ## Minimal shape

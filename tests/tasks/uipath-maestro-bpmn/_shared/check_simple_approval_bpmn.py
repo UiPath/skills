@@ -26,6 +26,16 @@ def local_name(element: ET.Element) -> str:
     return element.tag.rsplit("}", 1)[-1]
 
 
+# A public declaration reaches entry-point schema derivation and must use
+# `number`; the mutable variable it bridges to may carry the canvas float type
+# `double`. They correspond; they are not identical strings.
+MUTABLE_TYPES = {"number": ("number", "double")}
+
+
+def corresponds(public_type: str, mutable_type: str) -> bool:
+    return mutable_type in MUTABLE_TYPES.get(public_type, (public_type,))
+
+
 def variable(
     variables: list[ET.Element],
     *,
@@ -229,7 +239,6 @@ def main() -> None:
             for output in start_mapping.findall("uipath:output", NS)
             if output.attrib.get("source")
             == f"=vars.{attr(public_input, 'id')}"
-            and output.attrib.get("type") == public_input.attrib.get("type")
             and output.attrib.get("var")
         ]
         if len(bridges) != 1:
@@ -240,10 +249,12 @@ def main() -> None:
         internal_input = variable_by_id(variables, attr(bridges[0], "var"))
         if local_name(internal_input) != "inputOutput":
             fail(f"{input_name!r} start bridge must target uipath:inputOutput")
-        if public_input.attrib.get("type") != internal_input.attrib.get("type"):
-            fail(f"{input_name!r} public and mutable variable types must match")
-        if input_name == "amount" and public_input.attrib.get("type") != "number":
-            fail("numeric public and mutable amount variables must use type='number'")
+        if not corresponds(attr(public_input, "type"), attr(internal_input, "type")):
+            fail(f"{input_name!r} public and mutable variable types must correspond")
+        if attr(bridges[0], "type") != attr(internal_input, "type"):
+            fail(f"{input_name!r} start bridge type must match its mutable variable")
+        if input_name == "amount" and attr(public_input, "type") != "number":
+            fail("public 'amount' must use type='number'")
 
     public_output = variable(
         variables,
@@ -256,7 +267,6 @@ def main() -> None:
         output
         for output in end_mapping.findall("uipath:output", NS)
         if output.attrib.get("var") == attr(public_output, "id")
-        and output.attrib.get("type") == public_output.attrib.get("type")
         and (output.attrib.get("source") or "").startswith("=vars.")
     ]
     if len(output_bridges) != 1:
@@ -265,8 +275,10 @@ def main() -> None:
     internal_output = variable_by_id(variables, internal_output_id)
     if local_name(internal_output) != "inputOutput":
         fail("'decision' end bridge must read from uipath:inputOutput")
-    if public_output.attrib.get("type") != internal_output.attrib.get("type"):
-        fail("'decision' public and mutable variable types must match")
+    if not corresponds(attr(public_output, "type"), attr(internal_output, "type")):
+        fail("'decision' public and mutable variable types must correspond")
+    if attr(output_bridges[0], "type") != attr(internal_output, "type"):
+        fail("'decision' end bridge type must match its mutable variable")
 
     migration_versions = {
         elem.attrib.get("version") for elem in root.findall(".//uipath:migrationVersion", NS)

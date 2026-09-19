@@ -9,14 +9,14 @@ End-to-end Playwright pipeline from repository to UiPath Test Manager results us
 3. Ingestion is automatic: one Test Manager case per discovered Playwright **test**, bound to the package, with `PW_Tag_<tag>`, `PW_Project_<name>`, `PW_Suite_<name>`, `PW_Path_<chain>`, and `PW_File_<path>` labels as applicable.
 4. Create an empty test set and fill it with `uip tm testcases add --labels`.
 5. Run `uip tm testsets playwright-context` when available.
-6. Run with `uip tm testsets run`, optionally `--playwright-projects <names...>`.
+6. Run with `uip tm testsets run`, optionally `--playwright-project <name>`.
 7. Wait, report, and retrieve results.
 
 There is **no link step**. Do **NOT** run `uip tm testcases link-automation` on Playwright cases: ingestion links them; manual linking is the RPA pipeline and corrupts the association.
 
 For `--output json`, parse the JSON envelope from the first `{` through its matching final `}` (or read the last balanced JSON object). Auto-updater chatter, `Update completed with failures.`, `Resolved project …` lines, and telemetry warnings may occur on either side. Judge the command only by the envelope's `Result` field.
 
-`testsets playwright-context` and `run --playwright-projects` are hidden from `--help`. Older CLIs may return `unknown command` / `unknown option`: if the probe is missing, skip Step 5 and continue; if `--playwright-projects` is rejected, run without it so every project in the package config runs, and do not retry the flag. Project scoping still works without the probe.
+`testsets playwright-context` and `run --playwright-project` are hidden from `--help`. Older CLIs may return `unknown command` / `unknown option`: if the probe is missing, skip Step 5 and continue; if `--playwright-project` is rejected, run without it so every project in the package config runs, and do not retry the flag. Project scoping still works without the probe.
 
 ## Prerequisites
 
@@ -100,7 +100,7 @@ uip tm testcases add --test-set-key <TEST_SET_KEY> --labels "PW_File_<path>" --o
 ```
 Capture `TestSetKey` (for example `DEMO:10`). `--labels` is variadic, space-separated, exact, case-sensitive, and OR-matched; quote names containing spaces and discover real names with `uip tm objectlabel list` rather than guessing. It accepts any object label; `PW_*` are ingestion labels only. It is mutually exclusive with `--test-case-keys`; pass exactly one.
 
-Labels select **tests**; `--playwright-projects` selects browsers/projects. To run a whole suite on one browser, fill with `PW_Suite_*` or `PW_File_*` and pass that browser in Step 6. `PW_Project_<name>` selects tests participating in that project but does not make the run project-only. To run only a project, label-fill the desired tests by tag, suite, or file and pass the project name at run time.
+Labels select **tests**; `--playwright-project` selects browsers/projects. To run a whole suite on one browser, fill with `PW_Suite_*` or `PW_File_*` and pass that browser in Step 6. `PW_Project_<name>` selects tests participating in that project but does not make the run project-only. To run only a project, label-fill the desired tests by tag, suite, or file and pass the project name at run time.
 
 Keep one test set = one Playwright package for project scoping. Labels are not package-qualified: generic labels such as `PW_Tag_smoke` match all packages in a multi-package project. Use a package-unique `PW_File_<path>`, a unique suite label, or explicit `--test-case-keys` from the current ingestion. A mixed-package set cannot be project-scoped.
 
@@ -113,17 +113,17 @@ uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
 
 Read response fields rather than assuming the shape. `Data.IsPlaywright: true` means the set resolves to one Playwright package; `AvailablePlaywrightProjects` contains valid flag values and `SelectedPlaywrightProjects` contains the stored selection. Both are comma-joined strings such as `"chromium, firefox"`, not arrays; split on `", "` when scripting, and no stored selection is `""`.
 
-`Data.IsPlaywright: false` means the set does not resolve to exactly one synced Playwright package (RPA, multiple packages, or no package); run without `--playwright-projects`. `true` does not mean the set contains only Playwright tests: manual cases plus one Playwright package still return `true`. Treat it as “project selection is available.” The server does not error on type, so probe first and branch on `IsPlaywright`. Without a default folder, a genuine Playwright set falsely reports `IsPlaywright: false`; set the folder in Step 4 before trusting false.
+`Data.IsPlaywright: false` means the set does not resolve to exactly one synced Playwright package (RPA, multiple packages, or no package); run without `--playwright-project`. `true` does not mean the set contains only Playwright tests: manual cases plus one Playwright package still return `true`. Treat it as “project selection is available.” The server does not error on type, so probe first and branch on `IsPlaywright`. Without a default folder, a genuine Playwright set falsely reports `IsPlaywright: false`; set the folder in Step 4 before trusting false.
 
 ## Step 6 — Run
 
 For a scoped run, run:
 ```bash
 uip tm testsets run --test-set-key <TEST_SET_KEY> \
-    --playwright-projects chromium --output json
+    --playwright-project chromium --output json
 ```
 
-`--playwright-projects` is functional but absent from `uip tm testsets run --help`. Values are space-separated, case-sensitive names from `playwright.config`; several (`chromium firefox`) run all selected projects but still produce one log per test case, not per browser, so scope to one for attributable results. Unknown names fail fast before persistence and list available projects. The flag requires every case to come from one Playwright package and fails for Studio/RPA sets; omit it there. Selection persists on the test set until changed; omitting it reuses the stored selection, or config defaults if none was stored. Without tenant Playwright support, the command fails with instructions rather than running incorrectly. Omit the flag for a plain run using all config-default projects.
+`--playwright-project` is functional but absent from `uip tm testsets run --help`. It takes exactly one case-sensitive name from `playwright.config` — at most one project per execution. Results are one log per test case, not per browser, so run the set once per project if you need each browser attributed. An unknown name fails fast before persistence and lists available projects. The flag requires every case to come from one Playwright package and fails for Studio/RPA sets; omit it there. Selection persists on the test set until changed; omitting it reuses the stored selection, or config defaults if none was stored. Without tenant Playwright support, the command fails with instructions rather than running incorrectly. Omit the flag for a plain run using all config-default projects.
 
 Start without `--wait` for automation: the immediate complete JSON envelope carries `ExecutionId` and `Status: Pending`. With `--wait`, take the id from `Execution started: <id> (Pending)`, not `Starting execution for test set …`, whose UUID is the test-set id.
 

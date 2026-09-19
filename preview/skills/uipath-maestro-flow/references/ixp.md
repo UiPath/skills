@@ -1,6 +1,6 @@
 # IxP Extraction
 
-*Exact signatures, fields, and defaults: [`ixpExtract()`](api.md#ixpextract-function).*
+*Exact signatures, fields, and defaults: `ixpExtract()`.*
 
 IxP extraction runs a published Intelligent eXtraction Platform project on a
 Flow attachment.

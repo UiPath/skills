@@ -19,6 +19,7 @@ from _shared.edit_check import (  # noqa: E402
     assert_no_orphan_di,
     assert_preserved,
     assert_uipath_preserved,
+    assert_variables_extended_only,
     by_id,
     fail,
     load_original,
@@ -31,15 +32,15 @@ def _output_vars(task) -> set[str]:
 
 def main() -> None:
     _path, edited = parse_bpmn("Invoicing")
-    original = load_original(__file__, "Invoicing.bpmn")
+    original = load_original("edit/add_output", "Invoicing.bpmn")
 
+    # This task REQUIRES an addition; the shared guard covers the other half:
+    # pristine declarations round-trip untouched.
+    assert_variables_extended_only(original, edited)
     orig_vars = variable_ids(original)
-    new_vars = variable_ids(edited)
-    added_vars = new_vars - orig_vars
+    added_vars = variable_ids(edited) - orig_vars
     if not added_vars:
         fail("no new variable declared in BPMN.Variables")
-    if not orig_vars.issubset(new_vars):
-        fail(f"existing variables were dropped: {sorted(orig_vars - new_vars)}")
 
     calc = by_id(edited, "Task_Calc")
     if calc is None:

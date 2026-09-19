@@ -138,7 +138,7 @@
         "name": "route2",
         "type": "string",
         "custom": true,
-        "elementId": "Stage_Qn7tBz-tQn7tBz4Wm"
+        "elementId": "root"
       }
     ]
   },
@@ -290,7 +290,20 @@
               ],
               "data": {
                 "timerType": "timeDuration",
-                "timeDuration": "PT10S"
+                "timeDuration": "PT10S",
+                "outputs": [
+                  {
+                    "name": "route2",
+                    "type": "string",
+                    "custom": true,
+                    "var": "route2",
+                    "value": "=approved",
+                    "source": "=approved",
+                    "target": "",
+                    "body": "",
+                    "elementId": "root"
+                  }
+                ]
               }
             }
           ],

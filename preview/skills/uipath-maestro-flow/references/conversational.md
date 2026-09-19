@@ -1,6 +1,6 @@
 # Conversational
 
-*Exact signatures, fields, and defaults: [`conversationTrigger()`](api.md#conversationtrigger-function), [`waitForMessage()`](api.md#waitformessage-function), [`sendMessage()`](api.md#sendmessage-function), [`conversationContext()`](api.md#conversationcontext-function), [`conversationalAgent()`](api.md#conversationalagent-function).*
+*Exact signatures, fields, and defaults: `conversationTrigger()`, `waitForMessage()`, `sendMessage()`, `conversationContext()`, `conversationalAgent()`.*
 
 A chat-driven flow. A person opens a conversation; the flow waits for their
 message, answers it, and can post messages of its own. Every step is keyed by a

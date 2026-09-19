@@ -15,7 +15,7 @@ For user-initiated starts, use [manual](../manual/planning.md). For external eve
 
 ## Required Fields from sdd.md
 
-Compose a single canonical `timeCycle` string (ISO 8601 repeating interval) from the sdd.md phrasing.
+When sdd.md names a `timeCycle` value, copy it byte-for-byte — same spelling, same sub-second digits, same offset. A value naming the same instant in a different spelling is a defect. Compose a canonical `timeCycle` string (ISO 8601 repeating interval) from the sdd.md phrasing only when no literal value is given.
 
 | Field | Source | Notes |
 |-------|--------|-------|

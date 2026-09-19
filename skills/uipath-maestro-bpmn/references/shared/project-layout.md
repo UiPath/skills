@@ -13,6 +13,11 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
   to the project directory.
 
 For a new local project, place source files under a single project directory.
+`uip maestro bpmn init <ProjectName>` takes a name, not a path, and writes under
+the current directory; to land the project at a requested path, run it from that
+path's parent with the leaf as the name, and either pass
+`--skip-solution-registration` or make that parent a solution first — otherwise
+the default behavior below inserts the `<ProjectName>Solution/` level.
 `uip maestro bpmn init <ProjectName> --output json` nests that directory inside
 a solution. Inside a solution it registers the project with the parent `.uipx`;
 outside any solution it auto-scaffolds `<ProjectName>Solution/` and nests the
@@ -62,10 +67,18 @@ and leaves it untouched — the project still lands in
 
 Treat these JSON files as derived unless a CLI contract explicitly identifies a field as user-authored. For source fixes, edit BPMN or rerun CLI enrichment rather than patching generated output by hand.
 
-Local packaging requires the generated metadata set to exist. In particular,
-`uip maestro bpmn pack <project-path> <OutputDir> --output json` consumes
-`package-descriptor.json`; it does not create a missing descriptor from only
-the BPMN and `project.uiproj`.
+After source validation, generate the complete set with:
+
+```bash
+uip maestro bpmn refresh <project-path> --output json
+```
+
+Refresh regenerates all four files as one atomic set and local packaging
+consumes that set — see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+In particular,
+`uip maestro bpmn pack <project-path> <OutputDir> --output json` does not create
+a missing descriptor from only the BPMN and `project.uiproj`.
 
 For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
 

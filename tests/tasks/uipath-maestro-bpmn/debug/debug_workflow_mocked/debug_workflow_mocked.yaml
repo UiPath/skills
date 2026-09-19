@@ -40,9 +40,10 @@ initial_prompt: |
 
   The `uip` CLI is already available and is backed by a local test harness.
   You have consent to run this debug session. Use
-  `uip maestro bpmn ... --output json` for CLI reads. Do NOT inspect `mocks/`,
-  `fixtures/`, or any response JSON files directly — get every value from the
-  CLI. Do NOT upload, publish, deploy, or pack anything.
+  `uip maestro bpmn ... --output json` for CLI reads. Do NOT inspect `mocks/` or
+  `fixtures/` directly — get every value from the CLI. Capturing a CLI response
+  to your own file and reading it back is fine. Do NOT upload, publish, deploy,
+  or pack anything.
 
 success_criteria:
   - type: command_executed

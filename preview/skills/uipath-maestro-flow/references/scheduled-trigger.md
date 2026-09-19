@@ -1,6 +1,6 @@
 # Scheduled Trigger
 
-*Exact signatures, fields, and defaults: [`scheduled()`](api.md#scheduled-function).*
+*Exact signatures, fields, and defaults: `scheduled()`.*
 
 A scheduled trigger asks the platform scheduler to start a Flow repeatedly.
 
