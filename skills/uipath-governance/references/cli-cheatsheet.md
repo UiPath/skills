@@ -198,10 +198,13 @@ uip gov compliance-packs state restore tenant $TENANT_ID <packId> --output json 
 uip gov compliance-packs state get    tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state list   tenant $TENANT_ID          --output json
 
-# Organization scope (all tenants)
+# Organization scope — coverage/list only
 uip gov compliance-packs state coverage organization $ORG_ID <packId> --output json
-uip gov compliance-packs state enable  organization $ORG_ID <packId> --output json
 uip gov compliance-packs state list   organization $ORG_ID          --output json
+# state enable organization: accepted by the CLI, NOT implemented on the backend — it
+# configures nothing and returns no error. For org-wide apply, list tenants with
+# `uip login tenant list` and call `state enable tenant <id>` for each one.
+# See compliance-pack/full-apply/impl.md § Org-scope deployment.
 ```
 
 `state coverage` does NOT require the pack to be enabled first — it reads live tenant state fresh every call.
