@@ -220,6 +220,12 @@ def main():
                 f"(object/array shape lives in body.type); got {match.get('type')!r}"
             )
         body = match.get("body") or {}
+        if isinstance(body, str):
+            sys.exit(
+                f"FAIL: variable {var_name!r} body is a JSON-encoded string "
+                f"({body!r}); body must be a JSON object. Only `default` is "
+                "string-encoded — see global-vars/impl-json.md § jsonSchema type."
+            )
         if body.get("type") != want_body_type:
             sys.exit(
                 f"FAIL: variable {var_name!r} jsonSchema body.type should be "
