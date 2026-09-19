@@ -1,0 +1,83 @@
+task_id: skill-case-diagnose-shared-output-var-suffixed
+description: >
+  Diagnose mode. The staged case PASSES `uip maestro case validate` with zero
+  findings. Two send tasks in Review are meant to report into one case variable,
+  so the case always shows the most recent send. The second task's status row
+  carries `lastEmailStatus2` in both `id` and `var`, a numbered variant of the
+  shared name, and that name is declared nowhere. Nothing reads it, so validate
+  stays green: it checks that references resolve, and there is no reference.
+  The gate reads the shared name, so only the first task's send ever reaches it
+  and the second is silently lost. Grades the traps: deleting or retyping the
+  second task, dropping its status row, declaring the numbered name as a case
+  variable, or pointing the row's target at the numbered name.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, connector, feature:write-back]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ passes
+  `uip maestro case validate` cleanly. Review sends two notifications, and both
+  are supposed to report their send status into the same case variable, so the
+  case always shows the most recent one. Only the first send ever shows up
+  there.
+
+  Find out why and fix it. Keep the intended design: three stages,
+  Intake to Review to Decision, both send tasks in Review, and Decision gated
+  on the shared send status.
+
+  - A clean validate is NOT evidence the case is healthy here. The defect is
+    something validate cannot see.
+  - Both tasks report into ONE case variable. Do not give the second task a
+    variable of its own, and do not declare one for it.
+  - Do NOT delete or retype either send task, the gate, the stages, or the
+    trigger.
+  - Do NOT run `uip maestro case debug`.
+  - Do NOT ask for approval. Work end-to-end and finish with validate passing.
+
+  Scope: this is a targeted repair of one output row, not a build.
+
+  - This case is offline. The resource names and ids in it are placeholders, and
+    nothing here needs looking up on a tenant. Do not run `uip` commands that
+    reach one.
+  - The defect and its fix are both inside
+    LinearThreeStages/LinearThreeStages/caseplan.json. Nothing else changes.
+  - Read the case definition and the skill's output binding rules only. You do
+    NOT need to read the reference set exhaustively; the read-to-EOF rule is
+    lifted for this repair.
+  - If you are on your third edit, stop editing and re-read what the skill says
+    about which field may be renamed when two rows would collide.
+
+  Load the uipath-maestro-case skill and follow its validate to fix loop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "uip maestro case validate still passes after the repair"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both send tasks write the same shared status variable with no numbered variant anywhere, only one status variable is declared, and both tasks and the gate survive"
+    command: "python3 $TASK_DIR/check_shared_output_var_suffixed.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
