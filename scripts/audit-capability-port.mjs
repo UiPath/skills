@@ -18,6 +18,11 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
+/** Real `uip` verb paths, so an example's arguments are not read as verbs. */
+const CATALOG = new Set(
+  JSON.parse(readFileSync(new URL("../assets/uip-catalog-snapshot.json", import.meta.url), "utf8")).verbs,
+);
+
 const STOPWORDS = new Set([
   "never", "always", "without", "before", "first", "instead", "because",
   "should", "would", "their", "there", "these", "those", "which", "while",
@@ -48,13 +53,20 @@ export function commands(text) {
   for (const span of spans) {
     const match = span.match(/\buip ((?:[a-z][a-z-]* )*[a-z][a-z-]*)/);
     if (!match) continue;
-    // Stop before the first argument or flag: those are not verb-path segments.
-    const verbs = [];
+    // Trim to the longest prefix the CLI catalog actually knows. Without this,
+    // an example's arguments read as verb segments and `eval add greeting-test`
+    // and `eval add hello-test` count as two different commands.
+    const words = [];
     for (const word of match[1].split(/\s+/)) {
       if (word.startsWith("-") || word.startsWith("<")) break;
-      verbs.push(word);
+      words.push(word);
     }
-    if (verbs.length > 0) found.add(verbs.join(" "));
+    let verb = "";
+    for (let n = words.length; n > 0; n--) {
+      const candidate = words.slice(0, n).join(" ");
+      if (CATALOG.has(candidate)) { verb = candidate; break; }
+    }
+    if (verb) found.add(verb);
   }
   return found;
 }
@@ -86,8 +98,12 @@ function main([gaPath, previewPath]) {
 
   const gaCommands = commands(ga);
   const previewCommands = commands(preview);
+  // A preview command covers a GA one when it is the same or MORE specific.
+  // The reverse does not hold: preview naming `maestro flow eval` says nothing
+  // about whether `eval evaluator add` survived, and treating it as coverage
+  // hides every subcommand behind its parent.
   const missingCommands = [...gaCommands].filter((command) =>
-    ![...previewCommands].some((p) => p.startsWith(command) || command.startsWith(p)),
+    ![...previewCommands].some((p) => p === command || p.startsWith(`${command} `)),
   ).sort();
 
   const gaRules = rules(ga);
