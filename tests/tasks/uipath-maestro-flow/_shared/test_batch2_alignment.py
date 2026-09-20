@@ -79,6 +79,48 @@ def test_simulated_hitl_checks_accept_root_sdk_emit(tmp_path: Path) -> None:
         assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_outcome_wiring_accepts_outcome_literally_named_completed(
+    tmp_path: Path,
+) -> None:
+    """outcome-completed is not always a misuse: a real outcome whose own id
+    is "completed" wires that exact port, and the checker must accept it."""
+    flow = {
+        "nodes": [
+            {
+                "id": "review",
+                "type": "uipath.human-in-the-loop.quick-form",
+                "inputs": {
+                    "schema": {
+                        "outcomes": [
+                            {"id": "completed", "name": "Completed"},
+                            {"id": "reject", "name": "Reject"},
+                        ],
+                    },
+                },
+            },
+        ],
+        "edges": [
+            {
+                "sourceNodeId": "review",
+                "sourcePort": "outcome-completed",
+                "targetNodeId": "log",
+                "targetPort": "input",
+            },
+            {
+                "sourceNodeId": "review",
+                "sourcePort": "outcome-reject",
+                "targetNodeId": "log",
+                "targetPort": "input",
+            },
+        ],
+    }
+    (tmp_path / "Review.flow").write_text(json.dumps(flow))
+
+    result = run_script(SHARED / "check_simulated_hitl.py", "outcome-wiring", cwd=tmp_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_quick_form_check_accepts_specialized_node_type(tmp_path: Path) -> None:
     flow = {
         "nodes": [

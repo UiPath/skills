@@ -137,7 +137,7 @@ Flow execution reaches a HITL QuickForm node, the human task is created and comp
 
 ### Cause
 
-A QuickForm node has one output port per outcome, named `outcome-<outcome.id>`. `outcome-completed` is a separate, zero-outcome placeholder port that disappears the instant the schema has any real outcome — it is never a real branch once outcomes exist. Either one of the real outcome ports has no outgoing edge, or the flow was wired against the stale `outcome-completed` placeholder instead of the real per-outcome ports.
+A QuickForm node has one output port per outcome, named `outcome-<outcome.id>`. `outcome-completed` is the port for a zero-outcome node, or for a real outcome whose `id` is literally `completed` — never a shared exit for several outcomes. Either one of the real outcome ports has no outgoing edge, or the flow was wired against the placeholder instead of the real per-outcome ports.
 
 ### Fix
 
