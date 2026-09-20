@@ -70,6 +70,8 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule element the escalation fires under. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
 
+**The escalation table's recipient column has more than one accepted header.** `At-Risk Action` / `Breach Action` is one form; `At-Risk Escalation Display Name` / `Breach Escalation Display Name` is another — `--strict --sdd` recognizes both and reports `STRICT_SDD_SLA_ESCALATION_MISSING` when the column exists but a row's cell is empty or the plan's matching escalation carries no recipient. Neither form guarantees the *recipient* itself is in that cell, though: some SDDs put only the escalation's display title there and state the actual recipient in the Design Rationale's prose (e.g. "bumped up to the Category Management group so it does not stall"). Read the Design Rationale for every escalation row before writing `recipients[]` — a non-empty display-title cell tells the audit an escalation exists, not who it reaches.
+
 ## Identity Resolution
 
 When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the escalation rule. Resolved UUIDs land in `recipients-resolved.json`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — the design lane records email / group name as a string in sdd.md.
