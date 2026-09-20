@@ -1,30 +1,18 @@
 # Multi-skill Patterns Guide
 
-Common request shapes that span more than one specialist skill. Use this guide when deciding whether a request is single-skill (load one specialist directly) or multi-skill (emit a plan).
+Use this guide to decide whether a request is single-skill (load one specialist) or multi-skill (emit a plan).
 
-## When to emit a multi-skill plan
+## Routing
 
-Emit a multi-skill plan when the request clearly spans more than one specialist. Single-skill tasks (e.g., "create a workflow that sends an email") go directly to the specialist — no plan needed.
+Emit a multi-skill plan when a request crosses specialist boundaries, requires another product to exist first, or asks one skill to consume another skill's result. Use one specialist when one skill owns the deliverable end-to-end, the user modifies an existing automation in one project, or the request is read-only, diagnostic, or exploratory.
 
-A request is **multi-skill** when at least one of the following is true:
+Single-app UI automation—one project, live app, and workflow—is a single-skill `uipath-rpa` task. `uipath-rpa` owns authoring, live-app exploration, and probing.
 
-- Build + deploy crosses skill boundaries (RPA build → platform deploy)
-- A target product cannot exist without other products built first (Flow needs RPA processes that don't exist yet)
-- The user wants the result of one skill to be consumed by another (Agent uses RPA processes as tools)
-
-A request is **single-skill** when:
-
-- The deliverable is owned end-to-end by one skill (e.g., "create a UiPath RPA workflow that fills a form" — one project, one app, one workflow)
-- The user is modifying an existing automation in a single project
-- The request is read-only / diagnostic / exploration only
-
-> **Important:** Single-app UI automation (one project, one live app, one workflow) is **not** a multi-skill pattern — it's a single-skill `uipath-rpa` task. `uipath-rpa` owns UI automation authoring end-to-end, including live-app exploration and probing.
-
-> **Important — inline nodes are not components.** A Flow whose only "components" are **inline nodes** (HITL QuickForm, script, connector activity, inline agent) is a **single-skill** `uipath-maestro-flow` task, **not** a multi-skill plan. The flow author journey scaffolds the solution and authors every inline node itself — it reads the HITL plugin reference inline; it does not hand off to `uipath-human-in-the-loop` as a separate task. Counting inline pieces as separate skills ("solution + flow + human-in-the-loop") is a mis-classification. A flow only becomes **multi-skill** (Pattern 2/3) when it orchestrates **separate buildable projects** — distinct `.uipx` projects such as a standalone RPA process, a coded agent, or a coded app, each of which needs its own specialist.
+Inline nodes are not components. A Flow containing only inline HITL QuickForm, script, connector activity, or inline agent nodes is a single-skill `uipath-maestro-flow` task; the flow author scaffolds and authors those nodes and reads the HITL plugin reference inline. A Flow is multi-skill only when it orchestrates separate buildable projects, such as a standalone RPA process, coded agent, or coded app, each needing its own specialist.
 
 ## Pattern 1 — RPA build + deploy to Orchestrator
 
-**When it applies:** user wants to build an RPA workflow and deploy it to Orchestrator (most common production flow).
+**When it applies:** Build an RPA workflow and deploy it to Orchestrator.
 
 ```
 1. uipath-rpa      → create / edit, validate, build the workflow
@@ -32,13 +20,13 @@ A request is **single-skill** when:
 3. uipath-solution → pack, publish, deploy to Orchestrator (`uip solution` lifecycle)
 ```
 
-`uipath-rpa` does not deploy. Deploy to Orchestrator for solution-bundled RPA goes through `uipath-solution` (`uip solution pack/publish/deploy`). For raw single-package Orchestrator ops not wrapped in a `.uipx`, defer to `uipath-platform`.
+`uipath-rpa` does not deploy. For solution-bundled RPA, use `uipath-solution` (`uip solution pack/publish/deploy`). For raw single-package Orchestrator operations not wrapped in `.uipx`, defer to `uipath-platform`.
 
-> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the SDD carries a §9 *Interactive Authentication / Re-auth Handoff* subsection (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities.
+Attended re-authentication remains in the RPA build task. If the SDD includes §9 *Interactive Authentication / Re-auth Handoff* (human-only login such as hardware token, smart card, or biometric), implement the pause, handoff, and state-verified resume per [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not create a separate task or describe the activities.
 
 ## Pattern 2 — Flow with local resources
 
-**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are **not** components (see the blockquote above); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). Where the flow is authored and published during the build is `uipath-maestro-flow`'s own workflow — not a plan field.
+**When it applies:** A Flow and its separate buildable components are peer sibling projects under one `.uipx` solution at the current working directory. Components are distinct `.uipx` projects or standalone RPA `.xaml`/`.cs` processes, coded agents, or coded apps. Inline nodes are not components. Scaffold each component in this plan, or use a placeholder contract when it is not built here. `uipath-maestro-flow` owns flow authoring and publication.
 
 ```
 1. uipath-maestro-flow   → create solution, init flow project
@@ -49,11 +37,9 @@ A request is **single-skill** when:
 5. uipath-maestro-flow   → testing for the flow (mandatory)
 ```
 
-`<component skill>` is `uipath-rpa`, `uipath-agents`, or `uipath-coded-apps` depending on the component type.
-
 ## Pattern 3 — Flow with deployed resources
 
-**When it applies:** Flow references components that exist as standalone Orchestrator tenant resources — already published, or to be published as part of this session. The flow consumes them by tenant identity, not as peer sibling projects under a local solution.
+**When it applies:** A Flow consumes standalone Orchestrator tenant resources that are already published or will be published in this session. It references tenant identity, not peer sibling projects under a local solution.
 
 ```
 1. <component skill>   → scaffold any unbuilt component
@@ -63,11 +49,13 @@ A request is **single-skill** when:
 5. uipath-maestro-flow → testing for the flow (mandatory)
 ```
 
-> **BPMN is a peer orchestrator to Flow.** The same Pattern 2/3 structure applies to a Maestro BPMN process — swap `uipath-maestro-bpmn` for `uipath-maestro-flow`. As with Flow, inline `uipath:*` elements (scriptTask, businessRuleTask, connector, userTask/HITL) are authored by the BPMN specialist itself and are NOT separate components — only separate buildable projects (standalone RPA process, coded agent, coded app) fan out.
+`<component skill>` is `uipath-rpa`, `uipath-agents`, or `uipath-coded-apps` by component type.
+
+**BPMN is a peer orchestrator to Flow.** Apply Patterns 2 and 3 to a Maestro BPMN process by substituting `uipath-maestro-bpmn` for `uipath-maestro-flow`. Inline `uipath:*` elements—scriptTask, businessRuleTask, connector, and userTask/HITL—are authored by the BPMN specialist and are not separate components. Only separate buildable RPA processes, coded agents, and coded apps fan out.
 
 ## Pattern 4 — Flow deploy to Orchestrator
 
-**When it applies:** the flow exists; user wants it deployed to Orchestrator.
+**When it applies:** The Flow exists and must be deployed to Orchestrator.
 
 ```
 1. uipath-maestro-flow → validate, `uip maestro flow pack`
@@ -75,11 +63,11 @@ A request is **single-skill** when:
 3. uipath-solution     → publish and deploy to Orchestrator via `uip solution`
 ```
 
-Orchestrator deploy of the wrapping `.uipx` solution requires `uipath-solution`. For a non-solution single package (no `.uipx` wrapper), route the deploy step to `uipath-platform` instead.
+Use `uipath-solution` for deployment of the wrapping `.uipx` solution. For a non-solution single package, route deployment to `uipath-platform`.
 
-## Pattern 5 — Agent that uses RPA processes as tools
+## Pattern 5 — Agent using RPA processes as tools
 
-**When it applies:** the request is for an agent whose tools are RPA processes that need to be created and published.
+**When it applies:** The Agent's tools are RPA processes that must be created and published.
 
 ```
 1. uipath-rpa      → create and validate the RPA process(es) the agent will call
@@ -92,59 +80,57 @@ Orchestrator deploy of the wrapping `.uipx` solution requires `uipath-solution`.
 
 ## Pattern 6 — Build an AgentHub MCP server
 
-**When it applies:** the request is to register an AgentHub MCP server that wraps a coded agent or uses Orchestrator-asset-backed auth that does not exist yet. Pure `uipath-mcp-servers` work — `uipath` servers with resource tools, `command` / `platform` servers, or `remote` / `swagger` servers with auth assets already in place — is single-skill; go straight to `uipath-mcp-servers`.
+**When it applies:** Register an AgentHub MCP server wrapping a coded agent or requiring Orchestrator-backed authentication that does not yet exist. Pure `uipath-mcp-servers` work—`uipath` servers with resource tools, `command` / `platform` servers, or `remote` / `swagger` servers whose auth assets already exist—is single-skill and goes directly to `uipath-mcp-servers`.
 
-Wrapping a not-yet-built coded agent (server type `coded`):
+For a not-yet-built coded agent (`coded` server):
 
 ```
 1. uipath-agents      → develop and publish the coded agent (deploys end-to-end as an Orchestrator process)
 2. uipath-mcp-servers → register the coded MCP server against the published process key
 ```
 
-Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution that don't exist yet:
+For missing Orchestrator assets used by `remote` / `swagger` Bearer or header substitution:
 
 ```
 1. uipath-platform    → create the Orchestrator asset(s) holding the auth values
 2. uipath-mcp-servers → register the server with asset-substituted headers
 ```
 
-## Pattern routing for PDD-driven lane
-
-When deriving tasks from an SDD, the planner picks a pattern based on the SDD's project list:
+## Pattern routing for PDD-driven work
 
 | SDD shape | Pattern(s) used |
 |---|---|
-| Single RPA project, no deploy mention | Pattern: simple `uipath-rpa` build + testing |
+| Single RPA project, no deploy mention | Simple `uipath-rpa` build + testing |
 | Single RPA project, deploy to Orchestrator | Pattern 1 |
-| Single-host SDD with absorbed components (e.g., RPA-primary consuming an IXP model, custom connector, or API Workflow in-process) | Leaf-first: build each consumed component via its skill (`uipath-ixp` / `uipath-connector-builder` / `uipath-api-workflow`) + testing, deploy leaves, then the host project per Pattern 1 — **no orchestrator task** |
-| RPA Master Project (multiple sub-projects, queue-connected) | Pattern 1 applied per sub-project, then cross-project deploy via `uipath-solution` (single `.uipx`) |
-| Solution with Flow + RPA + Agents, components built fresh in this session | Pattern 2 expanded across all included products |
+| Single-host SDD with absorbed components (RPA-primary consuming an IXP model, custom connector, or API Workflow in-process) | Leaf-first: build and test each consumed component via `uipath-ixp` / `uipath-connector-builder` / `uipath-api-workflow`, deploy leaves, then the host project per Pattern 1 — no orchestrator task |
+| RPA Master Project (multiple sub-projects, queue-connected) | Pattern 1 per sub-project, then cross-project deploy via `uipath-solution` in one `.uipx` |
+| Solution with Flow + RPA + Agents, components built fresh | Pattern 2 expanded across included products |
 | Solution with Flow consuming pre-published Orchestrator resources | Pattern 3 |
-| BPMN orchestrating components built fresh in this session | Pattern 2 expanded, substituting `uipath-maestro-bpmn` for `uipath-maestro-flow` |
+| BPMN orchestrating components built fresh | Pattern 2, substituting `uipath-maestro-bpmn` for `uipath-maestro-flow` |
 | BPMN consuming pre-published Orchestrator resources | Pattern 3, substituting `uipath-maestro-bpmn` |
-| Solution overview SDD | Compose multiple patterns; respect cross-product integration order from §Cross-Project Data Flow |
+| Solution overview SDD | Compose multiple patterns and respect §Cross-Project Data Flow |
 | API Workflow (single product) | `uipath-api-workflow` + `uipath-solution` for deploy + testing |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
 
-> **Deploy routing is constraint-gated.** When the plan's delivery model blocks Solutions (`.uipx`) per [platform-availability-guide.md](platform-availability-guide.md) — standalone, Automation Suite older than 2.2510, or a user exclusion — every `uipath-solution` deploy/publish step in the table above becomes per-package Orchestrator publish routed to `uipath-platform`.
+Deploy routing is constraint-gated. If the delivery model blocks Solutions (`.uipx`) per [platform-availability-guide.md](platform-availability-guide.md)—standalone, Automation Suite older than 2.2510, or user exclusion—replace every `uipath-solution` deploy/publish step with per-package Orchestrator publishing routed to `uipath-platform`.
 
-Cross-project integration order (general rule): **dependencies before dependents**. Build callable resources (RPA processes, API Workflows, agents-as-tools) before the products that consume them (Flows, Cases, parent agents).
+Build dependencies before dependents: callable resources (RPA processes, API Workflows, and agents-as-tools) precede consumers (Flows, Cases, and parent agents).
 
 ## Pattern composition for Solutions
 
-Solution-scope SDDs produce a unified project list. The planner walks the list and emits one pattern segment per project, then sequences them so that integrated components are built before their consumers:
+For a solution-scope SDD, create one unified project list, apply the relevant pattern to each project, and sequence integrated components as follows:
 
-1. Build all leaf resources (libraries, custom connectors, IXP models, Coded Functions, callable API Workflows, RPA processes used as agent tools).
+1. Build all leaf resources (libraries, custom connectors, IXP models, Coded Functions, callable API Workflows, and RPA processes used as agent tools).
 2. Run testing for each leaf.
 3. Deploy leaf resources to Orchestrator.
-4. Build orchestrators (Flows, parent agents, Cases) using the published leaf references.
+4. Build orchestrators (Flows, parent agents, and Cases) using published leaf references.
 5. Run testing for each orchestrator.
 6. Deploy orchestrators.
-7. End-to-end validation.
+7. Perform end-to-end validation.
 
 ## Anti-patterns
 
-1. **Splitting a single-app UI automation into a "discovery" task plus an "authoring" task.** `uipath-rpa` owns end-to-end authoring including target configuration and live-app exploration. One task, one skill.
-2. **Skipping the dedicated Testing task per generation skill.** Testing is mandatory and lives at the patterns level — every generation step in every pattern is followed by a testing step.
-3. **Deploying via `uipath-rpa` or `uipath-maestro-flow`.** Deployment of `.uipx`-wrapped solutions to Orchestrator goes through `uipath-solution` (`uip solution pack/publish/deploy`); for non-solution single-package Orchestrator ops, defer to `uipath-platform`. The build skills do not deploy.
-4. **Building Flow nodes that reference resources before the resources exist.** Use Pattern 2 (local resources, mocked then wired) or Pattern 3 (build and deploy components first, then reference). Never reference an unpublished resource by ID.
+1. **Do not split single-app UI automation into discovery and authoring.** `uipath-rpa` owns end-to-end authoring, target configuration, and live-app exploration; use one task and one skill.
+2. **Do not skip the dedicated Testing task per generation skill.** Testing is mandatory and follows every generation step in every pattern.
+3. **Do not deploy via `uipath-rpa` or `uipath-maestro-flow`.** Deploy `.uipx`-wrapped solutions through `uipath-solution` (`uip solution pack/publish/deploy`); defer non-solution single-package Orchestrator operations to `uipath-platform`. Build skills do not deploy.
+4. **Do not build Flow nodes that reference resources before those resources exist.** Use Pattern 2 with mocked-then-wired resources or Pattern 3 with components built and deployed first; never reference an unpublished resource by ID.
