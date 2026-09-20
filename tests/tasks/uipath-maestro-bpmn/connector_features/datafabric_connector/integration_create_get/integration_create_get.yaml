@@ -1,22 +1,15 @@
 task_id: skill-bpmn-datafabric-integration-create-get
 description: >
-  Integration test for the UiPath Data Fabric (Integration Service) connector
-  in Maestro BPMN. Covers Create + Get round-trip on FlowCodeEvalEntity (C-01)
-  and expansionLevel comparison across levels 1, 2, and 3 (C-02).
+  Integration test for the UiPath Data Fabric connector in Maestro BPMN.
+  Covers Create + Get round-trip on FlowCodeEvalEntity (C-01) and
+  expansionLevel comparison across levels 1, 2, and 3 (C-02).
   Static-validate only; runtime `bpmn debug` skipped to avoid live tenant
-  side effects (same scope as the Flow original).
+  side effects.
   Ported from Flow `connector_features/datafabric_connector/integration_create_get.yaml`;
   connector activities are modeled as bpmn:sendTask nodes carrying the registry
-  Intsvc.ActivityExecution wrapper instead of Flow connector nodes. Flow's
-  `flow node add uipath.connector.uipath-uipath-dataservice.*` authoring step
-  maps to `bpmn registry get Intsvc.ActivityExecution --object-name <Object>`
-  (BPMN has no native Data Fabric node, so the Flow prompt's contrast against
-  `core.datafabric.*` is dropped). The connector skill emits two valid
-  activity shapes for the same operation: the curated per-operation objectName
-  (e.g. `CreateEntityRecordCurated`), or the generic entity-CRUD form where
-  every node's objectName is the entity name itself and the verb lives in
-  `operation`/`method` instead; both are accepted by the grader and by the
-  advisory registry-get criteria below.
+  Intsvc.ActivityExecution wrapper instead of Flow connector nodes, and the
+  grader accepts either the curated per-operation objectName or the generic
+  entity-CRUD form the connector skill may emit for the same operation.
 tags:
   - uipath-maestro-bpmn
   - integration
@@ -25,7 +18,6 @@ tags:
   - "shape:multi-node"
   - connector
   - uipath-uipath-dataservice
-  - "feature:connections"
 
 sandbox:
   template_sources:
@@ -81,6 +73,9 @@ initial_prompt: |
   operations.
 
   The process is not complete until `uip maestro bpmn validate` passes.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.

@@ -8,7 +8,33 @@ nine-condition FilterBuilder tree paged twice, plus a third active-only
 descending query) and the same assertions, re-homed from a Flow node's
 `inputs.detail` JSON dict to a BPMN `bpmn:sendTask` carrying the registry
 `Intsvc.ActivityExecution` wrapper (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Flow's task
+names no project, so this grader locates the BPMN file with no name hint.
+
+Assertion map (Flow → BPMN):
+  F check_smoke_query_filter.py:82-85    node type suffix `.query-entity-records`                → T: curated|generic entity-CRUD objectName classification (query_entity_nodes)
+  F check_smoke_query_filter.py:71-75,90-95  nine filter conditions via structured tree or runtime text → has_expected_filter() / node_representation()
+  F check_smoke_query_filter.py:97-104   full nine-condition tree present in >=1 node             → matrix_texts non-empty check (see NOTE below)
+  F check_smoke_query_filter.py:106-109  exactly 3 Query Entity Records activities                 → len(nodes) != 3 check
+  F check_smoke_query_filter.py:130-135  >=2 nodes sorted by score                                 → sorted_field() == "score", count >= 2
+  F check_smoke_query_filter.py:137-143  >=2 score-sorted nodes carry limit + start                → has_numeric(LIMIT_NAMES) and has_numeric(OFFSET_NAMES)
+  F check_smoke_query_filter.py:145-151  >=1 node with descending sort (isAscending=false)         → is_descending()
+  I                locate/parse .bpmn (file exists, well-formed XML, no name hint)                 → parse_bpmn()
+  I                parse a target="body" CDATA as JSON when present (Flow read structured fields)  → validate_body_inputs() / parse_json_maybe()
+  T                curated|generic entity-CRUD node classification                                 → query_entity_nodes()
+  T                inputs at any depth                                                             → all_inputs() walks `.//uipath:input`
+  T                ORDER BY in query text                                                          → ORDER_BY_RE fallback in sorted_field()/is_descending()
+  T                sort/limit/offset field-name synonyms (registry may name the field differently)  → SORT_FIELD_NAMES/LIMIT_NAMES/OFFSET_NAMES sets
+  DROPPED          entity_referenced() gate on node classification    (Flow's node-type filter is entity-agnostic; not in Flow)
+  DROPPED          connection-binding check (=bindings.<id> resolves to a declared Connection binding)  (Flow never checked connections)
+  DROPPED          require_no_private_connector_values                (not in Flow)
+  DROPPED          require_sequence_integrity                         (not in Flow; `bpmn validate` criterion covers structure)
+  DROPPED          require_di_for_visible_elements                     (not in Flow; `bpmn validate` criterion covers structure)
+
+  NOTE: a prior version of this grader required the complete nine-condition
+  tree to appear in at least TWO nodes. Flow's grader (line 100, `if not
+  matrix_nodes`) only requires it in at least ONE. Restored to match Flow
+  exactly -- see the `matrix_texts` check in `main()` below.
 
 CI caught a real gap in the first version of this grader: a legitimate agent
 solution encoded the curated `QueryEntityRecordsCurated` activity as
@@ -57,32 +83,23 @@ BPMN equivalent lives):
          XML attributes and flattened JSON leaves land in one `(name,
          value)` pair list.
 
-Also asserts a `=bindings.<id>` connection reference backed by a declared
-process-level `<uipath:binding resource="Connection">` (mirrors
-check_drive_to_slack.py's `require_connection_binding`) -- the one
-registry-contract assertion from the first version that CI did not flag,
-kept as-is.
-
 Checks performed:
-  1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
+  1. BPMN file exists and is well-formed XML.
   2. Exactly 3 bpmn:sendTask nodes carry Intsvc.ActivityExecution with
      connectorKey uipath-uipath-dataservice and either objectName matching
      Query Entity Records (QueryEntityRecordsCurated|QueryEntityRecords_V3)
      or objectName == FlowCodeEvalEntity with operation List / method GET
-     (a dynamic per-entity query shape) -- and each references
-     FlowCodeEvalEntity somewhere (input value/text at any depth, or
-     objectName).
+     (a dynamic per-entity query shape).
   3. Any `target="body"` input present is valid JSON (optional -- absence
      is not an error).
   4. Every one of the nine filter conditions appears somewhere across the
      three nodes, and the complete nine-condition set appears together in
-     at least TWO nodes (queries 1 and 2 both reuse the full tree, per the
-     prompt).
+     at least ONE node (Flow's threshold -- queries 1 and 2 both reuse the
+     full tree per the prompt, but only one match is required to pass).
   5. At least 2 nodes are sorted by `score` (any direction).
   6. At least 2 of those score-sorted nodes carry both a limit and a
      start/offset value.
   7. At least 1 node has a descending sort.
-  8. Every query node references a declared connection binding.
 """
 
 from __future__ import annotations
@@ -95,15 +112,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import (  # noqa: E402
-    NS,
-    elements,
-    fail,
-    parse_bpmn,
-    require_di_for_visible_elements,
-    require_no_private_connector_values,
-    require_sequence_integrity,
-)
+from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
@@ -159,17 +168,6 @@ def context_value(task: ET.Element, name: str) -> str:
     return ""
 
 
-def entity_referenced(task: ET.Element, object_name: str) -> bool:
-    if ENTITY in (object_name or "").lower():
-        return True
-    for inp in all_inputs(task):
-        name = (inp.attrib.get("name") or "").lower()
-        value = str(input_val(inp)).lower()
-        if ENTITY in name or ENTITY in value:
-            return True
-    return False
-
-
 def query_entity_nodes(root: ET.Element) -> list[ET.Element]:
     nodes = []
     for task in elements(root, "sendTask"):
@@ -184,8 +182,6 @@ def query_entity_nodes(root: ET.Element) -> list[ET.Element]:
         is_curated = object_name_l in OBJECT_NAMES
         is_dynamic_list = object_name_l == ENTITY and (operation == "list" or method == "GET")
         if not (is_curated or is_dynamic_list):
-            continue
-        if not entity_referenced(task, object_name):
             continue
         nodes.append(task)
     return nodes
@@ -352,32 +348,6 @@ def has_numeric(pairs: list, names: set) -> bool:
     return False
 
 
-def binding_ids(root: ET.Element) -> set:
-    return {
-        b.attrib.get("id", "")
-        for b in root.findall(".//uipath:bindings/uipath:binding", NS)
-        if b.attrib.get("resource") == "Connection"
-    }
-
-
-def require_connection_binding(task: ET.Element, bindings: set) -> None:
-    label = task.attrib.get("id", "<unnamed>")
-    connection = context_value(task, "connection")
-    match = re.match(r"^=bindings\.(\S+)$", connection)
-    if not match:
-        fail(
-            f"Query node {label!r} has no `=bindings.<id>` connection reference "
-            f"(found connection={connection!r})"
-        )
-    binding_id = match.group(1)
-    if binding_id not in bindings:
-        fail(
-            f"Query node {label!r} references binding {binding_id!r} with no "
-            f'matching <uipath:binding resource="Connection"> in the '
-            f"process-level <uipath:bindings> block (declared: {sorted(bindings)})"
-        )
-
-
 def main() -> None:
     path, root = parse_bpmn()
 
@@ -405,11 +375,10 @@ def main() -> None:
             for field, tokens, operators in EXPECTED.values()
         )
     ]
-    if len(matrix_texts) < 2:
+    if not matrix_texts:
         fail(
-            "the complete nine-condition FilterBuilder tree must appear together "
-            f"in at least TWO query nodes (queries 1 and 2 both reuse it per the "
-            f"prompt); found it in {len(matrix_texts)} node(s)"
+            "the nine filter conditions are split across query nodes; one Query "
+            "Entity Records node must contain the complete FilterBuilder tree"
         )
 
     if len(nodes) != 3:
@@ -443,16 +412,6 @@ def main() -> None:
     ]
     if not descending:
         fail("expected at least one query with a descending sort")
-
-    bindings = binding_ids(root)
-    if not bindings:
-        fail('no process-level <uipath:binding resource="Connection"> declared')
-    for task in nodes:
-        require_connection_binding(task, bindings)
-
-    require_no_private_connector_values(root)
-    require_sequence_integrity(root)
-    require_di_for_visible_elements(root)
 
     print(
         f"OK: {path} -- 3 Query Entity Records nodes; the full filter tree "

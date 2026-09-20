@@ -7,10 +7,30 @@ Ported from Flow `connector_features/datafabric_connector/smoke_create_all_types
 FlowCodeEvalEntity binding all 8 field types), translated from a JSON
 `bodyParameters` walk to an XML walk over the registry-driven
 ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Flow's task
+names no project, so this grader locates the BPMN file with no name hint
+(`parse_bpmn()` prefers the one with `project.uiproj` beside it).
+
+Assertion map (Flow → BPMN):
+  F check_smoke_create_all_types.py:75      node type suffix `.create-entity-record`     → T: curated|generic entity-CRUD objectName classification (find_create_tasks)
+  F check_smoke_create_all_types.py:80-83   bodyParameters covers all 8 fields            → target="body" JSON covers all 8 fields
+  F check_smoke_create_all_types.py:84-86   pathParameters.entityName == ENTITY           → T: entity name anywhere in node's inputs/objectName/path
+  F check_smoke_create_all_types.py:90-98   per-field type check, `=js:` expression skip  → T: expression strings (=…) passing type checks
+  F check_smoke_create_all_types.py:102-103 fail if no create-entity-record node found    → fail if find_create_tasks() empty
+  I                locate/parse .bpmn (file exists, well-formed XML, no name hint)         → parse_bpmn()
+  I                parse target="body" CDATA as JSON (Flow read bodyParameters)            → json.loads(body_inputs[0].text)
+  T                curated|generic entity-CRUD node classification                        → find_create_tasks() / _is_generic_create_form()
+  T                inputs at any depth                                                    → node_inputs() walks `.//uipath:input`
+  T                entity name anywhere in node's inputs/objectName/path                  → entity_values check
+  T                expression strings (=…) passing type checks                            → _is_expression()
+  DROPPED          "exactly one Create node" hard failure   (Flow returns on the first match in node order; no uniqueness assertion)
+  DROPPED          "exactly one target=body input" hard failure   (Flow read bodyParameters structurally; parsing it is I, enforcing single-body is not)
+  DROPPED          require_no_private_connector_values      (not in Flow)
+  DROPPED          require_sequence_integrity               (not in Flow; `bpmn validate` criterion covers structure)
+  DROPPED          require_di_for_visible_elements           (not in Flow; `bpmn validate` criterion covers structure)
 
 Where Flow's grader read `node.inputs.detail.bodyParameters` as a JSON object
-already embedded in the .flow file, this grader reads the single
+already embedded in the .flow file, this grader reads a
 `<uipath:input target="body">` CDATA payload on the sendTask and
 `json.loads`s it -- the BPMN registry shell puts the whole request body in one
 JSON blob instead of Flow's structured `bodyParameters` map. Flow accepted a
@@ -42,13 +62,14 @@ just directly under `uipath:context`), since some agents nest the body/query
 inputs inside `uipath:context` instead of as siblings of it.
 
 Checks performed:
-  1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
-  2. Exactly one bpmn:sendTask carries Intsvc.ActivityExecution with
+  1. BPMN file exists and is well-formed XML.
+  2. At least one bpmn:sendTask carries Intsvc.ActivityExecution with
      connectorKey uipath-uipath-dataservice and an objectName matching either
-     accepted Create Entity Record shape (see above).
+     accepted Create Entity Record shape (see above); the first match is
+     graded.
   3. That node targets entity FlowCodeEvalEntity.
-  4. That node has exactly one target="body" input, its CDATA is valid JSON,
-     and the JSON covers all 8 fields with Flow's literal-shape checks.
+  4. That node has a target="body" input whose CDATA is valid JSON and
+     covers all 8 fields with Flow's literal-shape checks.
 """
 
 from __future__ import annotations
@@ -61,15 +82,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import (  # noqa: E402
-    NS,
-    elements,
-    fail,
-    parse_bpmn,
-    require_di_for_visible_elements,
-    require_no_private_connector_values,
-    require_sequence_integrity,
-)
+from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
@@ -182,7 +195,7 @@ def find_create_tasks(root: ET.Element) -> list[ET.Element]:
 
 
 def main() -> None:
-    path, root = parse_bpmn("DataFabricAllTypesSmoke")
+    path, root = parse_bpmn()
 
     create_tasks = find_create_tasks(root)
     if not create_tasks:
@@ -192,11 +205,6 @@ def main() -> None:
             f"curated/preview objectName (CreateEntityRecordCurated|"
             f"CreateEntityRecord_V3) nor the generic entity-CRUD form "
             f"(objectName={ENTITY!r} with operation=Create or method=POST)"
-        )
-    if len(create_tasks) > 1:
-        fail(
-            "expected exactly one Data Service Create Entity Record connector "
-            f"node, found {len(create_tasks)}"
         )
     task = create_tasks[0]
     print(f"OK: {CONNECTOR_KEY} Create Entity Record sendTask present")
@@ -210,8 +218,8 @@ def main() -> None:
     print(f"OK: node targets entity {ENTITY!r}")
 
     body_inputs = [inp for inp in node_inputs(task) if inp.attrib.get("target") == "body"]
-    if len(body_inputs) != 1:
-        fail(f'expected exactly one target="body" input on the Create node, found {len(body_inputs)}')
+    if not body_inputs:
+        fail('no target="body" input found on the Create node')
     raw = body_inputs[0].text or ""
     try:
         body = json.loads(raw)
@@ -236,9 +244,6 @@ def main() -> None:
         lines = "\n".join(f"  {f} ({lbl}): got {got}={val!r}" for f, lbl, got, val in type_errors)
         fail(f"type mismatches in Create body:\n{lines}")
 
-    require_no_private_connector_values(root)
-    require_sequence_integrity(root)
-    require_di_for_visible_elements(root)
     print(f"OK: {path} — Create body covers all 8 fields on {ENTITY} with matching JSON-literal shapes")
 
 

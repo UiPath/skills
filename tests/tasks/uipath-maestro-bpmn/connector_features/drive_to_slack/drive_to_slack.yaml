@@ -1,7 +1,7 @@
 task_id: skill-bpmn-drive-to-slack
 description: |
-  Cross-connector scenario — downloads a file from Google Drive and posts it into a Slack channel via the "Send File to channel" activity. Exercises binary file flow between two Integration Service connectors in a single Maestro BPMN process.
-  Ported from Flow `connector_features/drive_to_slack.yaml`; the connector activities are modeled as bpmn:sendTask nodes carrying the registry Intsvc.ActivityExecution wrapper (one per connector) instead of Flow connector nodes, and the file-output-to-input wire is a `vars.<id>` data binding instead of a Flow node-id reference. Validate-only, mirroring the Flow original's scope: neither task ever ran `flow debug`/`bpmn debug` — both stop at `validate` plus a structural/wiring check, with no live tenant execution graded.
+  E2E cross-connector scenario — downloads a file from Google Drive and posts it into a Slack channel via the "Send File to channel" activity. Exercises binary file flow between two Integration Service connectors in a single Maestro BPMN process.
+  Ported from Flow `connector_features/drive_to_slack.yaml`; the connector activities are modeled as bpmn:sendTask nodes carrying the registry Intsvc.ActivityExecution wrapper (one per connector) instead of Flow connector nodes, and the file-output-to-input wire is a `vars.<id>` data binding instead of a Flow node-id reference.
 tags:
   - uipath-maestro-bpmn
   - integration
@@ -12,7 +12,6 @@ tags:
   - uipath-google-drive
   - uipath-salesforce-slack
   - "mode:build"
-  - "feature:connections"
 
 run_limits:
   expected_turns: 49

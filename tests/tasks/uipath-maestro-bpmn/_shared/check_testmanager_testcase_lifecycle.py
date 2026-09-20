@@ -29,6 +29,16 @@ spelling, this checker treats GETBYID and GET as equivalent for the single
 "get the test case" operation only. Nothing else is normalised -- a
 mismatched method on any other operation fails.
 
+Assertion map (Flow -> BPMN):
+  F criterion 2   flow_contains 'uipath-uipath-testmanager.'            -> connector_tasks() non-empty (main(), no --all-ops)
+  F criterion 4   flow_contains <5 node types>                          -> one classified node per op (main(), --all-ops)
+  I               locate/parse .bpmn                                    -> parse_bpmn()
+  T               objectName+method classification (no per-op node type)-> OPERATIONS / context_value()
+  T               GETBYID/GET equivalence for "get the test case"       -> OPERATIONS methods set
+  DROPPED         require_no_private_connector_values (not in Flow)
+  DROPPED         require_sequence_integrity (not in Flow; Flow checked no ordering)
+  DROPPED         require_di_for_visible_elements (not in Flow; validate criterion covers structure)
+
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_testmanager_testcase_lifecycle.py
     python3 $REFERENCE_DIR/_shared/check_testmanager_testcase_lifecycle.py --all-ops
@@ -47,15 +57,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import (  # noqa: E402
-    NS,
-    elements,
-    fail,
-    parse_bpmn,
-    require_di_for_visible_elements,
-    require_no_private_connector_values,
-    require_sequence_integrity,
-)
+from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
 
 CONNECTOR_KEY = "uipath-uipath-testmanager"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
@@ -128,9 +130,6 @@ def main() -> None:
     if missing:
         fail("missing TestCase lifecycle connector node(s):\n  " + "\n  ".join(missing))
 
-    require_no_private_connector_values(root)
-    require_sequence_integrity(root)
-    require_di_for_visible_elements(root)
     print("OK: all five TestCase lifecycle operations present as distinct connector nodes")
 
 

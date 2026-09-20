@@ -32,7 +32,7 @@ same operation (confirmed against a real CI artifact, 2026-09):
     the task description notes this to the grading reader.
 
 Checks performed:
-  1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
+  1. BPMN file exists and is well-formed XML.
   2. >=2 bpmn:sendTask nodes carry Intsvc.ActivityExecution with
      connectorKey uipath-uipath-dataservice and mention FlowCodeEvalEntity
      somewhere in their inputs, classified as a Create (curated objectName, or
@@ -43,6 +43,19 @@ Checks performed:
   4. The union of expansionLevel values read off those retrieval nodes covers
      {1, 2, 3} -- from an input named `expansionLevel` at any depth under the
      activity, or a body JSON key of the same name.
+
+Assertion map (Flow -> BPMN):
+  F check_integration_create_get.py:35  creates >= 2                     -> `creates < 2` check
+  F check_integration_create_get.py:38  gets >= 4                        -> `gets < 4` check
+  F check_integration_create_get.py:41-44 expansionLevel union {1,2,3}   -> `missing` expansionLevel check
+  I                                     locate/parse .bpmn               -> parse_bpmn()
+  T                                     curated|generic classification   -> is_create_node()/is_retrieval_node()
+  T                                     entity name anywhere in inputs   -> mentions_entity()
+  T                                     GETBYID/GET(List) equivalence    -> is_retrieval_node() List/GET branch
+  T                                     expression/body JSON at any depth -> expansion_level() query-or-body read
+  DROPPED  require_no_private_connector_values  (not in Flow grader)
+  DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
+  DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
 """
 
 from __future__ import annotations
@@ -61,9 +74,6 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
-    require_di_for_visible_elements,
-    require_no_private_connector_values,
-    require_sequence_integrity,
 )
 
 ENTITY = "FlowCodeEvalEntity"
@@ -221,9 +231,6 @@ def main() -> None:
         )
     print(f"OK: Get nodes cover expansionLevel {sorted(expansion_levels)}")
 
-    require_no_private_connector_values(root)
-    require_sequence_integrity(root)
-    require_di_for_visible_elements(root)
     print(f"OK: {path} has {creates} creates, {gets} gets, expansionLevels={sorted(expansion_levels)}")
 
 

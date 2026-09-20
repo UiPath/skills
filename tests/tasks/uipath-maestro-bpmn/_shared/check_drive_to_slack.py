@@ -7,8 +7,21 @@ send it into a Slack channel), translated from a JSON node/edge walk to an XML
 walk over the registry-driven ``Intsvc.ActivityExecution`` connector shell
 (see skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
+Assertion map (Flow → BPMN):
+  F check_drive_to_slack.py:51-53  uipath-google-drive connector key referenced → connector_task(root, DRIVE_KEY) present
+  F check_drive_to_slack.py:55-57  uipath-salesforce-slack connector key referenced → connector_task(root, SLACK_KEY) present
+  F check_drive_to_slack.py:59-61  Send File to channel operation referenced   → SEND_FILE_RE match on Slack node objectName
+  F check_drive_to_slack.py:63-71  Slack node references Drive node id (data binding) → Slack node consumes vars.<DriveOutputVar>
+  I                locate/parse .bpmn (file exists, well-formed XML)          → parse_bpmn()
+  T                vars.<VarId> reference in place of Flow node-id reference  → output_vars()/has_variable_reference()
+  DROPPED          require_no_private_connector_values                        (not in Flow)
+  DROPPED          require_sequence_integrity                                 (not in Flow; `bpmn validate` criterion covers structure)
+  DROPPED          require_di_for_visible_elements                            (not in Flow; `bpmn validate` criterion covers structure)
+  DROPPED          connection-binding check (=bindings.<id> resolves to a declared Connection binding) (Flow never checked connections)
+  DROPPED          Drive-precedes-Slack sequence-flow reaches() check         (Flow only checked a data reference, not order)
+
 Checks performed:
-  1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
+  1. BPMN file exists and is well-formed XML.
   2. A bpmn:sendTask carries Intsvc.ActivityExecution with connectorKey
      uipath-google-drive.
   3. A bpmn:sendTask carries Intsvc.ActivityExecution with connectorKey
@@ -16,9 +29,6 @@ Checks performed:
   4. The Slack node's objectName names the Send File(s) to channel operation.
   5. The Slack node consumes a variable the Drive node's <uipath:output>
      produces (data binding wired).
-  6. The Drive node precedes the Slack node on a sequence-flow path.
-  7. Each connector node references a connection binding (``=bindings.<id>``)
-     backed by a matching process-level <uipath:binding resource="Connection">.
 """
 
 from __future__ import annotations
@@ -30,16 +40,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import (  # noqa: E402
-    NS,
-    elements,
-    fail,
-    parse_bpmn,
-    require_di_for_visible_elements,
-    require_no_private_connector_values,
-    require_sequence_integrity,
-)
-from _shared.graph import reaches  # noqa: E402
+from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
 
 DRIVE_KEY = "uipath-google-drive"
 SLACK_KEY = "uipath-salesforce-slack"
@@ -85,14 +86,6 @@ def connector_task(root: ET.Element, connector_key: str) -> ET.Element | None:
     return None
 
 
-def binding_ids(root: ET.Element, resource: str = "Connection") -> set[str]:
-    return {
-        b.attrib.get("id", "")
-        for b in root.findall(".//uipath:bindings/uipath:binding", NS)
-        if b.attrib.get("resource") == resource
-    }
-
-
 def has_variable_reference(task: ET.Element, var_id: str) -> bool:
     needle = f"vars.{var_id}"
     for inp in context_inputs(task):
@@ -101,23 +94,6 @@ def has_variable_reference(task: ET.Element, var_id: str) -> bool:
         if needle in value or needle in text:
             return True
     return False
-
-
-def require_connection_binding(task: ET.Element, bindings: set[str], label: str) -> None:
-    connection = context_value(task, "connection")
-    match = re.match(r"^=bindings\.(\S+)$", connection)
-    if not match:
-        fail(
-            f"{label} connector node has no `=bindings.<id>` connection reference "
-            f"(found connection={connection!r})"
-        )
-    binding_id = match.group(1)
-    if binding_id not in bindings:
-        fail(
-            f"{label} connector node references binding {binding_id!r} with no matching "
-            f'<uipath:binding resource="Connection"> in the process-level <uipath:bindings> '
-            f"block (declared: {sorted(bindings)})"
-        )
 
 
 def main() -> None:
@@ -150,25 +126,6 @@ def main() -> None:
         )
     print(f"OK: Slack node consumes Drive output variable vars.{wired[0]}")
 
-    drive_id = drive_task.attrib.get("id", "")
-    slack_id = slack_task.attrib.get("id", "")
-    if not reaches(root, drive_id, slack_id):
-        fail(
-            f"Drive node {drive_id!r} does not precede Slack node {slack_id!r} "
-            "on a sequence-flow path"
-        )
-    print("OK: Drive node precedes Slack node on a sequence-flow path")
-
-    bindings = binding_ids(root)
-    if not bindings:
-        fail('no process-level <uipath:binding resource="Connection"> declared')
-    require_connection_binding(drive_task, bindings, "Drive")
-    require_connection_binding(slack_task, bindings, "Slack")
-    print("OK: both connector nodes reference a declared connection binding")
-
-    require_no_private_connector_values(root)
-    require_sequence_integrity(root)
-    require_di_for_visible_elements(root)
     print(f"OK: {path} wires Drive -> Slack via Intsvc.ActivityExecution connector nodes")
 
 

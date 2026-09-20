@@ -60,10 +60,12 @@ Re-homing decisions vs the Flow grader:
     proxy is not carried forward as-is.
   - Flow's Get-by-Id ``record_id`` keyword heuristic (``"update"``/``"record"``
     in the value) becomes an exact reference to the Update node's own
-    ``<uipath:output var=...>`` id, plus a sequence-flow reachability check
-    (``_shared/graph.reaches``) that Update precedes Get -- stronger than
-    Flow's keyword guess because the BPMN output/variable contract makes the
-    real producer identifiable.
+    ``<uipath:output var=...>`` id (a ``vars.<VarId>`` reference in place of
+    Flow's node-id-shaped reference) -- the BPMN output/variable contract
+    makes the real producer identifiable, where Flow could only guess from a
+    keyword. No ordering/reachability check is added: Flow's assertion is a
+    data-reference check, not a sequence assertion, so this port does not
+    require Update to precede Get on a sequence-flow path either.
   - Flow's "any End node has any ``outputs``" check becomes: a completion
     ``bpmn:endEvent`` carries a ``BPMN.Variables`` mapping whose
     ``<uipath:output>`` ``source`` expression references at least one of the
@@ -77,30 +79,67 @@ Re-homing decisions vs the Flow grader:
     follows the variable-write chain (any ``<uipath:output var=... source=...>``
     in the document) up to 3 hops looking for a CRUD output var at the root,
     rather than requiring a single direct hop.
-  - Added (not present in Flow's grader, but implied by the ported
-    prompt/skill and cheap to check from the same XML walk): a manual root
-    start (a ``bpmn:startEvent`` with no event definition and no
-    ``uipath:event`` extension -- structural-bpmn.md's own manual-start
-    derivation rule), and that every graded Data Service node carries a
-    connection binding (``=bindings.<id>`` resolving to a declared
-    ``resource="Connection"`` binding, per registry-workflow.md §4).
+  - Added (not present in Flow's grader, but Flow does check for a manual
+    trigger node -- ``core.trigger.manual`` -- so this is a direct
+    translation, not a new assertion): a manual root start (a
+    ``bpmn:startEvent`` with no event definition and no ``uipath:event``
+    extension -- structural-bpmn.md's own manual-start derivation rule).
+  - NOT ported: a per-node connection-binding requirement
+    (``=bindings.<id>`` resolving to a declared ``resource="Connection"``
+    binding) and a hard failure when a node carries other-than-exactly-one
+    ``target="body"`` input. Neither has a Flow counterpart -- Flow's
+    grader has no concept of connections, and Flow reads
+    ``bodyParameters`` as a plain dict (empty when absent, last-key-wins
+    semantics don't apply to a Flow JSON object). ``body_json`` now mirrors
+    that: zero ``target="body"`` inputs yields an empty body (fields report
+    as missing, same failure Flow would produce), and more than one takes
+    the last (matching runtime silently-last-wins behavior) instead of
+    failing outright.
+  - NOT ported: a non-null-value check on the Create body's six fields.
+    Flow only asserts the keys are present (``FIELDS - set(body)``); it
+    never inspects the values, so requiring non-null values is stricter
+    than Flow and is dropped.
 
 Checks performed:
-  1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
+  1. BPMN file exists and is well-formed XML.
   2. A root-level manual start event (no event definition / uipath:event).
-  3. One ContractRegistry Create Entity Record sendTask with a single
-     ``target="body"`` JSON holding all six fields, all non-null.
+  3. One ContractRegistry Create Entity Record sendTask with a
+     ``target="body"`` JSON holding all six fields.
   4. >=2 ContractRegistry Query Entity Records sendTasks, each carrying a
      standalone ``100`` limit token; across them, a dueDate < 2026-08-04
      filter and a contractTitle-is-null filter.
   5. One ContractRegistry Update Entity Record sendTask whose contractTitle
      is a ``=vars.<id>`` reference to a declared process variable.
   6. One ContractRegistry Get Entity Record by ID sendTask referencing the
-     Update node's own output variable, with Update reachable-before Get on
-     a sequence-flow path.
-  7. Every graded node references a declared connection binding.
-  8. A completion end event maps out at least one of the CRUD nodes' output
+     Update node's own output variable.
+  7. A completion end event maps out at least one of the CRUD nodes' output
      variables.
+
+Assertion map (Flow -> BPMN):
+  F check_contractregistry_crud_filters.py:50-53  manual trigger node present        -> has_manual_root_start()
+  F check_contractregistry_crud_filters.py:76-80   Create body has all six fields     -> FIELDS - set(create_body)
+  F check_contractregistry_crud_filters.py:81-83   >=2 Query nodes                    -> `len(queries) < 2` check
+  F check_contractregistry_crud_filters.py:86-88   dueDate < 2026-08-04 filter        -> matches_due_date_filter()
+  F check_contractregistry_crud_filters.py:89-91   contractTitle-null filter          -> matches_null_title_filter()
+  F check_contractregistry_crud_filters.py:92-96   each Query limited to 100          -> has_standalone_token(q, "100")
+  F check_contractregistry_crud_filters.py:98-104  Update sets contractTitle          -> "contractTitle" not in update_body
+  F check_contractregistry_crud_filters.py:105-108 contractTitle is variable-bound    -> UPDATE_TITLE_VAR_RE + variable_declared()
+  F check_contractregistry_crud_filters.py:113-116 Get-by-Id wired to Update output   -> wired_var lookup against update_out_vars
+  F check_contractregistry_crud_filters.py:118-120 an End node has mapped outputs     -> derives_from_crud() end-event walk
+  I                                                locate/parse .bpmn                 -> parse_bpmn()
+  T  curated|generic entity-CRUD node classification -> is_kind()
+  T  entity name anywhere in inputs/objectName/path   -> entity_ok()
+  T  inputs at any depth                              -> node_inputs()/all_node_values()
+  T  expression strings (=...) passing type checks    -> UPDATE_TITLE_VAR_RE match on `=vars.<id>`
+  T  vars.<VarId> references in place of Flow node-id refs -> Get-by-Id wired_var check
+  T  transitive variable derivation through BPMN.Variables copy tasks -> derives_from_crud()
+  DROPPED  require_no_private_connector_values  (not in Flow grader)
+  DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
+  DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
+  DROPPED  connection-binding requirement (=bindings.<id>)  (Flow grader has no connection concept)
+  DROPPED  hard-fail on other-than-exactly-one target="body" input (Flow reads bodyParameters as a plain dict; no such limit)
+  DROPPED  Update-precedes-Get `graph.reaches` ordering check (Flow's record_id check is a data reference, not an order assertion)
+  DROPPED  non-null-value check on Create body fields (Flow only checks key presence, not values -- stricter than F)
 """
 
 from __future__ import annotations
@@ -119,11 +158,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
-    require_di_for_visible_elements,
-    require_no_private_connector_values,
-    require_sequence_integrity,
 )
-from _shared.graph import reaches  # noqa: E402
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
@@ -229,10 +264,16 @@ def matches_null_title_filter(task: ET.Element) -> bool:
 
 
 def body_json(task: ET.Element, label: str) -> dict:
+    # Flow reads `bodyParameters` as a plain dict, defaulting to `{}` when
+    # absent -- no Flow equivalent polices a node's input count. Mirror that:
+    # zero target="body" inputs is an empty body (downstream field checks
+    # then fail on their own with a clear "missing fields" message); more
+    # than one takes the last (the runtime does not merge them -- the last
+    # one silently wins), rather than treating either shape as a hard error.
     body_inputs = [inp for inp in node_inputs(task) if inp.attrib.get("target") == "body"]
-    if len(body_inputs) != 1:
-        fail(f'expected exactly one target="body" input on the {label} node, found {len(body_inputs)}')
-    raw = body_inputs[0].text or ""
+    if not body_inputs:
+        return {}
+    raw = body_inputs[-1].text or ""
     try:
         body = json.loads(raw)
     except json.JSONDecodeError as exc:
@@ -275,27 +316,6 @@ def variable_declared(root: ET.Element, var_id: str) -> bool:
     return any(child.attrib.get("id") == var_id for child in variables)
 
 
-def binding_ids(root: ET.Element) -> set[str]:
-    return {
-        b.attrib.get("id", "")
-        for b in root.findall(".//uipath:bindings/uipath:binding", NS)
-        if b.attrib.get("resource") == "Connection"
-    }
-
-
-def require_connection_binding(task: ET.Element, bindings: set[str], label: str) -> None:
-    connection = context_value(task, "connection")
-    match = re.match(r"^=bindings\.(\S+)$", connection)
-    if not match:
-        fail(f"{label} node has no `=bindings.<id>` connection reference (found connection={connection!r})")
-    binding_id = match.group(1)
-    if binding_id not in bindings:
-        fail(
-            f"{label} node references binding {binding_id!r} with no matching "
-            f'<uipath:binding resource="Connection"> in the process-level <uipath:bindings> block'
-        )
-
-
 def main() -> None:
     path, root = parse_bpmn("ContractRegistryCrudFilters")
 
@@ -317,9 +337,6 @@ def main() -> None:
     missing = FIELDS - set(create_body)
     if missing:
         fail(f"Create body missing fields: {sorted(missing)}")
-    nullish = [f for f in FIELDS if create_body[f] is None]
-    if nullish:
-        fail(f"Create body has null values for fields: {sorted(nullish)}")
     print(f"OK: Create Entity Record node populates all six {ENTITY} fields")
 
     if len(queries) < 2:
@@ -369,19 +386,7 @@ def main() -> None:
             f"Get-by-Id node does not reference any Update output variable "
             f"(vars.{{{', '.join(update_out_vars)}}}); found values: {get_values}"
         )
-    update_id = update.attrib.get("id", "")
-    get_id = get.attrib.get("id", "")
-    if not reaches(root, update_id, get_id):
-        fail(f"Update node {update_id!r} does not precede Get node {get_id!r} on a sequence-flow path")
-    print(f"OK: Get-by-Id node references Update output vars.{wired_var}, reachable from Update")
-
-    bindings = binding_ids(root)
-    if not bindings:
-        fail('no process-level <uipath:binding resource="Connection"> declared')
-    for label, tasks in (("Create", creates), ("Query", queries), ("Update", updates), ("Get", gets)):
-        for t in tasks:
-            require_connection_binding(t, bindings, f"{label} ({t.attrib.get('id')})")
-    print("OK: every graded Data Service node references a declared connection binding")
+    print(f"OK: Get-by-Id node references Update output vars.{wired_var}")
 
     crud_vars: set[str] = set()
     for t in (create, *queries, update, get):
@@ -428,9 +433,6 @@ def main() -> None:
         )
     print("OK: a completion end event maps a CRUD output variable to a process output")
 
-    require_no_private_connector_values(root)
-    require_sequence_integrity(root)
-    require_di_for_visible_elements(root)
     print(
         f"OK: {path} — {len(creates)} create, {len(queries)} query, {len(updates)} update, "
         f"{len(gets)} get {ENTITY} node(s); filters, variable binding, and output mapping present"
