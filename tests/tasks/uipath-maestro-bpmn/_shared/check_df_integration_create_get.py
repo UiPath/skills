@@ -16,17 +16,33 @@ home for those fields: the registry does not pin where ``entityName`` or
 body key), so this checker accepts any of those homes -- see
 BATCH1-ADDENDUM.md "Where connector node values live in BPMN".
 
+The skill's Data Service connector emits TWO valid activity shapes for the
+same operation (confirmed against a real CI artifact, 2026-09):
+
+  - The curated per-operation form: ``objectName`` is one of the catalog's
+    ``*Curated``/``*_V3`` names (``CreateEntityRecordCurated``,
+    ``GetEntityRecordByIdCurated``, ...).
+  - The generic entity-CRUD form: ``objectName`` is the entity name itself
+    (``FlowCodeEvalEntity``) on every node, and the verb lives in
+    ``operation``/``method`` instead (``Create``/``POST``,
+    ``Retrieve``/``GETBYID`` with an ``id`` path input, or
+    ``List``/``GET`` with a ``where``/``id`` filter and/or an
+    ``expansionLevel`` query input -- the skill retrieves-by-Id through List
+    when Retrieve does not accept expansionLevel). Both forms are accepted;
+    the task description notes this to the grading reader.
+
 Checks performed:
   1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
   2. >=2 bpmn:sendTask nodes carry Intsvc.ActivityExecution with
-     connectorKey uipath-uipath-dataservice and objectName naming Create Entity
-     Record (Curated or _V3), and mention FlowCodeEvalEntity somewhere in their
-     inputs.
-  3. >=4 such nodes with objectName naming Get Entity Record By Id (Curated or
-     _V3), same entity-mention rule.
-  4. The union of expansionLevel values read off those Get nodes covers
-     {1, 2, 3} -- from a query input named `expansionLevel`, or a body JSON key
-     of the same name.
+     connectorKey uipath-uipath-dataservice and mention FlowCodeEvalEntity
+     somewhere in their inputs, classified as a Create (curated objectName, or
+     generic objectName + Create/POST verb).
+  3. >=4 such nodes classified as a retrieval (curated Get objectName, or
+     generic objectName + Retrieve/GETBYID, or generic objectName + List/GET
+     carrying an expansionLevel input or an Id filter).
+  4. The union of expansionLevel values read off those retrieval nodes covers
+     {1, 2, 3} -- from an input named `expansionLevel` at any depth under the
+     activity, or a body JSON key of the same name.
 """
 
 from __future__ import annotations
@@ -53,9 +69,13 @@ from _shared.bpmn_check import (  # noqa: E402
 ENTITY = "FlowCodeEvalEntity"
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
-CREATE_NAMES = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
-GET_NAMES = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
+CREATE_CURATED_NAMES = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
+GET_CURATED_NAMES = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
 REQUIRED_EXPANSION = {1, 2, 3}
+
+_CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)
+_RETRIEVE_OP_RE = re.compile(r"^retrieve$", re.IGNORECASE)
+_LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
 
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
@@ -120,6 +140,52 @@ def connector_nodes(root: ET.Element) -> list[ET.Element]:
     ]
 
 
+def has_id_filter(task: ET.Element) -> bool:
+    """An `id` input at any target, or a `where`/`filter` input mentioning Id.
+
+    Covers a Retrieve-by-Id done through List/GET: either a direct `id` query
+    param, or a `where` expression filtering on the Id field (the shape a real
+    CI artifact used: `=js:"'Id' = '" + vars.X.Id + "'"`).
+    """
+    for inp in node_inputs(task):
+        name = (inp.attrib.get("name") or "").lower()
+        if name == "id":
+            return True
+        if name in ("where", "filter"):
+            text = (inp.attrib.get("value") or "") + (inp.text or "")
+            if re.search(r"\bid\b", text, re.IGNORECASE):
+                return True
+    return False
+
+
+def is_generic_entity_object(object_name: str, entity: str) -> bool:
+    return object_name.strip().lower() == entity.strip().lower()
+
+
+def is_create_node(task: ET.Element, object_name: str) -> bool:
+    if object_name in CREATE_CURATED_NAMES:
+        return True
+    if not is_generic_entity_object(object_name, ENTITY):
+        return False
+    operation = context_value(task, "operation").strip()
+    method = context_value(task, "method").strip().upper()
+    return bool(_CREATE_OP_RE.match(operation)) or method == "POST"
+
+
+def is_retrieval_node(task: ET.Element, object_name: str) -> bool:
+    if object_name in GET_CURATED_NAMES:
+        return True
+    if not is_generic_entity_object(object_name, ENTITY):
+        return False
+    operation = context_value(task, "operation").strip()
+    method = context_value(task, "method").strip().upper()
+    if _RETRIEVE_OP_RE.match(operation) or method == "GETBYID":
+        return True
+    if _LIST_OP_RE.match(operation) or method == "GET":
+        return expansion_level(task) is not None or has_id_filter(task)
+    return False
+
+
 def main() -> None:
     path, root = parse_bpmn()
 
@@ -131,9 +197,9 @@ def main() -> None:
         if not mentions_entity(task, ENTITY):
             continue
         object_name = context_value(task, "objectName")
-        if object_name in CREATE_NAMES:
+        if is_create_node(task, object_name):
             creates += 1
-        elif object_name in GET_NAMES:
+        elif is_retrieval_node(task, object_name):
             gets += 1
             level = expansion_level(task)
             if level is not None:

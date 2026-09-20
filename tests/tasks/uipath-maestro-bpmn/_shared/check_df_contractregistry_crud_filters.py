@@ -24,7 +24,11 @@ Re-homing decisions vs the Flow grader:
     QueryEntityRecords_V3``, ``UpdateEntityRecordV2|UpdateEntityRecord_V3``,
     ``GetEntityRecordByIdCurated|GetEntityRecord_V3`` -- from
     ``dataservice-activities.json`` in BATCH1-ADDENDUM.md), since Flow's node
-    types did not distinguish them.
+    types did not distinguish them. The connector also exposes a GENERIC
+    entity-CRUD form (``objectName`` is the entity name itself, e.g.
+    "ContractRegistry", on every node; the operation is read off the context
+    ``operation``/``method`` fields instead) -- a real CI-graded solution used
+    this form, so both are accepted (``is_kind``/``GENERIC_OP_PATTERNS``).
   - Flow's ``pathParameters.entityName == "ContractRegistry"`` (with a
     variable-global-default carve-out) becomes: the literal string appears as
     the value of ANY ``uipath:input`` of that node (path/query/body) or
@@ -65,7 +69,14 @@ Re-homing decisions vs the Flow grader:
     ``<uipath:output>`` ``source`` expression references at least one of the
     graded CRUD nodes' own output variables -- as loose as Flow's (not
     requiring all four to be mapped), but tied to the nodes under test
-    instead of any arbitrary output.
+    instead of any arbitrary output. A real CI-graded solution routes each
+    CRUD response through its own copy step first (a ``BPMN.Variables``
+    mapping task reading ``=vars.Var_CreateResponse`` into e.g.
+    ``Var_CreatedRecord``, which the end event then maps out) instead of the
+    end event referencing the CRUD node's output var directly, so the check
+    follows the variable-write chain (any ``<uipath:output var=... source=...>``
+    in the document) up to 3 hops looking for a CRUD output var at the root,
+    rather than requiring a single direct hop.
   - Added (not present in Flow's grader, but implied by the ported
     prompt/skill and cheap to check from the same XML walk): a manual root
     start (a ``bpmn:startEvent`` with no event definition and no
@@ -124,6 +135,19 @@ QUERY_OBJECTS = {"QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
 UPDATE_OBJECTS = {"UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
 GET_OBJECTS = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
 
+# The Data Service connector also has a GENERIC entity-CRUD form: objectName
+# is the entity name itself ("ContractRegistry") on every node, and the
+# operation is distinguished by the context `operation`/`method` fields
+# instead of a curated per-op objectName. Accept either form -- the skill
+# does not mandate the curated one. Checked against `operation` OR `method`
+# (either field matching is enough).
+GENERIC_OP_PATTERNS = {
+    "create": re.compile(r"^(create|post)$", re.IGNORECASE),
+    "query": re.compile(r"^(list|get)$", re.IGNORECASE),
+    "update": re.compile(r"^(update|replace|put|patch)$", re.IGNORECASE),
+    "get": re.compile(r"^(retrieve|getbyid)$", re.IGNORECASE),
+}
+
 # An expression (leading "=") that reads a declared variable: `=vars.X` or
 # `=js:... vars.X ...`. A literal string title is the regression this catches.
 UPDATE_TITLE_VAR_RE = re.compile(r"\bvars\.([A-Za-z0-9_]+)")
@@ -156,8 +180,22 @@ def output_vars(task: ET.Element) -> list[str]:
 
 
 def entity_ok(task: ET.Element) -> bool:
+    if context_value(task, "objectName").strip().lower() == ENTITY.lower():
+        return True
     values = all_node_values(task) + [context_value(task, "path")]
     return any(v and ENTITY in v for v in values)
+
+
+def is_kind(task: ET.Element, curated_objects: set[str], kind: str) -> bool:
+    obj = context_value(task, "objectName")
+    if obj in curated_objects:
+        return True
+    if obj.strip().lower() != ENTITY.lower():
+        return False
+    op = context_value(task, "operation")
+    method = context_value(task, "method")
+    pattern = GENERIC_OP_PATTERNS[kind]
+    return bool(pattern.match(op) or pattern.match(method))
 
 
 def has_standalone_token(task: ET.Element, token: str) -> bool:
@@ -267,10 +305,10 @@ def main() -> None:
 
     df_nodes = [task for task in connector_nodes(root) if entity_ok(task)]
 
-    creates = [t for t in df_nodes if context_value(t, "objectName") in CREATE_OBJECTS]
-    queries = [t for t in df_nodes if context_value(t, "objectName") in QUERY_OBJECTS]
-    updates = [t for t in df_nodes if context_value(t, "objectName") in UPDATE_OBJECTS]
-    gets = [t for t in df_nodes if context_value(t, "objectName") in GET_OBJECTS]
+    creates = [t for t in df_nodes if is_kind(t, CREATE_OBJECTS, "create")]
+    queries = [t for t in df_nodes if is_kind(t, QUERY_OBJECTS, "query")]
+    updates = [t for t in df_nodes if is_kind(t, UPDATE_OBJECTS, "update")]
+    gets = [t for t in df_nodes if is_kind(t, GET_OBJECTS, "get")]
 
     if not creates:
         fail(f"no {ENTITY} Create Entity Record sendTask found")
@@ -348,13 +386,37 @@ def main() -> None:
     crud_vars: set[str] = set()
     for t in (create, *queries, update, get):
         crud_vars.update(output_vars(t))
+    # A CRUD node's response is often not exposed directly: a separate
+    # BPMN.Variables mapping task first copies it into another process
+    # variable (e.g. Var_CreatedRecord <- =vars.Var_CreateResponse), and the
+    # end event maps out THAT copy instead. Build a var -> source map from
+    # every <uipath:output var=... source=...> in the document (mapping
+    # tasks and the CRUD nodes' own activity outputs alike) and follow the
+    # chain up to 3 hops looking for a CRUD output var at the root.
+    var_sources: dict[str, str] = {}
+    for out in root.findall(".//uipath:output", NS):
+        var = out.attrib.get("var")
+        source = out.attrib.get("source")
+        if var and source and var not in var_sources:
+            var_sources[var] = source
+
+    def derives_from_crud(var_id: str, hops: int) -> bool:
+        if var_id in crud_vars:
+            return True
+        if hops <= 0:
+            return False
+        source = var_sources.get(var_id, "")
+        return any(
+            derives_from_crud(ref, hops - 1) for ref in re.findall(r"vars\.([A-Za-z0-9_]+)", source)
+        )
+
     mapped = False
     for end in elements(root, "endEvent"):
         if not has_typed_uipath_extension(end, "mapping", "BPMN.Variables"):
             continue
         for out in end.findall(".//uipath:output", NS):
             source = out.attrib.get("source", "")
-            if any(f"vars.{v}" in source for v in crud_vars):
+            if any(derives_from_crud(v, 3) for v in re.findall(r"vars\.([A-Za-z0-9_]+)", source)):
                 mapped = True
                 break
         if mapped:

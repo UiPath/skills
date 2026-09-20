@@ -25,11 +25,27 @@ input), so this grader accepts the entity string appearing as the value of
 ANY `uipath:input` on the node, or inside its context `path` field -- same
 looseness the batch addendum specifies for the Data Fabric ports.
 
+Two connector-node shapes are accepted for step 2, both observed from real
+skill output (CI run skill-bpmn-datafabric-smoke-create-all-types, 2026-09):
+
+  * Curated/preview form: objectName is literally
+    CreateEntityRecordCurated or CreateEntityRecord_V3.
+  * Generic entity-CRUD form: the skill's registry discoveryNotes steer some
+    agents to the entity-typed generic verb instead -- objectName equals the
+    entity name itself (FlowCodeEvalEntity, case-insensitive) and either
+    operation is "Create" (case-insensitive) or method is POST. This is the
+    real shape CI's passing run produced: objectName="FlowCodeEvalEntity",
+    operation="Create", method="POST", path="/FlowCodeEvalEntity".
+
+`uipath:input` elements are collected at ANY depth under the sendTask (not
+just directly under `uipath:context`), since some agents nest the body/query
+inputs inside `uipath:context` instead of as siblings of it.
+
 Checks performed:
   1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
   2. Exactly one bpmn:sendTask carries Intsvc.ActivityExecution with
-     connectorKey uipath-uipath-dataservice and an objectName matching
-     Create Entity Record (CreateEntityRecordCurated|CreateEntityRecord_V3).
+     connectorKey uipath-uipath-dataservice and an objectName matching either
+     accepted Create Entity Record shape (see above).
   3. That node targets entity FlowCodeEvalEntity.
   4. That node has exactly one target="body" input, its CDATA is valid JSON,
      and the JSON covers all 8 fields with Flow's literal-shape checks.
@@ -59,6 +75,7 @@ CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 ENTITY = "FlowCodeEvalEntity"
 OBJECT_NAME_RE = re.compile(r"^(CreateEntityRecordCurated|CreateEntityRecord_V3)$")
+OPERATION_CREATE_RE = re.compile(r"^create$", re.IGNORECASE)
 
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -116,6 +133,9 @@ def has_type(el: ET.Element, token: str) -> bool:
 
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
+    # `.//` walks every descendant of the sendTask, so this already covers
+    # both layouts seen in practice: context/body inputs as direct children
+    # of uipath:activity, or body/query inputs nested inside uipath:context.
     return task.findall(".//uipath:input", NS)
 
 
@@ -137,6 +157,15 @@ def all_node_values(task: ET.Element) -> list[str]:
     return values
 
 
+def _is_generic_create_form(object_name: str, operation: str, method: str) -> bool:
+    """Entity-typed generic verb: objectName IS the entity name, and either
+    operation says Create or method is POST (skill discoveryNotes steer some
+    agents to this form instead of the curated/preview verb)."""
+    if object_name.strip().lower() != ENTITY.lower():
+        return False
+    return bool(OPERATION_CREATE_RE.match(operation.strip())) or method.strip().upper() == "POST"
+
+
 def find_create_tasks(root: ET.Element) -> list[ET.Element]:
     found = []
     for task in elements(root, "sendTask"):
@@ -145,7 +174,9 @@ def find_create_tasks(root: ET.Element) -> list[ET.Element]:
         if context_value(task, "connectorKey") != CONNECTOR_KEY:
             continue
         object_name = context_value(task, "objectName")
-        if OBJECT_NAME_RE.match(object_name):
+        operation = context_value(task, "operation")
+        method = context_value(task, "method")
+        if OBJECT_NAME_RE.match(object_name) or _is_generic_create_form(object_name, operation, method):
             found.append(task)
     return found
 
@@ -157,8 +188,10 @@ def main() -> None:
     if not create_tasks:
         fail(
             f"no bpmn:sendTask carrying {ACTIVITY_TYPE} for connector key "
-            f"{CONNECTOR_KEY!r} with objectName matching Create Entity Record "
-            f"(CreateEntityRecordCurated|CreateEntityRecord_V3)"
+            f"{CONNECTOR_KEY!r} matching Create Entity Record -- neither the "
+            f"curated/preview objectName (CreateEntityRecordCurated|"
+            f"CreateEntityRecord_V3) nor the generic entity-CRUD form "
+            f"(objectName={ENTITY!r} with operation=Create or method=POST)"
         )
     if len(create_tasks) > 1:
         fail(

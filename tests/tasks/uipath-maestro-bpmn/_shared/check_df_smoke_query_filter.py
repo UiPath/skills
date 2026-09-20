@@ -10,62 +10,74 @@ descending query) and the same assertions, re-homed from a Flow node's
 `Intsvc.ActivityExecution` wrapper (see
 skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
+CI caught a real gap in the first version of this grader: a legitimate agent
+solution encoded the curated `QueryEntityRecordsCurated` activity as
+SEPARATE inputs, not a single body -- `entityName` as a `target="path"`
+input, the filter as a `target="query"` input named `queryExpression`
+holding a CEQL-like string (`(active = true)`), `start`/`limit`/`sortBy`/
+`isAscending` as flat `target="query"` inputs, AND the structured
+FilterBuilder tree duplicated in the context `metadata` JSON input under
+`essentialConfiguration.savedFilterTrees.queryExpression` (`filters[]` of
+`{id, operator, value: {value, rawString}}`, recursing into `groups[]`).
+This is exactly the dual structured-tree-or-runtime-text representation
+Flow's grader tolerated -- a single mandatory `target="body"` input was a
+BPMN-only requirement the Flow prompt never had and the registry does not
+actually mandate for this operation. Fixed below: a body input is now
+optional, and the searchable representation is built from every input at
+any depth plus the parsed `metadata` tree, not from one required body blob.
+
 Re-homing notes (every Flow JSON key this grader used to read, and where its
 BPMN equivalent lives):
 
   Flow `inputs.detail.filter` (design-time FilterBuilder tree) /
   `savedFilterTrees.queryExpression` / `configuration` (a `=jsonString:`
   -encoded blob holding the same tree)
-      -> BPMN: the single `target="body"` `<uipath:input>` JSON payload
-         (registry-workflow.md's "exactly ONE target=body input holding the
-         whole request JSON" contract -- Flow's three possible filter
-         locations collapse to this one slot). A structured filter tree
-         round-trips as nested JSON inside that CDATA; a runtime expression
-         lands as plain text (`=js:...`) in the same slot. Both are covered
-         the same way Flow covers its own two representations: dump the
-         parsed body back to text and search it for field+value+operator
-         tokens, never assert *where* in the tree a condition sits.
+      -> BPMN: a `savedFilterTrees.queryExpression` tree nested anywhere
+         inside ANY JSON-shaped `uipath:input` on the node -- most often the
+         context `metadata` input, but a `target="body"` input if the skill
+         chooses to emit one is walked the same way. `filters[]` leaves
+         (`{id, operator, value: {value, rawString}}`) are extracted the way
+         Flow's `structured_filter_leaves` walked `filters`/`groups`, and
+         dumped back to text. A runtime CEQL-like expression string
+         (`target="query"` input named `queryExpression`) is covered too,
+         since every input's raw name+value+text is part of the same search
+         blob -- both representations are searched together, the same
+         non-exclusive combination Flow's own `node_filter_text` uses.
 
   Flow `inputs.detail.queryParameters._sortFieldName` / `isAscending` /
   `limit` / `start`
-      -> BPMN: no fixed field-name vocabulary is available for this
-         operation -- no live Data Service connection exists on this box to
-         `uip is resources describe` it (BATCH1-ADDENDUM.md). Rather than
-         pin a guessed key spelling, the body is parsed as JSON and walked
-         structurally: a "sort spec" is any dict carrying both a
-         field-name-ish key (`fieldName`, `field`, `sortField`,
-         `sortFieldName`, `orderBy`) and a direction-ish sibling key
-         (`isDescending`, `isAscending`, `direction`, `sortDirection`,
-         `ascending`) -- a filter *condition* dict (field + operator + value
-         siblings) never has a direction-ish sibling, so a query that both
-         filters AND sorts on the same field (`score`, in queries 1 and 2)
-         is not confused between the two roles. `limit`/`start` are found
-         the same tolerant way: by key-name family, at any nesting depth.
-         GUESS: this key-name family is modeled on the public Data Service
-         entities-query REST shape (`filterGroup.conditions[]`,
-         `sortOptions[].{fieldName,isDescending}`, `start`, `limit`); it is
-         unverified against a live `describe` output, so the walk is
-         deliberately tolerant of alternate spellings (including Flow's own
-         flat `_sortFieldName`/`isAscending`/`limit`/`start`, which also
-         satisfies the same field+direction sibling test at the body's own
-         top level).
+      -> BPMN: read from a `uipath:input` whose `name` (case-insensitive)
+         is one of `sortBy|sortField|orderBy|_sortFieldName|sort` (sort
+         field), `isAscending|isDescending|direction|sortDirection`
+         (direction), `limit|top|pageSize` (page size), or
+         `start|offset|skip` (page offset) -- at ANY depth, meaning both a
+         flat `target="query"` input (the real shape CI caught) and a
+         same-named key nested inside a JSON-shaped input (a body-JSON
+         alternate shape) are found by the same lookup, since both flat
+         XML attributes and flattened JSON leaves land in one `(name,
+         value)` pair list.
 
-This also asserts the registry contract a read-only smoke doesn't get to
-skip: exactly one `target="body"` JSON input per query node
-(registry-workflow.md's single-body-input rule -- several such inputs on one
-node do not merge at runtime) and a `=bindings.<id>` connection reference
-backed by a declared process-level `<uipath:binding resource="Connection">`
-(mirrors check_drive_to_slack.py's `require_connection_binding`).
+Also asserts a `=bindings.<id>` connection reference backed by a declared
+process-level `<uipath:binding resource="Connection">` (mirrors
+check_drive_to_slack.py's `require_connection_binding`) -- the one
+registry-contract assertion from the first version that CI did not flag,
+kept as-is.
 
 Checks performed:
   1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
   2. Exactly 3 bpmn:sendTask nodes carry Intsvc.ActivityExecution with
-     connectorKey uipath-uipath-dataservice and objectName matching Query
-     Entity Records (QueryEntityRecordsCurated|QueryEntityRecords_V3).
-  3. Each such node has exactly one target="body" input, and it is valid JSON.
+     connectorKey uipath-uipath-dataservice and either objectName matching
+     Query Entity Records (QueryEntityRecordsCurated|QueryEntityRecords_V3)
+     or objectName == FlowCodeEvalEntity with operation List / method GET
+     (a dynamic per-entity query shape) -- and each references
+     FlowCodeEvalEntity somewhere (input value/text at any depth, or
+     objectName).
+  3. Any `target="body"` input present is valid JSON (optional -- absence
+     is not an error).
   4. Every one of the nine filter conditions appears somewhere across the
-     three nodes, and at least one single node's body contains all nine
-     together (the FilterBuilder tree is not split across query activities).
+     three nodes, and the complete nine-condition set appears together in
+     at least TWO nodes (queries 1 and 2 both reuse the full tree, per the
+     prompt).
   5. At least 2 nodes are sorted by `score` (any direction).
   6. At least 2 of those score-sorted nodes carry both a limit and a
      start/offset value.
@@ -96,6 +108,7 @@ from _shared.bpmn_check import (  # noqa: E402
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 OBJECT_NAMES = {"queryentityrecordscurated", "queryentityrecords_v3"}
+ENTITY = "flowcodeevalentity"
 
 UUID_RE = re.compile(
     r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b"
@@ -112,29 +125,49 @@ EXPECTED = {
     "null": ("description", (), ("isnull", "is null")),
 }
 
-FIELD_KEYS = {"fieldname", "field", "sortfield", "sortfieldname", "orderby"}
-DIRECTION_KEYS = {"isdescending", "isascending", "direction", "sortdirection", "ascending"}
-LIMIT_KEYS = {"limit", "pagesize", "top"}
-OFFSET_KEYS = {"start", "offset", "skip"}
+SORT_FIELD_NAMES = {"sortby", "sortfield", "orderby", "_sortfieldname", "sort"}
+DIRECTION_NAMES = {"isascending", "isdescending", "direction", "sortdirection"}
+LIMIT_NAMES = {"limit", "top", "pagesize"}
+OFFSET_NAMES = {"start", "offset", "skip"}
 
 
 def has_type(el: ET.Element, token: str) -> bool:
     return token in ET.tostring(el, encoding="unicode")
 
 
+def activity_root(task: ET.Element) -> ET.Element | None:
+    return task.find(".//uipath:activity", NS)
+
+
+def all_inputs(task: ET.Element) -> list[ET.Element]:
+    """Every uipath:input at any depth under this node's uipath:activity --
+    context inputs, top-level path/query/body inputs, all of it."""
+    root = activity_root(task)
+    if root is None:
+        return []
+    return root.findall(".//uipath:input", NS)
+
+
+def input_val(inp: ET.Element) -> str:
+    return inp.attrib.get("value") or (inp.text or "")
+
+
 def context_value(task: ET.Element, name: str) -> str:
-    for inp in task.findall(".//uipath:input", NS):
+    for inp in all_inputs(task):
         if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
+            return input_val(inp)
     return ""
 
 
-def body_inputs(task: ET.Element) -> list[ET.Element]:
-    return [
-        inp
-        for inp in task.findall(".//uipath:input", NS)
-        if inp.attrib.get("target") == "body"
-    ]
+def entity_referenced(task: ET.Element, object_name: str) -> bool:
+    if ENTITY in (object_name or "").lower():
+        return True
+    for inp in all_inputs(task):
+        name = (inp.attrib.get("name") or "").lower()
+        value = str(input_val(inp)).lower()
+        if ENTITY in name or ENTITY in value:
+            return True
+    return False
 
 
 def query_entity_nodes(root: ET.Element) -> list[ET.Element]:
@@ -144,47 +177,126 @@ def query_entity_nodes(root: ET.Element) -> list[ET.Element]:
             continue
         if context_value(task, "connectorKey") != CONNECTOR_KEY:
             continue
-        if context_value(task, "objectName").lower() not in OBJECT_NAMES:
+        object_name = context_value(task, "objectName")
+        object_name_l = object_name.lower()
+        operation = context_value(task, "operation").lower()
+        method = context_value(task, "method").upper()
+        is_curated = object_name_l in OBJECT_NAMES
+        is_dynamic_list = object_name_l == ENTITY and (operation == "list" or method == "GET")
+        if not (is_curated or is_dynamic_list):
+            continue
+        if not entity_referenced(task, object_name):
             continue
         nodes.append(task)
     return nodes
 
 
-def node_body(task: ET.Element) -> dict:
+def validate_body_inputs(task: ET.Element) -> None:
+    """A target="body" input is optional; if present it must be valid JSON."""
     label = task.attrib.get("id", "<unnamed>")
-    bodies = body_inputs(task)
-    if len(bodies) != 1:
-        fail(
-            f'Query node {label!r} must carry exactly ONE target="body" '
-            f"<uipath:input> holding the request JSON "
-            f"(registry-workflow.md single-body-input rule); found {len(bodies)}"
-        )
-    raw = bodies[0].text or bodies[0].attrib.get("value") or ""
+    for inp in all_inputs(task):
+        if inp.attrib.get("target") != "body":
+            continue
+        raw = input_val(inp)
+        if not raw.strip():
+            continue
+        try:
+            json.loads(raw)
+        except (json.JSONDecodeError, TypeError) as exc:
+            fail(f'Query node {label!r} target="body" input is not valid JSON: {exc}')
+
+
+def parse_json_maybe(value: str):
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
     try:
-        parsed = json.loads(raw)
-    except (json.JSONDecodeError, TypeError) as exc:
-        fail(f'Query node {label!r} target="body" is not valid JSON: {exc}')
-    if not isinstance(parsed, dict):
-        fail(
-            f'Query node {label!r} target="body" JSON must be an object, '
-            f"found {type(parsed).__name__}"
-        )
-    return parsed
+        return json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return None
 
 
-def node_text(task: ET.Element, body: dict) -> str:
-    """One lowercase search blob per node: the parsed body dumped back to
-    text (covers a structured filter/sort tree) plus every input's raw
-    name+value (covers a value sent as a separate query/path-targeted input
-    instead of folded into the body). Mirrors Flow's
-    `node_filter_text`, which combines `queryParameters.queryExpression`
-    text with `json.dumps(leaves)` of the structured tree."""
-    parts = [json.dumps(body).lower()]
-    for inp in task.findall(".//uipath:input", NS):
-        name = inp.attrib.get("name") or ""
-        value = inp.attrib.get("value") or (inp.text or "")
-        parts.append(f"{name} {value}".lower())
-    return " ".join(parts)
+def flatten_json_pairs(node, pairs: list) -> None:
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if isinstance(v, (dict, list)):
+                pairs.append((k, ""))
+                flatten_json_pairs(v, pairs)
+            else:
+                pairs.append((k, "" if v is None else str(v)))
+    elif isinstance(node, list):
+        for item in node:
+            flatten_json_pairs(item, pairs)
+
+
+def find_saved_filter_trees(node, out: list) -> None:
+    """Recursively find every `savedFilterTrees.queryExpression` tree,
+    wherever it is nested -- Flow's own grader tolerated several possible
+    nesting depths for the equivalent `configuration`/`savedFilterTrees`
+    blob, so this does not pin one exact path
+    (`essentialConfiguration.savedFilterTrees...` in the observed artifact,
+    but not asserted as the only valid one)."""
+    if isinstance(node, dict):
+        sft = node.get("savedFilterTrees")
+        if isinstance(sft, dict) and "queryExpression" in sft:
+            out.append(sft["queryExpression"])
+        for value in node.values():
+            find_saved_filter_trees(value, out)
+    elif isinstance(node, list):
+        for item in node:
+            find_saved_filter_trees(item, out)
+
+
+def filter_leaves_from_tree(tree, leaves: list) -> None:
+    if not isinstance(tree, dict):
+        return
+    leaves.extend(tree.get("filters") or [])
+    for child in tree.get("groups") or []:
+        filter_leaves_from_tree(child, leaves)
+
+
+def structured_filter_leaves(parsed_json) -> list:
+    trees: list = []
+    find_saved_filter_trees(parsed_json, trees)
+    leaves: list = []
+    for tree in trees:
+        filter_leaves_from_tree(tree, leaves)
+    return leaves
+
+
+def node_representation(task: ET.Element) -> tuple[list, str]:
+    """(pairs, text) for one query node.
+
+    `pairs` is every (name, value) from a flat uipath:input attribute AND
+    every leaf of any JSON-shaped input's parsed value (context `metadata`,
+    a target="body" input if present, or any other JSON input) -- used for
+    the sort/limit/offset keyword lookups, which need a name paired with its
+    value regardless of whether the skill put it in a flat query-string
+    input or nested inside a JSON blob.
+
+    `text` is the Flow-style flattened lowercase search blob for the
+    nine-condition filter check: every input's raw name+value+text (this
+    alone already contains a CEQL queryExpression string's tokens, and a
+    JSON input's raw CDATA text verbatim), plus the structured FilterBuilder
+    leaves -- if a savedFilterTrees.queryExpression tree is found in any
+    JSON-shaped input -- dumped back to text. Mirrors Flow's
+    structured_filter_leaves/node_filter_text, which combines a structured
+    tree and a runtime expression string the same non-exclusive way.
+    """
+    inputs = all_inputs(task)
+    pairs: list = [(inp.attrib.get("name") or "", input_val(inp)) for inp in inputs]
+    text_parts = [f"{k} {v}".lower() for k, v in pairs]
+    for inp in inputs:
+        parsed = parse_json_maybe(input_val(inp))
+        if parsed is None:
+            continue
+        flatten_json_pairs(parsed, pairs)
+        leaves = structured_filter_leaves(parsed)
+        if leaves:
+            text_parts.append(json.dumps(leaves).lower())
+    return pairs, " ".join(text_parts)
 
 
 def has_expected_filter(text: str, field: str, tokens: tuple, operators: tuple) -> bool:
@@ -196,67 +308,37 @@ def has_expected_filter(text: str, field: str, tokens: tuple, operators: tuple) 
     )
 
 
-def _walk(node, visit) -> None:
-    if isinstance(node, dict):
-        visit(node)
-        for value in node.values():
-            _walk(value, visit)
-    elif isinstance(node, list):
-        for item in node:
-            _walk(item, visit)
+def values_by_name(pairs: list, names: set) -> list:
+    return [v for k, v in pairs if k.lower() in names and v not in (None, "")]
 
 
-def sort_specs(body: dict) -> list[dict]:
-    """Every dict in `body` shaped like a sort spec: a field-name-ish key
-    paired with a direction-ish sibling. A filter condition dict (field +
-    operator + value) never has a direction-ish sibling, so the two are not
-    confused even when both name the same field."""
-    found: list[dict] = []
-
-    def visit(d: dict) -> None:
-        keys = {k.lower() for k in d}
-        if (keys & FIELD_KEYS) and (keys & DIRECTION_KEYS):
-            found.append(d)
-
-    _walk(body, visit)
-    return found
+def sorted_field(pairs: list) -> str:
+    values = values_by_name(pairs, SORT_FIELD_NAMES)
+    return values[0].lower() if values else ""
 
 
-def sort_field_name(spec: dict) -> str:
-    keys = {k.lower(): k for k in spec}
-    for candidate in FIELD_KEYS:
-        if candidate in keys:
-            return str(spec[keys[candidate]]).lower()
-    return ""
-
-
-def is_descending(spec: dict) -> bool:
-    keys = {k.lower(): k for k in spec}
-    if "isdescending" in keys:
-        return bool(spec[keys["isdescending"]])
-    if "isascending" in keys:
-        return spec[keys["isascending"]] is False
-    if "ascending" in keys:
-        return spec[keys["ascending"]] is False
-    for name in ("direction", "sortdirection"):
-        if name in keys:
-            return str(spec[keys[name]]).strip().lower().startswith("desc")
+def is_descending(pairs: list) -> bool:
+    for k, v in pairs:
+        key = k.lower()
+        val = str(v).strip().lower()
+        if key == "isdescending" and val in ("true", "1"):
+            return True
+        if key == "isascending" and val in ("false", "0"):
+            return True
+        if key in ("direction", "sortdirection") and val.startswith("desc"):
+            return True
     return False
 
 
-def numeric_values(body: dict, key_names: set) -> list:
-    found = []
-
-    def visit(d: dict) -> None:
-        for k, v in d.items():
-            if k.lower() in key_names:
-                try:
-                    found.append(int(v))
-                except (TypeError, ValueError):
-                    pass
-
-    _walk(body, visit)
-    return found
+def has_numeric(pairs: list, names: set) -> bool:
+    for k, v in pairs:
+        if k.lower() in names:
+            try:
+                int(v)
+                return True
+            except (TypeError, ValueError):
+                continue
+    return False
 
 
 def binding_ids(root: ET.Element) -> set:
@@ -289,8 +371,12 @@ def main() -> None:
     path, root = parse_bpmn()
 
     nodes = query_entity_nodes(root)
-    bodies = [node_body(task) for task in nodes]
-    texts = [node_text(task, body) for task, body in zip(nodes, bodies)]
+    for task in nodes:
+        validate_body_inputs(task)
+
+    reps = [node_representation(task) for task in nodes]
+    pairs_list = [pairs for pairs, _ in reps]
+    texts = [text for _, text in reps]
 
     missing = [
         name
@@ -300,7 +386,7 @@ def main() -> None:
     if missing:
         fail(f"missing filter coverage: {', '.join(missing)}")
 
-    matrix_nodes = [
+    matrix_texts = [
         text
         for text in texts
         if all(
@@ -308,32 +394,32 @@ def main() -> None:
             for field, tokens, operators in EXPECTED.values()
         )
     ]
-    if not matrix_nodes:
+    if len(matrix_texts) < 2:
         fail(
-            "the nine filter conditions are split across query nodes; one "
-            "Query Entity Records node must contain the complete FilterBuilder tree"
+            "the complete nine-condition FilterBuilder tree must appear together "
+            f"in at least TWO query nodes (queries 1 and 2 both reuse it per the "
+            f"prompt); found it in {len(matrix_texts)} node(s)"
         )
 
     if len(nodes) != 3:
         fail(
             f"expected exactly 3 Query Entity Records connector nodes "
-            f"(connectorKey={CONNECTOR_KEY!r}, objectName in {sorted(OBJECT_NAMES)}), "
-            f"found {len(nodes)}"
+            f"(connectorKey={CONNECTOR_KEY!r}, objectName matching Query Entity "
+            f"Records or a dynamic List/GET on {ENTITY!r}), found {len(nodes)}"
         )
 
-    all_specs = [sort_specs(body) for body in bodies]
     sorted_by_score = [
-        (task, body)
-        for task, body, specs in zip(nodes, bodies, all_specs)
-        if any(sort_field_name(s) == "score" for s in specs)
+        (task, pairs)
+        for task, pairs in zip(nodes, pairs_list)
+        if sorted_field(pairs) == "score"
     ]
     if len(sorted_by_score) < 2:
         fail(f"expected >=2 query nodes sorted by score, found {len(sorted_by_score)}")
 
     paginated = [
-        (task, body)
-        for task, body in sorted_by_score
-        if numeric_values(body, LIMIT_KEYS) and numeric_values(body, OFFSET_KEYS)
+        (task, pairs)
+        for task, pairs in sorted_by_score
+        if has_numeric(pairs, LIMIT_NAMES) and has_numeric(pairs, OFFSET_NAMES)
     ]
     if len(paginated) < 2:
         fail(
@@ -341,9 +427,7 @@ def main() -> None:
             f"found {len(paginated)}"
         )
 
-    descending = [
-        task for task, specs in zip(nodes, all_specs) if any(is_descending(s) for s in specs)
-    ]
+    descending = [task for task, pairs in zip(nodes, pairs_list) if is_descending(pairs)]
     if not descending:
         fail("expected at least one query with a descending sort")
 
@@ -358,9 +442,9 @@ def main() -> None:
     require_di_for_visible_elements(root)
 
     print(
-        f"OK: {path} -- 3 Query Entity Records nodes; one contains all 9 filter "
-        f"cases; {len(paginated)} paginated + {len(descending)} descending query "
-        f"nodes present"
+        f"OK: {path} -- 3 Query Entity Records nodes; the full filter tree "
+        f"appears in {len(matrix_texts)} of them; {len(paginated)} paginated + "
+        f"{len(descending)} descending query nodes present"
     )
 
 

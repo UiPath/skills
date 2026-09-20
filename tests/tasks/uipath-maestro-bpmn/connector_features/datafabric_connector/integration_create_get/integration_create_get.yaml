@@ -11,7 +11,12 @@ description: >
   `flow node add uipath.connector.uipath-uipath-dataservice.*` authoring step
   maps to `bpmn registry get Intsvc.ActivityExecution --object-name <Object>`
   (BPMN has no native Data Fabric node, so the Flow prompt's contrast against
-  `core.datafabric.*` is dropped).
+  `core.datafabric.*` is dropped). The connector skill emits two valid
+  activity shapes for the same operation: the curated per-operation objectName
+  (e.g. `CreateEntityRecordCurated`), or the generic entity-CRUD form where
+  every node's objectName is the entity name itself and the verb lives in
+  `operation`/`method` instead; both are accepted by the grader and by the
+  advisory registry-get criteria below.
 tags:
   - uipath-maestro-bpmn
   - integration
@@ -92,7 +97,7 @@ success_criteria:
   - type: command_executed
     description: "Advisory: agent queried the registry for Create Entity Record"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(CreateEntityRecordCurated|CreateEntityRecord_V3)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(CreateEntityRecordCurated|CreateEntityRecord_V3|FlowCodeEvalEntity)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
@@ -100,7 +105,7 @@ success_criteria:
   - type: command_executed
     description: "Advisory: agent queried the registry for Get Entity Record By Id"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(GetEntityRecordByIdCurated|GetEntityRecord_V3)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(GetEntityRecordByIdCurated|GetEntityRecord_V3|FlowCodeEvalEntity)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0
@@ -108,7 +113,7 @@ success_criteria:
   - type: command_executed
     description: "Advisory: agent queried the registry for Delete Entity Record"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(DeleteEntityRecordCurated|DeleteEntityRecord_V3)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(DeleteEntityRecordCurated|DeleteEntityRecord_V3|FlowCodeEvalEntity)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
