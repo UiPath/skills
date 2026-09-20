@@ -1,0 +1,107 @@
+# Ported from Flow `connector_features/testmanager_crud_grounded.yaml`.
+# Flow's task carries `skip: true` (pending agent-reliability confirmation).
+# Per BATCH1-ADDENDUM.md: Test Manager `skip: true` is NOT carried over --
+# the codereval Test Manager connection exists, and a skipped port yields no
+# signal -- this port runs so the BPMN suite measures it.
+task_id: skill-bpmn-testmanager-crud-grounded
+description: >
+  Data-grounded (Maestro BPMN): agent builds a process that creates a Test
+  Case via the uipath-uipath-testmanager connector node with a unique seeded
+  name, gets it back, outputs the retrieved name, and debugs (executes) the
+  process — then records the round-trip. Graded on the connector artifacts,
+  successful validation, and retrieved == created through the executed
+  process; registry-refresh telemetry is advisory.
+  Ported from Flow `connector_features/testmanager_crud_grounded.yaml`; the
+  connector node is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper (create = TestCase/POST, get =
+  TestCase/GETBYID|GET) instead of Flow's two per-operation connector node
+  types, and Flow's `skip: true` is not carried over (see header comment).
+tags:
+  - uipath-maestro-bpmn
+  - e2e
+  - "mode:build"
+  - "lifecycle:generate"
+  - "shape:multi-node"
+  - connector
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 _setup/seed.py"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Maestro BPMN process (inside a project of the same name) that uses the UiPath Test Manager Integration Service connector.
+
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test case with that exact name under that project.
+  2. Read it back so the create and read actually execute, and capture the name that comes back.
+  3. Record result.json with `created_name` (the name you sent), `retrieved_name` (the name returned), and `id`.
+
+  The process is not complete until `uip maestro bpmn validate` passes.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Advisory: live-v1 agent refreshed the node manifest"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+pull'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "The process contains Test Manager create and get connector nodes"
+    command: "python3 $REFERENCE_DIR/_shared/check_testmanager_crud_grounded.py --node-types"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Execution produced the seeded create/get round-trip result"
+    command: "python3 $REFERENCE_DIR/_shared/check_testmanager_crud_grounded.py --execution-evidence"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: retrieved name == created (seeded) name — real data round-tripped through the executed process"
+    command: "python3 $REFERENCE_DIR/_shared/check_testmanager_crud_grounded.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

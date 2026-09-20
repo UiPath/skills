@@ -1,0 +1,87 @@
+task_id: skill-bpmn-slack-channel-description
+description: >
+  Create a UiPath Maestro BPMN process that uses the Slack IS connector to
+  retrieve the channel description of #office-bellevue and outputs it. This is
+  an end-to-end test that exercises connector discovery, connection binding,
+  reference resolution, node configuration, and cloud debug execution.
+
+  Ported from Flow `multi_node/slack_channel_description/slack_channel_description.yaml`;
+  the connector node is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper (connectorKey uipath-salesforce-slack;
+  `uip is activities list uipath-salesforce-slack`: curated GetConversationInfo,
+  objectName ConversationsInfo_GET, method GETBYID) instead of a Flow connector
+  node, `flow debug`'s single-call inline payload becomes an ephemeral-solution
+  import + `bpmn debug` + `debug-instance variables-all`/`incidents` read, and
+  grading of the retrieved description searches the root scope's variables
+  plus every element's Outputs instead of one inline debug payload. The live
+  grading criterion's timeout is raised from Flow's 600s to 1050s to cover the
+  extra CLI steps (`solution init`/`solution projects import`, separate
+  `variables-all`/`incidents` reads) that BPMN's live surface needs beyond
+  Flow's single `flow debug` call; `run_limits` gains `task_timeout` and
+  `max_turns` (absent from the Flow task) so that grading window fits inside
+  the task watchdog.
+tags: [uipath-maestro-bpmn, e2e, "lifecycle:generate", "shape:multi-node", connector]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 120
+  task_timeout: 1800
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+reference:
+  directory: ../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-salesforce-slack=uipath-maestro-flow'
+    timeout: 120
+
+initial_prompt: |
+  Build the process inside a solution of the same name.
+
+  Create a UiPath Maestro BPMN process named "SlackChannelDescription" that
+  retrieves the channel description of #office-bellevue and outputs it.
+
+  Validate the final BPMN file.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  # ── BPMN file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro bpmn validate passes on the BPMN file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── End-to-end execution ────────────────────────────────────────────────
+  - type: run_command
+    description: "BPMN debug runs successfully and output contains the Bellevue office address"
+    command: "python3 $REFERENCE_DIR/_shared/check_channel_description.py"
+    timeout: 1050
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
