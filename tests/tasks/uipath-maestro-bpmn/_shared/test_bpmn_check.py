@@ -11,6 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import bpmn_check  # noqa: E402
+import pytest  # noqa: E402
 from bpmn_check import (  # noqa: E402
     NS,
     has_typed_uipath_extension,
@@ -148,3 +150,23 @@ def test_bundled_intsvc_event_contracts_match_cli_manifest() -> None:
         }
         assert "<uipath:context>" in event["xmlTemplate"]
         assert "=bindings.{connectionBindingId}" in event["xmlTemplate"]
+
+
+def test_find_bpmn_file_without_hint_prefers_the_project_file(tmp_path, monkeypatch) -> None:
+    """Two .bpmn files and no hint: the one beside project.uiproj wins.
+
+    Flow graders aggregated over every ``*.flow``; BPMN graders that pass no
+    name hint must not die on a stray draft or fixture copy.
+    """
+    project = tmp_path / "Proj"
+    project.mkdir()
+    (project / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+    (project / "project.uiproj").write_text("{}", encoding="utf-8")
+    (tmp_path / "draft.bpmn").write_text("<x/>", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file().endswith("Proj/Proj.bpmn")
+
+    (tmp_path / "project.uiproj").write_text("{}", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        bpmn_check.find_bpmn_file()

@@ -32,6 +32,11 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
+    # Several .bpmn files and no hint: the real project is the one with
+    # project.uiproj beside it (a stray draft copy or fixture has none).
+    projects = [p for p in paths if os.path.isfile(os.path.join(os.path.dirname(p), "project.uiproj"))]
+    if len(projects) == 1:
+        return projects[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")
 
 
