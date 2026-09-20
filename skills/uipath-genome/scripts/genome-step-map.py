@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
-"""Write <slug>-genome/source/step-map.json from a written genome and its source artifacts.
+"""Write step-map.json from a written genome and a process inventory derived from its source export.
 
 Usage:
-  genome-step-map.py <GENOME.md> [--out DIR]     # default --out: <slug>-genome/source next to the genome
+  genome-step-map.py <GENOME.md> --processes <inventory.json> --recordsets <recordsets.json> [--out DIR]
 
 The step map is the Source Map in machine-readable form: one entry per component workflow step with the source
 processes it was built from and the recordsets that drive them, so execution can tie built activities to source
-controls and test cases to source rows without re-reading the prose.
+controls and test cases to source rows without re-reading the prose. Extraction runs it to prove the Source Map
+resolves (every warning is a row that does not); execution runs it at migration preflight into the build's working
+folder (default --out: the current directory). Nothing is written beside the genome.
 
-Framework-agnostic: step -> source artifacts is read from each component genome's Source Map table (first cell = the
-step key, second = the cell naming `Name` (id) references), step names from its Workflow section, and the data links
-from source/process-data.json. A reference is a process only when the id resolves to a process of that name - root
-processes and their recordsets share names, and recordset ids appear in the same prose.
+Framework-agnostic. The genome side is read from each component genome's Source Map table (first cell = the step
+key, second = the cell naming `Name` (id) references) and its Workflow section. The source side is two JSON files
+the framework's own inventory script derives from the export - this script knows no framework and reads no export:
+
+  --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
+  --recordsets  a list of {"id", "name"} (other keys ignored)
+
+For Worksoft Certify these are certify-process-data.json and certify-test-data.json from
+certify-export-inventory.py data. A reference is a process only when the id resolves to a process of that name -
+root processes and their recordsets share names, and recordset ids appear in the same prose.
 """
 import argparse
 import json
@@ -70,15 +78,19 @@ def components(path, text):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('genome')
-    ap.add_argument('--out')
+    ap.add_argument('--processes', required=True, help='process inventory JSON the framework script derived from the export')
+    ap.add_argument('--recordsets', required=True, help='recordset list JSON from the same script')
+    ap.add_argument('--out', help='where to write step-map.json; default: current directory')
     a = ap.parse_args()
     text = open(a.genome, encoding='utf-8').read()
-    slug = os.path.splitext(a.genome)[0]
-    out_dir = a.out or os.path.join(slug, 'source')
-    pd = json.load(open(os.path.join(out_dir, 'process-data.json'), encoding='utf-8'))
-    td = json.load(open(os.path.join(out_dir, 'test-data.json'), encoding='utf-8'))
+    out_dir = a.out or '.'
+    pd = json.load(open(a.processes, encoding='utf-8'))
+    td = json.load(open(a.recordsets, encoding='utf-8'))
     if isinstance(pd, dict):
-        sys.exit("process-data.json is name-keyed: regenerate it with the source guide's current script (names repeat)")
+        sys.exit("the process inventory is name-keyed: regenerate it with the source guide's current script (names repeat)")
+    for p in pd:
+        if not isinstance(p, dict) or 'id' not in p or 'name' not in p:
+            sys.exit(f"{a.processes}: every entry needs 'id' and 'name' (see the docstring for the contract)")
     by_id = {p['id']: p for p in pd}
     by_name = {}
     for p in pd:
@@ -171,9 +183,12 @@ def main():
                       'name': name, 'sourceProcesses': [{'name': p['name'], 'id': p['id']} for p in procs],
                       'recordsets': rs})
 
-    doc = {'genome': os.path.basename(a.genome), 'sourceArtifacts': ['targets.json', 'test-data.json', 'process-data.json'],
-           'note': 'Source process names repeat across folders; the id identifies the copy the step was built from.',
+    doc = {'genome': os.path.basename(a.genome),
+           'inventory': {'processes': os.path.abspath(a.processes), 'recordsets': os.path.abspath(a.recordsets)},
+           'note': 'Source process names repeat across folders; the id identifies the copy the step was built from. '
+                   'Derived at migration preflight from the inventory of the export the Source Map names; regenerate, never edit.',
            'steps': steps}
+    os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'step-map.json')
     open(path, 'w', encoding='utf-8').write(json.dumps(doc, indent=1, ensure_ascii=False))
     print(f"written {path}: {len(steps)} steps, {sum(len(s['sourceProcesses']) for s in steps)} process refs, "

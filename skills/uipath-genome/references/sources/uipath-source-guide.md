@@ -250,7 +250,7 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 
 ## UI Target Locators
 
-UiPath sources already hold UiPath targets; nothing is translated, everything is carried over. The catalog `source/targets.json` lists, per project:
+UiPath sources already hold UiPath targets; nothing is translated, everything is carried over. Execution reads them from the source project the Source Map names; the catalog it derives lists, per project:
 
 | Where | What | Carry-over at execution |
 |---|---|---|
@@ -263,9 +263,9 @@ Selectors never enter the genome body (inventory rule above still holds); they t
 
 ## Test Data
 
-| Where | What | `source/test-data.json` / `process-data.json` |
+| Where | What | Data catalog derived at execution |
 |---|---|---|
-| `.variations/*.json`, registered in `project.json` → `designOptions.fileInfoCollection[].dataVariationFilePath` | data rows per test case, keyed by argument name | one recordset per file, rows as-is; `process-data.json` maps test case → file |
+| `.variations/*.json`, registered in `project.json` → `designOptions.fileInfoCollection[].dataVariationFilePath` | data rows per test case, keyed by argument name | one recordset per file, rows as-is; the process inventory maps test case → file |
 | Test Data Queues (`test-data add-queue` argument named after the queue), Data Service entities | external data sources | Platform Dependencies rows (queue, entity), not rows in the artifact |
 | `GetRobotCredential` / `GetRobotAsset` asset names, `GetCredential` | credentials and configuration already in Orchestrator | keep the asset names; one credential asset per account stays the rule; no secret is present in the source and none is written |
 | Default values on test-case arguments (`this:<Class>.<Arg>` root attributes) | single-row data | the recordset's only row |

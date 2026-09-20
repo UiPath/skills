@@ -2,7 +2,7 @@
 
 Companion to [worksoft-certify-source-guide.md § UI Target Locators](worksoft-certify-source-guide.md): how each Certify interface stores a control's recognition data and which UiPath attribute each recorded field becomes. The UiPath vocabulary, reliability tiers, criteria mapping, anchor policy and confidence tiers are in [selector-translation-guide.md](../selector-translation-guide.md) and are not repeated here — read it first. Observations below come from twenty-one production exports (Workday, SAP GUI, SAP Fiori/Web GUI, Coupa, NetSuite, Jira, LabVantage LIMS, ENOVIA PLM, Kinaxis, WinSCP, Windows dialogs).
 
-The recognition data is `MapObjects.json` → windows (`ObjectIdParmValues[].CertifyValue`) and `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue`; one locator per object (a handful have none). The `targets` command parses every format below into one normalized shape (`technology`, `class`, `instance`, `findby[]`, `parentpath[]`, `anchor`, `volatile[]`) — work from `certify-targets.json`, never from the raw XML.
+The recognition data is `MapObjects.json` → windows (`ObjectIdParmValues[].CertifyValue`) and `ChildTrackObjects[].ObjectIdParmValues[].CertifyValue`; one locator per object (a handful have none). The `targets` command parses every format below into one normalized shape (`technology`, `class`, `instance`, `findby[]`, `parentpath[]`, `anchor`, `volatile[]`) — work from the `certify-targets.json` execution derives from the export, never from the raw XML.
 
 ## Locator formats
 

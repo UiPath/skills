@@ -138,4 +138,8 @@ flowchart LR
 
 | Component | Source artifact | Notes |
 |-----------|-----------------|-------|
-| {Component} | {Source framework}: {project / solution / object} | {ambiguity or unresolved reference} |
+| Source framework | {framework name as SKILL.md § Source Frameworks spells it} {version the export states} | |
+| Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
+| {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
+| Excluded / unreachable | {objects the genome does not cover, by name} | {why} |
+| Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |

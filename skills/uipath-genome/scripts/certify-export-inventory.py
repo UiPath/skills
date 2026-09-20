@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Inventory a Worksoft Certify JSON database export for genome extraction.
+"""Inventory a Worksoft Certify JSON database export - for reading it at genome extraction and for deriving the
+migration catalogs at genome execution.
 
 Usage:
   certify-export-inventory.py profile <EXPORT_DIR> [--out DIR]   # vocabulary, results, call graph, roots, clusters, layouts, screens
@@ -8,7 +9,9 @@ Usage:
   certify-export-inventory.py targets <EXPORT_DIR> [--out DIR]   # UI target catalog: windows + controls with parsed Certify locators and the actions applied to each control
   certify-export-inventory.py data    <EXPORT_DIR> [--out DIR]   # test data: layouts + recordsets as named rows, process -> recordset links
 
-Writes certify-profile.txt / certify-cards.txt / certify-targets.{json,md} / certify-test-data.{json,md} /
+Extraction reads profile/cards/dump (and targets, for control types and actions) from a scratch folder and writes
+only the genome; execution derives targets/data into the build's working folder (migration preflight) - never
+beside the genome. Writes certify-profile.txt / certify-cards.txt / certify-targets.{json,md} / certify-test-data.{json,md} /
 certify-process-data.json into --out (default: current directory); dump prints to stdout.
 Never prints values of variables whose name contains password/pwd/secret/token (account user names are kept: they are
 identity, not secrets).

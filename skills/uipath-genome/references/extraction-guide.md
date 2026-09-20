@@ -37,12 +37,13 @@ Per artifact, in inventory order, using the source guide's signal tables. Collec
 | Hardcoded literals: paths, URLs, addresses, names, thresholds, columns | Configuration Questions |
 | Test cases, eval sets, assertions | Acceptance Criteria evidence |
 | Prompts and instructions (agents) | Business Rules (paraphrased) |
-| UI control recognition data (object maps, selectors, XPaths) | **Source artifact** `source/targets.json` (source guide § UI Target Locators and its selectors companion; UiPath side in [selector-translation-guide.md](selector-translation-guide.md)) — never the genome body |
-| Composite UI actions (type-ahead picks, menu paths, option lists, find-row-then-act, keystrokes to the focused element) | Workflow substeps carrying the **full interaction contract** in behavioural words: typed value, match rule, confirm key, path levels, row rule (source guide § Composite actions). Per-control actions travel in `source/targets.json` |
-| Data-driving rows (recordsets, data sheets) | **Source artifact** `source/test-data.json` + `source/process-data.json` (source guide § Test Data); literals also feed Configuration Questions |
+| UI control recognition data (object maps, selectors, XPaths) | **Not written.** Read it (the source guide's `targets` inventory) to know each control's type and the actions applied to it — that decides the substep wording — but the locators stay in the export; execution derives the catalog from the export the Source Map names ([source-migration-guide.md § Migration preflight](source-migration-guide.md)) |
+| Composite UI actions (type-ahead picks, menu paths, option lists, find-row-then-act, keystrokes to the focused element) | Workflow substeps carrying the **full interaction contract** in behavioural words: typed value, match rule, confirm key, path levels, row rule (source guide § Composite actions) |
+| Data-driving rows (recordsets, data sheets) | **Not written.** Literals feed Configuration Questions; row schemas feed the Interface and the test components' row tables; the rows themselves stay in the export and are migrated at execution from the data catalog derived there |
 | Login accounts used per scenario | Platform Dependencies: one credential asset per account; the account identity stays in the test data, the secret never |
+| Where everything came from | **Source Map** — framework, export path and identity, per-step source objects with ids, inventory counts ([genome-format-guide.md § Source Map](genome-format-guide.md)) |
 
-Read every relevant file. No sampling, no "the helpers are similar". The two source artifacts are part of every extraction whose source guide has the sections; execution builds the UI targets and migrates the test data from them ([source-migration-guide.md](source-migration-guide.md)).
+Read every relevant file. No sampling, no "the helpers are similar". The genome files are the only output; the Source Map is what lets execution find the export's locators and rows again.
 
 ### Step 4 — Build graphs
 
@@ -82,13 +83,13 @@ Write the **process genome first** (when applicable), then each **component geno
 | Acceptance Criteria | One per step, per transformation, per rule, per handler, plus edge cases. Existing test cases and eval sets become criteria directly (behavioural wording). |
 | Deployment | Solution vs independent packages, triggers, folders from the manifest and bindings. Count the buildable projects: non-test components plus exactly one test project when test components exist. |
 | Complexity, Tags | Step 5; applications + domain + platform features. |
-| Source Map | Step → file / workflow / node label; component → project. Dead code, unresolved references, inferred steps. Names the source artifacts written in Step 6b. |
+| Source Map | Step → file / workflow / node label; component → project. Dead code, unresolved references, inferred steps. Framework, export path and identity, per-step source objects with ids, inventory counts — the migration contract of Step 6b. |
 
-### Step 6b — Write the source artifacts
+### Step 6b — Complete the Source Map as the migration contract
 
-Under `<slug>-genome/source/` write `targets.json` (UI target catalog), `test-data.json` and `process-data.json` (decoded rows and process → recordset links), each with a readable `.md` twin, using the source guide's script or procedure. Secrets are redacted at decode time; account user names are kept. Record the counts (windows, controls, recordsets, rows, credential accounts) in the process genome's Source Map. Skip an artifact only when the source guide states the framework stores nothing of that kind, and say so in the Source Map.
+Execution regenerates the target catalog, the data catalog and the step map from the export, so the Source Map must let it: the framework name, the export's root path and identity, one row per workflow step naming the source objects it was built from as `` `Name` (id) `` (names repeat across folders; the id identifies the copy), the data sets that drive each step, and the inventory counts (processes, windows, controls and how many lack a locator, recordsets, rows, credential accounts). Nothing is written beside the genome: no catalog copy, no decoded rows.
 
-Also write `step-map.json`: the Source Map in machine-readable form — one entry per component workflow step with `component`, `componentGenome`, `project`, `step`, `name`, `sourceProcesses` (`{name, id}`, because source names repeat across folders and the id is what identifies the copy the step was built from) and `recordsets` (names: the step's own rows, the rows it passes on, and the rows its callers pass in, restricted to what the built components reach) — so execution can map built activities to source controls and test cases to source rows without re-reading the prose. `scripts/genome-step-map.py <genome.md>` derives all of it from the written genomes plus `process-data.json`; run it after the genomes are written and fix every warning it prints — each one is a Source Map row whose reference does not resolve against the export.
+Check the contract resolves before offering edits: run the source guide's inventory into a scratch folder (for Certify, `certify-export-inventory.py data`), then `scripts/genome-step-map.py <genome.md> --processes <process inventory> --recordsets <recordset list> --out <scratch>` reads the written genomes' Source Map tables plus that inventory and prints one entry per component workflow step (`component`, `project`, `step`, `name`, `sourceProcesses` `{name, id}`, `recordsets`). Fix every warning it prints — each one is a Source Map row whose reference does not resolve against the export, and execution will hit the same gap.
 
 Generalization checklist before writing Configuration Questions: file and folder paths, URLs and hosts, email addresses, server and database names, credential and asset names, queue and bucket names, folder paths, thresholds and limits, column and field names, document types, prompts' tunable parameters (model, thresholds), the application choice itself.
 
@@ -116,6 +117,6 @@ Write all files, then ask "Want to adjust anything?". Common follow-ups:
 6. **Treating designer metadata, generated files, or test projects as workflow logic.**
 7. **Sampling files.** Every non-generated artifact is read.
 8. **Leaving a section empty because the source is ambiguous.** Write the best interpretation, flag it, note it in the Source Map.
-9. **Extracting the behaviour and leaving the recognition data and test rows behind.** The source artifacts are what makes the rebuilt automation runnable; without them execution ships placeholders and invented data.
+9. **Extracting the behaviour and losing the provenance.** A Source Map without the export's location or without per-step source objects leaves execution unable to find the locators and rows the export carried, and it ships placeholders and invented data. Writing copies of the export's catalogs beside the genome is the opposite mistake: they duplicate the export, go stale, and are not the genome's to keep.
 10. **Copying credentials, or dropping the account identity with them.** Passwords stay out; which account each scenario signs in as is part of the data.
 11. **Flattening a composite action to its data.** "Enter Voluntary into Primary Reason" for a type-ahead pick, "choose Terminate Employee" for a two-level menu path, "select row 2" for a row found by content: the builder cannot recover the interaction from that wording. Write the contract the source guide's composite-actions table demands.

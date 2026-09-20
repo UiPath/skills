@@ -123,8 +123,16 @@ Comma-separated: business domain, target applications, platform features (docume
 ### Source Map (extraction only)
 One row per workflow step (component) or per component (process): the source framework and the file, object, or workflow it came from. Names files and workflow objects, never activity names or variables. Also records dead code found, unresolved invocations, and steps whose intent was inferred. Authored genomes have no Source Map. Remove the section on request when the genome is redistributed as a reusable blueprint.
 
-### Source Artifacts (extraction only)
-Extraction writes, next to the genome, `<slug>-genome/source/targets.json` (UI target catalog: windows and controls with the source's recognition data and the source actions applied to each control, translated per the source guide), `test-data.json` (data-driving rows as named rows, secrets redacted, account user names kept), `process-data.json` (which process runs with which rows) and `step-map.json` (genome step → source processes and recordsets), each JSON with a readable `.md` twin where useful. The Source Map names them with their counts. They are not part of the genome body and are removed together with the Source Map when the genome is shared as a blueprint. Execution builds UI targets and migrates test data from them ([source-migration-guide.md](source-migration-guide.md)).
+**For a genome extracted from another framework the Source Map is also the migration contract.** Execution regenerates every catalog it needs — UI target locators, data rows, process inventory, step map — from the export, and the Source Map is the only place that says where the export is and which source objects each step came from. It must therefore carry, in the process genome (or the single component genome):
+
+| Row | Content |
+|---|---|
+| Source framework | the framework name exactly as [SKILL.md § Source Frameworks](../SKILL.md) spells it, and the framework version the export states |
+| Source export | the export's root path as extraction read it, plus its identity (database or tenant, export date, process count) so a moved copy can be recognised |
+| Per-step rows | for every workflow step, the source objects it was built from, each as `` `Name` (id) `` — names repeat across folders in most frameworks, so the id is what identifies the copy — and the data sets (recordsets, sheets) that drive it |
+| Inventory counts | what the export holds and the genome covers: processes, windows, controls (and how many have no locator), recordsets, rows, credential accounts; excluded and unreachable objects by name |
+
+Recognition data, data rows and process inventories are not written beside the genome. They are the export's; a copy next to the genome goes stale and says nothing the export does not. Execution derives them with the source guide's script into the build's working folder ([source-migration-guide.md § Migration preflight](source-migration-guide.md)). A genome shared without its Source Map can be built but not migrated: the reader gets placeholders or a live capture, and the redistribution note says so.
 
 ## Population Matrix (component genomes)
 

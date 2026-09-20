@@ -99,4 +99,6 @@
 
 | Workflow step | Source artifact | Notes |
 |---------------|-----------------|-------|
-| {Step N} | {Source framework}: {file or object name} | {ambiguity, dead code, or unresolved reference} |
+| {Step N} | {Source framework}: `{file or object name}` ({id} where names repeat); {data sets that drive it} | {ambiguity, dead code, or unresolved reference} |
+
+*A component of a process genome inherits the Source framework, Source export and Inventory rows from the process genome; a standalone component genome carries them itself.*

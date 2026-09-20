@@ -83,5 +83,5 @@ Edits are in-place, never a regeneration:
 | "Use a different skill for step X" | Build With row and rationale, validated against the mapping guide |
 | "Split this into components" | Promote to a process genome: create the process file, move component content into component files, add Handoffs |
 | "Scenario X signs in as persona Y" | Platform Dependencies (credential asset for Y), the test component's row schema (asset name per row), Configuration Questions |
-| "Rename / reorder / remove steps" on an extracted genome | Workflow and Source Map, and `source/step-map.json` so execution still maps steps to source processes and rows |
-| "Drop the Source Map" on an extracted genome | Remove the section from every file and the `source/` artifacts folder — the genome is being shared as a blueprint; say that target and data migration will no longer be possible from it |
+| "Rename / reorder / remove steps" on an extracted genome | Workflow and Source Map together, so every step still names its source objects and execution still maps steps to source processes and rows |
+| "Drop the Source Map" on an extracted genome | Remove the section from every file — the genome is being shared as a blueprint; say that target and data migration will no longer be possible from it, because the Source Map is what names the export and the per-step source objects |

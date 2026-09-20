@@ -2,7 +2,7 @@
 
 **Delete this file when the UIA CLI gains a `create-definition` command and an offline `add-anchor`.** It records shapes that the CLI would otherwise own, so a catalog-only migration does not have to rediscover them.
 
-Scope: a migration whose only input is a source target catalog (`source/targets.json`), with **no reachable application**. `target-anchorable resolve-defaults` and `add-anchor` both take live snapshot refs (`e*`/`w*`), and there is no `create-definition`, so neither a first definition nor an anchor can be produced through the CLI in that situation.
+Scope: a migration whose only input is the target catalog derived from the source export, with **no reachable application**. `target-anchorable resolve-defaults` and `add-anchor` both take live snapshot refs (`e*`/`w*`), and there is no `create-definition`, so neither a first definition nor an anchor can be produced through the CLI in that situation.
 
 **Precedence: whenever the application is reachable, the CLI path wins and this file does not apply.** The UIA package guide's rule stands — definitions are CLI-owned, never hand-edited. What follows is the documented exception for the offline case, not general licence.
 
