@@ -1,0 +1,212 @@
+# Flow → BPMN eval parity map
+
+Flow tasks: 131 · BPMN tasks: 82 · generated 2026-09-19
+
+| Bucket | Count |
+|---|---|
+| Ported 1:1 | 21 |
+| Covered by an equivalent BPMN task | 18 |
+| Portable — structural (authoring + validate) | 29 |
+| Portable — live (bpmn debug + tenant re-read) | 17 |
+| Portable pending a feasibility probe | 16 |
+| Not portable (Flow-only surface) | 30 |
+
+## Porting ledger (branch `test/bpmn-port-connectors`)
+
+| Flow task | BPMN port | CI result | Notes |
+|---|---|---|---|
+| `connector_features/drive_to_slack.yaml` | `connector_features/drive_to_slack/` | PASS 1/1 (run 35484984200) | pilot |
+| `connector_features/datafabric_connector/smoke_create_all_types.yaml` | `…/datafabric_connector/smoke_create_all_types/` | PASS (run 35489744689, iteration 2) | grader widened to generic entity-CRUD form |
+| `connector_features/datafabric_connector/integration_create_get.yaml` | `…/datafabric_connector/integration_create_get/` | PASS (run 35489744689, iteration 2) | same |
+| `connector_features/datafabric_connector/contractregistry_crud_filters.yaml` | `…/datafabric_connector/contractregistry_crud_filters/` | PASS (run 35489744689, iteration 2) | same + transitive output mapping |
+| `connector_features/datafabric_connector/smoke_query.yaml` | `…/datafabric_connector/smoke_query/` | PASS (run 35490499651, iteration 3; run 35490198577 ERRORed on a tenant ping timeout) | sort in ORDER BY clause |
+| `connector_features/datafabric_connector/smoke_update.yaml` | `…/datafabric_connector/smoke_update/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/datafabric_connector/smoke_file_activities.yaml` | `…/datafabric_connector/smoke_file_activities/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/datafabric_connector/e2e_contract_intake_pipeline.yaml` | `…/datafabric_connector/e2e_contract_intake_pipeline/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/datafabric_connector/trigger_lifecycle.yaml` | `…/datafabric_connector/trigger_lifecycle/` | PASS it.3 (run 35501830119) after two grader fixes (it.1 was a real agent omission of the entity param; it.2 a grader over-strictness) | |
+| `connector_features/testmanager_attachments/…` | `connector_features/testmanager_attachments/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/testmanager_execution_results/…` | `connector_features/testmanager_execution_results/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/testmanager_generic_records/…` | `connector_features/testmanager_generic_records/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/testmanager_requirement_lifecycle/…` | `connector_features/testmanager_requirement_lifecycle/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/testmanager_testset_lifecycle/…` | `connector_features/testmanager_testset_lifecycle/` | PASS (run 35499789502) | batch 2 |
+| `connector_features/datafabric_connector/smoke_update_existing_flow.yaml` | `…/datafabric_connector/smoke_update_existing_flow/` | PASS (run 35500726138) | batch 3, brownfield scaffold via bpmn init |
+| `connector_features/non-catalog-http-fallback/…` | `connector_features/non_catalog_http_fallback/` | PASS (run 35500726138) | batch 3 |
+| `single_node/outlook_waitfor_email/…` | `single_node/outlook_waitfor_email/` | PASS (run 35500726138) | batch 3 |
+| `single_node/outlook_trigger_inbox/…` | `single_node/outlook_trigger_inbox/` | PASS it.2 (run 35501830119); it.1 the agent omitted parentFolderId | advisory `uip is triggers` telemetry stays 0 (skill does not teach trigger discovery) |
+| `e2e/devcon_expense_approval.yaml` | `e2e/devcon_expense_approval/` | PARTIAL 0.885 it.3 (run 35503094182) | every HITL/schema/wiring assertion passes; only `validate` fails (Actions.HITL MISSING_BINDING: needs a deployed Action App; Flow's inline quick-form has no tenant dependency). Iterations exhausted; parity-minus-validate, same platform gap as the two simulated HITL ports. |
+| `e2e/jira_get_issue/…` | `e2e/jira_get_issue/` | PASS (run 35501830119) | LIVE pilot: ephemeral solution + bpmn debug + variables-all recipe works |
+| `interactive/customer_escalation_simulated/…` | `interactive/customer_escalation_simulated/` | PASS 0.94 (run 35501830119) | only the advisory name check (threshold 0) missed, as in Flow |
+| `interactive/expense_approval_simulated/…` | `interactive/expense_approval_simulated/` | PARTIAL 0.70 (run 35501830119) | everything passes except `validate`: Actions.HITL needs a deployed Action App binding (MISSING_BINDING with placeholder appId). Platform gap vs Flow's inline quick-form. |
+| `interactive/hitl_schema_design_simulated/…` | `interactive/hitl_schema_design_simulated/` | PARTIAL 0.68 (run 35501830119) | same validate/Action App gap |
+| `interactive/solution_select.yaml` | `interactive/solution_select/` | PARKED (skill gap, run 35501830119) | BPMN skill has no existing-solution selection rule; agent auto-scaffolded `WeatherAlertSolution/` without asking, exactly as predicted. Port kept in tree as the documented gap. |
+| `e2e/jira_create_issue/…` | `e2e/jira_create_issue/` | PASS (run 35503094182) | live |
+| `e2e/escalation_jira_ticket/…` | `e2e/escalation_jira_ticket/` | PASS (run 35503094182) | live |
+| `e2e/escalation_orchestrator_paths/…` | `e2e/escalation_orchestrator_paths/` | PASS (run 35503094182) | live, 7 debug runs |
+| `e2e/escalation_slack_alert/…` | `e2e/escalation_slack_alert/` | PASS it.2 (run 35524004307); it.1 the agent omitted the Slack folderKey binding (runtime 102010) | live |
+| `e2e/jira_lifecycle/…` | `e2e/jira_lifecycle/` | PARKED after 3 iterations | it.1 our poll-cap bug; it.2 instance never terminal in 720s; it.3 (run 35525387843) `bpmn debug` exited 1 before creating an instance. Three different runtime failures of a multi-instance Jira loop; Flow's own version is flaky (0.82 typical, 2/12 zero). Needs a live investigation, not more retries. |
+| `e2e/jira_search_triage/…` | `e2e/jira_search_triage/` | PARKED (skill gap) after 3 iterations | it.3 (run 35525387843) runtime 400008 "Failed to evaluate the input collection variable for the marker element": the multi-instance `inputCollection="=vars.Var_SearchResponse.issues"` over a connector response does not evaluate — multi-instance over connector output not taught/supported. |
+| `multi_node/bellevue_weather/…` | `multi_node/bellevue_weather/` | PARKED (skill gap) after it.1+it.2 (runs 35523787101, 35525387843) | identical runtime fault both times: the script task reads `temperature_2m` off an undefined HTTP response — the skill does not teach the Intsvc.HttpExecution response shape well enough for downstream scripts. |
+| `multi_node/slack_channel_description/…` | `multi_node/slack_channel_description/` | PASS it.2 (run 35525387843); it.1 the agent omitted the Slack channel parameter | live |
+| `connector_trigger/trigger_with_filter.yaml` | — | PARKED (skill gap) | Flow asserts a structured `filter` tree (groupOperator + filters[], MST-8802 guard); BPMN `Intsvc.EventTrigger` declares `filter` only as an untyped object with no template placeholder and the skill says trigger properties are CLI-owned enrichment. Re-port once a persisted filter shape is documented. |
+| `connector_features/testmanager_testcase_lifecycle/…` | `connector_features/testmanager_testcase_lifecycle/` | PASS (run 35488848026) | Flow's skip:true not carried over |
+
+## Ported 1:1 (21)
+
+| Flow task | BPMN target / note |
+|---|---|
+| `edit/add_node/add_node.yaml` | edit/add_node (structural only; Flow is live) |
+| `edit/add_output/add_output.yaml` | edit/add_output (structural only; Flow is live) |
+| `edit/group_to_subflow/group_to_subflow.yaml` | edit/group_to_subflow (structural only; Flow is live) |
+| `edit/move_node/move_node.yaml` | edit/move_node (structural only; Flow is live) |
+| `edit/remove_node/remove_node.yaml` | edit/remove_node (structural only; Flow is live) |
+| `edit/update_node/update_node.yaml` | edit/update_node (structural only; Flow is live) |
+| `hitl/quality_01_schema_design.yaml` | hitl/quality_schema_design |
+| `hitl/quality_02_result_downstream.yaml` | hitl/quality_result_downstream |
+| `hitl/quality_03_boolean_decision.yaml` | hitl/quality_boolean_decision |
+| `hitl/quality_04_brownfield_insert.yaml` | hitl/quality_brownfield_insert |
+| `hitl/smoke_02_completed_port_wired.yaml` | hitl/smoke_completed_wired |
+| `hitl/smoke_03_multi_outcome_routing.yaml` | hitl/smoke_multi_outcome_routing |
+| `interactive/customer_escalation_triage/customer_escalation_triage.yaml` | e2e/customer_escalation_triage (live, this branch) |
+| `multi_node/calculator/calculator.yaml` | multi_node/calculator (structural only; Flow is live) |
+| `multi_node/customer_escalation/customer_escalation.yaml` | multi_node/customer_escalation |
+| `multi_node/dice_roller/dice_roller.yaml` | multi_node/dice_roller (structural only; Flow is live) |
+| `multi_node/feet_inches/feet_inches.yaml` | multi_node/feet_inches (structural only; Flow is live) |
+| `multi_node/loop_multiply/loop_multiply.yaml` | multi_node/loop_multiply (structural only; Flow is live) |
+| `multi_node/multi_city_weather/multi_city_weather.yaml` | multi_node/multi_city_weather (structural only; Flow is live) |
+| `multi_node/reading_list/reading_list.yaml` | multi_node/reading_list (structural only; Flow is live) |
+| `multi_node/wiki_pageviews/wiki_pageviews.yaml` | multi_node/wiki_pageviews (structural only; Flow is live) |
+
+## Covered by an equivalent BPMN task (18)
+
+| Flow task | BPMN target / note |
+|---|---|
+| `hitl/smoke_01_hitl_node_placed.yaml` | nodes/hitl_rpa_wrappers (HITL shell placed) |
+| `single_node/api_workflow/api_workflow.yaml` | authoring/api_workflow_task (structural; Flow is live) |
+| `single_node/coded_agent/coded_agent.yaml` | single_node/agent_job (same BPMN node; Flow is live) |
+| `single_node/decision/decision.yaml` | author/gateway_sequence_flows (structural; Flow is live) |
+| `single_node/delay/delay.yaml` | single_node/timer |
+| `single_node/lowcode_agent/lowcode_agent.yaml` | single_node/agent_job (structural; Flow is live) |
+| `single_node/openmeteo_weather/openmeteo_weather.yaml` | single_node/http_weather (structural; Flow is live) |
+| `single_node/rpa/rpa.yaml` | single_node/rpa_job (structural; Flow is live) |
+| `single_node/subflow/subflow.yaml` | single_node/subprocess |
+| `single_node/switch/switch.yaml` | single_node/switch |
+| `single_node/terminate/terminate.yaml` | single_node/terminate |
+| `single_node/transform_filter/transform_filter.yaml` | single_node/script_task_filter |
+| `single_node/transform_group_by/transform_group_by.yaml` | single_node/script_task_group_by |
+| `single_node/transform_map/transform_map.yaml` | single_node/script_task_map |
+| `smoke/init_validate.yaml` | smoke/author_validate |
+| `smoke/merge_parallel_sync.yaml` | parallel/fork_join |
+| `smoke/registry_discovery.yaml` | smoke/registry_discovery |
+| `smoke/scheduled_trigger.yaml` | single_node/timer_start |
+
+## Portable — structural (authoring + validate) (29)
+
+| Flow task | BPMN target / note |
+|---|---|
+| `connector_features/datafabric_connector/contractregistry_crud_filters.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/e2e_contract_intake_pipeline.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/integration_create_get.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/smoke_create_all_types.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/smoke_file_activities.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/smoke_query.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/smoke_update.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/smoke_update_existing_flow.yaml` | uipath-dataservice ActivityExecution payloads; validate-only |
+| `connector_features/datafabric_connector/trigger_lifecycle.yaml` | Intsvc.EventTrigger Record Created/Updated + downstream ActivityExecution |
+| `connector_features/drive_to_slack.yaml` | two ActivityExecution nodes; binary output chaining; validate-only |
+| `connector_features/non-catalog-http-fallback/non_catalog_http_fallback.yaml` | generic HTTP connector (uipath-uipath-http) ActivityExecution |
+| `connector_features/slack-http-fallback/slack_http_fallback.yaml` | connector-mode HTTP fallback (Intsvc.HttpExecution on Slack connection) |
+| `connector_features/testmanager_attachments/testmanager_attachments.yaml` | one ActivityExecution per Test Manager operation; validate-only |
+| `connector_features/testmanager_execution_results/testmanager_execution_results.yaml` | one ActivityExecution per Test Manager operation; validate-only |
+| `connector_features/testmanager_generic_records/testmanager_generic_records.yaml` | one ActivityExecution per Test Manager operation; validate-only |
+| `connector_features/testmanager_requirement_lifecycle/testmanager_requirement_lifecycle.yaml` | one ActivityExecution per Test Manager operation; validate-only |
+| `connector_features/testmanager_testcase_lifecycle/testmanager_testcase_lifecycle.yaml` | one ActivityExecution per Test Manager operation; validate-only |
+| `connector_features/testmanager_testset_lifecycle/testmanager_testset_lifecycle.yaml` | one ActivityExecution per Test Manager operation; validate-only |
+| `connector_trigger/trigger_with_filter.yaml` | Intsvc.EventTrigger with structured filter tree |
+| `e2e/devcon_expense_approval.yaml` | Actions.HITL + scriptTasks; schema-design judge |
+| `interactive/bellevue_weather_simulated/bellevue_weather_simulated.yaml` | simulation harness is skill-agnostic; BPMN skill allows AskUserQuestion |
+| `interactive/cli_dice_roller_simulated/cli_dice_roller_simulated.yaml` | simulation harness is skill-agnostic; BPMN skill allows AskUserQuestion |
+| `interactive/customer_escalation_simulated/customer_escalation_simulated.yaml` | simulation harness is skill-agnostic; BPMN skill allows AskUserQuestion |
+| `interactive/expense_approval_simulated/expense_approval_simulated.yaml` | simulation harness is skill-agnostic; BPMN skill allows AskUserQuestion |
+| `interactive/hitl_schema_design_simulated/hitl_schema_design_simulated.yaml` | simulation harness is skill-agnostic; BPMN skill allows AskUserQuestion |
+| `interactive/slack_channel_description_simulated/slack_channel_description_simulated.yaml` | simulation harness is skill-agnostic; BPMN skill allows AskUserQuestion |
+| `interactive/solution_select.yaml` | existing-solution selection rule; check the BPMN skill states the same greenfield rule |
+| `single_node/outlook_trigger_inbox/outlook_trigger_inbox.yaml` | Intsvc.EventTrigger startEvent with fresh parentFolderId reference resolution |
+| `single_node/outlook_waitfor_email/outlook_waitfor_email.yaml` | Intsvc.WaitForEvent receiveTask with subject filter |
+
+## Portable — live (bpmn debug + tenant re-read) (17)
+
+| Flow task | BPMN target / note |
+|---|---|
+| `connector_features/datafabric_connector/smoke_error.yaml` | live 4xx on missing entity; debug + incidents |
+| `connector_features/generic_dynamic_node/generic_dynamic_node.yaml` | generic activity + --object-name at registry get; live |
+| `connector_features/jdbc_databricks_query/jdbc_databricks_query.yaml` | JDBC ActivityExecution; live |
+| `connector_features/testmanager_crud_grounded/testmanager_crud_grounded.yaml` | Test Manager create+get round trip; live debug |
+| `connector_trigger/webhook_waitfor_parallel.yaml` | parallelGateway + Intsvc.WaitForEvent (webhook) + HttpExecution self-trigger; live debug |
+| `e2e/escalation_jira_ticket/escalation_jira_ticket.yaml` | sibling of the live escalation port on this branch; reuse escalation_is.py |
+| `e2e/escalation_orchestrator_paths/escalation_orchestrator_paths.yaml` | exclusiveGateway paths + Orchestrator.* nodes; live debug |
+| `e2e/escalation_slack_alert/escalation_slack_alert.yaml` | sibling of the live escalation port; reuse escalation_is.py |
+| `e2e/jira_create_issue/jira_create_issue.yaml` | Jira ActivityExecution; live debug + tenant re-read; teardown journal |
+| `e2e/jira_get_issue/jira_get_issue.yaml` | Jira ActivityExecution read-only; live debug + variables-all |
+| `e2e/jira_lifecycle/jira_lifecycle.yaml` | multiInstance loop + exclusiveGateway + Jira create/comment/transition |
+| `e2e/jira_search_triage/jira_search_triage.yaml` | Jira JQL search + multiInstance + add comment |
+| `multi_node/bellevue_weather/bellevue_weather.yaml` | HttpExecution sendTask + scriptTask + exclusiveGateway; debug via bpmn_live |
+| `multi_node/billing_discrepancy_detector/billing_discrepancy_detector.yaml` | two DF reads in parallelGateway fork/join; no agent |
+| `multi_node/billing_invoice_lookup/billing_invoice_lookup.yaml` | Data Fabric via Intsvc.ActivityExecution (uipath-dataservice); no agent |
+| `multi_node/slack_channel_description/slack_channel_description.yaml` | Intsvc.ActivityExecution Slack; Slack plumbing in e2e/customer_escalation_triage/escalation_is.py |
+| `multi_node/slack_weather_pipeline/slack_weather_pipeline.yaml` | HttpExecution + Slack ActivityExecution; live debug |
+
+## Portable pending a feasibility probe (16)
+
+| Flow task | BPMN target / note |
+|---|---|
+| `connector_features/ceql_where.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/complex_array.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/dtl_load_by_default_false.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/dtl_load_by_default_true.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/enhanced_enum.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/enum.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/generate_schema.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/multiselect.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/paginated_reference_lookup.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/path_params.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/query_params.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `connector_features/searchable_joins.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
+| `multi_node/billing_dispute_analyst/billing_dispute_analyst.yaml` | inline agent + context-grounding index: BPMN only has Orchestrator.StartAgentJob (published agent) — needs a published grounded agent on the tenant |
+| `multi_node/billing_dispute_resolution/billing_dispute_resolution.yaml` | inline agent → StartAgentJob substitute |
+| `multi_node/billing_resolution_writer/billing_resolution_writer.yaml` | inline agent → StartAgentJob substitute |
+| `single_node/file_attachment/file_attachment.yaml` | file-typed process variable: confirm canvas variable contract supports it |
+
+## Not portable (Flow-only surface) (30)
+
+| Flow task | BPMN target / note |
+|---|---|
+| `bindings/idempotent_reconfigure.yaml` | tests `flow node configure` binding upsert; BPMN has no node configure. A bindings_v2.json correctness test would be new coverage, not a port |
+| `bindings/multi_connector_independence.yaml` | tests `flow node configure` binding upsert; BPMN has no node configure. A bindings_v2.json correctness test would be new coverage, not a port |
+| `bindings/no_duplicate_connection_bindings.yaml` | tests `flow node configure` binding upsert; BPMN has no node configure. A bindings_v2.json correctness test would be new coverage, not a port |
+| `bindings/reconfigure_different_connection.yaml` | tests `flow node configure` binding upsert; BPMN has no node configure. A bindings_v2.json correctness test would be new coverage, not a port |
+| `connector_features/datafabric_connector/smoke_activation_negative.yaml` | skill-routing smoke belongs to tests/tasks/activation, not a BPMN port |
+| `connector_features/datafabric_connector/smoke_activation_positive.yaml` | skill-routing smoke belongs to tests/tasks/activation, not a BPMN port |
+| `context-grounding/batch_transform/batch_transform.yaml` | Flow pattern node (batch transform) is Flow-only |
+| `context-grounding/summarize/summarize.yaml` | Flow pattern node (deep-rag) is Flow-only |
+| `conversational/conversational_chat_loop.yaml` | conversational agent loop is Flow-only |
+| `evaluate/child_simulation/child_simulation_crud.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
+| `evaluate/evaluator_type_choice.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
+| `evaluate/inline_agent_eval/inline_agent_eval.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
+| `evaluate/local_crud.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
+| `evaluate/no_auto_upload.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
+| `evaluate/simulation/simulation_crud.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
+| `interactive/ixp_invoice_extraction_simulated/ixp_invoice_extraction_simulated.yaml` | IXP node is Flow-only |
+| `ixp/e2e_01_invoice_extraction_greenfield.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/e2e_02_project_selection.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/e2e_03_project_creation_handoff/e2e_03_project_creation_handoff.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/e2e_04_build_mechanics.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/integration_handle_routing.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/routing.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/routing_listing.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/routing_negative.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/scaffold_minimal.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `ixp/scaffold_multinode.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
+| `node_features/datafabric_native/integration_native_read_create.yaml` | native core.datafabric.* nodes are Flow-only; connector variant is covered by the DF connector ports |
+| `smoke/inline_agent_robust.yaml` | inline agent is Flow-only; BPMN agents are published |
+| `voice/voice_inbound_call.yaml` | voice nodes are Flow-only |
+| `voice/voice_outbound_call.yaml` | voice nodes are Flow-only |
