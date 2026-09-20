@@ -1,0 +1,169 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+task_id: skill-bpmn-solution-select-ask
+description: >
+  Interactive-mode variant of init-validate. The working directory already
+  contains two existing solutions (SolarReports, TideTracker). When asked to
+  create a new Maestro BPMN process project, this task expects the agent to
+  STOP before scaffolding, discover the existing solutions (e.g. `find .
+  -maxdepth 2 -type f -name '*.uipx' -print`), and present a dropdown via the
+  interaction mechanism available in its runtime (one option per discovered
+  solution + "Create a new solution" + "Something else") instead of guessing.
+  A simulated user answers the prompt with a non-default solution name. The
+  resulting artifact proves that the agent used that answer before building
+  and validating the process.
+
+
+  Ported from Flow `interactive/solution_select.yaml`; product nouns swapped
+  ("Flow project" -> "Maestro BPMN process project", `.flow` -> `.bpmn`,
+  `Type=='Flow'` -> `Type=='ProcessOrchestration'` in the `.uipx`
+  registration), and the existing-untouched check strengthened to a
+  byte-identical file comparison instead of a Projects==[] field check.
+  Flow's skill documents this exact discover-then-ask behavior as an
+  explicit greenfield rule (SKILL.md rule 6 / `references/author/
+  greenfield.md` -- "Discover the target solution before scaffolding...
+  stop and ask which to use"). uipath-maestro-bpmn has NO equivalent rule:
+  SKILL.md and `references/shared/project-layout.md` document
+  `uip maestro bpmn init` auto-scaffolding a `<ProjectName>Solution/`
+  wrapper when run outside an existing solution, with no instruction to
+  search for `*.uipx` files or ask the user which solution to use first.
+  This port intentionally targets behavior the BPMN skill does not yet
+  teach, to document the gap -- grep confirms no "existing solution" /
+  "which solution" / greenfield-discovery language anywhere under
+  skills/uipath-maestro-bpmn/. Expect this task to fail on today's skill
+  unless the agent generalizes its general "confirm before authoring"
+  rule (SKILL.md rule 4) to solution placement on its own initiative.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", simulation]
+
+agent:
+  # Make the structured-question tool available to runtimes that support it.
+  # Others may ask the same question through chat.
+  # allowed_tools uses replace strategy — restate the full default list.
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+
+run_limits:
+  # Simulation interleaves user+agent turns, so visible-turn count runs higher
+  # than a single-shot task. Advisory only — max_turns (experiment) is the cap.
+  expected_turns: 18
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixtures/existing_solutions
+
+# No initial_prompt — in simulation mode the simulator generates the opening
+# user message from the persona and goal below. A simulated user then answers
+# the solution-selection prompt with a non-default solution name, so the test
+# runs end-to-end without a human while verifying that the answer was used.
+simulation:
+  enabled: true
+  persona: |
+    You are a UiPath developer working in a directory that already holds a
+    couple of unrelated solutions (SolarReports and TideTracker). You want a
+    fresh, separate solution for this new work and you trust the agent to
+    drive the work.
+  goal: |
+    Get a new Maestro BPMN process project called WeatherAlert created in a
+    separate solution and validated successfully.
+  constraints:
+    - "If the agent asks which solution the new Maestro BPMN process project should live in, do NOT pick SolarReports or TideTracker — choose the 'Create a new solution' option and specify the exact solution name `WeatherSelection-7K4M`."
+    - "If the agent asks for the new solution's name separately, answer exactly `WeatherSelection-7K4M`."
+    - "If asked any other clarifying question, pick the recommended / first sensible option and keep moving."
+    - "Keep replies short — one sentence or a single chosen option."
+    - "Never tell the agent to stop, skip validation, or reuse an existing solution."
+  max_turns: 6
+
+reference:
+  directory: ../..
+
+success_criteria:
+  # ── Selection honored: process landed in the user-chosen new solution ──
+  # WeatherSelection-7K4M has an unguessable suffix, so landing here proves the
+  # agent surfaced the choice AND used the answer — without grading the ask
+  # mechanism (Claude AskUserQuestion vs Codex chat).
+  - type: json_check
+    description: "Maestro BPMN process project registered in the user-selected solution .uipx"
+    path: "WeatherSelection-7K4M/WeatherSelection-7K4M.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+      - expression: "length(Projects[?Type=='ProcessOrchestration'])"
+        operator: "gte"
+        expected: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN file created inside the user-selected solution"
+    command: "python3 $REFERENCE_DIR/_shared/check_solution_select.py bpmn"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── Did NOT silently adopt an existing solution ────────────────────────
+  - type: run_command
+    description: "Agent did not init the process project inside a pre-existing solution"
+    command: "python3 $REFERENCE_DIR/_shared/check_solution_select.py existing-untouched"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "SolarReports solution left untouched (no project registered)"
+    path: "SolarReports/SolarReports.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "TideTracker solution left untouched (no project registered)"
+    path: "TideTracker/TideTracker.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Build is valid in the selected solution ────────────────────────────
+  - type: run_command
+    description: "Process validates in the selected solution"
+    command: "python3 $REFERENCE_DIR/_shared/check_solution_select.py validate"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Selected solution contains an initialized BPMN project"
+    command: "python3 $REFERENCE_DIR/_shared/check_solution_select.py project"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Advisory: recorded in the report, never gates the run ──────────────
+  - type: run_command
+    description: "Agent created the selected solution artifact"
+    command: "python3 $REFERENCE_DIR/_shared/check_solution_select.py solution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: outcome already enforced by the WeatherSelection-7K4M json_check; records the explicit-init convention only
+
+  - type: run_command
+    description: "Advisory: no default WeatherAlert solution before the name was given — records the default-then-repair inefficiency; nondeterministic on simulator name-timing, so non-gating"
+    command: "python3 $REFERENCE_DIR/_shared/check_solution_select.py no-extra-solution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
