@@ -435,7 +435,8 @@ def run_debug(
     instance_id = get_ci(debug_data, "InstanceId")
     if not isinstance(instance_id, str) or not instance_id:
         raise CheckFailure(
-            f"debug returned no instance id (exit {completed.returncode}); "
-            f"log: {tail_log(log_file)}"
+            f"debug returned no instance id (exit {completed.returncode}): "
+            f"{get_ci(payload, 'Message', '')} {get_ci(payload, 'Instructions', '')}".strip()
+            + f"; stderr tail: {(completed.stderr or '')[-1500:]}"
         )
     return debug_data, instance_id
