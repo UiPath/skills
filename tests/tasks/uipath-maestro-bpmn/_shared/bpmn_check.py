@@ -54,10 +54,20 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
     projects = _project_files(paths)
     if len(projects) == 1:
         return projects[0]
+    # Byte-identical copies (the agent copied its scaffold into the solution
+    # wrapper; CI run 35538279757, testmanager_crud_grounded) are one artifact.
+    if len({_sha256(p) for p in paths}) == 1:
+        return paths[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")
 
 
-def resolve_project(bpmn_name: str) -> Path:
+def _sha256(path: str | Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
     """Locate the project directory containing ``bpmn_name``.
 
     Grades the project wherever the agent placed it (top level or nested under
@@ -66,8 +76,19 @@ def resolve_project(bpmn_name: str) -> Path:
     project unambiguously: exactly one ``bpmn_name`` with project.uiproj beside
     it, so a stray draft copy is never graded (``find_bpmn_file`` would
     silently return the alphabetically-first match).
+
+    ``exclude_under``: directories whose contents are not candidates. A live
+    grader's own ephemeral solution (``uip solution projects import``) leaves a
+    second, byte-identical project under its run directory; a later criterion
+    in the same task must not read that copy as ambiguity (CI run 35538279757,
+    billing_invoice_lookup ``bindings``).
     """
-    candidates = _project_files(Path.cwd().rglob(bpmn_name))
+    excluded = [Path(d).resolve() for d in exclude_under]
+    candidates = [
+        p
+        for p in _project_files(Path.cwd().rglob(bpmn_name))
+        if not any(p.resolve().is_relative_to(d) for d in excluded)
+    ]
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "

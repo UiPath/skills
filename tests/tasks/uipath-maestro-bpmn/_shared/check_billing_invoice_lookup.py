@@ -392,7 +392,7 @@ def lookup() -> None:
         fail("process declares no public uipath:input variable for the invoice number")
     var_name = input_names[0]
 
-    project_dir = resolve_project(os.path.basename(bpmn_path))
+    project_dir = resolve_project(os.path.basename(bpmn_path), exclude_under=[LIVE_RUN_DIR])
     original_hash = sha256(Path(bpmn_path))
 
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
@@ -522,7 +522,7 @@ def is_real_connection_key(value) -> bool:
 
 def bindings() -> None:
     bpmn_path = find_bpmn_file(NAME_HINT)
-    project_dir = resolve_project(os.path.basename(bpmn_path))
+    project_dir = resolve_project(os.path.basename(bpmn_path), exclude_under=[LIVE_RUN_DIR])
     with tempfile.TemporaryDirectory(prefix="bpmn-eval-pack-") as output_dir:
         result = subprocess.run(
             ["uip", "maestro", "bpmn", "pack", str(project_dir), output_dir, "--output", "json"],

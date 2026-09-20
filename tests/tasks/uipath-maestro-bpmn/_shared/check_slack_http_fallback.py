@@ -95,6 +95,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -117,7 +118,11 @@ NAME_HINT = "SlackEmojiListTest"
 SLACK_KEY = "uipath-salesforce-slack"
 # Slack endpoint that lists a team's custom emoji. Bare token, so both '/emoji.list'
 # and 'emoji.list' forms satisfy the check, mirroring Flow's own tolerance.
+# T: the Slack connector's generic (non-curated) resource for that endpoint is
+# named ``emoji_list`` / ``emoji_list_GET`` -- the same endpoint, connector
+# naming (CI run 35538279757: the agent's node ran to completion against it).
 EMOJI_ENDPOINT = "emoji.list"
+EMOJI_ENDPOINT_RE = re.compile(r"emoji[._]list")
 ACTIVITY_TYPES = ("Intsvc.ActivityExecution", "Intsvc.HttpExecution")
 
 LIVE_RUN_DIR = Path("slack-emoji-list-live")
@@ -181,7 +186,7 @@ def is_slack_connector_node(el: ET.Element) -> bool:
 
 
 def references_emoji_endpoint(el: ET.Element) -> bool:
-    return EMOJI_ENDPOINT in node_blob(el)
+    return EMOJI_ENDPOINT_RE.search(node_blob(el)) is not None
 
 
 def find_slack_connector_nodes(root: ET.Element) -> list[ET.Element]:

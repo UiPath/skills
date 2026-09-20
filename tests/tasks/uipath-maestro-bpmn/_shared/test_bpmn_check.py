@@ -165,7 +165,7 @@ def test_find_bpmn_file_without_hint_prefers_the_project_file(tmp_path, monkeypa
     project.mkdir()
     (project / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
     (project / "project.uiproj").write_text("{}", encoding="utf-8")
-    (tmp_path / "draft.bpmn").write_text("<x/>", encoding="utf-8")
+    (tmp_path / "draft.bpmn").write_text("<draft/>", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
 
     assert bpmn_check.find_bpmn_file().endswith("Proj/Proj.bpmn")
@@ -373,3 +373,35 @@ def test_validate_bpmn_fails_malformed_xml_without_calling_the_cli(tmp_path, mon
     monkeypatch.setattr(validate_bpmn.subprocess, "run", _no_cli)
 
     assert validate_bpmn.main([]) == 1
+
+
+def test_find_bpmn_file_without_hint_accepts_identical_copies(tmp_path, monkeypatch) -> None:
+    """Two byte-identical .bpmn files, both beside a project.uiproj: one
+    artifact, not ambiguity (the agent copied its scaffold into the solution
+    wrapper on CI run 35538279757). Differing content still fails."""
+    for d in ("Proj", "ProjSolution/Proj"):
+        (tmp_path / d).mkdir(parents=True)
+        (tmp_path / d / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+        (tmp_path / d / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file().endswith("Proj.bpmn")
+
+    (tmp_path / "Proj" / "Proj.bpmn").write_text("<y/>", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        bpmn_check.find_bpmn_file()
+
+
+def test_resolve_project_excludes_the_live_run_copy(tmp_path, monkeypatch) -> None:
+    """A live grader's ephemeral solution holds an imported copy of the
+    project; ``exclude_under`` keeps it out of the candidate set."""
+    for d in ("ProjSolution/Proj", "proj-live/ProjLiveEval/Proj"):
+        (tmp_path / d).mkdir(parents=True)
+        (tmp_path / d / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+        (tmp_path / d / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit):
+        bpmn_check.resolve_project("Proj.bpmn")
+    resolved = bpmn_check.resolve_project("Proj.bpmn", exclude_under=[Path("proj-live")])
+    assert resolved == tmp_path / "ProjSolution" / "Proj"

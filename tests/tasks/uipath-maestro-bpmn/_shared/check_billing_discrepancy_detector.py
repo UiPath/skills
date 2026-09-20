@@ -558,7 +558,7 @@ def bindings() -> None:
     root = ET.parse(bpmn_path).getroot()
     needs_connection = any(connector_context(node).get("connectorKey") for node in root.iter())
 
-    project_dir = resolve_project(os.path.basename(bpmn_path))
+    project_dir = resolve_project(os.path.basename(bpmn_path), exclude_under=[LIVE_RUN_DIR])
     with tempfile.TemporaryDirectory(prefix="billing-pack-") as out_dir:
         packed = subprocess.run(
             ["uip", "maestro", "bpmn", "pack", str(project_dir), out_dir, "--output", "json"],
@@ -688,7 +688,7 @@ def detector() -> None:
     if not find_join_gateways(root):
         fail("no bpmn:parallelGateway acts as a join (>=2 incoming flows)")
 
-    project_dir = resolve_project(os.path.basename(bpmn_path))
+    project_dir = resolve_project(os.path.basename(bpmn_path), exclude_under=[LIVE_RUN_DIR])
     original_hash = sha256(Path(bpmn_path))
 
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
