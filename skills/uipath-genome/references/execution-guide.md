@@ -188,7 +188,7 @@ Scaffolding: <target framework>, <expression language>, <package@version, …> (
 Run: <the owning skill's run command for the entry point>
 ```
 
-Extracted genomes add the healing-pass note: inferred targets are verified on the first run against the live application, and fixes go into the Object Repository element.
+Extracted genomes add the healing-pass note: inferred targets are verified on the first run against the live application, and fixes go into the Object Repository element. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([source-migration-guide.md § Result parity](source-migration-guide.md)). The report does not claim that results match the source; the tables make that comparison possible for whoever holds a source result.
 
 ## Anti-patterns
 

@@ -132,6 +132,27 @@ A migration's targets are generated from rules, so a wrong rule is wrong hundred
 
 Families to walk for a typical form-driven application: window scope; labelled text input; prompt / type-ahead (leaf, popup entry, value display); custom list (combobox, option, displayed selection); checkbox / radio; segmented date; command button and icon button; menu root and revealed level; grid header and cell; search box and result link; dialog close and error banner. Stale refs are normal — every capture re-mints them, and a `resolve-defaults` call can invalidate the refs of the capture it read from; re-capture rather than retry.
 
+## Result parity — making a UiPath run comparable with the source's
+
+Whether a migrated suite reproduces the source's results is decided by whoever can compare runs — against a fresh source run when the source still executes, or against the last result log the export carries when it does not. That comparison is not the skill's job, and neither is verifying the outcome. The skill's job is to make it possible: the built automation asserts at the source's checkpoints under the source's ids, attaches evidence named by those ids, and ships a mapping table that says which UiPath assertion and which artifact stand for each source checkpoint. The table is **static** — derived from the workflows before any run — one per test case, kept with the project (`<build>/migration/parity/<TestCase>.md`):
+
+| # | Source checkpoint | Expected | UiPath assertion | Evidence | Compare |
+|---|---|---|---|---|---|
+| 12 | step 12 (id 4471) — verify requisition status after submit | `Successfully Completed` | `VerifyOptions` Appears on "Click Submit", target: status cell | `CreateRequisition-12-status.png` attached to the test result; log `[CP 12] status=Successfully Completed` | equals |
+| 19 | step 19 (id 4488) — screen capture after the position opened | position page shown | `VerifyOptions` Appears on "Click OK", target: page header | `CreateRequisition-19-position.png` | present |
+| — | none | — | page-settle check after every navigation | none | added |
+
+Rules:
+
+1. **Every source checkpoint has a row.** A checkpoint is a source step that asserts something (verify, compare, visible, cell check), a step the source's result log records as a check, or a capture the source took where the state was meant to be inspected. Extraction lists them per workflow step in the Source Map — source step id, what is asserted, the expected value, whether a capture followed ([genome-format-guide.md § Source Map](genome-format-guide.md)). No checkpoint list, no parity.
+2. **Every row names the UiPath construct that asserts the same thing:** `VerifyOptions` on the acting activity (the normal case), a Check activity where the source branched, a test assertion at the end of the case, or a read-back and compare when a value is checked. A checkpoint with no counterpart is a row marked `not asserted` with the reason; the report counts them.
+3. **Evidence per checkpoint, findable by id.** At each checkpoint the built automation attaches a screenshot to the test result through the library's evidence workflow, named `<TestCase>-<CheckpointId>-<label>.png`, and writes one Info log line `[CP <id>] <what>=<observed value>`, so a run's log can be read row by row against the table and against the source's result log, and Test Manager holds the images. A screenshot on failure is the same mechanism with the failing step's id.
+4. **The compare rule is the source's own criteria** carried over — equals, contains, present, absent, count — never tightened or loosened.
+5. **Assertions the source never had are rows marked `added`** (page-settle checks, pick acceptance the source did not verify). They do not count toward parity; they are listed so the reviewer sees the difference.
+6. **Generated, not typed.** Activity display names and log lines carry the checkpoint id, so the table is produced from the workflows by the executor's own script, needs no run, and is regenerated after every change. A table maintained by hand drifts from the project within one edit.
+
+The completion report states, per test case: source checkpoints, asserted, not asserted (with reasons), added, and where the tables are. It does not claim parity — that is a statement only a comparison of runs can make, and it belongs to the reviewer who holds a source result.
+
 ## Test data — pipeline
 
 | Step | Output |
@@ -152,7 +173,8 @@ Mechanics — creating screens and elements, updating definitions, fuzzifying, l
 - per UI activity: the source window and control it was derived from (or "none"), the resulting strict/fuzzy selector, anchor and semantic description, the confidence tier, and the OR element it links to — one OR element per distinct source control, reused across workflows;
 - per composite source step: the pattern applied (§ Composite interactions), the activities it expanded into, the derived elements created, and the verify sub-step;
 - per data file: the source recordset(s) it was filled from and, per argument, whether the value came from the source, stayed at its default, or had no source counterpart; credentials appear as asset names and environments only;
-- per workflow: validate result after linking, and any activity still without a target.
+- per workflow: validate result after linking, and any activity still without a target;
+- per test case: the result parity table (§ Result parity) — source checkpoint, expected value, UiPath assertion, evidence, compare rule — and its counts.
 
 How that is scripted (mapping files, registries, validators) is the executor's choice for the run; the reports are the deliverable.
 
@@ -179,3 +201,4 @@ How that is scripted (mapping files, registries, validators) is the executor's c
 19. Assuming a grid's markup from the application's name — table attributes present or absent — instead of reading one cell live (rule 8).
 20. Registering one element per source step, source window or activity type, one screen per source window, or one element per field value — and copying a composite pattern's activities into every step instead of one helper workflow (§ Object Repository identity).
 21. Reading catalogs that sat beside the genome instead of deriving them from the export the Source Map names (§ Migration preflight); a stale copy migrates yesterday's locators.
+22. Reporting a test migration done without the result parity table, or with a table typed by hand; evidence that cannot be found by checkpoint id is not comparable evidence (§ Result parity).
