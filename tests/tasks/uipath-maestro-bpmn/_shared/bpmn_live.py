@@ -395,21 +395,34 @@ def run_debug(
     # jira_search_triage). Size the interval so the CLI keeps polling for the
     # whole budget this call was priced at.
     poll_ms = max(500, math.ceil(timeout * 1000 / (CLI_MAX_POLLS - 10)))
-    completed = run_cli(
-        [
-            "uip",
-            "maestro",
-            "bpmn",
-            "debug",
-            str(project_dir),
-            "--poll-interval",
-            str(poll_ms),
-            "--inputs",
-            json.dumps(inputs, separators=(",", ":")),
-        ],
-        timeout=timeout,
-        log_file=log_file,
-    )
+    try:
+        completed = run_cli(
+            [
+                "uip",
+                "maestro",
+                "bpmn",
+                "debug",
+                str(project_dir),
+                "--poll-interval",
+                str(poll_ms),
+                "--inputs",
+                json.dumps(inputs, separators=(",", ":")),
+            ],
+            timeout=timeout,
+            # No --log-file here: the CLI buffers that file and a SIGKILL on
+            # timeout leaves it empty (run 35524004307). Streamed to stderr,
+            # the poll log (instance id, per-poll status) survives on the
+            # TimeoutExpired exception and is the only evidence of a stuck run.
+            log_file=None,
+        )
+    except subprocess.TimeoutExpired as exc:
+        partial = exc.stderr or exc.stdout or b""
+        if isinstance(partial, bytes):
+            partial = partial.decode("utf-8", "replace")
+        raise CheckFailure(
+            f"bpmn debug did not reach a terminal status within the {timeout}s budget "
+            f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
+        ) from None
     payload = parse_json_output(completed.stdout or completed.stderr, "debug")
     debug_data = get_ci(payload, "Data", {})
     if str(get_ci(payload, "ErrorCode", "")).casefold() == "timeout":
