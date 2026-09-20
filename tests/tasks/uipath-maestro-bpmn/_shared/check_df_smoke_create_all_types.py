@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""DF smoke_create_all_types (BPMN): Data Service Create Entity Record node
+covers all 8 supported field types with correct JSON literal shapes.
+
+Ported from Flow `connector_features/datafabric_connector/smoke_create_all_types.yaml`'s
+``check_smoke_create_all_types.py``: same scenario (a single Create node on
+FlowCodeEvalEntity binding all 8 field types), translated from a JSON
+`bodyParameters` walk to an XML walk over the registry-driven
+``Intsvc.ActivityExecution`` connector shell (see
+skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+
+Where Flow's grader read `node.inputs.detail.bodyParameters` as a JSON object
+already embedded in the .flow file, this grader reads the single
+`<uipath:input target="body">` CDATA payload on the sendTask and
+`json.loads`s it -- the BPMN registry shell puts the whole request body in one
+JSON blob instead of Flow's structured `bodyParameters` map. Flow accepted a
+`=js:`-prefixed string as an expression binding for any field (grading wiring,
+not literal choice); the BPMN skill's expression prefix is a bare `=`
+(`=vars.X`, `=js:...`), so any string starting with `=` is accepted here,
+which is a superset that still covers `=js:`.
+
+Entity-name check: the skill does not pin where `entityName`/`path` lands
+(context `path`, a sibling `target="path"` input, or a `target="query"`
+input), so this grader accepts the entity string appearing as the value of
+ANY `uipath:input` on the node, or inside its context `path` field -- same
+looseness the batch addendum specifies for the Data Fabric ports.
+
+Checks performed:
+  1. BPMN file exists, is well-formed XML, DI and sequence-flow integrity hold.
+  2. Exactly one bpmn:sendTask carries Intsvc.ActivityExecution with
+     connectorKey uipath-uipath-dataservice and an objectName matching
+     Create Entity Record (CreateEntityRecordCurated|CreateEntityRecord_V3).
+  3. That node targets entity FlowCodeEvalEntity.
+  4. That node has exactly one target="body" input, its CDATA is valid JSON,
+     and the JSON covers all 8 fields with Flow's literal-shape checks.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from _shared.bpmn_check import (  # noqa: E402
+    NS,
+    elements,
+    fail,
+    parse_bpmn,
+    require_di_for_visible_elements,
+    require_no_private_connector_values,
+    require_sequence_integrity,
+)
+
+CONNECTOR_KEY = "uipath-uipath-dataservice"
+ACTIVITY_TYPE = "Intsvc.ActivityExecution"
+ENTITY = "FlowCodeEvalEntity"
+OBJECT_NAME_RE = re.compile(r"^(CreateEntityRecordCurated|CreateEntityRecord_V3)$")
+
+UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+DATETIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?")
+
+
+def _is_expression(v):
+    # BPMN expression prefix is bare `=` (`=vars.X`, `=js:...`); Flow's
+    # grader accepted only `=js:` -- this is a superset that still covers it.
+    return isinstance(v, str) and v.startswith("=")
+
+
+def _check_str(v):
+    return isinstance(v, str)
+
+
+def _check_number(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _check_int(v):
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def _check_bool(v):
+    return isinstance(v, bool)
+
+
+def _check_date(v):
+    return isinstance(v, str) and bool(DATE_RE.match(v))
+
+
+def _check_datetime(v):
+    return isinstance(v, str) and bool(DATETIME_RE.match(v))
+
+
+def _check_uuid(v):
+    return isinstance(v, str) and bool(UUID_RE.match(v))
+
+
+EXPECTED = {
+    "title":        ("STRING",         _check_str),
+    "description":  ("MULTILINE_TEXT", _check_str),
+    "score":        ("DECIMAL",        _check_number),
+    "viewCount":    ("INTEGER",        _check_int),
+    "active":       ("BOOLEAN",        _check_bool),
+    "releaseDate":  ("DATE",           _check_date),
+    "lastUpdated":  ("DATETIME",       _check_datetime),
+    "externalId":   ("UUID",           _check_uuid),
+}
+
+
+def has_type(el: ET.Element, token: str) -> bool:
+    return token in ET.tostring(el, encoding="unicode")
+
+
+def node_inputs(task: ET.Element) -> list[ET.Element]:
+    return task.findall(".//uipath:input", NS)
+
+
+def context_value(task: ET.Element, name: str) -> str:
+    for inp in node_inputs(task):
+        if inp.attrib.get("name") == name:
+            return inp.attrib.get("value") or (inp.text or "")
+    return ""
+
+
+def all_node_values(task: ET.Element) -> list[str]:
+    values: list[str] = []
+    for inp in node_inputs(task):
+        v = inp.attrib.get("value")
+        if v:
+            values.append(v)
+        if inp.text and inp.text.strip():
+            values.append(inp.text.strip())
+    return values
+
+
+def find_create_tasks(root: ET.Element) -> list[ET.Element]:
+    found = []
+    for task in elements(root, "sendTask"):
+        if not has_type(task, ACTIVITY_TYPE):
+            continue
+        if context_value(task, "connectorKey") != CONNECTOR_KEY:
+            continue
+        object_name = context_value(task, "objectName")
+        if OBJECT_NAME_RE.match(object_name):
+            found.append(task)
+    return found
+
+
+def main() -> None:
+    path, root = parse_bpmn("DataFabricAllTypesSmoke")
+
+    create_tasks = find_create_tasks(root)
+    if not create_tasks:
+        fail(
+            f"no bpmn:sendTask carrying {ACTIVITY_TYPE} for connector key "
+            f"{CONNECTOR_KEY!r} with objectName matching Create Entity Record "
+            f"(CreateEntityRecordCurated|CreateEntityRecord_V3)"
+        )
+    if len(create_tasks) > 1:
+        fail(
+            "expected exactly one Data Service Create Entity Record connector "
+            f"node, found {len(create_tasks)}"
+        )
+    task = create_tasks[0]
+    print(f"OK: {CONNECTOR_KEY} Create Entity Record sendTask present")
+
+    entity_values = all_node_values(task) + [context_value(task, "path")]
+    if not any(v and ENTITY in v for v in entity_values):
+        fail(
+            f"entity name {ENTITY!r} not found in any input value or context "
+            f"path of the Create node (checked: {[v for v in entity_values if v]})"
+        )
+    print(f"OK: node targets entity {ENTITY!r}")
+
+    body_inputs = [inp for inp in node_inputs(task) if inp.attrib.get("target") == "body"]
+    if len(body_inputs) != 1:
+        fail(f'expected exactly one target="body" input on the Create node, found {len(body_inputs)}')
+    raw = body_inputs[0].text or ""
+    try:
+        body = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        fail(f'target="body" input is not valid JSON: {exc}\n  raw={raw!r}')
+
+    if not isinstance(body, dict):
+        fail(f'target="body" JSON must be an object, got {type(body).__name__}')
+
+    missing = set(EXPECTED) - set(body.keys())
+    if missing:
+        fail(f"Create body JSON missing fields: {sorted(missing)}")
+
+    type_errors = []
+    for field, (label, check) in EXPECTED.items():
+        v = body[field]
+        if _is_expression(v):
+            continue
+        if not check(v):
+            type_errors.append((field, label, type(v).__name__, v))
+    if type_errors:
+        lines = "\n".join(f"  {f} ({lbl}): got {got}={val!r}" for f, lbl, got, val in type_errors)
+        fail(f"type mismatches in Create body:\n{lines}")
+
+    require_no_private_connector_values(root)
+    require_sequence_integrity(root)
+    require_di_for_visible_elements(root)
+    print(f"OK: {path} — Create body covers all 8 fields on {ENTITY} with matching JSON-literal shapes")
+
+
+if __name__ == "__main__":
+    main()
