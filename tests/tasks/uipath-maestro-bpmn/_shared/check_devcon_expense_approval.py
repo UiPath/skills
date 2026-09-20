@@ -20,21 +20,25 @@ Assertion map (Flow -> BPMN):
   F(T) check_devcon_expense_approval.py:78-82   amount field type number  -> T: TWO accepted forms, per CI run 35500726138's real registry-template artifact vs. the older per-field hypothesis:
                     (T1, per-field form)  a context input naming/presenting "amount" references a declared vars.<id> whose <uipath:variables> type is numeric
                     (T2, real Actions.HITL registry-template form -- skills/uipath-maestro-bpmn/validator/bpmn-spec.json extensionTypes["Actions.HITL"]) the single <uipath:input name="HitlTaskArguments" type="json" target="bodyField"> JSON body has a key naming "amount" whose value is an `=vars.<V>.<field>` (or bare `=vars.<V>`) expression, resolved against either a numeric-typed declared variable V, or V's declared jsonSchema CDATA `properties.<field>.type == number|integer` (Var_Expense in the CI artifact)
-  F(T) check_devcon_expense_approval.py:84-96   decision boolean OR approve/reject outcome -> T1: an HITL output field named approve/approved/decision, typed boolean OR string; T2: the HitlTaskArguments body names the decision field via a `decisionField` key (Actions.HITL returns it dynamically, so the wrapper output stays opaquely typed "Actions.HITL"), OR a declared jsonSchema variable (e.g. Var_LogResponse) declares a boolean/string property matching approve/approved/decision
-  F(T) check_devcon_expense_approval.py:98-105  text output field for the rejection reason -> T1: an HITL output field typed text/string named reason/comment/...; T2: HitlTaskArguments names it via a `rejectionReasonField` key, OR a declared jsonSchema variable declares a matching text/string property
-  F/T check_devcon_expense_approval.py:107-118 input bound to upstream script output (vars.<node>.output.<field> or =js:$vars...) -> T: T1 checks a context input, T2 checks a HitlTaskArguments body value; either references a declared variable via vars.<id> (no .output. segment -- BPMN variables are flat, not node-scoped like Flow's $vars.<node>.output.<field>)
+  F(T) check_devcon_expense_approval.py:84-96   decision boolean OR approve/reject outcome -> T1: an HITL output field named approve/approved/decision, typed boolean OR string; T2 (recursive, CI runs 35500726138 + 35501830119): any HitlTaskArguments key at ANY depth matching approve/approved/decision whose value is a boolean literal, an `=`-expression resolving to a boolean-typed variable/schema property, or a bare string naming a field some downstream script actually dereferences (the original decisionField rule, generalized -- a stringly-typed literal like `"approved":"yes"` still fails, since "yes" is never dereferenced downstream); OR (fallback) a declared jsonSchema variable (e.g. Var_LogResponse) names a matching boolean/string property
+  F(T) check_devcon_expense_approval.py:98-105  text output field for the rejection reason -> T1: an HITL output field typed text/string named reason/comment/...; T2 (recursive): any HitlTaskArguments key at any depth matching reason/comment/explanation/justification/note whose value is any plain string (a literal default, empty allowed, or a field-name pointer -- both accepted unconditionally, unlike decision) or an `=`-expression resolving to string/text; OR (fallback) a declared jsonSchema variable names a matching text property
+  F/T check_devcon_expense_approval.py:107-118 input bound to upstream script output (vars.<node>.output.<field> or =js:$vars...) -> T: T1 checks a context input, T2 checks any HitlTaskArguments body value at any depth; either references a declared variable via vars.<id> (no .output. segment -- BPMN variables are flat, not node-scoped like Flow's $vars.<node>.output.<field>)
   DROPPED           outcome-<id> port-per-outcome wiring mechanics (lines 120-138) -> BPMN bpmn:userTask has a single completion path, not a per-outcome handle; both of Flow's outcome ports wired to the SAME downstream node anyway, so the faithful reduction is "the HITL task has an outgoing sequence flow" (kept below)
   F   check_devcon_expense_approval.py:127-138 HITL completion must be wired  -> the HITL userTask has >=1 outgoing bpmn:sequenceFlow
   F   check_devcon_expense_approval.py:140-147 downstream script reads HITL output via $vars.<hitl_id>.output -> T: some bpmn:scriptTask in the process references vars.<HITL output var id> (no .output. segment), in its <bpmn:script> source or its uipath:mapping input/output value -- this substring match already covers the real form's `vars.Var_ManagerDecision.approved` shape
 
-Real registry-template shape confirmed against CI run 35500726138's artifact
-(ExpenseApprovalSolution/ExpenseApproval/ExpenseApproval.bpmn) and
-skills/uipath-maestro-bpmn/validator/bpmn-spec.json's Actions.HITL
-extensionType: `contextFields` are fixed app-identity metadata (appId,
-appVersion, actions, key, taskTitle) -- NOT the reviewer-facing form fields.
-Form fields (amount, submitterName, category, decisionField,
-rejectionReasonField, ...) are keys of the ONE `HitlTaskArguments` JSON body
-input, and the single `<uipath:output type="Actions.HITL" var="...">` is
+Real registry-template shape confirmed against two CI artifacts:
+run 35500726138 (ExpenseApprovalSolution/ExpenseApproval/ExpenseApproval.bpmn,
+flat HitlTaskArguments keys, decisionField/rejectionReasonField pointers) and
+run 35501830119 (ExpenseApproval/ExpenseApproval/ExpenseApproval.bpmn -- grade
+that copy, not the stray ExpenseApprovalSolution/ scaffold alongside it in
+that artifact -- form fields nested one level down under `fields`, decision
+and reason expressed as boolean/string literal defaults instead of pointer
+keys). Both match skills/uipath-maestro-bpmn/validator/bpmn-spec.json's
+Actions.HITL extensionType: `contextFields` are fixed app-identity metadata
+(appId, appVersion, actions, key, taskTitle) -- NOT the reviewer-facing form
+fields. Form fields live at any depth inside the ONE `HitlTaskArguments` JSON
+body, and the single `<uipath:output type="Actions.HITL" var="...">` is
 opaquely typed; downstream code reads its fields as `vars.<var>.<field>`.
 Platform note (recorded, not graded here): `uip maestro bpmn validate` can
 only pass this shape with a real Action App binding -- see the task
@@ -47,12 +51,15 @@ Checks performed:
      HitlTaskArguments input) and a typed output mapping.
   4. The amount is presented, resolving to a declared number-typed variable
      either directly or through a jsonSchema property.
-  5. The manager's decision is captured (boolean/string output field, OR a
-     decisionField key, OR a matching jsonSchema property).
-  6. The optional rejection reason is captured (text/string output field, OR
-     a rejectionReasonField key, OR a matching jsonSchema property).
-  7. At least one input value (context input or HitlTaskArguments body field)
-     is bound to a declared variable via vars.<id> (not a hardcoded literal).
+  5. The manager's decision is captured (boolean literal, boolean-typed
+     expression, or a genuinely-dereferenced field-name pointer, at any depth
+     in HitlTaskArguments; OR a matching jsonSchema property).
+  6. The optional rejection reason is captured (any string value at any depth
+     in HitlTaskArguments, or a string-typed expression; OR a matching
+     jsonSchema property).
+  7. At least one input value (context input or HitlTaskArguments body field,
+     at any depth) is bound to a declared variable via vars.<id> (not a
+     hardcoded literal).
   8. The HITL task has an outgoing sequence flow (completion is wired).
   9. Some scriptTask in the process reads one of the HITL's output variables
      via vars.<id>.
@@ -202,6 +209,61 @@ def schema_property_matches(declared_schemas: dict[str, dict], name_re: re.Patte
     return False
 
 
+def iter_keys_at_any_depth(obj):
+    """Yield every (key, value) pair anywhere in a nested JSON structure of
+    dicts/lists -- CI run 35501830119 nested the form fields one level down
+    (`HitlTaskArguments.fields.approved`), so a top-level-only scan misses
+    them entirely."""
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            yield key, value
+            yield from iter_keys_at_any_depth(value)
+    elif isinstance(obj, list):
+        for item in obj:
+            yield from iter_keys_at_any_depth(item)
+
+
+def field_dereferenced_downstream(scripts, field_name: str) -> bool:
+    """Whether some downstream scriptTask's text plausibly reads
+    ``field_name`` off the HITL response (``response.approved``,
+    ``decision.approved``, ``response["approved"]``, ...). Deliberately loose
+    -- a dotted/bracket property-access substring, not full dataflow tracing
+    -- matching this file's existing script_reads() style."""
+    if not field_name:
+        return False
+    needles = (f".{field_name}", f'"{field_name}"', f"'{field_name}'")
+    return any(needle in text_content(task) for task in scripts for needle in needles)
+
+
+def decision_value_ok(value, declared_types, declared_schemas, scripts) -> bool:
+    """A decision-matching key's value is acceptable as: a boolean literal
+    (`fields.approved: false`); an `=`-expression resolving to a
+    boolean-typed variable/schema property; or (the original decisionField
+    rule, generalized) a bare string naming a field that some downstream
+    script actually dereferences -- NOT any bare string, so a stringly-typed
+    literal decision (`"approved": "yes"`) still fails."""
+    if isinstance(value, bool):
+        return True
+    if not isinstance(value, str):
+        return False
+    if _vars_match(value) is not None:
+        return resolve_expr_type(value, declared_types, declared_schemas) in BOOLEAN_TYPES
+    return field_dereferenced_downstream(scripts, value.strip())
+
+
+def reason_value_ok(value, declared_types, declared_schemas) -> bool:
+    """A reason-matching key's value is acceptable as: any plain string
+    (a literal default, including empty -- `fields.rejectionReason: ""` -- or
+    a field-name pointer, both accepted unconditionally per the task's own
+    tolerance for the reason field); or an `=`-expression resolving to a
+    string/text-typed variable/schema property."""
+    if not isinstance(value, str):
+        return False
+    if _vars_match(value) is None:
+        return True
+    return resolve_expr_type(value, declared_types, declared_schemas) in TEXT_TYPES
+
+
 def main() -> None:
     path, root = parse_bpmn("ExpenseApproval")
 
@@ -232,6 +294,7 @@ def main() -> None:
 
     declared_types = declared_var_types(root)
     declared_schemas = declared_var_schemas(root)
+    scripts = elements(root, "scriptTask")
 
     body_input = hitl_body_input(hitl)
 
@@ -239,10 +302,13 @@ def main() -> None:
         # -- T2: real Actions.HITL registry-template form -------------------
         # Form fields live as keys of the single merged HitlTaskArguments
         # JSON body, not as separate context inputs / typed outputs (see
-        # skills/uipath-maestro-bpmn/validator/bpmn-spec.json).
+        # skills/uipath-maestro-bpmn/validator/bpmn-spec.json). Walked
+        # recursively: CI run 35501830119 nested them one level down under a
+        # "fields" object instead of putting them at the top level.
         body = parse_body_json(body_input)
+        entries = [(k, v) for k, v in iter_keys_at_any_depth(body) if isinstance(k, str)]
 
-        amount_entries = [(k, v) for k, v in body.items() if isinstance(k, str) and AMOUNT_RE.search(k)]
+        amount_entries = [(k, v) for k, v in entries if AMOUNT_RE.search(k)]
         if not amount_entries:
             fail("HitlTaskArguments body has no key presenting the expense amount")
         checked_types = []
@@ -260,39 +326,35 @@ def main() -> None:
                 f"vars.<id>[.field] (found types: {checked_types})"
             )
 
-        decision_field = next(
-            (v for k, v in body.items() if isinstance(k, str) and k.lower() == "decisionfield" and isinstance(v, str)),
-            None,
-        )
-        decision_ok = decision_field is not None or schema_property_matches(
-            declared_schemas, DECISION_NAME_RE, BOOLEAN_TYPES | TEXT_TYPES
-        )
+        decision_entries = [(k, v) for k, v in entries if DECISION_NAME_RE.search(k)]
+        decision_ok = any(
+            decision_value_ok(v, declared_types, declared_schemas, scripts) for _k, v in decision_entries
+        ) or schema_property_matches(declared_schemas, DECISION_NAME_RE, BOOLEAN_TYPES | TEXT_TYPES)
         if not decision_ok:
             fail(
-                "HitlTaskArguments has no decisionField key, and no declared "
-                "jsonSchema variable names a boolean/string decision property "
-                "(approve/approved/decision)"
+                "HitlTaskArguments has no key (at any depth) matching "
+                "approve/approved/decision whose value is a boolean literal, a "
+                "boolean-typed expression, or a string naming a field a "
+                "downstream script actually dereferences, and no declared "
+                "jsonSchema variable names a matching boolean/string property "
+                f"(checked keys: {[k for k, _v in decision_entries]})"
             )
 
-        reason_field = next(
-            (
-                v
-                for k, v in body.items()
-                if isinstance(k, str) and k.lower() == "rejectionreasonfield" and isinstance(v, str)
-            ),
-            None,
-        )
-        reason_ok = reason_field is not None or schema_property_matches(declared_schemas, REASON_RE, TEXT_TYPES)
+        reason_entries = [(k, v) for k, v in entries if REASON_RE.search(k)]
+        reason_ok = any(
+            reason_value_ok(v, declared_types, declared_schemas) for _k, v in reason_entries
+        ) or schema_property_matches(declared_schemas, REASON_RE, TEXT_TYPES)
         if not reason_ok:
             fail(
-                "HitlTaskArguments has no rejectionReasonField key, and no "
-                "declared jsonSchema variable names a text reason property "
-                "(reason/comment/...)"
+                "HitlTaskArguments has no key (at any depth) matching "
+                "reason/comment/explanation/justification/note with a string "
+                "value, and no declared jsonSchema variable names a matching "
+                f"text property (checked keys: {[k for k, _v in reason_entries]})"
             )
 
         bound_any = any(
             expr_var_ref(v) is not None and (expr_var_ref(v) in declared_types or expr_var_ref(v) in declared_schemas)
-            for v in body.values()
+            for _k, v in entries
             if isinstance(v, str)
         )
         if not bound_any:
@@ -365,7 +427,6 @@ def main() -> None:
                 return True
         return False
 
-    scripts = elements(root, "scriptTask")
     if not scripts:
         fail("no bpmn:scriptTask found to log the HITL outcome downstream")
     consumed = any(any(script_reads(s, v) for v in hitl_out_vars) for s in scripts)

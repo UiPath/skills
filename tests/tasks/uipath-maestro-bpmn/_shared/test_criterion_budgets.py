@@ -499,16 +499,31 @@ def _unsized_loops(path: str, subcommand: str | None) -> list[int]:
 _SEED_CASE_NAMES = ("cases", "seed_cases")
 
 
-def _seed_case_count(script: str) -> int | None:
+def _seed_case_count(script: str, yaml_dir: str | None = None) -> int | None:
     """Cases the task's ``seed.py`` writes, when stated literally — what makes
     ``manual xN`` checkable. None when absent, unnamed, or ambiguous: better no
-    cross-check than a wrong one."""
-    seed = os.path.join(os.path.dirname(script), "seed.py")
-    if not os.path.exists(seed):
-        # pre_run scripts moved into a sibling _setup/ (2026-09) so they can be
-        # staged via sandbox.template_sources without $SKILLS_REPO_PATH.
-        seed = os.path.join(os.path.dirname(script), "_setup", "seed.py")
-    if not os.path.exists(seed):
+    cross-check than a wrong one.
+
+    Checks beside ``script`` first (a checker that lives in the task's own
+    directory, alongside its ``_setup/seed.py``), then beside ``yaml_dir`` (a
+    checker that instead lives in ``_shared/`` — the BATCH1-ADDENDUM convention
+    for connector/e2e ports — whose seed.py is a sibling of the task's own
+    YAML, not of the shared script)."""
+    candidates = [os.path.dirname(script)]
+    if yaml_dir and yaml_dir not in candidates:
+        candidates.append(yaml_dir)
+    seed = None
+    for directory in candidates:
+        for rel in ("seed.py", os.path.join("_setup", "seed.py")):
+            # pre_run scripts moved into a sibling _setup/ (2026-09) so they can
+            # be staged via sandbox.template_sources without $SKILLS_REPO_PATH.
+            candidate = os.path.join(directory, rel)
+            if os.path.exists(candidate):
+                seed = candidate
+                break
+        if seed:
+            break
+    if not seed:
         return None
     counts = set()
     for node in ast.walk(ast.parse(open(seed).read())):
@@ -715,7 +730,11 @@ def test_criterion_clears_the_debug_budget(
     where = f"{os.path.basename(script)}{f' {subcommand}' if subcommand else ''}"
     assert criterion is not None, f"{yaml_path}: run_command has no timeout:"
 
-    seeded = _seed_case_count(script) if price.unsized else None
+    seeded = (
+        _seed_case_count(script, os.path.join(_SUITE_ROOT, os.path.dirname(yaml_path)))
+        if price.unsized
+        else None
+    )
     problem = _annotation_error(price, declared, seeded, where)
     if problem:
         pytest.fail(f"{yaml_path}: {problem}")

@@ -88,7 +88,7 @@ success_criteria:
 
   - type: run_command
     description: "The completed process validates"
-    command: "for f in $(find . -maxdepth 6 -name \"*.bpmn\" -not -path \"*/node_modules/*\"); do uip maestro bpmn validate \"$f\" --output json >/dev/null 2>&1 && exit 0; done; exit 1"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
     timeout: 180
     expected_exit_code: 0
     weight: 1.5
