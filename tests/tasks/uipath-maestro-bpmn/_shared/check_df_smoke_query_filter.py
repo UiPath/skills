@@ -312,12 +312,23 @@ def values_by_name(pairs: list, names: set) -> list:
     return [v for k, v in pairs if k.lower() in names and v not in (None, "")]
 
 
-def sorted_field(pairs: list) -> str:
+# A sort may also ride inside the CEQL-like query string itself
+# ("... ORDER BY score DESC"), as the eval agent emitted on CI run 35489744689.
+ORDER_BY_RE = re.compile(r"\border\s+by\s+([a-z0-9_]+)(?:\s+(asc|desc))?", re.IGNORECASE)
+
+
+def sorted_field(pairs: list, text: str = "") -> str:
     values = values_by_name(pairs, SORT_FIELD_NAMES)
-    return values[0].lower() if values else ""
+    if values:
+        return values[0].lower()
+    match = ORDER_BY_RE.search(text)
+    return match.group(1).lower() if match else ""
 
 
-def is_descending(pairs: list) -> bool:
+def is_descending(pairs: list, text: str = "") -> bool:
+    match = ORDER_BY_RE.search(text)
+    if match and (match.group(2) or "").lower() == "desc":
+        return True
     for k, v in pairs:
         key = k.lower()
         val = str(v).strip().lower()
@@ -410,8 +421,8 @@ def main() -> None:
 
     sorted_by_score = [
         (task, pairs)
-        for task, pairs in zip(nodes, pairs_list)
-        if sorted_field(pairs) == "score"
+        for task, pairs, text in zip(nodes, pairs_list, texts)
+        if sorted_field(pairs, text) == "score"
     ]
     if len(sorted_by_score) < 2:
         fail(f"expected >=2 query nodes sorted by score, found {len(sorted_by_score)}")
@@ -427,7 +438,9 @@ def main() -> None:
             f"found {len(paginated)}"
         )
 
-    descending = [task for task, pairs in zip(nodes, pairs_list) if is_descending(pairs)]
+    descending = [
+        task for task, pairs, text in zip(nodes, pairs_list, texts) if is_descending(pairs, text)
+    ]
     if not descending:
         fail("expected at least one query with a descending sort")
 
