@@ -20,6 +20,10 @@ the framework's own inventory script derives from the export - this script knows
 For Worksoft Certify these are certify-process-data.json and certify-test-data.json from
 certify-export-inventory.py data. A reference is a process only when the id resolves to a process of that name -
 root processes and their recordsets share names, and recordset ids appear in the same prose.
+
+The Source Map rows this script reads are the contract in references/genome-format-guide.md § Source Map; the
+extraction-time check is references/extraction-guide.md Step 6b, the execution-time run
+references/source-migration-guide.md § Migration preflight.
 """
 import argparse
 import json

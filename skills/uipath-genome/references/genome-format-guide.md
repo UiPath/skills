@@ -1,13 +1,13 @@
 # Genome Format Guide
 
-Rules for the content of a genome regardless of how it is produced (authored, extracted, or edited). Templates: [component-genome-template.md](../assets/templates/component-genome-template.md), [process-genome-template.md](../assets/templates/process-genome-template.md). Worked examples: [assets/examples/](../assets/examples/).
+Content rules for every genome, however produced (authored, extracted, edited). Templates: [component-genome-template.md](../assets/templates/component-genome-template.md), [process-genome-template.md](../assets/templates/process-genome-template.md). Worked examples: [assets/examples/](../assets/examples/).
 
 ## Two Levels
 
 | Level | File | Scope | Use when |
 |---|---|---|---|
-| **Component genome** | `<slug>-genome.md` | One buildable project (RPA process, Flow, BPMN, agent, API workflow, coded app, function, case plan) | The automation is one project. This is the only file for a standalone automation. |
-| **Process genome** | `<slug>-genome.md` plus `<slug>-genome/<component-slug>-genome.md` per component | A business process realised by two or more buildable projects | A solution with ≥2 projects, a coordinator (Flow / BPMN / Case) that invokes other automations, or a described process that clearly needs ≥2 components |
+| **Component genome** | `<slug>-genome.md` | One buildable project (RPA process, Flow, BPMN, agent, API workflow, coded app, function, case plan) | Automation is one project. Only file for a standalone automation. |
+| **Process genome** | `<slug>-genome.md` plus `<slug>-genome/<component-slug>-genome.md` per component | Business process realised by two or more buildable projects | Solution with ≥2 projects, coordinator (Flow / BPMN / Case) invoking other automations, or described process clearly needing ≥2 components |
 
 Rules:
 
@@ -20,10 +20,10 @@ Rules:
 
 ## File Naming and Location
 
-- Write to the user's current working directory unless they name a location.
+- Write to user's current working directory unless they name a location.
 - Slug: split CamelCase on capitals, lowercase, hyphens for spaces, strip other characters. "Invoice Processing" → `invoice-processing-genome.md`; "InvoiceIntake" → `invoice-intake-genome.md`; "Email Triage & Routing" → `email-triage-routing-genome.md`.
-- Extracted genomes take the slug from the source project or solution name; fall back to the directory name.
-- Process genome components: `<process-slug>-genome/<component-slug>-genome.md`. Component slug comes from the project name.
+- Extracted genomes take slug from source project or solution name; fall back to directory name.
+- Process genome components: `<process-slug>-genome/<component-slug>-genome.md`. Component slug from project name.
 
 ## Section Rules
 
@@ -36,23 +36,25 @@ Resolve infrastructure to the real system. "Integration Service" is not an appli
 ### Build With / Components
 One skill per row from [skill-mapping-guide.md](skill-mapping-guide.md). Rationale states why that skill and not the nearest alternative.
 
-**Process genomes with test components:** the Type column of every test component reads "Test-case group in project `<ProcessName>.Tests`", and a **Project layout** block follows the Components table: one sentence stating that the solution has N buildable projects (the non-test components plus one test project), then a table `Folder | Component | Test cases | Data file(s)` with one row per test component and one row for the shared `Config/` folder (constants from the Configuration Questions, credential-asset name → environment URL map). The component genomes' Build With rationale names their folder in that project. The component diagram nests the test components inside a subgraph for the test project.
+**Process genomes with test components:** the Type column of every test component reads "Test-case group in project `<ProcessName>.Tests`", and a **Project layout** block follows the Components table: one sentence stating the solution has N buildable projects (non-test components plus one test project), then a table `Folder | Component | Test cases | Data file(s)` with one row per test component and one row for the shared `Config/` folder (constants from the Configuration Questions, credential-asset name → environment URL map). The component genomes' Build With rationale names their folder in that project. The component diagram nests the test components inside a subgraph for the test project.
 
 ### Platform Dependencies
-Every Orchestrator or Integration Service resource the automation touches: queues, assets, credentials, storage buckets, connections, folders, triggers. Each row names the resource type and purpose. Extracted genomes keep the source resource name; authored genomes propose one. Credentials: one credential asset per login account the automation signs in with (scenarios often use several accounts with different roles and tenants); the asset holds the secret, the data rows name the asset.
+Every Orchestrator or Integration Service resource touched: queues, assets, credentials, storage buckets, connections, folders, triggers. Each row names resource type and purpose. Extracted genomes keep the source resource name; authored genomes propose one.
+
+**Credentials: one credential asset per login account**, named after the account or persona, with its environment or tenant. Scenarios often sign in as several accounts with different roles on different tenants; never collapse them onto one login. The asset holds the secret; the genome and the data rows name the asset — a password, token or secret value never appears in a genome, a data file or a report, and dropping the account identity along with the secret loses which role each scenario ran as. Execution-side naming and declaration: [source-migration-guide.md](source-migration-guide.md) rule 4.
 
 ### Interface (component)
 Inputs, outputs, side effects. Mandatory content for a component inside a process genome (it is the contract the Handoffs table relies on). Standalone components may stub it: "Runs unattended with no arguments; outputs are the side effects listed in Workflow."
 
-**Library components** (a project other components consume as a package) carry, instead of the three bullets, one table per public workflow: `Argument | Direction | Type | Description`, plus the conventions the consumers rely on (naming, defaults, what a failed final check does). This table is the contract consumers are authored against before the library packs.
+**Library components** (a project other components consume as a package) carry, instead of the three bullets, one table per public workflow: `Argument | Direction | Type | Description`, plus the conventions consumers rely on (naming, defaults, what a failed final check does). This table is the contract consumers are authored against before the library packs.
 
-**Test components** (a group of test cases over data rows, one folder of the single test project) list the row schema per test case: the fields that vary per scenario (at most about 20 — an analyzer rule caps workflow arguments), separately from the constants that live in the project's shared configuration workflow. Credentials appear as the name of a credential asset per row, never as values.
+**Test components** (a group of test cases over data rows, one folder of the single test project) list the row schema per test case: the fields that vary per scenario (at most about 20 — an analyzer rule caps workflow arguments), separately from the constants in the project's shared configuration workflow. Credentials appear as the name of a credential asset per row, never as values.
 
 ### Configuration Questions
-Format: `N. {Question}? (default: {value})`. Every hardcoded value in the source or description becomes a question: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (default: Outlook)"). Scaffolding choices (project location, target framework, expression language, installed package versions) belong to the executing environment, not to the automation: execution asks them itself ([execution-guide.md § 1.3](execution-guide.md)); do not write them into the genome.
+Format: `N. {Question}? (default: {value})`. Every hardcoded value in the source or description becomes a question: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (default: Outlook)"). Scaffolding choices (project location, target framework, expression language, installed package versions) belong to the executing environment, not the automation: execution asks them itself ([execution-guide.md § 1.3](execution-guide.md)); do not write them into the genome.
 
 ### Workflow (component) / Process Map (process)
-Numbered steps in execution order. A step that involves several fields, a condition, validation, or a transformation gets substeps (a, b, c) and a data annotation `(input: …; output: …)`.
+Numbered steps in execution order. A step involving several fields, a condition, validation, or a transformation gets substeps (a, b, c) and a data annotation `(input: …; output: …)`.
 
 Shallow, insufficient for replication:
 ```markdown
@@ -70,6 +72,8 @@ Sufficient:
 ```
 
 Test: if a builder cannot rebuild the step from the text alone, add detail. Never compress distinct steps to hit a count.
+
+**Composite UI interactions carry their full contract.** Source frameworks and descriptions bundle a multi-step interaction into one step: type-ahead pick, menu or tree path, option list, find-row-then-act, keystrokes to the focused element. The substep states, in behavioural words, everything the builder needs to rebuild the interaction: what is typed, how the suggestion or option is matched (equals / contains / nth), which key confirms, each path level, the row rule. "Enter Voluntary into Primary Reason" is a data loss; "type Voluntary into Primary Reason and pick the suggestion that equals Voluntary" is the step. A source guide's composite-actions table gives the wording per source action; execution builds each contract as a pattern ([source-migration-guide.md § Composite interactions](source-migration-guide.md)).
 
 ### Business Rules
 Plain language, no code syntax, specific fields and thresholds kept. Group under `### Step N: {name}` headings for the step where the rule fires; cross-step rules under `### General`.
@@ -104,18 +108,18 @@ Banned: "completes successfully", "handles errors properly", and anything code-l
 
 ### Process Map diagrams (process)
 Two diagrams, never merged into one:
-- **Process view:** a BPMN-style swimlane rendered as a Mermaid `flowchart TB`. One `subgraph` per actor or system lane (automation, each human actor, each system, any party outside the automation). BPMN shapes: `((Start))` and `(((End)))` events, `[Task]` rectangles prefixed with the component number in brackets, `{Gateway?}` diamonds with labelled yes/no edges, solid arrows for sequence flow inside a lane, dashed arrows (`-.->`) with a label for message or data flow across lanes. Every gateway must have a corresponding rule under Business Rules or Error Handling.
-- **Component view:** a `flowchart LR` with the solution as a subgraph; solid arrows for build-time dependencies ("depends on / invokes"), dashed arrows for run-time data passed between components, shared platform resources as plain nodes.
+- **Process view:** BPMN-style swimlane rendered as Mermaid `flowchart TB`. One `subgraph` per actor or system lane (automation, each human actor, each system, any party outside the automation). BPMN shapes: `((Start))` and `(((End)))` events, `[Task]` rectangles prefixed with the component number in brackets, `{Gateway?}` diamonds with labelled yes/no edges, solid arrows for sequence flow inside a lane, dashed arrows (`-.->`) with a label for message or data flow across lanes. Every gateway must have a corresponding rule under Business Rules or Error Handling.
+- **Component view:** `flowchart LR` with the solution as a subgraph; solid arrows for build-time dependencies ("depends on / invokes"), dashed arrows for run-time data passed between components, shared platform resources as plain nodes.
 Mermaid cannot render BPMN 2.0 itself; when the customer wants a formal model, add a sidecar `<process-slug>-process.bpmn` authored from the Process Map (the `uipath-maestro-bpmn` skill knows the format) and link it from this section.
 
 ### Handoffs (process)
-One row per edge between components: mechanism (queue item, start job, Flow invoke, event, file drop, Action Center task), the data schema passed, and what happens when the receiving side fails. This table is the data contract; component Interface sections must agree with it.
+One row per edge between components: mechanism (queue item, start job, Flow invoke, event, file drop, Action Center task), data schema passed, and what happens when the receiving side fails. This table is the data contract; component Interface sections must agree with it.
 
 ### Deployment (process)
 Packaging (one solution vs independent packages), entry points and triggers, target folders or environments. Name the buildable projects explicitly; when test components exist, Deployment names exactly one test project and one Test Manager test set per folder of it.
 
 ### Complexity
-`simple | medium | complex`. Component genomes: inferred per [authoring-guide.md](authoring-guide.md) (from a description) or [extraction-guide.md](extraction-guide.md) (from source signals). Process genomes are `medium` with 2-3 components and no human lanes, otherwise `complex`.
+`simple | medium | complex`. Never ask the user to declare it. Component genomes: inferred from the description ([authoring-guide.md](authoring-guide.md) Step 3) or from source signals ([extraction-guide.md](extraction-guide.md) Step 5); both default to the lower level when ambiguous and escalate when later evidence demands it. Process genomes are `medium` with 2-3 components and no human lanes, otherwise `complex`.
 
 ### Tags
 Comma-separated: business domain, target applications, platform features (document-understanding, queues, human-in-the-loop, …).
@@ -133,7 +137,7 @@ One row per workflow step (component) or per component (process): the source fra
 | Checkpoints | for every workflow step of a test component, the source's checkpoints inside it: source step id, what is asserted, the expected value (or the data column it comes from), and whether the source captured a screenshot there. Execution builds one assertion and one evidence artifact per checkpoint and produces the result parity table from them ([source-migration-guide.md § Result parity](source-migration-guide.md)) |
 | Inventory counts | what the export holds and the genome covers: processes, windows, controls (and how many have no locator), recordsets, rows, credential accounts; excluded and unreachable objects by name |
 
-Recognition data, data rows and process inventories are not written beside the genome. They are the export's; a copy next to the genome goes stale and says nothing the export does not. Execution derives them with the source guide's script into the build's working folder ([source-migration-guide.md § Migration preflight](source-migration-guide.md)). A genome shared without its Source Map can be built but not migrated: the reader gets placeholders or a live capture, and the redistribution note says so.
+**The genome files are the only output of extraction.** Recognition data (locators), data rows and process inventories never enter the genome body and are not written beside it either: they are the export's, a copy next to the genome goes stale and says nothing the export does not, and execution re-derives them from the export with the source guide's script into the build's working folder ([source-migration-guide.md § Migration preflight](source-migration-guide.md)). What the Source Map must record is everything execution needs to find them again — the rows above. A Source Map that names the export but not the per-step objects has lost the migration: execution cannot find the locators and rows the export carried and ships placeholders and invented data. A genome shared without its Source Map can be built but not migrated: the reader gets placeholders or a live capture, and the redistribution note says so.
 
 ## Population Matrix (component genomes)
 
@@ -161,7 +165,11 @@ Minimums, not ceilings. Fifteen distinct steps in the source or description mean
 
 ## Ambiguity Marker
 
-When intent is unclear from the source, write the best interpretation and append `*[Inferred]*` to that line. Never leave a section empty because the source is ambiguous. Users remove markers once they confirm the content ("Remove the inferred flags").
+When intent is unclear from the source, write the best interpretation, append `*[Inferred]*` to that line, and record the uncertainty in the Source Map. Never leave a section empty because the source is ambiguous. Users remove markers once they confirm the content ("Remove the inferred flags").
+
+## Write, Then Offer Edits
+
+Every mode writes the file(s) to the working directory immediately — no preview, no confirmation — then says where they are and asks "Want to adjust anything?". Edits are targeted and in place, never a regeneration; edit tables: [authoring-guide.md](authoring-guide.md) Step 8 and [extraction-guide.md](extraction-guide.md) Step 7.
 
 ## Provenance
 

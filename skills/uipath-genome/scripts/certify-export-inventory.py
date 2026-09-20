@@ -9,12 +9,13 @@ Usage:
   certify-export-inventory.py targets <EXPORT_DIR> [--out DIR]   # UI target catalog: windows + controls with parsed Certify locators and the actions applied to each control
   certify-export-inventory.py data    <EXPORT_DIR> [--out DIR]   # test data: layouts + recordsets as named rows, process -> recordset links
 
-Extraction reads profile/cards/dump (and targets, for control types and actions) from a scratch folder and writes
-only the genome; execution derives targets/data into the build's working folder (migration preflight) - never
-beside the genome. Writes certify-profile.txt / certify-cards.txt / certify-targets.{json,md} / certify-test-data.{json,md} /
+Which mode runs which command, and where the output goes: references/sources/worksoft-certify-source-guide.md
+(command block at the top); why nothing is written beside the genome: references/genome-format-guide.md § Source Map;
+execution-time derivation: references/source-migration-guide.md § Migration preflight.
+Writes certify-profile.txt / certify-cards.txt / certify-targets.{json,md} / certify-test-data.{json,md} /
 certify-process-data.json into --out (default: current directory); dump prints to stdout.
 Never prints values of variables whose name contains password/pwd/secret/token (account user names are kept: they are
-identity, not secrets).
+identity, not secrets - references/genome-format-guide.md § Platform Dependencies).
 """
 import argparse
 import collections
