@@ -23,8 +23,17 @@ Re-homing decisions vs the Flow grader:
   - Flow's ``node.type`` suffix matching (``.record-created`` /
     ``.record-updated`` / ``.query-entity-records`` / ``.get-entity-record-
     by-id`` / ``.delete-entity-record``) becomes: for the two trigger starts,
-    an ``Intsvc.EventTrigger`` startEvent (with ``bpmn:messageEventDefinition``)
-    whose context ``operation`` field contains "creat"/"updat" (a live
+    a ``bpmn:startEvent`` carrying the ``Intsvc.EventTrigger`` payload alone
+    (classified by ``uipath:event``/``uipath:type``, the same
+    ``has_typed_uipath_extension`` helper the batch's other checkers use --
+    **not** additionally gated on a direct-child ``bpmn:messageEventDefinition``:
+    a real CI-graded solution nested that element one level down, inside
+    ``bpmn:extensionElements`` alongside ``uipath:event`` rather than as a
+    sibling of it, and `uip maestro bpmn validate` accepted the file. Flow
+    itself never had this structural distinction -- it classified triggers by
+    node type only -- so the BPMN port does not invent a placement
+    requirement the CLI does not enforce either.) The ``operation`` context
+    field is then matched by substring for "creat"/"updat" (a live
     Data Service connection has no local ``describe`` access here to pin the
     exact operation string the registry enrichment writes -- see
     BATCH1-ADDENDUM.md -- so operation is matched by substring, tolerant of
@@ -77,6 +86,7 @@ Assertion map (Flow -> BPMN):
   T                                     curated|generic objectName classification                     -> is_kind()
   T                                     entity name anywhere in node inputs/objectName/path            -> entity_ok()
   T                                     vars.<VarId> substring reference, transitive through BPMN.Variables copies, in place of Flow node-id reference -> references_var() / var_sources_map()
+  T                                     trigger startEvent classified by uipath:event/Intsvc.EventTrigger alone, not gated on a direct-child bpmn:messageEventDefinition (CI run 35500726138: a passing, `bpmn validate`-accepted solution nested messageEventDefinition inside extensionElements instead of as a startEvent sibling; Flow has no structural analog to require a stricter placement than the CLI itself enforces) -> trigger_start_events()
   DROPPED  require_no_private_connector_values  (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_sequence_integrity            (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow; `validate` criterion already covers structure)
@@ -208,12 +218,15 @@ def sendtask_nodes(root: ET.Element) -> list[ET.Element]:
 
 
 def trigger_start_events(root: ET.Element) -> list[ET.Element]:
-    return [
-        s
-        for s in elements(root, "startEvent")
-        if has_typed_uipath_extension(s, "event", TRIGGER_TYPE)
-        and s.find(f"{{{BPMN_NS}}}messageEventDefinition") is not None
-    ]
+    # Classify by the uipath:event/Intsvc.EventTrigger payload alone. Do not
+    # additionally require a direct-child bpmn:messageEventDefinition: the
+    # registry xmlTemplate places it there, but a real CI-graded solution
+    # nested it one level down inside bpmn:extensionElements instead, and
+    # `uip maestro bpmn validate` accepted that placement. Flow's own
+    # classification is by node type only, with no structural analog to gate
+    # on, so this port does not invent a stricter placement rule than the CLI
+    # itself enforces.
+    return [s for s in elements(root, "startEvent") if has_typed_uipath_extension(s, "event", TRIGGER_TYPE)]
 
 
 def var_sources_map(root: ET.Element) -> dict[str, str]:
