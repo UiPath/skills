@@ -35,6 +35,11 @@ UIPATH_NS = "http://uipath.org/schema/bpmn"
 # Absolute monotonic deadline capping every CLI subprocess. A task assigns
 
 
+# `uip maestro bpmn debug` polls the instance at most this many times
+# (pollDebugInstanceStatus maxPolls in the maestro tool).
+CLI_MAX_POLLS = 300
+
+
 class CheckFailure(RuntimeError):
     pass
 
@@ -382,6 +387,14 @@ def run_debug(
     price it, the same way flow_check.run_debug is priced in the flow suite.
     """
 
+    # The CLI polls at most CLI_MAX_POLLS times, so the poll interval decides
+    # how long `bpmn debug` waits before giving up with a poll-timeout envelope
+    # (ErrorCode "timeout", Data.lastStatus still "Running", no FinalStatus).
+    # 500 ms capped the wait at 150 s and turned every longer run into
+    # "final status was None" (CI run 35503094182, jira_lifecycle and
+    # jira_search_triage). Size the interval so the CLI keeps polling for the
+    # whole budget this call was priced at.
+    poll_ms = max(500, math.ceil(timeout * 1000 / (CLI_MAX_POLLS - 10)))
     completed = run_cli(
         [
             "uip",
@@ -390,7 +403,7 @@ def run_debug(
             "debug",
             str(project_dir),
             "--poll-interval",
-            "500",
+            str(poll_ms),
             "--inputs",
             json.dumps(inputs, separators=(",", ":")),
         ],
@@ -399,6 +412,13 @@ def run_debug(
     )
     payload = parse_json_output(completed.stdout or completed.stderr, "debug")
     debug_data = get_ci(payload, "Data", {})
+    if str(get_ci(payload, "ErrorCode", "")).casefold() == "timeout":
+        raise CheckFailure(
+            "bpmn debug stopped waiting before the run reached a terminal status: "
+            f"instance {get_ci(debug_data, 'instanceId')!r} was still "
+            f"{get_ci(debug_data, 'lastStatus')!r} after "
+            f"{get_ci(debug_data, 'timeoutSeconds')!r}s"
+        )
     instance_id = get_ci(debug_data, "InstanceId")
     if not isinstance(instance_id, str) or not instance_id:
         raise CheckFailure(
