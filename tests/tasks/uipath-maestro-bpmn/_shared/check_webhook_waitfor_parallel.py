@@ -69,6 +69,9 @@ from _shared.graph import reachable  # noqa: E402
 BPMN_NS = NS["bpmn"]
 WAIT_TYPE = "Intsvc.WaitForEvent"
 HTTP_TYPE = "Intsvc.HttpExecution"
+# registry-workflow.md lists both wrappers for the managed HTTP sendTask; the
+# eval agent emitted UnifiedHttpRequest on CI run 35538279757.
+HTTP_TYPES = (HTTP_TYPE, "Intsvc.UnifiedHttpRequest")
 CONNECTOR_KEY = "uipath-http-webhook"
 
 
@@ -132,10 +135,14 @@ def fan_out_point(root: ET.Element, start_id: str) -> str | None:
 
 
 def wait_for_event_nodes(root: ET.Element) -> list[ET.Element]:
-    """bpmn:receiveTask carrying the registry Intsvc.WaitForEvent wrapper,
-    bound to the HTTP Webhook connector."""
+    """Element carrying the registry Intsvc.WaitForEvent wrapper, bound to the
+    HTTP Webhook connector. Classified by the wrapper type, not the BPMN tag:
+    the skill teaches ``bpmn:receiveTask``, but the eval agent also emits a
+    validating ``bpmn:intermediateCatchEvent`` + messageEventDefinition with
+    the same wrapper (CI run 35538279757), as it did for Intsvc.EventTrigger
+    in trigger_lifecycle."""
     out = []
-    for task in elements(root, "receiveTask"):
+    for task in list(elements(root, "receiveTask")) + list(elements(root, "intermediateCatchEvent")):
         if not has_typed_uipath_extension(task, "event", WAIT_TYPE):
             continue
         if context_value(task, "connectorKey") != CONNECTOR_KEY:
@@ -149,7 +156,7 @@ def http_get_nodes(root: ET.Element) -> list[ET.Element]:
     URL, with nothing in headers or query parameters."""
     good = []
     for task in elements(root, "sendTask"):
-        if not has_typed_uipath_extension(task, "activity", HTTP_TYPE):
+        if not any(has_typed_uipath_extension(task, "activity", t) for t in HTTP_TYPES):
             continue
         mode = context_value(task, "mode").lower()
         method = context_value(task, "method").upper()
@@ -190,7 +197,7 @@ def main() -> None:
     event_nodes = wait_for_event_nodes(root)
     if not event_nodes:
         fail(
-            f"no bpmn:receiveTask carrying {WAIT_TYPE} bound to connectorKey "
+            f"no bpmn:receiveTask or intermediateCatchEvent carrying {WAIT_TYPE} bound to connectorKey "
             f"{CONNECTOR_KEY!r} (HTTP Webhook wait-for-event)"
         )
     print("OK: HTTP Webhook wait-for-event receiveTask present")
@@ -198,7 +205,7 @@ def main() -> None:
     http_nodes = http_get_nodes(root)
     if not http_nodes:
         fail(
-            f"no bpmn:sendTask carrying {HTTP_TYPE} configured as a manual GET to the "
+            f"no bpmn:sendTask carrying {' or '.join(HTTP_TYPES)} configured as a manual GET to the "
             "webhook URL (mode=manual, method=GET, url containing 'webhook', "
             "no populated headers/parameters context field)"
         )

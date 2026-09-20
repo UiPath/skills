@@ -22,20 +22,34 @@ Reading the Flow graders during the loop reclassified four "structural" tasks as
 | multi_node/bellevue_weather | parked, skill gap | runs 35523787101 + 35525387843: identical runtime fault, the script task reads `temperature_2m` off an undefined HTTP response. The skill does not teach the `Intsvc.HttpExecution` response shape well enough for downstream scripts |
 | e2e/jira_search_triage | parked, skill/platform gap | run 35525387843: runtime 400008 "Failed to evaluate the input collection variable for the marker element" — `multiInstanceLoopCharacteristics` over a connector response (`=vars.Var_SearchResponse.issues`) does not evaluate |
 | e2e/jira_lifecycle | parked, needs live investigation | three different runtime failures in three runs (our CLI poll cap bug; instance never terminal in 720 s; `bpmn debug` exit 1 before creating an instance). Flow's own version is flaky (0.82 typical, 2/12 zero in the week's nightlies) |
-| multi_node/slack_weather_pipeline | written, in CI batch 10 | run 35538279757 |
-| multi_node/billing_invoice_lookup | written, in CI batch 10 | run 35538279757 |
-| multi_node/billing_discrepancy_detector | written, in CI batch 10 | run 35538279757 |
-| connector_features/generic_dynamic_node | written, in CI batch 10 | run 35538279757 |
-| connector_features/slack_http_fallback | written, in CI batch 10 | run 35538279757 |
-| connector_features/jdbc_databricks_query (structural) | written, in CI batch 10 | run 35538279757 |
-| connector_trigger/webhook_waitfor_parallel (structural) | written, in CI batch 10 | run 35538279757 |
-| connector_features/datafabric_connector/smoke_error (structural) | written, in CI batch 10 | run 35538279757 |
-| connector_features/testmanager_crud_grounded (self-report, Flow `skip:true` dropped) | written, in CI batch 10 | run 35538279757 |
+| multi_node/slack_weather_pipeline | FAIL 0.375, iteration 1 of 3 | run 35538279757: runtime 300501 "Slack channel office-bellevue was not found" in the agent's channel-select script; agent defect (channel exists, Flow finds it) |
+| multi_node/billing_invoice_lookup | green on the graded criteria (0.91); bindings advisory fixed, not re-run | run 35538279757; grader read its own ephemeral live solution as a second project |
+| multi_node/billing_discrepancy_detector | FAIL 0.30, iteration 1 of 3 | run 35538279757: Integration Services 400 "Expected a field name expression but got 'StringValue'" on the ERP query (malformed Data Service filter, agent authoring); accountTier not derived from CRM |
+| connector_features/generic_dynamic_node | green | run 35538279757 |
+| connector_features/slack_http_fallback | 0.76; grader fixed, not re-run | run 35538279757: debug completed; grader wanted `emoji.list`, connector generic resource is `emoji_list_GET` |
+| connector_features/jdbc_databricks_query (structural) | green | run 35538279757 |
+| connector_trigger/webhook_waitfor_parallel (structural) | 0.47; grader fixed, not re-run | run 35538279757: agent used intermediateCatchEvent + WaitForEvent and Intsvc.UnifiedHttpRequest, both valid |
+| connector_features/datafabric_connector/smoke_error (structural) | green | run 35538279757 |
+| connector_features/testmanager_crud_grounded (self-report, Flow `skip:true` dropped) | 0.89; grader fixed, not re-run | run 35538279757: two byte-identical `.bpmn` (scaffold + solution copy) |
 | interactive/bellevue_weather_simulated | written, reviewed, not run | commit 80033663f; live criterion timeout 1050, task_timeout 2550 (sanctioned) |
 | interactive/cli_dice_roller_simulated | written, reviewed, not run | commit 8fc7a7692; task_timeout 2800 (sanctioned) |
 | interactive/slack_channel_description_simulated | written, reviewed, not run | commit f000d026d; all five Flow criteria kept, live timeout 1050 |
 
-Batch 10 results are appended in the "Batch 10 and after" section when they land; if that section is missing, read `parity-ledger.md` or re-run the batch. The three interactive ports have never been dispatched: they go in the next batch together.
+Batch 10 landed; see "Batch 10 and after". The three interactive ports have never been dispatched.
+
+## Batch 10 and after
+
+Run 35538279757 (nine ports, one dispatch). Green: smoke_error, generic_dynamic_node, jdbc_databricks_query. Four more failed only on grader defects, all fixed on this branch and replayed green against the downloaded CI artifacts (`gh run download 35538279757`, `**/00/artifacts/`):
+
+1. `find_bpmn_file` with no hint now treats byte-identical `.bpmn` copies as one artifact (testmanager_crud_grounded: the agent copied its scaffold into the solution wrapper).
+2. `resolve_project(exclude_under=…)`: a live grader's own `uip solution projects import` leaves an identical project under its run directory; later criteria in the same task must exclude it (both billing graders pass `LIVE_RUN_DIR`). Any future multi-criterion live grader needs the same.
+3. Classify wait-for-event by the `Intsvc.WaitForEvent` wrapper, not the BPMN tag: the agent emits `bpmn:intermediateCatchEvent` + messageEventDefinition as well as `bpmn:receiveTask`, and both validate (webhook_waitfor_parallel; same lesson as trigger_lifecycle for EventTrigger).
+4. Accept `Intsvc.UnifiedHttpRequest` wherever a grader accepts `Intsvc.HttpExecution`; registry-workflow.md lists both for the managed HTTP sendTask.
+5. Slack's generic resource for the `emoji.list` endpoint is `emoji_list_GET`; the fallback grader matches `emoji[._]list`.
+
+Two real failures, one iteration spent each: billing_discrepancy_detector (Integration Services 400 on the ERP query filter, "Expected a field name expression but got 'StringValue'": the agent wrote a malformed Data Service filter; add to the skill findings as "Data Service query filter grammar") and slack_weather_pipeline (script task could not find channel `office-bellevue`, which exists and Flow's agent finds; likely channel-list pagination).
+
+Next dispatch, one batch: the four grader-fixed tasks for confirmation, the two real failures (iteration 2), the three interactive simulated ports and `ceql_where` (first run). Ten tasks.
 
 ## Probe bucket (16): pilot ported, 11 decided, 4 blocked
 
@@ -78,12 +92,12 @@ Budget: `_shared/test_criterion_budgets.py` prices every `run_debug` call; crite
 
 ## Skill findings to report upstream
 
-Connector trigger parameters (Data Fabric entity, Outlook `parentFolderId`) are omitted on first attempts; `uip is triggers objects/describe` discovery is not taught; Slack `folderKey` binding omitted; `Intsvc.HttpExecution` response shape unclear to downstream scripts; multi-instance over connector output fails at runtime; no "existing solutions → ask" greenfield rule; Actions.HITL requires a tenant Action App.
+Connector trigger parameters (Data Fabric entity, Outlook `parentFolderId`) are omitted on first attempts; `uip is triggers objects/describe` discovery is not taught; Slack `folderKey` binding omitted; `Intsvc.HttpExecution` response shape unclear to downstream scripts; Data Service query filter grammar (400 "Expected a field name expression"); Slack channel lookup misses existing channels (pagination); multi-instance over connector output fails at runtime; no "existing solutions → ask" greenfield rule; Actions.HITL requires a tenant Action App.
 
 ## Resuming
 
 1. `git checkout test/bpmn-port-live` (stacked on the PR branch; rebase after the PR merges).
-2. Read batch 10's run (35538279757) if the "Batch 10 and after" section is missing; record results in `parity-ledger.md`.
-3. Dispatch the four never-run ports (three interactive simulated tasks + `ceql_where`) as one batch. New ports follow the spawn pattern "read PORTING-BRIEF, BATCH1-ADDENDUM, LIVE-ADDENDUM; port <task>; create <paths>; gates; report with assertion map".
+2. Dispatch the ten-task batch listed under "Batch 10 and after"; record results in `parity-ledger.md` and this table.
+3. New ports follow the spawn pattern "read PORTING-BRIEF, BATCH1-ADDENDUM, LIVE-ADDENDUM; port <task>; create <paths>; gates; report with assertion map".
 4. Dispatch new ports as one batch; iterate per the rule; park with evidence.
 5. Port the 7 field-shape probes marked portable; verify the carrier live before the 2 plausible ones; the 4 agent/file-typed probes need tenant fixtures first.
