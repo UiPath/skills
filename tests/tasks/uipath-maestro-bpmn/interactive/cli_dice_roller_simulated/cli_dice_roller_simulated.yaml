@@ -1,0 +1,154 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+task_id: skill-bpmn-cli-dice-roller-simulated
+description: >
+  Dice-roller Maestro BPMN process in interactive mode, driven by a simulated
+  non-technical user who withholds requirements until asked. Tests the
+  agent's ability to clarify ambiguous asks before building.
+
+  Ported from Flow
+  `interactive/cli_dice_roller_simulated/cli_dice_roller_simulated.yaml`; the
+  persona/goal/constraints are unchanged apart from product-noun swaps
+  ("UiPath Flow" -> "UiPath Maestro BPMN process", "flow" -> "process", "a
+  `.flow` file" -> "a `.bpmn` file"), the Script node becomes a
+  `bpmn:scriptTask` (the `BPMN.ScriptTask` registry construct), and the
+  live-check criterion follows the same translation as the committed
+  live-simulated ports (`_shared/check_weather_bpmn_simulated.py`,
+  `_shared/check_jira_get_issue.py`): a JSON node-type scan + inline `flow
+  debug` payload becomes an XML scan for a `bpmn:scriptTask` element plus the
+  BPMN live-debug surface (ephemeral solution import, `bpmn debug`,
+  `debug-instance variables-all`/`incidents`, per LIVE-ADDENDUM's canonical
+  pattern). That surface's worst-case budget (90 solution init + 180 solution
+  import + 480 debug + 120 variables-all + 120 incidents + 60s margin = 1050s)
+  fits under Flow's own criterion timeout (1320s), so the criterion timeout is
+  kept verbatim; `run_limits.task_timeout` is raised from Flow's 2400s to
+  2800s (turn_timeout 1200 + worst-case grading 1515 [180 validate + 1320
+  live check + 15 name check] + 60s margin = 2775, rounded up to the nearest
+  50 for per-criterion spawn overhead) so the larger live-check budget still
+  fits under the single turns+grading watchdog (tests/README.md). The graded
+  assertions themselves (a scriptTask node exists; the run's outputs contain
+  an integer in [1, 6]; the project was named as elicited) are unchanged from
+  Flow's own grader.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", simulation]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below. Unchanged from Flow.
+  max_turns: 60
+  turn_timeout: 1200
+  # Flow's task_timeout (2400) does not cover this task's live-debug criterion
+  # once the BPMN ephemeral-solution surface is counted: turn_timeout (1200) +
+  # worst-case grading (180 validate + 1320 live check + 15 name check = 1515)
+  # + 60s margin = 2775; rounded up to 2800 for per-criterion spawn overhead.
+  # task_timeout wraps turns AND grading under one watchdog (tests/README.md),
+  # so it must cover both, not grading alone.
+  task_timeout: 2800
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+reference:
+  directory: ../..
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical operations analyst. You have heard of UiPath but
+    have never built a process yourself. You speak in plain English, never in
+    code. You are friendly but impatient: if the agent dithers, prod it to
+    just build something. You cannot read or write code — if the agent shows
+    you code, say "I trust you, just make it work." You also have no way to
+    open a link or type into a chat window, so anything that needs you to
+    drive it yourself is no good: the agent has to be able to run it and
+    report the number back here.
+
+  goal: |
+    You want a UiPath Maestro BPMN process that rolls a single six-sided die
+    and shows you the number that came up.
+
+    OPENING MESSAGE: open the way you would to a colleague — a couple of short
+    sentences covering the outcome you want plus the rules that matter: one
+    die, six sides, numbers 1 through 6, and you want the rolled number shown
+    as the result rather than buried somewhere nobody looks. State in this
+    first message that you have no way to open a link or type into a chat
+    window yourself, so it has to be something the agent can run and report
+    the number back from — do not save this for later. Say that it has
+    to be built as a UiPath Maestro BPMN process — not an API workflow, not a
+    standalone script — inside a solution of the same name, and that you want
+    it validated before you sign off. Do not name files or paths and do not use
+    technical wording. How the agent builds it is its own business. Close by
+    inviting the agent to ask you anything it needs before it starts building.
+    Keep the withheld items below to yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "DiceRoller".
+      - You want the completed process to validate before you sign off.
+      - You want to see it actually produce a number when it runs before you sign off.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'CLI', 'uip', 'node', or 'edge' unless the agent brings them up first."
+    - "Do not reveal the project name 'DiceRoller' unless asked what to name it."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro BPMN process at all (e.g. an API workflow), tell it you specifically want a Maestro BPMN process — i.e. a `.bpmn` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "Whatever the agent showed you actually working is the version you want kept. If it says it is swapping the process back to some other design now that the demo is done, tell it to leave the working version in place — you do not want to be handed something nobody has seen run."
+    - "When the agent reports it built the process, do not end yet if it hasn't shown you the result: before you sign off you want to see it actually run and produce a number 1 through 6. If it only says the process is built and validated, ask it once to run it and show you the roll. Once the agent has both built the process AND shown you a run that produced a number 1 through 6, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, or alternative designs, and do not raise any requirement beyond seeing it actually work — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # Name-agnostic: any unambiguous generated .bpmn must validate. The exact
+  # project name is scored separately below.
+  - type: run_command
+    description: "uip maestro bpmn validate passes (any .bpmn)"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # Runtime check (mirrors Flow's check_dice_runs_simulated.py): a
+  # bpmn:scriptTask exists and the live debug run's outputs contain an
+  # integer in [1, 6]. Supersedes a static grep for "random", which a
+  # process that never executes would still pass.
+  - type: run_command
+    description: "BPMN debug runs; scriptTask executed and output is an integer in [1,6]"
+    command: "python3 $REFERENCE_DIR/_shared/check_dice_runs_simulated.py"
+    # 1320 funds the ephemeral-solution live-debug surface (solution init +
+    # import + bpmn debug + variables-all + incidents = 990s) plus margin —
+    # see check_dice_runs_simulated.py's own budget comment. Kept verbatim
+    # from Flow, which already exceeds the 1050s this surface needs.
+    timeout: 1320
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the process behaves identically whatever it's
+  # called. Non-gating: reports whether the agent elicited the exact name
+  # (score 1/0), but pass_threshold 0 keeps a cosmetic miss from failing the
+  # task and the low weight keeps it from dominating the score.
+  - type: run_command
+    description: "Project/BPMN file is named DiceRoller (elicited from the user)"
+    command: "find . -iname 'DiceRoller*.bpmn' | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
