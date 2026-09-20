@@ -1,0 +1,81 @@
+task_id: skill-bpmn-non-catalog-http-fallback
+description: >
+  Integration test: a NON-catalog service (Spotify) has no IS connector of its
+  own — there is no `uipath-spotify` connector key. The only managed path is the
+  generic HTTP connector (`uipath-uipath-http`): a connection of that type holds
+  Spotify's base URL + OAuth, and the process issues a connector-mode HTTP
+  request against it for the `/me` endpoint. The skill must build that
+  managed-HTTP node. Non-catalog counterpart of slack-http-fallback (there the
+  proxy targets a catalog connector; here the connector key IS
+  uipath-uipath-http). Graded structurally: validate plus a check on the
+  fallback node shape. Runtime debug is not graded here — correctness is
+  verified by the node shape, so the test does not depend on a live Spotify
+  connection in the grading sandbox.
+  Ported from Flow `connector_features/non-catalog-http-fallback/non_catalog_http_fallback.yaml`;
+  the managed `core.action.http.v2` node is modeled as a bpmn:sendTask carrying
+  the registry Intsvc.ActivityExecution wrapper (connectorKey
+  uipath-uipath-http, connection bound via `=bindings.<id>`) instead of a Flow
+  connector-mode HTTP node.
+tags:
+  - uipath-maestro-bpmn
+  - integration
+  - "mode:build"
+  - "lifecycle:generate"
+  - "shape:single-node"
+  - connector
+  - uipath-uipath-http
+  - "feature:http"
+
+run_limits:
+  expected_turns: 32
+  task_timeout: 1500
+  max_turns: 100
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a new UiPath Maestro BPMN process project called "SpotifyProfileTest"
+  with a manual start that gets the current user's Spotify profile. Wire the
+  manual start to the node that fetches the profile.
+
+  Use the connection present in the `Shared/uipath-maestro-flow` folder.
+
+  Validate the final .bpmn file.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "The completed process validates"
+    command: 'for f in $(find . -maxdepth 6 -name "*.bpmn" -not -path "*/node_modules/*"); do uip maestro bpmn validate "$f" --output json >/dev/null 2>&1 && exit 0; done; exit 1'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Profile fetch uses a managed HTTP node with the uipath-uipath-http connector key (non-catalog fallback) and targets the /me endpoint"
+    command: "python3 $REFERENCE_DIR/_shared/check_non_catalog_http_fallback.py check_fallback"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
