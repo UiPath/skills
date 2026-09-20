@@ -1,0 +1,110 @@
+task_id: skill-bpmn-datafabric-smoke-query
+description: >
+  Smoke: read-only record queries against FlowCodeEvalEntity covering boolean,
+  numeric, text, date, datetime, UUID, and null filters, ordered pages, and
+  offset pagination. FILE attachments are not filterable. Ported from Flow
+  `connector_features/datafabric_connector/smoke_query.yaml`; the three Query
+  Entity Records activities are modeled as bpmn:sendTask nodes carrying the
+  registry Intsvc.ActivityExecution wrapper (connectorKey
+  uipath-uipath-dataservice, objectName
+  QueryEntityRecordsCurated|QueryEntityRecords_V3) instead of Flow connector
+  nodes, and the grader walks each node's single target="body" JSON payload
+  (or a runtime expression string in the same slot) instead of Flow's
+  `inputs.detail` dict — same either/or tolerance Flow's grader applies, since
+  neither prompt prescribes serialization. Dropped the `core.datafabric.*`
+  node contrast (BPMN has no native Data Fabric node). Static-validate only;
+  no `bpmn debug` — same scope as the Flow original.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", connector, uipath-uipath-dataservice, "feature:connections"]
+
+run_limits:
+  max_turns: 120
+  expected_turns: 35
+  turn_timeout: 2400
+  task_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
+    timeout: 60
+  - command: 'python3 "_setup/seed_flow_code_eval_records.py"'
+    timeout: 120
+
+initial_prompt: |
+  Build this with the UiPath Data Service Integration Service connector
+  (`uipath-uipath-dataservice`) activities for every entity operation.
+
+  Build a UiPath Maestro BPMN process against FlowCodeEvalEntity that runs
+  read-only record queries — do NOT modify any records. Use exactly THREE
+  Query Entity Records activities, not one activity per condition.
+
+  Query 1 must contain ONE structured FilterBuilder tree with a single Any (OR)
+  group containing all nine conditions below. Keep all nine conditions in this
+  one query activity:
+  - active equals true (boolean)
+  - score is greater than or equal to 8.5 (decimal)
+  - viewCount is greater than or equal to 1000 (integer)
+  - title equals "FilterFixture-Matrix" (string)
+  - description contains "sci-fi" (multiline text)
+  - releaseDate is less than 2025-01-01 (date)
+  - lastUpdated is greater than or equal to 2024-01-01T00:00:00 (datetime)
+  - externalId equals any valid UUID value of your choice
+  - description is null
+
+  Query 1 must retrieve the first 2 records sorted by score ascending, with
+  offset/start 0. Query 2 must reuse the same nine-condition FilterBuilder
+  tree, sort, and limit, but use offset/start 2 for the next page. Query 3 must
+  filter active equals true, sort by score descending, and use a limit of 4.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath-uipath-dataservice`) for these operations.
+
+  The process is not complete until `uip maestro bpmn validate` passes.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Advisory: agent queried the registry for Query Entity Records"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(QueryEntityRecordsCurated|QueryEntityRecords_V3)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0.0
+  - type: command_executed
+    description: "BPMN file was validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: "Three query nodes contain the compact filter and pagination design"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_smoke_query_filter.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
