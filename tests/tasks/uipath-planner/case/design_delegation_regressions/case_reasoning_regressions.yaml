@@ -13,9 +13,17 @@ tags:
   - feature:conversational
 
 run_limits:
-  task_timeout: 3300
+  # Aligned to the design-task family (finalize_from_draft 4200/3600,
+  # sdd_response_map 4200/3600, finalize_reject_route 4200/3600). This is a
+  # from-scratch greenfield design and was carrying the tightest wall of any
+  # design task in the suite. Same argument finalize_reject_route records for
+  # its own bump: a task should not carry a wall tighter than its siblings.
+  # NOT a response to hitting the wall — run 35392190940 spent 2708.9s reading
+  # the three design docs TWICE (cat spill + Read of the same file) and never
+  # reached its first Write; the double-read is fixed in SKILL.md rule 13.
+  task_timeout: 4200
   max_turns: 150
-  turn_timeout: 2700
+  turn_timeout: 3600
 
 # Inherit agent from the experiment; override only allowed_tools. The lane's
 # Template conformance gate runs its 35-item walk in ONE subagent when the
