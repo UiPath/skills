@@ -14,6 +14,7 @@ tags:
   - feature:conversational
   - feature:escalation
   - feature:trigger
+  - no-sdd-input
 
 # Inherit agent from the experiment; override only allowed_tools — the Rule 16
 # design handoff loads the uipath-planner skill in the same conversation

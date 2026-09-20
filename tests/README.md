@@ -108,6 +108,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
 | **path-to-ga** | flat, optional | Marks exhaustive, difficult, currently blocked, or historically fragile tasks that represent must-pass scenarios on the path to GA. | `path-to-ga` |
 | **outcome-graded** | flat, optional | Marks tasks whose primary criteria grade the live outcome of an executed run rather than authored file contents. | `outcome-graded` |
+| **no-sdd-input** | flat, optional | Marks tasks given no `sdd.md` and no inline design — the agent authors the design itself, so the task measures planner SDD authoring rather than build behaviour. Tasks that ship an SDD or embed one in `initial_prompt` are NOT marked. | `no-sdd-input` |
 | **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `eval`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`, `conversational`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
 
 ### Rules
@@ -115,7 +116,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 1. **Required on every task: `skill` + `tier` + `mode:*` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
 2. **One value per singular dimension** (`tier`, `mode`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
-4. **`connector`, `resource`, `windows`, `path-to-ga`, and `outcome-graded` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
+4. **`connector`, `resource`, `windows`, `path-to-ga`, `outcome-graded`, and `no-sdd-input` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
 5. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
 6. **Don't repeat the skill name as a feature tag.** Don't tag a flow task with `rpa` (bare) or `uipath-rpa` as a feature.
 
