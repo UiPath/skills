@@ -1,0 +1,97 @@
+task_id: skill-bpmn-jdbc-databricks-query
+description: >
+  Databricks-via-JDBC coverage (Maestro BPMN connector, special SDK case):
+  builds a Maestro BPMN process whose Execute Query Synchronously activity
+  (registry `Intsvc.ActivityExecution`, connectorKey `uipath-uipath-jdbc`,
+  objectName `query`) runs a complex aggregate SQL query (GROUP BY / HAVING /
+  AVG / ORDER BY — expressible only via raw SQL, not the generic record
+  activities) against the `employees` table on a Databricks database,
+  exposing the result as a process output. Grades structurally: the .bpmn
+  parses as XML and wires the JDBC gateway connector as a real bpmn:sendTask
+  with the registry Intsvc.ActivityExecution wrapper and the
+  ExecuteQuerySynchronously operation (objectName `query`, method `POST`) —
+  not the native Databricks connector, not an HTTP fallback. Exercises the
+  disambiguation that Databricks SQL has no native connector — it must
+  resolve to the JDBC gateway. Tenant prerequisite: a Databricks-backed
+  `uipath-uipath-jdbc` connection reaching `sandbox.globalmart` (employees
+  seeded per the spartacus connector-sanity fixture). REQUIRES cloud auth AND
+  that connection.
+  Ported from Flow
+  `connector_features/jdbc_databricks_query/jdbc_databricks_query.yaml`; the
+  JSON node/edge walk becomes an XML walk over the registry-driven
+  Intsvc.ActivityExecution wrapper, and Flow's node-type-suffix disambiguation
+  guard becomes a connectorKey + objectName/method context-field match.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, uipath-uipath-jdbc]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 900
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a new UiPath Maestro BPMN process project called "DatabricksQuery"
+  inside a solution of the same name, with a manual start.
+
+  It should run a SQL query against a Databricks database using the Database
+  Hub (JDBC) connector, and expose the query result as a process output. Run
+  an aggregate query over the `employees` table that groups by department,
+  keeps only departments with two or more employees, and orders them by
+  average salary.
+
+  Discover the Databricks-backed Database Hub (JDBC) connection in the
+  `Shared/uipath-maestro-flow` folder from the tenant — do NOT hand-author or
+  invent a connection id. If the JDBC connector isn't available in your
+  registry, stop rather than falling back to a generic HTTP request.
+
+  Validate the final .bpmn file and debug it.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "The completed process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: live-v1 agent ran bpmn debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "DatabricksQuery checks: valid BPMN wires the JDBC Execute-Query node with a bound connection, not the native Databricks connector or an HTTP fallback"
+    command: "python3 $REFERENCE_DIR/_shared/check_databricks_query.py"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

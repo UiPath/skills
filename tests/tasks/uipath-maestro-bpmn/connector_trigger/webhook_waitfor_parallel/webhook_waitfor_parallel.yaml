@@ -1,0 +1,117 @@
+task_id: skill-bpmn-webhook-waitfor-parallel
+description: >
+  E2E self-testing process: a manual start fans out into two parallel
+  branches. Branch 1 is a mid-flow Wait-for-event node (bpmn:receiveTask,
+  registry `Intsvc.WaitForEvent`) bound to the HTTP Webhook connector
+  (connectorKey `uipath-http-webhook`). Branch 2 is a Managed HTTP Request
+  (bpmn:sendTask, registry `Intsvc.HttpExecution`, manual mode, GET) whose
+  URL is the webhook URL of that same HTTP Webhook connection, with nothing
+  in headers or query. The GET self-delivers the event that completes the
+  wait at runtime.
+  Exercises the connector-trigger plugin's "Wait for events" variant,
+  parallel branch fan-out from the manual start, manual-mode HTTP, and the
+  CLI webhook-URL wiring. Validates the static two-branch shape only (no
+  `bpmn debug`).
+  Ported from Flow `connector_trigger/webhook_waitfor_parallel.yaml`; the
+  Flow JSON node/edge walk becomes an XML walk over the registry-driven
+  `Intsvc.WaitForEvent` / `Intsvc.HttpExecution` wrappers, and the trigger's
+  raw outgoing-edge fan-out becomes a manual-start-or-parallelGateway fan-out
+  (BPMN forks via a dedicated gateway node; either shape is accepted).
+tags:
+  [
+    uipath-maestro-bpmn,
+    integration,
+    "mode:build",
+    "lifecycle:generate",
+    "shape:multi-node",
+    connector,
+    "feature:trigger",
+    "feature:http",
+    wait-for-event,
+    uipath-http-webhook,
+  ]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+run_limits:
+  expected_turns: 35
+  turn_timeout: 1200
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN process named "WebhookSelfTest" with a manual
+  start.
+
+  The manual start must fan out into TWO parallel branches:
+
+    - Branch 1: a mid-flow node that waits for an HTTP Webhook
+      event (the HTTP Webhook connector). For its connection, use the HTTP
+      Webhook connection in the `Shared/uipath-maestro-flow` folder. Then End
+      this branch.
+
+    - Branch 2: a Managed HTTP Request node configured as a GET request
+      whose URL is the webhook URL of that same HTTP Webhook connection.
+      Do NOT put anything in the headers or the query parameters — just the GET to
+      the webhook URL. Then End this branch.
+
+  After building, validate the process.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Solution-creation telemetry (report only; the BPMN artifact is graded below)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(new|init)|maestro\s+bpmn\s+init)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "WebhookSelfTest BPMN artifact exists"
+    command: "find . -iname 'WebhookSelfTest*.bpmn' -not -path '*/node_modules/*' 2>/dev/null | grep -q ."
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Webhook-URL retrieval telemetry (report only; the final artifact grades URL wiring)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+webhooks\s+config'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Process validates successfully"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two-branch structure: wait-for-event + manual-GET-to-webhook-URL (no headers/query), both reaching End"
+    command: "python3 $REFERENCE_DIR/_shared/check_webhook_waitfor_parallel.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
