@@ -31,15 +31,29 @@ Reading the Flow graders during the loop reclassified four "structural" tasks as
 | connector_trigger/webhook_waitfor_parallel (structural) | written, in CI batch 10 | run 35538279757 |
 | connector_features/datafabric_connector/smoke_error (structural) | written, in CI batch 10 | run 35538279757 |
 | connector_features/testmanager_crud_grounded (self-report, Flow `skip:true` dropped) | written, in CI batch 10 | run 35538279757 |
-| interactive/bellevue_weather_simulated | being written (agent in flight when this doc was cut) | — |
-| interactive/cli_dice_roller_simulated | being written | — |
-| interactive/slack_channel_description_simulated | being written | — |
+| interactive/bellevue_weather_simulated | written, reviewed, not run | commit 80033663f; live criterion timeout 1050, task_timeout 2550 (sanctioned) |
+| interactive/cli_dice_roller_simulated | written, reviewed, not run | commit 8fc7a7692; task_timeout 2800 (sanctioned) |
+| interactive/slack_channel_description_simulated | written, reviewed, not run | commit f000d026d; all five Flow criteria kept, live timeout 1050 |
 
-Batch 10 results and the three interactive ports are appended in the "Batch 10 and after" section when they land; if that section is missing, read `parity-ledger.md` or re-run the batch.
+Batch 10 results are appended in the "Batch 10 and after" section when they land; if that section is missing, read `parity-ledger.md` or re-run the batch. The three interactive ports have never been dispatched: they go in the next batch together.
 
-## Probe bucket (16), not started except the pilot
+## Probe bucket (16): pilot ported, 11 decided, 4 blocked
 
-`connector_features/ceql_where` is the pilot for the 12 Integration Service field-shape evals (CEQL filter, complex_array, enum, enhanced_enum, multiselect, path_params, query_params, searchable_joins, generate_schema, dtl_load_by_default ×2, paginated_reference_lookup). An agent was probing it when this doc was cut; its verdict decides the other 11. The remaining 4 probes need a published agent substitute (billing_dispute_analyst / _resolution / _writer use Flow inline agents) or a file-typed process variable (single_node/file_attachment).
+`connector_features/ceql_where` is ported (commit fd6312fde), not yet run. The probe confirmed the filter carrier exists: `Intsvc.ActivityExecution` enrichment for the Entra `groups` List operation exposes a `where` parameter (type `query`, `FilterBuilder`, `hasCEQL: true`), and the CI-passing Data Fabric artifact carries the same tree as a `target="query" name="queryExpression" type="json"` input. As in Flow, the sandbox has no live tenant for enrichment, so the port grades the same standalone `where_detail.json` planning artifact plus the connector node and terminate end. No `bpmn validate` gate, matching Flow. Its one review flag: the groups-operation tolerance (objectName contains `group`, or `groups` + GET/list) has no CI-passed fixture yet.
+
+Verdict for the other 11 field-shape evals, from that probe:
+
+| Eval | Verdict | Carrier |
+|---|---|---|
+| path_params, query_params | portable, high confidence | `target="path"` / `target="query"` inputs, proven live |
+| paginated_reference_lookup | portable | same query carrier (`pageSize`, `nextPage` seen in the Entra enrichment) |
+| complex_array, multiselect | portable | nested JSON in the single `target="body"` CDATA, or array-valued query inputs |
+| enum | portable | any literal `uipath:input` graded against the allowed set |
+| enhanced_enum, searchable_joins | plausible, unverified | needs the `metadata` json context field or a `where`/`queryExpression` carrier; verify with a live `registry get` for the target connector first |
+| generate_schema | uncertain | BPMN's schema surface is the opaque `jsonSchema` output contract that the skill says not to pre-empt offline; side-artifact grading or park |
+| dtl_load_by_default ×2 | uncertain | `design.loadByDefault` is discovery-time metadata, not wire XML; portable only if Flow's grader checks the wire value |
+
+The remaining 4 probes need a published agent substitute (billing_dispute_analyst / _resolution / _writer use Flow inline agents) or a file-typed process variable (single_node/file_attachment).
 
 ## Methodology (how each port is made)
 
@@ -70,6 +84,6 @@ Connector trigger parameters (Data Fabric entity, Outlook `parentFolderId`) are 
 
 1. `git checkout test/bpmn-port-live` (stacked on the PR branch; rebase after the PR merges).
 2. Read batch 10's run (35538279757) if the "Batch 10 and after" section is missing; record results in `parity-ledger.md`.
-3. Finish or re-spawn the three interactive live ports and the `ceql_where` probe (briefs in this directory; spawn prompts followed the pattern "read PORTING-BRIEF, BATCH1-ADDENDUM, LIVE-ADDENDUM; port <task>; create <paths>; gates; report with assertion map").
+3. Dispatch the four never-run ports (three interactive simulated tasks + `ceql_where`) as one batch. New ports follow the spawn pattern "read PORTING-BRIEF, BATCH1-ADDENDUM, LIVE-ADDENDUM; port <task>; create <paths>; gates; report with assertion map".
 4. Dispatch new ports as one batch; iterate per the rule; park with evidence.
-5. Decide the 12 field-shape probes from the `ceql_where` verdict; the 4 agent/file-typed probes need tenant fixtures first.
+5. Port the 7 field-shape probes marked portable; verify the carrier live before the 2 plausible ones; the 4 agent/file-typed probes need tenant fixtures first.
