@@ -1,0 +1,72 @@
+task_id: skill-bpmn-ceql-where
+description: >
+  Tests the CEQL where query IS feature — agent plans a structured filter
+  tree for the Microsoft Entra (Azure AD) connector's "List groups"
+  operation with a `displayName = "active"` filter, following the canonical
+  shape documented in the Filter Trees (CEQL) section of the
+  uipath-platform skill. The process must reference the registered connector
+  key (`uipath-microsoft-azureactivedirectory`) and use an exclusive gateway
+  + Terminate end event for routing. This is an offline structure test:
+  product validation is not graded because the two authoring loops persist
+  an unconfigured connector differently.
+  Ported from Flow `connector_features/ceql_where.yaml`; the .flow JSON
+  node/edge graph becomes a .bpmn XML `bpmn:sendTask` carrying the registry
+  `Intsvc.ActivityExecution` wrapper, Flow's Decision node becomes a
+  `bpmn:exclusiveGateway`, and Flow's Terminate node becomes a `bpmn:endEvent`
+  with `bpmn:terminateEventDefinition`. The `where_detail.json` planning
+  artifact and its canonical CEQL filter-tree shape are graded unchanged —
+  the offline-planning rationale (no live tenant enrichment available to
+  either authoring loop) applies identically to Flow and to Maestro BPMN.
+tags: [uipath-maestro-bpmn, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, "mode:build"]
+
+run_limits:
+  expected_turns: 34
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  This sandbox has no UiPath tenant, so you can't run the live node-configuration
+  step. Instead, capture the filter you'd apply to the operation as where_detail.json
+  so it can be reviewed.
+
+  Build a UiPath Maestro BPMN process "CeqlWhereTest" with a manual start that
+  lists Microsoft Entra (Azure AD) groups whose displayName equals "active".
+  Find the registered Entra/Azure AD connector key before wiring the node.
+
+  Branch on the result: if the call fails, stop the process immediately;
+  if it succeeds, log "CeqlWhere test passed".
+  Produce the final .bpmn file. Do not fabricate a tenant connection merely to
+  make product validation pass; the generated structure and the separately
+  reviewable filter are the deliverables in this offline task.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "where_detail.json (found anywhere under the solution) has a canonical CEQL filter tree on displayName='active'; process references the registered Azure AD / Entra connector key with List Groups + Terminate end event"
+    command: "python3 $REFERENCE_DIR/_shared/check_ceql_where.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0
