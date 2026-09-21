@@ -39,6 +39,8 @@ This is the only sub-grade the agent computes, because no CLI can grade it relia
 G_jud score = 100 − (15 × Criticals) − (4 × Warnings) − (1 × Infos)      # floor 0
 ```
 
+Count **once**, from the already-merged finding tables — the finding set is an input to grading, never something to re-derive while grading. If a recount would change a count or severity, the finding set was not final: finish merging (Step 2.5b + Step 3), then grade once and lock the letter.
+
 **Step 2 — Judgment-finding cap.** Two caps catch a blocking flaw the score understates:
 
 - Any **unmitigated judgment Critical** caps G_jud at **D**.

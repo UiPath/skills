@@ -8,7 +8,7 @@ description: >
   `{"status":"ok"}` while producing two fields where one rename was asked
   for.
 
-  Critical Rule 22 requires the two differences to be applied as targeted
+  Critical Rule 23 requires the two differences to be applied as targeted
   commands instead: `fields rename` for Total Amount -> Invoice Total, and
   `fields add` for the new Purchase Order Number. The fixture diff removes
   nothing, so the correct path is non-destructive and unambiguous.

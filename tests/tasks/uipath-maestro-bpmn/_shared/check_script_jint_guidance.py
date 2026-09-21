@@ -108,26 +108,18 @@ def one_variable(
     *,
     name: str,
     kind: str,
-    element_id: str | None,
+    element_id: str,
 ) -> ET.Element:
-    scope = (
-        f"scoped to {element_id!r}"
-        if element_id is not None
-        else "at process scope"
-    )
+    # elementId is the scope: the owning element's id, never absent (#3211).
     return exactly_one(
         [
             variable
             for variable in variables
             if local_name(variable) == kind
             and variable.attrib.get("name") == name
-            and (
-                variable.attrib.get("elementId") == element_id
-                if element_id is not None
-                else "elementId" not in variable.attrib
-            )
+            and variable.attrib.get("elementId") == element_id
         ],
-        f"{kind} variable named {name!r} {scope}",
+        f"{kind} variable named {name!r} scoped to {element_id!r}",
     )
 
 
@@ -177,17 +169,17 @@ def variables_mapping(element: ET.Element) -> ET.Element:
 def bridge_target(
     element: ET.Element,
     *,
-    name: str,
     source: str,
-    output_type: str,
 ) -> str:
+    # Matched by source + a non-empty target var. The output's `name` and
+    # `type` are display metadata — expressions resolve ids and the type
+    # contract lives on the variable declarations, so pinning either here
+    # would grade serialization style, not behaviour.
     output = exactly_one(
         [
             candidate
             for candidate in mapping_outputs(element)
-            if candidate.attrib.get("name") == name
-            and candidate.attrib.get("source") == source
-            and candidate.attrib.get("type") == output_type
+            if candidate.attrib.get("source") == source
             and candidate.attrib.get("var")
         ],
         f"variable bridge from {source!r}",
@@ -262,6 +254,9 @@ def main() -> None:
     process = root.find("bpmn:process", NS)
     if process is None:
         fail("missing bpmn:process")
+    process_id = attr(process, "id")
+    if not process_id:
+        fail("bpmn:process must have a non-empty id")
     # `isExecutable` is not graded: nothing in the CLI reads it, so grading it
     # would grade doc style rather than behaviour (same call as
     # check_simple_approval_bpmn.py; see .claude/rules/test-writing.md).
@@ -435,23 +430,19 @@ def main() -> None:
 
     internal_amount_id = bridge_target(
         start,
-        name="amount",
         source=f"=vars.{attr(public_amount, 'id')}",
-        output_type="double",
     )
     internal_days_id = bridge_target(
         start,
-        name="daysOverdue",
         source=f"=vars.{attr(public_days, 'id')}",
-        output_type="integer",
     )
+    if internal_amount_id == internal_days_id:
+        fail("the amount and daysOverdue bridges must target distinct variables")
     end_output = exactly_one(
         [
             output
             for output in mapping_outputs(end)
-            if output.attrib.get("name") == "riskScore"
-            and output.attrib.get("var") == attr(public_risk, "id")
-            and output.attrib.get("type") == "double"
+            if output.attrib.get("var") == attr(public_risk, "id")
             and re.fullmatch(
                 r"=vars\.[\w.-]+",
                 output.attrib.get("source", ""),
@@ -461,30 +452,20 @@ def main() -> None:
     )
     result_variable_id = attr(end_output, "source").removeprefix("=vars.")
 
-    for variable_id, expected_name, expected_type in (
-        (internal_amount_id, "amount", "double"),
-        (internal_days_id, "daysOverdue", "integer"),
+    for variable_id, expected_type in (
+        (internal_amount_id, "double"),
+        (internal_days_id, "integer"),
     ):
         variable = variable_by_id(variables, variable_id)
-        named_variable = one_variable(
-            variables,
-            name=expected_name,
-            kind="inputOutput",
-            element_id=None,
-        )
-        if named_variable is not variable:
-            fail(
-                f"{expected_name!r} bridge must target the uniquely scoped "
-                "mutable variable"
-            )
         if local_name(variable) != "inputOutput":
             fail(f"{variable_id!r} must be a mutable inputOutput variable")
-        if variable.attrib.get("name") != expected_name:
-            fail(f"{variable_id!r} must be named {expected_name!r}")
         if variable.attrib.get("type") != expected_type:
             fail(f"{variable_id!r} must use type {expected_type!r}")
-        if "elementId" in variable.attrib:
-            fail(f"{variable_id!r} must remain a process-scoped mutable variable")
+        if variable.attrib.get("elementId") != process_id:
+            fail(
+                f"{variable_id!r} must be process-scoped via "
+                f"elementId={process_id!r} (#3211)"
+            )
 
     response_id = attr(response, "id")
 
@@ -586,34 +567,32 @@ def main() -> None:
             )
     else:
         business_result = variable_by_id(variables, result_variable_id)
-        named_business_result = one_variable(
-            variables,
-            name="riskScore",
-            kind="inputOutput",
-            element_id=task_id,
-        )
-        if business_result is not named_business_result:
-            fail("the optional business result must be the scoped riskScore variable")
+        if local_name(business_result) != "inputOutput":
+            fail("the optional business result must be a mutable inputOutput variable")
         if business_result.attrib.get("type") != "double":
-            fail("the optional mutable riskScore variable must use type='double'")
+            fail("the optional mutable business result must use type='double'")
+        if business_result.attrib.get("elementId") not in {task_id, process_id}:
+            fail(
+                "the optional business result must carry elementId of the "
+                "script task or the process (#3211)"
+            )
         if len(task_outputs) != 3:
             fail(
-                "a distinct riskScore variable requires exactly one custom "
-                "output in addition to scriptResponse and Error"
+                "a distinct business-result variable requires exactly one "
+                "custom output in addition to scriptResponse and Error"
             )
         risk_mapping = exactly_one(
             [
                 output
                 for output in task_outputs
-                if output.attrib.get("name") == "riskScore"
-                and output.attrib.get("var") == result_variable_id
+                if output.attrib.get("var") == result_variable_id
                 and output.attrib.get("source") == f"=vars.{response_id}"
                 and output.attrib.get("type") == "double"
             ],
-            "optional scriptResponse-to-riskScore output mapping",
+            "optional scriptResponse-to-business-result output mapping",
         )
         if risk_mapping.attrib.get("custom") != "true":
-            fail("the optional riskScore mapping must be marked custom=true")
+            fail("the optional business-result mapping must be marked custom=true")
 
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)

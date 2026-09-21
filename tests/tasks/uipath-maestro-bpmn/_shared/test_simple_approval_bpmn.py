@@ -1,4 +1,4 @@
-"""Unit tests for the variable-lookup helpers in check_simple_approval_bpmn.
+"""Unit tests for the variable-lookup and type helpers in check_simple_approval_bpmn.
 
 These helpers gate the eval's whole variable contract, and each one fails the
 run via `fail()` (a `SystemExit`) when a lookup is not unique -- so the
@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from check_simple_approval_bpmn import (  # noqa: E402
     NS,
+    corresponds,
     variable,
     variable_by_id,
     variables_mapping,
@@ -111,3 +112,19 @@ def test_variables_mapping_rejects_a_foreign_mapping_type() -> None:
     )
     with pytest.raises(SystemExit, match="BPMN.Variables mapping"):
         variables_mapping(node)
+
+
+@pytest.mark.parametrize(
+    ("public_type", "mutable_type", "expected"),
+    [
+        ("number", "double", True),
+        ("number", "number", True),
+        ("string", "string", True),
+        ("number", "string", False),
+        ("string", "double", False),
+    ],
+)
+def test_corresponds_pairs_public_number_with_canvas_double(
+    public_type: str, mutable_type: str, expected: bool
+) -> None:
+    assert corresponds(public_type, mutable_type) is expected

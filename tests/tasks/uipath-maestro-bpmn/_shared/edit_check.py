@@ -16,7 +16,9 @@ to a preserved subtree fails the check.
 from __future__ import annotations
 
 import os
+import re
 import xml.etree.ElementTree as ET
+from enum import Enum
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
@@ -147,6 +149,245 @@ def assert_uipath_preserved(original: ET.Element, edited: ET.Element, local_name
         fail(f"uipath:{local_name} was dropped by the edit (must be preserved)")
     if canonical(orig) != canonical(new):
         fail(f"uipath:{local_name} payload was modified (must round-trip untouched)")
+
+
+def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> None:
+    """Pristine variable declarations must round-trip untouched — attributes of
+    the ``uipath:variables`` block itself included, and in their pristine
+    relative order. Additions are allowed, but every added declaration needs a
+    non-empty ``name`` and ``type``, and its ``elementId`` (when present) must
+    reference a live BPMN element id."""
+    orig = _find_first(original, "variables")
+    new = _find_first(edited, "variables")
+    if orig is None:
+        fail("fixture bug: no uipath:variables in pristine original")
+    if new is None:
+        fail("uipath:variables was dropped by the edit (must be preserved)")
+    if sorted(orig.attrib.items()) != sorted(new.attrib.items()):
+        fail("uipath:variables attributes were modified (must round-trip untouched)")
+    ids = [child.attrib.get("id", "") for child in new]
+    if not all(ids) or len(ids) != len(set(ids)):
+        fail("all uipath:variables declarations must have unique non-empty ids")
+    edited_by_id = {child.attrib.get("id"): child for child in new}
+    for child in orig:
+        child_id = child.attrib.get("id")
+        match = edited_by_id.get(child_id)
+        if match is None:
+            fail(f"pristine variable {child_id!r} was removed (must be preserved)")
+        if canonical(child) != canonical(match):
+            fail(f"pristine variable {child_id!r} was modified (must round-trip untouched)")
+    pristine_order = [child.attrib.get("id") for child in orig]
+    pristine_set = set(pristine_order)
+    edited_pristine_order = [i for i in ids if i in pristine_set]
+    if edited_pristine_order != pristine_order:
+        fail("pristine variable declarations were reordered (must round-trip untouched)")
+    live_ids = _live_bpmn_ids(edited)
+    for child in new:
+        child_id = child.attrib.get("id")
+        if child_id in pristine_set:
+            continue
+        _assert_addition_is_well_formed(child, child_id, live_ids)
+
+
+def _live_bpmn_ids(root: ET.Element) -> set[str]:
+    """Ids of real BPMN elements. Excludes DI shape ids, which the canvas
+    treats as orphans when a variable scopes to one."""
+    return {
+        el.attrib["id"]
+        for el in root.iter()
+        if el.attrib.get("id") and el.tag.startswith("{" + BPMN_NS + "}")
+    }
+
+
+def _assert_addition_is_well_formed(
+    child: ET.Element,
+    child_id: str,
+    live_ids: set[str],
+) -> None:
+    if not child.attrib.get("name") or not child.attrib.get("type"):
+        fail(f"new variable {child_id!r} needs a non-empty name and type")
+    scope = child.attrib.get("elementId")
+    if scope and scope not in live_ids:
+        fail(f"new variable {child_id!r} has a dangling elementId {scope!r}")
+
+
+class Side(Enum):
+    """Which file a declaration set was read from. A defect on the ORIGINAL
+    side is a fixture bug, not an agent error."""
+
+    ORIGINAL = "pristine original"
+    EDITED = "edited file"
+
+
+def _declarations_anywhere(root: ET.Element, side: Side) -> dict[str, ET.Element]:
+    """Every ``uipath:variables`` child in the file, keyed by id — the root
+    block plus any subprocess-level block."""
+    prefix = "fixture bug: " if side is Side.ORIGINAL else ""
+    where = side.value
+    found: dict[str, ET.Element] = {}
+    for block in root.iter():
+        if local(block.tag) != "variables":
+            continue
+        for child in block:
+            child_id = child.attrib.get("id", "")
+            if not child_id:
+                fail(f"{prefix}a uipath:variables declaration in the {where} has no id")
+            if child_id in found:
+                fail(f"{prefix}variable id {child_id!r} is declared more than once in the {where}")
+            found[child_id] = child
+    return found
+
+
+def _frozen_view(element: ET.Element):
+    """Everything about a declaration except the one thing a re-scope may
+    move: its ``elementId``."""
+    return (
+        local(element.tag),
+        tuple(sorted((k, v) for k, v in element.attrib.items() if k != "elementId")),
+        (element.text or "").strip(),
+    )
+
+
+def _parents(root: ET.Element) -> dict[ET.Element, ET.Element]:
+    return {child: parent for parent in root.iter() for child in parent}
+
+
+def _enclosing_subprocess_ids(
+    element: ET.Element,
+    parents: dict[ET.Element, ET.Element],
+) -> list[str]:
+    """Subprocess ids containing ``element``, innermost first."""
+    ids: list[str] = []
+    current = parents.get(element)
+    while current is not None:
+        if local(current.tag) == "subProcess" and current.attrib.get("id"):
+            ids.append(current.attrib["id"])
+        current = parents.get(current)
+    return ids
+
+
+def _owning_subprocess(
+    scope: str,
+    edited: ET.Element,
+    parents: dict[ET.Element, ET.Element],
+) -> str | None:
+    """The subprocess a scope id sits in: the id itself when it names a
+    subprocess, otherwise the subprocess containing the scoped element."""
+    for element in edited.iter():
+        if element.attrib.get("id") != scope:
+            continue
+        if local(element.tag) == "subProcess":
+            return scope
+        enclosing = _enclosing_subprocess_ids(element, parents)
+        return enclosing[0] if enclosing else None
+    return None
+
+
+def _owning_element_id(
+    element: ET.Element,
+    parents: dict[ET.Element, ET.Element],
+) -> str:
+    """The nearest ancestor-or-self carrying an id — the flow node a mapping
+    child belongs to, which is what an author needs named."""
+    current: ET.Element | None = element
+    while current is not None:
+        if current.attrib.get("id"):
+            return current.attrib["id"]
+        current = parents.get(current)
+    return local(element.tag)
+
+
+def _referencing_elements(
+    variable_id: str,
+    edited: ET.Element,
+) -> list[ET.Element]:
+    """Elements whose own attributes or text reference ``variable_id`` —
+    ``var="<id>"`` or a ``vars.<id>`` expression, including inside a CDATA
+    mapping body. Declarations are not references, so ``uipath:variables``
+    blocks are skipped."""
+    declared: set[int] = set()
+    for block in edited.iter():
+        if local(block.tag) == "variables":
+            for node in block.iter():
+                declared.add(id(node))
+            declared.add(id(block))
+    # A following "." is a property read (`vars.X.field`), which IS a reference;
+    # only more id characters mean a different variable.
+    pattern = re.compile(r"vars\.%s(?![\w-])" % re.escape(variable_id))
+    matches: list[ET.Element] = []
+    for element in edited.iter():
+        if id(element) in declared:
+            continue
+        if element.attrib.get("var") == variable_id:
+            matches.append(element)
+            continue
+        blob = " ".join(list(element.attrib.values()) + [element.text or ""])
+        if pattern.search(blob):
+            matches.append(element)
+    return matches
+
+
+def assert_variables_preserved_or_rescoped(original: ET.Element, edited: ET.Element) -> None:
+    """Every pristine declaration must survive somewhere in the file, frozen
+    except for its ``elementId``. A re-scope must keep the variable reachable:
+    the new scope must name a live BPMN element, and moving a variable into a
+    subprocess is allowed only when nothing outside that subprocess still
+    references it.
+
+    Looser than ``assert_variables_extended_only`` on purpose: an edit that
+    groups nodes into a subprocess may re-scope that subprocess's own
+    variables, which structural-bpmn.md documents as importing cleanly.
+    Freezing the root block would fail that correct edit."""
+    pristine = _declarations_anywhere(original, Side.ORIGINAL)
+    if not pristine:
+        fail("fixture bug: no uipath:variables declarations in the pristine original")
+    current = _declarations_anywhere(edited, Side.EDITED)
+    live_ids = _live_bpmn_ids(edited)
+    parents = _parents(edited)
+
+    for child_id, child in pristine.items():
+        match = current.get(child_id)
+        if match is None:
+            fail(f"pristine variable {child_id!r} was dropped by the edit")
+        if _frozen_view(child) != _frozen_view(match):
+            for attribute in ("name", "type"):
+                if child.attrib.get(attribute) != match.attrib.get(attribute):
+                    fail(
+                        f"pristine variable {child_id!r} changed its {attribute} "
+                        f"({child.attrib.get(attribute)!r} -> {match.attrib.get(attribute)!r})"
+                    )
+            if local(child.tag) != local(match.tag):
+                fail(f"pristine variable {child_id!r} changed kind (input/output/inputOutput)")
+            fail(
+                f"pristine variable {child_id!r} was modified — only its "
+                "elementId may change"
+            )
+        scope = match.attrib.get("elementId")
+        if child.attrib.get("elementId") and not scope:
+            fail(
+                f"pristine variable {child_id!r} lost its elementId (the canvas "
+                "drops the declaration and every vars reference to it)"
+            )
+        if scope and scope not in live_ids:
+            fail(f"variable {child_id!r} has a dangling elementId {scope!r}")
+        if not scope or scope == child.attrib.get("elementId"):
+            continue
+        subprocess_id = _owning_subprocess(scope, edited, parents)
+        if subprocess_id is None:
+            continue
+        for element in _referencing_elements(child_id, edited):
+            if subprocess_id in _enclosing_subprocess_ids(element, parents):
+                continue
+            fail(
+                f"variable {child_id!r} was re-scoped into subprocess "
+                f"{subprocess_id!r} while {_owning_element_id(element, parents)!r} "
+                "outside it still references it"
+            )
+
+    for child_id, child in current.items():
+        if child_id in pristine:
+            continue
+        _assert_addition_is_well_formed(child, child_id, live_ids)
 
 
 def flows(root: ET.Element) -> list[tuple[str, str, str]]:

@@ -121,12 +121,12 @@ Write results to a file alongside the project (e.g., `eval-results-<timestamp>.j
 # Show only data points named "checkout-flow"
 uip maestro flow eval run results <run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json \
-  --output-filter 'Data.Results[?DataPoint==`checkout-flow`]'
+  --output-filter '[?DataPoint==`checkout-flow`]'
 
 # Show only score and name per row
 uip maestro flow eval run results <run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json \
-  --output-filter 'Data.Results[*].{name: DataPoint, score: Score}'
+  --output-filter '[*].{name: DataPoint, score: EvaluatorScores}'
 ```
 
 ## List Past Runs

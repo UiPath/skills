@@ -56,10 +56,20 @@ The six baseline inputs:
 | **Description** | Ask the user, or derive from the supplied material and confirm. |
 | **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, `category_name`, nested `subcategories`) — **only nodes with `category_is_active: 1`** (0 = archived). One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by **label** (e.g. "Standard Operating Procedure") and send that `answer_option` code. Never reuse the template's placeholder code. |
-| **Owner email** | `GET /users` → the list is under `data.users[]`, the field is **`user_email`** (prefer `user_is_active: 1`); a non-listed address 400s (`Cannot identify owner by email`). Default to the signed-in user — confirm which listed email is theirs. |
+| **Owner email** | The **signed-in identity is the default owner** — take it from the auth/identity call, not from a list. `GET /users` is optional; if you use it, do a targeted lookup with `?s=<email>&invite=all` (both parameters — the default filter hides users who can still own a process) and treat a miss as no signal. **Never block the publish on it** — submit and let the API decide. |
 | **Submitter email** | Same recipe as owner; usually the same person. |
 
-**Tenant-required application questions** ("Applications used", "Thin applications used", and similar): the valid answers are the tenant's application inventory — `GET /appinventory` (paged; entries carry the app id, name, version, language). Match what the caller's material names, but if the documents leave the systems unconfirmed, `AskUserQuestion` with the inventory entries — **never record an application the material does not support**. Follow that question's own schema shape for how the selected entries are encoded in `user_inputs`.
+**Tenant-required application questions** ("Applications used", "Thin applications used", and similar): the valid answers are the tenant's application inventory — `GET /appinventory` (paged; entries carry the app id, name, version, language). Match what the caller's material names. Follow that question's own schema shape for how the selected entries are encoded in `user_inputs`.
+
+**When the material's systems are not in the inventory, create them** — `PUT /appinventory` upserts, and an element whose `application_id` is `null` inserts:
+
+```json
+[{ "application_id": null, "application_name": "SUNAT Portal",
+   "application_version": "1.0", "application_language": "English",
+   "categoryIds": [1] }]
+```
+
+All five fields are required and `categoryIds` needs ≥1 real id. This needs the **`MANAGE_APP_INVENTORY`** permission; ordinary roles do not have it and get a `403 "This user is not permitted to perform this action based on their role."` **If creating fails for any reason — that 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Pick the closest inventory entries to satisfy the required field and name the real systems in the description. **Never abandon a publish because an application is missing or uncreatable, and never pass off a substituted application as the real one without saying so.**
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
@@ -94,6 +104,13 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 - **400** → fix and retry. The message shapes seen live:
   - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing/empty; add it.
   - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing. Check in order: (1) owner (`OVR-PROCESS_OWNER`) / submitter (`OVR-OVERVIEW_PROCESS_SUBMITTER`) — enforced but never flagged; (2) **diff your payload against every `required`-flagged question in the live schema** — tenant admins add required questions (e.g. "Applications used" / "Thin applications used"), and a payload missing any of them gets this same generic 400. Fill the gaps (Step 4 recipes), then retry once.
+  - `"Cannot identify owner by email"` (`localizationKey: error_invalid_process_owner`) → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant: AH creates a user row just-in-time on first authenticated call, and only an interactive web sign-in promotes it to the state owner/submitter assignment requires. Confirm the identity is real with the auth/identity call (`IsActive: 1` plus a role list), then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
+
+    ```
+    https://cloud.uipath.com/<org>/<tenant>/automationhub_
+    ```
+
+    Build that URL from the org/tenant you are already authenticated against — never from the error response. Nothing was created, so the retry is safe. Newer Automation Hub versions accept these users with no sign-in at all, so on an up-to-date tenant this error should not appear.
   - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
   - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → an enum field carries an invalid `answer_option` code (you left a template placeholder in). Use a code from that field's `enum`.
 - **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
