@@ -1,0 +1,55 @@
+task_id: skill-doc-mode-select-routing-smoke
+description: >
+  Smoke test: a reusable-corpus workload with dependent lookups must route to
+  agentic search rather than one-shot semantic search, and must carry the
+  completeness boundary the skill teaches. Verifies the skill fires and that
+  its routing contract — mode, decisive signal, case ID, boundary — is applied,
+  rather than a bare mode label.
+tags: [uipath-doc-mode-select, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  We keep several thousand controlled procedure documents in a knowledge index
+  that is reused across runs. A reviewer asks: "which of these documents still
+  reference the retired escalation terminology?" — the wording varies between
+  documents, so one lookup never finds them all, and the reviewer needs the
+  complete list.
+
+  Load the applicable UiPath skill and route this workload. Write your routing
+  decision to `route.txt` as a single line in the skill's reporting format,
+  followed by two or three lines explaining what is required before the list
+  can be called complete.
+
+  Do NOT create a project, a flow, or an agent. Write only `route.txt`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-doc-mode-select skill"
+    expected_skill: "uipath-doc-mode-select"
+    skill_name: "uipath-doc-mode-select"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced route.txt"
+    path: "route.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Routed to agentic search on the dependent-lookup signal, citing the PA3 case"
+    path: "route.txt"
+    includes:
+      - "PA3"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Applied the completeness boundary rather than treating search as exhaustive"
+    path: "route.txt"
+    includes:
+      - "enumerat"
+    weight: 3.0
+    pass_threshold: 1.0
