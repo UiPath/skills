@@ -30,7 +30,12 @@ tags:
 
 # Sized from the two existing golden-rebuild tasks: cm_golden_expense (8 stages / 15
 # tasks) measures ~60 min healthy, contract_execution (8 / 30) measures 92-150 min.
-# This case is 8 / 32 with twenty resources to describe, so it sits at the upper end.
+# This case is 8 / 32 with twenty resources to describe, so it sits at the upper end —
+# confirmed directly: a hand-authored build with no sdd convert path available (run
+# 35542776064, published CLI, no PR overlay) hit 5400s mid-build at 501 commands with
+# no crash and no auth failure, the same "healthy long build killed" failure mode this
+# comment already warned about. 9000s covers contract_execution's own measured upper
+# bound with headroom.
 #
 # turn_timeout MUST NOT be smaller than task_timeout. One harness "turn" is the ENTIRE
 # agent query stream, so turn_timeout caps the whole session and is the binding limit.
@@ -43,9 +48,9 @@ tags:
 # Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a caseplan-sized
 # extended-thinking response is not fatal.
 run_limits:
-  task_timeout: 5400
+  task_timeout: 9000
   max_turns: 700
-  turn_timeout: 5400
+  turn_timeout: 9000
 
 # The case skill delegates heavy legs (reference reading, per-resource schema pulls)
 # to sub-agents; without Agent the whole build runs inline in one context and dies to
