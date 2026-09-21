@@ -107,7 +107,7 @@ A screen's definition is a `uix:TargetApp` (the stored screen carries `Selector`
 - `uip rpa uia …` relay commands (`object-repository *`, `target-anchorable *`, `target-app *`) reject `--output`; read what they print.
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
 - Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). Carry positional indexes as selector variables ([selector-translation-guide.md](selector-translation-guide.md) rule 7) and write the change back with `target-anchorable update-definition` → `object-repository replace-elements`.
-- `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change (verified on six elements in one pass).
+- `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change.
 - Element metadata `ActivityType` may stay `None` on elements registered before their acting activity was known: it only tunes selector generation, which offline has already happened; the live pass replaces the definitions anyway.
 
 ## What offline authoring cannot know

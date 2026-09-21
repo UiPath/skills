@@ -322,7 +322,7 @@ class Export:
                 for name, v in attrs.items():
                     if SENSITIVE.search(name or '') and v.get('type') != 'CREDENTIAL':
                         take(v.get('string'))
-                # a literal assigned into a password-named variable (String.assign -> $StrLaraPassword$) is the
+                # a literal assigned into a password-named variable (String.assign -> $strAppPassword$) is the
                 # commonest way a secret ends up in a bot; the attribute is called sourceString, so only the target tells
                 if SENSITIVE.search((n.get('returnTo') or {}).get('variableName') or ''):
                     for v in attrs.values():
