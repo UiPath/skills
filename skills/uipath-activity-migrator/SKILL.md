@@ -160,7 +160,7 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 <items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
 ### Fixes applied (<F>)              <- only when the post-migration fix or the runtime loop edited the output
-- <file>: <activity> — <what was changed>   <- loop fixes end with (run <n>, fix guide | annotation | hypothesis)
+- <file>: <activity> — <what was changed>   <- loop fixes end with (fix <n>, fix guide | annotation | hypothesis)
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Runtime check                    <- only when the user said yes
