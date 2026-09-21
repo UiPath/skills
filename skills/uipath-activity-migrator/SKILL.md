@@ -220,6 +220,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Running the migrated project without the user's yes, or repairing and rerunning outside the runtime guide's fix and rerun loop; every fix and every rerun sits behind one yes/no
 - Running the check with `debug start`; the debugger stops at every throw, handled by a Try Catch or not, and holds the session, so it says nothing about whether the workflow fails
 - Running or validating the source project through the headless Studio while the migrated one is open; both carry the same `projectId` and the host has mixed their files
+- Inferring window state from `Get-Process` or any process listing before a rerun; it shows one window per process and hides the rest, the UIA package's window snapshot is the only source
 - Passing `--skip-build` to the runtime check, or probing it with `debug break` / `debug continue`; the first fails on a headless Studio that has not built the project itself, the second returns `Success` with or without a session
 - Running or cancelling the migrated project from Studio's integrated terminal without clearing `UIPATH_STUDIO_PID`; the rpa tool opens the migrated project in the user's Studio, which closes their project and ends the terminal session
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
