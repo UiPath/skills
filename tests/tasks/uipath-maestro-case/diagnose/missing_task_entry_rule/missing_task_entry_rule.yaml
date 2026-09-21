@@ -2,7 +2,7 @@ task_id: skill-case-diagnose-missing-task-entry-rule
 description: >
   Diagnose mode — the staged case PASSES `uip maestro case validate` with zero
   errors and zero warnings, but Review's "Notify Reviewer" task carries no
-  `entryConditions`. Per the skill's Rule 6 a missing task entry rule leaves
+  `entryConditions`. Per the skill's Rule 7 a missing task entry rule leaves
   `uip maestro case debug` hanging indefinitely at that task. Exercises whether
   the agent can find a defect the validator is completely silent about, rather
   than treating a green validate as proof of health.
