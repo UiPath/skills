@@ -35,7 +35,8 @@ def main() -> None:
     original = load_original("edit/add_output", "Invoicing.bpmn")
 
     # This task REQUIRES an addition; the shared guard covers the other half:
-    # pristine declarations round-trip untouched.
+    # pristine declarations round-trip untouched, and additions are validated
+    # in the blocks the canvas reads (process root or bpmn:subProcess).
     assert_variables_extended_only(original, edited)
     orig_vars = variable_ids(original)
     added_vars = variable_ids(edited) - orig_vars
