@@ -66,14 +66,16 @@
 # values ever leave the machine.
 #
 # Non-blocking by contract: registered as an async hook in hooks.json
-# ("async": true) on every event EXCEPT SessionEnd, so Claude Code runs it in
-# the background and never waits for it. SessionEnd is registered
-# SYNCHRONOUSLY (30s timeout): async hooks still running at session teardown
-# are killed after a short grace window — shorter than this hook's PowerShell
-# + `uip track` startup — which would silently drop the session-end event.
-# Always exits 0 and swallows every error. Runs under Windows PowerShell 5.1
-# and PowerShell 7+ (pwsh) on Windows, macOS, and Linux — no jq, node, or
-# python.
+# ("async": true) on every event EXCEPT SessionEnd, so the agent runs it in the
+# background and never waits for it. SessionEnd is registered SYNCHRONOUSLY
+# (30s timeout): async hooks still running at session teardown are killed after
+# a short grace window — shorter than this hook's PowerShell + `uip track`
+# startup — which would silently drop the session-end event. The hand-off
+# therefore runs INLINE on every event: the HOST owns non-blocking dispatch, and
+# detaching it here would defeat the synchronous SessionEnd registration by
+# letting the hook return before `uip track` has flushed. Always exits 0 and
+# swallows every error. Runs under Windows PowerShell 5.1 and PowerShell 7+
+# (pwsh) on Windows, macOS, and Linux — no jq, node, or python.
 #
 # Structure: pure helpers (below), driven by Main (bottom). Configuration is
 # env only:
@@ -455,11 +457,13 @@ function Main {
   # disappears). Send no envelope, no `source` (the CLI overrides it), and no
   # session id (the CLI resolves its own and drops a payload one).
   #
-  # `uip track` is never-fail (exits 0, emits nothing when telemetry is opted
-  # out); piping to it is harmless even if the CLI is absent (the catch
-  # swallows the command-not-found error). The hook is registered async in
-  # hooks.json (sync with a 30s timeout on SessionEnd — see header), so the
-  # agent never waits on this call mid-session.
+  # INLINE, never detached: hooks.json registers this hook async on every event
+  # except SessionEnd (see header), so the host — not this script — owns
+  # non-blocking dispatch. A detached hand-off would return before `uip track`
+  # flushed, silently dropping the very session-end event the synchronous
+  # SessionEnd registration exists to protect. `uip track` is never-fail (exits
+  # 0, emits nothing when telemetry is opted out); piping to it is harmless even
+  # if the CLI is absent (the catch swallows the command-not-found error).
   try { $json | & uip track *> $null } catch { }
 
   exit 0
