@@ -267,6 +267,8 @@ Call <toolName> at most <N> times (N ≤ 3 for a single decision). After the las
 If the retrieved content does not cover a detail, say so in <rationaleField>, lower <confidenceField>, and still return every outputSchema field. Never end a run without a determination.
 ```
 
+When the workload genuinely needs several dependent lookups — a multi-hop question, or an enumerative deliverable — do not suppress the loop; bound it. See [../../../agentic-search/planning.md](../../../agentic-search/planning.md).
+
 ## References
 
 - [context.md](context.md) — capability overview and variant decision
