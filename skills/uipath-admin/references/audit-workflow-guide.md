@@ -79,6 +79,8 @@ A “who did it” query with no matching event means **no such event was found*
 
 Never identify an actor from an adjacent event, different resource, different type, or broad `--search` hit. Do not broaden filters until something returns and present that as the culprit. Two or three targeted empty queries are a complete investigation; stop and report them. Name an actor only when the cited event matches the requested resource and verb, and quote `createdOn` plus the identifying `eventDetails` field for verification.
 
+Before concluding that the action never happened, rule out a deliberate gap: an active exclusion rule hides its matching events from both `events` and `export`, and neither response marks the omission. Run `uip admin audit org exclusions list --output json`; if a rule covers the source, target, type, or status you searched, report that the trail stops recording those events from the rule's `ActivatedOn` onward. That explains the silence — it never licenses naming an actor the query did not return. See [audit-exclusions-guide.md](./audit-exclusions-guide.md#when-an-investigation-comes-up-empty-check-the-exclusions).
+
 ## Investigation 2 — Show logins for user X
 
 **Use scope `org`.** Org audit includes Identity Server / IdP authentication (`User Login`, password changes, MFA setup, federation, and SSO bindings), membership, license and billing, tenant lifecycle, org settings, and org-level robot accounts and external apps. Tenant-only activity includes Orchestrator runs, asset/queue/folder edits, Action Center tasks, Apps, AgentHub, Document Understanding, Integration Service, and Test Manager. AOps `Governance`, `Pipelines`, and `Source Control` are org sources.
@@ -260,8 +262,11 @@ Report the top 5 event types per scope, most active actors grouped by `actorName
 | “logged in” / “login” / “authenticated” / a user email | **2** — Login history |
 | “export” / “dump” / “JSON” / “CSV” / date range | **3** — Date-range dump |
 | “overview” / “what's happening” / “recent activity” / “audit summary” | **4** — Overview |
+| “stop/suppress/mute recording” / “too noisy” / “which events aren't we recording” | none — exclusion rules: [audit-exclusions-guide.md](./audit-exclusions-guide.md) |
 
 If multiple signals appear, run the investigations in sequence and stitch the results together. Do not make the user re-ask.
+
+Exclusion rules are a configuration change, not an investigation: they are organization-scoped, every write suppresses evidence, and each one needs an explicit impact statement and confirmation first (Critical Rule 30c).
 
 ## Common gotchas
 

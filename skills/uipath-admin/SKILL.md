@@ -1,6 +1,6 @@
 ---
 name: uipath-admin
-description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets, PATs, SMTP), Authorization (custom roles, role assignments, permission catalog, effective-access check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async op polling), IP Restriction (allowlist, enforcement, bypass rules, lockout safety), and Audit via `uip admin audit` (event sources, paginated queries, JSON-folder or CSV export). Troubleshoot access-denied, login failures, role misconfig, IP lockout, PAT/app auth. Owns ALL org/tenant/identity audit — use `uip admin audit`, NOT `uip or audit-logs`, for any audit logs / audit trail / audit events / export / login history / who-did-what request. Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. RPA workflows→uipath-rpa."
+description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets, PATs, SMTP), Authorization (custom roles, role assignments, permission catalog, effective-access check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async op polling), IP Restriction (allowlist, enforcement, bypass rules, lockout safety), and Audit via `uip admin audit` (event sources, paginated queries, JSON-folder or CSV export, exclusion rules). Troubleshoot access-denied, login failures, role misconfig, IP lockout, PAT/app auth. Owns ALL org/tenant/identity audit — use `uip admin audit`, NOT `uip or audit-logs`, for any audit logs / audit trail / audit events / export / login history / who-did-what request. Also owns audit exclusion rules: stop, suppress, or mute recording of chosen audit events (`audit org exclusions`). Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. RPA workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -15,6 +15,7 @@ Administrative operations through `uip admin` for Identity Server, Authorization
 - **OMS:** Current organization, tenant lifecycle, service provisioning, operation polling, and region discovery. The CLI cannot create or delete organizations.
 - **IP Restriction:** Allowlist entries, enforcement, bypass rules, and `ip-restriction my-ip` for public-IP questions and safety checks.
 - **Audit:** Use `uip admin audit`, never `uip or audit-logs`, for organization or tenant audit events, sources, targets, types, queries, login history, membership/license activity, tenant activity, investigations, and exports. `uip or audit-logs` is Orchestrator-operational audit and belongs to `uipath-platform`.
+- **Audit exclusions:** Use `uip admin audit org exclusions` for the rules that stop the trail recording matching events — "stop/suppress/mute recording these events", "our audit trail is too noisy", "which events are we not recording", or any list/get/create/update/delete of an exclusion rule. Organization-scoped only. Every write suppresses evidence, so follow [audit-exclusions-guide.md](references/audit-exclusions-guide.md) and Rules 30b–30e.
 - **Troubleshooting:** Use the [diagnose capability index](references/diagnose/CAPABILITY.md) and [identity troubleshooting guide](references/identity-troubleshoot-guide.md) for access, authentication, identity, tenant operations, provisioning, robot authentication, SMTP, PAT, external-app, or IP-lockout symptoms.
 
 For audit availability, run `uip admin audit <scope> sources`; discover live catalogs instead of relying on memory. Route `org` versus `tenant` with [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#scope-selection) and Rule 23. Natural-language investigations may cover resource changes/deletions, sign-ins, tenant changes, compliance windows, and cross-scope requests; run once per requested scope and combine results.
@@ -73,6 +74,14 @@ Each rule is part of the agent contract.
 29b. **Retry transient audit 5xx errors** (`ErrorCode: server_error` / `Retry: RetryLater`, such as 503/504) up to two more times with several seconds of backoff, using the identical query. Do not change limit or window. Never present or save an error envelope as data; report failed retrieval.
 30. **Exports use a base directory and whole UTC days.** Require `--from-date`, `--to-date`, and `--output-path`. Dates are inclusive calendar days; do not use the events next-day trick. `--output-path` is a directory, never a filename/extension; the CLI creates `audit_<from>_<to>_<generated-at>` inside it. Default JSON creates per-day `<YYYY-MM-DD>.json`; `--file-format csv` creates one merged CSV. Use CSV for flat spreadsheets and JSON for day-wise files. Pass a user-named destination verbatim without confirmation; confirm only a selected default such as `./audit-exports`. Report `Path` and `GeneratedAt`.
 
+30b. **Exclusion rules are organization-scoped, and a rule must constrain something.** `uip admin audit org exclusions <list|get|create|update|delete>`; there is no `audit tenant exclusions` — limit a rule to tenants with a `--tenant-id` selector instead. One selector per dimension (`--tenant-id`, `--source`, `--target`, `--type`, `--status`); values inside a selector are OR-ed and selectors are AND-ed. At least one selector is required, because a rule constraining nothing would exclude every event in the organization; never satisfy a vague "mute the audit noise" by creating one. Discover selector GUIDs with `audit org sources` and never invent them (Rule 26). `enforcement` is not a flag — `Exclude` is the only value. See [audit-exclusions-guide.md](references/audit-exclusions-guide.md).
+
+30c. **Every exclusion write suppresses evidence — state the impact and get explicit confirmation first.** Before `create`, `update`, or `delete`, show the rule's selectors translated to names from `audit org sources` (never bare GUIDs) and say: exclusion starts when the rule activates and is never retroactive; events already recorded are unaffected; events suppressed from then on cannot be recovered, because deleting the rule resumes recording without restoring the gap. Wait for the user's confirmation. Never widen a rule beyond what the user asked for, never delete a rule you did not create to get past `RuleLimitExceeded` or `OverlappingRuleExists`, and never chain writes — create one rule, verify it with `exclusions get`, report `PolicyId` plus `ActivatedOn`, then stop.
+
+30d. **`exclusions update` is a full replacement, not a patch.** Run `exclusions get <POLICY_ID> --output json` first, then resend every selector the rule should keep — an omitted field is dropped, so renaming with `--name` alone strips the rule's selectors. Pass `<POLICY_ID>` before the selector flags; they are variadic and would read the id as another value. `--file` supplies the whole body instead and cannot be combined with any inline flag; a body carries only camelCase `name`, `enforcement`, `isActive`, and `selectors`, so a `get` response — PascalCased, with server-owned `policyId` and timestamps — is rejected rather than trimmed. To swap a rule without a recording gap, stage the replacement with `--inactive`, delete the old rule, then activate the new one.
+
+30e. **An exclusions failure names its own cause — act on `Instructions`, do not improvise.** Rejections carry the service's reason in `Message` and a machine-readable code in `Context.errorCode` (`OverlappingRuleExists`, `UnknownSelectorValue`, `SelectorValueNotPermitted`, `DuplicateRuleName`, …); a local `Result: ValidationError` never reached the network, so fix the command instead of retrying it. `SelectorValueNotPermitted` is by design — UiPath monitoring events and audit-configuration changes, including changes to the rules themselves, can never be excluded; report the refusal rather than re-spelling the target. `unknown command 'exclusions'` means the installed CLI predates the feature (tell the user to upgrade `@uipath/cli`); `HTTP 404` on `list` means this organization's audit service does not expose the rules API yet. Neither is retryable, and neither is a reason to fall back to `uip or audit-logs`. **An active rule also hides its events from `events` and `export` without marking the gap** — when a targeted investigation comes back empty, run `exclusions list` before concluding the action never happened (this explains the silence; it never licenses naming an actor, Rule 27b).
+
 ### IP Restriction
 
 31. **Enforcement enable requires a safety check and confirmation:** Run `ip-restriction my-ip`, verify the caller IP is covered by `ip-ranges list`, then state: “After enabling IP restriction, any caller (Portal, CLI, robot, external app) whose source IP is not in `ip-ranges list` will be blocked from this org. Misconfiguration locks you out and requires platform-side recovery. Proceed?” Require `--confirm`. Deleting a range while enforcement is enabled also requires `--confirm`. See [enforcement management](references/ip-restriction/enforcement-management.md).
@@ -89,6 +98,10 @@ The rest are the inverse of the Critical Rules — never:
 - treat `audit events` as a bare array (R24), hand-loop dates to paginate (R25), invent source/target/type GUIDs (R26), or query events unbounded on a noisy tenant (R27);
 - name an actor the query didn't return (R27b), pass `--tenant-id` to `org` audit (R28), retry a 401 (R29), or save/report an error envelope as data (R29b);
 - use the next-day `--to-date` trick on `export` (R30), or `roles update` with only the changed flag (R12);
+- reach for `audit tenant exclusions`, create a selector-less exclusion rule, or invent a selector GUID (R30b);
+- write an exclusion rule without stating the impact and getting confirmation, or present one as retroactive (R30c);
+- `exclusions update` with only the changed flag, mix `--file` with inline flags, or feed a `get` response back into `--file` (R30d);
+- retry a `SelectorValueNotPermitted` refusal or an `unknown command` / 404 on `exclusions` (R30e);
 - confuse provisioned `services list` with the `list-available` catalog (R22), or run an OMS mutation without echoing the resolved target (Output Etiquette).
 
 ## Quick Start
@@ -105,6 +118,8 @@ The rest are the inverse of the Critical Rules — never:
 | Find public IP | `ip-restriction my-ip --output json`; return `Data.ipAddress` |
 | Enable IP enforcement | `my-ip` → verify range → `enforcement enable --confirm` |
 | Query/export audit | [audit-workflow-guide.md](references/audit-workflow-guide.md) |
+| Stop recording noisy audit events | `audit org sources` → propose + confirm → `uip admin audit org exclusions create --name "<RULE_NAME>" --type <EVENT_TYPE_ID> --status Success --output json` → verify with `exclusions get` (Rules 30b–30e, [audit-exclusions-guide.md](references/audit-exclusions-guide.md)) |
+| See which audit events are suppressed | `uip admin audit org exclusions list --output json` |
 
 ## Key Concepts
 
@@ -119,6 +134,8 @@ See [key-concepts.md](references/key-concepts.md) for organization hierarchy and
 | OMS reads | Lead with `Organization: <ORG_NAME>`; separate provisioned services with status from the available catalog without status. Tenant reads also show name, UUID, and lifecycle status. |
 | OMS mutations | Echo resolved target; auto-poll async operations three times at five-second intervals, then offer a numbered menu; re-list synchronous services to verify state. |
 | Audit queries/exports | State scope, count, resolved UTC window, filters, and cursor state; obey Rules 23, 26, and 27. After reporting, wait for the user's next-step choice and do not chain mutations. For exports report `Path` and `GeneratedAt`. See [audit output etiquette](references/audit-workflow-guide.md#output-etiquette--after-every-audit-query-or-export). |
+| Audit exclusion reads | Rule count and how many are active; each rule's selectors translated to names from `audit org sources`, never bare GUIDs; `IsActive` plus `ActivatedOn` per rule. |
+| Audit exclusion writes | Before writing, state the impact and obtain explicit confirmation (Rule 30c). After: `PolicyId`, `IsActive`, `ActivatedOn`, which events stop being recorded and from when, and — on a delete — that recording resumes now while the existing gap remains. Offer one next step and wait; never chain another write. See [audit-exclusions-guide.md](references/audit-exclusions-guide.md#output-etiquette--after-an-exclusions-call). |
 | IP Restriction mutations | Before enabling, state impact and obtain explicit confirmation; afterward rerun `my-ip` and `ip-ranges list` to confirm coverage; never say APMS. |
 
 ## Task Navigation
@@ -146,6 +163,7 @@ See [key-concepts.md](references/key-concepts.md) for organization hierarchy and
 | Bypass rules | [bypass-rule-management.md](references/ip-restriction/bypass-rule-management.md) |
 | Audit CLI | [audit-commands.md](references/audit-commands.md) |
 | Audit investigations | [audit-workflow-guide.md](references/audit-workflow-guide.md) |
+| Audit exclusion rules (stop recording events) | [audit-exclusions-guide.md](references/audit-exclusions-guide.md), surface in [audit-commands.md](references/audit-commands.md#uip-admin-audit-org-exclusions) |
 | Audit pagination | [audit-commands.md](references/audit-commands.md) plus Rule 25 |
 | Troubleshooting | [identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
 | Diagnostic capability index | [diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
