@@ -41,7 +41,7 @@ Reason the shape from the process — never reach for the template first. Build 
 
 ### Task types
 
-<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 The enum is closed — exactly these nine literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
@@ -112,7 +112,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 ### Lifecycle gates
 
-<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
@@ -424,7 +424,7 @@ The Interrupting cell is read off the SOURCE's words, exactly like the Response 
 
 ### Naming rules
 
-<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 Safe display characters for stage labels, task display names, and condition/SLA/escalation titles:
 
@@ -451,7 +451,7 @@ Comparison exact — case-sensitive, untrimmed. Never normalize external lookup 
 
 ## Layer closure — the design checklist
 
-ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — `case-sdd-conformance-checklist.md` owns them; walk it against the written file.
+ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — the case SDD template's § Validation conformance checklist owns them; walk it against the written file.
 
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 
