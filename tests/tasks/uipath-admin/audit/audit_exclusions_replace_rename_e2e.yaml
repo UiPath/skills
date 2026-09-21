@@ -1,0 +1,91 @@
+task_id: skill-admin-audit-exclusions-replace-rename-e2e
+description: >
+  End-to-end test (outcome-graded): the single highest-cost trap on this surface.
+  `exclusions update` is a PUT — a full replacement — so renaming a rule with
+  `--name` alone drops every selector it carried. Per Rule 30d the agent must
+  `exclusions get` first and resend the selectors it is not changing.
+
+  pre_run seeds a real active rule with two selectors (EventType + Status) and
+  records both, then publishes the new name in seed.json. The check reads the
+  rule back and asserts it still carries every seeded dimension AND value — an
+  agent that renamed it with `--name` alone silently changed what the
+  organization stops recording, which is the failure this task exists to catch.
+
+  The renamed rule must also carry the SEEDED policy id: creating a second rule
+  under the new name and leaving the original in place is not a rename, and it
+  doubles the suppression rather than moving it.
+
+  A do-nothing agent cannot score — the seeded rule starts under the old name,
+  so the new name matches nothing until the agent acts.
+
+  A `cleanup_exclusion_marker` sweep runs before and after, keyed on a marker
+  both names share, so neither the original nor the renamed rule survives the
+  run. An exclusion rule is organization-wide; a leftover keeps suppressing this
+  organization's audit trail.
+
+  Blocker: needs `uip admin audit org exclusions` in the published `@uipath/cli`
+  (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
+  organization. Until both ship, pre_run cannot seed the rule and the verifier
+  reports that the rules could not be read.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, scope-org, path-to-ga]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
+
+pre_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-rename" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-rename-before" EXCL_RENAME_BASE="ce-audit-excl-rename-after" EXCL_STATUS="Success" python3 _setup/setup_exclusion_rule.py'
+    timeout: 120
+
+post_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-rename" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+
+run_limits:
+  expected_turns: 9
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Our UiPath organization has an audit exclusion rule whose name no longer
+  matches our naming standard. `seed.json` in this directory holds its current
+  name in `rule.name` and the name it must have in `rule.rename_to`.
+
+  Rename it. Which events it stops recording must not change at all — the rule
+  has to keep suppressing exactly what it suppresses today.
+
+  Do NOT prompt the user for approval or confirmation — this is an automated
+  test. Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "The renamed rule is the same rule, still active, and still carries every seeded selector value"
+    command: 'EXCL_MODE=present EXCL_SEED_KEY=rule EXCL_NAME_FIELD=rename_to EXCL_EXPECT_SEEDED_ID=1 EXCL_EXPECT_SEEDED_SELECTORS=1 EXCL_EXPECT_ACTIVE=true python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_exclusions.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the rule back before replacing it (a full-replacement body cannot be built without it)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+exclusions\s+(?:get|list)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not delete and re-create the rule instead of replacing it in place"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+exclusions\s+delete\b'
+    exclude_pattern: '--help'
+    weight: 1.5
+    pass_threshold: 1.0

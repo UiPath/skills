@@ -1,0 +1,113 @@
+task_id: skill-admin-audit-exclusions-delete-e2e
+description: >
+  End-to-end test (outcome-graded): an auditor wants a suppressed class of event
+  recorded again, which means deleting the exclusion rule that suppresses it.
+  pre_run seeds a real active rule and records its id, so the check reads that
+  exact id back from the service — a do-nothing agent cannot make a seeded rule
+  disappear.
+
+  The prompt asks for the outcome ("record these events again"), never the verb,
+  so the agent has to know that deactivating is not on offer as a partial step:
+  there is no `--activate` / `--deactivate` toggle, and staging with
+  `--inactive` applies to a new rule, not to an existing one. Removing the rule
+  is the operation.
+
+  The verifier treats an unreadable rule listing as a hard failure rather than as
+  "deleted", so an unreachable service cannot be mistaken for success — the one
+  way a delete check silently passes for the wrong reason.
+
+  A `cleanup_exclusion_marker` sweep runs before and after so a seeded rule never
+  outlives the run: an exclusion rule is organization-wide and keeps suppressing
+  events while it exists.
+
+  Blocker: needs `uip admin audit org exclusions` in the published `@uipath/cli`
+  (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
+  organization. Until both ship, pre_run cannot seed the rule and the verifier
+  reports that the seeded rule is missing.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, audit, exclusions, scope-org, path-to-ga]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
+
+pre_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-delete" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+  - command: 'EXCL_SNAPSHOT=1 python3 _setup/setup_exclusion_rule.py'
+    timeout: 120
+  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-delete" EXCL_STATUS="Success" python3 _setup/setup_exclusion_rule.py'
+    timeout: 120
+
+post_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-delete" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+
+run_limits:
+  expected_turns: 8
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  We are being audited and one class of event is missing from our UiPath audit
+  trail: our organization is deliberately suppressing it. The rule responsible
+  is named in `seed.json`'s `rule.name` field.
+
+  Make our organization record those events again, and tell me from when the
+  trail will be complete — and whether the period it was suppressed can be
+  recovered.
+
+  Do NOT prompt the user for approval or confirmation — this is an automated
+  test. Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "The seeded rule is gone from the organization, so its events are recorded again"
+    command: 'EXCL_MODE=absent EXCL_SEED_KEY=rule python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_exclusions.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent stated that recording resumes now and that the suppressed period cannot be recovered"
+    include_reference: false
+    include_agent_output: true
+    include_tool_calls: true
+    weight: 2.0
+    pass_threshold: 1.0
+    prompt: |
+      The agent was asked to make a UiPath organization record a suppressed class
+      of audit event again, and to say from when the trail will be complete and
+      whether the suppressed period can be recovered.
+
+      The facts: deleting an audit exclusion rule resumes recording from that
+      moment onward. Events that were suppressed while the rule was active were
+      never written, so they cannot be recovered or backfilled.
+
+      Score EXACTLY 1.0 or EXACTLY 0.0 — there is no partial credit and no
+      intermediate value. If the case feels borderline, decide which of the two
+      descriptions below fits better and return that score.
+
+      Inspect the agent's final reply, then score:
+        1.0  The reply conveys BOTH that recording resumes from now (not
+             retroactively) AND that the events suppressed while the rule was
+             active are gone for good / cannot be recovered or re-created.
+        0.0  The reply claims or implies the gap is filled, recoverable,
+             backfillable, or retroactively restored; or it never addresses the
+             suppressed period at all.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+  - type: run_command
+    description: "Every rule that existed before the run still exists — only the seeded rule was removed"
+    command: 'EXCL_MODE=absent EXCL_SEED_KEY=rule EXCL_EXPECT_SNAPSHOT_INTACT=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_exclusions.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

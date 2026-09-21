@@ -39,6 +39,10 @@ EVENT_SIGNATURE = ("eventtype", "eventsource", "createdon")
 LTS_SIGNATURE = ("identifier", "datecreatedutc", "action")
 # A source row is a top-level audit category (Identity, Tenant, Governance, ...).
 SOURCE_SIGNATURE = ("eventtargets",)
+# An exclusion rule: `uip admin audit org exclusions list|get`. `enforcement`
+# joins the signature so a bare `{policyId, name}` summary an agent wrote itself
+# does not read as a rule record.
+EXCLUSION_SIGNATURE = ("policyid", "enforcement", "selectors")
 
 
 def _norm(key):
@@ -218,6 +222,7 @@ EMPTY_CONTAINER_KEYS = {
     EVENT_SIGNATURE: _GENERIC_CONTAINERS | {"auditevents", "events"},
     LTS_SIGNATURE: _GENERIC_CONTAINERS | {"events", "auditevents"},
     SOURCE_SIGNATURE: _GENERIC_CONTAINERS | {"sources"},
+    EXCLUSION_SIGNATURE: _GENERIC_CONTAINERS | {"exclusions", "rules"},
 }
 
 
@@ -339,6 +344,49 @@ def live_query(scope, verb, extra_args=(), attempts=3):
         fail(f"internal: bad verb {verb!r}")
     args = ["admin", "audit", scope, verb, *extra_args]
     return poll(lambda: run_cli(args, timeout=60), max_attempts=attempts, delay=5)
+
+
+def live_exclusions(attempts=3):
+    """Read the organization's exclusion rules back from the service.
+
+    Read-only and org-scoped — there is no tenant variant of this surface. Same
+    anti-forgery role as `live_query`: an exclusions check compares the agent's
+    outcome against what the harness itself reads, never against the agent's own
+    report.
+
+    Returns the parsed list of rule records, or None when the read itself failed
+    (unreachable service, `unknown command` on a CLI that predates the surface,
+    or a 404 where the organization does not expose the rules API). A caller must
+    treat None as "cannot grade" rather than "no rules exist" — an absent rule
+    would otherwise satisfy every delete check for free.
+    """
+    data = poll(
+        lambda: run_cli(["admin", "audit", "org", "exclusions", "list"], timeout=60),
+        max_attempts=attempts,
+        delay=5,
+    )
+    if not data or str(field(data, "Result") or "").strip().lower() != "success":
+        return None
+    records = find_records(data, EXCLUSION_SIGNATURE)
+    return [] if records is None else records
+
+
+def selectors_of(rule):
+    """`{dimension: {value, ...}}` for one rule, dimensions lowercased.
+
+    Tolerates both spellings of the payload: the tool emits camelCase
+    (`selectors[].type`) and the CLI host PascalCases every key under `Data`.
+    """
+    out = {}
+    for selector in field(rule, "Selectors") or []:
+        dimension = field(selector, "Type")
+        if not dimension:
+            continue
+        values = field(selector, "Values") or []
+        out.setdefault(str(dimension).strip().lower(), set()).update(
+            str(v).strip().lower() for v in values if v is not None
+        )
+    return out
 
 
 def env_flag(name, default=False):

@@ -1,0 +1,87 @@
+task_id: skill-admin-audit-exclusions-create-e2e
+description: >
+  End-to-end test (outcome-graded): the agent stops the audit trail recording one
+  named class of event. pre_run resolves a real event type from the live sources
+  catalog and publishes its NAME — not its id — into seed.json, so the agent has
+  to discover the id with `audit org sources` (Rule 26) before it can write the
+  rule.
+
+  The check reads the rule back from the service and asserts what the scenario
+  required: enforcement `Exclude`, active with an `activatedOn`, an EventType
+  selector carrying the planned id, and a Status selector. Every catalog-backed
+  selector value must exist in the live sources catalog, so an invented GUID
+  fails even where the service would have accepted it.
+
+  A do-nothing agent cannot score: the rule name carries this run's uuid8, so
+  nothing matching it exists until the agent creates it.
+
+  A `cleanup_exclusion_marker` sweep runs both before and after. An exclusion
+  rule is organization-wide, so a leftover from a run that died mid-way would
+  keep suppressing this organization's audit trail for every later run.
+
+  Blocker: needs `uip admin audit org exclusions` in the published `@uipath/cli`
+  (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
+  organization. Until both ship, pre_run records the planned name only and the
+  verifier reports that the rules could not be read.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, scope-org, path-to-ga]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
+
+pre_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-create" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-create" EXCL_PLAN_ONLY=1 EXCL_STATUS="Success" python3 _setup/setup_exclusion_rule.py'
+    timeout: 120
+
+post_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-create" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+
+run_limits:
+  expected_turns: 9
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  `seed.json` in this directory names an audit event type in its
+  `rule.type_name` field. Those events succeed thousands of times a day and
+  nobody reviews them, so our UiPath organization should stop recording the
+  successful ones — the failures must keep being recorded.
+
+  Set that up, using the rule name in `seed.json`'s `rule.name` field, and
+  confirm afterwards that it is in effect.
+
+  Do NOT prompt the user for approval or confirmation — this is an automated
+  test. Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "The organization now carries the planned active rule, excluding successful events of the planned type, with catalog-backed selector ids"
+    command: 'EXCL_MODE=present EXCL_SEED_KEY=rule EXCL_EXPECT_SELECTORS="EventType,Status" EXCL_EXPECT_SEEDED_SELECTORS=1 EXCL_EXPECT_ACTIVE=true EXCL_REQUIRE_CATALOG_IDS=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_exclusions.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not reach for the non-existent `audit tenant exclusions` subgroup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+exclusions\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not delete an existing exclusion rule to make room for its own"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+exclusions\s+delete\b'
+    exclude_pattern: '--help'
+    weight: 1.5
+    pass_threshold: 1.0
