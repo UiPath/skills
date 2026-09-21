@@ -175,7 +175,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not run the interactive uip login flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)'
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
