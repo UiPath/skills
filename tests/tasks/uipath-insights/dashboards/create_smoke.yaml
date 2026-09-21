@@ -1,0 +1,191 @@
+task_id: skill-insights-smoke-dashboard-create
+description: >
+  Smoke test: agent uses the uipath-insights skill to author a monitoring
+  dashboard for a Maestro process and create it from a file. Given a
+  prompt asking for a dashboard with two charts, the agent should read the
+  process's current dashboard to the --output-file artifact first, author
+  the definition from the field ids that read returns, write it to a file,
+  and pass that file to create. It should never capture the read's stdout
+  into the file: stdout is a PascalCase envelope and the command refuses
+  it before any request.
+
+  It grades the local authoring flow, not the round trip. A create is one
+  shot per process slot, so a task that graded a successful create would
+  occupy a slot a real process's Monitoring tab reads. The prompt supplies
+  a placeholder process key that belongs to no Maestro process, so the
+  create either lands on an orphan slot or is refused, and no real
+  process's dashboard is touched either way. Same reasoning that left the
+  three by-id RBAC reads out of the RBAC smoke task. Because the slot is
+  one shot, a pre_run step frees it before the agent starts; without that
+  the task passes once and fails forever, and an A/B of two variants fails
+  whichever runs second.
+
+  On the eval tenant the slot read answers not-found, because the tenant
+  has no Insights Portal service. The prompt therefore asks for the create
+  unconditionally: the CLI's own preflight refuses it before any request,
+  and the criteria grade the command shape, which is all this tier can
+  prove.
+tags: [uipath-insights, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 14
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  # The create is one shot per slot, so the placeholder slot is freed
+  # first (Command Optimization Rule, section 5). The script never fails
+  # the task: a CLI without the delete verb, or a slot that cannot be read,
+  # leaves the slot as it is and exits zero.
+  - command: "python3 _setup/clear_slot.py"
+    timeout: 120
+    fail_on_error: false
+
+initial_prompt: |
+  Build a monitoring dashboard for the Maestro process
+  00000000-0000-0000-0000-000000000000 and create it. I want two charts:
+  process instances broken down by status, and instances over time. Start
+  from whatever that process's Monitoring tab shows today so the charts
+  use field ids that exist, and take that definition as a file
+  rather than copying what the command prints. Give the dashboard a name.
+  Write the definition to a file and create it from that file. If the
+  process already has a saved dashboard, stop and tell me rather than
+  trying to replace it. If the read fails or comes back not found, author
+  the file anyway from the writes guide's shape and still send the create
+  once, even if the file cannot meet every guide rule: the CLI refuses a
+  bad file before anything goes out, and I want to see its answer. Send the create
+  once: if it fails or the outcome is unclear, read the slot back and tell
+  me what you found instead of running it again. Report what the result proves and what it does not.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every wildcard in this file is bounded with
+  # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, and each part is load-bearing. The
+  # grader matches every pattern against two haystacks: the raw
+  # `bash -lc "..."` text, which keeps newlines, and a normalized one that
+  # unwraps the wrapper and re-joins the shlex tokens with single spaces
+  # (coder-eval 0.12.1, criteria/command_executed.py, _normalize_shell and
+  # _match_haystacks). The \n in the class stops a batched neighbour on the
+  # raw haystack; the (?!uip\s) lookahead stops the next `uip ` on the
+  # normalized one, where the newline is already a space. The \\\n branch
+  # lets a backslash-continued command through: shlex keeps an escaped
+  # newline as its own token, so the normalized haystack carries a literal
+  # newline there too, and a class without that branch false-fails every
+  # continued command on both haystacks. A bare .* is worse than any of
+  # these, since re.DOTALL lets it leave the command entirely. No barrier
+  # closes the case where the neighbour is not a `uip` command; only naming
+  # the flags the target accepts does that, which the flag patterns below do.
+  #
+  # Authoring step 1: read the slot to the artifact before writing
+  # anything. Requires --output-file rather than the bare read, because the
+  # artifact is the whole point of the step: it is the only channel that
+  # carries the camelCase definition create accepts.
+  - type: command_executed
+    description: "Agent read the process's current dashboard to a file before authoring"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the dashboard from a file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+create\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the two criteria
+  # above pass even when the verb exists in no installed CLI. --help is the
+  # reality gate: it exits 0 only when the CLI registers the command and
+  # exits 3 on an unknown one. A live create cannot be the gate, for the
+  # one-shot reason in the description.
+  - type: run_command
+    description: "CLI path is real: dashboards create is registered in the installed CLI"
+    command: "uip insights dashboards create --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Rule 1: the input file is the artifact contract and CLI stdout is not
+  # it. This pattern is shaped differently from the others: instead of a
+  # barrier wildcard it walks only what `get` can take (flags with values,
+  # at most one positional id that does not start with a dash, stderr
+  # merges such as 2>&1, backslash continuations) and then requires a
+  # capture: a > or >> or &> or >| or 1> redirect to a path-like target
+  # that is not /dev/null, a pipe into tee, or a pipe through jq that then
+  # redirects to a path. The walk cannot reach a neighbouring command even
+  # on the normalized haystack, where a newline is already a space, because
+  # a second positional word stops it; a barrier wildcard walked into
+  # `jq ... > dashboard.json` on the next line, which is the exact
+  # authoring flow the prompt asks for. The three path flags take their
+  # value in an atomic group that may contain >, so a file name with a >
+  # inside quotes is not read as a redirect once the normalizer strips the
+  # quotes; that group needs the Python 3.11+ `re` the pinned coder-eval
+  # runs on. 2>&1, 2>/dev/null, 2>err.txt, and > /dev/null are not
+  # captures and do not match; `| jq .Data.Saved` and a `>` comparison
+  # inside a jq filter do not match either. Forty shapes were replayed
+  # through the pinned coder-eval 0.12.1 _match_haystacks before this
+  # landed. Single quotes inside the pattern are written as \x27 because
+  # the YAML scalar is single-quoted.
+  - type: command_not_executed
+    description: "Agent did not capture read stdout into the definition file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:"[^"]*"|\x27[^\x27]*\x27|(?!-)[A-Za-z0-9_.:-]+))?(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*[ 	]*(?:(?:(?<![0-9&])>>?|&>|>\||(?<![0-9])1>>?)[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"]*[./][^\s\x27"]*)|\|[ \t]*tee\b|\|[ \t]*jq[^&;|\n]*?(?<![0-9&])>[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"]*[./][^\s\x27"]*))'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 3: a create is sent once and never retried. The cap is 1 rather
+  # than 0, so this is a bounded command_executed rather than a
+  # command_not_executed: the loader rewrites command_not_executed to
+  # min_count 0 / max_count 0 whatever the file says
+  # (coder_eval/models/tasks.py, the success_criteria normalizer), which
+  # would fail the single legitimate create. min_count 0 keeps a run that
+  # stopped before creating from failing here as well; the criterion above
+  # is what requires the create to happen.
+  - type: command_executed
+    description: "Agent did not send the create more than once"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+create\b(?!\s+(?:--help|-h)\b)'
+    min_count: 0
+    max_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids command substitution and shell
+  # variables inside a uip invocation. The flag branch names only the flags
+  # the dashboard commands accept, the superset every dashboard task carries, so a
+  # neighbour's `jq --arg $KEY` cannot satisfy it.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights dashboard command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+\S+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(process-key|case|source-type|localization|output-file|file|backup-file|expected-version|from-process-key|to-process-key|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_{])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # There is no --source-type, no inline JSON body, and no
+  # service-identifier flag on create: the CLI sends AO and composes the
+  # slot id itself. An agent that invents one is working against the
+  # identity the CLI owns. --json and --output are left out of the list:
+  # both are real host global options (packages/common/src/host-global-options.ts).
+  - type: command_not_executed
+    description: "Agent did not invent flags on dashboards create"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+create(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(source-type|service-identifier|dashboard-id|body|data|definition|tenant|organization)\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

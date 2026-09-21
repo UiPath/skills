@@ -42,7 +42,7 @@
 {"id": "negative-043", "prompt": "Design a Process Maker workflow", "expected_skill": ""}
 {"id": "negative-044", "prompt": "Set up UiPath AI Center to deploy my fraud detection ML model", "expected_skill": ""}
 {"id": "negative-045", "prompt": "Set up a classic Document Understanding ML extractor in Studio with a labeling session and AI Center training for scanned invoices", "expected_skill": ""}
-{"id": "negative-046", "prompt": "Build a UiPath Insights dashboard to visualize bot performance over the last quarter", "expected_skill": ""}
+{"id": "negative-046", "prompt": "Build a Power BI dashboard from our Salesforce pipeline export for last quarter", "expected_skill": ""}
 {"id": "negative-047", "prompt": "Migrate my Automation Anywhere bots to a new environment", "expected_skill": ""}
 {"id": "negative-048", "prompt": "Refactor my Blue Prism object to use a work queue instead of a collection", "expected_skill": ""}
 {"id": "negative-049", "prompt": "Train a sklearn random forest classifier on my customer churn dataset", "expected_skill": ""}
