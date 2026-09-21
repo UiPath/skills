@@ -37,7 +37,11 @@ import urllib.parse
 import zlib
 import xml.etree.ElementTree as ET
 
-SENSITIVE = re.compile(r'passw|pwd|secret|token', re.I)
+SENSITIVE = re.compile(r'passw|pwd|secret|token|api[_-]?key', re.I)
+# Literal credentials that hide inside otherwise harmless attributes (an `Authorization` header in a disabled test call):
+# a bearer/basic scheme followed by a literal, and JSON Web Tokens (three base64url segments starting with `eyJ`).
+BEARER_LITERAL = re.compile(r'(?i)\b(bearer|basic)\s+(?!\$)([A-Za-z0-9._~+/=\-]{16,})')
+JWT_LITERAL = re.compile(r'eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{4,}')
 BRANCH_COMMANDS = ('else', 'elseIf', 'catch', 'finally')
 # Not steps: authoring notes, the run's own log and screenshots, timing, debugging leftovers, migration plumbing.
 NOISE = {('Comment', 'Comment'), ('LogToFile', 'logToFile'), ('Delay', 'delay'), ('LegacyAutomation', 'getKeystrokesDelay'),
@@ -48,6 +52,16 @@ GLOBAL_VALUE = re.compile(r'\$@([A-Za-z0-9_]+)\$')
 SYSTEM_VAR = re.compile(r'\$System:([A-Za-z0-9_]+)')
 VAR_REF = re.compile(r'\$([A-Za-z0-9_\-]+)')
 DATA_FILE_EXT = ('.xml', '.xlsx', '.xls', '.xlsm', '.csv', '.txt', '.json', '.vbs', '.ps1', '.bat', '.config', '.ini')
+SCRIPT_EXT = ('.bat', '.cmd', '.ps1', '.vbs', '.py', '.js', '.exe')
+SCRIPT_HOSTS = ('powershell.exe', 'powershell', 'cmd.exe', 'cmd', 'cscript.exe', 'wscript.exe')
+# Commands a logger sub-bot may consist of (besides the log line itself): control flow, string and number preparation,
+# file/folder housekeeping, error handling. A bot made only of these with at least one logToFile is a logger bot -
+# calls to it are the run's own logging, not steps (source guide § Evidence).
+LOGGER_ALLOWED_PACKAGES = {'LogToFile', 'If', 'String', 'Number', 'Datetime', 'System', 'Boolean', 'Comment', 'Delay', 'Loop',
+                           'ErrorHandler', 'TaskBot', 'File', 'Folder', 'MessageBox', 'Step', 'Screen', 'LegacyAutomation', 'Dictionary', 'List'}
+# Data-bearing commands the data catalog lists (package, command) -> kind
+DATA_COMMANDS = {('CsvTxt', 'OpenCSVTXT'): 'csv-file', ('TextFile', 'ReadFile'): 'text-file', ('TextFile', 'WriteFile'): 'text-file',
+                 ('PDF', 'extractText'): 'pdf-file', ('Browser', 'downloadFile'): 'download', ('Json', 'StartSession'): 'json-file'}
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -62,6 +76,25 @@ def repo_path(s):
     """`repository:///Automation%20Anywhere/Bots/My%20Tasks/X/Y` -> `My Tasks/X/Y`."""
     s = urllib.parse.unquote(s or '').replace('\\', '/')
     return REPO_PREFIX.sub('', s).strip('/')
+
+
+def capture_action(attrs):
+    """The action a Recorder capture applies: the one attribute named `<control>Action` (textbox, button, client, label,
+    passwordtext, combobox, tree, listview, radio, checkbox, menu, ...)."""
+    for k, v in attrs.items():
+        if k and k.endswith('Action') and k != 'defaultAction' and isinstance(v, dict) and v.get('string'):
+            return v['string']
+    return None
+
+
+def is_script_launch(attrs, x=None, bot=None):
+    """`runApp` of a batch / PowerShell / VBScript file or of a script host = a script the export does not contain."""
+    fp = attrs.get('filePath') or {}
+    s = (fp.get('expression') or fp.get('string') or '').lower()
+    params = attrs.get('parameters') or {}
+    p = (params.get('expression') or params.get('string') or '').lower()
+    base = os.path.basename(s.replace('\\', '/'))
+    return base in SCRIPT_HOSTS or s.endswith(SCRIPT_EXT[:-1]) or any(p.endswith(e) or (e + ' ') in p for e in SCRIPT_EXT[:-1])
 
 
 def fmt_window(w):
@@ -109,13 +142,20 @@ class Bot:
         self._number(self.doc.get('nodes', []), 0)
         self.metadata_dir = abs_path + 'Metadata'
 
-    def _number(self, nodes, depth):
+    def _number(self, nodes, depth, parent_disabled=False):
+        """Editor line numbers; a disabled node disables its whole subtree (the runtime skips it), so the flag is
+        propagated to children and branches - every `disabled` test downstream then means "not executed"."""
         for n in nodes:
+            if parent_disabled:
+                n['disabled'] = True
+            off = bool(n.get('disabled'))
             self.lines.append((len(self.lines) + 1, depth, n, False))
-            self._number(n.get('children', []), depth + 1)
+            self._number(n.get('children', []), depth + 1, off)
             for b in n.get('branches', []):
+                if off:
+                    b['disabled'] = True
                 self.lines.append((len(self.lines) + 1, depth, b, True))
-                self._number(b.get('children', []), depth + 1)
+                self._number(b.get('children', []), depth + 1, off or bool(b.get('disabled')))
 
     def line_of(self, node):
         for ln, _, n, _ in self.lines:
@@ -194,6 +234,39 @@ class Export:
         self.edges = [e for b in self.bots for e in self._edges(b)]
         self.called = {e['calleeId'] for e in self.edges if e['calleeId'] and not e['disabled']}
         self.called_any = {e['calleeId'] for e in self.edges if e['calleeId']}
+        self.loggers = {b.id for b in self.bots if self._is_logger(b)}
+        self.manifest = self._manifest()
+
+    def _manifest(self):
+        """A Control Room bot export ("Export bots") ships `manifest.json` beside the `Automation Anywhere/` tree: one entry
+        per file with its content type, the dependencies the Control Room scanned (enabled Run Task targets) and the
+        metadata folder each screenshot belongs to. Absent on Bot Migration output."""
+        for d in (self.given, self.root, os.path.dirname(self.root), os.path.dirname(os.path.dirname(self.root))):
+            p = os.path.join(os.path.abspath(d), 'manifest.json')
+            if os.path.isfile(p):
+                try:
+                    with open(p, encoding='utf-8-sig') as fh:
+                        m = json.load(fh)
+                except (OSError, ValueError) as e:
+                    return {'path': p, 'error': str(e)}
+                files = m.get('files') or []
+                deps = {}
+                for f in files:
+                    if f.get('contentType') == 'application/vnd.aa.taskbot':
+                        deps[repo_path(f.get('path'))] = {'scanned': [repo_path(d) for d in f.get('scannedDependencies') or []],
+                                                          'manual': [repo_path(d) for d in f.get('manualDependencies') or []],
+                                                          'excluded': bool(f.get('excluded')), 'description': f.get('description') or '', 'author': f.get('author') or ''}
+                return {'path': p, 'files': len(files), 'contentTypes': dict(collections.Counter(f.get('contentType') for f in files)),
+                        'packages': m.get('packages') or [], 'bots': deps}
+        return None
+
+    def _is_logger(self, bot):
+        cmds = [(n.get('packageName'), n.get('commandName')) for _, _, n, _ in bot.lines if not n.get('disabled')]
+        if not any(c == ('LogToFile', 'logToFile') for c in cmds):
+            return False
+        if any(c == ('TaskBot', 'runTask') for c in cmds):
+            return False
+        return all(p in LOGGER_ALLOWED_PACKAGES for p, _ in cmds)
 
     @staticmethod
     def _find_bots(root):
@@ -255,6 +328,12 @@ class Export:
                     for v in attrs.values():
                         if v.get('type') == 'STRING' and not v.get('expression'):
                             take(v.get('string'))
+                # literal tokens anywhere in the node (headers of a disabled test call, a message box echoing a token)
+                blob = json.dumps(n.get('attributes') or [], ensure_ascii=False)
+                for m in JWT_LITERAL.findall(blob):
+                    take(m)
+                for _, lit in BEARER_LITERAL.findall(blob):
+                    take(lit)
         return out
 
     def _edges(self, bot):
@@ -329,15 +408,96 @@ class Export:
         for sec in self.secrets:
             if sec in s:
                 s = s.replace(sec, '***')
+        s = JWT_LITERAL.sub('***', s)
+        s = BEARER_LITERAL.sub(lambda m: f"{m.group(1)} ***", s)
         return s
 
-    def fmt_taskbot(self, v, bot):
+    def fmt_taskbot(self, v, bot, compact=False):
+        """compact: bindings that pass the caller's same-named variable through (`X="$X$"`) are folded to a count - the
+        real parameters (a literal, a differently named variable) stay visible (source guide, Call Graph Rules 5)."""
         ref = (v.get('taskbotFile') or {}).get('string') or (v.get('taskbotFile') or {}).get('expression') or ''
         callee = self.resolve(ref)
         head = f"`{callee.name}` ({callee.id})" if callee else f"UNRESOLVED `{repo_path(ref) or '?'}`"
-        ins = ', '.join(f"{d.get('key')}={self.V(d.get('value'), bot, d.get('key'))}" for d in (v.get('taskbotInput') or {}).get('dictionary', []))
-        outs = ', '.join(f"{d.get('key')}={self.V(d.get('value'), bot, d.get('key'))}" for d in (v.get('taskbotOutput') or {}).get('dictionary', []))
-        return f"{head} in{{{ins}}} out{{{outs}}}"
+
+        def bindings(d):
+            items, passthrough = [], 0
+            for e in (d or {}).get('dictionary', []):
+                txt = self.V(e.get('value'), bot, e.get('key'))
+                if compact and txt == json.dumps(f"${e.get('key')}$"):
+                    passthrough += 1
+                    continue
+                items.append(f"{e.get('key')}={txt}")
+            if passthrough:
+                items.append(f"+{passthrough} pass-through")
+            return ', '.join(items)
+        return f"{head} in{{{bindings(v.get('taskbotInput'))}}} out{{{bindings(v.get('taskbotOutput'))}}}"
+
+    def fmt_returnto_dict(self, ret, bot, compact=False):
+        """A node's returnTo map (callee output -> caller variable); compact folds same-named pairs."""
+        items, passthrough = [], 0
+        for d in ret.get('dictionary', []):
+            txt = self.V(d.get('value'), bot, d.get('key'))
+            if compact and txt == f"${d.get('key')}$":
+                passthrough += 1
+                continue
+            items.append(f"{d.get('key')}: {txt}")
+        if passthrough:
+            items.append(f"+{passthrough} pass-through")
+        return '{' + ', '.join(items) + '}'
+
+    def fmt_stored_procedure(self, attrs, bot):
+        """Database.store = run a stored procedure: name(@in=value, @out -> $variable$)."""
+        name = self.V(attrs.get('query'), bot, 'query')
+        params = []
+        for e in (attrs.get('entryList') or {}).get('list', []):
+            d = {x.get('key'): x.get('value') or {} for x in e.get('dictionary', [])}
+            direction = (d.get('inOrOutParamter') or {}).get('string') or 'Input'
+            pname = (d.get('parametername') or {}).get('string') or '?'
+            val = self.V(d.get('parametervalue'), bot, pname)
+            params.append(f"{pname}{'<->' if direction != 'Input' else '='}{val}")
+        sess = attrs.get('session') or {}
+        sess_txt = self.V(sess, bot, 'session') if sess.get('type') == 'SESSION' else (sess.get('string') or sess.get('expression') or 'Default')
+        extra = ''
+        if (attrs.get('doExport') or {}).get('boolean'):
+            extra = f" export-to {self.V(attrs.get('filePath'), bot, 'filePath')}"
+        return f"storedProcedure {name}({', '.join(params)}) session={sess_txt}{extra}"
+
+    def stored_procedure_params(self, attrs, bot):
+        out = []
+        for e in (attrs.get('entryList') or {}).get('list', []):
+            d = {x.get('key'): x.get('value') or {} for x in e.get('dictionary', [])}
+            out.append({'name': (d.get('parametername') or {}).get('string'), 'direction': (d.get('inOrOutParamter') or {}).get('string') or 'Input',
+                        'value': self.V(d.get('parametervalue'), bot, (d.get('parametername') or {}).get('string') or ''), 'type': (d.get('outputParamType') or {}).get('string')})
+        return out
+
+    def fmt_rest(self, attrs, bot):
+        parts = [f"uri={self.V(attrs.get('uri'), bot, 'uri')}", f"auth={(attrs.get('authenticationMode') or {}).get('string')}"]
+        for k in ('headerContentType',):
+            if attrs.get(k):
+                parts.append(f"contentType={(attrs[k].get('string') or attrs[k].get('expression'))}")
+        for k, label in (('customHeaders', 'headers'), ('urlEncodedPostParameters', 'form'), ('queryParameters', 'query')):
+            items = []
+            for e in (attrs.get(k) or {}).get('list', []):
+                d = {x.get('key'): x.get('value') or {} for x in e.get('dictionary', [])}
+                if d.get('enabled') and d['enabled'].get('boolean') is False:
+                    continue
+                nm = (d.get('name') or {}).get('string') or '?'
+                items.append(f"{nm}={self.V(d.get('value'), bot, nm)}")
+            if items:
+                parts.append(f"{label}[{', '.join(items)}]")
+        for k in ('body', 'jsonBody', 'requestBody'):
+            if attrs.get(k):
+                parts.append(f"body={self.V(attrs[k], bot, 'body')[:200]}")
+        return ' '.join(parts)
+
+    def fmt_dll(self, attrs, bot):
+        params = []
+        for e in (attrs.get('dllParamEntryList') or {}).get('list', []):
+            d = {x.get('key'): x.get('value') or {} for x in e.get('dictionary', [])}
+            nm = (d.get('paramName') or {}).get('string') or '?'
+            val = next((self.V(v, bot, nm) for k, v in d.items() if k.endswith('Value') and (v.get('expression') or v.get('string') is not None)), '?')
+            params.append(f"{nm}={val}")
+        return f"{(attrs.get('nameSpace') or {}).get('string')}.{(attrs.get('className') or {}).get('string')}.{(attrs.get('functionName') or {}).get('string')}({', '.join(params)})"
 
     def capture_summary(self, v, bot):
         """UIOBJECT value -> normalized control description (also the row shape of the target catalog)."""
@@ -375,6 +535,21 @@ class Export:
         return f"ui[{c['technology']}/{c['controlType']}] {wtxt} {{{crit}}}" + (f" obj={json.dumps(name, ensure_ascii=False)}" if name else '')
 
     def fmt_condition(self, a, bot):
+        """One condition attribute. Automation 360 nests conditions two ways: several CONDITIONAL attributes on one `if`
+        joined by its `operator` attribute (migrated bots), or one attribute carrying a `groupAttribute` (a parenthesised
+        group) and `operatorAttribute` chains (`{operator, value, attributes, operatorAttribute}`) - native bots."""
+        if a.get('groupAttribute') is not None:
+            s = '(' + self.fmt_condition(a['groupAttribute'], bot) + ')'
+        else:
+            s = self._fmt_single_condition(a, bot)
+        chain = a.get('operatorAttribute')
+        while chain:
+            nxt = ('(' + self.fmt_condition(chain['groupAttribute'], bot) + ')') if chain.get('groupAttribute') is not None else self._fmt_single_condition(chain, bot)
+            s += f" {chain.get('operator') or 'AND'} {nxt}"
+            chain = chain.get('operatorAttribute')
+        return s
+
+    def _fmt_single_condition(self, a, bot):
         v = a.get('value') or {}
         cname = v.get('conditionalName') or '?'
         sub = {x.get('name'): x.get('value') or {} for x in a.get('attributes', [])}
@@ -399,7 +574,7 @@ class Export:
         rs = f" -> ${ret.get('variableName')}$" if ret.get('variableName') else ''
         return f"for {iname}({sub}){rs}"
 
-    def render(self, n, bot, is_branch=False):
+    def render(self, n, bot, is_branch=False, compact=False):
         pk, cmd = n.get('packageName'), n.get('commandName')
         off = '[off] ' if n.get('disabled') else ''
         if cmd == 'Comment':
@@ -407,18 +582,42 @@ class Export:
             if not t or SEPARATOR.match(t):
                 return None
             return f"{off}# {t.replace(chr(10), ' / ')}"
+        attrs = {a.get('name'): a.get('value') or {} for a in n.get('attributes', []) if a.get('name')}
+        ret = n.get('returnTo') or {}
+        ret_txt = ''
+        if ret:
+            ret_txt = ' -> ' + (f"${ret.get('variableName')}$" if ret.get('type') == 'VARIABLE'
+                                else self.fmt_returnto_dict(ret, bot, compact) if ret.get('type') == 'DICTIONARY' else self.V(ret, bot))
+        if n.get('returns'):
+            ret_txt += ' -> ' + ', '.join(f"{k}=${(val or {}).get('variableName')}$" for k, val in n['returns'].items())
+        # Commands with a dedicated shape
+        if pk == 'Database' and cmd == 'store':
+            return f"{off}Database.storedProcedure {self.fmt_stored_procedure(attrs, bot)}{ret_txt}"
+        if pk == 'Rest' and cmd.startswith('rest'):
+            return f"{off}Rest.{cmd[4:].upper()} {self.fmt_rest(attrs, bot)}{ret_txt}"
+        if pk == 'DLL' and cmd.startswith('RunCSharpDLL'):
+            return f"{off}DLL.run {self.fmt_dll(attrs, bot)}{ret_txt}"
+        if compact and cmd == 'messageBox':
+            c = self.V(attrs.get('content'), bot, 'content')
+            return f"{off}MessageBox.messageBox {c[:120]}{'…' if len(c) > 120 else ''}"
+        if compact and cmd == 'runTask' and (attrs.get('taskbot') or {}).get('type') == 'TASKBOT':
+            callee = self.resolve(((attrs['taskbot'].get('taskbotFile') or {}).get('string') or (attrs['taskbot'].get('taskbotFile') or {}).get('expression') or ''))
+            if callee and callee.id in self.loggers:
+                msg = next((self.V(d.get('value'), bot, d.get('key')) for d in (attrs['taskbot'].get('taskbotInput') or {}).get('dictionary', [])
+                            if re.search(r'message|msg|text', d.get('key') or '', re.I)), '')
+                return f"{off}log(`{callee.name}`) {msg}"
         conds, others, op = [], [], None
         for a in n.get('attributes', []):
             v = a.get('value') or {}
             t = v.get('type')
-            if t == 'CONDITIONAL':
+            if t == 'CONDITIONAL' or a.get('groupAttribute') is not None:
                 conds.append(self.fmt_condition(a, bot))
             elif a.get('name') == 'operator' and cmd in ('if', 'elseIf'):
                 op = v.get('string')
             elif t == 'ITERATOR':
                 others.append(self.fmt_iterator(a, bot))
             elif t == 'TASKBOT':
-                others.append(self.fmt_taskbot(v, bot))
+                others.append(self.fmt_taskbot(v, bot, compact))
             else:
                 others.append(f"{a.get('name')}={self.V(v, bot, a.get('name'))}")
         text = ''
@@ -426,11 +625,7 @@ class Export:
             text = f" {op or 'AND'} ".join(conds) if len(conds) > 1 else conds[0]
         if others:
             text = (text + ' ' if text else '') + ' '.join(others)
-        ret = n.get('returnTo') or {}
-        if ret:
-            text += ' -> ' + (f"${ret.get('variableName')}$" if ret.get('type') == 'VARIABLE' else self.V(ret, bot))
-        if n.get('returns'):
-            text += ' -> ' + ', '.join(f"{k}=${(val or {}).get('variableName')}$" for k, val in n['returns'].items())
+        text += ret_txt
         label = cmd if is_branch or cmd in ('if', 'elseIf', 'try', 'throw') else f"{pk}.{cmd}"
         if cmd == 'loop.commands.start':
             label = 'loop'
@@ -451,7 +646,8 @@ def dump(x: Export, which, compact=False):
     pr = L.append
     props = bot.doc.get('properties') or {}
     pr(f"# `{bot.name}` ({bot.id})  path={bot.path}  priority={props.get('automationPriority')} botCodeVersion={props.get('botCodeVersion')} "
-       f"migrationJournal={bot.doc.get('migrationJournalReviewIds') or []} lines={len(bot.lines)} disabled={sum(1 for _, _, n, _ in bot.lines if n.get('disabled'))}")
+       f"migrationJournal={bot.doc.get('migrationJournalReviewIds') or []} lines={len(bot.lines)} disabled={sum(1 for _, _, n, _ in bot.lines if n.get('disabled'))}"
+       + (' LOGGER-BOT (calls to it are log lines)' if bot.id in x.loggers else ''))
     pr(f"PACKAGES: {', '.join(f'{p.get('name')} {p.get('version')}' for p in bot.doc.get('packages', []))}")
     d = bot.description()
     if d:
@@ -510,7 +706,7 @@ def dump(x: Export, which, compact=False):
                 a = {a.get('name'): a.get('value') or {} for a in n.get('attributes', [])}
                 pr(f"{ln:>4} {'  ' * depth}delay {x.V(a.get('delayTime'), bot)} {(a.get('timeUnit') or {}).get('string', '').lower()}")
                 continue
-        t = x.render(n, bot, is_branch)
+        t = x.render(n, bot, is_branch, compact)
         if t is None:
             continue
         pr(f"{ln:>4} {'  ' * depth}{t}")
@@ -529,6 +725,38 @@ def profile(x: Export):
        f"metadata folders={sum(1 for b in x.bots if os.path.isdir(b.metadata_dir))}")
     migrated = [b.name for b in x.bots if b.doc.get('migrationJournalReviewIds')]
     pr(f"migration journal (Enterprise 11 -> Automation 360 Bot Migration): {len(migrated)} bots carry review ids: {migrated}")
+    if x.loggers:
+        pr(f"logger bots (only log, flow and string commands; calls to them are log lines, not steps): {[b.name for b in x.bots if b.id in x.loggers]}")
+    pr("\n## MANIFEST (Control Room bot export: manifest.json beside the repository tree)")
+    m = x.manifest
+    if not m:
+        pr("  none - the export is Bot Migration output or a copied repository tree; dependencies come from the bots' Run Task commands only")
+    elif m.get('error'):
+        pr(f"  {m['path']}: unreadable ({m['error']})")
+    else:
+        pr(f"  {m['path']}: {m['files']} files {m['contentTypes']}; export-level packages: {len(m['packages'])}; "
+           f"bots excluded from the export: {[p for p, d in m['bots'].items() if d['excluded']]}; descriptions/authors given: "
+           f"{sum(1 for d in m['bots'].values() if d['description'])}/{sum(1 for d in m['bots'].values() if d['author'])}")
+        # Cross-check: the Control Room's scanned dependencies against the enabled Run Task edges the bots carry
+        path_of = {b.id: b.path for b in x.bots}
+        edges_by_caller = collections.defaultdict(set)
+        for e in x.edges:
+            if not e['disabled']:
+                edges_by_caller[path_of[e['callerId']]].add(e['calleePath'].lower())
+        missing_in_manifest, missing_in_bots, not_in_export = [], [], []
+        for p, d in m['bots'].items():
+            scanned = {s.lower() for s in d['scanned']} | {s.lower() for s in d['manual']}
+            mine = edges_by_caller.get(p, set())
+            if p.lower() not in x.by_path_ci:
+                not_in_export.append(p)
+                continue
+            for s in sorted(mine - scanned):
+                missing_in_manifest.append(f"{os.path.basename(p)} -> {os.path.basename(s)}")
+            for s in sorted(scanned - mine):
+                missing_in_bots.append(f"{os.path.basename(p)} -> {os.path.basename(s)}")
+        pr(f"  bots listed in the manifest but absent from the tree: {not_in_export or 'none'}")
+        pr(f"  enabled Run Task edges the manifest does not list: {missing_in_manifest or 'none'}")
+        pr(f"  manifest dependencies no enabled Run Task carries (disabled or stale): {missing_in_bots or 'none'}")
     pk = collections.defaultdict(set)
     for b in x.bots:
         for p in b.doc.get('packages', []):
@@ -620,14 +848,28 @@ def profile(x: Export):
             continue
         attrs = {a.get('name'): a.get('value') or {} for a in n.get('attributes', [])}
         uo = (attrs.get('uiObject') or {}).get('uiObject') or {}
-        act = next((attrs[k].get('string') for k in ('textboxAction', 'buttonAction', 'clientAction', 'labelAction', 'passwordtextAction') if k in attrs), None)
+        act = capture_action(attrs)
         capc[(uo.get('technologyType'), uo.get('controlType'), act, bool(n.get('disabled')))] += 1
     for (t, c, a, off), cnt in sorted(capc.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]), str(kv[0][2]), kv[0][3])):
         pr(f"  {t}/{c}/{a}: {'0 / ' + str(cnt) if off else str(cnt)}")
     pr("\n## APPLICATIONS, BROWSERS, SCRIPTS (command: attributes)")
     for b, ln, n in enabled + [(b, ln, n) for b, ln, n in all_nodes if n.get('disabled') and n.get('commandName') in ('openbrowser', 'runApp', 'RunScript')]:
         if n.get('commandName') in ('openbrowser', 'runApp', 'RunScript'):
-            pr(f"  {b.name}:{ln} {x.render(n, b)}")
+            attrs = {a.get('name'): a.get('value') or {} for a in n.get('attributes', [])}
+            tag = ' [script - not in the export]' if n.get('commandName') == 'runApp' and is_script_launch(attrs) else ''
+            pr(f"  {b.name}:{ln} {x.render(n, b)}{tag}")
+    pr("\n## API CALLS, DLL FUNCTIONS (command: attributes; secrets are vault references)")
+    for b, ln, n in all_nodes:
+        if n.get('packageName') in ('Rest', 'DLL', 'Json') and n.get('commandName') not in ('Close', 'EndSession'):
+            pr(f"  {b.name}:{ln} {x.render(n, b)[:700]}")
+    pr("\n## STORED PROCEDURES (name: callers) - Database.store = run a stored procedure on the connected database")
+    procs = collections.defaultdict(list)
+    for b, ln, n in all_nodes:
+        if n.get('packageName') == 'Database' and n.get('commandName') == 'store':
+            attrs = {a.get('name'): a.get('value') or {} for a in n.get('attributes', [])}
+            procs[x.V(attrs.get('query'), b, 'query')].append(f"{b.name}:{ln}{' [off]' if n.get('disabled') else ''}")
+    for name in sorted(procs):
+        pr(f"  {name}: {procs[name]}")
     pr("\n## EMAIL (command: attributes)")
     for b, ln, n in all_nodes:
         if n.get('packageName') == 'Email' and n.get('commandName') in ('emailConnect', 'sendMail', 'moveEmail', 'saveAttachment'):
@@ -637,9 +879,9 @@ def profile(x: Export):
         for a in n.get('attributes', []):
             if (a.get('value') or {}).get('type') == 'ITERATOR' and 'email' in ((a.get('value') or {}).get('iteratorName') or ''):
                 pr(f"  {b.name}:{ln} {x.render(n, b)}")
-    pr("\n## DATABASE / EXCEL / XML (command: attributes)")
+    pr("\n## DATABASE / EXCEL / XML / CSV / TEXT / PDF (command: attributes)")
     for b, ln, n in all_nodes:
-        if n.get('packageName') in ('Database', 'Excel_MS', 'XML') and n.get('commandName') not in ('disconnect', 'CloseSpreadsheet', 'endSession', 'GoToCell'):
+        if n.get('packageName') in ('Database', 'Excel_MS', 'XML', 'CsvTxt', 'TextFile', 'PDF') and n.get('commandName') not in ('disconnect', 'CloseSpreadsheet', 'endSession', 'GoToCell', 'CloseCsvTxt', 'ReadFromCsvTxt'):
             pr(f"  {b.name}:{ln} {x.render(n, b)[:400]}")
     pr("\n## FILES AND FOLDERS (enabled commands)")
     for b, ln, n in enabled:
@@ -676,20 +918,33 @@ def cards(x: Export):
     for b in x.bots:
         g = b.var_groups()
         on = [(ln, n) for ln, _, n, _ in b.lines if not n.get('disabled')]
-        pr(f"### `{b.name}` ({b.id})  [{b.folder}] lines={len(b.lines)} enabled={len(on)} steps={sum(1 for _, n in on if (n.get('packageName'), n.get('commandName')) not in NOISE and n.get('commandName') not in BRANCH_COMMANDS)}")
+        pr(f"### `{b.name}` ({b.id})  [{b.folder}] lines={len(b.lines)} enabled={len(on)} steps={sum(1 for _, n in on if (n.get('packageName'), n.get('commandName')) not in NOISE and n.get('commandName') not in BRANCH_COMMANDS)}"
+           + ('  LOGGER-BOT' if b.id in x.loggers else ''))
         d = b.description()
         if d:
             pr(f"  description: {d[:300]}")
         pr(f"  inputs: {g['in'] + g['inout']}")
         pr(f"  outputs: {g['out'] + g['inout']}" if g['out'] or g['inout'] else "  outputs: []")
         pr(f"  callers: {sorted(callers.get(b.name, []))}")
-        calls = []
+        calls, log_calls = [], 0
         for e in x.edges:
             if e['caller'] == b.name and not e['disabled']:
+                if e['calleeId'] in x.loggers:
+                    log_calls += 1
+                    continue
                 t = f"`{e['callee']}` ({e['calleeId']})" if e['callee'] else f"UNRESOLVED {e['calleePath']}"
                 if not calls or calls[-1] != t:
                     calls.append(t)
-        pr(f"  calls (in order): {calls}")
+        pr(f"  calls (in order): {calls}" + (f"  (+{log_calls} calls to logger bots)" if log_calls else ''))
+        real_params = collections.OrderedDict()
+        for e in x.edges:
+            if e['caller'] == b.name and not e['disabled'] and e['callee'] and e['calleeId'] not in x.loggers:
+                for k, v in e['inputs'].items():
+                    txt = x.V(v, b, k)
+                    if txt != json.dumps(f"${k}$"):
+                        real_params.setdefault(e['callee'], set()).add(f"{k}={txt[:60]}")
+        if real_params:
+            pr("  real parameters passed (non pass-through bindings): " + '; '.join(f"{c}: {sorted(v)[:8]}" for c, v in real_params.items())[:1500])
         wins = []
         for v in b.doc.get('variables', []):
             if v.get('type') == 'WINDOW':
@@ -705,11 +960,10 @@ def cards(x: Export):
             if n.get('commandName') == 'capture':
                 attrs = {a.get('name'): a.get('value') or {} for a in n.get('attributes', [])}
                 uo = (attrs.get('uiObject') or {}).get('uiObject') or {}
-                act = next((attrs[k].get('string') for k in ('textboxAction', 'buttonAction', 'clientAction', 'labelAction', 'passwordtextAction') if k in attrs), None)
-                caps[f"{uo.get('technologyType')}/{uo.get('controlType')}/{act}"] += 1
+                caps[f"{uo.get('technologyType')}/{uo.get('controlType')}/{capture_action(attrs)}"] += 1
         if caps:
             pr(f"  ui captures: {dict(caps)}")
-        conds, loops, tries, throws, stops, emails, dbs, excel, files, keys, apps, runs = [], [], 0, 0, 0, [], [], [], [], [], [], []
+        conds, loops, tries, throws, stops, emails, dbs, excel, files, keys, apps, apis = [], [], 0, 0, 0, [], [], [], [], [], [], []
         for ln, n in on:
             cmd = n.get('commandName')
             if cmd in ('if', 'elseIf'):
@@ -724,17 +978,19 @@ def cards(x: Export):
                 stops += 1
             elif n.get('packageName') == 'Email' and cmd in ('sendMail', 'emailConnect', 'moveEmail', 'saveAttachment'):
                 emails.append(f"{ln}:{cmd}")
-            elif n.get('packageName') == 'Database' and cmd in ('connect', 'sqlQuery', 'insertUpdateDelete'):
-                dbs.append(f"{ln}:{x.render(n, b)[:140]}")
+            elif n.get('packageName') == 'Database' and cmd in ('connect', 'sqlQuery', 'insertUpdateDelete', 'store', 'exportToDataTable'):
+                dbs.append(f"{ln}:{x.render(n, b)[:160]}")
             elif n.get('packageName') == 'Excel_MS':
                 excel.append(f"{ln}:{cmd}")
-            elif n.get('packageName') in ('File', 'Folder'):
+            elif n.get('packageName') in ('File', 'Folder') or (n.get('packageName'), cmd) in DATA_COMMANDS:
                 files.append(f"{ln}:{cmd}")
             elif cmd == 'Keystrokes':
                 keys.append(f"{ln}:{x.render(n, b)[:120]}")
             elif cmd in ('runApp', 'openbrowser', 'RunScript'):
                 apps.append(f"{ln}:{x.render(n, b)[:160]}")
-        for label, items, cap in (('conditions', conds, 40), ('loops', loops, 12), ('database', dbs, 12), ('keystrokes', keys, 12), ('apps', apps, 8), ('email', emails, 12), ('excel', excel, 12), ('files', files, 12)):
+            elif n.get('packageName') in ('Rest', 'DLL') and cmd not in ('Open', 'Close'):
+                apis.append(f"{ln}:{x.render(n, b)[:200]}")
+        for label, items, cap in (('conditions', conds, 40), ('loops', loops, 12), ('database', dbs, 14), ('api/dll', apis, 8), ('keystrokes', keys, 12), ('apps', apps, 8), ('email', emails, 12), ('excel', excel, 12), ('files', files, 12)):
             if items:
                 pr(f"  {label} ({len(items)}): {items[:cap]}{' …' if len(items) > cap else ''}")
         pr(f"  error handling: try={tries} throw={throws} stopTask={stops} catch-returns={sum(1 for _, _, n, _ in b.lines if n.get('commandName') == 'catch' and n.get('returns'))}")
@@ -767,7 +1023,7 @@ def targets(x: Export):
                 if not uiv:
                     continue
                 c = x.capture_summary(uiv, b)
-                act = next((attrs[k].get('string') for k in ('textboxAction', 'buttonAction', 'clientAction', 'labelAction', 'passwordtextAction') if k in attrs), 'EXISTS' if cmd != 'capture' else None)
+                act = capture_action(attrs) or ('EXISTS' if cmd != 'capture' else None)
                 val = attrs.get('value') or {}
                 value = val.get('expression') or val.get('string')
                 if 'passwordtextAction' in attrs and value and not str(value).startswith('$'):
@@ -827,7 +1083,7 @@ def data(x: Export):
                           'continueOnError': e['continueOnError'], 'recordset': None,
                           'inputs': {k: x.V(v, b, k) for k, v in e['inputs'].items()}, 'outputs': {k: x.V(v, b, k) for k, v in e['outputs'].items()}})
         g = b.var_groups()
-        pd.append({'id': b.id, 'name': b.name, 'path': b.path, 'folder': b.folder, 'recordset': None,
+        pd.append({'id': b.id, 'name': b.name, 'path': b.path, 'folder': b.folder, 'recordset': None, 'loggerBot': b.id in x.loggers,
                    'priority': (b.doc.get('properties') or {}).get('automationPriority'), 'migrationJournalReviewIds': b.doc.get('migrationJournalReviewIds') or [],
                    'inputs': g['in'] + g['inout'], 'outputs': g['out'] + g['inout'],
                    'screenshots': sum(1 for _, _, n, _ in b.lines if n.get('commandName') == 'captureDesktop' and not n.get('disabled')),
@@ -864,21 +1120,62 @@ def data(x: Export):
             cmd, pk = n.get('commandName'), n.get('packageName')
             attrs = {a.get('name'): a.get('value') or {} for a in n.get('attributes', [])}
             r = lambda k: json.loads(x.V(attrs.get(k), b, k)) if attrs.get(k) and (attrs[k].get('type') in ('STRING', 'FILE')) else x.V(attrs.get(k), b, k)
+            def session_of(v):
+                """A session is named by a STRING attribute (`session="X"`), a SESSION value, or the connect's returnTo."""
+                v = v or {}
+                if v.get('type') == 'SESSION':
+                    sn = v.get('sessionName') or {}
+                    return sn.get('string') or sn.get('expression') or v.get('expression') or 'Default'
+                return v.get('string') or v.get('expression') or 'Default'
             if pk == 'Excel_MS' and cmd in ('OpenSpreadsheet', 'CreateSpreadsheet'):
                 add('workbook', r('filePath'), b.name, ln, mode=(attrs.get('fileAccessMode') or {}).get('string'), sheet=(attrs.get('sheetName') or {}).get('string'))
             elif pk == 'Database' and cmd == 'connect':
                 url = r('connectionURL')
-                sess = ((n.get('returnTo') or {}).get('sessionName') or {}).get('string') or 'Default'
+                sess = ((n.get('returnTo') or {}).get('sessionName') or {}).get('string') or session_of(attrs.get('session'))
                 sess_url[sess] = url
-                add('database-connection', url, b.name, ln, session=sess)
-            elif pk == 'Database' and cmd in ('sqlQuery', 'insertUpdateDelete'):
+                oledb = 'oledb' in str(url).lower() or 'excel' in str(url).lower()
+                add('database-connection', url, b.name, ln, session=sess, kindHint='workbook via OLEDB' if oledb else 'database server (connection string from configuration)')
+            elif pk == 'Database' and cmd in ('sqlQuery', 'insertUpdateDelete', 'exportToDataTable'):
                 q = r('query')
-                sess = ((attrs.get('session') or {}).get('sessionName') or {}).get('string') or 'Default'
-                tables = re.findall(r'\[([^\]]+?)\$*\]', q)
+                sess = session_of(attrs.get('session'))
+                tables = re.findall(r'\[([^\]]+?)\$*\]', q) or re.findall(r'(?i)(?:from|update|into|join)\s+([A-Za-z_][\w.]*)', q)
                 add('database-connection', sess_url.get(sess, f"session {sess}"), b.name, ln)
                 key = f"query|{b.name}:{ln}"
                 src[key] = {'id': stable_id(key), 'name': q[:200], 'kind': 'query', 'session': sess, 'connection': sess_url.get(sess), 'tables': tables[:6], 'usedBy': [f"{b.name}:{ln}"],
-                            'export': (attrs.get('doExport') or {}).get('boolean'), 'exportTo': r('filePath') if attrs.get('filePath') else None}
+                            'export': (attrs.get('doExport') or {}).get('boolean'), 'exportTo': r('filePath') if attrs.get('filePath') else None,
+                            'toTable': (n.get('returnTo') or {}).get('variableName')}
+            elif pk == 'Database' and cmd == 'store':
+                name = r('query')
+                sess = session_of(attrs.get('session'))
+                params = x.stored_procedure_params(attrs, b)
+                add('stored-procedure', name, b.name, ln, connection=sess_url.get(sess), parameters=[f"{p['direction'][:2].lower()} {p['name']}" for p in params],
+                    outputs=[p['name'] for p in params if p['direction'] != 'Input'],
+                    exportTo=r('filePath') if (attrs.get('doExport') or {}).get('boolean') and attrs.get('filePath') else None)
+            elif pk == 'Rest' and cmd.startswith('rest'):
+                uri = r('uri')
+                headers = [((({e.get('key'): e.get('value') or {} for e in d.get('dictionary', [])}).get('name') or {}).get('string')) for d in (attrs.get('customHeaders') or {}).get('list', [])]
+                form = [((({e.get('key'): e.get('value') or {} for e in d.get('dictionary', [])}).get('name') or {}).get('string')) for d in (attrs.get('urlEncodedPostParameters') or {}).get('list', [])]
+                creds = sorted(set(re.findall(r'vault:[^\s,\]}]+', x.fmt_rest(attrs, b))))
+                add('api-endpoint', f"{cmd[4:].upper()} {uri}", b.name, ln, auth=(attrs.get('authenticationMode') or {}).get('string'), headers=headers, form=form,
+                    credentials=creds, responseTo=x.fmt_returnto_dict(n.get('returnTo') or {}, b) if (n.get('returnTo') or {}).get('type') == 'DICTIONARY' else (n.get('returnTo') or {}).get('variableName'))
+            elif pk == 'DLL' and cmd == 'Open':
+                add('dll-file', r('file'), b.name, ln)
+            elif pk == 'DLL' and cmd.startswith('RunCSharpDLL'):
+                add('dll-function', x.fmt_dll(attrs, b).split('(')[0], b.name, ln, call=x.fmt_dll(attrs, b)[:300], resultTo=(n.get('returnTo') or {}).get('variableName'))
+            elif (pk, cmd) in DATA_COMMANDS:
+                path_attr = next((k for k in ('filePath', 'outputFile', 'url') if attrs.get(k)), None)
+                add(DATA_COMMANDS[(pk, cmd)], r(path_attr) if path_attr else '?', b.name, ln, command=cmd,
+                    **({'saveTo': r('filePath')} if cmd == 'downloadFile' and attrs.get('filePath') else {}),
+                    **({'textTo': r('outputFile')} if cmd == 'extractText' and attrs.get('outputFile') else {}))
+            elif pk == 'Credential' and cmd == 'assignToCV':
+                add('credential', x.V(attrs.get('stringVar'), b, 'stringVar'), b.name, ln, toVariable=(n.get('returnTo') or {}).get('variableName'))
+            elif cmd == 'sendMail':
+                acct = attrs.get('ewsUsernameInteractive') or attrs.get('username') or attrs.get('fromAddress')
+                add('mailbox-send', f"{(attrs.get('serverType') or {}).get('string')} from {x.V(acct, b) if acct else '?'}", b.name, ln,
+                    to=r('toAddress') if attrs.get('toAddress') else None, cc=r('cc') if attrs.get('cc') else None,
+                    subject=r('subject') if attrs.get('subject') else None, attachments=r('attachmentsFilePath') if attrs.get('attachmentsFilePath') else None)
+            elif cmd == 'runApp' and is_script_launch(attrs):
+                add('script', f"{r('filePath')} {r('parameters') if attrs.get('parameters') else ''}".strip()[:200], b.name, ln, inExport=False)
             elif pk == 'XML' and cmd == 'startSession':
                 add('xml-file', r('filePath'), b.name, ln)
             elif pk == 'XML' and cmd == 'getSingleNodeV2':
@@ -906,9 +1203,13 @@ def data(x: Export):
                     sub = {s.get('name'): s.get('value') or {} for s in a.get('attributes', [])}
                     add('mailbox-folder', f"read {(sub.get('folder') or {}).get('string') or '?'} ({(sub.get('readStatus') or {}).get('string')})", b.name, ln,
                         filter={'from': x.V(sub.get('from'), b), 'subject': x.V(sub.get('subject'), b)})
-                if v.get('type') == 'ITERATOR' and 'files' in (v.get('iteratorName') or ''):
+                if v.get('type') == 'ITERATOR' and ('files' in (v.get('iteratorName') or '') or 'folder' in (v.get('iteratorName') or '')):
                     sub = {s.get('name'): s.get('value') or {} for s in a.get('attributes', [])}
-                    add('folder', json.loads(x.V(sub.get('folderPath'), b)) if sub.get('folderPath') else '?', b.name, ln, role='file loop')
+                    add('folder', json.loads(x.V(sub.get('folderPath'), b)) if sub.get('folderPath') else '?', b.name, ln,
+                        role='file loop' if 'files' in v.get('iteratorName') else 'subfolder loop')
+                if v.get('type') == 'ITERATOR' and 'resultset' in (v.get('iteratorName') or ''):
+                    sub = {s.get('name'): s.get('value') or {} for s in a.get('attributes', [])}
+                    add('database-connection', sess_url.get(session_of(sub.get('session')), f"session {session_of(sub.get('session'))}"), b.name, ln, role='result-set loop')
     rs = list(src.values())
     md = ["# Automation 360 data sources (secrets redacted)\n", f"{len(rs)} sources across {len(x.bots)} bots. Kinds: {dict(collections.Counter(s['kind'] for s in rs))}\n"]
     for kind in sorted({s['kind'] for s in rs}):

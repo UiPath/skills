@@ -1,0 +1,73 @@
+{
+ "files": [
+  {
+   "path": "Automation Anywhere\\Bots\\My MetaBots\\Demo\\ErpPortal\\ErpPortal\\ErpLogin",
+   "newPath": null,
+   "contentType": "application/vnd.aa.taskbot",
+   "metadataForFile": null,
+   "manualDependencies": [],
+   "scannedDependencies": [],
+   "manualDependenciesNewPaths": [],
+   "scannedDependenciesNewPaths": [],
+   "description": "",
+   "author": "",
+   "excluded": false
+  },
+  {
+   "path": "Automation Anywhere\\Bots\\My MetaBots\\Demo\\ErpPortal\\ErpPortal\\ErpLoginMetadata\\README.txt",
+   "newPath": null,
+   "contentType": "application/octet-stream",
+   "metadataForFile": null,
+   "manualDependencies": [],
+   "scannedDependencies": [],
+   "manualDependenciesNewPaths": [],
+   "scannedDependenciesNewPaths": [],
+   "description": "",
+   "author": "",
+   "excluded": false
+  },
+  {
+   "path": "Automation Anywhere\\Bots\\My Tasks\\Demo\\InvoiceMailIntake\\MainTask",
+   "newPath": null,
+   "contentType": "application/vnd.aa.taskbot",
+   "metadataForFile": null,
+   "manualDependencies": [],
+   "scannedDependencies": [
+    "Automation Anywhere\\Bots\\My Tasks\\Demo\\InvoiceMailIntake\\ReadConfigTask",
+    "Automation Anywhere\\Bots\\My MetaBots\\Demo\\ErpPortal\\ErpPortal\\ErpLogin"
+   ],
+   "manualDependenciesNewPaths": [],
+   "scannedDependenciesNewPaths": [],
+   "description": "",
+   "author": "",
+   "excluded": false
+  },
+  {
+   "path": "Automation Anywhere\\Bots\\My Tasks\\Demo\\InvoiceMailIntake\\ReadConfigTask",
+   "newPath": null,
+   "contentType": "application/vnd.aa.taskbot",
+   "metadataForFile": null,
+   "manualDependencies": [],
+   "scannedDependencies": [],
+   "manualDependenciesNewPaths": [],
+   "scannedDependenciesNewPaths": [],
+   "description": "",
+   "author": "",
+   "excluded": false
+  },
+  {
+   "path": "Automation Anywhere\\Bots\\My Tasks\\Demo\\InvoiceMailIntake\\MyDocs\\InvoiceMailIntake_Config.xml",
+   "newPath": null,
+   "contentType": "application/octet-stream",
+   "metadataForFile": null,
+   "manualDependencies": [],
+   "scannedDependencies": [],
+   "manualDependenciesNewPaths": [],
+   "scannedDependenciesNewPaths": [],
+   "description": "",
+   "author": "",
+   "excluded": false
+  }
+ ],
+ "packages": []
+}
