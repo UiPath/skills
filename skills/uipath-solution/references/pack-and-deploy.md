@@ -180,11 +180,37 @@ Key options:
 | `--parent-folder-path <path>` | Parent folder under which the new folder is created | -- |
 | `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
+| `--wait` | Wait for a `--personal-workspace` / `--feed` deploy to finish instead of returning as soon as it starts. Changes nothing on the tenant path, which always waits — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) | (off — return at `DeploymentStarted`) |
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
+
+### A deploy that stops in `Draft`
+
+`Draft` is where the server parks a deployment whose install never completed — nearly always because deploy-time validation rejected something (a virtual resource with no `value`, a resource conflict, a folder that no longer exists). Nothing advances it on its own, and it **cannot be activated**: `deploy activate` on it fails. It is not a transient state to wait out.
+
+How you find out depends on which feed you deployed from:
+
+- **Tenant feed** — `deploy run` always waits, and the failure carries the server's own reasons. `Message` is only `Deployment failed with status: …`; the detail is in **`Instructions`**, as `Validation: …`, `Conflicts: …`, `Schedule: …`, `Deployment: …` — read that field, it names the resource and the property.
+- **`--personal-workspace` / `--feed`** — the install is fire-and-forget by default. The command returns `Status: DeploymentStarted` the moment the request is accepted and never learns the outcome, so a deploy that fails validation seconds later still looks like a success. **Pass `--wait`** — the CLI then polls the deployment and puts the reason in `Message` (`Deployment '…' failed (OperationStatus: Draft): <reason>`). Without it, check afterwards with `uip solution deploy list` and read `OperationStatus`.
+
+The fix is the deploy config, not a retry — rerunning the same command with the same config reproduces the same `Draft`:
+
+```bash
+uip solution deploy config get "MySolution" -d config.json --output json
+
+# fix what the validation named — set the missing value, or link to an existing resource
+uip solution deploy config set config.json MyQueue maxNumberOfRetries 5
+uip solution deploy config link config.json MyBucket --name "ExistingBucket" --folder-path "Shared"
+
+uip solution deploy run -n "MyDeployment" \
+  --package-name "MySolution" --package-version "2.0.0" \
+  --folder-name "MySolutionFolder" --config-file config.json --wait --output json
+```
+
+A `Draft` left by an **install** does not block that rerun — the CLI's "already deployed" guard deliberately lets it through, because rerunning is the fix. A `Draft` left by an **upgrade** does block: it sits against a deployment that is still live, so the retry verb there is `deploy upgrade`, not `deploy run` ([Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)).
 
 ## Step 5: Check Deployment Status
 
