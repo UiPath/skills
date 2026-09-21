@@ -11,7 +11,13 @@ uip admin audit
 ├── org
 │   ├── sources
 │   ├── events
-│   └── export
+│   ├── export
+│   └── exclusions          # org only — no tenant twin
+│       ├── list
+│       ├── get <policy-id>
+│       ├── create
+│       ├── update <policy-id>
+│       └── delete <policy-id>
 └── tenant
     ├── sources
     ├── events
@@ -20,11 +26,16 @@ uip admin audit
 
 Run `uip admin audit org <verb>` or `uip admin audit tenant <verb>`. Never use `--scope`; `audit sources --scope organization` is invalid. Tenant commands additionally support `--tenant-id`.
 
+`sources`, `events`, and `export` are verb-symmetric across both scopes. `exclusions` exists only under `org`; `uip admin audit tenant exclusions` is `unknown command`.
+
 | Verb | `Data` shape |
 |---|---|
 | `audit <scope> sources` | array of `AuditEventSourceDto` |
 | `audit <scope> events` | object `{auditEvents, next, previous}` |
 | `audit <scope> export` | object `{Path, Format, Bytes, Days, NonEmptyDays}`; `Files` for `json`, `Events` for `--file-format csv` |
+| `audit org exclusions list` | array of `ExclusionRuleDto` |
+| `audit org exclusions get/create/update` | one `ExclusionRuleDto` |
+| `audit org exclusions delete` | `{}` |
 
 ## `uip admin audit <scope> sources`
 
@@ -170,6 +181,140 @@ For CSV, `Path` ends in `.csv`, `Format` is `csv`, and `Events` reports total ro
 - On any single-day HTTP failure, or a CSV day with invalid JSON, write nothing. For JSON, do not create the output folder. Identify the failed day; discard earlier chunks to preserve atomic export.
 - `Days` is the requested UTC-day count; `NonEmptyDays` is the count containing data. `NonEmptyDays: 0` means an idle window, not failure. JSON `Files` counts written day files; CSV `Events: 0` produces a header-only file.
 - The long-term store lags live `events`, typically by up to ~24–48 h. Recent days can be empty even when `events` has data. For completeness, end the window ≥2 days in the past or rerun later.
+
+## `uip admin audit org exclusions`
+
+CRUD over the organization's audit exclusion rules — which events the audit trail stops recording. Workflow, safety contract, and error-code recovery: [audit-exclusions-guide.md](./audit-exclusions-guide.md). This section is the surface only.
+
+Organization-scoped: the service takes the owning organization from the validated request scope and ignores the tenant header, so there is no `audit tenant exclusions`. A rule limited to some tenants names them in a Tenant selector.
+
+Reads need audit-read permission. `create`, `update`, and `delete` need a user token whose identity is in the organization's Administrators group; a service-to-service token is refused on writes.
+
+```bash
+uip admin audit org exclusions list --output json
+uip admin audit org exclusions get <POLICY_ID> --output json
+uip admin audit org exclusions create --name "<RULE_NAME>" --type <EVENT_TYPE_ID> --status Success --output json
+uip admin audit org exclusions update <POLICY_ID> --name "<RULE_NAME>" --type <EVENT_TYPE_ID> --status Success --output json
+uip admin audit org exclusions delete <POLICY_ID> --output json
+```
+
+### Selector model
+
+A rule carries at most one selector per dimension; two selectors on one dimension are rejected server-side. Values inside a selector are OR-ed, selectors are AND-ed.
+
+| Dimension | Flag | Values |
+|---|---|---|
+| `Tenant` | `--tenant-id <guid...>` | tenant GUIDs. A tenant outside this organization is accepted and matches nothing. |
+| `EventSource` | `--source <guid...>` | source GUIDs from `audit org sources` |
+| `EventTarget` | `--target <guid...>` | target GUIDs from `audit org sources` |
+| `EventType` | `--type <guid...>` | type GUIDs from `audit org sources` |
+| `Status` | `--status <status...>` | `Success` or `Failure`, case-insensitive |
+
+`enforcement` is not a flag: `Exclude` is the only value the service accepts, and the CLI supplies it.
+
+### Write flags (`create` and `update`)
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name <name>` | yes, unless `--file` | Unique among the organization's **active** rules; max 256 characters. |
+| `--tenant-id <guid...>` | no | Tenant selector. Repeatable. |
+| `--source <guid...>` | no | EventSource selector. Repeatable. |
+| `--target <guid...>` | no | EventTarget selector. Repeatable. |
+| `--type <guid...>` | no | EventType selector. Repeatable. |
+| `--status <status...>` | no | Status selector. Repeatable. |
+| `--inactive` | no | Save without activating. Excludes nothing; may reuse an active rule's name or match set. |
+| `--file <path>` | no | Whole body as JSON. Mutually exclusive with every flag above; max 64 KB. |
+| `--login-validity <minutes>` | no | Token-refresh hint. |
+
+At least one selector flag is required — the CLI refuses an unconstrained rule locally, before any HTTP call, because it would exclude every event in the organization.
+
+`update` is a PUT: the body is a full replacement and every omitted field is dropped. Run `exclusions get` first and resend every selector the rule should keep. Pass `<POLICY_ID>` before the selector flags, which are variadic and would otherwise absorb it as a value.
+
+### `--file` body
+
+Exactly four camelCase keys; a selector carries only `type` and `values`:
+
+```json
+{
+  "name": "<RULE_NAME>",
+  "enforcement": "Exclude",
+  "isActive": true,
+  "selectors": [
+    { "type": "EventType", "values": ["<EVENT_TYPE_ID>"] },
+    { "type": "Status", "values": ["Success"] }
+  ]
+}
+```
+
+`enforcement` may be omitted. Any other top-level key — `policyId`, `activatedOn`, `createdOn`, `lastModifiedOn`, or a typo — fails with `Result: ValidationError` naming the field, before the request is sent: server-owned fields are refused rather than silently dropped. A `get` response cannot be reused as a `--file` body, because keys under `Data` come back PascalCased and carry those server-owned fields.
+
+### Output codes and `Data`
+
+| Verb | `Code` |
+|---|---|
+| `list` | `AuditOrgExclusionsList` |
+| `get` | `AuditOrgExclusionsGet` |
+| `create` | `AuditOrgExclusionsCreated` |
+| `update` | `AuditOrgExclusionsUpdated` |
+| `delete` | `AuditOrgExclusionsDeleted` (`Data` is `{}`) |
+
+`ExclusionRuleDto` fields: `policyId`, `name`, `enforcement`, `isActive`, `activatedOn`, `selectors`, `createdOn`, `lastModifiedOn`. `activatedOn` is the instant exclusion starts and is `null` while the rule is inactive. `selectors` entries carry `type` and `values`.
+
+```json
+{
+  "policyId": "<POLICY_ID>",
+  "name": "<RULE_NAME>",
+  "enforcement": "Exclude",
+  "isActive": true,
+  "activatedOn": "<ACTIVATED_ON>",
+  "selectors": [
+    { "type": "EventType", "values": ["<EVENT_TYPE_ID>"] },
+    { "type": "Status", "values": ["Success"] }
+  ],
+  "createdOn": "<CREATED_ON>",
+  "lastModifiedOn": "<LAST_MODIFIED_ON>"
+}
+```
+
+`list` is ordered by name and is not paginated — the rule set is capped server-side. A rule whose stored document cannot be parsed is still listed, with an empty `selectors` array, so that it can be deleted.
+
+### Behavior worth knowing
+
+- Exclusion is never retroactive: recorded events stay recorded. Renaming preserves `activatedOn`; changing the match set re-stamps it.
+- Deleting a rule resumes recording from that moment. Events suppressed while it was active are gone permanently.
+- UiPath monitoring events and audit-configuration changes — including changes to the rules themselves — can never be excluded (`SelectorValueNotPermitted`).
+- An active rule hides its matching events from `audit <scope> events` **and** `audit <scope> export`. Neither response marks the gap.
+
+### Exclusions error envelope
+
+Failures carry the service's own reason in `Message` (from the problem body's `detail`), a machine-readable `code` in `Context.errorCode`, and a per-code hint in `Instructions`:
+
+```json
+{
+  "Result": "Failure",
+  "Message": "An active rule already excludes every event this rule would.",
+  "Instructions": "An active rule already excludes everything this one would — its id is in the message. Delete or narrow that rule, or save this one with --inactive to stage it alongside.",
+  "Context": { "errorCode": "OverlappingRuleExists" }
+}
+```
+
+| `errorCode` | Cause |
+|---|---|
+| `RuleNotFound` | Unknown id, or a rule owned by another organization (answers identically). |
+| `DuplicateRuleName` | Another active rule holds that name. |
+| `OverlappingRuleExists` | An active rule already excludes everything this one would. |
+| `RuleLimitExceeded` | The organization is at its rule cap. |
+| `EmptySelectorsNotAllowed` | Body constrains nothing. |
+| `InvalidSelectorValue` | Value is not a GUID, or `--status` is outside `Success`/`Failure`. |
+| `UnknownSelectorValue` | No audit metadata defines that id. |
+| `SelectorValueNotPermitted` | Protected target — UiPath monitoring or audit-configuration events. |
+| `SelectorLimitExceeded` | Too many selectors, or too many values in one selector. |
+| `RuleModifiedConcurrently` | Another admin changed the rule mid-call. |
+| `InvalidRequest` | Rejected before the rule logic; the message names the field. |
+
+Recovery per code: [audit-exclusions-guide.md → Error codes](./audit-exclusions-guide.md#error-codes--what-to-do).
+
+Availability: `unknown command 'exclusions'` means the installed CLI predates the feature (upgrade `@uipath/cli`); `HTTP 404` on `list` means the audit service in this organization does not expose `/api/EventConfig/rules` yet. Neither is retryable.
 
 ## Cross-cutting flags from the CLI host
 
