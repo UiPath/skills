@@ -1,0 +1,164 @@
+name: Publish signed skills package
+
+# Manual signed publish to npmjs. `hooks/*.ps1` are Authenticode-signed by the
+# Azure DevOps release gate (.pipelines/release-gate.yml), then overlaid onto
+# the tree before packing.
+#
+# publish.yml remains the unsigned path and is unchanged. Do not run both for
+# the same version: npm rejects republishing a version that already exists.
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Publish channel"
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - latest
+
+# Same group names as publish.yml, so a run here serializes against one there.
+concurrency:
+  group: publish-${{ inputs.channel }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Validate version sync (signed publish guard)
+    runs-on: uipath-ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+      - run: node scripts/sync-version.mjs --check
+
+  sign-hooks:
+    name: Sign hooks (Azure DevOps release gate)
+    needs: [guard]
+    if: github.repository == 'UiPath/skills'
+    runs-on: uipath-ubuntu-latest
+    # Pins the OIDC subject to `repo:UiPath/skills:environment:release-gate`,
+    # so one Entra federated credential covers every release line.
+    environment: release-gate
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      # Runs the gate against this exact commit and overlays the signed
+      # scripts. Asserts the returned manifest matches this commit and script
+      # set. A failure stops the publish -- this workflow has no unsigned path.
+      - name: Sign hooks in Azure DevOps
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_SIGNING_CLIENT_ID }}
+          ADO_ORGANIZATION: ${{ vars.ADO_ORGANIZATION || 'uipath' }}
+          ADO_PROJECT: ${{ vars.ADO_PROJECT || 'skills' }}
+          ADO_PIPELINE_ID: ${{ vars.ADO_RELEASE_GATE_PIPELINE_ID }}
+          GATE_CHANNEL: ${{ inputs.channel }}
+          GATE_REF: ${{ github.ref }}
+          GATE_COMMIT: ${{ github.sha }}
+        run: node scripts/fetch-signed-hooks.mjs
+
+      - name: Upload signed hooks
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: signed-hooks
+          path: hooks/*.ps1
+          retention-days: 1
+          if-no-files-found: error
+
+  publish-npmjs:
+    name: Publish signed package to npmjs
+    needs: [guard, sign-hooks]
+    runs-on: uipath-ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      # Must precede `npm pack`: a signature covers the file's exact bytes, so
+      # the signed file has to be the one that gets packed.
+      - name: Overlay signed hooks
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: signed-hooks
+          path: hooks
+
+      # OIDC trusted publishing needs npm >= 11.5.1. Pinned to a major, not
+      # `npm@latest`: npm 12 renamed the `npm pack --json` payload, which broke
+      # the nested pack in our `prepack` hook.
+      - name: Upgrade npm for trusted publishing
+        run: |
+          npm install -g npm@12
+          echo "npm $(npm --version) / node $(node --version)"
+
+      - name: Resolve dist-tag and stamp version
+        id: dist
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ "$CHANNEL" != "preview" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
+            exit 0
+          fi
+
+          BASE=$(node -p "require('./package.json').version")
+          PREVIEW="${BASE}-preview.${RUN_NUMBER}"
+          npm version "$PREVIEW" --no-git-tag-version --allow-same-version
+          node scripts/sync-version.mjs
+
+          # Only the highest release line owns the bare `preview` tag; a lower
+          # line publishes to `preview-v<M.N>` so it cannot move `preview`
+          # backwards. Fails open to `preview` if the registry is unreachable.
+          TAG=preview
+          CURRENT=$(npm view "@uipath/skills@preview" version --@uipath:registry=https://registry.npmjs.org/ 2>/dev/null || true)
+          if [ -n "$CURRENT" ]; then
+            HIGHEST=$({ echo "${CURRENT%%-*}"; echo "$BASE"; } | sort -V | tail -1)
+            if [ "$HIGHEST" != "$BASE" ]; then
+              TAG="preview-v${BASE%.*}"
+            fi
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Publishing $PREVIEW to dist-tag $TAG (preview is at ${CURRENT:-unset})"
+
+      # Pack first and publish that exact tarball, so the bytes verified below
+      # are the bytes published. `prepack`/`postpack` run here as they would
+      # under a direct `npm publish`; publishing a tarball path does not re-run
+      # them.
+      - name: Pack the package
+        id: pack
+        run: |
+          rm -f uipath-skills-*.tgz
+          npm pack --pack-destination .
+          TARBALL=$(ls uipath-skills-*.tgz)
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "Packed $TARBALL"
+
+      - name: Verify signed hooks survived packing
+        run: node scripts/check-hook-signatures.mjs "${{ steps.pack.outputs.tarball }}"
+
+      # No auth token and no setup-node registry-url: a token would make npm
+      # use token auth and bypass OIDC. Requires the npmjs trusted publisher
+      # for @uipath/skills to name this workflow file.
+      - name: Publish to npmjs (OIDC trusted publishing)
+        run: |
+          npm config set @uipath:registry https://registry.npmjs.org/
+          npm publish "${{ steps.pack.outputs.tarball }}" \
+            --access public --provenance --tag "${{ steps.dist.outputs.tag }}"
