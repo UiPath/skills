@@ -483,10 +483,14 @@ jobs:
           # one turn, so turn_timeout is its wall budget — #3376). A sync guard
           # (tests/scripts/test_nightly_claude_experiment_sync.py) pins the two
           # files identical outside that delta.
-          if [ "$AGENT" = "claude" ]; then
-            args=(-e experiments/nightly-claude.yaml)
-          else
+          # Shape mirrors the model-selection chain below: codex / antigravity /
+          # delegate-sdk named positively, claude as the fallback — so an empty
+          # $AGENT (the guarded future non-dispatch case) resolves to the same
+          # arm for the budget as it does for the model.
+          if [ "$AGENT" = "codex" ] || [ "$AGENT" = "antigravity" ] || [ "$AGENT" = "delegate-sdk" ]; then
             args=(-e experiments/nightly.yaml)
+          else
+            args=(-e experiments/nightly-claude.yaml)
           fi
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,

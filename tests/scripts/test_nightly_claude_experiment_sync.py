@@ -9,7 +9,6 @@ notices.
 
 from __future__ import annotations
 
-import copy
 from pathlib import Path
 
 import yaml
@@ -32,9 +31,12 @@ def test_run_limits_carry_the_intended_values() -> None:
     assert _load("nightly-claude.yaml")["defaults"]["run_limits"] == CLAUDE_RUN_LIMITS
 
 
-def test_task_timeout_covers_the_turn_in_both() -> None:
+def test_task_timeout_covers_the_turn_in_the_defaults() -> None:
     # task_timeout silently caps the turn (orchestrator arms it around agent +
-    # grading), so task >= turn must hold in every experiment default.
+    # grading), so task >= turn must hold in the experiment DEFAULTS. This is
+    # the defaults layer only: a task's own run_limits merge field-by-field on
+    # top and can still invert the pair (the task cap then binds, harmlessly) —
+    # asserting the merged result per task is a different, larger guard.
     for name in ("nightly.yaml", "nightly-claude.yaml"):
         limits = _load(name)["defaults"]["run_limits"]
         assert limits["task_timeout"] >= limits["turn_timeout"], name
@@ -49,7 +51,7 @@ def test_everything_else_is_identical() -> None:
         config.pop("description")
         config["defaults"].pop("run_limits")
 
-    assert copy.deepcopy(nightly) == copy.deepcopy(claude), (
+    assert nightly == claude, (
         "nightly-claude.yaml drifted from nightly.yaml outside run_limits — "
         "mirror the nightly.yaml change (or revert the stray edit)"
     )
