@@ -26,7 +26,7 @@ This uploads documents and auto-suggests a taxonomy based on the document conten
 
 **Option B — Blank project + import taxonomy from file:**
 
-Use this when the taxonomy comes from somewhere else — a file the user provides, or another project's taxonomy you want this one to share (export it with `projects get-taxonomy <source-project>`). Create the project blank, then import:
+Use this when the taxonomy comes from somewhere else — a file the user provides, or another project's taxonomy. Create the project blank, then import:
 
 ```bash
 uip ixp projects create "<name>" <folder-path> --skip-taxonomy --output json
@@ -37,8 +37,6 @@ The taxonomy file can be in either format — the CLI auto-detects based on whic
 
 - `{ "field_types": [...], "label_group": {...} }` — the suggestion format; no CLI command writes it to disk, so expect it only if the user hands you such a file
 - `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or copying another project's taxonomy into this one. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
-
-The import target must be a **different** project from the one the dump came from, and its taxonomy must be empty. Re-importing a dump into its own project duplicates entries instead of changing them — SKILL.md Critical Rule 23.
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
