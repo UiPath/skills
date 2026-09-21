@@ -5,8 +5,9 @@ description: "Nightly cron config for the claude-code arm — nightly.yaml with 
 # claude-code harness streams the whole session as one turn, so turn_timeout is
 # its effective wall budget — and the shared 900/1200 default is sized for the
 # codex arm (#3376: five tasks in two days died at a cap the same agent clears
-# with a bigger budget, e.g. ai_decision_review at 1223s vs 900, multi-city-
-# weather killed at 905s). Everything else MUST stay identical to nightly.yaml;
+# with a bigger budget, e.g. skill-bpmn-ai-decision-review-brownfield
+# at 1223s vs 900, skill-bpmn-multi-city-weather killed at 905s — the flow
+# suite has same-named twins with their own pins). Everything else MUST stay identical to nightly.yaml;
 # tests/scripts/test_nightly_claude_experiment_sync.py fails the build on any
 # other divergence, so edit nightly.yaml and let the guard tell you what to
 # mirror here.
