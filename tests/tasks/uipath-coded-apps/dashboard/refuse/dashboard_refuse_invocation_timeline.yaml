@@ -14,6 +14,10 @@ tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate
 
 sandbox:
   node: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 
 reference:
   directory: ..
@@ -24,6 +28,13 @@ reference:
 # FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
 # a generous timeout so the heavy tree is gone before the sandbox is preserved.
 post_run:
+  # The build flow mints a fresh OAuth external app per run
+  # (dashboards/plugins/build/impl.md Phase 3). Without this, every run orphans
+  # one live OAuth client on the shared org. The cleanup reads the minted
+  # clientId out of the build's own intent.json, so it needs nothing from the
+  # agent and cannot touch a concurrent run's app.
+  - command: "python3 _setup/cleanup_external_app.py"
+    timeout: 60
   - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
     timeout: 180
 

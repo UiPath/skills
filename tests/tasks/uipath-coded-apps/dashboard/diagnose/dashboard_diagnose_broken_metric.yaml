@@ -21,6 +21,11 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-coded-apps/assets/fixtures
       mount_point: _setup
+    # `_setup` already holds the skill's fixtures here, so the shared cleanup
+    # scripts mount alongside under their own point rather than colliding.
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _cleanup
 
 pre_run:
   - command: |
@@ -63,6 +68,11 @@ pre_run:
 # FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
 # a generous timeout so the heavy tree is gone before the sandbox is preserved.
 post_run:
+  # Defensive: the seeded project carries an empty clientId, so a fix that
+  # re-runs the build flow can mint an OAuth external app. The cleanup reads
+  # the clientId out of intent.json and no-ops when none was minted.
+  - command: "python3 _cleanup/cleanup_external_app.py"
+    timeout: 60
   - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
     timeout: 180
 
