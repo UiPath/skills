@@ -183,17 +183,27 @@ def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> 
     edited_pristine_order = [i for i in ids if i in pristine_set]
     if edited_pristine_order != pristine_order:
         fail("pristine variable declarations were reordered (must round-trip untouched)")
-    # Additions can land in ANY uipath:variables block, not just the first —
-    # `_find_first` sees one block while `variable_ids` in the checkers scans
-    # them all, so an addition in a node-scoped block satisfied "an addition
-    # exists" without ever reaching these checks (#3384).
-    # _declarations_anywhere also enforces whole-file id uniqueness and
-    # rejects an id-less declaration in any block.
+    # Additions may live in any canvas-read uipath:variables block, not just
+    # the first; _declarations_anywhere enforces block ownership, whole-file
+    # id uniqueness, and rejects an id-less declaration in any block.
+    pristine_anywhere = _declarations_anywhere(original, Side.ORIGINAL)
+    edited_anywhere = _declarations_anywhere(edited, Side.EDITED)
     live_ids = _live_bpmn_ids(edited)
-    for child_id, child in _declarations_anywhere(edited, Side.EDITED).items():
-        if child_id in pristine_set:
+    for child_id, child in edited_anywhere.items():
+        if child_id in pristine_anywhere:
             continue
         _assert_addition_is_well_formed(child, child_id, live_ids)
+    # Pristine declarations beyond the first block (a fixture with a
+    # subprocess-owned block) round-trip too; the first block's are already
+    # checked above with their block's attributes and order.
+    for child_id, child in pristine_anywhere.items():
+        if child_id in pristine_set:
+            continue
+        match = edited_anywhere.get(child_id)
+        if match is None:
+            fail(f"pristine variable {child_id!r} was removed (must be preserved)")
+        if canonical(child) != canonical(match):
+            fail(f"pristine variable {child_id!r} was modified (must round-trip untouched)")
 
 
 def _live_bpmn_ids(root: ET.Element) -> set[str]:
@@ -227,14 +237,29 @@ class Side(Enum):
 
 
 def _declarations_anywhere(root: ET.Element, side: Side) -> dict[str, ET.Element]:
-    """Every ``uipath:variables`` child in the file, keyed by id — the root
-    block plus any subprocess-level block."""
+    """Every ``uipath:variables`` child in the file, keyed by id.
+
+    The canvas reads ``uipath:variables`` from exactly two owners — the
+    ``bpmn:process`` root and a ``bpmn:subProcess`` (PO.Frontend
+    ``bpmn-from-xml-headless.ts`` filters the element out of every other
+    node's data) — so a block on any other element is dropped on import and
+    fails here rather than being silently walked."""
     prefix = "fixture bug: " if side is Side.ORIGINAL else ""
     where = side.value
+    parents = _parents(root)
     found: dict[str, ET.Element] = {}
     for block in root.iter():
         if local(block.tag) != "variables":
             continue
+        owner = parents.get(parents.get(block))
+        owner_name = local(owner.tag) if owner is not None else "?"
+        if owner_name not in ("process", "subProcess"):
+            owner_id = owner.attrib.get("id") if owner is not None else None
+            fail(
+                f"{prefix}uipath:variables block on {owner_name} {owner_id!r} in the "
+                f"{where} is dropped on import — declare in the process block or a "
+                "bpmn:subProcess block"
+            )
         for child in block:
             child_id = child.attrib.get("id", "")
             if not child_id:
