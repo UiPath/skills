@@ -127,7 +127,7 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       #
-      # claude-agent-sdk 0.2.144 shipped without a win_amd64 wheel, so uv falls
+      # claude-agent-sdk 0.2.157 shipped without a win_amd64 wheel, so uv falls
       # back to the sdist and nothing bundles claude.exe — every task here then
       # dies at agent_crash ("Claude Code not found"). coder-eval asks for
       # >=0.2.124 with no upper bound, so exclude that single release instead of
@@ -137,7 +137,7 @@ jobs:
         run: |
           uv pip install --system \
             "coder-eval==${{ steps.ceref.outputs.version }}" \
-            "claude-agent-sdk!=0.2.144"
+            "claude-agent-sdk!=0.2.157"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
@@ -243,8 +243,8 @@ jobs:
           AUTHORITY: https://alpha.uipath.com
           EMAIL:    ${{ secrets.UIPATH_EMAIL }}
           PASSWORD: ${{ secrets.UIPATH_PASSWORD }}
-          TENANT:   ${{ secrets.UIPATH_TENANT }}
-          ORG:      ${{ secrets.UIPATH_ORG }}
+          TENANT:   ${{ vars.UIPATH_TENANT }}
+          ORG:      ${{ vars.UIPATH_ORG }}
           # Drop screenshots + DOM dumps here so we can upload them as an
           # artifact for post-mortem on auth failures.
           AUTH_DEBUG_DIR: ${{ github.workspace }}/auth-debug
@@ -313,8 +313,8 @@ jobs:
           # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # The gate's agent model, passed on the command line rather than pinned in
           # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
