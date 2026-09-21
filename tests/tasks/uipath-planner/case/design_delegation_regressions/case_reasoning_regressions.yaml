@@ -21,6 +21,16 @@ run_limits:
   # NOT a response to hitting the wall — run 35392190940 spent 2708.9s reading
   # the three design docs TWICE (cat spill + Read of the same file) and never
   # reached its first Write; the double-read is fixed in SKILL.md rule 13.
+  #
+  # OUTCOME, recorded so nobody reads the bump as a rescue: it was not one.
+  # Run 35545625376 confirmed all three doc fixes landed — three clean Reads,
+  # no spill, no checklist pre-read, seed Write present — and the task still
+  # TIMEOUTed, now consuming the whole 4200s instead of 2708s for the same
+  # 0.000. In that run it sustained 12.1 output tok/s while five siblings
+  # sharing the runner ran 50.8-101.5; the four that started in the same slot
+  # at t=0 included one at 98.5. The wall is kept for sibling parity only.
+  # What remains is deliberation cost on the hardest reasoning task in the
+  # suite, not an instruction defect and not runner contention.
   task_timeout: 4200
   max_turns: 150
   turn_timeout: 3600
