@@ -8,6 +8,26 @@ Authoring is upstream. Do not ship a flow whose source has not been through the
 loop in [`CLI-LOOP.md`](CLI-LOOP.md) — `check` on the source, `compile` to emit,
 `validate` on the emitted `.flow`.
 
+## Lay out the emitted flow first
+
+```bash
+uip maestro flow format <Name>.flow --output json
+```
+
+Layout is not an authoring concern — nothing upstream needs it, and `validate`
+passes without it. It becomes one here, the moment the emitted file is opened
+by something that draws it: `solution upload`, `flow debug`, or a person
+opening the project in a designer. Run `format` before any of those, on the
+artifact as last emitted.
+
+`compile` writes a placeholder `ui.position` on each node and no top-level
+`layout` block at all — and the canvas renders from `layout`. The placeholders
+are one flat row, so a four-armed switch arrives as a single 3,000px line with
+the arms in sequence rather than side by side. `format` builds `layout`, fans
+the arms onto their own rows, sizes each node by its canvas shape, and reports
+`NodesRepositioned`. Skipping it is the most common cause of misshapen nodes in
+Studio Web.
+
 ## Refresh solution resources first
 
 ```bash
