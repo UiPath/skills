@@ -18,19 +18,16 @@ run_limits:
   # from-scratch greenfield design and was carrying the tightest wall of any
   # design task in the suite. Same argument finalize_reject_route records for
   # its own bump: a task should not carry a wall tighter than its siblings.
-  # NOT a response to hitting the wall — run 35392190940 spent 2708.9s reading
-  # the three design docs TWICE (cat spill + Read of the same file) and never
-  # reached its first Write; the double-read is fixed in SKILL.md rule 13.
-  #
-  # OUTCOME, recorded so nobody reads the bump as a rescue: it was not one.
-  # Run 35545625376 confirmed all three doc fixes landed — three clean Reads,
-  # no spill, no checklist pre-read, seed Write present — and the task still
-  # TIMEOUTed, now consuming the whole 4200s instead of 2708s for the same
-  # 0.000. In that run it sustained 12.1 output tok/s while five siblings
-  # sharing the runner ran 50.8-101.5; the four that started in the same slot
-  # at t=0 included one at 98.5. The wall is kept for sibling parity only.
-  # What remains is deliberation cost on the hardest reasoning task in the
-  # suite, not an instruction defect and not runner contention.
+  # Held at parity after the real cause was found: simulation.max_turns.
+  # Every passing task in this suite runs a simulator capped at 8-12 turns
+  # (picker 8, reject 8, finalize 10, loan 10, response_map 12). This task
+  # was capped at 35 and procurement at 30 — the only two that fail. The
+  # lane holds exactly ONE Case Review confirmation, so a 35-turn allowance
+  # buys an interview the lane never asks for: run 35545625376 ended on
+  # task_timeout (4200s) and NOT turn_timeout (3600s), i.e. no single turn
+  # was over-long — 18 bounded turns simply summed past the budget. The
+  # apparent 12.1 output tok/s was the same artifact: simulator turns spend
+  # wall-clock without producing agent output tokens.
   task_timeout: 4200
   max_turns: 150
   turn_timeout: 3600
@@ -49,8 +46,13 @@ reference:
 
 initial_prompt: |
   Design a "CaseReasoningRegression" Maestro case and produce `sdd.md`. Stop
-  after the SDD — do not create caseplan.json. This is a design-only exercise:
-  do not query tenant registry, connections, schemas, or users. Use concrete
+  after the SDD — do not create caseplan.json.
+
+  The requirements below are complete and settled — do not redesign them or
+  re-interview me on the stages, tasks, routing, or deadlines.
+
+  This is a design-only exercise: do not query tenant registry, connections,
+  schemas, or users. Use concrete
   intended resource and system names, leave identities unresolved, and defer
   authoritative tenant resolution to the later build run. Do not inspect plugin
   planning docs.
@@ -128,4 +130,6 @@ simulation:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, routes, or deadlines."
     - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
     - "Do not authorize creating caseplan.json, running, publishing, or deploying."
-  max_turns: 35
+  # 12, matching sdd_response_map — the closest analogue (design-only,
+  # greenfield, same 4200/3600 budget), which scores 1.000. Was 35.
+  max_turns: 12

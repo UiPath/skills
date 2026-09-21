@@ -149,4 +149,9 @@ simulation:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, owners, timing, or global-event behavior."
     - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
     - "Do not authorize creating caseplan.json, running, publishing, or deploying."
-  max_turns: 30
+  # 12, matching the passing design tasks (picker 8, reject 8, finalize 10,
+  # loan 10, response_map 12). Was 30. The lane holds exactly ONE Case
+  # Review confirmation; a 30-turn allowance buys an interview it never
+  # asks for, and the only two tasks in this suite capped above 12 were
+  # the only two that failed run 35545625376.
+  max_turns: 12
