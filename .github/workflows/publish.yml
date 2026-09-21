@@ -11,6 +11,8 @@ name: Publish skills package
 #   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
 #         Committed `package.json` version. Stable is manual-only — there is
 #         no `release:` trigger; publishing a GitHub Release does not publish.
+#         Once npmjs serves the version, announce-stable.yml posts it to
+#         #team-coding-agents as Skills Buddy (see that workflow).
 #   - workflow_dispatch (channel: preview) -> `preview` : npmjs (pre-release)
 #   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
 #
@@ -210,6 +212,17 @@ jobs:
         run: |
           npm config set @uipath:registry https://registry.npmjs.org/
           npm publish --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+
+  announce-latest:
+    # `npm publish` returns before npmjs serves the version; the called
+    # workflow waits for availability (failing if it never comes), then posts
+    # the stable-publish announcement as Skills Buddy. It reads the version
+    # and skill list from this run's ref (the release branch).
+    name: Announce stable publish
+    needs: [publish-npmjs]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'latest'
+    uses: ./.github/workflows/announce-stable.yml
+    secrets: inherit
 
   publish-studioweb-dev:
     name: Publish Studio Web dev to GitHub Packages

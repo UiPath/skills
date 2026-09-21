@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-16T04:05:30Z",
-  "cli_version": "1.203.0-dev.8690",
+  "generated_at": "2026-09-21T04:07:18Z",
+  "cli_version": "1.203.0-dev.8750",
   "verbs": [
     "admin",
     "admin audit",
@@ -343,6 +343,7 @@
     "codedagent run",
     "codedagent setup",
     "codedapp",
+    "codedapp delete",
     "codedapp deploy",
     "codedapp init",
     "codedapp pack",
@@ -446,6 +447,8 @@
     "eval schedule pause",
     "eval schedule resume",
     "eval schedule update",
+    "eval simulatable-components",
+    "eval simulatable-components list",
     "feedback",
     "feedback send",
     "function",
@@ -631,6 +634,7 @@
     "is resources run get",
     "is resources run list",
     "is resources run replace",
+    "is resources run script",
     "is resources run update",
     "is triggers",
     "is triggers describe",

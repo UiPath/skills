@@ -11,7 +11,9 @@ Steps for reviewing an agent project: low-code (`agent.json`) or coded (`main.py
 3. Never invent `rule_id` values. Each cited ID must occur verbatim in a loaded `agents-*-rules.md` catalog or review-CLI JSON. Verify every ID before reporting. A real Critical issue covered by neither source is reported without a `rule_id`; unrule'd Warnings and Infos are dropped.
 4. Grade agent projects only with `A`, `B`, `C`, `D`, or `F`, with no `+`/`-`, per agent and overall: `min(G_det, G_jud)`. Read `G_det` from review CLI `Data.Grade`; do not recompute it. Compute `G_jud` from judgment findings only. Show the binding constraint for every grade; low-code reports omit the printed derivation as required by the rubric. A security or data-integrity judgment Critical forces F. The skill grade cannot exceed `Data.Grade`; report both. Do not grade RPA, flows, or coded apps. See [agent-grading-rubric.md](agent-grading-rubric.md).
 5. `uip agent refresh` owns `.agent-builder/`, `.local/build/`, and, for low-code agents, regenerated root `entry-points.json` from `agent.json`. Do not open these contents. Exclude them from classification, authored-file selection, structural metrics, and manual checks. Report a defect only if refresh fails to fix them. Read low-code schemas from `agent.json` `.inputSchema` and `.outputSchema`.
-6. The only writes are `uip agent refresh` (Step 2) and `uip agent review-history add` (Step 6); both write CLI-owned files. Everything else stays read-only per SKILL.md Critical Rule 1.
+6. The only writes are `uip agent refresh` (Step 2) and `uip agent review-history add` (Step 6 — exactly once per low-code project, only after the report is final); both write CLI-owned files. Everything else stays read-only per SKILL.md Critical Rule 1.
+7. Never execute project code, import its packages, or read installed package sources (`site-packages/…`, `inspect.getsource`, scratch `python3 -c` experiments) to verify a suspected or CLI-emitted finding. Deterministic verification is the review CLI's job (SKILL.md Anti-Pattern 4); judgment verdicts cite only the catalog and the agent's own source. One read of the flagged source lines is the maximum confirmation.
+8. The workflow converges forward, never back. Run the Step 2.5a review CLI before any deep manual source investigation, and once Steps 2–4.5 are complete, the next action is writing the report (Step 5) — verification beyond each catalog rule's `detection_method` is out of scope. The report file is the deliverable: an unwritten report scores zero regardless of analysis depth.
 
 ## Step 2 — Validate
 
@@ -28,7 +30,7 @@ Apply to every encountered agent, including late-invoked reviews.
 
 ### 2.5a. Deterministic CLI pass
 
-Run once and capture JSON:
+Run this pass before any deep manual source investigation — when reading the source raises a suspected wiring, import, or contract defect, the CLI verdict comes first and needs no empirical confirmation (Critical Rule 7). Run once and capture JSON:
 
 | Type | Command |
 |---|---|
@@ -73,7 +75,7 @@ Agents only:
 Final grade = min(G_det, G_jud)
 ```
 
-`G_det` is the letter in CLI `Data.Grade`; never recompute it from issue counts. For judgment findings only, calculate `100 − (15 × Criticals) − (4 × Warnings) − (1 × Infos)`, floored at 0; map `85–100 A`, `65–84 B`, `45–64 C`, `25–44 D`, `0–24 F`. Any unmitigated judgment Critical caps at D; a security/data-integrity judgment Critical forces F. Architecture-principle scores do not affect the grade. For multiple agents use the worst grade, never an average. Show the binding constraint, for example `B — gated by G_det = CLI Data.Grade B; judgment clean (G_jud A)`. Use [agent-grading-rubric.md](agent-grading-rubric.md) for omissions, edge cases, no-PDD/CLI/no-eval handling, and examples.
+`G_det` is the letter in CLI `Data.Grade`; never recompute it from issue counts. Compute G_jud **exactly once**, after the finding set is merged (Steps 2.5b and 3 complete): count the rows already in the merged severity tables, apply the formula, and lock the grade. Do not re-derive the finding set or recount severities while grading; when a finding's severity is borderline, apply the judgment default (Warning, Critical Rule 2) and move on. For judgment findings only, calculate `100 − (15 × Criticals) − (4 × Warnings) − (1 × Infos)`, floored at 0; map `85–100 A`, `65–84 B`, `45–64 C`, `25–44 D`, `0–24 F`. Any unmitigated judgment Critical caps at D; a security/data-integrity judgment Critical forces F. Architecture-principle scores do not affect the grade. For multiple agents use the worst grade, never an average. Show the binding constraint, for example `B — gated by G_det = CLI Data.Grade B; judgment clean (G_jud A)`. Use [agent-grading-rubric.md](agent-grading-rubric.md) for omissions, edge cases, no-PDD/CLI/no-eval handling, and examples.
 
 ## Step 5 — Report Additions
 
@@ -87,10 +89,10 @@ Low-code reports omit the sections listed in [agent-grading-rubric.md § Low-cod
 
 ## Step 6 — Record the Agent Grade
 
-Low-code agent projects only, after the report. For each low-code agent project, persist its per-agent final grade (Step 4.5) into the project's `review-history.json`:
+Low-code agent projects only, and only after the report is final — its last line is the final-grade line (Step 5). For each low-code agent project, run the command **exactly once**, with the grade and counts read from the finished report:
 
 ```bash
 uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <CRITICAL_COUNT> --warnings <WARNING_COUNT> --output json
 ```
 
-The CLI owns `review-history.json`: never create, edit, or review the file; exclude it from the authored-file set. If the command fails, state that the grade was not recorded and stop — recording never changes the review outcome.
+`review-history.json` is append-only and the CLI has no edit or undo verb: every re-run appends a duplicate entry that corrupts the project's history. Never run the command with a provisional grade, and never re-run it to revise a grade or correct an earlier entry — if a wrong entry was recorded, state that in the review summary and leave the history as is. The CLI owns `review-history.json`: never create, edit, or review the file; exclude it from the authored-file set. If the command fails, state that the grade was not recorded and stop — recording never changes the review outcome.

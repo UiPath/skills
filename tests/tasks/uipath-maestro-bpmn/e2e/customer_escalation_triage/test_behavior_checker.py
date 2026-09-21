@@ -300,7 +300,7 @@ class SeedTests(unittest.TestCase):
     def test_seed_writes_consistent_case(self):
         with tempfile.TemporaryDirectory() as directory:
             subprocess.run(
-                [sys.executable, str(HERE / "seed.py")],
+                [sys.executable, str(HERE / "_setup" / "seed.py")],
                 cwd=directory,
                 check=True,
                 capture_output=True,
@@ -515,7 +515,7 @@ class TeardownRetryTests(unittest.TestCase):
             journal = Path(tmp) / ".created-ids.jsonl"
             with patch.multiple(escalation_is, JOURNAL=journal, **defaults):
                 spec = importlib.util.spec_from_file_location(
-                    "teardown_run", HERE / "teardown_escalation.py"
+                    "teardown_run", HERE / "_setup" / "teardown_escalation.py"
                 )
                 module = importlib.util.module_from_spec(spec)
                 try:

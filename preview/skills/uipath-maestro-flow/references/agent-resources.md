@@ -1,6 +1,6 @@
 # Agent resource families
 
-*Exact signatures, fields, and defaults: [`inlineAgent()`](api.md#inlineagent-function). Prompting, inputs and the sidecar: [inline-agent.md](inline-agent.md).*
+*Exact signatures, fields, and defaults: `inlineAgent()`. Prompting, inputs and the sidecar: [inline-agent.md](inline-agent.md).*
 
 An inline agent's capabilities are ARTIFACT nodes hanging off its own handles —
 tools on `tool`, an escalation on `escalation`, a memory on `memory` — not steps

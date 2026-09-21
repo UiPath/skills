@@ -550,6 +550,19 @@ def run_debug(
         )
     status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
+        # A chat-driven flow reports Success with no finalStatus: `flow debug`
+        # uploads it and hands off to Studio Web rather than running it. Naming
+        # that is the difference between "the flow is broken" and "no headless
+        # run is possible for this design", which is a task-shape problem.
+        if _get_ci(data, "Code") == "FlowDebugStudioWebHandoff" or _get_ci(
+            payload, "handedOff", "HandedOff"
+        ):
+            _fail(
+                "Flow is chat-driven, so `flow debug` handed off to Studio Web "
+                "instead of running it: a headless run cannot verify this design. "
+                "Either the flow should not be conversational, or this criterion "
+                f"is the wrong check for it.\n{r.stdout}"
+            )
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}" + _incident_details(data))
     if unreadable is not None:
         # Every attempt completed, and every attempt's outputs were unreadable.

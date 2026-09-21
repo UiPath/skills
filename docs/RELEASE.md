@@ -2,11 +2,12 @@
 
 The complete default tree is published as **`@uipath/skills`**, versioned in lockstep with **`@uipath/cli`** so a given CLI release always resolves to a compatible skills package. Every directory under `skill-flavors/` also builds a marker-free package at the same version. Flavor publication is deliberately separate from the established default-package release path.
 
-> **Hook signing.** Publishes to npmjs (`latest`, `preview`) are gated on an
-> Azure DevOps release gate, which Authenticode-signs `hooks/*.ps1` and runs
-> FOSSA before the tarball is packed and published with `--provenance` from
-> GitHub Actions. The `dev` channel and the flavor packages are not gated —
-> flavor packages ship no `hooks/` at all.
+> **Hook signing.** `publish-signed.yml` publishes to npmjs with
+> `hooks/*.ps1` Authenticode-signed by an Azure DevOps release gate, which
+> also runs FOSSA. It is manual-dispatch only. `publish.yml` is unchanged and
+> still publishes unsigned on its existing triggers — do not run both for the
+> same version, as npm rejects republishing an existing version. Flavor
+> packages ship no `hooks/` at all.
 
 ## Version model
 
@@ -172,7 +173,7 @@ Stable (`latest`) is **not** published automatically — the sprint cut publishe
    ```bash
    gh workflow run publish.yml --ref release/v<minor> -f channel=latest
    ```
-   This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`.
+   This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`. The run then waits until npmjs actually serves the version (`npm publish` returns as soon as the registry *accepts* the tarball; availability follows minutes later, or never if held for review) and posts the "Published to npm (stable)" announcement to `#team-coding-agents` as Skills Buddy (`announce-stable.yml`, skill list in the thread). A red `Announce stable publish` job means the version is still not installable — check npmjs before telling anyone. To (re)announce a line by hand: `gh workflow run announce-stable.yml --ref main -f ref=release/v<minor>` (the branch's committed `package.json` is the version).
 2. (Optional) Create a GitHub Release tagged `v<version>` as a durable changelog record. This is **just a record** — there is no `release:` trigger, so it does **not** publish anything to npm; the dispatch in step 1 is what publishes.
 
 > **Lockstep note.** The CLI resolves `@uipath/skills` from npm `latest` for its own minor line. Because stable is now manual, **promote the matching skills line to stable before the CLI cuts that minor**, or the CLI will resolve the previous skills minor.

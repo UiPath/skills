@@ -1,6 +1,6 @@
 # Delay
 
-*Exact signatures, fields, and defaults: [`delay()`](api.md#delay-function).*
+*Exact signatures, fields, and defaults: `delay()`.*
 
 Delay pauses the current path for a duration.
 

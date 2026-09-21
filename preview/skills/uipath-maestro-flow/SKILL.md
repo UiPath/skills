@@ -3,14 +3,7 @@ name: uipath-maestro-flow
 description: "TRIGGER for authoring or editing UiPath Maestro Flow sources as `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`) and running the `uip maestro flow` check/compile/validate loop. Covers graph structure, expressions, nodes, bindings, connectors, brownfield edits, and emitted `.flow` validation. Case plans (`caseplan.json`, reference-mode) → uipath-maestro-case; structural-core BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
-<!--
-Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ b543763. Canonical source lives there;
-edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
-
-This file is deliberately a router. Node-specific detail belongs in
-`references/`; statically checkable rules belong in the SDK's own `check`.
--->
+<!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 
 # UiPath Flow — TypeScript Builder SDK
 
@@ -152,34 +145,74 @@ contains the copyable safe-project sequence.
 
 ## Builder frame
 
-Start with `flow(id)`, declare `.input({ name: types.* })`,
-`.output({ name: types.* })`, and `.var(name, types.*, default?)`; add graph
-nodes; use `.return(...)` when a path should answer and `.terminate(...)` when
-the whole run should stop; call `.build()`.
+The quick start above shows the shape — `flow(id)`, declarations, nodes,
+`.return(...)`, `.build()`. Three things it does not show:
 
-Expressions: `lit(value)`, `input(name)`, `v(name)`, `out(step, path?)`,
-`err(step, field?)`, `ran(step)`, ``js`...` ``, and ``tmpl`...` ``. A shared
-continuation is often clearer than duplicating work in several arms; use
-`ran(step)` when its value legitimately comes from only one arm.
+- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than
+  one step writes or reads. `.input` and `.output` are the flow's contract with
+  its caller; a var is the state in between. A step writes one with
+  `{ updates: { name: <expr> } }`.
+- **`.return(...)` ends a PATH. `.terminate(...)` ends the RUN.** They look
+  interchangeable on a straight chain and are not: inside a `.parallel` arm a
+  terminate aborts the sibling arms mid-flight, where a return leaves them going.
+- **Expressions are how a step names something that is not a literal.** There is
+  one per kind of thing you can refer to:
 
-Exact function signatures and option shapes:
-[`references/api.md`](references/api.md) — the builders too (`FlowBuilder`,
-`StepList`, `ArmBuilder`). The sibling authoring surfaces have their own skills:
-`uipath-maestro-case` for `@uipath/maestro-builder-sdk/case` and `uipath-maestro-bpmn`
-for `@uipath/maestro-builder-sdk/bpmn`. Neither is needed to build a Flow.
+  | | refers to |
+  | --- | --- |
+  | `input(name)` | a flow input |
+  | `v(name)` | a flow variable |
+  | `out(step, path?)` | a step's result, whole or one field |
+  | `err(step, field?)` | a FAILED step's error envelope — only inside its handler |
+  | `ran(step)` | whether a step ran at all, as a boolean |
+  | `lit(value)` | a constant, where a raw value would be ambiguous |
+  | ``js`…` `` / ``tmpl`…` `` | an expression, or a string, you write yourself |
 
-Those pages are **compact** — signature, summary, one line per field — because
-they are read under a token budget. The unabridged declarations they are
-generated from ship in the installed package and are the authority when a
-signature names a type whose members or rules you need:
+  `ran(step)` earns an early mention: when arms converge, one shared
+  continuation usually reads better than the same work duplicated per arm, and
+  `ran` is how that continuation asks whether the value it wants was produced.
 
-```bash
-grep -rln "declare function err" node_modules/@uipath/maestro-builder-sdk/dist --include="*.d.ts"
-#  -> node_modules/@uipath/maestro-builder-sdk/dist/core/expr.d.ts   (full @param prose, all five field values)
+## API index
+
+**Every signature, option shape and field is indexed in the installed package**,
+not in this guide. Two files, keyed by the kind of name you have:
+
+| you have | look in | a row gives you |
+| --- | --- | --- |
+| a field or method — `outcomePorts`, `stepToList` | `dist/api-members.md` | the shape that declares it, and the lines that do |
+| an exported symbol — `HitlInputs`, `hitl`, `FlowBuilder` | `dist/api-index.md` | its kind, area, and the lines that declare it |
+
+Both ship in the installed `@uipath/maestro-builder-sdk` package, and a row's
+path is relative to that package's root:
+
+```
+| `outcomePorts` | property | `HitlInputs` | `dist/core/actions.d.ts:583-597` |
 ```
 
-Grep the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and
-no comments, so searching it is how a lookup turns into twenty tool calls.
+Each file's own header names the repo and generator it came from, and says not to
+edit it there — the rows are regenerated from the declarations on every build.
+
+**Match one name; do not read either file end to end.** Then read the span — it
+is the whole declaration including its doc comment, so one read answers the
+question, with the types and the `@remarks` and `@example` bodies in full. No
+searching and no shell, so it works the same on Windows.
+
+A field or method name is the usual case, because these references are one line
+per field — so `api-members.md` is usually the one you want. Both cover all three
+entry points, `/case` and `/bpmn` included.
+
+They live in the package rather than here **because the spans are only true of
+one build**: a line moves whenever a declaration above it changes, and this guide
+ships on its own cadence. An index beside the `.d.ts` files it points into cannot
+disagree with them.
+
+Read the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and
+no comments, so searching it is how a lookup turns into twenty tool calls. A name
+in neither index is probably a RUNTIME output key — a human task's `Action`, an
+error envelope's fields — which no declaration carries; those are in the node
+references. The sibling surfaces' runtime-only decisions live in their own
+skills: `uipath-maestro-case` and `uipath-maestro-bpmn`; neither is needed to
+build a Flow.
 
 ## Supported node types
 
@@ -746,15 +779,19 @@ document-validation station.
 Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipient?, fields?, outcomes, outcomePorts?, exposeError? })`.
 
 ```ts
-.step('review', hitl({ title: 'Review invoice',
+.var('status', types.string)
+.stepSwitch('review', hitl({ title: 'Review invoice',
   recipient: { assignee: { type: 'user', value: 'reviewer@acme.test' } },
   fields: [{ id: 'amount', type: 'number', direction: 'inOut', value: input('amount') }],
-  outcomes: ['Approve', 'Reject'], outcomePorts: true }))
-.stepToList('outcome-reject', (b) => b.return({ status: 'rejected' }))
-.step('proceed', script({ code: 'return "approved";' }))
+  outcomes: ['Approve', 'Reject'] }), [
+  { value: 'Approve', body: (b) => b.step('proceed', script({ code: 'return "approved";' }),
+      { updates: { status: lit('approved') } }) },
+  { value: 'Reject', body: (b) => b.step('notify', script({ code: 'return "rejected";' }),
+      { updates: { status: lit('rejected') } }) }])
+.return({ status: v('status') })
 ```
 
-`outcomePorts` routes per outcome (`outcome-<slug>` exits; the FIRST continues the main path); without it the node has ONE `completed` exit that every outcome leaves on, so route on `out('review', 'Action')` instead — a task with several outcomes needs one of the two or its outcomes cannot be told apart (`check` warns HITL_OUTCOMES_UNREACHABLE).
+More than one outcome routes per outcome by DEFAULT (`outcome-<slug>` exits). `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns; `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. `outcomePorts: false` — or a variant, or `{ version: '1.0' }` — keeps the single `completed` exit instead, where you route on `out('review', 'Action')`.
 
 **Reference: [`references/hitl.md`](references/hitl.md)**
 

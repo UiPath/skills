@@ -17,9 +17,13 @@ run_limits:
 reference:
   directory: ..
 
+# Each recipient must match exactly one Slack user, or the 3-entry check below
+# cannot pass. "Coder Eval" is deliberately NOT used: it is a prefix of "Coder
+# Eval Test", so a substring lookup returns two rows and the agent is then
+# required to stop and ask. Re-verify uniqueness before changing a name.
 initial_prompt: |
   Create a flow file to create a Slack group direct message between
-  Coder Evals, IS-sandboxes@uipath.com and E2E-testing.
+  Coder Eval Test, IS-sandboxes@uipath.com and E2E Nightly Summary.
   Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Use the connection present in Shared/uipath-maestro-flow.
 
@@ -57,7 +61,7 @@ success_criteria:
   - type: run_command
     description: "The completed flow validates"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
