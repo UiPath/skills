@@ -105,6 +105,16 @@ running `uip solution init` then `flow init` from inside the solution; add
 `.maestro_automate` file in the project root says it was, and rebuilding without
 the flag silently returns a plain Flow.
 
+**Misshapen nodes on the canvas.** `compile` writes a placeholder
+`ui.position` on each node — all of them on one row — and no top-level `layout`
+block, which is what the canvas renders from. Symptom: the flow behaves
+correctly and is unreadable, a switch's arms strung out in a line instead of
+side by side. This is not a run-time fault and no check reports it — `validate`
+passes, because layout is not an authoring concern. Fix:
+`uip maestro flow format <Name>.flow`, which is owed before an upload, a debug,
+or anyone opening the project in a designer — see
+[`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+
 **Green `validate`, faulted `debug`.** Structural correctness and runtime
 correctness are different claims. `validate` proves the emitted `.flow` is well
 formed; only a run proves the tenant resolves what it references. Start at
@@ -118,7 +128,6 @@ missing. Verified against the SDK rather than assumed:
 | Classic `.flow` defect | Why it cannot happen here |
 | --- | --- |
 | `variables.nodes[]` missing, so `$vars.X.output` is undefined downstream | `compile` emits the node variable declarations unasked — a four-step flow gets eight entries |
-| Misshapen nodes in Studio Web because `flow format` was never run | `compile` emits `ui.position` and `ui.size` on every node; there is no separate format step in this loop |
 | `bindings[]` missing on a resource node, giving "Folder does not exist or the user does not have access" | `compile` derives the bindings from the node spec — an `agent(…)` step emits its `name` and `folderPath` bindings on its own |
 
 A defect in this table showing up in a real run means the artifact was
