@@ -23,7 +23,8 @@ forwards to ``uip track``. Covers:
 * the drop paths — a non-UiPath tool call, an unrecognized event, and opt-out.
 
 The stubbed ``uip`` writes the payload to a capture file and we poll for it
-(the hook is fire-and-forget, so we never parse its stdout).
+(we never parse the hook's stdout). The hand-off itself is INLINE on both
+twins -- see ``test_hand_off_is_inline_not_detached``.
 
 POSIX-only: the hooks run under ``bash`` and ``pwsh`` (both preinstalled on
 GitHub ubuntu runners) and the stub is a shebang script invoked via a real
@@ -498,7 +499,39 @@ def test_opt_out_drops_everything():
 # ── helpers ────────────────────────────────────────────────────────────────
 
 
-def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
+@pytest.mark.parametrize(
+    ("hook_event", "expected_name"),
+    [
+        pytest.param("SessionEnd", "session-end", id="session-end"),
+        pytest.param("Stop", "completion", id="stop"),
+    ],
+)
+def test_hand_off_is_inline_not_detached(hook_event, expected_name):
+    """Both twins must hand off to ``uip track`` INLINE, never detached.
+
+    hooks.json registers this hook async everywhere except SessionEnd, so the
+    HOST owns non-blocking dispatch. A script-level detach (``( cmd & )``,
+    ``Start-Process``, a background job) would make SessionEnd effectively
+    async again: the hook returns in milliseconds, the agent proceeds with
+    teardown, and the still-starting `uip track` child is killed before it
+    flushes -- silently dropping the session-end event the synchronous
+    registration exists to protect.
+    """
+    event = run_hook(
+        {
+            "hook_event_name": hook_event,
+            "session_id": "sess-inline",
+            "reason": "clear",
+            "model": "claude-opus-5",
+        },
+        require_immediate=True,
+    )
+    assert event["eventName"] == expected_name
+
+
+def run_hook(
+    payload, *, telemetry_disabled="0", expect_drop=False, require_immediate=False
+):
     """Invoke the hook with a stubbed ``uip``; return the forwarded JSON object
     (parsed) or ``None`` when the hook drops the event.
 
@@ -530,6 +563,17 @@ def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
             timeout=30,
             check=True,
         )
+
+        if require_immediate:
+            # The hand-off is inline, so the stub has ALREADY written the
+            # capture file by the time the hook exits. Checked with zero
+            # polling -- that is precisely the contract under test.
+            assert capture.exists(), (
+                "hook returned before `uip track` received the event -- the "
+                "hand-off was detached. That defeats the synchronous SessionEnd "
+                "registration in hooks.json (the hook returns, teardown "
+                "proceeds, and the detached child is killed before it flushes)."
+            )
 
         deadline = time.time() + (1.5 if expect_drop else 5.0)
         while time.time() < deadline:
