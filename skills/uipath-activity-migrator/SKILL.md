@@ -39,7 +39,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 8. **Verify with the modern CLI.** Migration is not done until `uip rpa build` passes on `<OUTPUT_DIR>`, or the remaining errors are reported as manual work after the bounded fix loop in [build-verification-guide.md](references/build-verification-guide.md). Every `uip rpa` command this skill runs is prefixed `env -u UIPATH_STUDIO_PID`; in PowerShell, clear it with `$env:UIPATH_STUDIO_PID = $null` before the command instead. Dropping it is never an acceptable translation. [runtime-verification-guide.md](references/runtime-verification-guide.md) says why.
 9. **Libraries first.** When analyze reports `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED`, stop. Tell the user to migrate and publish that library to the feed before migrating this project. The tool cannot order dependencies.
 10. **Bounded loops.** At most 3 build-fix iterations in Step 5. Then report what remains.
-11. **Never run the migrated project unasked.** The runtime check of Step 6 runs only after the user answers yes to its one question, and it only observes: no edits, no selector repair, no rerun with changes. It runs in the headless Studio, never in the Studio the user has open (Rule 8).
+11. **Never run the migrated project unasked.** The runtime check of Step 6 runs only after the user answers yes to its one question. Every fix and every rerun after it happens only through the runtime guide's fix and rerun loop, each behind one yes/no; outside that loop the check only observes. It runs in the headless Studio, never in the Studio the user has open (Rule 8).
 
 ## Workflow
 
@@ -146,7 +146,7 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 ### Step 6 — Post-migration and report
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
-2. Offer the runtime check when the conditions in [runtime-verification-guide.md](references/runtime-verification-guide.md) hold: one yes/no question, default no, no time limit proposed. On yes, run it as the guide says, attribute a failure with its table, and fill the Runtime check block below.
+2. Offer the runtime check when the conditions in [runtime-verification-guide.md](references/runtime-verification-guide.md) hold: one yes/no question, default no, no time limit proposed. On yes, run it as the guide says, attribute a failure with its table, offer the guide's fix and rerun loop for a migration-related failure, and fill the Runtime check block below.
 3. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Activities the tool left classic are not defects: they compile and run as classic, so they appear as the `<L>` count on the status line and in the full list, never as lines. `<M>` is the summarizer's needs-attention count minus every finding the fix guide reported as fixed or healthy; fixed findings appear under Fixes applied, healthy ones nowhere, and the by-reason and by-file lines are derived from the remaining items only. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. Name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. The report is these blocks and nothing else: no sentences between or after them. Shape:
 
 ```markdown
@@ -159,12 +159,12 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 - By file: <file> (<n>), <file> (<n>), … <k> more files
 <items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
-### Fixes applied (<F>)              <- only when the post-migration fix edited the output
-- <file>: <activity> — <what was changed>
+### Fixes applied (<F>)              <- only when the post-migration fix or the runtime loop edited the output
+- <file>: <activity> — <what was changed>   <- loop fixes end with (run <n>, fix guide | annotation | hypothesis)
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Runtime check                    <- only when the user said yes
-<Passed in <duration> | Failed at <file>: <activity> — <exception type>: <first line of message> | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
+<Passed in <duration> | Passed on run <n> after <k> fixes | Failed at <file>: <activity> — <exception type>: <first line of message>, after <k> fixes, <u> undone | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
 - <migration-related | not migration-related>: <why>. <what to do>     <- only when failed
 
 ### Next steps
@@ -193,7 +193,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 | [tool-behavior-guide.md](references/tool-behavior-guide.md) | Behavior `--help` cannot tell you: option binding, exit code, output streams, the `.upgrade` and output folders, restore version selection, the Orchestrator hand-off template, `bulk` |
 | [sarif-triage-guide.md](references/sarif-triage-guide.md) | Every analyze and upgrade run: status mapping, core rule IDs, stop conditions, summarizer usage |
 | [build-verification-guide.md](references/build-verification-guide.md) | Step 5: build and validate loop, expected warnings, fix policy |
-| [runtime-verification-guide.md](references/runtime-verification-guide.md) | Step 6: the opt-in run of the migrated project, its verdict and attribution rules |
+| [runtime-verification-guide.md](references/runtime-verification-guide.md) | Step 6: the opt-in run of the migrated project, its verdict and attribution rules, the starting-state baseline, and the fix and rerun loop |
 | [uia-post-migration-fix-guide.md](references/uia-post-migration-fix-guide.md) | The migrated output carries `.ToStringWithDelimiter()` markers (UIA Hook 3), or the user asks for a post-migration fix on an already-migrated project |
 | [packages/uia-guide.md](references/packages/uia-guide.md) | Project depends on `UiPath.UIAutomation.Activities` |
 | [packages/mail-guide.md](references/packages/mail-guide.md) | Project depends on `UiPath.Mail.Activities` |
@@ -217,7 +217,8 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Pre-scanning the XAML for classic activities (`grep` on `<ui:` prefixes) before or after `analyze`; the SARIF is the only complete inventory, and the `ui:` prefix also covers System and Excel activities
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
-- Running the migrated project without the user's yes, or repairing selectors and rerunning after that run fails; the runtime check observes and attributes, nothing more
+- Running the migrated project without the user's yes, or repairing and rerunning outside the runtime guide's fix and rerun loop; every fix and every rerun sits behind one yes/no
+- Waiting for the completion notification of a run whose log already says `Suspended on exception`; that session never completes, cancel it and read the exception line
 - Passing `--skip-build` to the runtime check, or probing it with `debug break` / `debug continue`; the first fails on a headless Studio that has not built the project itself, the second returns `Success` with or without a session
 - Running or cancelling the migrated project from Studio's integrated terminal without clearing `UIPATH_STUDIO_PID`; the rpa tool opens the migrated project in the user's Studio, which closes their project and ends the terminal session
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
