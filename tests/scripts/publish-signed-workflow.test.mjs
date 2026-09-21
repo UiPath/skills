@@ -8,14 +8,29 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SIGNED = readFileSync(join(REPO_ROOT, ".github", "workflows", "publish-signed.yml"), "utf8");
 const DEFAULT = readFileSync(join(REPO_ROOT, ".github", "workflows", "publish.yml"), "utf8");
 
-test("signed publish runs only on manual dispatch, so it cannot race publish.yml", () => {
-  assert.match(SIGNED, /^on:\n\s+workflow_dispatch:/m);
-  assert.doesNotMatch(SIGNED, /^\s+push:/m);
-  assert.doesNotMatch(SIGNED, /^\s+schedule:/m);
+// The invariant that matters is not "no push trigger" but "a push can never
+// publish". Guarding on the event, not only on the input, means a trigger
+// added for testing cannot reach `npm publish` however the inputs evaluate.
+test("publishing requires an explicit non-dry-run dispatch", () => {
+  assert.match(
+    SIGNED,
+    /- name: Publish to npmjs[\s\S]{0,120}?if: github\.event_name == 'workflow_dispatch' && inputs\.dry_run != true/,
+  );
+});
+
+test("no trigger targets main or a release branch", () => {
+  const triggers = SIGNED.slice(SIGNED.indexOf("\non:"), SIGNED.indexOf("\nconcurrency:"));
+  assert.doesNotMatch(triggers, /branches:.*\bmain\b/);
+  assert.doesNotMatch(triggers, /branches:.*release\//);
+  assert.doesNotMatch(triggers, /^\s+schedule:/m);
+});
+
+test("dry_run defaults to not publishing", () => {
+  assert.match(SIGNED, /dry_run:[\s\S]{0,160}?default: true[\s\S]{0,40}?type: boolean/);
 });
 
 test("both publish workflows share a concurrency group per channel", () => {
-  assert.match(SIGNED, /group: publish-\$\{\{ inputs\.channel \}\}/);
+  assert.match(SIGNED, /group: publish-\$\{\{ inputs\.channel \|\| 'preview' \}\}/);
   assert.match(DEFAULT, /group: publish-/);
 });
 
