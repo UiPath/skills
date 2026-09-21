@@ -152,13 +152,12 @@ def assert_uipath_preserved(original: ET.Element, edited: ET.Element, local_name
 
 
 def assert_variables_extended_only(original: ET.Element, edited: ET.Element) -> None:
-    """Pristine variable declarations must round-trip untouched in their own
-    block — attributes of that ``uipath:variables`` block included, and in
-    their pristine relative order. Additions are allowed anywhere in the file
-    (the root block or one the edit adds on a node), but every added
-    declaration needs a non-empty ``name`` and ``type``, its ``elementId``
-    (when present) must reference a live BPMN element id, and ids stay unique
-    across every block."""
+    """Pristine variable declarations round-trip untouched: the first block's
+    with that block's attributes and their relative order, the rest by value.
+    Additions may land in the process block or a ``bpmn:subProcess`` block —
+    the only two the canvas reads — and each needs a non-empty ``name`` and
+    ``type``, an ``elementId`` that names a live BPMN element when present,
+    and an id unique across every block."""
     orig = _find_first(original, "variables")
     new = _find_first(edited, "variables")
     if orig is None:
