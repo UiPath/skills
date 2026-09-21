@@ -189,12 +189,19 @@ Key options:
 
 ### A deploy that stops in `Draft`
 
-`Draft` is where the server parks a deployment whose install never completed — nearly always because deploy-time validation rejected something (a virtual resource with no `value`, a resource conflict, a folder that no longer exists). Nothing advances it on its own, and it **cannot be activated**: `deploy activate` on it fails. It is not a transient state to wait out.
+`Draft` is where the server parks a deployment whose install never completed — nearly always because deploy-time validation rejected something (a virtual resource with no `value`, a resource conflict, a folder that no longer exists). Nothing advances it on its own, and it **cannot be activated**: `deploy activate` on it fails.
+
+One narrow exception: a deployment that was *just* requested sits in `Draft` for a moment before the pipeline promotes it to `InProgress`, so a `Draft` read seconds after firing the command says nothing yet. What is never normal is a `Draft` that is still there after the command returned, or after a wait has ended.
 
 How you find out depends on which feed you deployed from:
 
 - **Tenant feed** — `deploy run` always waits, and the failure carries the server's own reasons. `Message` is only `Deployment failed with status: …`; the detail is in **`Instructions`**, as `Validation: …`, `Conflicts: …`, `Schedule: …`, `Deployment: …` — read that field, it names the resource and the property.
-- **`--personal-workspace` / `--feed`** — the install is fire-and-forget by default. The command returns `Status: DeploymentStarted` the moment the request is accepted and never learns the outcome, so a deploy that fails validation seconds later still looks like a success. **Pass `--wait`** — the CLI then polls the deployment and puts the reason in `Message` (`Deployment '…' failed (OperationStatus: Draft): <reason>`). Without it, check afterwards with `uip solution deploy list` and read `OperationStatus`.
+- **`--personal-workspace` / `--feed`** — the install is fire-and-forget by default. The command returns `Status: DeploymentStarted` the moment the request is accepted and never learns the outcome, so a deploy that fails validation seconds later still looks like a success. **Pass `--wait`** — the CLI then polls the deployment and puts the reason in `Message` (`Deployment '…' failed (OperationStatus: Draft): <reason>`). Without it, check afterwards with `uip solution deploy list` **carrying the same feed flag** — `deploy list` is tenant-scoped when none is passed and does not show a Personal Workspace or folder-feed deployment at all, so a missing row there is not an answer:
+
+  ```bash
+  uip solution deploy list --personal-workspace --output json
+  uip solution deploy list --feed "<name-or-key>" --output json
+  ```
 
 The fix is the deploy config, not a retry — rerunning the same command with the same config reproduces the same `Draft`:
 
