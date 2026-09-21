@@ -171,8 +171,12 @@ These are the common flags; use only the ones the behavior claim needs:
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
 | Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
-| Compact read-back | `--output-filter "<JMESPath>" --output json` |
-| Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
+| Compact read-back (success path) | `--output-filter "<JMESPath>" --output json` |
+| Fault-safe read-back | `--output json > <file>`, then read the tail of `<file>` |
+
+`flow debug` currently emits `ResourceBuilder` INFO/WARN messages directly to
+the stream. `--log-level error` and `--log-file` do not suppress or relocate
+those messages, so do not rely on either flag to keep the debug response small.
 
 ### `--output-filter` is JMESPath, and three things about it are worth knowing
 
@@ -190,11 +194,13 @@ Wrap the whole expression in DOUBLE quotes so the inner `'…'` survives the she
 `Code` stay at the top level and are still printed, so a filter naming
 `finalStatus` reads `Data.finalStatus`.
 
-**Filter, do not post-process.** `--output-filter` is cheaper and less brittle
-than piping the whole envelope through `jq`, and much cheaper than hunting for
-the JSON inside interleaved log lines. If a filter is rejected, fix the
-expression rather than falling back to `--output json | jq` — a rejected filter
-exits non-zero with the parse error, so the fix is usually one edit.
+**Filter successful runs; capture fault envelopes before reading them.** On the
+success path, `--output-filter` is cheaper and less brittle than piping the
+whole envelope through `jq`. If a filter is rejected, fix the expression rather
+than falling back to `--output json | jq` — a rejected filter exits non-zero
+with the parse error, so the fix is usually one edit. On the fault path, the CLI
+may return the unfiltered envelope, so redirect `--output json` to a file and
+read its tail instead of depending on a narrow projection reaching stdout.
 
 ### Ready-made projections — copy one, do not compose your own
 
@@ -233,18 +239,19 @@ double quotes instead of single ones:
 --output-filter '{status:finalStatus,raw:variables.globals."multiply.output"}'
 ```
 
-**There is no `incidents` in this envelope.** `Data` carries exactly
-`finalStatus`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`,
-`solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
-projection silently yields `null`. Incidents come from the separate
-`debug-instance incidents` call below, keyed by the `instanceId` you just read.
+**A fault envelope can include `incidents[]` under `Data`.** Each incident can
+carry the failing `elementId`, `errorCode`, `errorMessage`, and `errorDetails`,
+so retain that payload when the run fails. Use `debug-instance incidents` with
+the returned `instanceId` when you need the fuller backend payload, including
+details such as the AI-generated summary; it is a follow-up source, not the
+only source of incident information.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
 ( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+( cd <Solution> && uip maestro flow debug <Name> \
   --inputs @inputs.json \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
   --output json )
@@ -257,10 +264,20 @@ from `Data`. Read and retain `Result`, the projected status/instance/URL, the
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-Incidents are **not** in this envelope — fetch them by the `instance` you just
-read, and only when something actually failed.
+For a fault-safe read-back, preserve the full envelope and then inspect its
+tail. This survives a failure that bypasses `--output-filter`, keeps the
+`incidents[]` payload available, and avoids losing the verdict behind staging
+logs:
 
-For a fault, query the backend incident payload with the returned instance id:
+```bash
+( cd <Solution> && uip maestro flow debug <Name> \
+  --inputs @inputs.json \
+  --output json > /tmp/flow-debug.json )
+tail -80 /tmp/flow-debug.json
+```
+
+When something failed, query the fuller backend incident payload with the
+returned instance id:
 
 ```bash
 uip maestro flow debug-instance incidents <instanceId> \
