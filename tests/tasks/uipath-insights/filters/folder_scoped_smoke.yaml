@@ -1,0 +1,235 @@
+task_id: skill-insights-smoke-folder-scoped-investigation
+description: >
+  Smoke test: agent uses the uipath-insights skill to scope a job
+  investigation to one folder, which is Playbook 6 chained end to end.
+  Given a folder name, the agent should discover its key with
+  `filter-folders list`, page or raise `--limit` to see every candidate,
+  pass the key literally to `--folder-key` on `jobs summary` and
+  `jobs top-failures`, and report how the discovery window bounds the
+  answer. The CLI is authenticated; the tenant may hold no folder by that
+  name and may hold none at all, so the prompt names two fallbacks and both
+  still end in the folder-scoped reads: the first row discovery returned, or
+  the all-zero GUID when discovery returned nothing. The second discovery
+  call is asked for unconditionally for the same reason the RBAC drilldown
+  task asks for its second users page: a criterion gated on `HasMore` fails a
+  correct agent on a tenant small enough to fit in one page.
+
+  Covers the discovery-to-jobs chain (both halves existed in separate tasks
+  and no task joined them), the discovery guide's paging step, its
+  past-the-last-row branch, the no-time-flags rule enforced at grading time,
+  and the uipath-platform hand-off for folders without recent activity. The
+  saved first page is what lets a checker read Pagination for the first
+  time in this corpus.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  How have jobs in the folder named "Shared" been doing over the last seven
+  days? Write the answer to `folder-report.md` in the working directory.
+
+  Get the folder's key from Insights discovery rather than from me. First
+  fetch the first five folders only and save that full JSON output to
+  `folders-page.json` by redirecting stdout. Then get the complete list in
+  one call with the maximum page size, and say from the pagination fields
+  whether that first page had already shown everything. If no folder is
+  named exactly "Shared", use the first folder discovery returned and say
+  so. If discovery returns no folders at all, run the two reads below with
+  the folder key 00000000-0000-0000-0000-000000000000 and report what the
+  CLI said about it.
+
+  With the key, give me the seven-day job summary for that folder and the
+  processes that failed most in it, each from one Insights read, typing the
+  key into the command as a literal.
+
+  In folder-report.md, name the folder and key you used, the window, the
+  totals and the top failing processes, and say whether the discovery list
+  was complete. Also tell me, without running it, how I would see folders
+  that exist but had no recent Insights activity. Apart from the two
+  discovery pages asked for above, run each Insights command at most once;
+  do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Discovery workflow step 1 with an explicit small page, which is what
+  # makes HasMore true on any tenant with more than five active folders.
+  - type: command_executed
+    description: "Agent fetched a five-row first page of folder discovery"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-folders\s+list(?:(?!uip\s)[^&;|])*(--limit|\s-l)[\s=]+["'']?5\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Discovery workflow step 2: raise --limit to the 10000 maximum in one
+  # call, or walk --offset. Either earns it.
+  - type: command_executed
+    description: "Agent completed discovery with a maximum --limit or an --offset page"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-folders\s+list(?:(?!uip\s)[^&;|])*((--limit|\s-l)[\s=]+["'']?10000\b|(--offset|\s-o)[\s=]+["'']?\d+)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Playbook 6 step 2, with a GUID literal in the flag. Discovery returns
+  # FolderKey as a GUID, so a placeholder or a variable does not match.
+  - type: command_executed
+    description: "Agent ran jobs summary scoped by a literal --folder-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary(?:(?!uip\s)[^&;|])*--folder-key[\s=]+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran jobs top-failures scoped by a literal --folder-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+top-failures(?:(?!uip\s)[^&;|])*--folder-key[\s=]+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-pattern 2: the key comes from discovery, never from the guide's
+  # own example. The playbook's placeholder and the guide's example key are
+  # the two ways to fake the chain, so both are named here: the literal
+  # a1b2c3d4-e5f6-7890-abcd-ef1234567890 is jobs-commands-guide.md:228, and
+  # an agent that pastes it matches the GUID-shaped criteria above without
+  # ever running discovery. The all-zero fallback is deliberately not listed:
+  # it appears nowhere in skills/uipath-insights/, so it cannot be copied
+  # from a guide, and the prompt asks for it when discovery is empty.
+  - type: command_not_executed
+    description: "Agent did not reuse a placeholder or example folder key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+(?:(?!uip\s)[^&;|])*--folder-key[\s=]+["'']?(<|FOLDER_KEY|\$\(|`|\$[A-Za-z_]|a1b2c3d4-e5f6-7890-abcd-ef1234567890)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Discovery guide Rule 1: filter-* commands take no time flags.
+  - type: command_not_executed
+    description: "Agent did not add a time flag to a discovery command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-\w+\s+list(?:(?!uip\s)[^&;|])*--(time-range|started-after|started-before)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The hand-off for folders without recent activity is described, not run:
+  # the prompt asks how, and the skill routes the full inventory to
+  # uipath-platform. Anchored to a command position because the prompt asks
+  # the report to NAME this command, and a report authored with a Bash
+  # heredoc would otherwise trip the guard for complying.
+  - type: command_not_executed
+    description: "Agent described the Orchestrator folder inventory instead of running it"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[\n;&|]\s*)uip\s+or\s+folders\b(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string. These two gates re-run
+  # the discovery guide's rules at grading time. Only the first is
+  # tenant-agnostic: --time-range is an unknown option, rejected by commander
+  # before any request. The --offset gate IS a live read, so a 403, a 429, a
+  # 5xx or an expired session fails it for reasons the agent cannot control;
+  # that is accepted here the way rbac/drilldown_smoke.yaml accepts its own
+  # live gate, because the past-the-last-row branch has no local equivalent.
+  # Verified 2026-09-14 against @uipath/cli 1.203.0-dev.8671 with
+  # insights-tool 1.203.0-dev.8669: "unknown option '--time-range'", exit 3;
+  # an --offset past the last row is a Success with empty Data and the
+  # "requested --offset is past the last row" instruction, exit 0.
+  - type: run_command
+    description: "filter-folders rejects --time-range with exit 3"
+    command: "uip insights filter-folders list --time-range 60 --output json"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "An --offset past the last row is a Success, not a failure"
+    command: "uip insights filter-folders list --offset 100000 --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The first thing in this corpus to read Pagination. Limit echoes the
+  # request, and the two completeness fields are typed the way the guide
+  # says to branch on them. Data-agnostic: an empty tenant still returns
+  # the envelope with Total 0 and HasMore false.
+  - type: json_check
+    description: "folders-page.json is a five-row discovery page with typed Pagination fields"
+    path: "folders-page.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+      - expression: "Code"
+        operator: equals
+        expected: "InsightsFilterFoldersList"
+      - expression: "Pagination.Limit"
+        operator: equals
+        expected: 5
+      - expression: "Pagination.HasMore"
+        operator: exists
+        expected: true
+      - expression: "Pagination.Total"
+        operator: gte
+        expected: 0
+      - expression: "Instructions"
+        operator: exists
+        expected: true
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the folder report"
+    path: "folder-report.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Discovery guide steps 2 and 6 and the Completion Output rule: say
+  # whether every page was retrieved, and hand the no-recent-activity case
+  # to uipath-platform rather than declaring the folder absent.
+  - type: llm_judge
+    description: "Report states discovery completeness and routes the full inventory to uipath-platform"
+    include_agent_output: false
+    include_reference: false
+    files: ["folder-report.md"]
+    prompt: |
+      The uipath-insights skill says folder discovery only shows folders
+      with Insights activity in a fixed 30-day window, that the answer must
+      say whether every page of a list was retrieved, and that the full
+      inventory of folders (including idle ones) comes from Orchestrator via
+      the uipath-platform skill (`uip or folders list`), which the agent
+      describes rather than runs here. Read folder-report.md.
+
+      Score 1.0 if the report (a) says whether the discovery list was
+      complete, from the pagination fields or from having fetched the whole
+      list in one call, and (b) answers the "folders with no recent
+      activity" question by pointing to Orchestrator's folder inventory or
+      the uipath-platform skill, and does not claim a folder absent from
+      discovery does not exist. Score 0.0 if either part is missing, or if
+      the report says an undiscovered folder does not exist.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 9, the same guard the other eight uipath-insights tasks
+  # carry at the same weight: the session is already authenticated, so an
+  # interactive re-login is never the agent's move. `refresh`, `status`,
+  # `tenant` and `which` are the non-interactive subcommands.
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
