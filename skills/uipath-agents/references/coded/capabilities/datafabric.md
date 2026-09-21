@@ -4,7 +4,9 @@ How to query and manage UiPath Data Fabric entities from coded agents. Two integ
 
 ## Step 1: Discover Available Entities
 
-Before choosing a path, discover what entities exist. Start with folder-scoped listing — most entities live in a specific folder (commonly `Shared`):
+Before choosing a path, discover what entities exist. Discovery is auth-gated (`uip login status --output json` first; if not logged in, do the quickstart's step-5 auth one-shot now). **Coded consequence:** `DataFabricEntityItem.id` / `folder_key` are tenant-minted UUIDs that only this listing returns, so for Data Fabric agents do auth + discovery *before* Build, not after — the same ordering the Integration Service capability uses. "Scaffold only" / "don't run or deploy" does not skip this step: listing entities is read-only discovery, not running the agent.
+
+Start with folder-scoped listing — most entities live in a specific folder (commonly `Shared`):
 
 ```bash
 # List entities in the default Shared folder
@@ -294,7 +296,7 @@ from uipath_langchain.agent.tools import create_datafabric_tool
 
 ### Setup
 
-Use the entity ID, name, and folder key from Step 1 discovery.
+Use the entity ID, name, and folder key from Step 1 discovery. Never ship `<ENTITY_ID>`-style placeholders for the user to fill in later — if Step 1 has not been run yet, run it now and wire the real `Id` / `Name` / `FolderId` values.
 
 ### Usage
 
@@ -449,6 +451,8 @@ graph = create_agent(llm, tools=[query_tool, close_order], messages=[SystemMessa
 6. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
 
 7. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
+
+8. **Placeholder entity IDs are a build failure, not a deferral.** `create_datafabric_tool` cannot resolve `<ENTITY_ID>` / `<FOLDER_ID>`, and `uip codedagent init` does not validate them, so the gap surfaces only at first invocation. Run Step 1 before Build and paste the discovered UUIDs.
 
 ## Comparison with Low-Code DataFabric Context
 
