@@ -534,7 +534,7 @@ The connector schema lists fields like `message.toRecipients`, `message.subject`
 //   so the message block disappears the next time the file is saved:
 "bodyParameters": {
   "message": {
-    "toRecipients": "andrei.hodoroaga@uipath.com",
+    "toRecipients": "<RECIPIENT_EMAIL>",
     "subject": "this is a test",
     "body": { "content": "<p>hi</p>", "contentType": "Html" }
   },
@@ -543,7 +543,7 @@ The connector schema lists fields like `message.toRecipients`, `message.subject`
 
 // ✓ CORRECT — flat dotted keys match the connector's field names verbatim:
 "bodyParameters": {
-  "message.toRecipients": "andrei.hodoroaga@uipath.com",
+  "message.toRecipients": "<RECIPIENT_EMAIL>",
   "message.subject": "this is a test",
   "message.body.content": "<p>hi</p>",
   "message.body.contentType": "Html",
@@ -561,13 +561,13 @@ The Assign / Response literal-wrap rule (SKILL.md rule 5) does NOT apply here. T
 // ✗ WRONG — designer reads "${'andrei...'}" as an expression, not a literal,
 //   and clears the field on save:
 "bodyParameters": {
-  "message.toRecipients": "${'andrei.hodoroaga@uipath.com'}",
+  "message.toRecipients": "${'<RECIPIENT_EMAIL>'}",
   "message.subject": "${'this is a claude skill test'}"
 }
 
 // ✓ CORRECT — bare literals:
 "bodyParameters": {
-  "message.toRecipients": "andrei.hodoroaga@uipath.com",
+  "message.toRecipients": "<RECIPIENT_EMAIL>",
   "message.subject": "this is a claude skill test"
 }
 ```
@@ -643,7 +643,7 @@ The stub emits both `bodyParameters` (with the flat dotted keys per rule (a)) AN
   ...
   "endpoint": "/hubs/productivity/send-mail-v2",
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "...",
     "message.body.content": "...",
     "message.body.contentType": "Text",
@@ -789,7 +789,7 @@ uip api-workflow registry resolve "send mail v2" --output json
 uip api-workflow registry stub <send-mail-v2-guid> \
   --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
   --inputs '{
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "this is a claude skill test",
     "message.body.content": "${$context.variables.titleLabel}",
     "message.body.contentType": "Text",
@@ -812,7 +812,7 @@ The stub detects multipart from IS Elements (`parameters[].type === "multipart"`
       "method": "POST",
       "endpoint": "/hubs/productivity/send-mail-v2",
       "bodyParameters": {
-        "message.toRecipients": "andrei.hodoroaga@uipath.com",
+        "message.toRecipients": "<RECIPIENT_EMAIL>",
         "message.subject": "this is a claude skill test",
         "message.body.content": "${$context.variables.titleLabel}",
         "message.body.contentType": "Text",

@@ -362,7 +362,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   // ✗ Wrong — dropped on save
   "bodyParameters": {
     "message": {
-      "toRecipients": "andrei.hodoroaga@uipath.com",
+      "toRecipients": "<RECIPIENT_EMAIL>",
       "subject": "test",
       "body": { "content": "<p>hi</p>", "contentType": "Html" }
     },
@@ -371,7 +371,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
   // ✓ Correct — survives roundtrip
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "test",
     "message.body.content": "<p>hi</p>",
     "message.body.contentType": "Html",
@@ -383,20 +383,20 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
 
 <!--skill-flavor:connector-literal-roundtrip-symptom:start-->
-- **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'andrei.hodoroaga@uipath.com'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
+- **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'<RECIPIENT_EMAIL>'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
 <!--skill-flavor:connector-literal-roundtrip-symptom:end-->
 - **Cause:** SKILL.md rule 5 (literal-wrap as `${'foo'}`) applies to **Assign / Response / If `when`**, NOT to connector params. StudioWeb's connector field detector treats `${...}` as a non-literal expression — it's looking for either a bare literal value or a real reference. `${'foo'}` looks like neither (it's a literal-disguised-as-expression), so the value isn't bound as a field literal and is dropped.
 - **Fix:** Bare literals in connector params:
   ```json
   // ✗ Wrong — cleared on save
   "bodyParameters": {
-    "message.toRecipients": "${'andrei.hodoroaga@uipath.com'}",
+    "message.toRecipients": "${'<RECIPIENT_EMAIL>'}",
     "message.subject": "${'this is a claude skill test'}"
   }
 
   // ✓ Correct — bare literals
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "this is a claude skill test"
   }
   ```
@@ -437,7 +437,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   "with": {
     "endpoint": "/hubs/productivity/send-mail-v2",
     "bodyParameters": {
-      "message.toRecipients": "andrei.hodoroaga@uipath.com",
+      "message.toRecipients": "<RECIPIENT_EMAIL>",
       "message.subject": "...",
       "message.body.content": "...",
       "message.body.contentType": "Text",
