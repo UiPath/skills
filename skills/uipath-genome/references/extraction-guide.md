@@ -50,7 +50,7 @@ Read every relevant file. No sampling, no "the helpers are similar".
 
 ### Step 4 — Build graphs
 
-- **Call graph per component** with source guide's Call Graph Rules → ordered workflow steps. Dead code goes to the Source Map.
+- **Call graph per component** with source guide's Call Graph Rules → ordered workflow steps. Dead code goes to the Source Map — but a branch is dead only when the conditions on every path to it contradict it for every value; prove that from the condition text before writing "dead" (an inner `contains X` under an outer `is empty OR contains X` is reachable, and the reference migration lost the source's "already completed" handling to exactly that misreading). A wrong dead-code row drops behaviour from the build, and execution never edits the genome to restore it.
 - **Handoff graph across components** from cross-component edges → Components order and Handoffs table. Each edge records mechanism, data passed, and failure behaviour visible in the source (error port, retry, boundary event, dead-letter queue).
 
 ### Step 5 — Infer complexity (component)

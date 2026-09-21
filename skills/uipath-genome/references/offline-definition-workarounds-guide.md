@@ -98,6 +98,18 @@ When the source's selectors guide sends a recorded caption to an anchor ([select
 
 Leave `.metadata`'s `Anchor0`–`Anchor3` as `null` — an anchor persists and round-trips without them; they hold only the `--name`/`--description` labels `add-anchor` attaches.
 
+## Screens — `TargetApp` definitions offline
+
+A screen's definition is a `uix:TargetApp` (the stored screen carries `Selector`, `Version="V3"` and `Area="0, 0, 0, 0"`), obtained like an element's: write a minimal seed, mutate it only through `uip rpa uia target-app update-definition` (`--name`, `--description`, `--selector` — it also writes the `.metadata` sibling in the CLI's own shape), then `object-repository create-app` → `create-screen` → `link-screen`. The command exposes no launch URL or file path, so an application card linked to an offline screen can only *attach*: the launch itself is a Start Process ([source-migration-guide.md § Composite interactions](source-migration-guide.md), "actions without a control") and the live pass may move the open into the card. A window-level screen with no elements is the legitimate shape for maximise, close and "window exists" steps, and for the scope a Start Process-launched application is attached through.
+
+## CLI behaviour observed offline
+
+- `uip rpa uia …` relay commands (`object-repository *`, `target-anchorable *`, `target-app *`) reject `--output`; read what they print.
+- `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
+- Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). Carry positional indexes as selector variables ([selector-translation-guide.md](selector-translation-guide.md) rule 7) and write the change back with `target-anchorable update-definition` → `object-repository replace-elements`.
+- `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change (verified on six elements in one pass).
+- Element metadata `ActivityType` may stay `None` on elements registered before their acting activity was known: it only tunes selector generation, which offline has already happened; the live pass replaces the definitions anyway.
+
 ## What offline authoring cannot know
 
 Structural validity is the easy half. A catalog cannot tell you these, and each has a correct offline answer that is *not* a guess:
