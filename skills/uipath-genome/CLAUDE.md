@@ -14,7 +14,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | Authoring steps, platform-capability suggestions, bounded follow-ups, authored edit table | `references/authoring-guide.md` |
 | Build With skill names, decision tree, operate-only skills | `references/skill-mapping-guide.md` |
 | Configuration and scaffolding questions, project/solution resolution, library gating, skill groups, owning-skill contract, subagents, acceptance verdicts, completion report | `references/execution-guide.md` |
-| Migration preflight, Object Repository identity, composite **patterns** (build), verification on acting activity, Element Scope, live verification per family, result parity, test-data pipeline, executor records | `references/source-migration-guide.md` |
+| Migration preflight (including the secret scrub), what each **kind** of source step becomes at build time, link ordering and idempotency, Object Repository identity, composite **patterns** (build), verification on acting activity, Element Scope, the three verification verdicts per family, result parity, test-data pipeline, executor records | `references/source-migration-guide.md` |
 | Every UiPath-side selector fact: tag chain per technology, attribute catalog and tiers, matching semantics, rules 1–16 (criteria, purpose, `aaname`, anchors, position, tables, scope, identifiers, description, confidence, no-selector, one tag one node, driver verification, widget anatomy), § Checking a definition | `references/selector-translation-guide.md` |
 | Definition and anchor shapes when no application reachable (temporary) | `references/offline-definition-workarounds-guide.md` |
 | What a source guide must contain | `references/sources/source-framework-contract.md` |

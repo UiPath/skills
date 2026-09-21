@@ -85,6 +85,8 @@ Test execution and reporting of the resulting test project belong to `uipath-tes
 
 ### Step vocabulary → behaviour
 
+The right column is what **extraction** writes in the genome. What **execution** then builds for each kind of step — and which kinds produce no activity at all — is [source-migration-guide.md § Source steps that are not UI actions](../source-migration-guide.md); only the rows that act on a control become a UI activity with a migrated target.
+
 | Action (component.action) | Genome wording |
 |---|---|
 | `Execution.Execute Process` | Invoke sub-process (call-graph edge; in a UiPath library, invoke workflow) |
