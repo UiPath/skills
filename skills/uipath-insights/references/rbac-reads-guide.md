@@ -8,9 +8,9 @@ Tenant and organization context comes from the session. Never take it from the u
 
 These rows carry personal data that the other Insights commands do not: user and group email addresses, role IDs nested inside a principal, and a role `Resource` string that embeds the organization and tenant GUIDs.
 
-The CLI withholds all three unless the caller explicitly chooses a structured format (`--output json`, `--output yaml`, or the `--json` alias). Run these six commands without `--output`. The format still resolves to json, so the envelope parses exactly the same, and the safe view is what you get: no `Email` on a user or group, roles as names rather than `{Id, Name}`, and no `Resource` on a role. This is the one place in the skill where Critical Rule 1 does not apply.
+The CLI withholds all three unless the caller passes the family's include flag: `--include-email` on `users` and `groups`, `--include-resource` on `roles`. The output format has no bearing on it, because json is also the default format and `UIP_DEFAULT_OUTPUT` can select it with nothing in the command line, so a format-keyed gate would put identity data in output nobody asked to be structured. Run these six commands with `--output json` like every other command, and leave the include flag off: the safe view is then what you get, with no `Email` on a user or group, roles as names rather than `{Id, Name}`, and no `Resource` on a role.
 
-Add `--output json` only when the user asked for a field the safe view withholds. The whole workflow below runs without it, including the name-to-GUID join.
+Add the include flag only when the user asked for a field the safe view withholds. The whole workflow below runs without it, including the name-to-GUID join.
 
 Keep these values out of what you write even on a call that returns them. Summarize with names and counts. Quote an email, a nested role ID, or a `Resource` string only when the user asked for that specific field. The same restriction covers anything written outside the conversation: a file, a commit, a ticket, or a PR body.
 

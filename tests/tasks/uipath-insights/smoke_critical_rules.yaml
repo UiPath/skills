@@ -5,6 +5,12 @@ description: >
   out-of-scope (start a job, queue metrics, root-cause a specific error).
   The agent should run an insights command for the first and NOT run insights
   commands for the others. Auth errors are expected (no live tenant).
+
+  Both routes count as the same evidence: the agent may issue the plain
+  `jobs` reads or the `jobs investigate` playbook that runs them. The
+  playbook is one `uip insights` command, so the patterns still name only
+  `uip insights` commands, and the negative assertions below are anchored
+  at `uip insights` rather than at a subcommand, so they already cover it.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover, negative]
 
 run_limits:
@@ -36,26 +42,36 @@ success_criteria:
   - type: command_executed
     description: "Agent ran insights jobs for the in-scope request (job failures)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|top-failures|failure-details|summary)\s+.*--time-range'
+    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|top-failures|failure-details|summary|investigate\s+(failing|health|stuck))\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--time-range'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
-  # Negative patterns use [^&;|\n]* and \b, not .* : the grader compiles with
-  # re.DOTALL, so .* bleeds across command separators (a legitimate insights
-  # call batched with an out-of-scope command would false-fail), bare `start`
-  # matches --started-after, and bare `queue` matches the now-taught
-  # filter-queues discovery command.
+  # Every gap between anchors is (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, never .* . Both
+  # halves carry weight, because the grader matches two haystacks: the raw
+  # command, which keeps newlines, and a shlex-normalized copy where a newline
+  # becomes a space (_match_haystacks, criteria/command_executed.py 0.12.1).
+  # The \n in the class stops a batched neighbour on the raw haystack. The
+  # (?!uip\s) lookahead stops the next `uip ` on the normalized one, where the
+  # newline is already gone. The \\\n alternative keeps a backslash-continued
+  # command matching, which a bare (?:(?!uip\s)[^&;|\n])* drops.
+  #
+  # A neighbour that is not a `uip` command still reaches the pattern on the
+  # normalized haystack. Only naming the flags the target accepts closes that,
+  # which is what the alerts and RBAC tasks do.
+  #
+  # The anchors matter too: bare `start` would match --started-after, and bare
+  # `queue` would match the now-taught filter-queues discovery command.
   - type: command_not_executed
     description: "Agent did NOT run uip insights for starting a job (out of scope)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights[^&;|\n]*\bstart\b|uip\s+insights[^&;|\n]*Invoice_Processing'
+    command_pattern: 'uip\s+insights(?:(?!uip\s)(?:[^&;|\n]|\\\n))*\bstart\b|uip\s+insights(?:(?!uip\s)(?:[^&;|\n]|\\\n))*Invoice_Processing'
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent did NOT run uip insights jobs for queue metrics (not supported)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs[^&;|\n]*queue'
+    command_pattern: 'uip\s+insights\s+jobs(?:(?!uip\s)(?:[^&;|\n]|\\\n))*queue'
     weight: 2.0
     pass_threshold: 1.0

@@ -192,12 +192,13 @@ def _get_ci(mapping, *candidate_keys: str, default=None):
 def process_names(data) -> list:
     """Process names carried by a jobs envelope's `Data.ProcessName`.
 
-    The row columns come back as arrays that are sometimes nested one level per
-    grouping bucket (`JobCountByTime` is `[[1]]` on the same response), so
-    collect strings at any depth and drop blanks. Empty list when the column is
-    absent or null, which is what an empty window returns. The column is read
-    case-insensitively so a serialization change to camelCase can't silently
-    turn a populated window into an empty-looking one.
+    The plain reads project `ProcessName` into a flat array of names, and the
+    `jobs investigate` playbooks carry it on row objects instead. Strings are
+    collected at any depth so either shape reads the same here, and blanks are
+    dropped. Empty list when the column is absent or null, which is what an
+    empty window returns. The column is read case-insensitively so a
+    serialization change to camelCase can't silently turn a populated window
+    into an empty-looking one.
     """
     names: list = []
 
