@@ -253,6 +253,12 @@ uip solution deploy activate "<DEPLOYMENT_NAME>" --output json
 uip solution deploy uninstall "<DEPLOYMENT_NAME>" --output json
 ```
 
+Uninstall removes the resources and the folder; the deployment itself stays in `deploy list`. Remove it with a second command:
+
+```bash
+uip solution deploy delete "<DEPLOYMENT_NAME>" --yes --output json
+```
+
 ### Bundle for Upload
 
 ```bash
@@ -457,5 +463,6 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Deploy | `uip solution deploy run --name ... --output json` | Any directory | `DeploymentSucceeded`, `DeploymentFailed`, `ValidationFailed` |
 | Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory | `SuccessfulActivate`, `FailedActivate` |
 | Uninstall | `uip solution deploy uninstall "<NAME>" --output json` | Any directory | `SuccessfulUninstall`, `FailedUninstall` |
+| Delete deployment record | `uip solution deploy delete "<NAME>" --yes --output json` | Any directory | `Deleted` |
 | Deploy status | `uip solution deploy status <pipeline-deployment-id> --output json` | Any directory | — |
 | List deployments | `uip solution deploy list --output json` | Any directory | — |
