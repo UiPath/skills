@@ -451,7 +451,7 @@ Comparison exact — case-sensitive, untrimmed. Never normalize external lookup 
 
 ## Layer closure — the design checklist
 
-ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) owns them; walk it against the written file.
+ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — `case-sdd-conformance-checklist.md` owns them; walk it against the written file.
 
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 
