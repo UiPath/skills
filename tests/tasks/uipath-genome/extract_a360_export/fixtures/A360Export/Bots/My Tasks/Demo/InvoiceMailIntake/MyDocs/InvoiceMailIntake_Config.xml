@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Configuration>
+<Environment>Test</Environment>
+<RootPath>C:\Robots\InvoiceMailIntake</RootPath>
+<ErpUrl>https://erp-test.contoso.com/portal</ErpUrl>
+</Configuration>

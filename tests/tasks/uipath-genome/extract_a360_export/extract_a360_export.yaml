@@ -1,0 +1,88 @@
+task_id: skill-genome-extract-a360-export
+description: >
+  Smoke: agent uses the uipath-genome skill to extract a process genome plus component
+  genomes from a staged Automation Anywhere Automation 360 export (a root task bot reading
+  a config workbook through OLEDB and a mailbox through EWS, a sub-bot, and a migrated
+  MetaBot logic with HTML recorder captures on an ERP portal). Grades framework detection
+  through the source guide and its inventory script, the process/component layout, behavioural
+  wording, credential assets per account, and the Source Map with stable bot ids.
+tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The folder `A360Export/` is an Automation Anywhere (Automation 360) Control Room export of
+  our InvoiceMailIntake robot, migrated from Enterprise 11. Extract a genome from it so we have
+  a ground-truth blueprint before rebuilding it in UiPath. Write the genome into the current
+  directory.
+
+  Before starting, load the uipath-genome skill and follow its extraction workflow for the
+  framework you detect. Do not ask me what the robot does — read the export. Do not run any
+  `uip` commands. Work autonomously; do not pause for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the Automation 360 inventory script instead of reading bot files raw"
+    tool_name: "Bash"
+    command_pattern: 'a360-export-inventory\.py\s+(profile|cards|dump|targets|data)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Process genome written with the slugified robot name"
+    path: "invoice-mail-intake-genome.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process genome and every linked component pass structural, wording, skill-name and Source Map checks"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py process
+      invoice-mail-intake-genome.md
+      --components invoice-mail-intake-genome
+      --skills uipath-rpa
+      --expect CV_ERP_Robot CV_APMailbox "Automation Anywhere"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Source Map names the framework and the bots with their stable ids; configuration defaults come from the export"
+    path: "invoice-mail-intake-genome.md"
+    includes:
+      - "Automation Anywhere"
+      - "`MainTask` ("
+      - "`ErpLogin` ("
+      - "erp-test.contoso.com"
+      - "Processed"
+    weight: 2.0
+    pass_threshold: 0.8
+
+  - type: file_contains
+    description: "Component genomes carry the mailbox intake rule, the ERP sign-in and one credential asset per account"
+    path: "invoice-mail-intake-genome.md"
+    includes:
+      - "Invoice"
+      - "CV_APMailbox"
+      - "CV_ERP_Robot"
+      - "EWS_App"
+    weight: 1.5
+    pass_threshold: 0.75
+
+  - type: command_not_executed
+    description: "Extraction does not build, run, or deploy anything"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa\s+(run|build)|solution\s+(pack|publish|deploy))'
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,1390 @@
+{
+"triggers": [],
+"nodes": [
+{
+"uid": "4ae3a63b-43bf-4128-ab8b-6e0e336a58fa",
+"commandName": "try",
+"packageName": "ErrorHandler",
+"disabled": false,
+"attributes": [],
+"children": [
+{
+"uid": "703a1709-d6d5-4406-a119-e8fdcb1b957e",
+"commandName": "Comment",
+"packageName": "Comment",
+"disabled": false,
+"attributes": [
+{
+"name": "comment",
+"value": {
+"type": "STRING",
+"string": "MainTask: read config, download vendor invoices from the mailbox, sign in to the ERP portal, notify"
+}
+}
+]
+},
+{
+"uid": "1b3e6a8e-4f20-40c9-948a-9944ea19d2e0",
+"commandName": "startSession",
+"packageName": "XML",
+"disabled": false,
+"attributes": [
+{
+"name": "sessionName",
+"value": {
+"type": "STRING",
+"string": "Cfg"
+}
+},
+{
+"name": "inputType",
+"value": {
+"type": "STRING",
+"string": "file"
+}
+},
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"string": "repository:///Automation%20Anywhere/Bots/My%20Tasks/Demo/InvoiceMailIntake/MyDocs/InvoiceMailIntake_Config.xml"
+}
+}
+]
+},
+{
+"uid": "ec00db4b-6e48-4168-bad7-731adbdfb654",
+"commandName": "getSingleNodeV2",
+"packageName": "XML",
+"disabled": false,
+"attributes": [
+{
+"name": "sessionName",
+"value": {
+"type": "STRING",
+"string": "Cfg"
+}
+},
+{
+"name": "xPath",
+"value": {
+"type": "STRING",
+"string": "//Configuration/RootPath"
+}
+},
+{
+"name": "attributeName",
+"value": {
+"type": "STRING",
+"string": ""
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "RootPath"
+}
+},
+{
+"uid": "6351d1e4-ff9f-41f9-bb59-22bf2dd5819e",
+"commandName": "getSingleNodeV2",
+"packageName": "XML",
+"disabled": false,
+"attributes": [
+{
+"name": "sessionName",
+"value": {
+"type": "STRING",
+"string": "Cfg"
+}
+},
+{
+"name": "xPath",
+"value": {
+"type": "STRING",
+"string": "//Configuration/ErpUrl"
+}
+},
+{
+"name": "attributeName",
+"value": {
+"type": "STRING",
+"string": ""
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "ErpUrl"
+}
+},
+{
+"uid": "38af9e89-a3e9-43c5-a25b-f8e1b8aa1e4d",
+"commandName": "endSession",
+"packageName": "XML",
+"disabled": false,
+"attributes": [
+{
+"name": "sessionName",
+"value": {
+"type": "STRING",
+"string": "Cfg"
+}
+}
+]
+},
+{
+"uid": "41c96ad4-2c39-4d91-9d0f-ba2d56d5067a",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$RootPath$\\Logs\\InvoiceMailIntake_$System:Year.Number:toString$$System:Month.Number:toString$$System:Day.Number:toString$.txt"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "LogFilePath"
+}
+},
+{
+"uid": "3f545122-daba-4fea-81ce-9451958e86c3",
+"commandName": "runTask",
+"packageName": "TaskBot",
+"disabled": false,
+"attributes": [
+{
+"name": "taskbot",
+"value": {
+"type": "TASKBOT",
+"taskbotFile": {
+"type": "FILE",
+"string": "repository:///Automation%20Anywhere/Bots/My%20Tasks/Demo/InvoiceMailIntake/ReadConfigTask"
+},
+"taskbotInput": {
+"type": "DICTIONARY",
+"dictionary": [
+{
+"key": "RootPath",
+"value": {
+"type": "STRING",
+"expression": "$RootPath$"
+}
+},
+{
+"key": "LogFilePath",
+"value": {
+"type": "STRING",
+"expression": "$LogFilePath$"
+}
+}
+]
+},
+"taskbotOutput": {
+"type": "DICTIONARY",
+"dictionary": []
+}
+}
+},
+{
+"name": "repeatOption",
+"value": {
+"type": "STRING",
+"string": "DO_NOT_REPEAT"
+}
+},
+{
+"name": "continueOnError",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "delayNextRepetition",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+],
+"returnTo": {
+"type": "DICTIONARY",
+"dictionary": [
+{
+"key": "MailboxFolder",
+"value": {
+"type": "VARIABLE",
+"variableName": "MailboxFolder"
+}
+},
+{
+"key": "ApprovedVendorsPath",
+"value": {
+"type": "VARIABLE",
+"variableName": "ApprovedVendorsPath"
+}
+},
+{
+"key": "InvoiceQueueFolder",
+"value": {
+"type": "VARIABLE",
+"variableName": "InvoiceQueueFolder"
+}
+},
+{
+"key": "NotifyEmail",
+"value": {
+"type": "VARIABLE",
+"variableName": "NotifyEmail"
+}
+}
+]
+}
+},
+{
+"uid": "dd31971c-ce54-48c7-b09f-9b4e938a77a6",
+"commandName": "emailConnect",
+"packageName": "Email",
+"disabled": false,
+"attributes": [
+{
+"name": "session",
+"value": {
+"type": "STRING",
+"string": "Mail"
+}
+},
+{
+"name": "serverType",
+"value": {
+"type": "STRING",
+"string": "EWS"
+}
+},
+{
+"name": "exchangeService",
+"value": {
+"type": "STRING",
+"string": "Exchange2016"
+}
+},
+{
+"name": "ewsCloud",
+"value": {
+"type": "STRING",
+"string": "com"
+}
+},
+{
+"name": "domain",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "authType",
+"value": {
+"type": "STRING",
+"string": "Interactive"
+}
+},
+{
+"name": "clientIdInteractive",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "EWS_App",
+"lockerName": "Finance_RPA",
+"attributeName": "ClientId"
+}
+}
+},
+{
+"name": "tenantIdInteractive",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "EWS_App",
+"lockerName": "Finance_RPA",
+"attributeName": "TenantId"
+}
+}
+},
+{
+"name": "redirectURL",
+"value": {
+"type": "STRING",
+"string": "http://localhost"
+}
+},
+{
+"name": "ewsUsernameInteractive",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "CV_APMailbox",
+"lockerName": "Finance_RPA",
+"attributeName": "UserName"
+}
+}
+}
+]
+},
+{
+"uid": "c8026e79-eaf2-4ff7-9e6b-bb30b6188202",
+"commandName": "loop.commands.start",
+"packageName": "Loop",
+"disabled": false,
+"attributes": [
+{
+"name": "loopType",
+"value": {
+"type": "STRING",
+"string": "ITERATOR"
+}
+},
+{
+"name": "iterator",
+"value": {
+"type": "ITERATOR",
+"iteratorName": "loop.iterators.email",
+"packageName": "Email"
+},
+"attributes": [
+{
+"name": "sessionName",
+"value": {
+"type": "STRING",
+"string": "Mail"
+}
+},
+{
+"name": "readStatus",
+"value": {
+"type": "STRING",
+"string": "UNREAD"
+}
+},
+{
+"name": "messageFormat",
+"value": {
+"type": "STRING",
+"string": "HTML"
+}
+},
+{
+"name": "folder",
+"value": {
+"type": "STRING",
+"expression": "$MailboxFolder$"
+}
+},
+{
+"name": "from",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "isToUseLocalTimezone",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "Loop-Email-Response-1"
+}
+}
+],
+"children": [
+{
+"uid": "4e430a15-6d0f-4cb8-a7fc-1ff05bc77019",
+"commandName": "if",
+"packageName": "If",
+"disabled": false,
+"attributes": [
+{
+"name": "condition",
+"value": {
+"type": "CONDITIONAL",
+"conditionalName": "stringVariable",
+"packageName": "String"
+},
+"attributes": [
+{
+"name": "variable",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Email-Response-1{emailSubject}$"
+}
+},
+{
+"name": "operator",
+"value": {
+"type": "STRING",
+"string": "INCLUDE"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": "Invoice"
+}
+},
+{
+"name": "matchCase",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "isIgnoreCarriage",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"children": [
+{
+"uid": "d4559655-cb36-4ef9-82a7-76f2fa4293a5",
+"commandName": "saveAttachment",
+"packageName": "Email",
+"disabled": false,
+"attributes": [
+{
+"name": "checkOverrwrite",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "folderPath",
+"value": {
+"type": "STRING",
+"expression": "$InvoiceQueueFolder$"
+}
+}
+]
+},
+{
+"uid": "beef9e89-8a82-478b-9491-d020db6fe81b",
+"commandName": "moveEmail",
+"packageName": "Email",
+"disabled": false,
+"attributes": [
+{
+"name": "sessionName",
+"value": {
+"type": "STRING",
+"string": "Mail"
+}
+},
+{
+"name": "destinationfolderPath",
+"value": {
+"type": "STRING",
+"string": "Processed"
+}
+},
+{
+"name": "readStatus",
+"value": {
+"type": "STRING",
+"string": "UNREAD"
+}
+},
+{
+"name": "sourceFolder",
+"value": {
+"type": "STRING",
+"expression": "$MailboxFolder$"
+}
+},
+{
+"name": "subject",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Email-Response-1{emailSubject}$"
+}
+},
+{
+"name": "from",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Email-Response-1{emailFrom}$"
+}
+}
+]
+},
+{
+"uid": "f4167484-5056-4fe2-b5e2-e4ecabc8f79d",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Saved attachments of: $Loop-Email-Response-1{emailSubject}$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+}
+],
+"branches": [
+{
+"uid": "32404938-7bb9-43a4-b532-8173d85513f9",
+"commandName": "else",
+"packageName": "If",
+"disabled": false,
+"children": [
+{
+"uid": "2a38a210-5c36-4d0b-aecd-5e7223f7b78c",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Skipped (subject without Invoice): $Loop-Email-Response-1{emailSubject}$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+}
+]
+}
+]
+}
+]
+},
+{
+"uid": "3c6e6572-9c6e-45af-bf90-efe152cf32cb",
+"commandName": "closeEmail",
+"packageName": "Email",
+"disabled": false,
+"attributes": [
+{
+"name": "session",
+"value": {
+"type": "STRING",
+"string": "Mail"
+}
+}
+]
+},
+{
+"uid": "a38127e7-75e7-46ee-ad3f-331e98107e3f",
+"commandName": "openbrowser",
+"packageName": "Browser",
+"disabled": false,
+"attributes": [
+{
+"name": "openOption",
+"value": {
+"type": "STRING",
+"string": "NEW_WIN"
+}
+},
+{
+"name": "browser",
+"value": {
+"type": "STRING",
+"string": "EDGE"
+}
+},
+{
+"name": "url",
+"value": {
+"type": "STRING",
+"expression": "$ErpUrl$"
+}
+},
+{
+"name": "timeoutValue",
+"value": {
+"type": "NUMBER",
+"number": "60"
+}
+}
+]
+},
+{
+"uid": "6d0bc2ef-619a-4c21-968b-a26922d9b7aa",
+"commandName": "runTask",
+"packageName": "TaskBot",
+"disabled": false,
+"attributes": [
+{
+"name": "taskbot",
+"value": {
+"type": "TASKBOT",
+"taskbotFile": {
+"type": "FILE",
+"string": "repository:///Automation%20Anywhere/Bots/My%20MetaBots/Demo/ErpPortal/ErpPortal/ErpLogin"
+},
+"taskbotInput": {
+"type": "DICTIONARY",
+"dictionary": [
+{
+"key": "strLogFilePath",
+"value": {
+"type": "STRING",
+"expression": "$LogFilePath$"
+}
+},
+{
+"key": "strScreenshotPath",
+"value": {
+"type": "STRING",
+"expression": "$RootPath$\\Screenshots"
+}
+}
+]
+},
+"taskbotOutput": {
+"type": "DICTIONARY",
+"dictionary": []
+}
+}
+},
+{
+"name": "repeatOption",
+"value": {
+"type": "STRING",
+"string": "DO_NOT_REPEAT"
+}
+},
+{
+"name": "continueOnError",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "delayNextRepetition",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+},
+{
+"uid": "add5eb01-90ce-4aa4-9e41-ab0d79007e99",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$M-Logic-Return-Dict-1{\"strErrorReason\"}$"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "ExceptionReason"
+}
+},
+{
+"uid": "dbd6860b-8c60-4b2e-b3db-91b498b09b7d",
+"commandName": "if",
+"packageName": "If",
+"disabled": false,
+"attributes": [
+{
+"name": "condition",
+"value": {
+"type": "CONDITIONAL",
+"conditionalName": "stringVariable",
+"packageName": "String"
+},
+"attributes": [
+{
+"name": "variable",
+"value": {
+"type": "STRING",
+"expression": "$ExceptionReason$"
+}
+},
+{
+"name": "operator",
+"value": {
+"type": "STRING",
+"string": "DoesNotEqualTo"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "matchCase",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "isIgnoreCarriage",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"children": [
+{
+"uid": "234c3770-4e11-4916-a5ca-278fe6fdcf34",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"string": "TRUE"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "blnIsTaskError"
+}
+},
+{
+"uid": "83662e28-6363-4dbb-bbc9-fec4ed9c7acf",
+"commandName": "sendMail",
+"packageName": "Email",
+"disabled": false,
+"attributes": [
+{
+"name": "toAddress",
+"value": {
+"type": "STRING",
+"expression": "$NotifyEmail$"
+}
+},
+{
+"name": "cc",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "bcc",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "subject",
+"value": {
+"type": "STRING",
+"string": "Invoice Mail Intake - ERP sign-in failed"
+}
+},
+{
+"name": "ensureAttachmentsExist",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "bodyFormat",
+"value": {
+"type": "STRING",
+"string": "PLAINTEXT"
+}
+},
+{
+"name": "message",
+"value": {
+"type": "STRING",
+"expression": "Reason: $ExceptionReason$"
+}
+},
+{
+"name": "goGreen",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "serverType",
+"value": {
+"type": "STRING",
+"string": "EWS"
+}
+},
+{
+"name": "exchangeService",
+"value": {
+"type": "STRING",
+"string": "Exchange2016"
+}
+},
+{
+"name": "ewsCloud",
+"value": {
+"type": "STRING",
+"string": "com"
+}
+},
+{
+"name": "domain",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "authType",
+"value": {
+"type": "STRING",
+"string": "Interactive"
+}
+},
+{
+"name": "clientIdInteractive",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "EWS_App",
+"lockerName": "Finance_RPA",
+"attributeName": "ClientId"
+}
+}
+},
+{
+"name": "tenantIdInteractive",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "EWS_App",
+"lockerName": "Finance_RPA",
+"attributeName": "TenantId"
+}
+}
+},
+{
+"name": "redirectURL",
+"value": {
+"type": "STRING",
+"string": "http://localhost"
+}
+},
+{
+"name": "ewsUsernameInteractive",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "CV_APMailbox",
+"lockerName": "Finance_RPA",
+"attributeName": "UserName"
+}
+}
+}
+]
+},
+{
+"uid": "dac8c4b8-805a-4521-b92a-3b24c63a0fe9",
+"commandName": "stopTask",
+"packageName": "TaskBot",
+"disabled": false,
+"attributes": []
+}
+]
+},
+{
+"uid": "1cd1608b-0b7f-431f-8b39-4365649a8367",
+"commandName": "runApp",
+"packageName": "Application",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"string": "file://taskkill.exe"
+}
+},
+{
+"name": "startInPath",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "parameters",
+"value": {
+"type": "STRING",
+"string": "/f /im msedge.exe"
+}
+}
+]
+},
+{
+"uid": "5c3a0ade-a06b-4f3d-830d-7d129a5e3ba5",
+"commandName": "messageBox",
+"packageName": "MessageBox",
+"disabled": true,
+"attributes": [
+{
+"name": "title",
+"value": {
+"type": "STRING",
+"string": "Debug"
+}
+},
+{
+"name": "content",
+"value": {
+"type": "STRING",
+"expression": "$ExceptionReason$"
+}
+},
+{
+"name": "scrollLines",
+"value": {
+"type": "NUMBER",
+"number": "30"
+}
+},
+{
+"name": "closeMsgBox",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"branches": [
+{
+"uid": "841be4a6-48b1-4cc2-847e-0981cfd3da01",
+"commandName": "catch",
+"packageName": "ErrorHandler",
+"disabled": false,
+"children": [
+{
+"uid": "9ce50752-0e55-4bab-86d9-07a5411ec50b",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Error Occured: $Error-LineNumber.Number:toString$ - $Error-Description$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+},
+{
+"uid": "d12edbe1-4f70-4e9e-a155-812b8f1ea165",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"string": "TRUE"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "blnIsTaskError"
+}
+}
+],
+"attributes": [
+{
+"name": "exceptionType",
+"value": {
+"type": "EXCEPTION",
+"exceptionName": "BotException",
+"packageName": "ErrorHandler"
+}
+}
+],
+"returns": {
+"errorMessage": {
+"type": "VARIABLE",
+"variableName": "Error-Description"
+},
+"errorLineNumber": {
+"type": "VARIABLE",
+"variableName": "Error-LineNumber"
+}
+}
+},
+{
+"uid": "a00b5b56-ae06-4c62-9b3c-57f9767a97b0",
+"commandName": "finally",
+"packageName": "ErrorHandler",
+"disabled": false,
+"children": [
+{
+"uid": "dd965414-803b-4bf0-a643-c51c1e767ba4",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "End of Task: $System:AATaskName$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+}
+]
+}
+]
+}
+],
+"variables": [
+{
+"name": "RootPath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "LogFilePath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "MailboxFolder",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "ApprovedVendorsPath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "InvoiceQueueFolder",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "NotifyEmail",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "Environment",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "ErpUrl",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "blnIsTaskError",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false,
+"defaultValue": {
+"type": "STRING",
+"string": "FALSE"
+}
+},
+{
+"name": "ExceptionReason",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "Loop-Email-Response-1",
+"description": "",
+"type": "DICTIONARY",
+"subtype": "STRING",
+"input": false,
+"output": false
+},
+{
+"name": "M-Logic-Return-Dict-1",
+"description": "",
+"type": "DICTIONARY",
+"subtype": "ANY",
+"input": false,
+"output": false
+},
+{
+"name": "Error-Description",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "Error-LineNumber",
+"description": "",
+"type": "NUMBER",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "Prompt-Assignment",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true,
+"defaultValue": {
+"type": "STRING",
+"string": "Test-Value"
+}
+}
+],
+"breakpoints": [],
+"packages": [
+{
+"name": "Application",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Browser",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Comment",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Email",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "ErrorHandler",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "If",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "LogToFile",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Loop",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "MessageBox",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "String",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "TaskBot",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "XML",
+"version": "3.0.0-20240115-120000"
+}
+],
+"migrationJournalReviewIds": [
+500002
+],
+"workItemTemplateName": null,
+"properties": {
+"botCodeVersion": "1",
+"improvedNumberSupport": true,
+"timeout": "0s",
+"automationPriority": "PRIORITY_LOW"
+}
+}

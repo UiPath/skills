@@ -1,0 +1,737 @@
+{
+"triggers": [],
+"nodes": [
+{
+"uid": "8b121f8c-aceb-4fcf-ac62-8fb5a949ed84",
+"commandName": "try",
+"packageName": "ErrorHandler",
+"disabled": false,
+"attributes": [],
+"children": [
+{
+"uid": "8b3e1401-16a7-4434-9b75-cb1a21279efc",
+"commandName": "Comment",
+"packageName": "Comment",
+"disabled": false,
+"attributes": [
+{
+"name": "comment",
+"value": {
+"type": "STRING",
+"string": "Description: Read every Key/Value row of the CONFIG sheet into the same-named setting"
+}
+}
+]
+},
+{
+"uid": "72961396-987c-4907-8022-dfe82ad5333c",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$RootPath$\\Config\\Config.xlsx"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "ConfigFilePath"
+}
+},
+{
+"uid": "66b41355-b6c3-44ca-bda5-7a4be41ad86c",
+"commandName": "connect",
+"packageName": "Database",
+"disabled": false,
+"attributes": [
+{
+"name": "connectionMode",
+"value": {
+"type": "STRING",
+"string": "DEFAULT"
+}
+},
+{
+"name": "connectionOption",
+"value": {
+"type": "STRING",
+"string": "text"
+}
+},
+{
+"name": "connectionURL",
+"value": {
+"type": "STRING",
+"expression": "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$ConfigFilePath$;Extended Properties=\"Excel 12.0 Xml;HDR=Yes;IMEX=1\";"
+}
+},
+{
+"name": "use64BitDriver",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "isUserDefinedDriver",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+],
+"returnTo": {
+"type": "SESSION",
+"sessionName": {
+"type": "STRING",
+"string": "Default"
+},
+"sessionTarget": "LOCAL"
+}
+},
+{
+"uid": "1311940c-48b5-4980-aca7-a1c1e3007eac",
+"commandName": "sqlQuery",
+"packageName": "Database",
+"disabled": false,
+"attributes": [
+{
+"name": "session",
+"value": {
+"type": "SESSION",
+"sessionName": {
+"type": "STRING",
+"string": "Default"
+}
+}
+},
+{
+"name": "query",
+"value": {
+"type": "STRING",
+"string": "SELECT * FROM [CONFIG$]"
+}
+},
+{
+"name": "doExport",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "withHeader",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+},
+{
+"uid": "700c2d72-8adc-48a5-bf76-6557f3759870",
+"commandName": "loop.commands.start",
+"packageName": "Loop",
+"disabled": false,
+"attributes": [
+{
+"name": "loopType",
+"value": {
+"type": "STRING",
+"string": "ITERATOR"
+}
+},
+{
+"name": "iterator",
+"value": {
+"type": "ITERATOR",
+"iteratorName": "iterators.resultset",
+"packageName": "Database"
+},
+"attributes": [
+{
+"name": "session",
+"value": {
+"type": "SESSION",
+"sessionName": {
+"type": "STRING",
+"string": "Default"
+}
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "Loop-Dataset-Column-1"
+}
+}
+],
+"children": [
+{
+"uid": "16675922-8856-4086-a636-509bde7cfa5e",
+"commandName": "if",
+"packageName": "If",
+"disabled": false,
+"attributes": [
+{
+"name": "condition",
+"value": {
+"type": "CONDITIONAL",
+"conditionalName": "stringVariable",
+"packageName": "String"
+},
+"attributes": [
+{
+"name": "variable",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[0]$"
+}
+},
+{
+"name": "operator",
+"value": {
+"type": "STRING",
+"string": "EqualsTo"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": "MAILBOX_FOLDER"
+}
+},
+{
+"name": "matchCase",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "isIgnoreCarriage",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"children": [
+{
+"uid": "f5d516ef-7131-4838-9f48-68d315b1a66a",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[1]$"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "MailboxFolder"
+}
+}
+]
+},
+{
+"uid": "6a7abe60-3b3c-4c29-8cd6-4f3dcf78fe23",
+"commandName": "if",
+"packageName": "If",
+"disabled": false,
+"attributes": [
+{
+"name": "condition",
+"value": {
+"type": "CONDITIONAL",
+"conditionalName": "stringVariable",
+"packageName": "String"
+},
+"attributes": [
+{
+"name": "variable",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[0]$"
+}
+},
+{
+"name": "operator",
+"value": {
+"type": "STRING",
+"string": "EqualsTo"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": "APPROVED_VENDORS_PATH"
+}
+},
+{
+"name": "matchCase",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "isIgnoreCarriage",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"children": [
+{
+"uid": "c2080ac6-04cf-4e03-af8c-711a5b690192",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[1]$"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "ApprovedVendorsPath"
+}
+}
+]
+},
+{
+"uid": "be8f3f2c-d35c-4ea3-8fa1-9757ba581a00",
+"commandName": "if",
+"packageName": "If",
+"disabled": false,
+"attributes": [
+{
+"name": "condition",
+"value": {
+"type": "CONDITIONAL",
+"conditionalName": "stringVariable",
+"packageName": "String"
+},
+"attributes": [
+{
+"name": "variable",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[0]$"
+}
+},
+{
+"name": "operator",
+"value": {
+"type": "STRING",
+"string": "EqualsTo"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": "INVOICE_QUEUE_FOLDER"
+}
+},
+{
+"name": "matchCase",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "isIgnoreCarriage",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"children": [
+{
+"uid": "1d274728-a86c-4a05-9fe0-74b67b3e06d7",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[1]$"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "InvoiceQueueFolder"
+}
+}
+]
+},
+{
+"uid": "72d369e7-9d40-4ce9-a9fd-1b9fd311d935",
+"commandName": "if",
+"packageName": "If",
+"disabled": false,
+"attributes": [
+{
+"name": "condition",
+"value": {
+"type": "CONDITIONAL",
+"conditionalName": "stringVariable",
+"packageName": "String"
+},
+"attributes": [
+{
+"name": "variable",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[0]$"
+}
+},
+{
+"name": "operator",
+"value": {
+"type": "STRING",
+"string": "EqualsTo"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": "NOTIFY_EMAIL"
+}
+},
+{
+"name": "matchCase",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "isIgnoreCarriage",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"children": [
+{
+"uid": "68836ed1-cd30-46c2-b8f0-0ab4807a8c3e",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$Loop-Dataset-Column-1[1]$"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "NotifyEmail"
+}
+}
+]
+}
+]
+},
+{
+"uid": "8371ba54-86f4-4eb0-8952-fd451c2eafb3",
+"commandName": "disconnect",
+"packageName": "Database",
+"disabled": false,
+"attributes": [
+{
+"name": "session",
+"value": {
+"type": "SESSION",
+"sessionName": {
+"type": "STRING",
+"string": "Default"
+}
+}
+},
+{
+"name": "dosaveData",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+},
+{
+"uid": "0cdf2309-ca98-4d88-965b-e921ca152247",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Configuration loaded from $ConfigFilePath$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+}
+],
+"branches": [
+{
+"uid": "534d1ea3-8ab9-4f12-909a-a82b8a866034",
+"commandName": "catch",
+"packageName": "ErrorHandler",
+"disabled": false,
+"children": [
+{
+"uid": "f37d532b-2513-46dc-a0a7-f425d29d50d3",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Error Occured: $Error-LineNumber.Number:toString$ - $Error-Description$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+}
+],
+"attributes": [
+{
+"name": "exceptionType",
+"value": {
+"type": "EXCEPTION",
+"exceptionName": "BotException",
+"packageName": "ErrorHandler"
+}
+}
+],
+"returns": {
+"errorMessage": {
+"type": "VARIABLE",
+"variableName": "Error-Description"
+},
+"errorLineNumber": {
+"type": "VARIABLE",
+"variableName": "Error-LineNumber"
+}
+}
+}
+]
+}
+],
+"variables": [
+{
+"name": "RootPath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "LogFilePath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "MailboxFolder",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "ApprovedVendorsPath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "InvoiceQueueFolder",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "NotifyEmail",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": true
+},
+{
+"name": "ConfigFilePath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "Loop-Dataset-Column-1",
+"description": "",
+"type": "RECORD",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "Error-Description",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "Error-LineNumber",
+"description": "",
+"type": "NUMBER",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+}
+],
+"breakpoints": [],
+"packages": [
+{
+"name": "Comment",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Database",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "ErrorHandler",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "If",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "LogToFile",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Loop",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "String",
+"version": "3.0.0-20240115-120000"
+}
+],
+"migrationJournalReviewIds": [],
+"workItemTemplateName": null,
+"properties": {
+"botCodeVersion": "1",
+"improvedNumberSupport": true,
+"timeout": "0s",
+"automationPriority": "PRIORITY_MEDIUM"
+}
+}

@@ -1,0 +1,824 @@
+{
+"triggers": [],
+"nodes": [
+{
+"uid": "48f37584-946d-4e8a-bc3c-aeed07b1ee9b",
+"commandName": "Comment",
+"packageName": "Comment",
+"disabled": true,
+"attributes": [
+{
+"name": "comment",
+"value": {
+"type": "STRING",
+"string": "Description: Metabot logic to sign in to the ERP vendor portal"
+}
+}
+]
+},
+{
+"uid": "c8b3397c-1d80-4dba-bd6a-6410f6a30122",
+"commandName": "try",
+"packageName": "ErrorHandler",
+"disabled": false,
+"attributes": [],
+"children": [
+{
+"uid": "453666ae-d995-4375-b6a3-d6a7b3c43556",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Started Metabot: $System:AATaskName$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+},
+{
+"uid": "e88360fb-f652-4cff-a919-b2bb5a8dbdc3",
+"commandName": "capture",
+"packageName": "Recorder",
+"disabled": false,
+"attributes": [
+{
+"name": "wait",
+"value": {
+"type": "NUMBER",
+"number": "15"
+}
+},
+{
+"name": "uiObject",
+"value": {
+"type": "UIOBJECT",
+"uiObject": {
+"blob": "eyJvYmpOb2RlIjogeyJ1bmlxdWVJZCI6ICIiLCAiaWQiOiAiIiwgIm5hbWUiOiAial91c2VybmFtZSIsICJ2YWx1ZSI6ICIiLCAiY2xhc3NOYW1lIjogIiIsICJwYXJlbnQiOiAiIiwgIndpbmRvd1RpdGxlIjogIiIsICJwYXRoIjogeyJvYmpQYXRoIjogW3siaW5kZXgiOiAtMX0sIHsiaW5kZXgiOiAxfSwgeyJpbmRleCI6IDF9LCB7ImluZGV4IjogMn1dfSwgInJvbGUiOiA1LCAiaW5kZXgiOiAwLCAibGVmdCI6IDEwLCAidG9wIjogMTAsICJ3aWR0aCI6IDEwMCwgImhlaWdodCI6IDIwLCAiY2xpY2tYIjogNTAsICJjbGlja1kiOiAxMCwgImRlc2NyaXB0aW9uIjogImpfdXNlcm5hbWUiLCAic3RhdGVzIjogIiIsICJkZWZhdWx0QWN0aW9uIjogIiIsICJ0ZWNobm9sb2d5IjogeyJ0ZWNoVHlwZSI6IDYsICJwbGF0Zm9ybVR5cGUiOiAxMiwgImFwcGxpY2F0aW9uVHlwZSI6IDAsICJwcm9jZXNzSWQiOiAiIiwgIndpbkhhbmRsZSI6ICIiLCAiaXNTaWx2ZXJsaWdodFRlY2hub2xvZ3kiOiBmYWxzZX0sICJhY3Rpb25zIjogW10sICJwcm9wZXJ0aWVzIjogW10sICJhdHRyaWJ1dGVzIjogW10sICJpc0xpbmtlZCI6IGZhbHNlfSwgIm9iakl0ZW0iOiB7fSwgImNoaWxkcmVuIjogW10sICJpdGVtcyI6IFtdLCAic2VhcmNoQ3JpdGVyaWEiOiBbXSwgImNhcHR1cmVWZXJzaW9uIjogMjkwMH0=",
+"controlType": "TEXTBOX",
+"technologyType": "HTML",
+"criteria": {
+"HTML Tag": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "INPUT"
+}
+},
+"HTML ID": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "username"
+}
+},
+"HTML Name": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "j_username"
+}
+},
+"HTML Type": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "text"
+}
+},
+"DOMXPath": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "//input[@id='username']"
+}
+}
+}
+},
+"uiObjectWindow": {
+"type": "WINDOW",
+"expression": "$window-1$"
+}
+}
+},
+{
+"name": "textboxAction",
+"value": {
+"type": "STRING",
+"string": "SETTEXT"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "typeOfInput",
+"value": {
+"type": "STRING",
+"string": "CREDENTIAL"
+}
+},
+{
+"name": "valueCV",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "CV_ERP_Robot",
+"lockerName": "Finance_RPA",
+"attributeName": "UserName"
+}
+}
+}
+]
+},
+{
+"uid": "3d0098bf-a475-4ca1-a17a-99d8f7f92bd2",
+"commandName": "capture",
+"packageName": "Recorder",
+"disabled": false,
+"attributes": [
+{
+"name": "wait",
+"value": {
+"type": "NUMBER",
+"number": "15"
+}
+},
+{
+"name": "uiObject",
+"value": {
+"type": "UIOBJECT",
+"uiObject": {
+"blob": "eyJvYmpOb2RlIjogeyJ1bmlxdWVJZCI6ICIiLCAiaWQiOiAiIiwgIm5hbWUiOiAial9wYXNzd29yZCIsICJ2YWx1ZSI6ICIiLCAiY2xhc3NOYW1lIjogIiIsICJwYXJlbnQiOiAiIiwgIndpbmRvd1RpdGxlIjogIiIsICJwYXRoIjogeyJvYmpQYXRoIjogW3siaW5kZXgiOiAtMX0sIHsiaW5kZXgiOiAxfSwgeyJpbmRleCI6IDF9LCB7ImluZGV4IjogM31dfSwgInJvbGUiOiA1LCAiaW5kZXgiOiAwLCAibGVmdCI6IDEwLCAidG9wIjogMTAsICJ3aWR0aCI6IDEwMCwgImhlaWdodCI6IDIwLCAiY2xpY2tYIjogNTAsICJjbGlja1kiOiAxMCwgImRlc2NyaXB0aW9uIjogImpfcGFzc3dvcmQiLCAic3RhdGVzIjogIiIsICJkZWZhdWx0QWN0aW9uIjogIiIsICJ0ZWNobm9sb2d5IjogeyJ0ZWNoVHlwZSI6IDYsICJwbGF0Zm9ybVR5cGUiOiAxMiwgImFwcGxpY2F0aW9uVHlwZSI6IDAsICJwcm9jZXNzSWQiOiAiIiwgIndpbkhhbmRsZSI6ICIiLCAiaXNTaWx2ZXJsaWdodFRlY2hub2xvZ3kiOiBmYWxzZX0sICJhY3Rpb25zIjogW10sICJwcm9wZXJ0aWVzIjogW10sICJhdHRyaWJ1dGVzIjogW10sICJpc0xpbmtlZCI6IGZhbHNlfSwgIm9iakl0ZW0iOiB7fSwgImNoaWxkcmVuIjogW10sICJpdGVtcyI6IFtdLCAic2VhcmNoQ3JpdGVyaWEiOiBbXSwgImNhcHR1cmVWZXJzaW9uIjogMjkwMH0=",
+"controlType": "PASSWORD_TEXT",
+"technologyType": "HTML",
+"criteria": {
+"HTML Tag": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "INPUT"
+}
+},
+"HTML ID": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "password"
+}
+},
+"HTML Name": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "j_password"
+}
+},
+"HTML Type": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "password"
+}
+}
+}
+},
+"uiObjectWindow": {
+"type": "WINDOW",
+"expression": "$window-1$"
+}
+}
+},
+{
+"name": "passwordtextAction",
+"value": {
+"type": "STRING",
+"string": "SETTEXT"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "typeOfInput",
+"value": {
+"type": "STRING",
+"string": "CREDENTIAL"
+}
+},
+{
+"name": "valueCV",
+"value": {
+"type": "CREDENTIAL",
+"credential": {
+"name": "CV_ERP_Robot",
+"lockerName": "Finance_RPA",
+"attributeName": "Password"
+}
+}
+}
+]
+},
+{
+"uid": "91203e03-ba2a-4a3b-8e12-2888f4ef4f58",
+"commandName": "capture",
+"packageName": "Recorder",
+"disabled": false,
+"attributes": [
+{
+"name": "wait",
+"value": {
+"type": "NUMBER",
+"number": "15"
+}
+},
+{
+"name": "uiObject",
+"value": {
+"type": "UIOBJECT",
+"uiObject": {
+"blob": "eyJvYmpOb2RlIjogeyJ1bmlxdWVJZCI6ICIiLCAiaWQiOiAiIiwgIm5hbWUiOiAiU2lnbiBpbiIsICJ2YWx1ZSI6ICIiLCAiY2xhc3NOYW1lIjogIiIsICJwYXJlbnQiOiAiIiwgIndpbmRvd1RpdGxlIjogIiIsICJwYXRoIjogeyJvYmpQYXRoIjogW3siaW5kZXgiOiAtMX0sIHsiaW5kZXgiOiAxfSwgeyJpbmRleCI6IDF9LCB7ImluZGV4IjogNH1dfSwgInJvbGUiOiAxLCAiaW5kZXgiOiAwLCAibGVmdCI6IDEwLCAidG9wIjogMTAsICJ3aWR0aCI6IDEwMCwgImhlaWdodCI6IDIwLCAiY2xpY2tYIjogNTAsICJjbGlja1kiOiAxMCwgImRlc2NyaXB0aW9uIjogIlNpZ24gaW4iLCAic3RhdGVzIjogIiIsICJkZWZhdWx0QWN0aW9uIjogIiIsICJ0ZWNobm9sb2d5IjogeyJ0ZWNoVHlwZSI6IDYsICJwbGF0Zm9ybVR5cGUiOiAxMiwgImFwcGxpY2F0aW9uVHlwZSI6IDAsICJwcm9jZXNzSWQiOiAiIiwgIndpbkhhbmRsZSI6ICIiLCAiaXNTaWx2ZXJsaWdodFRlY2hub2xvZ3kiOiBmYWxzZX0sICJhY3Rpb25zIjogW10sICJwcm9wZXJ0aWVzIjogW10sICJhdHRyaWJ1dGVzIjogW10sICJpc0xpbmtlZCI6IGZhbHNlfSwgIm9iakl0ZW0iOiB7fSwgImNoaWxkcmVuIjogW10sICJpdGVtcyI6IFtdLCAic2VhcmNoQ3JpdGVyaWEiOiBbXSwgImNhcHR1cmVWZXJzaW9uIjogMjkwMH0=",
+"controlType": "BUTTON",
+"technologyType": "HTML",
+"criteria": {
+"HTML Tag": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "BUTTON"
+}
+},
+"HTML ID": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "loginButton"
+}
+},
+"HTML Type": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "submit"
+}
+}
+}
+},
+"uiObjectWindow": {
+"type": "WINDOW",
+"expression": "$window-1$"
+}
+}
+},
+{
+"name": "buttonAction",
+"value": {
+"type": "STRING",
+"string": "CLICK"
+}
+}
+]
+},
+{
+"uid": "9bb737e6-7d45-4139-aa8c-051060556a05",
+"commandName": "delay",
+"packageName": "Delay",
+"disabled": false,
+"attributes": [
+{
+"name": "delayType",
+"value": {
+"type": "STRING",
+"string": "REGULAR"
+}
+},
+{
+"name": "delayTime",
+"value": {
+"type": "NUMBER",
+"number": "3"
+}
+},
+{
+"name": "timeUnit",
+"value": {
+"type": "STRING",
+"string": "SECONDS"
+}
+}
+]
+},
+{
+"uid": "ad1040c0-8f2e-432e-b096-70bdd6ead44f",
+"commandName": "capture",
+"packageName": "Recorder",
+"disabled": false,
+"attributes": [
+{
+"name": "wait",
+"value": {
+"type": "NUMBER",
+"number": "15"
+}
+},
+{
+"name": "uiObject",
+"value": {
+"type": "UIOBJECT",
+"uiObject": {
+"blob": "eyJvYmpOb2RlIjogeyJ1bmlxdWVJZCI6ICIiLCAiaWQiOiAiIiwgIm5hbWUiOiAiSW52YWxpZCB1c2VyIG5hbWUgb3IgcGFzc3dvcmQiLCAidmFsdWUiOiAiIiwgImNsYXNzTmFtZSI6ICIiLCAicGFyZW50IjogIiIsICJ3aW5kb3dUaXRsZSI6ICIiLCAicGF0aCI6IHsib2JqUGF0aCI6IFt7ImluZGV4IjogLTF9LCB7ImluZGV4IjogMX0sIHsiaW5kZXgiOiAxfSwgeyJpbmRleCI6IDZ9XX0sICJyb2xlIjogNjYsICJpbmRleCI6IDAsICJsZWZ0IjogMTAsICJ0b3AiOiAxMCwgIndpZHRoIjogMTAwLCAiaGVpZ2h0IjogMjAsICJjbGlja1giOiA1MCwgImNsaWNrWSI6IDEwLCAiZGVzY3JpcHRpb24iOiAiSW52YWxpZCB1c2VyIG5hbWUgb3IgcGFzc3dvcmQiLCAic3RhdGVzIjogIiIsICJkZWZhdWx0QWN0aW9uIjogIiIsICJ0ZWNobm9sb2d5IjogeyJ0ZWNoVHlwZSI6IDYsICJwbGF0Zm9ybVR5cGUiOiAxMiwgImFwcGxpY2F0aW9uVHlwZSI6IDAsICJwcm9jZXNzSWQiOiAiIiwgIndpbkhhbmRsZSI6ICIiLCAiaXNTaWx2ZXJsaWdodFRlY2hub2xvZ3kiOiBmYWxzZX0sICJhY3Rpb25zIjogW10sICJwcm9wZXJ0aWVzIjogW10sICJhdHRyaWJ1dGVzIjogW10sICJpc0xpbmtlZCI6IGZhbHNlfSwgIm9iakl0ZW0iOiB7fSwgImNoaWxkcmVuIjogW10sICJpdGVtcyI6IFtdLCAic2VhcmNoQ3JpdGVyaWEiOiBbXSwgImNhcHR1cmVWZXJzaW9uIjogMjkwMH0=",
+"controlType": "LABEL",
+"technologyType": "HTML",
+"criteria": {
+"HTML Tag": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "DIV"
+}
+},
+"HTML ID": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "loginError"
+}
+},
+"DOMXPath": {
+"enabled": true,
+"value": {
+"type": "STRING",
+"string": "//div[@id='loginError']"
+}
+}
+}
+},
+"uiObjectWindow": {
+"type": "WINDOW",
+"expression": "$window-1$"
+}
+}
+},
+{
+"name": "labelAction",
+"value": {
+"type": "STRING",
+"string": "GETPROPERTY"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": "HTML InnerText"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "strErrorReason"
+}
+},
+{
+"uid": "66c06c15-e28d-47c6-bd8b-e8a4512eafb6",
+"commandName": "if",
+"packageName": "If",
+"disabled": false,
+"attributes": [
+{
+"name": "condition",
+"value": {
+"type": "CONDITIONAL",
+"conditionalName": "stringVariable",
+"packageName": "String"
+},
+"attributes": [
+{
+"name": "variable",
+"value": {
+"type": "STRING",
+"expression": "$strErrorReason$"
+}
+},
+{
+"name": "operator",
+"value": {
+"type": "STRING",
+"string": "DoesNotEqualTo"
+}
+},
+{
+"name": "value",
+"value": {
+"type": "STRING",
+"string": ""
+}
+},
+{
+"name": "matchCase",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+},
+{
+"name": "isIgnoreCarriage",
+"value": {
+"type": "BOOLEAN",
+"boolean": false
+}
+}
+]
+}
+],
+"children": [
+{
+"uid": "4c5a53f2-9f10-4d3b-a2e5-4c900de47a0f",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$strScreenshotPath$\\LoginError_$intDateTimeStamp$.png"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "m-string-start-in-path"
+}
+},
+{
+"uid": "4cbc7406-cc7e-48b3-917c-3f58a0f936d2",
+"commandName": "captureDesktop",
+"packageName": "Screen",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$m-string-start-in-path$"
+}
+},
+{
+"name": "isOverwriteFile",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+}
+]
+},
+{
+"uid": "ba827c10-c3a7-4c0a-abb4-cf9ab605440e",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Sign in failed: $strErrorReason$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+}
+]
+},
+{
+"uid": "f9bb2f9f-17c2-405a-86e0-c8c1d7a655a7",
+"commandName": "Keystrokes",
+"packageName": "Keystrokes",
+"disabled": false,
+"attributes": [
+{
+"name": "windowValue",
+"value": {
+"type": "WINDOW",
+"expression": "$window-1$"
+}
+},
+{
+"name": "typeOfInputStringToType",
+"value": {
+"type": "STRING",
+"string": "VALUE"
+}
+},
+{
+"name": "stringToType",
+"value": {
+"type": "STRING",
+"string": "[ESC]"
+}
+},
+{
+"name": "delay",
+"value": {
+"type": "NUMBER",
+"number": "10"
+}
+}
+]
+}
+],
+"branches": [
+{
+"uid": "587ccfe7-403d-4b46-8366-981c5ebfba46",
+"commandName": "catch",
+"packageName": "ErrorHandler",
+"disabled": false,
+"children": [
+{
+"uid": "0b0e6aac-b55f-45a0-ad59-b0f6f8fd96d2",
+"commandName": "assign",
+"packageName": "String",
+"disabled": false,
+"attributes": [
+{
+"name": "sourceString",
+"value": {
+"type": "STRING",
+"expression": "$Error-Description$"
+}
+}
+],
+"returnTo": {
+"type": "VARIABLE",
+"variableName": "strErrorReason"
+}
+},
+{
+"uid": "e243cabd-3919-4aea-857f-ea2a7ed9758a",
+"commandName": "logToFile",
+"packageName": "LogToFile",
+"disabled": false,
+"attributes": [
+{
+"name": "filePath",
+"value": {
+"type": "FILE",
+"expression": "file://$LogFilePath$"
+}
+},
+{
+"name": "logContent",
+"value": {
+"type": "STRING",
+"expression": "Error in $System:AATaskName$: $Error-LineNumber.Number:toString$ - $Error-Description$"
+}
+},
+{
+"name": "appendTimestamp",
+"value": {
+"type": "BOOLEAN",
+"boolean": true
+}
+},
+{
+"name": "logOption",
+"value": {
+"type": "STRING",
+"string": "APPEND_FILE"
+}
+},
+{
+"name": "encodingValue",
+"value": {
+"type": "STRING",
+"string": "ANSI"
+}
+}
+]
+}
+],
+"attributes": [
+{
+"name": "exceptionType",
+"value": {
+"type": "EXCEPTION",
+"exceptionName": "BotException",
+"packageName": "ErrorHandler"
+}
+}
+],
+"returns": {
+"errorMessage": {
+"type": "VARIABLE",
+"variableName": "Error-Description"
+},
+"errorLineNumber": {
+"type": "VARIABLE",
+"variableName": "Error-LineNumber"
+}
+}
+}
+]
+}
+],
+"variables": [
+{
+"name": "strLogFilePath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": false
+},
+{
+"name": "strErrorReason",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": true
+},
+{
+"name": "strScreenshotPath",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": true,
+"output": false
+},
+{
+"name": "window-1",
+"description": "",
+"type": "WINDOW",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false,
+"defaultValue": {
+"type": "WINDOW",
+"window": {
+"name": "ERP Portal*",
+"path": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+"class": "Chrome_WidgetWin_1",
+"handle": "0",
+"isChild": false,
+"location": {
+"top": 0,
+"left": 0
+},
+"size": {
+"height": 0,
+"width": 0
+}
+}
+},
+"readOnly": true
+},
+{
+"name": "Error-Description",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "Error-LineNumber",
+"description": "",
+"type": "NUMBER",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "intDateTimeStamp",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+},
+{
+"name": "m-string-start-in-path",
+"description": "",
+"type": "STRING",
+"subtype": "UNDEFINED",
+"input": false,
+"output": false
+}
+],
+"breakpoints": [],
+"packages": [
+{
+"name": "Comment",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Delay",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "ErrorHandler",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "If",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Keystrokes",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "LogToFile",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Recorder",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "Screen",
+"version": "3.0.0-20240115-120000"
+},
+{
+"name": "String",
+"version": "3.0.0-20240115-120000"
+}
+],
+"migrationJournalReviewIds": [
+500001
+],
+"workItemTemplateName": null,
+"properties": {
+"botCodeVersion": "1",
+"improvedNumberSupport": true,
+"timeout": "0s",
+"automationPriority": "PRIORITY_MEDIUM"
+}
+}
