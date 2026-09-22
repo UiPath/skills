@@ -26,18 +26,12 @@ The app and its function backend are **two sibling projects**, each with its own
 └── <BACKEND>/    # uip function new <BACKEND> -l ts; uipath.json = the functions map
 ```
 
-1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts --empty` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: `uip function pack` inside the app produces `<APP>.<VERSION>.nupkg`, but once the app is published, `uip function publish` under that id is rejected with `400` errorCode 2007 (`Project type has changed since the latest published version`) — Orchestrator will not switch a published package between the two types.
-2. `<BACKEND>` is the package id and the name of the auto-created process; Orchestrator slugs it (`[^a-zA-Z0-9]+` → `-`) into the `<PACKAGE_ID>` segment of the invoke URL ([deployment-guide.md](deployment-guide.md)). Use only lowercase letters, digits and `-` so package id, process name and URL segment coincide. Name it for the backend as a whole (`claims-backend`), not after one function — each function's `path` is its own slug beneath it.
+1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts --empty` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: `uip function pack` inside the app produces `<APP>.<VERSION>.nupkg`, but once the app is published, `uip function publish` under that id is rejected (`400`, `Project type has changed since the latest published version`) — a published package id cannot switch between the two types.
+2. `<BACKEND>` is the package id and the name of the process the app's SDK call resolves against. Use only lowercase letters, digits and `-`. Name it for the backend as a whole (`claims-backend`), not after one function — each function keeps its own `name` and `path` beneath it.
 
 ## Token Flow
 
-The app sends its PKCE access token on every function call:
-
-```ts
-headers: { Authorization: `Bearer ${token}` }
-```
-
-Deployed, it arrives as `ctx.user.accessToken` — delegated identity, the caller's folder permissions apply. The app's PKCE scope string MUST include `OR.Default` explicitly; it is auto-granted to any registered External App but is not implicit in the scope string, and omitting it makes the deployed trigger return 403:
+`Functions.invoke` sends the app's PKCE access token on every call — the app builds neither an `Authorization` header nor a trigger URL. Deployed, the token arrives as `ctx.user.accessToken` — delegated identity, the caller's folder permissions apply. The app's PKCE scope string MUST include `OR.Default` explicitly; it is auto-granted to any registered External App but is not implicit in the scope string, and omitting it makes the deployed trigger return 403:
 
 ```text
 openid profile email offline_access OR.Default
@@ -52,52 +46,40 @@ uip function serve    # terminal 1 — functions on :7070, hot reload
 npm run dev           # terminal 2 — app dev server (Vite, :5173)
 ```
 
-1. The app fetches `http://localhost:7070/<PATH>` directly — `serve` answers with CORS `Access-Control-Allow-Origin: *`, so the cross-port call works as-is.
+1. `Functions.invoke` has no local target, so under `import.meta.env.DEV` the app fetches `http://localhost:7070/<PATH>` directly — `serve` answers with CORS `Access-Control-Allow-Origin: *`, so the cross-port call works as-is. This is the only place the app fetches a function URL itself; keep the switch in one wrapper (below) so UI code is identical in both modes.
 2. Do NOT add `server.proxy` to the app's Vite config to reach the function — it breaks the app's OAuth callback (hard rule in the coded-apps guidance → `uipath-coded-apps`).
 3. `serve` decodes `ctx.user` from a forwarded Bearer JWT when the app sends one (decoded, not verified — dev convenience only); an unauthenticated call (plain curl) gets `ctx.user = null`. `ctx.robot` / `ctx.platform` local values and env fallbacks → [local-dev-guide.md](local-dev-guide.md).
 
 ## Deployed Calls from the App
 
-Deployed, call the function through the SDK's `Functions` service — confirm `node_modules/@uipath/uipath-typescript/dist/functions/index.d.ts` exists; if it is absent, the package's `release-metadata.json` names the `Functions` `since` version, or use the raw `fetch` below. The SDK marks the service `@experimental`; the raw `fetch` is the stable path. It looks the function up by its `defineFunction` `name` in the folder, resolves the invoke URL from the trigger, and sends input as query string for `GET` and as JSON body otherwise. Scope: `OR.Default`, plus `OR.Folders.Read` when you pass `folderId`/`folderPath` instead of `folderKey` (the SDK then reads `/odata/Folders` to resolve the key) — the SDK's shipped `docs/oauth-scopes.md`, § Functions.
+Deployed, the app calls the function through the SDK's `Functions` service — never a hand-built `…/orchestrator_/t/…` trigger URL, even though the function has HTTP semantics; the trigger URL is not an app-facing API. `invoke` takes the function's `defineFunction` `name` (unique within its folder) and typed input, and handles route, transport and token itself. It needs an SDK version that ships the `functions` subpath (`release-metadata.json` in the package lists the `since` version) and is tagged `@experimental` in the SDK — still the intended call path. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey` (the SDK's shipped `docs/oauth-scopes.md`, § Functions).
 
 ```ts
+import type { UiPath } from "@uipath/uipath-typescript/core";
 import { Functions } from "@uipath/uipath-typescript/functions";
 
-const functions = new Functions(sdk); // the app's initialized UiPath instance
-const result = await functions.invoke<Input, Output>(
-  { name: "<FUNCTION_NAME>" },  // the defineFunction name — not the package or process name
-  input,
-  { folderKey: "<FOLDER_KEY>" }, // or folderId / folderPath; omit when the SDK was initialized with a folder context
-);
-```
-
-Non-2xx responses throw the SDK's error types (`statusCode` on the error); the function-side body shapes are in the error contract below. `Functions.invoke` targets the deployed trigger only — under the local two-server loop the app still fetches `http://localhost:7070/<PATH>`, so keep the `import.meta.env.DEV` switch in one wrapper and leave UI code identical.
-
-Raw `fetch` — the fallback when the service is unavailable, and always the local-dev path — sends the app's PKCE token from `sdk.getToken()`:
-
-```ts
-const FN_BASE = import.meta.env.DEV
-  ? "http://localhost:7070"
-  : "https://api.<HOST>/<ORG_ID>/<TENANT_ID>/orchestrator_/t/<FOLDER_KEY>/<PACKAGE_ID>";
-
-async function callFn<T>(path: string, input?: unknown, token = sdk.getToken()): Promise<T> {
-  const res = await fetch(`${FN_BASE}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    // Never an empty body: the deployed gateway rejects it with 400 errorCode 4804.
-    body: JSON.stringify(input ?? {}),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-  return body as T;
+export async function requestQuote(sdk: UiPath, input: QuoteInput): Promise<QuoteOutput> {
+  if (import.meta.env.DEV) {
+    const token = sdk.getToken();
+    const res = await fetch("http://localhost:7070/quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(input),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+    return body as QuoteOutput;
+  }
+  return new Functions(sdk).invoke<QuoteInput, QuoteOutput>(
+    { name: "quote" },             // the defineFunction name — not the package or process name
+    input,
+    { folderKey: "<FOLDER_KEY>" }, // or folderId / folderPath; omit when the SDK was initialized with a folder context
+  );
 }
 ```
 
-- Always the `api.<HOST>` subdomain — the portal domain sends no CORS headers ([http-semantics-guide.md](http-semantics-guide.md#cors)). curl doesn't enforce CORS, so a portal-domain URL "working" in a terminal proves nothing about the browser.
-- `<ORG_ID>`/`<TENANT_ID>` as GUIDs (preferred over slugs in browser URLs). `<FOLDER_KEY>` is the folder's Key GUID, shared by every function in the folder — discovery recipe in [deployment-guide.md](deployment-guide.md).
+- The `DEV` branch is the local two-server loop only (`uip function serve`, above). There is no deployed `fetch` path.
+- Folder context is required: pass one of `folderKey` / `folderId` / `folderPath`, or rely on the folder context the SDK was initialized with.
 
 ## Timeout Budget
 
@@ -118,16 +100,17 @@ Put `signal: AbortSignal.timeout(8_000)` on every external `fetch` inside the ha
 
 ## Error Contract for the Frontend
 
-Every non-2xx response from the function runtime has the shape `{ "error": "<MESSAGE>", "details"?: ... }`; gateway errors (last row) carry `{ "errorCode": <N>, "message": "..." }` instead:
+A resolved `invoke` is the function's declared output. Any non-2xx answer is thrown as a `UiPathError` subclass carrying `statusCode` and `message`. Branch on `statusCode`; do not parse `message`:
 
-| Source | Status / body | Frontend treatment |
+| Source | `statusCode` | Frontend treatment |
 |---|---|---|
-| Thrown `FunctionError(message, status)` | That status, `error` = message | 4xx: user-actionable — surface `error` |
-| Input schema validation failure | `400`, `error` = `"ValidationFailed"`, `details` = per-field errors | Client bug — fix the request shape |
-| Plain `throw` in the handler | `500`, `error` = message, `details` = stack | Generic failure UI; treat as transient |
-| 18 s guard above | `504`, `error` = `"Function timed out"` | Retryable |
-| Gateway (no function reached) | e.g. `403` missing `OR.Default`, `404` errorCode `1623` bad route/folder key, `400` errorCode `4804` empty body | Wiring bug — recheck scope, URL, body |
+| Thrown `FunctionError(message, status)` | That status | 4xx: user-actionable — map the status to UI text |
+| Input schema validation failure | `400` | Client bug — fix the request shape |
+| Plain `throw` in the handler | `500` | Generic failure UI; treat as transient |
+| 18 s guard above | `504` | Retryable |
+| No function with that `name` in the folder context | `404` | Wiring bug — check the `defineFunction` name and the folder option |
+| Gateway (no function reached) | `403` missing `OR.Default` | Wiring bug — recheck the app's scope string |
 
-Branch on status class: 4xx is user-actionable (show `error`, let the user correct input or permissions), 5xx is transient/retryable. Full status semantics → [http-semantics-guide.md](http-semantics-guide.md).
+4xx is user-actionable, 5xx is transient/retryable. Full status semantics → [http-semantics-guide.md](http-semantics-guide.md).
 
-Response shape discipline: the output schema describes success data only, and errors are thrown — a function never returns an `errors[]` array inside a 200. The frontend can therefore branch on `res.ok` alone: ok → body matches the declared output contract; not ok → body carries `{error, details?}`.
+Response shape discipline: the output schema describes success data only, and errors are thrown — a function never returns an `errors[]` array inside a 200. The frontend therefore branches on thrown vs resolved alone: resolved → the declared output contract; thrown → `statusCode`.

@@ -7,8 +7,8 @@ description: >
   package.json and uipath.json (never a `functions/` dir or the functions SDK
   inside the app — one package id cannot be both a WebApp and a Function), the
   backend name is its own package id, the app requests `OR.Default`, the app
-  calls the function through the SDK `Functions` service or a JSON-body fetch
-  that never targets the portal domain, and no Vite proxy is added. Offline by
+  calls the function through the SDK `Functions` service (never a hand-built
+  trigger URL), and no Vite proxy is added. Offline by
   design: the registry is unreachable and `uip` is unauthenticated, so
   install/pack/publish/deploy are out of scope and the prompt says so.
 tags: [uipath-functions, integration, mode:build, lifecycle:generate, feature:js]
@@ -79,7 +79,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Sibling layout, distinct package id, app untouched by the backend, OR.Default scope, SDK/fetch wiring, no Vite proxy"
+    description: "Sibling layout, distinct package id, app untouched by the backend, OR.Default scope, SDK Functions.invoke wiring, no Vite proxy"
     command: "python3 $REFERENCE_DIR/check_js_app_backend_layout.py layout"
     timeout: 30
     expected_exit_code: 0

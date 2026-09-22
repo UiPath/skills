@@ -16,10 +16,11 @@ uipath-functions coded-app wiring guide:
      package.json, no `quote-app/functions/` dir, no `defineFunction` under
      `quote-app/src`.
   4. `quote-app/uipath.json` `scope` carries the `OR.Default` token.
-  5. `quote-app/src/api/quote.ts` calls the function either through the SDK
+  5. `quote-app/src/api/quote.ts` calls the deployed function through the SDK
      `Functions` service (`@uipath/uipath-typescript/functions`, `new
-     Functions(`, `.invoke(`) or via `fetch` with a Bearer header and a JSON
-     body; executable code never names the portal domain `cloud.uipath.com`.
+     Functions(`, `.invoke`); executable code never hand-builds a trigger URL
+     (`orchestrator_/t/`) nor names the portal domain `cloud.uipath.com`. A
+     `fetch` to `http://localhost:7070` (the local serve loop) is allowed.
   6. `quote-app/vite.config.ts` gained no `proxy`.
 
 Run as `check_js_app_backend_layout.py layout` (checks 1 minus the backend
@@ -173,22 +174,18 @@ def check_app_wiring() -> None:
         and re.search(r"new\s+Functions\s*\(", src)
         and re.search(r"\.invoke\s*(<.*?>)?\s*\(", src, re.DOTALL)
     )
-    uses_fetch = (
-        re.search(r"\bfetch\s*\(", src)
-        and re.search(r"Authorization", src)
-        and re.search(r"JSON\.stringify\s*\(", src)
-    )
-    if not (uses_sdk or uses_fetch):
+    if not uses_sdk:
         sys.exit(
-            "FAIL: quote-app/src/api/quote.ts must call the function via the SDK Functions service "
-            "(@uipath/uipath-typescript/functions, new Functions(sdk).invoke(...)) or via fetch with a "
-            "Bearer header and a JSON body"
+            "FAIL: quote-app/src/api/quote.ts must call the deployed function through the SDK Functions service "
+            "(@uipath/uipath-typescript/functions, new Functions(sdk).invoke(...)) — not a hand-built trigger URL"
         )
+    if re.search(r"orchestrator_/t/", src):
+        sys.exit("FAIL: hand-built trigger URL found — deployed calls go through Functions.invoke; only http://localhost:7070 (local serve) may be fetched")
     if re.search(r"cloud\.uipath\.com", src):
         sys.exit("FAIL: browser calls must target the api.* host — cloud.uipath.com found in executable code")
     if not re.search(r"export\s+(default\s+)?(async\s+)?(function\s+|const\s+|let\s+)?requestQuote\b|export\s*\{[^}]*\brequestQuote\b", src):
         sys.exit("FAIL: quote-app/src/api/quote.ts must export requestQuote")
-    print("OK: app calls the function via " + ("the SDK Functions service" if uses_sdk else "fetch"))
+    print("OK: app calls the function via the SDK Functions service")
 
 
 def check_no_vite_proxy() -> None:
