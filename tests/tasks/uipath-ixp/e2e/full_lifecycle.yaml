@@ -123,7 +123,7 @@ success_criteria:
     description: "Agent updated a field prompt"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts)(?=[^\r\n]*--updates)(?=[^\r\n]*"group"\s*:\s*"[^"\r\n]+")(?=[^\r\n]*"name"\s*:\s*"[^"\r\n]+")[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 

@@ -18,10 +18,10 @@ sandbox:
     - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
-  The `Invoice Number` field on IXP project `my_invoices-f1afa9ef-ixp` is
-  scoring poorly. Validation shows the model is confusing the Purchase
-  Order (PO) number with the invoice number. Update the field instruction
-  to clarify:
+  The `Invoice Number` field in the `Invoice Header` field group on IXP
+  project `my_invoices-f1afa9ef-ixp` is scoring poorly. Validation shows
+  the model is confusing the Purchase Order (PO) number with the invoice
+  number. Update the field instruction to clarify:
 
     "Extract the unique invoice identifier from the document header.
     Do NOT use the Purchase Order (PO) number, even if it is the most
@@ -56,14 +56,14 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  # The name must be the field's exact taxonomy name — `update-prompts` matches
-  # by name and reports an unmatched one WITHOUT failing, so a reworded name is
-  # a silent no-op. `Invoice Number` is the name in _setup/fixtures/taxonomy.json
-  # and in the skill's own examples; keep the prompt and this pattern on it.
+  # An entry is addressed by `group` + `name`, and `update-prompts` reports an
+  # unmatched entry WITHOUT failing — so a reworded name is a silent no-op. Both
+  # names are exact from _setup/fixtures/taxonomy.json (`Invoice Header` >
+  # `Invoice Number`); the mock fails every read, so the prompt supplies them.
   - type: file_matches_regex
-    description: "CLI received the structured `Invoice Number` update with the requested instruction"
+    description: "CLI received the structured `Invoice Header` > `Invoice Number` update with the requested instruction"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*\}\s*\])(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"name"\s*:\s*"Invoice Number")(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"instructions"\s*:\s*"[^"\r\n]*Extract the unique invoice identifier[^"\r\n]*Do NOT use the Purchase Order[^"\r\n]*")(?=[^\r\n]*--output\s+json(?:\s|$))[^\r\n]*)$
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*\}\s*\])(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"group"\s*:\s*"Invoice Header")(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"name"\s*:\s*"Invoice Number")(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"instructions"\s*:\s*"[^"\r\n]*Extract the unique invoice identifier[^"\r\n]*Do NOT use the Purchase Order[^"\r\n]*")(?=[^\r\n]*--output\s+json(?:\s|$))[^\r\n]*)$
     weight: 2.5
     pass_threshold: 1.0
