@@ -87,12 +87,27 @@ OUTPUT_TYPES = {
     "caseKey": "string",
     "jiraIssueKey": "string",
 }
-# Connector activities are matched by (connectorKey, path substring): the
-# registry may emit versioned or templated paths, and the runtime correlates
-# on the element id either way.
-JIRA_CREATE = (escalation_is.JIRA_CONNECTOR, "curated_create_issue")
+# Connector activities are matched by connectorKey plus a substring of the
+# registry path or object name: the registry may emit versioned or templated
+# paths, and the runtime correlates on the element id either way.
+#
+# Accept every Jira object that carries a curated Create-Issue marker.
+# Four objects create an issue on this connector and all four behave
+# identically (verified live: same body, same {self, key, id}, same ticket),
+# but `create_issue` carries no `curated` block, so it is the generic
+# operation the prompt rules out. Among the curated three, `uip is resources
+# describe` cannot rank: its summary maps `curated` to the display name and
+# drops the `curated.isHidden` flag that marks the live one
+# (integrationservice-sdk metadata/resource-metadata.ts), printing
+# `Curated: "Create Issue"` for two of them. Pinning one spelling therefore
+# fails a process that creates the right ticket.
+JIRA_CREATE = (
+    escalation_is.JIRA_CONNECTOR,
+    ("curated_create_issue", "curated-issue-create", "curated_issue"),
+)
+GENERIC_REST_PREFIX = "/rest/api"
 SLACK_SEND_AS = "user"
-SLACK_SEND = (escalation_is.SLACK_CONNECTOR, "send_message_to_channel")
+SLACK_SEND = (escalation_is.SLACK_CONNECTOR, ("send_message_to_channel",))
 COMPLETED_STATUSES = {"Completed", "Successful"}
 
 
@@ -161,17 +176,36 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
 
     connectors = index_runtime_connectors(process)
 
-    def ids_for(connector_key: str, path_needle: str) -> tuple[str, ...]:
+    def ids_for(connector_key: str, needles: tuple[str, ...]) -> tuple[str, ...]:
         found = tuple(
             element_id
-            for (key, route), element_ids in connectors.items()
-            if key == connector_key and path_needle in route
+            for (key, path, object_name), element_ids in connectors.items()
+            if key == connector_key
+            # A curated object name never rescues a raw REST path: a node
+            # carrying both calls the provider's API directly whatever its
+            # objectName claims, and the prompt forbids that outright.
+            and not path.startswith(GENERIC_REST_PREFIX)
+            and any(
+                needle in path or needle in object_name for needle in needles
+            )
             for element_id in element_ids
         )
         if not found:
+            generic = sorted(
+                element_id
+                for (key, path, _), element_ids in connectors.items()
+                if key == connector_key and path.startswith(GENERIC_REST_PREFIX)
+                for element_id in element_ids
+            )
+            if generic:
+                raise CheckFailure(
+                    f"{connector_key} node(s) {generic} call the provider's "
+                    f"raw REST API; the task requires the curated activity "
+                    f"(one of {list(needles)})"
+                )
             raise CheckFailure(
-                f"no {connector_key} activity with a registry path "
-                f"containing {path_needle!r}"
+                f"no {connector_key} activity whose registry path or object "
+                f"name contains one of {list(needles)}"
             )
         return found
 

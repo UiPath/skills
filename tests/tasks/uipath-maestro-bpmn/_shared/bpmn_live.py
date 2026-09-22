@@ -292,12 +292,17 @@ def connector_context(element: ET.Element) -> dict[str, str]:
 
 def index_runtime_connectors(
     process: ET.Element,
-) -> dict[tuple[str, str], tuple[str, ...]]:
-    """Index the element ids of every connector-bearing node, by (key, path).
+) -> dict[tuple[str, str, str], tuple[str, ...]]:
+    """Index the element ids of every connector-bearing node, by
+    (key, path, objectName).
 
     Scans all descendants rather than a fixed tag list: registry templates
     may emit a connector activity as sendTask, serviceTask, or a plain task,
     and the runtime correlates on the element id either way.
+
+    Both route fields are carried: a connector can expose one operation under
+    several objects whose paths differ only in spelling, so a caller matching
+    on the path alone cannot say which of them it means.
 
     Returns ALL ids per key. Placing the same connector operation on more than
     one branch is a legitimate topology -- a Drive copy reached from two
@@ -306,15 +311,17 @@ def index_runtime_connectors(
     which forfeited the whole live criterion for a correct process.
     """
 
-    connectors: dict[tuple[str, str], list[str]] = {}
+    connectors: dict[tuple[str, str, str], list[str]] = {}
     for node in process.iter():
         identifier = node.attrib.get("id")
         if not identifier:
             continue
         context = connector_context(node)
-        key = (context.get("connectorKey", ""), context.get("path", ""))
-        if not all(key):
+        connector_key = context.get("connectorKey", "")
+        path = context.get("path", "")
+        if not connector_key or not path:
             continue
+        key = (connector_key, path, context.get("objectName", ""))
         connectors.setdefault(key, []).append(identifier)
     return {key: tuple(ids) for key, ids in connectors.items()}
 
