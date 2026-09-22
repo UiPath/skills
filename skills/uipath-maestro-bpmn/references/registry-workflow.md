@@ -120,8 +120,8 @@ For a connector or operation not listed, describe every candidate and keep
 the ones whose `Operation.Curated` names the activity asked for. Expect more
 than one to survive — that is what happens on Jira — and treat the remainder
 as undecidable from the CLI: pick one, then say in your summary which object
-you used and which others tied. Never pick silently. The wrong one is
-accepted by `validate` and by `pack`, and fails only at run time.
+you used and which others tied. Never pick silently — `validate` and `pack`
+accept any object name, so nothing local tells the user you guessed.
 
 The response adds an enrichment block with the live field metadata. Match the
 key case-insensitively — the CLI's output formatter has changed key casing
