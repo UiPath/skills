@@ -164,7 +164,7 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Runtime check                    <- only when the user said yes
-<Passed in <duration> | Passed on run <n> after <k> fixes | Failed at <file>: <activity> — <exception type>: <first line of message>, after <k> fixes, <u> undone | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
+<Passed in <duration> | Passed on run <n> after <k> fix(es) | Failed at <file>: <activity> — <exception type>: <first line of message>, after <k> fix(es), <u> undone | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
 - <migration-related | not migration-related>: <why>. <what to do>     <- only when failed
 
 ### Next steps
@@ -221,6 +221,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Running the check with `debug start`; the debugger stops at every throw, handled by a Try Catch or not, and holds the session, so it says nothing about whether the workflow fails
 - Running or validating the source project through the headless Studio while the migrated one is open; both carry the same `projectId` and the host has mixed their files
 - Inferring window state from `Get-Process` or any process listing before a rerun; it shows one window per process and hides the rest, the UIA package's window snapshot is the only source
+- Polling the run log or the instance list more than once a minute while a run is in flight; a workflow can run for hours, every poll is a full turn that copies the log into the context, and the completion notification arrives either way
 - Passing `--skip-build` to the runtime check, or probing it with `debug break` / `debug continue`; the first fails on a headless Studio that has not built the project itself, the second returns `Success` with or without a session
 - Running or cancelling the migrated project from Studio's integrated terminal without clearing `UIPATH_STUDIO_PID`; the rpa tool opens the migrated project in the user's Studio, which closes their project and ends the terminal session
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
