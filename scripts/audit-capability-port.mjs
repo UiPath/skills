@@ -71,11 +71,24 @@ export function commands(text) {
   return found;
 }
 
-/** Bolded imperatives — the rules and anti-patterns a reader must not lose. */
+/**
+ * Bolded imperatives — the rules and anti-patterns a reader must not lose.
+ *
+ * The keyword is matched case-insensitively because the house style shouts the
+ * negation: `**Do NOT scaffold …**` outnumbers `**Do not …**` across the Maestro
+ * references, and a case-sensitive match read those files as ruleless — it
+ * reported 0 rules for the IxP plugin, whose four `Do NOT` rules are the ones a
+ * port must not drop. Anchoring the keyword to the start of the bolded span
+ * keeps `**cannot …**` / `**What NOT to do**` out. De-duplication folds case so
+ * one rule written both ways is not counted twice.
+ */
 export function rules(text) {
-  return [...new Set(
-    [...text.matchAll(/\*\*((?:Never|Always|Do not) [^*]{6,}?)\*\*/g)].map((m) => m[1]),
-  )].sort();
+  const byKey = new Map();
+  for (const [, rule] of text.matchAll(/\*\*((?:never|always|do\s+not)\s[^*]{6,}?)\*\*/gi)) {
+    const key = rule.toLowerCase().replace(/\s+/g, " ");
+    if (!byKey.has(key)) byKey.set(key, rule);
+  }
+  return [...byKey.values()].sort();
 }
 
 /** A rule counts as covered when at least half its distinctive words appear. */

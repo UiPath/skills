@@ -435,6 +435,8 @@ Signature: `ixpExtract({ project, modelName, name, folderName, fileRef, pageRang
 
 Copy identity fields from a freshly pulled tenant registry; never construct them.
 
+Asking WHICH models exist ("what document extractors can I add?") is read-only Q&A, not a build: one `registry search 'uipath.ixp'` is the whole answer, and `registry get` is never fanned out across its hits.
+
 **Reference: [`references/ixp.md`](references/ixp.md)**
 
 ## Document classify and Dynamic Extract
