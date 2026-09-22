@@ -70,6 +70,8 @@ Append (not prepend) the trigger node:
 
 **`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None"}` when writing.
 
+> **This recipe is not the whole `data.inputs`.** An `sdd.md` variable row with `Category=In` bound to this trigger adds a fourth entry that the global-vars plugin writes onto **this node**: the bridge in `data.inputs.outputs[]`, shaped `{name, type, source: "=vars.<formal-slot-id>", var}`. The recipe above never emits `outputs`, so a node that satisfies it can still be incomplete. Follow [`global-vars/impl-json.md` § In argument](../../variables/global-vars/impl-json.md#in-argument) for the bridge and for the `data.inputs` shape it requires on a bare manual trigger — it governs, not the literal above. Without the bridge, `=vars.<name>` is undefined at fire and `uip maestro case validate` still returns `Valid`; [Step 12 Check 17](../../../implementation.md) is the only gate that catches it.
+
 ## Recipe — `entry-points.json` (append to `entryPoints`)
 
 Read the file, parse, append:
@@ -111,6 +113,7 @@ After writing, confirm:
 - `nodes[].data.typeVersion === "1.0.0"`.
 - `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
 - `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
+- `nodes[].data.inputs.outputs[]` holds one bridge per In-arg bound to this trigger. Skip when the SDD declares no `Category=In` row against it; otherwise verify the bridge per [`global-vars/impl-json.md` § In argument](../../variables/global-vars/impl-json.md#in-argument) — `source` present, no `value` key.
 - **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
