@@ -87,7 +87,7 @@ Summarize to the user in one line: tool version and location.
 
 Only when `UiPath.UIAutomation.Activities` is a dependency. Rationale and details: [packages/uia-guide.md § Resolve the target line](references/packages/uia-guide.md#resolve-the-target-line).
 
-1. If the user named a line or version ("migrate to 26.10", "use 25.10.40"), resolve that and skip the question.
+1. If the user named a line or version ("migrate to 26.10", "use 25.10.40"), resolve that and skip the question. A version below the minimum in [uia-guide.md § Version gates](references/packages/uia-guide.md#version-gates) cannot be used: say so, name the minimum, and ask for another; the tool enforces the same minimum in Step 3.
 2. Otherwise resolve the candidate lines from the official UiPath NuGet feed. The script needs no project and no login. Do not use `uip rpa packages versions` here: the headless Studio host it starts refuses to open Legacy projects.
 
    ```bash
@@ -96,7 +96,7 @@ Only when `UiPath.UIAutomation.Activities` is a dependency. Rationale and detail
 
    Output: the two most recent LTS lines (`<year>.10`) with their highest stable patch; the newest is `recommended`.
 3. Ask once with `AskUserQuestion`: newest line first, labeled `(Recommended)`, each option showing `<line>.x → <version>`. Say once that a package version runs only on Studio and robots at or above the minimum its release notes list, so the older line is the safe pick when the fleet is behind. The project's `studioVersion` field is not a signal: it records the Studio that last saved the Legacy project.
-4. If the script prints `error` (feed unreachable), use the tool default without asking and record "target version: tool default (feed unreachable)" for the report.
+4. If the script prints `error` (feed unreachable), pass no version and let the tool pin its built-in default: do not ask. Step 3 sets `<UIA_VERSION>` from the version the tool reports, and the report line carries the suffix "(tool default, feed unreachable)".
 
 Record the chosen version as `<UIA_VERSION>`.
 
@@ -106,13 +106,13 @@ Assemble `<PACKAGE_FLAGS>` from every package guide read in Step 1 (Hook 1 secti
 
 ```bash
 mkdir -p "<PROJECT_DIR>/.upgrade"
-"<MIGRATOR_EXE>" analyze --project-path "<PROJECT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
+"<MIGRATOR_EXE>" analyze --project-path "<PROJECT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif" 2> "<PROJECT_DIR>/.upgrade/analyze-latest.err"
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/analyze-latest.sarif" --out "<PROJECT_DIR>/.upgrade/analyze-latest.md"
 ```
 
-Omit `--uia-package-version` when the project has no UIAutomation dependency. The summarizer prints a short summary (status, counts, blockers, what needs attention grouped by reason and by file) and writes the full per-item report to the `--out` file. Show the user the short summary as is.
+Omit `--uia-package-version` when the project has no UIAutomation dependency or when Step 2 fell back to the tool default; never pass the flag with an empty value. The summarizer prints a short summary (status, counts, blockers, a `Reason:` line for a `failed` without blockers or an `unknown`, step failures, what needs attention grouped by reason and by file) and writes the full per-item report to the `--out` file. Show the user the short summary as is.
 
-Check the effective UIAutomation version in the "Package versions" row against `<UIA_VERSION>`. When they differ, the flag did not bind. The usual cause is the space-separated form (`--uia-package-version 25.10.39`), which the tool accepts and ignores; fix the command to the `=` form and rerun analyze. If the effective version still differs, stop and ask the user whether to proceed on the effective version or abort. Do not compensate by editing package versions on the output afterwards. Then apply the stop conditions from [sarif-triage-guide.md § Stop conditions](references/sarif-triage-guide.md#stop-conditions):
+Read the UIAutomation version in the summarizer's `Packages:` line (the `to` value): it is what `<OUTPUT_DIR>/project.json` will hold. When Step 2 fell back, set `<UIA_VERSION>` to it now. Otherwise, when it differs from `<UIA_VERSION>`, the flag did not bind. The usual cause is the space-separated form (`--uia-package-version 25.10.39`), which the tool accepts and ignores; fix the command to the `=` form and rerun analyze. If it still differs, the tool refused the request: its `UIAUTOMATION-PACKAGE-UPGRADE` message reads `Cannot use version '<X>' … Minimum required version is '<Y>'. Using minimum version.` Tell the user the requested version cannot be used and that `<Y>` is the lowest possible, and ask whether to migrate to `<Y>` or abort. On yes, `<UIA_VERSION>` is `<Y>` from here on; the analyze results already describe that version, so no rerun is needed. Do not compensate by editing package versions on the output afterwards. Then apply the stop conditions from [sarif-triage-guide.md § Stop conditions](references/sarif-triage-guide.md#stop-conditions):
 
 | Analyze outcome | Action |
 |---|---|
@@ -120,18 +120,19 @@ Check the effective UIAutomation version in the "Package versions" row against `
 | `RESTORE-MISSING-PACKAGE` / `RESTORE-INCOMPATIBLE-PACKAGE` | Stop. Explain which package, offer the Orchestrator-feed command with placeholders (Rule 6) or `--ignore-missing-dependencies` with its consequences. Rerun analyze after the user acts. |
 | `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED` | Rule 9. Stop. |
 | Package guide stop condition | Follow the guide. |
-| `status: failed` for any other reason | Stop. Show the failing rule messages and the `.upgrade` log path. |
+| Summarizer exits 2 (`cannot parse`, `no .sarif files`) | The tool wrote no log: it died or rejected the command line. Read `<PROJECT_DIR>/.upgrade/analyze-latest.err` and the exit code, fix the cause, rerun analyze. A crash is not yours to fix: stop and report it with the `.err` content. |
+| `status: failed` or `status: unknown` for any other reason | Stop. Show the blockers or the `Reason:` line and the `.upgrade` log path. Never continue to Step 4. |
 
 ### Step 4 — Upgrade
 
 Same flags as the analyze run, plus the output path:
 
 ```bash
-"<MIGRATOR_EXE>" upgrade --project-path "<PROJECT_DIR>" --output-path "<OUTPUT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif"
+"<MIGRATOR_EXE>" upgrade --project-path "<PROJECT_DIR>" --output-path "<OUTPUT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif" 2> "<PROJECT_DIR>/.upgrade/upgrade-latest.err"
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif" --out "<PROJECT_DIR>/.upgrade/upgrade-latest.md"
 ```
 
-Confirm `<OUTPUT_DIR>/project.json` exists and its `targetFramework` is `Windows`. If the summary status is `failed`, report and stop; do not retry with different flags unless a package guide says so.
+Confirm `<OUTPUT_DIR>/project.json` exists and its `targetFramework` is `Windows`. If the summarizer cannot parse the log or the status is `failed` or `unknown`, report and stop: `<OUTPUT_DIR>` may be partially written, so delete or rename it before any rerun (Step 1 item 4). Do not retry with different flags unless a package guide says so.
 
 ### Step 5 — Verify
 
@@ -151,7 +152,7 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 
 ```markdown
 ## Migration result: <status>
-<N> activities migrated, <L> left classic, <M> need attention, build <passed|failed|not verified>. Output: <OUTPUT_DIR>. UIAutomation <from> → <UIA_VERSION>.
+<N> activities migrated, <L> left classic, <M> need attention, build <passed|failed|not verified>. Output: <OUTPUT_DIR>. UIAutomation <from> → <UIA_VERSION>.   <- append " (tool default, feed unreachable)" after the version when Step 2 fell back
 Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR>/.upgrade/<name>-<id>.html   <- only when L + M > 0; left-classic activities still run as classic and are listed there
 
 ### Needs attention (<M>)            <- only when M > 0

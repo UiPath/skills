@@ -15,12 +15,13 @@ Core options come first, then one block per active extension. A flag named anywh
 
 ## Exit code
 
-`0` for success, partial success, and failure alike. Only an unhandled crash returns `1`. Status comes from the SARIF results (see [sarif-triage-guide.md](sarif-triage-guide.md)).
+`0` for success, partial success, and failure alike: every exception inside a step, a crashed core step included, is caught and written into the SARIF as a result (rule `ERROR` or `WARNING`, message `Step failed: <Step> - <exception>`), and the log is still printed. Non-zero only when the command never ran, a rejected command line or a startup crash; then stdout holds no log and the one-line cause is on stderr. Status comes from the SARIF results (see [sarif-triage-guide.md](sarif-triage-guide.md)).
 
 ## Output streams
 
 - `--output-format sarif`: stdout is the SARIF 2.1.0 log, sometimes preceded by stray `info:` lines from extension steps. Redirect it to a file; the summarizer skips the leading lines, a raw JSON parse does not. Console logging is otherwise suppressed and no browser opens.
 - `--output-format console` (the default): a text summary plus an HTML report that the tool opens in the browser. Never use it from the agent.
+- stderr: normally empty. It carries the command-line validation errors and the `Error: <message>` line of a startup crash, the two cases where stdout holds no log at all. Steps 3 and 4 redirect it to `analyze-latest.err` / `upgrade-latest.err` in `.upgrade` so it survives a background run and can be read after the fact.
 
 ## The `.upgrade` folder
 

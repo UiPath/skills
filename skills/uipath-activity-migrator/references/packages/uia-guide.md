@@ -12,7 +12,7 @@ Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the ins
 
 | Flag | Use |
 |---|---|
-| `--uia-package-version=<VER>` | Always pass the resolved `<UIA_VERSION>`. The tool raises values below its built-in minimum and reports the clamp under `UIAUTOMATION-PACKAGE-UPGRADE` at warning level; confirm the effective version from that message after analyze |
+| `--uia-package-version=<VER>` | Pass the resolved `<UIA_VERSION>`; omit the flag when Step 2 fell back to the tool default. A value below the tool's built-in minimum is refused and the minimum used instead, reported under `UIAUTOMATION-PACKAGE-UPGRADE` at warning level as `Cannot use version … Minimum required version is … Using minimum version.`; Step 3 relays that to the user |
 | `--uia-fix-selector-strategy=true` | Only on rerun, when the build fails with an ambiguous `SelectorStrategy` (`CS0104` / `BC30561`). Fully qualifies the enum in pre-existing expressions |
 | `--uia-enable-partial-migration=true` | Only when the user asks and `--help` lists it. Emits the closest modern activity even when fidelity is lost; the result needs manual review. Needs a package that supports it (see version gates); older packages ignore the flag |
 
@@ -42,7 +42,7 @@ Goal: the latest stable patch of the release line the client's robots run.
    The script drops prerelease versions, groups by `major.minor`, keeps LTS lines (minor `10`), takes the highest stable patch per line, drops lines below the minimum, and returns the two most recent lines. Do not use `uip rpa packages versions` for this: it starts the headless Studio host, which refuses Legacy projects and needs a project folder. Set `UIPATH_ACTIVITY_MIGRATOR_FEED_URL` to a mirror's NuGet v3 flat-container base when the public feed is blocked.
 3. The newest candidate is the recommendation. Compatibility runs one way: a package version works on Studio and robots at or above the minimum its release notes list, and an older package always works on a newer host. Do not use `studioVersion` from `project.json` as a signal; it records the Studio that last saved the Legacy project, not the one that will open the result or the robots that will run it.
 4. Ask once with `AskUserQuestion`. Newest line first, labeled `(Recommended)`. Option label: `<line>.x → <resolved version>`. Option description for the newest: "Longest support ahead; requires Studio and robots at or above the minimum this package version lists in its release notes." For the older: "Safe pick when the fleet is behind that minimum."
-5. Script prints `error` (feed unreachable): use the tool default, do not ask, and record "target version: tool default (feed unreachable)" for the report.
+5. Script prints `error` (feed unreachable): pass no version and let the tool pin its built-in default; do not ask. Step 3 sets `<UIA_VERSION>` from the version the tool reports, and the report line carries the suffix "(tool default, feed unreachable)".
 
 ### Stop conditions specific to this package
 
@@ -70,22 +70,26 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
 
 ## Hook 3 — After upgrade
 
-1. **Ambiguous `SelectorStrategy` build errors** (`CS0104`, `BC30561`): delete `<OUTPUT_DIR>`, rerun Step 4 with `--uia-fix-selector-strategy=true`, then rebuild. Do not hand-edit the expressions.
-1. **No version edits on the output.** When the tool pinned something other than `<UIA_VERSION>`, that was handled in Step 3; do not raise `UiPath.UIAutomation.Activities` on the output to make up the difference, and do not advise the user about future package upgrades in the report.
-2. **Annotations.** Migrated activities carry design-time annotations, one line per message: `[PostMigration Action Required]: <TYPE>: <message>`, followed by `[Existing annotation]: <user text>` when the classic activity had one. List them per file for the report:
+Actions, in this order, once the Step 5 build passed:
+
+1. **Annotations.** Migrated activities carry design-time annotations, one line per message: `[PostMigration Action Required]: <TYPE>: <message>`, followed by `[Existing annotation]: <user text>` when the classic activity had one. List them per file; they are the needs-attention items of the report:
 
    ```bash
    grep -rn "PostMigration Action Required" --include=*.xaml "<OUTPUT_DIR>"
    ```
 
-3. **Expression-selector defects.** When the output contains `.ToStringWithDelimiter()` markers, run the full procedure in [uia-post-migration-fix-guide.md](../uia-post-migration-fix-guide.md) with `<OUTPUT_DIR>` as its `<MIGRATED_DIR>`: scan, classify each variable's value, present the findings table, confirm once, apply Fix 1 and Fix 2 with targeted edits, validate each edited file, then rebuild. Never rework or "improve" a selector that carries the marker; the defects are structural, and a selector rewrite destroys the variable binding.
-4. **Leftover classic activities** compile and run on the Windows framework; they are not broken. Report them as the left-classic count on the status line; the summarizer's "UIA not migrated" section in the full list is the inventory, and the report never lists them one by one. Do not name a modern equivalent for any of them: several classic activities (Wait Attribute, Anchor Base, Start Process among them) have no one-to-one modern counterpart, and a guessed equivalent sends the user down the wrong path. Do not count `<ui:` elements in the XAML to cross-check the count: that prefix also covers classic System and Excel activities, and a naive pattern counts property elements such as `<ui:Highlight.Target>` as activities.
-5. **What the output now contains.** Count the modern activity elements the run produced (opening tags only; property elements such as `<uix:NClick.Target>` are excluded), and look a specific activity up by the display name the SARIF reported; the nearest opening tag above it is its modern type:
+2. **Expression-selector defects.** When the output contains `.ToStringWithDelimiter()` markers, run the full procedure in [uia-post-migration-fix-guide.md](../uia-post-migration-fix-guide.md) with `<OUTPUT_DIR>` as its `<MIGRATED_DIR>`: scan, classify each variable's value, present the findings table, confirm once, apply Fix 1 and Fix 2 with targeted edits, validate each edited file, then rebuild. Never rework or "improve" a selector that carries the marker; the defects are structural, and a selector rewrite destroys the variable binding.
 
-   ```bash
-   grep -rhoE "<uix:N[A-Za-z]+([[:space:]]|/?>)" --include=*.xaml "<OUTPUT_DIR>" | sed -E 's/[[:space:]\/>]+$//' | sort | uniq -c | sort -rn
-   grep -rn -B6 "DisplayName=\"<SOURCE_ACTIVITY_DISPLAY_NAME>\"" --include=*.xaml "<OUTPUT_DIR>" | grep -oE "<[a-z]+:[A-Za-z]+" | tail -1
-   ```
+Report inputs:
 
-   Generated Use Application/Browser cards appear in this count too, so it can exceed the number of migrated activities.
-5. **Runtime prerequisites for the report.** Studio 2024.10 or later to open the project. Robots at or above the minimum `<UIA_VERSION>` requires. Only when the project automates a browser: the UiPath browser extension must be installed on the robot machines.
+- **Left classic.** Activities the pinned package could not migrate compile and run as classic. They are the `<L>` count on the status line, and the summarizer's "UIA not migrated" section is their inventory (SKILL.md Step 6). Never name a modern equivalent for one: several classic activities (Wait Attribute, Anchor Base, Start Process among them) have no one-to-one counterpart. Never count `<ui:` elements as a cross-check: that prefix also covers classic System and Excel activities and property elements such as `<ui:Highlight.Target>`.
+- **Runtime prerequisites.** Studio 2024.10 or later to open the project. Robots at or above the minimum `<UIA_VERSION>` requires. Only when the project automates a browser: the UiPath browser extension must be installed on the robot machines.
+
+Not part of this hook: a build error that calls for a rerun with a flag is handled in Step 5 by [build-verification-guide.md](../build-verification-guide.md) with the flags of Hook 1, and package versions on the output are never edited (Rule 7).
+
+On request only, never in the report. When the user asks what a specific activity became, find it by the display name the SARIF reported; the nearest opening tag above it is its modern type. The second command counts the modern activity elements the run produced (opening tags only, property elements such as `<uix:NClick.Target>` excluded); generated Use Application/Browser cards appear in it too, so it can exceed the number of migrated activities:
+
+```bash
+grep -rn -B6 "DisplayName=\"<SOURCE_ACTIVITY_DISPLAY_NAME>\"" --include=*.xaml "<OUTPUT_DIR>" | grep -oE "<[a-z]+:[A-Za-z]+" | tail -1
+grep -rhoE "<uix:N[A-Za-z]+([[:space:]]|/?>)" --include=*.xaml "<OUTPUT_DIR>" | sed -E 's/[[:space:]\/>]+$//' | sort | uniq -c | sort -rn
+```

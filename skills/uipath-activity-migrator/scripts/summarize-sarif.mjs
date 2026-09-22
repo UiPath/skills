@@ -7,6 +7,10 @@
 //   --json      → full classification as JSON instead of the Markdown summary
 // stdout is a short summary: status, counts, blockers, and what needs attention grouped by reason
 // and by file. Items are listed inline only when there are few (INLINE_LIMIT).
+// Status: failed = the tool stopped the run (an error-level result with no file location, its own stop rule)
+// or an extension reported a project-level blocker; unknown = validation never reported (a project without
+// workflows, or the Validate step failed as a whole); partial = anything left to do; success = notes only.
+// A `failed` without blockers and every `unknown` carry a Reason line.
 // Input may be UTF-8 (with or without BOM) or UTF-16 (PowerShell 5.1 redirection).
 // No dependencies. Node 18+.
 
@@ -26,9 +30,15 @@ const TYPE_ISSUES = new Set([
   'TYPE-MISSING', 'TYPE-CHECK', 'WORKFLOW-COMPILATION-ERROR', 'WORKFLOW-VALIDATION-ISSUE', 'REPAIR_LOCAL_ASSEMBLIES',
   'WORKFLOW-LOAD',
 ]);
+// Step-execution rules, emitted when a step threw: `Step failed: <Step> - …` with no file when the whole step
+// threw (ERROR stops the run, WARNING lets it continue without that step), `Error processing workflow …` with a
+// file when one workflow's processing threw (the workflow is skipped from then on and copied unchanged).
+const STEP_RULES = new Set(['ERROR', 'WARNING']);
 // Activity- or workflow-scoped extension rules: an error there means one activity was left classic, not a failed run.
 const isActivityScoped = (id) => /^UIAUTOMATION-(ACTIVITY|WORKFLOW)-/.test(id) || id.endsWith('-ACTIVITY-MIGRATION');
-const isCritical = (id, lvl) => lvl === 'error' && !isActivityScoped(id) && !TYPE_ISSUES.has(id);
+// The tool's own stop rule (UpgradeContext.HasCriticalError): an error-level result with no file location.
+// A per-file error never stops the run; the workflow is skipped by the remaining steps and copied unchanged.
+const isCritical = (id, lvl, file) => lvl === 'error' && !file && !isActivityScoped(id);
 const ACTION_TAG = '[PostMigration Action Required]';
 const INLINE_LIMIT = 10;
 const MSG_LIMIT = 320;
@@ -109,6 +119,7 @@ const activityOf = (r) => {
 };
 const familyOf = (id) => {
   if (!id) return 'other';
+  if (STEP_RULES.has(id)) return 'step';
   if (id.startsWith('UIAUTOMATION-')) return 'uia';
   if (id.endsWith('-ACTIVITY-MIGRATION')) return 'productivity';
   if (id.endsWith('-PACKAGE-UPGRADE') || id.endsWith('-PACKAGE-MIGRATION')) return 'package';
@@ -123,6 +134,7 @@ const blockers = [];
 const packages = [];
 const effectiveVersions = {};
 const typeIssues = [];
+const stepFailures = [];
 const actionRequired = [];
 const uia = { migrated: 0, migratedByType: {}, migratedItems: [], notMigrated: [], partial: [], warnings: [], workflow: [] };
 const productivity = { migrated: 0, notMigrated: [], warnings: [] };
@@ -153,9 +165,10 @@ for (const r of results) {
     reason = (body.split(/(?<=[.!?])\s/)[0] || 'warning').replace(/[.!?]$/, '').trim().slice(0, 110);
   }
   else if (bareOutcome) reason = { ERROR: 'not migrated', PARTIAL: 'partial' }[bareOutcome[1]];
+  if (fam === 'step') reason = 'step failed';
   const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), guid: propsOf(r).activityGuid || '', property: propsOf(r).propertyName || '', reason, bare: Boolean(bareOutcome), outcome: (bareOutcome || reasonMatch ? (id.match(/-(ERROR|WARNING|PARTIAL|INFO)(?:-|$)/) || [])[1] : '') || '', message: msgOf(r) };
 
-  const critical = isCritical(id, lvl);
+  const critical = isCritical(id, lvl, entry.file);
   if (critical) hasCriticalError = true;
   if (id.startsWith('WORKFLOW-VALIDATION') || id === 'WORKFLOW-COMPILATION-ERROR') sawValidation = true;
   if (id === 'PROJECT-FRAMEWORK-UPDATE') frameworkChanged = true;
@@ -166,7 +179,14 @@ for (const r of results) {
     if (m) effectiveVersions[m[1]] = { from: m[2], to: m[3] };
   }
   if (critical || WARNING_LEVEL_BLOCKERS.has(id)) blockers.push(entry);
-  if (TYPE_ISSUES.has(id) && lvl !== 'note') typeIssues.push(entry);
+  // Per-file issues: the type/load/compile/validation rules at warning or error, plus any workflow a step could
+  // not process (a step rule, or any other non-activity error, carrying a file). The run continued without them.
+  const perFileIssue = lvl !== 'note' && (TYPE_ISSUES.has(id)
+    || (entry.file && (fam === 'step' || (lvl === 'error' && fam !== 'uia' && fam !== 'productivity' && !isActivityScoped(id)))));
+  if (perFileIssue) typeIssues.push(entry);
+  // A whole step that threw at warning level: the run went on without it. An extension step here means that
+  // extension migrated nothing; not a blocker, but the first thing to read after the status line.
+  if (fam === 'step' && !entry.file && !critical) stepFailures.push(entry);
   if (entry.message.includes(ACTION_TAG)) actionRequired.push(entry);
 
   if (fam === 'uia') {
@@ -199,12 +219,21 @@ for (const r of results) {
 
 // Status keys off rule IDs as well as levels: the UIA extension reports unmigrated
 // activities at note or warning level, so a level-only reading would call them success.
-const leftovers = uia.notMigrated.length + uia.partial.length + uia.warnings.length + productivity.notMigrated.length + productivity.warnings.length + actionRequired.length + typeIssues.length;
+const leftovers = uia.notMigrated.length + uia.partial.length + uia.warnings.length + productivity.notMigrated.length + productivity.warnings.length + actionRequired.length + typeIssues.length + stepFailures.length;
 let status;
+let statusReason = '';
 if (hasCriticalError || blockers.length > 0) status = 'failed';
-else if (results.length === 0) status = 'unknown';
-else if (!sawValidation && !results.some((r) => (r.ruleId || '') === 'PROJECT-COPY')) status = byLevel.error > 0 ? 'failed' : 'unknown';
-else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'partial';
+else if (results.length === 0) {
+  status = 'unknown';
+  statusReason = 'the log has no results: the tool reported nothing, as for a project without workflows';
+} else if (!sawValidation && !results.some((r) => (r.ruleId || '') === 'PROJECT-COPY')) {
+  // Validation reports once per workflow it reached; a completed run always carries that or a project copy.
+  const why = stepFailures.length
+    ? `a step failed as a whole (${stepFailures.map((e) => e.message).join('; ')})`
+    : 'no workflow reached validation, as for a project without workflows or one whose every workflow failed earlier';
+  status = byLevel.error > 0 ? 'failed' : 'unknown';
+  statusReason = `validation never reported: ${why}${byLevel.error > 0 ? `; ${byLevel.error} error-level result(s) explain it, see the per-file issues` : ''}`;
+} else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'partial';
 else status = 'success';
 
 // Two report sets. "Left classic": UIA activities the tool did not migrate; they compile and run as
@@ -266,6 +295,7 @@ const unknownRules = Object.entries(byRule).filter(([id]) => familyOf(id) === 'o
 const summary = {
   file,
   status,
+  reason: statusReason || null,
   outputPath: (run.properties && run.properties.outputPath) || null,
   totals: { results: results.length, ...byLevel, migrated: migratedTotal, leftClassic: leftClassic.length, attention: attention.length, attentionResults: attentionResults.length },
   frameworkChanged,
@@ -278,6 +308,7 @@ const summary = {
   uia,
   productivity,
   typeIssues,
+  stepFailures,
   actionRequired,
   unknownRules: Object.fromEntries(unknownRules),
   byRule,
@@ -300,10 +331,15 @@ out.push('');
 out.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${leftClassic.length} left classic | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
 if (frameworkChanged) out.push('Framework: Legacy → Windows');
 if (pkgLine) out.push(`Packages: ${pkgLine}`);
+if (statusReason) out.push(`Reason: ${statusReason}`);
 if (leftClassic.length) out.push(`Left classic (${leftClassic.length}): still run as classic; listed under "UIA not migrated" in ${outFile || 'the --out file'}`);
 if (blockers.length) {
   out.push('', `## Blockers (${blockers.length})`);
   for (const b of blockers) out.push(`- **${b.rule}** — ${b.message}${b.file ? ` (${b.file})` : ''}`);
+}
+if (stepFailures.length) {
+  out.push('', `## Step failures (${stepFailures.length}): the run continued without these steps`);
+  for (const s of stepFailures) out.push(`- ${s.message}`);
 }
 if (attention.length) {
   out.push('', `## Needs attention (${attention.length})`);
@@ -330,12 +366,14 @@ if (outFile) {
   md.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${leftClassic.length} left classic | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
   if (frameworkChanged) md.push('Framework: Legacy → Windows');
   if (pkgLine) md.push(`Packages: ${pkgLine}`);
+  if (statusReason) md.push(`Reason: ${statusReason}`);
   if (Object.keys(uia.migratedByType).length) md.push(`Migrated by classic type: ${Object.entries(uia.migratedByType).map(([t, n]) => `${t} ×${n}`).join(', ')}`);
   section('Blockers', blockers, (e) => `- **${e.rule}** — ${e.message}${e.file ? ` (${e.file})` : ''}`);
+  section('Step failures (run continued without the step)', stepFailures, (e) => `- ${e.message}`);
   section('UIA not migrated', uia.notMigrated, itemLine);
   section('UIA partial', uia.partial, itemLine);
   section('Manual action required', actionRequired, itemLine);
-  section('Type / compile issues', typeIssues, itemLine);
+  section('Per-file issues (type, load, parse, compile, validation, step)', typeIssues, itemLine);
   section('Productivity not migrated', productivity.notMigrated, itemLine);
   section('Productivity warnings', productivity.warnings, itemLine);
   section('UIA warnings (activity and property), informational', uia.warnings.filter((e) => !e.message.includes(ACTION_TAG)), itemLine);
