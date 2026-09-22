@@ -91,9 +91,38 @@ resolve a live connection and object, then enrich:
 
 ```bash
 uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
+uip is resources list <connectorKey> --connection-id <id> --output json   # the objects that connector exposes
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
+
+### Picking the object: take it from the table, do not infer it
+
+A connector exposes several objects that perform the same operation, and
+`uip is resources describe` cannot tell you which one the product ships.
+Jira creates an issue under `curated_create_issue`, `curated-issue-create`,
+`curated_issue` and `create_issue`; all four accept the same body and return
+the same `{self, key, id}`. The live one is marked by `curated.isHidden:
+false` in the raw object metadata, and describe's summary drops that flag —
+it prints `Curated: "Create Issue"` for two of them. Neither `Type: curated`
+(set on a hidden legacy object here) nor the display name ranks them.
+
+So take the object from this table. Confirm it with
+`uip is resources describe <connectorKey> <object> --connection-id <id>
+--operation <Operation.Name>` before authoring, and read `RequestFields` and
+`Parameters` from that same call.
+
+| Connector key | Object | Activity | Operation |
+| --- | --- | --- | --- |
+| `uipath-atlassian-jira` | `curated_create_issue` | Create Issue | `Create` |
+| `uipath-atlassian-jira` | `curated_get_issue` | Get Issue | `Retrieve` |
+| `uipath-atlassian-jira` | `curated_edit_issue` | Update Issue | `Replace` |
+| `uipath-salesforce-slack` | `send_message_to_channel_v2` | Send Message to Channel | `Create` |
+
+For a connector or operation not listed, list the objects, describe each
+candidate, and pick the one whose `Operation.Curated` names the activity the
+user asked for. When two still tie, say which you chose and why rather than
+picking silently — the wrong one is accepted by `validate` and by `pack`.
 
 The response adds an enrichment block with the live field metadata. Match the
 key case-insensitively — the CLI's output formatter has changed key casing
