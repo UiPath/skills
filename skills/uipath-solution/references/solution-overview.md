@@ -130,7 +130,8 @@ uip solution
   │     ├── list                          List deployments
   │     ├── activate <name>               Activate a deployment (only needed after --skip-activate or to retry a failed auto-activation)
   │     ├── upgrade <deployment-key>      Move a deployment to a newer package version in place, keeping its existing configuration
-  │     ├── uninstall <name>              Uninstall a deployment
+  │     ├── uninstall <name>              Uninstall a deployment — removes its resources and folder, leaves the deployment
+  │     ├── delete <name>                 Delete what uninstall leaves behind, a superseded version, or a failed install (--yes)
   │     └── config
   │           ├── get <package-name>      Fetch default deploy config
   │           ├── set <file> ...          Set a resource property in config

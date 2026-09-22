@@ -23,6 +23,7 @@ Activate deployed solutions, uninstall deployments, and manage published solutio
 graph LR
     A[deploy activate] --> B[deploy status]
     C[deploy list] --> D[deploy uninstall]
+    D --> H[deploy delete]
     C --> E[packages list]
     E --> F[packages delete]
     G[solution delete]
@@ -108,6 +109,26 @@ uip solution deploy uninstall "MyDeployment" --timeout 600 --poll-interval 10000
 
 This is destructive -- it removes the Orchestrator folder and all resources that were provisioned by the deployment.
 
+### Then Delete the Deployment Record
+
+Uninstall does not remove the deployment itself. It stays in `deploy list`, and Orchestrator refuses to uninstall it a second time. Remove it with:
+
+```bash
+uip solution deploy delete "MyDeployment" --yes --output json
+```
+
+The service offers one action per state, and `deploy list` reports which in `Actions`:
+
+| Deployment state | `Actions` | What removes it |
+|---|---|---|
+| Installed | `SetupActivation, Uninstall, Upgrade` | `deploy uninstall` |
+| Uninstalled | `Delete` | `deploy delete` |
+| Never installed (`Draft`, e.g. a failed install) | `Install, Delete` | `deploy delete` |
+
+So a full clean-up is two commands, and the two are never interchangeable. `deploy delete` reads the action list first: when the record lists actions but not `Delete` it refuses locally and names the command to run instead, so it cannot remove a live deployment's resources. A record that lists no actions at all is the exception — nothing is known about it, so the request goes to the server and the server decides.
+
+The leftover record does not block a redeploy of the same package, so the delete is housekeeping. Do it when a tenant is shared, where uninstalled and failed deployments otherwise accumulate in every `deploy list`.
+
 ## Step 4: List Published Packages
 
 View all solution packages that have been published to the feed:
@@ -188,6 +209,9 @@ uip solution deploy list --limit 20 --output json
 # Uninstall the old deployment
 uip solution deploy uninstall "MySolution-v1" --output json
 
+# Remove the record it leaves behind
+uip solution deploy delete "MySolution-v1" --yes --output json
+
 # Verify it was removed
 uip solution deploy list --output json
 
@@ -207,6 +231,7 @@ These are different operations targeting different systems:
 | Command | What it removes | System |
 |---------|----------------|--------|
 | `deploy uninstall <name>` | Orchestrator folder, provisioned resources | Orchestrator |
+| `deploy delete <name>` | The deployment left behind by an uninstall, a superseded version, or a failed install | Orchestrator |
 | `solution delete <id>` | Solution project | Studio Web |
 
 Uninstalling a deployment does not remove the package from the solution feed. Deleting from Studio Web does not affect Orchestrator deployments.
