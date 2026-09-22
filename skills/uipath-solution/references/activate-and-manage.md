@@ -125,7 +125,7 @@ The service offers one action per state, and `deploy list` reports which in `Act
 | Uninstalled | `Delete` | `deploy delete` |
 | Never installed (`Draft`, e.g. a failed install) | `Install, Delete` | `deploy delete` |
 
-So a full clean-up is two commands, and the two are never interchangeable. `deploy delete` reads the action list first and refuses before it sends anything, so it cannot remove a live deployment's resources.
+So a full clean-up is two commands, and the two are never interchangeable. `deploy delete` reads the action list first: when the record lists actions but not `Delete` it refuses locally and names the command to run instead, so it cannot remove a live deployment's resources. A record that lists no actions at all is the exception — nothing is known about it, so the request goes to the server and the server decides.
 
 The leftover record does not block a redeploy of the same package, so the delete is housekeeping. Do it when a tenant is shared, where uninstalled and failed deployments otherwise accumulate in every `deploy list`.
 

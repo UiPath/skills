@@ -112,7 +112,7 @@ This skill is the terminal step of an SDD-driven build: after `uipath-planner` p
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 | [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns |
-| [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall`, in-place version upgrades, environment management |
+| [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |
 
 ## Anti-patterns
