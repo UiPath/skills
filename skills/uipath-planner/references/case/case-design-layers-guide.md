@@ -396,7 +396,7 @@ Pick from the source's words — WHERE the work lives, never whether it interrup
 
 Never author `start-task` as a stage-entry row on the breached stage: it validates, but stage re-entry re-runs every task whose `Run Only Once` is `No` — a breach meant to add one manager check silently re-runs the whole stage.
 
-The Interrupting cell is read off the SOURCE's words, exactly like the Response cell — it is not a judgement call you make after choosing the lane. A source that says "globally interrupt into <Lane>" has already said `Yes`; treating it as parallel oversight contradicts the sentence you are modelling. A case-scope breach that must be resolved before the case can close is a takeover, never oversight. Measured on run 35619933454: "globally interrupt into a Case SLA Review secondary stage ... before the application can close" was authored non-interrupting, and that single cell was the whole graded failure.
+Read the Interrupting cell off the SOURCE's words, exactly like the Response cell — it is not a judgement call you make after choosing the lane. A source that says "globally interrupt into <Lane>" has already said `Yes`; treating it as parallel oversight contradicts the sentence you are modelling. A case-scope breach that must be resolved before the case can close is a takeover, never oversight.
 
 ### Defaults when the source is silent
 

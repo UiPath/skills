@@ -151,9 +151,8 @@ name; only the stage and task scopes take a `: <name>` qualifier. EXACTLY two ro
 one `At-Risk`, one `Breached` — always. A status the source says nothing about
 is still authored: `notify-only` with Target and Interrupting `—`. `—` is legal ONLY in Target and
 Interrupting: **Response is a closed enum and `—` is never one of its values**, so a scope with no SLA gets
-NO rows here at all rather than a placeholder row. Rows are keyed to (Scope, SLA) — no SLA, no row. Measured
-on run 35619933454: one `[stage: Resolve / — / —]` row for a stage the source gave no SLA failed the graded
-contract on its own. An omitted row is never how "nothing
+NO rows here at all rather than a placeholder row. Rows are keyed to (Scope, SLA) — no SLA, no row.
+An omitted row is never how "nothing
 was asked for" gets expressed, and a stated response for one status never removes the other status's row;
 never invent a stage, task, or routing change to carry a notification. Legal Response values and the Interrupting value each implies:
 case-design-layers-guide.md § Choosing the response. Two-way closure against the SDD's
