@@ -49,7 +49,9 @@ def uip_json(*args: str) -> dict | None:
             [exe, "insights", *args, "--output", "json"],
             capture_output=True,
             text=True,
-            timeout=50,
+            # copy and delete each make three or four backend calls, and two
+            # gate runs can hit the tenant at once; 50 seconds was tight.
+            timeout=120,
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -62,6 +64,20 @@ def uip_json(*args: str) -> dict | None:
 
 def data_of(envelope: dict | None) -> dict:
     return (envelope or {}).get("Data") or {}
+
+
+def outcome(envelope: dict | None, key: str) -> str:
+    """One line for the run log: the Data field on success, the envelope's
+    own words on failure, so a seed or clear that did not land says why."""
+    if envelope is None:
+        return "no JSON envelope (uip missing, timed out, or printed nothing)"
+    value = data_of(envelope).get(key)
+    if value is not None:
+        return str(value)
+    return (
+        f"{envelope.get('Result')} / {envelope.get('ErrorCode')}: "
+        f"{envelope.get('Message')}"
+    )
 
 
 def read_key() -> str | None:
@@ -90,7 +106,7 @@ def seed_by_copy(key: str) -> str:
         "--from-process-key", TEMPLATE_SOURCE_KEY,
         "--to-process-key", key,
     )
-    return str(data_of(copied).get("CopyState") or "unavailable")
+    return outcome(copied, "CopyState")
 
 
 def seed_by_create(key: str) -> str:
@@ -114,7 +130,7 @@ def seed_by_create(key: str) -> str:
             "dashboards", "create", "--process-key", key,
             "--file", str(definition),
         )
-        return str(data_of(created).get("SlotState") or "unavailable")
+        return outcome(created, "SlotState")
 
 
 def cmd_seed(key: str) -> None:
@@ -143,7 +159,7 @@ def cmd_clear(key: str) -> None:
         return
     dashboard_id = str(data.get("Id"))
     gone = uip_json("dashboards", "delete", dashboard_id, "--yes")
-    print(f"slot: delete of dashboard {dashboard_id} -> {data_of(gone).get('DeleteState') or 'unavailable'}")
+    print(f"slot: delete of dashboard {dashboard_id} -> {outcome(gone, 'DeleteState')}")
 
 
 def main(argv: list[str]) -> None:
