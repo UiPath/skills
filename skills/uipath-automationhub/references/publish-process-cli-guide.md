@@ -86,6 +86,16 @@ Then re-read `uip ah applications list` and use the new ids in the answer.
 
 Write the answers to `./ah-answers.json` as the filled `user_inputs` structure (the CLI accepts the whole schema-get document or just the answers map). Wrapping rules unchanged: most fields `{ "value": <v> }`; owner/submitter are **direct strings**; enum codes from that field's own `enum`; integers as numbers. Show the user a concise preview and get a confirm before writing.
 
+### Preflight: check the answers against the schema
+
+`ah-schema.json` is the same document the service validates against, so check `ah-answers.json` against it locally **before** creating:
+
+1. **Required answers present** — every question the schema flags `required`, plus owner and submitter (enforced but never flagged), has a non-empty value. Take requiredness from *this tenant's* schema, never from a fixed list: the same Business Process flow requires `COUNT_APPS` on one tenant and rejects it on another.
+2. **Enum codes verbatim** — every enum answer (Documentation, application questions, any select) is a code that appears exactly in that question's own `enum`. Copy it; never retype it. A code with a dropped segment (`…-ovrbp-0-3-5` instead of `…-ovrbp-0-3-0-5`) is rejected as an unnamed required-field error, not as a bad code.
+3. **No placeholders left** — no `Sample input`, no `First.last@example.com`, no template category `1` unless the tenant's tree really has it.
+
+Fix anything found locally, then create. This costs nothing on a correct payload and turns the two unnamed `400`s below into a named local fix.
+
 ## Step 5: Create the process
 
 ```bash
@@ -93,7 +103,7 @@ uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah
 ```
 
 - `Result: Success` → **`Data.Id`** is the new process id. A success means it WAS created — never re-run on a confusing field read (that duplicates).
-- `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed required field → owner/submitter first, then diff against the schema's required set; `Invalid Category Id`; placeholder answer codes). Fix and retry **once**.
+- `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → the payload shape is off: an answer code the schema does not know, or the answers not wrapped as `user_inputs`). Fix and retry **once**.
 - `Cannot identify owner by email` → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant. Confirm with `uip ah auth-info get` — `IsActive: 1` plus a role list proves the identity is real — then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
 
   ```
