@@ -145,6 +145,7 @@ tests/
 ├── experiments/
 │   ├── default.yaml              # Dev / ad-hoc — tempdir, full lifecycle (no docker image required)
 │   ├── nightly.yaml              # Nightly cron — docker, full lifecycle, staging tenant
+│   ├── nightly-claude.yaml       # nightly.yaml with claude-sized run_limits ONLY — edit nightly.yaml first; test_nightly_claude_experiment_sync.py pins them identical outside that delta
 │   ├── smoke.yaml                # PR-gate smoke (Linux, docker, faster budget)
 │   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir)
 │   ├── activation.yaml           # Opt-in skill-activation benchmark (early-stop)

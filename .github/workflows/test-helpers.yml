@@ -274,8 +274,11 @@ jobs:
 
       # Guards both gates in scripts/check-task-driver.py; the headline case
       # replays the 2026-09-04 multi-line pre_run that ERRORed the Windows split.
+      # The experiment sync guard rides here too: it pins nightly-claude.yaml
+      # identical to nightly.yaml outside run_limits, and nothing else in CI
+      # collects tests/scripts/ files without an explicit listing.
       - name: Run task gate tests
-        run: pytest tests/scripts/test_check_task_driver.py -v
+        run: pytest tests/scripts/test_check_task_driver.py tests/scripts/test_nightly_claude_experiment_sync.py -v
 
   required-checks-contract:
     runs-on: uipath-ubuntu-latest
