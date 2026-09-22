@@ -1541,12 +1541,17 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   );
 
   assert.match(publishDev, /^\s*run:\s*npm publish --tag dev\s*$/m);
+  // The root publish packs at the repository root and publishes that file --
+  // signed hooks are overlaid before packing, so the verified bytes are the
+  // published bytes. It must still never reach for the flavor packer's output.
   assert.match(
     publishNpmjs,
-    /^\s*npm publish --access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m,
+    /^\s*npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}" \\\n\s*--access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m,
   );
+  assert.match(publishNpmjs, /^\s*npm pack --pack-destination \.\s*$/m);
+  assert.doesNotMatch(publishDev, /npm run skills:pack|build\/npm|\.tgz/);
+  assert.doesNotMatch(publishNpmjs, /npm run skills:pack|build\/npm/);
   for (const job of [publishDev, publishNpmjs]) {
-    assert.doesNotMatch(job, /npm run skills:pack|build\/npm|\.tgz/);
     assert.doesNotMatch(job, /ENABLE_SKILL_FLAVOR_PUBLISH/);
   }
   assert.doesNotMatch(defaultWorkflow, /npm run skills:pack|build\/npm\/\*\.tgz/);
