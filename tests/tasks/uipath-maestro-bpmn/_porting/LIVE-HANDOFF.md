@@ -51,6 +51,14 @@ Two real failures, one iteration spent each: billing_discrepancy_detector (Integ
 
 Next dispatch, one batch: the four grader-fixed tasks for confirmation, the two real failures (iteration 2), the three interactive simulated ports and `ceql_where` (first run). Ten tasks.
 
+## Batch 11 (after the structural PR merged)
+
+Branch rebased onto main (PR #3426 squashed as 345c1da8a). Run 35783045540, ten tasks. Green: slack_http_fallback, webhook_waitfor_parallel, testmanager_crud_grounded (the three batch-10 grader fixes confirmed) and cli_dice_roller_simulated (first run). billing_invoice_lookup hit a platform 504 during polling (infra, rerun). bellevue_weather_simulated's simulation stopped on turn 1 with empty agent output (harness, rerun). Real failures: billing_discrepancy_detector parked after two different malformed Data Service where clauses (skill gap: where clause from a process variable); slack_channel_description_simulated (channel_not_found), slack_weather_pipeline (wrong Slack connection bound, 401 + MISSING_BINDING) and ceql_where (CEQL string instead of the canonical tree) get one more iteration. Flow's own nightlies for these three pass 4/12, 6/12 and 11/12, so the BPMN flakiness is at parity except ceql_where.
+
+Grader tolerance added this round: every live grader that classified managed HTTP by `Intsvc.HttpExecution` now also accepts `Intsvc.UnifiedHttpRequest` (both listed in registry-workflow.md). Also landed on main via #3476: `bpmn_check.body_object()` reads sendTask bodies in both registry forms (one JSON blob, or one typed input per field); any new grader that reads a body must use it.
+
+Batch 12 = billing_invoice_lookup (rerun), bellevue_weather_simulated (rerun), slack_channel_description_simulated (it.2), slack_weather_pipeline (it.3), ceql_where (it.2).
+
 ## Probe bucket (16): pilot ported, 11 decided, 4 blocked
 
 `connector_features/ceql_where` is ported (commit fd6312fde), not yet run. The probe confirmed the filter carrier exists: `Intsvc.ActivityExecution` enrichment for the Entra `groups` List operation exposes a `where` parameter (type `query`, `FilterBuilder`, `hasCEQL: true`), and the CI-passing Data Fabric artifact carries the same tree as a `target="query" name="queryExpression" type="json"` input. As in Flow, the sandbox has no live tenant for enrichment, so the port grades the same standalone `where_detail.json` planning artifact plus the connector node and terminate end. No `bpmn validate` gate, matching Flow. Its one review flag: the groups-operation tolerance (objectName contains `group`, or `groups` + GET/list) has no CI-passed fixture yet.

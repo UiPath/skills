@@ -108,7 +108,9 @@ from _shared.bpmn_live import (  # noqa: E402
 )
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
-ACTIVITY_TYPE = "Intsvc.HttpExecution"
+# registry-workflow.md lists Intsvc.UnifiedHttpRequest beside HttpExecution for the managed HTTP sendTask; the eval agent emits either (CI run 35538279757).
+ACTIVITY_TYPES = ("Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest")
+ACTIVITY_TYPE = ACTIVITY_TYPES[0]
 VERDICTS = ("nice day", "bring a jacket")
 
 LIVE_RUN_DIR = Path("bellevue-weather-simulated-live")
@@ -166,7 +168,7 @@ def find_http_execution_nodes(root: ET.Element) -> list[ET.Element]:
         el
         for el in root.iter()
         if el.tag != f"{{{BPMN_NS}}}extensionElements"
-        and has_typed_uipath_extension(el, "activity", ACTIVITY_TYPE)
+        and any(has_typed_uipath_extension(el, "activity", t) for t in ACTIVITY_TYPES)
     ]
 
 

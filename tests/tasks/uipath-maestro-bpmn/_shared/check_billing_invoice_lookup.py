@@ -694,7 +694,7 @@ def advisory() -> None:
     http_nodes = [
         task.attrib.get("id")
         for task in (*elements(root, "sendTask"), *elements(root, "serviceTask"))
-        if has_typed_uipath_extension(task, "activity", "Intsvc.HttpExecution")
+        if any(has_typed_uipath_extension(task, "activity", t) for t in ("Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest"))
     ]
     if http_nodes:
         fail(f"the process calls Data Service over raw HTTP ({http_nodes}); use the connector action")

@@ -111,7 +111,9 @@ from _shared.bpmn_live import (  # noqa: E402
 
 SLACK_CONNECTOR_KEY = "uipath-salesforce-slack"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
-HTTP_TYPE = "Intsvc.HttpExecution"
+# registry-workflow.md lists Intsvc.UnifiedHttpRequest beside HttpExecution for the managed HTTP sendTask; the eval agent emits either (CI run 35538279757).
+HTTP_TYPES = ("Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest")
+HTTP_TYPE = HTTP_TYPES[0]
 WEATHER_HINTS = ("open-meteo", "openmeteoapis")
 NAME_HINT = "SlackWeatherPipeline"
 
@@ -204,7 +206,7 @@ def find_weather_node(root: ET.Element) -> list[ET.Element]:
         if activity is None:
             continue
         raw = ET.tostring(activity, encoding="unicode")
-        if HTTP_TYPE not in raw and ACTIVITY_TYPE not in raw:
+        if not any(t in raw for t in HTTP_TYPES) and ACTIVITY_TYPE not in raw:
             continue
         if any(hint in raw.lower() for hint in WEATHER_HINTS):
             found.append(node)
@@ -247,7 +249,7 @@ def main() -> None:
     weather_nodes = find_weather_node(root)
     if not weather_nodes:
         _fail(
-            f"bpmn does not reference an API-capable node ({HTTP_TYPE} or "
+            f"bpmn does not reference an API-capable node ({' / '.join(HTTP_TYPES)} or "
             f"{ACTIVITY_TYPE}) targeting one of {WEATHER_HINTS}"
         )
     print(f"OK: bpmn references an API node targeting open-meteo")
