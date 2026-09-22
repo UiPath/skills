@@ -42,7 +42,7 @@ Task-level bundles — what to put in the `uipath.json` `scope` field for a give
 | Insights RTM (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights) | `Insights Insights.RealTimeData OR.Folders.Read` |
 | Maestro SLA (CaseInstances SLA summary) | `Insights Insights.RealTimeData OR.Folders.Read PIMS` |
 | Generic trace spans (`Traces.getById` / `getSpansByIds`) | `Traces.Api` (+ `Insights Insights.RealTimeData`) |
-| JS/TS function backend (SDK `Functions.invoke`) | `OR.Default` — must appear explicitly in the scope string; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` instead of `folderKey` |
+| JS/TS function backend (SDK `Functions.invoke`) | `OR.Default` (add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` instead of `folderKey`) |
 
 ## Widgets
 

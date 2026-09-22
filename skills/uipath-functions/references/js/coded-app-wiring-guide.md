@@ -23,11 +23,11 @@ The app and its function backend are **two sibling projects**, each with its own
 ```text
 <WORKSPACE>/
 ├── <APP>/        # Coded App — Vite + React; uipath.json = clientId / scope / redirectUri (PKCE config)
-└── <BACKEND>/    # uip function new <BACKEND> -l ts; uipath.json = the functions map
+└── <BACKEND>/    # uipath.json = the functions map
 ```
 
-1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts --empty` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: `uip function pack` inside the app produces `<APP>.<VERSION>.nupkg`, but once the app is published, `uip function publish` under that id is rejected (`400`, `Project type has changed since the latest published version`) — a published package id cannot switch between the two types.
-2. `<BACKEND>` is the package id and the name of the process the app's SDK call resolves against. Use only lowercase letters, digits and `-`. Name it for the backend as a whole (`claims-backend`), not after one function — each function keeps its own `name` and `path` beneath it.
+1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: once the app is published, `uip function publish` under that id is rejected (`400`, `Project type has changed since the latest published version`).
+2. `<BACKEND>` is the package id — name it for the backend as a whole (`claims-backend`), not after one function; one project holds every function, each with its own `defineFunction` `name` and `path`.
 
 ## Token Flow
 
@@ -46,39 +46,41 @@ uip function serve    # terminal 1 — functions on :7070, hot reload
 npm run dev           # terminal 2 — app dev server (Vite, :5173)
 ```
 
-1. `Functions.invoke` has no local target, so under `import.meta.env.DEV` the app fetches `http://localhost:7070/<PATH>` directly — `serve` answers with CORS `Access-Control-Allow-Origin: *`, so the cross-port call works as-is. This is the only place the app fetches a function URL itself; keep the switch in one wrapper (below) so UI code is identical in both modes.
+1. `Functions.invoke` has no local target, so under `import.meta.env.DEV` the app fetches `http://localhost:7070/<PATH>` directly — `serve` answers with CORS `Access-Control-Allow-Origin: *`, so the cross-port call works as-is. This is the only fetch the app writes itself; put it at the top of the same wrapper that invokes the deployed function (below) so UI code is identical in both modes:
+
+   ```ts
+   if (import.meta.env.DEV) {
+     const token = sdk.getToken();
+     const res = await fetch("http://localhost:7070/quote", {
+       method: "POST",
+       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+       body: JSON.stringify(input),
+     });
+     const body = await res.json();
+     if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+     return body as QuoteOutput;
+   }
+   ```
 2. Do NOT add `server.proxy` to the app's Vite config to reach the function — it breaks the app's OAuth callback (hard rule in the coded-apps guidance → `uipath-coded-apps`).
 3. `serve` decodes `ctx.user` from a forwarded Bearer JWT when the app sends one (decoded, not verified — dev convenience only); an unauthenticated call (plain curl) gets `ctx.user = null`. `ctx.robot` / `ctx.platform` local values and env fallbacks → [local-dev-guide.md](local-dev-guide.md).
 
 ## Deployed Calls from the App
 
-Deployed, the app calls the function through the SDK's `Functions` service — never a hand-built `…/orchestrator_/t/…` trigger URL, even though the function has HTTP semantics; the trigger URL is not an app-facing API. `invoke` takes the function's `defineFunction` `name` (unique within its folder) and typed input, and handles route, transport and token itself. It needs an SDK version that ships the `functions` subpath (`release-metadata.json` in the package lists the `since` version) and is tagged `@experimental` in the SDK — still the intended call path. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey` (the SDK's shipped `docs/oauth-scopes.md`, § Functions).
+Deployed, the app calls the function through the SDK's `Functions` service — never a hand-built `…/orchestrator_/t/…` trigger URL, even though the function has HTTP semantics; the trigger URL is not an app-facing API. `invoke` takes the function's `defineFunction` `name` — not the package or process name — plus typed input, and handles route, transport and token itself. Use `@uipath/uipath-typescript` 1.7.2 or later. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey` (the SDK's shipped `docs/oauth-scopes.md`, § Functions).
 
 ```ts
 import type { UiPath } from "@uipath/uipath-typescript/core";
 import { Functions } from "@uipath/uipath-typescript/functions";
 
 export async function requestQuote(sdk: UiPath, input: QuoteInput): Promise<QuoteOutput> {
-  if (import.meta.env.DEV) {
-    const token = sdk.getToken();
-    const res = await fetch("http://localhost:7070/quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify(input),
-    });
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-    return body as QuoteOutput;
-  }
   return new Functions(sdk).invoke<QuoteInput, QuoteOutput>(
-    { name: "quote" },             // the defineFunction name — not the package or process name
+    { name: "quote" },
     input,
-    { folderKey: "<FOLDER_KEY>" }, // or folderId / folderPath; omit when the SDK was initialized with a folder context
+    { folderKey: "<FOLDER_KEY>" },
   );
 }
 ```
 
-- The `DEV` branch is the local two-server loop only (`uip function serve`, above). There is no deployed `fetch` path.
 - Folder context is required: pass one of `folderKey` / `folderId` / `folderPath`, or rely on the folder context the SDK was initialized with.
 
 ## Timeout Budget

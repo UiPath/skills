@@ -1,14 +1,10 @@
 task_id: skill-coded-apps-function-backend-invoke-smoke
 description: >
-  Smoke test: agent uses the uipath-coded-apps skill to call the app's
-  already-deployed JS/TS function backend the way the skill routes it (Task
-  Navigation row -> uipath-functions coded-app wiring): through the SDK
-  `Functions` service from `@uipath/uipath-typescript/functions`, not a
-  hand-built `orchestrator_/t/...` URL, and with `OR.Default` added to the
-  app's runtime scope (the function's HTTP trigger rejects tokens without it —
-  oauth-scopes.md bundle row). Offline: no `uip` or `npm`; the SDK is
-  preinstalled so the agent can read the installed `dist/functions/index.d.ts`
-  as the coded-apps SDK reference protocol requires.
+  Smoke test: the uipath-coded-apps skill routes an app-side call to an
+  already-deployed JS/TS function backend through the SDK `Functions` service
+  (`@uipath/uipath-typescript/functions`), never a hand-built trigger URL, and
+  adds `OR.Default` to the app's runtime scope. Offline: no `uip` or `npm`; the
+  SDK is preinstalled so the agent can read its type definitions.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
@@ -78,17 +74,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No hand-built trigger URL in executable code (the SDK resolves it; comments are allowed)"
-    command: "python3 -c \"import re,sys; s=open('src/customer360.ts').read(); s=re.sub(r'/\\*.*?\\*/','',s,flags=re.S); s=re.sub(r'(?m)(?:^|(?<=\\s))//.*$','',s); sys.exit(1 if re.search(r'orchestrator_/t/', s) else 0)\""
+    description: "No hand-built function URL in executable code (the SDK resolves it; comments are allowed)"
+    command: "python3 -c \"import re,sys; s=open('src/customer360.ts').read(); s=re.sub(r'/\\*.*?\\*/','',s,flags=re.S); s=re.sub(r'(?m)(?:^|(?<=\\s))//.*$','',s); sys.exit(1 if re.search(r'orchestrator_/t/|cloud\\.uipath\\.com', s) else 0)\""
     timeout: 10
     expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Executable code never targets the portal domain (browsers must call api.*)"
-    command: "python3 -c \"import re,sys; s=open('src/customer360.ts').read(); s=re.sub(r'/\\*.*?\\*/','',s,flags=re.S); s=re.sub(r'(?m)(?:^|(?<=\\s))//.*$','',s); sys.exit(1 if re.search(r'cloud\\.uipath\\.com', s) else 0)\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.0
+    weight: 2.5
     pass_threshold: 1.0
