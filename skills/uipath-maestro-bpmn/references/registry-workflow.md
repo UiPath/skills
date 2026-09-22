@@ -91,9 +91,37 @@ resolve a live connection and object, then enrich:
 
 ```bash
 uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
+uip is resources list <connectorKey> --connection-id <id> --output json   # the objects that connector exposes
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
+
+### Picking the object: take it from the table, do not infer it
+
+A connector exposes several objects that perform the same operation, and
+`uip is resources describe` cannot rank them. Four Jira objects create an
+issue; describe prints `Curated: "Create Issue"` for two of them, because its
+summary drops the `curated.isHidden` flag that marks the live one. Ranking on
+`Type: curated` or on the display name picks a hidden legacy object instead.
+
+So take the object from this table rather than inferring it. Confirm it with
+`uip is resources describe <connectorKey> <object> --connection-id <id>
+--operation <Operation.Name>` before authoring, and read `RequestFields` and
+`Parameters` from that same call.
+
+| Connector key | Object | Activity | Operation |
+| --- | --- | --- | --- |
+| `uipath-atlassian-jira` | `curated_create_issue` | Create Issue | `Create` |
+| `uipath-atlassian-jira` | `curated_get_issue` | Get Issue | `Retrieve` |
+| `uipath-atlassian-jira` | `curated_edit_issue` | Update Issue | `Replace` |
+| `uipath-salesforce-slack` | `send_message_to_channel_v2` | Send Message to Channel | `Create` |
+
+For a connector or operation not listed, describe every candidate and keep
+the ones whose `Operation.Curated` names the activity asked for. Expect more
+than one to survive — that is what happens on Jira — and treat the remainder
+as undecidable from the CLI: pick one, then say in your summary which object
+you used and which others tied. Never pick silently — `validate` and `pack`
+accept any object name, so nothing local tells the user you guessed.
 
 The response adds an enrichment block with the live field metadata. Match the
 key case-insensitively — the CLI's output formatter has changed key casing

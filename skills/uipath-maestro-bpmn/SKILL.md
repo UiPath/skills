@@ -157,7 +157,11 @@ For registry-evidence-only tasks, follow the command-first recipe in
    Bash call, not one command per turn — each shell round-trip is a model turn
    and dozens of them exhaust the run's time budget before authoring finishes:
    `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
-   Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`. Do not call `registry get` for structural
+   Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`; take
+   `--object-name` from the table in
+   [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it)
+   — a connector exposes several objects per operation and `describe` does not
+   rank them. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams. If a registry template's BPMN host tag is PascalCase (for example
