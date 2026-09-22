@@ -123,7 +123,7 @@ SLACK_KEY = "uipath-salesforce-slack"
 # naming (CI run 35538279757: the agent's node ran to completion against it).
 EMOJI_ENDPOINT = "emoji.list"
 EMOJI_ENDPOINT_RE = re.compile(r"emoji[._]list")
-ACTIVITY_TYPES = ("Intsvc.ActivityExecution", "Intsvc.HttpExecution")
+ACTIVITY_TYPES = ("Intsvc.ActivityExecution", "Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest")
 
 LIVE_RUN_DIR = Path("slack-emoji-list-live")
 SOLUTION_INIT_TIMEOUT = 90
