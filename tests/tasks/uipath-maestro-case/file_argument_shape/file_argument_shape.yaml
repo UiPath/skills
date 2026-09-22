@@ -1,0 +1,61 @@
+task_id: skill-case-file-argument-shape
+description: >
+  BROWNFIELD SELF-CHECK ON A CASE WITH FILE ARGUMENTS. The staged caseplan has three
+  file-type In arguments whose entries on the trigger carry id, name, type and elementId
+  only, and one case-root file Variable carrying a string default and custom. The agent
+  runs the skill's Step 12 checks and fixes what they find. Grades that the trigger
+  entries gain neither default nor custom and the root Variable keeps both.
+tags:
+  - uipath-maestro-case
+  - integration
+  - mode:build
+  - lifecycle:generate
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: .
+
+initial_prompt: |
+  `SupplierIntake/SupplierIntake/caseplan.json` in this folder is an existing case plan.
+  It exists only as this local file: there is no Studio Web copy to reconcile.
+
+  Run the uipath-maestro-case skill's Step 12 checks against it and fix whatever they
+  find. The task is complete when
+  `uip maestro case validate SupplierIntake/SupplierIntake/caseplan.json --output json`
+  passes on the result.
+
+  Do NOT call AskUserQuestion. It is not available in this harness.
+  Do NOT publish the solution and do NOT run `uip maestro case debug`.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the SupplierIntake caseplan.json"
+    command: "uip maestro case validate SupplierIntake/SupplierIntake/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      the three file In arguments' entries on the trigger carry neither default nor
+      custom, and the case-root file Variable keeps its string default, custom and root
+      elementId
+    command: "python3 $REFERENCE_DIR/check_file_args.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: >
+      Agent did not read this task's own directory. The whole repository is mounted
+      read-only in the sandbox and that directory holds the grader.
+    tool_name: "Bash"
+    command_pattern: 'tests/tasks/uipath-maestro-case/file_argument_shape'
+    weight: 1.0
+    pass_threshold: 1.0
