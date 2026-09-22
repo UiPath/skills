@@ -55,7 +55,7 @@ success_criteria:
     includes:
       - "@uipath/uipath-typescript/functions"
       - "new Functions("
-      - ".invoke("
+      - ".invoke"
     weight: 3.0
     pass_threshold: 1.0
 
@@ -79,16 +79,16 @@ success_criteria:
 
   - type: run_command
     description: "No hand-built trigger URL in executable code (the SDK resolves it; comments are allowed)"
-    command: "sed -E 's#(^|[[:space:]])//.*##' src/customer360.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E 'orchestrator_/t/'"
+    command: "python3 -c \"import re,sys; s=open('src/customer360.ts').read(); s=re.sub(r'/\\*.*?\\*/','',s,flags=re.S); s=re.sub(r'(?m)(?:^|(?<=\\s))//.*$','',s); sys.exit(1 if re.search(r'orchestrator_/t/', s) else 0)\""
     timeout: 10
-    expected_exit_code: 1
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "Executable code never targets the portal domain (browsers must call api.*)"
-    command: "sed -E 's#(^|[[:space:]])//.*##' src/customer360.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E 'cloud\\.uipath\\.com'"
+    command: "python3 -c \"import re,sys; s=open('src/customer360.ts').read(); s=re.sub(r'/\\*.*?\\*/','',s,flags=re.S); s=re.sub(r'(?m)(?:^|(?<=\\s))//.*$','',s); sys.exit(1 if re.search(r'cloud\\.uipath\\.com', s) else 0)\""
     timeout: 10
-    expected_exit_code: 1
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0

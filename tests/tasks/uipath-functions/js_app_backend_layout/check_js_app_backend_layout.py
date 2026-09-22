@@ -22,7 +22,10 @@ uipath-functions coded-app wiring guide:
      body; executable code never names the portal domain `cloud.uipath.com`.
   6. `quote-app/vite.config.ts` gained no `proxy`.
 
-Exits 0 on PASS, with a `FAIL: ...` message on the first violation.
+Run as `check_js_app_backend_layout.py layout` (checks 1 minus the backend
+package shape, 3-6) or `... backend` (backend package.json, functions map and
+quote.ts shape); no argument runs everything. Exits 0 on PASS, with a
+`FAIL: ...` message on the first violation.
 """
 
 from __future__ import annotations
@@ -145,7 +148,7 @@ def check_app_not_a_function_project() -> None:
     if (APP / "functions").exists():
         sys.exit("FAIL: the app project must not contain a functions/ directory")
     for path in (APP / "src").rglob("*.ts*"):
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text = _strip_comments(path.read_text(encoding="utf-8", errors="replace"))
         if SDK in text or re.search(r"\bdefineFunction\s*\(", text):
             sys.exit(f"FAIL: function code found inside the app project: {path.relative_to(APP)}")
     print("OK: the app project was not turned into a function project")
@@ -183,7 +186,7 @@ def check_app_wiring() -> None:
         )
     if re.search(r"cloud\.uipath\.com", src):
         sys.exit("FAIL: browser calls must target the api.* host — cloud.uipath.com found in executable code")
-    if not re.search(r"export\s+(async\s+)?function\s+requestQuote\b|export\s+const\s+requestQuote\b", src):
+    if not re.search(r"export\s+(default\s+)?(async\s+)?(function\s+|const\s+|let\s+)?requestQuote\b|export\s*\{[^}]*\brequestQuote\b", src):
         sys.exit("FAIL: quote-app/src/api/quote.ts must export requestQuote")
     print("OK: app calls the function via " + ("the SDK Functions service" if uses_sdk else "fetch"))
 
@@ -197,15 +200,23 @@ def check_no_vite_proxy() -> None:
     print("OK: vite.config.ts unchanged (no proxy, base './')")
 
 
+LAYOUT_CHECKS = (
+    check_sibling_layout,
+    check_app_not_a_function_project,
+    check_app_scope,
+    check_app_wiring,
+    check_no_vite_proxy,
+)
+BACKEND_CHECKS = (check_backend_package, check_backend_manifest, check_quote_ts)
+
+
 def main() -> None:
-    check_sibling_layout()
-    check_backend_package()
-    check_backend_manifest()
-    check_quote_ts()
-    check_app_not_a_function_project()
-    check_app_scope()
-    check_app_wiring()
-    check_no_vite_proxy()
+    part = sys.argv[1] if len(sys.argv) > 1 else "all"
+    groups = {"layout": LAYOUT_CHECKS, "backend": BACKEND_CHECKS, "all": LAYOUT_CHECKS + BACKEND_CHECKS}
+    if part not in groups:
+        sys.exit(f"FAIL: unknown check group {part!r} (layout | backend | all)")
+    for check in groups[part]:
+        check()
     print("PASS")
 
 

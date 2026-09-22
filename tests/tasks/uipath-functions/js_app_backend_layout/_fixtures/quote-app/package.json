@@ -15,7 +15,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@uipath/coded-apps-dev": "^0.1.0",
+    "@uipath/coded-apps-dev": "^1.0.0-beta.1",
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "~5.7.0",
     "vite": "^6.0.0"

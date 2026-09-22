@@ -26,8 +26,8 @@ The app and its function backend are **two sibling projects**, each with its own
 └── <BACKEND>/    # uip function new <BACKEND> -l ts; uipath.json = the functions map
 ```
 
-1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts --empty` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: `uip function pack` inside the app happily produces `<APP>.<VERSION>.nupkg`, but once the app is published, `uip function publish` under that id is rejected — Orchestrator will not switch a published package between the two types.
-2. `<BACKEND>` is the `<PACKAGE_ID>` segment of the invoke URL ([deployment-guide.md](deployment-guide.md)) and the `Release.Name` callers see. Name it for the backend as a whole (`claims-backend`), not after one function — each function's `path` is its own slug beneath it.
+1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts --empty` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: `uip function pack` inside the app produces `<APP>.<VERSION>.nupkg`, but once the app is published, `uip function publish` under that id is rejected with `400` errorCode 2007 (`Project type has changed since the latest published version`) — Orchestrator will not switch a published package between the two types.
+2. `<BACKEND>` is the package id and the name of the auto-created process; Orchestrator slugs it (`[^a-zA-Z0-9]+` → `-`) into the `<PACKAGE_ID>` segment of the invoke URL ([deployment-guide.md](deployment-guide.md)). Use only lowercase letters, digits and `-` so package id, process name and URL segment coincide. Name it for the backend as a whole (`claims-backend`), not after one function — each function's `path` is its own slug beneath it.
 
 ## Token Flow
 
@@ -58,7 +58,7 @@ npm run dev           # terminal 2 — app dev server (Vite, :5173)
 
 ## Deployed Calls from the App
 
-Deployed, call the function through the SDK's `Functions` service (`@uipath/uipath-typescript` ≥ 1.7.0 — confirm `node_modules/@uipath/uipath-typescript/dist/functions/index.d.ts` exists; older installs need an upgrade or the raw `fetch` below). It looks the function up by its `defineFunction` `name` in the folder, resolves the invoke URL from the trigger, sends input as query string for `GET` and as JSON body otherwise, and acquires the caller's Studio Web license before invoking. Scope: `OR.Default` only (the SDK's shipped `docs/oauth-scopes.md`, § Functions).
+Deployed, call the function through the SDK's `Functions` service — confirm `node_modules/@uipath/uipath-typescript/dist/functions/index.d.ts` exists; if it is absent, the package's `release-metadata.json` names the `Functions` `since` version, or use the raw `fetch` below. The SDK marks the service `@experimental`; the raw `fetch` is the stable path. It looks the function up by its `defineFunction` `name` in the folder, resolves the invoke URL from the trigger, and sends input as query string for `GET` and as JSON body otherwise. Scope: `OR.Default`, plus `OR.Folders.Read` when you pass `folderId`/`folderPath` instead of `folderKey` (the SDK then reads `/odata/Folders` to resolve the key) — the SDK's shipped `docs/oauth-scopes.md`, § Functions.
 
 ```ts
 import { Functions } from "@uipath/uipath-typescript/functions";
