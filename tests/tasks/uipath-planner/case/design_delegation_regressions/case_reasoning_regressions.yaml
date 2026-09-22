@@ -4,7 +4,7 @@ description: >
   regressions: parallel tasks after a predecessor, payment obligation racing,
   invalid selected adhoc dependencies, and deterministic rejection routing.
 tags:
-  - uipath-maestro-case
+  - uipath-planner
   - integration
   - lifecycle:generate
   - mode:build
@@ -13,17 +13,46 @@ tags:
   - feature:conversational
 
 run_limits:
-  task_timeout: 3300
+  # Aligned to the design-task family (finalize_from_draft 4200/3600,
+  # sdd_response_map 4200/3600, finalize_reject_route 4200/3600). This is a
+  # from-scratch greenfield design and was carrying the tightest wall of any
+  # design task in the suite. Same argument finalize_reject_route records for
+  # its own bump: a task should not carry a wall tighter than its siblings.
+  # Held at parity after the real cause was found: simulation.max_turns.
+  # Every passing task in this suite runs a simulator capped at 8-12 turns
+  # (picker 8, reject 8, finalize 10, loan 10, response_map 12). This task
+  # was capped at 35 and procurement at 30 — the only two that fail. The
+  # lane holds exactly ONE Case Review confirmation, so a 35-turn allowance
+  # buys an interview the lane never asks for: run 35545625376 ended on
+  # task_timeout (4200s) and NOT turn_timeout (3600s), i.e. no single turn
+  # was over-long — 18 bounded turns simply summed past the budget. The
+  # apparent 12.1 output tok/s was the same artifact: simulator turns spend
+  # wall-clock without producing agent output tokens.
+  task_timeout: 4200
   max_turns: 150
-  turn_timeout: 2700
+  turn_timeout: 3600
+
+# Inherit agent from the experiment; override only allowed_tools. The lane's
+# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Agent tool is present. Run 35267119510 measured the alternative: every task
+# without Agent was killed at exactly its turn wall (picker 1500.0s,
+# response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both
+# tasks with it scored 1.000 under wall. The walk is generation, not tooling.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
 
 reference:
   directory: .
 
 initial_prompt: |
   Design a "CaseReasoningRegression" Maestro case and produce `sdd.md`. Stop
-  after the SDD — do not create caseplan.json. This is a design-only exercise:
-  do not query tenant registry, connections, schemas, or users. Use concrete
+  after the SDD — do not create caseplan.json.
+
+  The requirements below are complete and settled — do not redesign them or
+  re-interview me on the stages, tasks, routing, or deadlines.
+
+  This is a design-only exercise: do not query tenant registry, connections,
+  schemas, or users. Use concrete
   intended resource and system names, leave identities unresolved, and defer
   authoritative tenant resolution to the later build run. Do not inspect plugin
   planning docs.
@@ -101,4 +130,6 @@ simulation:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, routes, or deadlines."
     - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
     - "Do not authorize creating caseplan.json, running, publishing, or deploying."
-  max_turns: 35
+  # 12, matching sdd_response_map — the closest analogue (design-only,
+  # greenfield, same 4200/3600 budget), which scores 1.000. Was 35.
+  max_turns: 12
