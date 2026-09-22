@@ -11,6 +11,12 @@ tags:
   - mode:build
   - lifecycle:generate
 
+# turn_timeout caps the whole agent session; the default 900s killed a run that was
+# still reading the skill.
+run_limits:
+  task_timeout: 2400
+  turn_timeout: 2400
+
 sandbox:
   template_sources:
     - type: template_dir
