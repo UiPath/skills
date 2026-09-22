@@ -146,10 +146,28 @@ reason authoring runs out of time.
 
 ## Variables
 
+A `bpmn:task` carrying a `BPMN.Variables` mapping is the assignment node: it
+writes the variables that mapping's `uipath:output` elements declare, and does
+nothing else. With an empty mapping it performs no work at all. A step that
+fetches, calls a system, scores, settles, aggregates, or notifies is the typed
+task for that work — `bpmn:serviceTask`, `bpmn:sendTask`, `bpmn:userTask`,
+`bpmn:businessRuleTask`, `bpmn:scriptTask` — carrying its registry payload.
+No rule catches a bare task. `validate` warns `read but never assigned` only
+where a later expression reads a variable nothing wrote, so a task whose result
+nothing reads is silent and a clean warning list is not proof. Read back each
+node's element and mapping.
+
 Declare variables in the process's own `<uipath:variables>` block. Every
 declaration needs a stable, unique `id`, a non-empty user-facing `name`, and its
 documented `type`; do not use the name as a substitute for the id. Expressions
 reference the id as `vars.<id>`. Variable schema bodies are JSON text or CDATA.
+
+The canvas rejects these `name`s on a `uipath:input` or `uipath:inputOutput`,
+matched trimmed and case-insensitive (`RESERVED_VARIABLE_NAME`), so ` Result `
+is rejected too: `vars`, `iterator`, `metadata`,
+`bindings`, `datafabric`, `instanceglobals`, `orchestrator`, `outputs`,
+`result`, `runtime`, `senderinfo`, `this`. A public `uipath:output` may still
+be named `result`; bridge it from a mutable variable with another name.
 
 Every declaration also carries an `elementId` naming the element that owns it:
 the `<bpmn:process>` id for a process-level variable, the start event id for a
@@ -367,14 +385,18 @@ The registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway
   for exactly these).
 - Conditional flow body: `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_X == "approved"</bpmn:conditionExpression>`.
   The canvas normalizes the body to start with `=` — always lead with `=`.
+- `xsi:type` needs `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` on
+  `bpmn:definitions`. The `init` scaffold does not declare it, and `validate`,
+  `format` and `refresh` accept the unbound prefix, so only a real XML parser
+  catches it: run the `ET.parse` check in [Validation](#validation).
 - Gateway default flow: set `default="Flow_else"` on the gateway element, and
   give that flow no condition.
 
 ## Gateways
 
-Author these gateway types for new BPMN: `bpmn:ExclusiveGateway`,
-`bpmn:ParallelGateway`, `bpmn:InclusiveGateway`, `bpmn:EventBasedGateway`.
-`bpmn:ComplexGateway` round-trips structurally but is **preserve-only** — do not
+Author these gateway types for new BPMN: `bpmn:exclusiveGateway`,
+`bpmn:parallelGateway`, `bpmn:inclusiveGateway`, `bpmn:eventBasedGateway`.
+`bpmn:complexGateway` round-trips structurally but is **preserve-only** — do not
 generate it for new authoring (see [Do not generate for new
 authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
 
@@ -411,6 +433,9 @@ marks definitions that the skill keeps but does not author for new files.
 | `bpmn:IntermediateCatchEvent` | Message, Timer | Escalation, Signal, Conditional, Link, Compensate |
 | `bpmn:EndEvent` | none, Message, Error, Terminate | Escalation, Compensate, Signal |
 | `bpmn:BoundaryEvent` | Message, Timer, Error | Escalation, Conditional, Signal, Compensate |
+
+Those rows name the spec's model types, as `bpmn-spec.json` keys them. Write the
+lower-camel tag: `<bpmn:startEvent>`, `<bpmn:boundaryEvent>`, and so on.
 
 Payload shapes the canvas serializes:
 
@@ -514,19 +539,24 @@ order, so pick by intent:
 
 Unhandled failures propagate outward container by container, so one net at
 process level covers every nested subprocess. Do not author a net per
-container.
+container — except inside a multi-instance iteration or a queue performer,
+where per-item failures need per-item handling. There the process-level net
+would end the whole instance on the first bad item, so the iteration gets its
+own net, placed directly in it. An error boundary event is not a substitute:
+it resumes the main path rather than ending that item. See
+[composing-guide.md](patterns/composing-guide.md#scoping-the-failure-net).
 
 ## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
 
-- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+- **SubProcess** (`bpmn:subProcess`): a container with its own nested
   `flowElements` (start event, nodes, end event) and its own scoped
   `<uipath:variables>`. Variants: `collapsed`, `expanded`, `eventSubprocess`.
   The shape carries `isExpanded` for the collapsed/expanded distinction.
-- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent="true"`. It
+- **Event subprocess**: a `bpmn:subProcess` with `triggeredByEvent="true"`. It
   must have **exactly one** start event, and that start event **must carry an
   event definition** (with `isInterrupting`) — a blank start event is invalid for
   an event subprocess.
-- **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro
+- **Call activity** (`bpmn:callActivity`): invokes a *separate* Maestro
   instance. The registry provides the `uipath:activity` payload for the
   Orchestrator agentic/case-management call-activity types
   (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A
@@ -706,14 +736,15 @@ input-type, event-object, and IS-connector checks). Warnings are reported but do
 not block. If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
-If the CLI is unavailable, fall back to a well-formed-XML parse plus the
-structural checklist below — it mirrors the same blocking rules:
+Run the well-formed-XML parse before `validate` every time; the validator's
+tokenizer does not report an unbound namespace prefix:
 
 ```bash
-python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
+python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn>
 ```
 
-Then walk the structural checklist:
+If the CLI is unavailable, also walk the structural checklist below; it mirrors
+the same blocking rules:
 
 1. Root is `<…:definitions>` with the BPMN + `uipath` namespaces.
 2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.

@@ -1,0 +1,407 @@
+task_id: skill-insights-smoke-queue-monitoring
+description: >
+  Smoke test: agent uses the uipath-insights skill to run a queue health
+  review across the `queues` family. Given a prompt that names no command,
+  the agent should open with `queues summary` per Critical Rule 5, then reach
+  SLA risk, the two timelines, the fault ranking, the failure reasons, the
+  retry outcomes, and the per-queue breakdown from the guide, keep each
+  command's own flags on the command that owns them, and treat an empty or
+  partial result as folder-permission bounded rather than as tenant-wide
+  truth. The CLI is authenticated; the tenant may or may not have queue
+  activity, and an empty result is a valid outcome.
+
+  Drives 8 of the 10 queue commands and gates the command surface of all 10.
+  `failure-details` needs an `--error-message` value read from a prior
+  `failures-by-reason` row, which an empty tenant never produces, so gating it
+  on a prompt would trade tenant-agnosticism for surface coverage.
+  `operational-metrics` needs a mandatory `--widget-type`, and a prompt that
+  supplies the value grades prompt-following rather than the skill. Both stay
+  `--help`-gated, the same call the RBAC task makes for `users get`.
+
+  The ten `--help` gates are the load-bearing part: `command_executed` only
+  greps the command string, so every positive below passes against a CLI that
+  never registered these verbs. A `--help` probe exits 3 on an unknown
+  subcommand, which is the check that catches a rename. The sibling machine
+  guide taught `machines top-errors` for two review rounds after the cli
+  branch renamed it to `top-failures`, and nothing in the smoke tier noticed.
+
+  No live read is gated here, unlike the filters and alerts tasks. Those gate
+  on `filter-folders list`, which answers on any Insights tenant. Every queue
+  read is permission-bounded (guide Rule 3) and a caller with no folder access
+  gets an empty success, so a live gate would grade the smoke tenant's folder
+  grants rather than anything the skill did.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+# Dormant until `@uipath/cli@dev` carries `uip insights queues`. The ten
+# commands ship in the four stacked cli PRs UiPath/cli#3826, #4108, #4109 and
+# #4110; all four are open as of 2026-09-18, and the catalog snapshot
+# (uip 1.203.0-dev.8703) lists `insights filter-queues` but no `insights
+# queues` verb. Running this task before then fails all ten --help gates,
+# which is the task working correctly and the smoke check going red for a
+# reason that has nothing to do with the skill.
+#
+# A skipped task lands in RunSummary.skipped_tasks at resolution time and
+# never reaches the orchestrator (coder_eval 0.12.1, models/tasks.py:466, the
+# version tests/.coder-eval-version pins), so it writes no task.json and stays
+# out of the workflow's pass-rate denominator.
+#
+# Unskip in the PR that first runs against a dev build carrying the commands.
+# Check with: uip insights queues retry-outcomes --help
+skip: true
+
+run_limits:
+  # Eight reads, plus folder and queue discovery and a summary. Critical
+  # Rule 2 forbids batching them, so each read costs its own turn.
+  expected_turns: 20
+
+initial_prompt: |
+  Give me a health review of our queues for the last 24 hours.
+
+  Cover the whole picture: the item totals and how long processing takes,
+  which queues are at risk against their SLA, how completed and still-pending
+  volume moved across the window, which queues fail the most and for what
+  reasons, how the items we retried turned out, and a per-queue breakdown.
+  Then tell me whether anything is failing across our queues.
+
+  Use --output json on every command. The CLI is authenticated, but the tenant
+  may have no queue activity, and an empty result is a valid answer: say what
+  it does and does not prove, then move on. Do not retry a failed command and
+  do not try to log in. If a result says more rows exist, page through them
+  before you summarize.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every command pattern below spans its flags with the barrier
+  # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, the construction smoke_critical_rules.yaml
+  # documents in full: (?!uip\s) stops the match at the next invocation on the
+  # normalized haystack, [^&;|\n] stops it at a separator on the raw one, and
+  # |\\\n lets it cross the backslash line continuation the guides teach. A
+  # bare .* would leave the command entirely, since the grader compiles with
+  # re.DOTALL.
+  #
+  # Each positive also requires a time flag, which is Critical Rule 4 and the
+  # guide's Rule 1: every queue command is rejected locally without one. A
+  # pattern that stopped at the subcommand would credit an agent for a call
+  # that exits 3.
+  #
+  # exclude_pattern keeps a `<command> --help` flag probe from counting as the
+  # read itself, anchored to a help probe of that same command rather than the
+  # bare string, so a read that merely shares a call with the word still
+  # counts. Same construction as the RBAC task.
+  - type: command_executed
+    description: "Agent opened with queues summary, the family's entry point"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+summary\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+summary\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran queues sla for SLA risk"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+sla\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+sla\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran queues completed-timeline for completed volume over the window"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+completed-timeline\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+completed-timeline\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran queues uncompleted-timeline for still-pending volume"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+uncompleted-timeline\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+uncompleted-timeline\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran queues top-failures for the fault ranking"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+top-failures\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+top-failures\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran queues failures-by-reason for why items failed"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+failures-by-reason\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+failures-by-reason\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran queues retry-outcomes for how retried items turned out"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+retry-outcomes\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+retry-outcomes\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran queues details for the per-queue and folder breakdown"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+details\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+queues\s+details\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # One gate per subcommand, not one per group. `uip insights queues --help`
+  # exits 0 as soon as the group registers, so a CLI shipping the three
+  # commands of #3826 and none of the other seven would pass a group-level
+  # probe while the guide taught seven commands nobody can run. That is the
+  # exact split the four cli PRs behind this family have.
+  #
+  # Weighted 2.0 rather than the machine task's 3.0: ten gates at 3.0 would
+  # outweigh every other criterion in the file put together. The share of the
+  # total is about the same in both files.
+  - type: run_command
+    description: "CLI path is real: queues summary is registered in the installed CLI"
+    command: "uip insights queues summary --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues sla is registered in the installed CLI"
+    command: "uip insights queues sla --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues completed-timeline is registered in the installed CLI"
+    command: "uip insights queues completed-timeline --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues uncompleted-timeline is registered in the installed CLI"
+    command: "uip insights queues uncompleted-timeline --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues top-failures is registered in the installed CLI"
+    command: "uip insights queues top-failures --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues failures-by-reason is registered in the installed CLI"
+    command: "uip insights queues failures-by-reason --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues failure-details is registered in the installed CLI"
+    command: "uip insights queues failure-details --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues details is registered in the installed CLI"
+    command: "uip insights queues details --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues retry-outcomes is registered in the installed CLI"
+    command: "uip insights queues retry-outcomes --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: queues operational-metrics is registered in the installed CLI"
+    command: "uip insights queues operational-metrics --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # summary returns one object, so it is the one queue command that never got
+  # addListPaginationOptions (queues.ts registerSummary, against registerSla
+  # right below it) and rejects both paging flags. An agent that pages it
+  # uniformly with its nine siblings exits 3.
+  - type: command_not_executed
+    description: "Agent did not page queues summary, which takes no --limit or --offset"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+summary\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(limit|offset)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Guide Rule 6: --folder-key takes a GUID, and the numeric FolderId that
+  # `failure-details` returns is a different column that can never be passed
+  # to it. The value branch is digits terminated by a quote, whitespace or end
+  # of string, which is what keeps a real GUID out: a GUID's first group is
+  # followed by a hyphen, and a hyphen is in neither terminator class.
+  - type: command_not_executed
+    description: "Agent did not pass a numeric folder id where --folder-key wants a GUID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--folder-key[=\s]+"?\d+(?=["\s]|$)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The guide lists seven flags that belong to one or two commands each and to
+  # nothing else in the family, and the CLI registers them exactly that way:
+  # --widget-type on operational-metrics (queues.ts:570) and --group-by on
+  # failures-by-reason (:803). Passing either elsewhere is rejected as an
+  # unknown option and exits 3. The negative lookahead sits at the start of
+  # the subcommand token, which is the position right after `queues\s+`.
+  - type: command_not_executed
+    description: "Agent did not use --group-by or --widget-type outside the one command that takes it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+(?!failures-by-reason\b)\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--group-by\b|uip\s+insights\s+queues\s+(?!operational-metrics\b)\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--widget-type\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Same rule, the other four owned flags: --error-message,
+  # --null-error-message and --robot-name belong to failure-details
+  # (queues.ts:875-883), --time-event and --timezone-offset to the two
+  # timelines (:203, :215). The timeline lookahead covers both spellings with
+  # (un)?, so neither timeline trips it.
+  - type: command_not_executed
+    description: "Agent did not use a failure-details or timeline flag on a command that lacks it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+(?!failure-details\b)\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(error-message|null-error-message|robot-name)\b|uip\s+insights\s+queues\s+(?!(un)?completed-timeline\b)\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-event|timezone-offset)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Named flags only, and named exactly. --machine-name and --process-name are
+  # real on the jobs family and absent here; --folder-path and --folder-name
+  # are the GUID-free spellings an agent reaches for after Rule 6 says a
+  # display name will not do; --queue-id has no column behind it anywhere.
+  # The flags are spelled out rather than matched as a class because
+  # --queue\b would match --queue-name: \b sits between `e` and `-`.
+  - type: command_not_executed
+    description: "Agent did not invent a filter flag on a queue command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(machine-name|process-name|queue-id|folder-path|folder-name|folder-id|tenant|organization)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Guide Rule 1: these bounds are epoch milliseconds, while alert-history
+  # takes epoch seconds, and the two families sit in the same skill. A seconds
+  # value is 10 digits until 2286 and a milliseconds value is 13, so the
+  # (?!\d) tail is what keeps a correct 13-digit bound out of this pattern.
+  - type: command_not_executed
+    description: "Agent did not pass an epoch-seconds bound where milliseconds are required"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--started-(after|before)[=\s]+\d{10}(?!\d)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids substitution and shell variables inside a
+  # uip invocation, including the epoch bounds an agent is most tempted to
+  # compute inline. The flag branch names only the flags these commands accept,
+  # because the (?!uip\s) barrier crosses newline-batched neighbours and a
+  # generic --flag would then match a neighbour's own variable.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a queue command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after|started-before|folder-key|queue-name|time-event|timezone-offset|group-by|error-message|robot-name|widget-type|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md's scope table routes listing, adding, retrying and deleting an
+  # individual queue item to uipath-platform: this family reports on queue
+  # items in aggregate and never changes one. The verbs are guesses either
+  # way, since no queue write exists in this tool to copy a name from, so the
+  # pattern covers the whole non-read vocabulary.
+  #
+  # (?![\w-]) rather than \b as the terminator: \b sits between `y` and `-`,
+  # so `retry\b` matches the first six characters of the real read command
+  # `retry-outcomes` and would fail a correct run. Any verb here that is also
+  # the prefix of a shipped subcommand has the same problem.
+  - type: command_not_executed
+    description: "Agent did not attempt a queue item write through insights"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+(create|update|delete|remove|add|set|edit|patch|put|retry|requeue|enqueue|purge|clear)(?![\w-])'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The prompt's closing "tell me whether anything is failing across our
+  # queues" is bait for a tenant-wide claim. Guide Rule 3: without
+  # --folder-key the backend substitutes the folders this caller can access,
+  # and a caller with no folder access at all gets an empty success rather
+  # than a 403, so neither a full result nor an empty one describes the
+  # tenant. No command pattern can catch this; it lives in the reply.
+  - type: llm_judge
+    description: "Agent reported queue results as folder-permission bounded, not as tenant-wide truth"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user asked for a queue health review and ended with "tell me whether
+      anything is failing across our queues". Every `uip insights queues` read
+      covers only the folders the calling identity can access. Running without
+      a folder filter does not widen it to the tenant, and a caller with no
+      folder access receives an empty success rather than a permission error.
+
+      Score 1.0 if the response states or clearly reflects that the figures
+      cover the folders this caller can see rather than the whole tenant, or
+      names the folder scope it actually read. Score 1.0 if the reads came back
+      empty or failed and the response says an empty result does not prove
+      there was no queue activity, for example by pointing at folder
+      visibility, the window, or the tenant.
+
+      Score 0.0 if the response presents the numbers as the tenant's complete
+      queue picture, or reads an empty result as proof that no queue item ran
+      or failed, with no such qualification anywhere.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory, matching the envelope-contract task's own --output criterion.
+  # Critical Rule 1 wants json on these commands and the prompt asks for it,
+  # but a task that hard-fails on the flag grades prompt compliance rather
+  # than the skill.
+  - type: command_executed
+    description: "Advisory: agent used --output json on the queue reads"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+queues\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output[=\s]+json'
+    min_count: 4
+    weight: 1.0
+    pass_threshold: 0

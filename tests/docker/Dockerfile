@@ -162,6 +162,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
     && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \
+    && bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
     && ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet \
     && rm /tmp/dotnet-install.sh \
     && dotnet --version

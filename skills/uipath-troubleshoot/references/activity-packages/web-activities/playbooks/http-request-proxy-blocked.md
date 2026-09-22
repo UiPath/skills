@@ -24,7 +24,7 @@ What to look for:
 
 ## Investigation
 
-1. **Capture the symptom.** From logs/traces or the workflow output: is it `StatusCode 0`, `407`, or a timeout with no status? `uip or jobs logs <job-key> --level Error --output json` / `uip or jobs traces <job-key> --output json`.
+1. **Capture the symptom.** From logs/traces or the workflow output: is it `StatusCode 0`, `407`, or a timeout with no status? `uip or jobs logs <job-key> --level Error --output json` / `uip traces spans get --job-key <job-key> --output json`.
 2. **Confirm the endpoint is external** and that the failure is environment-specific (robot/server, not the developer machine).
 3. **Establish whether a proxy governs internet egress** in that environment and whether the robot's run account routes through it.
 4. **Rule out a plain transport failure** — if the message is a `WebException` naming DNS / "Unable to connect" / SSL, that is [http-request-connection-failure.md](./http-request-connection-failure.md), not a proxy gap.

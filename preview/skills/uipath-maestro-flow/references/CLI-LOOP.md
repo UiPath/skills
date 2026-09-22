@@ -57,6 +57,12 @@ uip maestro flow validate <Name>.flow --output json
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.
 
+Layout is deliberately absent from this sequence. `uip maestro flow format`
+is not an authoring gate — `validate` passes without it and nothing upstream
+reads a position. It is required before the emitted file reaches anything that
+draws it: `solution upload`, `flow debug`, or a person opening the project in a
+designer. See [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 
 ## Product-CLI scaffold
@@ -100,6 +106,8 @@ behavior evidence:
 ```bash
 uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
 uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
+# Before anything opens the emitted file — upload, debug, or a designer:
+uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
 ( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
 ( cd <Solution> && uip maestro flow debug <Name> --log-level error \
