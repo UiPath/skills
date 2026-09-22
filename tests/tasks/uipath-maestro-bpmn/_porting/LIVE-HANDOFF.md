@@ -59,6 +59,12 @@ Grader tolerance added this round: every live grader that classified managed HTT
 
 Batch 12 = billing_invoice_lookup (rerun), bellevue_weather_simulated (rerun), slack_channel_description_simulated (it.2), slack_weather_pipeline (it.3), ceql_where (it.2).
 
+## Batch 12
+
+Run 35785806030, five tasks. Green: billing_invoice_lookup, slack_weather_pipeline (iteration 3). Parked: bellevue_weather_simulated (same `temperature_2m` response-shape fault as its non-simulated twin) and ceql_where (the agent writes the connector's sanctioned CEQL `where` string, never Flow's numeric-groupOperator tree; the tree is a Flow-skill construct). slack_channel_description_simulated failed on a grader defect: an abandoned untyped draft under `<Name>Solution/` beside the real solution; `find_bpmn_file` now drops candidates with no registry-typed node. Iteration 3 goes in batch 13 with the field-shape ports.
+
+Field-shape family decision: assertions on wire parameters (path, query, pagination, enum, multiselect, complex_array) port; assertions on a Flow filter-tree shape do not (ceql_where parked; enhanced_enum and searchable_joins must be checked for the same trap before porting).
+
 ## Probe bucket (16): pilot ported, 11 decided, 4 blocked
 
 `connector_features/ceql_where` is ported (commit fd6312fde), not yet run. The probe confirmed the filter carrier exists: `Intsvc.ActivityExecution` enrichment for the Entra `groups` List operation exposes a `where` parameter (type `query`, `FilterBuilder`, `hasCEQL: true`), and the CI-passing Data Fabric artifact carries the same tree as a `target="query" name="queryExpression" type="json"` input. As in Flow, the sandbox has no live tenant for enrichment, so the port grades the same standalone `where_detail.json` planning artifact plus the connector node and terminate end. No `bpmn validate` gate, matching Flow. Its one review flag: the groups-operation tolerance (objectName contains `group`, or `groups` + GET/list) has no CI-passed fixture yet.
