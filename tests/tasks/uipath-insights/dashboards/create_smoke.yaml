@@ -39,17 +39,23 @@ sandbox:
       mount_point: _setup
 
 pre_run:
-  # The create is one shot per slot, so the placeholder slot is freed
-  # first (Command Optimization Rule, section 5). The script never fails
-  # the task: a CLI without the delete verb, or a slot that cannot be read,
-  # leaves the slot as it is and exits zero.
-  - command: "python3 _setup/clear_slot.py"
-    timeout: 120
+  # The create is one shot per slot, so every run gets a fresh key whose
+  # slot is free by construction (Command Optimization Rule, section 5,
+  # met without a delete). A fixed key collided when two gate runs
+  # overlapped (skills runs 35721927455 and 35721932318): one agent
+  # created, the other read the occupied slot and correctly stopped.
+  - command: "python3 _setup/slot.py new"
+    timeout: 30
     fail_on_error: false
 
+post_run:
+  # The orphan this run created goes away with it.
+  - command: "python3 _setup/slot.py clear"
+    timeout: 120
+
 initial_prompt: |
-  Build a monitoring dashboard for the Maestro process
-  00000000-0000-0000-0000-000000000000 and create it. I want two charts:
+  Build a monitoring dashboard for the Maestro process whose key is the
+  process_key in ./seed.json, and create it. I want two charts:
   process instances broken down by status, and instances over time. Start
   from whatever that process's Monitoring tab shows today so the charts
   use field ids that exist, and take that definition as a file
@@ -192,13 +198,16 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # The create landed. pre_run freed the slot, so a saved dashboard there
-  # after the run is this run's create and nothing else. No command string
+  # The create landed. The key is this run's alone, so a saved dashboard
+  # there after the run is this run's create and nothing else. No command string
   # can fake it, and a file the CLI refused leaves the slot on the
   # template and fails here, which is the round trip this task grades.
   - type: run_command
     description: "Live: the placeholder slot holds a saved dashboard after the run"
-    command: "uip insights dashboards get --process-key 00000000-0000-0000-0000-000000000000 --output json | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Data\"][\"Saved\"] is True else 1)'"
+    command: >-
+      K=$(python3 -c 'import json; print(json.load(open("seed.json"))["process_key"])');
+      uip insights dashboards get --process-key "$K" --output json
+      | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["Data"]["Saved"] is True else 1)'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
