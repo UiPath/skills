@@ -20,11 +20,11 @@ When a format-valid guardrail and its selected source conclusively match a catal
 2. Read the guardrail's exact source path, `id`, `name`, `validatorType`, action, scopes, and `matchNames`, plus only its selected source or resource.
 3. Fetch the catalog and tenant validator list once, as specified in Step 0.
 4. Compare configured action and scope with the exact `when_not_to_use` clause and relevant `examples[].config`.
-5. If the clause directly matches the selected source, establish `LC_GUARDRAIL_ACTION_INEFFECTIVE` and immediately save the requested report.
+5. If the clause directly matches the selected source, establish the matching Audit Mode rule ID and immediately save the requested report: `LC_GUARDRAIL_ACTION_INEFFECTIVE` when the clause faults the configured action or scope of a guardrail that belongs on this agent; `LC_GUARDRAIL_MISAPPLIED` when the clause disqualifies the guardrail for this agent's context or data flow (the guardrail should not be present at all).
 
 The completed checkpoint must include retained CLI findings, letter-grade derivation, and the Audit Mode finding with exact guardrail source path and identifiers, selected resource path and identifiers, matched catalog clause, configured scope/action, and catalog-supported fix. If the user explicitly requests additional exhaustive review, save this checkpoint first and update the same report afterward; otherwise return it and end the review turn. Do not delay it for solution packing, eval inspection, repeated validation or catalog calls, general architecture analysis, or unrelated project introspection.
 
-Require a direct source-to-catalog contradiction, not a plausible concern. For example, `pii_detection` with `Block` or `Filter` at `Tool` scope selecting `SendCustomerEmail`, whose input schema requires `recipient_email`, directly matches a catalog clause saying that action breaks a tool requiring PII. If the input is optional or the clause does not directly match, continue normal Audit Mode.
+Require a direct source-to-catalog contradiction, not a plausible concern. For example, `pii_detection` with `Block` or `Filter` at `Tool` scope selecting `SendCustomerEmail`, whose input schema requires `recipient_email`, directly matches a catalog clause saying that action breaks a tool requiring PII → `LC_GUARDRAIL_ACTION_INEFFECTIVE`. By contrast, `pii_detection` at `Llm` scope on a generate-only agent whose LLM never receives real PII matches a clause disqualifying the guardrail for that data flow → `LC_GUARDRAIL_MISAPPLIED` (see [Relevance Check](#relevance-check--lc_guardrail_misapplied)). If the input is optional or the clause does not directly match, continue normal Audit Mode.
 
 ## Missing-guardrail fast path — completed deliverable
 
