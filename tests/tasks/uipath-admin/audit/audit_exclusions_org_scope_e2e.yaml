@@ -1,6 +1,6 @@
-task_id: skill-admin-audit-exclusions-org-scope-smoke
+task_id: skill-admin-audit-exclusions-org-scope-e2e
 description: >
-  Smoke test: the request is phrased per-tenant ("what isn't being recorded for
+  Test: the request is phrased per-tenant ("what isn't being recorded for
   our production tenant"), which invites the symmetric verb that does not exist.
   Exclusion rules are organization-scoped — `uip admin audit tenant exclusions`
   is `unknown command` — so the agent must read the org rules and interpret the
@@ -18,7 +18,16 @@ description: >
   Blocker: needs `uip admin audit org exclusions` in the published `@uipath/cli`
   (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
   organization.
-tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org, path-to-ga]
+
+  Tier note: this is a smoke-shaped check — one scenario, cheap, no build —
+  carried in the e2e tier because the surface it exercises is not deployed
+  yet. Every blocked task in this repo waits in e2e: the PR gate runs the
+  smoke tier against the live organization and enforces a pass rate, so a
+  task that cannot pass until `/api/EventConfig/rules` ships would redden
+  that gate on every PR touching uipath-admin. Re-tag it `smoke` (tag,
+  task_id and filename) in the same change that removes the Blocker note.
+
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org, path-to-ga]
 reference:
   directory: ..
 
