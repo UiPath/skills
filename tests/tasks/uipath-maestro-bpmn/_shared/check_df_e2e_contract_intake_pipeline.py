@@ -34,12 +34,14 @@ CRUD-chain re-homing decisions vs the Flow grader:
     ``uipath:input`` value/text reachable from a node (``entity_ok``/
     ``all_node_values``/``has_priority_desc_sort``), not one named field --
     matching the batch's sibling checkers.
-  - Flow's ``bodyParameters`` dict becomes every ``target="body"`` input's
-    JSON, merged into one dict (registry-workflow.md §3 documents ONE
-    `target="body"` input as the canonical shape, but Flow's own grader never
-    penalized node shape -- only body *content* -- so more than one such
-    input is not itself a chain-criterion failure here; see ``--shape`` mode
-    below for the shape assertion Flow actually never made either).
+  - Flow's ``bodyParameters`` dict becomes the dict
+    ``bpmn_check.body_object()`` decodes from every ``target="body"`` input
+    -- JSON blobs merged, per-field typed inputs folded in alongside them
+    (registry-workflow.md §3 documents ONE `target="body"` input as the
+    canonical shape, but Flow's own grader never penalized node shape -- only
+    body *content* -- so more than one such input is not itself a
+    chain-criterion failure here; see ``--shape`` mode below for the shape
+    assertion Flow actually never made either).
   - Flow's ``wired_to_create`` (``recordId`` expr is ``=js:`` and contains a
     create node id) becomes a real variable-binding assertion: the consuming
     node's inputs must contain ``vars.<V>`` where ``V`` is one of the Create
@@ -110,6 +112,7 @@ Assertion map (Flow -> BPMN):
   T                                                 entity name anywhere in node inputs/objectName/path  -> entity_ok()
   T                                                 vars.<VarId> substring reference in place of Flow node-id reference -> wired_to_create()
   T                                                 merge every target="body" input instead of requiring exactly one (chain criterion only) -> body_json()
+  T                                                 per-field target="body" inputs -> bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
   DROPPED  require_no_private_connector_values  (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_sequence_integrity            (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow; `validate` criterion already covers structure)
@@ -120,7 +123,6 @@ Assertion map (Flow -> BPMN):
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -131,6 +133,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     all_node_values,
+    body_fields,
+    body_object,
     context_value,
     elements,
     fail,
@@ -213,33 +217,19 @@ def is_kind(task: ET.Element, curated_objects: set[str], kind: str) -> bool:
 
 
 def body_json(task: ET.Element, label: str) -> dict:
-    """Merge every target="body" input's JSON into one dict.
+    """The node's request body, from either shape agents emit.
 
     Flow's grader reads a single `bodyParameters` dict and never penalized
     node *shape* -- only body *content* (see module docstring). A
-    hand-authored BPMN file may carry more than one `target="body"` input
-    without that being a chain-criterion failure Flow ever asserted, so this
-    merges rather than hard-failing on the count.
+    hand-authored BPMN file may carry more than one `target="body"` input, or
+    one typed input per field, without that being a chain-criterion failure
+    Flow ever asserted, so this decodes whatever is there via
+    `bpmn_check.body_object()` rather than hard-failing on the count or the
+    shape.
     """
-    merged: dict = {}
-    found_any = False
-    for inp in node_inputs(task):
-        if inp.attrib.get("target") != "body":
-            continue
-        raw = inp.text or ""
-        if not raw.strip():
-            continue
-        found_any = True
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            fail(f'{label} node target="body" input is not valid JSON: {exc}\n  raw={raw!r}')
-        if not isinstance(parsed, dict):
-            fail(f'{label} node target="body" JSON must be an object, got {type(parsed).__name__}')
-        merged.update(parsed)
-    if not found_any:
+    if not body_fields(task):
         fail(f'no target="body" input found on the {label} node')
-    return merged
+    return body_object(task)
 
 
 def connector_nodes(root: ET.Element) -> list[ET.Element]:

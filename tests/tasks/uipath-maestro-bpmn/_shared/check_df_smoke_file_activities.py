@@ -41,11 +41,12 @@ instead of assuming Flow's JSON shape:
   * Download's `recordId` literal UUID -> a bare (non-expression) UUID-shaped
     value on any of Download's inputs (Flow required a UUID literal here too).
   * Create's single-body-dict read -> Flow's grader reads ONE
-    ``bodyParameters`` dict; here every ``target="body"`` input's JSON is
-    parsed and merged (a hand-authored file may legitimately or accidentally
-    carry more than one -- registry-workflow.md §3 -- but Flow's own grader
-    never penalized node shape, only body *content*, so an extra body input
-    is not itself a failure here).
+    ``bodyParameters`` dict; here ``bpmn_check.body_object()`` decodes every
+    ``target="body"`` input into one dict -- merging JSON blobs and folding
+    per-field typed inputs in alongside them (a hand-authored file may
+    legitimately or accidentally carry more than one -- registry-workflow.md
+    §3 -- but Flow's own grader never penalized node shape, only body
+    *content*, so an extra body input is not itself a failure here).
   * Upload's multipart `file` binding -> Flow accepted any `=js:$vars.*`
     expression naming *any* variable in scope (its own docstring: "download
     output, typed file global, or start-input file parameter all pass").
@@ -66,8 +67,8 @@ Checks performed:
      Create: curated or generic entity-CRUD form -- see above).
   3. Download, Upload, and Delete each reference field "file1".
   4. Download's recordId is a literal (non-expression) UUID.
-  5. Create's target="body" JSON (merged across every such input) covers
-     title/description/score.
+  5. Create's request body (every target="body" input decoded and merged,
+     JSON blob or per-field typed inputs) covers title/description/score.
   6. Upload's `target="file"`/`name="file"` input carries a `vars.<id>`
      reference (any variable).
   7. Upload and Delete both reference Create's output variable for recordId.
@@ -83,7 +84,8 @@ Assertion map (Flow -> BPMN):
   T                                          curated|generic Create classification (integration_create_get precedent) -> is_create_node()
   T                                          entity name anywhere in node inputs/objectName/path -> mentions(task, ENTITY)
   T                                          vars.<VarId> substring reference in place of Flow node-id/variable-chain reference -> has_variable_reference()
-  T                                          merge every target="body" input instead of requiring exactly one -> merged body-field union parse
+  T                                          merge every target="body" input instead of requiring exactly one -> bpmn_check.body_object()
+  T                                          per-field target="body" inputs -> bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
   DROPPED  require_no_private_connector_values  (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_sequence_integrity            (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow; `validate` criterion already covers structure)
@@ -94,7 +96,6 @@ Assertion map (Flow -> BPMN):
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -105,6 +106,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     all_node_values,
+    body_object,
     context_value,
     elements,
     fail,
@@ -226,30 +228,6 @@ def file_field_values(task: ET.Element) -> list[str]:
     return values
 
 
-def merged_body_json(task: ET.Element) -> dict:
-    """Parse every target="body" input's JSON and merge the resulting dicts.
-
-    Flow's grader reads one `bodyParameters` dict; a hand-authored BPMN file
-    may carry more than one `target="body"` input without that being a
-    content failure Flow ever asserted (only the resulting field coverage
-    matters here), so this merges rather than hard-failing on the count.
-    """
-    merged: dict = {}
-    for inp in node_inputs(task):
-        if inp.attrib.get("target") != "body":
-            continue
-        raw = inp.text or ""
-        if not raw.strip():
-            continue
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, dict):
-            merged.update(parsed)
-    return merged
-
-
 def main() -> None:
     path, root = parse_bpmn()
 
@@ -278,7 +256,7 @@ def main() -> None:
         fail("Download node has no literal (non-expression) UUID-shaped recordId value")
     print(f"OK: Download recordId is a literal UUID ({dl_uuid})")
 
-    create_body = merged_body_json(create)
+    create_body = body_object(create)
     if not create_body:
         fail(f'no parseable target="body" JSON object found on the Create node')
     missing_fields = REQUIRED_CREATE_BODY - set(create_body.keys())

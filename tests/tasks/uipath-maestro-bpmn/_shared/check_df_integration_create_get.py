@@ -42,7 +42,8 @@ Checks performed:
      carrying an expansionLevel input or an Id filter).
   4. The union of expansionLevel values read off those retrieval nodes covers
      {1, 2, 3} -- from an input named `expansionLevel` at any depth under the
-     activity, or a body JSON key of the same name.
+     activity, or a key of the same name in the request body decoded by
+     ``bpmn_check.body_object()``.
 
 Assertion map (Flow -> BPMN):
   F check_integration_create_get.py:35  creates >= 2                     -> `creates < 2` check
@@ -53,6 +54,7 @@ Assertion map (Flow -> BPMN):
   T                                     entity name anywhere in inputs   -> mentions_entity()
   T                                     GETBYID/GET(List) equivalence    -> is_retrieval_node() List/GET branch
   T                                     expression/body JSON at any depth -> expansion_level() query-or-body read
+  T                                     per-field target="body" inputs → bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
   DROPPED  require_no_private_connector_values  (not in Flow grader)
   DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
@@ -60,7 +62,6 @@ Assertion map (Flow -> BPMN):
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -70,6 +71,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    body_object,
     context_value,
     elements,
     fail,
@@ -116,22 +118,13 @@ def expansion_level(task: ET.Element) -> int | None:
             match = re.search(r"\d+", raw or "")
             if match:
                 return int(match.group())
-    # Or a key inside the single `target="body"` JSON blob.
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") != "body" or inp.attrib.get("target") != "body":
-            continue
-        text = (inp.text or "").strip()
-        if not text:
-            continue
+    # Or a key inside the node's request body.
+    body = body_object(task)
+    if "expansionLevel" in body:
         try:
-            body = json.loads(text)
-        except json.JSONDecodeError:
-            fail(f"body input on a connector node is not valid JSON: {text[:200]!r}")
-        if isinstance(body, dict) and "expansionLevel" in body:
-            try:
-                return int(body["expansionLevel"])
-            except (TypeError, ValueError):
-                return None
+            return int(body["expansionLevel"])
+        except (TypeError, ValueError):
+            return None
     return None
 
 

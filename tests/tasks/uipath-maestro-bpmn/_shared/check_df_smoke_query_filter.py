@@ -20,7 +20,8 @@ Assertion map (Flow → BPMN):
   F check_smoke_query_filter.py:137-143  >=2 score-sorted nodes carry limit + start                → has_numeric(LIMIT_NAMES) and has_numeric(OFFSET_NAMES)
   F check_smoke_query_filter.py:145-151  >=1 node with descending sort (isAscending=false)         → is_descending()
   I                locate/parse .bpmn (file exists, well-formed XML, no name hint)                 → parse_bpmn()
-  I                parse a target="body" CDATA as JSON when present (Flow read structured fields)  → validate_body_inputs() / parse_json_maybe()
+  I                parse a target="body" CDATA as JSON when present (Flow read structured fields)  → validate_body_inputs() (bpmn_check.body_object()) / parse_json_maybe()
+  T                per-field target="body" inputs → bpmn_check.body_object()                         → one typed input per field (CI run 35777886090) is a valid body, not a JSON-parse failure
   T                curated|generic entity-CRUD node classification                                 → query_entity_nodes()
   T                inputs at any depth                                                             → all_inputs() walks `.//uipath:input`
   T                ORDER BY in query text                                                          → bpmn_check.order_by() fallback in sorted_field()/is_descending()
@@ -93,8 +94,10 @@ Checks performed:
      Query Entity Records (QueryEntityRecordsCurated|QueryEntityRecords_V3)
      or objectName == FlowCodeEvalEntity with operation List / method GET
      (a dynamic per-entity query shape).
-  3. Any `target="body"` input present is valid JSON (optional -- absence
-     is not an error).
+  3. Any `target="body"` request body present decodes via
+     `bpmn_check.body_object()`: a `name="body"` blob must be a valid JSON
+     object, and per-field typed inputs are fields, not malformed JSON
+     (optional -- absence is not an error).
   4. Every one of the nine filter conditions appears somewhere across the
      three nodes, and the complete nine-condition set appears together in
      at least ONE node (Flow's threshold -- queries 1 and 2 both reuse the
@@ -117,6 +120,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    body_object,
     context_value,
     elements,
     fail,
@@ -214,18 +218,12 @@ def query_entity_nodes(root: ET.Element) -> list[ET.Element]:
 
 
 def validate_body_inputs(task: ET.Element) -> None:
-    """A target="body" input is optional; if present it must be valid JSON."""
-    label = task.attrib.get("id", "<unnamed>")
-    for inp in all_inputs(task):
-        if inp.attrib.get("target") != "body":
-            continue
-        raw = input_val(inp)
-        if not raw.strip():
-            continue
-        try:
-            json.loads(raw)
-        except (json.JSONDecodeError, TypeError) as exc:
-            fail(f'Query node {label!r} target="body" input is not valid JSON: {exc}')
+    """A target="body" request body is optional; if present it must decode.
+
+    ``body_object`` fails the check itself on a ``name="body"`` blob that is
+    not a JSON object, and reads per-field typed inputs as fields.
+    """
+    body_object(task)
 
 
 def parse_json_maybe(value: str):
