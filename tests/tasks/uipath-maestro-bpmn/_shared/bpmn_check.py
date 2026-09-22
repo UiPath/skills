@@ -43,11 +43,14 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
     if name_hint:
         matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
         if matches:
-            return matches[0]
+            # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
+            # left beside `Foo.bpmn` matches too, and sorts first. Apply
+            # resolve_project's rule here as well so the draft is never graded.
+            hinted = _project_files(matches)
+            return hinted[0] if len(hinted) == 1 else matches[0]
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
-    # Several .bpmn files and no hint: apply resolve_project's rule.
     projects = _project_files(paths)
     if len(projects) == 1:
         return projects[0]

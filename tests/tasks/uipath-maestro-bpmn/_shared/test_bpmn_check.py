@@ -175,6 +175,28 @@ def test_find_bpmn_file_without_hint_prefers_the_project_file(tmp_path, monkeypa
         bpmn_check.find_bpmn_file()
 
 
+def test_find_bpmn_file_with_hint_prefers_the_project_file(tmp_path, monkeypatch) -> None:
+    """A hint narrows to a basename, not to a project.
+
+    ``Proj-old.bpmn`` matches the hint ``Proj`` and sorts before ``Proj.bpmn``
+    (``-`` is 0x2D, ``.`` is 0x2E), so returning the first match graded the
+    stray draft -- the hazard resolve_project's docstring names.
+    """
+    project = tmp_path / "Proj"
+    project.mkdir()
+    (project / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+    (project / "project.uiproj").write_text("{}", encoding="utf-8")
+    (tmp_path / "Proj-old.bpmn").write_text("<x/>", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
+
+    # Two hint matches beside a project.uiproj: the rule cannot pick, so the
+    # pre-existing first-match behaviour stands rather than a spurious FAIL.
+    (tmp_path / "project.uiproj").write_text("{}", encoding="utf-8")
+    assert bpmn_check.find_bpmn_file("Proj") == "Proj-old.bpmn"
+
+
 def test_context_value_strips_and_falls_back_to_element_text() -> None:
     """One canonical reading of an input, so one artifact gets one verdict.
 

@@ -65,10 +65,9 @@ from __future__ import annotations
 import os
 import sys
 import xml.etree.ElementTree as ET
-from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import elements, fail, parse_bpmn  # noqa: E402
 
 # Flow element tags treated as "nodes" for text search — mirrors Flow's
 # nodes[] (as opposed to edges[]/sequenceFlow, which is searched separately

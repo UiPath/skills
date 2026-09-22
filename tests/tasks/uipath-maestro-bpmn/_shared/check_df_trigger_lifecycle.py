@@ -108,7 +108,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     all_node_values,
-    attr,
     context_value,
     elements,
     fail,

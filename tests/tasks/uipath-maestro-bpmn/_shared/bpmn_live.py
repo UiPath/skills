@@ -24,7 +24,6 @@ import json
 import math
 import re
 import subprocess
-import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any

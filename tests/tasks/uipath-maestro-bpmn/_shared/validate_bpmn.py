@@ -20,7 +20,7 @@ Discovery: EVERY ``.bpmn`` under the sandbox (excluding ``node_modules`` and
 tool caches). Not only project-registered files: on that same CI run the
 agent's real process sat outside the initialised project while the valid
 scaffold sat inside it, so a project-scoped rule still read as a pass.
-``validate`` is offline, so one attempt per file with a fixed cap is enough.
+``validate`` is offline, so one attempt per file is enough.
 
 Timeouts are budgeted across the whole run, not per file. A per-file cap is
 the wrong unit here precisely because the loop above exists to grade several
@@ -29,9 +29,10 @@ criterion, the harness SIGKILLs the shell, and its buffered stdout — the only
 record of which file stalled — is discarded. ``validate_flow.py`` documents
 that same failure. So :data:`DEFAULT_BUDGET_SECONDS` is an aggregate wall-clock
 deadline: each file gets whatever is left of it, and an overrun is reported
-from here, named, and flushed. The default is the 180 s criterion timeout the
-callers set, minus :data:`BUDGET_HEADROOM_SECONDS` for interpreter start,
-discovery, and writing the failure message. A caller on a different criterion
+from here, named, and flushed. The default is
+:data:`CRITERION_TIMEOUT_SECONDS` -- the timeout every caller sets -- minus
+:data:`BUDGET_HEADROOM_SECONDS` for interpreter start, discovery, and
+writing the failure message. A caller on a different criterion
 timeout passes ``--budget``.
 
 Every print is flushed for the same reason: on an overrun the harness keeps
@@ -46,9 +47,9 @@ import sys
 import time
 from pathlib import Path
 
-# Callers set criterion `timeout: 180`; leave a margin to report inside it.
-DEFAULT_BUDGET_SECONDS = 170
+CRITERION_TIMEOUT_SECONDS = 180
 BUDGET_HEADROOM_SECONDS = 10
+DEFAULT_BUDGET_SECONDS = CRITERION_TIMEOUT_SECONDS - BUDGET_HEADROOM_SECONDS
 SKIP_PARTS = {"node_modules", ".npm-prefix", ".venv"}
 
 
@@ -71,8 +72,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="SECONDS",
         help=(
             "aggregate wall-clock budget for validating every file "
-            f"(default: {DEFAULT_BUDGET_SECONDS}, sized for a 180s criterion "
-            "timeout)"
+            f"(default: {DEFAULT_BUDGET_SECONDS}, sized for a "
+            f"{CRITERION_TIMEOUT_SECONDS}s criterion timeout)"
         ),
     )
     return parser.parse_args(argv)
