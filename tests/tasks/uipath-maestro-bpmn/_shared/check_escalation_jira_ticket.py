@@ -259,7 +259,10 @@ def _recover_partial_keys(project_key: str, correlation: str, raw_text: str) -> 
 
 
 def main() -> None:
-    seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
+    seed_path = Path("seed.json")
+    if not seed_path.is_file():
+        _fail("seed.json is missing from the sandbox (pre_run seed did not run)")
+    seed = json.loads(seed_path.read_text(encoding="utf-8"))
     correlation = seed["correlationId"]
     project_key = seed["project_key"]
 
