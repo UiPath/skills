@@ -82,7 +82,15 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    NS,
+    all_node_values,
+    context_value,
+    elements,
+    fail,
+    has_type,
+    parse_bpmn,
+)
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
@@ -141,33 +149,11 @@ EXPECTED = {
 }
 
 
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
-
-
 def node_inputs(task: ET.Element) -> list[ET.Element]:
     # `.//` walks every descendant of the sendTask, so this already covers
     # both layouts seen in practice: context/body inputs as direct children
     # of uipath:activity, or body/query inputs nested inside uipath:context.
     return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
-
-
-def all_node_values(task: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in node_inputs(task):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
 
 
 def _is_generic_create_form(object_name: str, operation: str, method: str) -> bool:

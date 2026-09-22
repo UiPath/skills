@@ -12,7 +12,7 @@ classification helpers are copied from the passing sibling port
 ``connector_features/datafabric_connector/contractregistry_crud_filters/``'s
 ``check_df_contractregistry_crud_filters.py`` for this batch's consistency.
 
-Two modes, one file (kept together per BATCH1-ADDENDUM.md's "no new shared
+Two modes, one file (kept together per _porting/BATCH1-ADDENDUM.md's "no new shared
 modules" rule):
 
   - default: the CRUD-chain criterion (Flow's ``check_e2e_contract_intake_pipeline.py``).
@@ -62,7 +62,7 @@ Connector-shape re-homing (the ``--shape`` mode): Flow's
 placement, required-parameter coverage). Checking its actual assertions
 against what has a network-free BPMN analog:
   - "endpoint == manifest.path": needs a live registry enrichment call
-    against a real connection; BATCH1-ADDENDUM.md forbids running that from a
+    against a real connection; _porting/BATCH1-ADDENDUM.md forbids running that from a
     grader. NOT PORTED.
   - "param-in-wrong-section": same live-manifest dependency. NOT PORTED.
   - "required-param-missing": WARN-only in Flow itself (never fails the
@@ -130,6 +130,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -181,24 +183,6 @@ SORT_DIR_NAMES = {"isascending", "sortdirection", "sortorder", "direction"}
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
     return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
-
-
-def all_node_values(task: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in node_inputs(task):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
 
 
 def node_blob(task: ET.Element) -> str:

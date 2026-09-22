@@ -36,7 +36,7 @@ Re-homing decisions vs the Flow grader:
     a ``uipath:input`` named ``parentFolderId`` anywhere under the
     startEvent's ``uipath:event`` payload — the registry's generic
     ``Intsvc.EventTrigger`` schema does not pin where an Outlook-specific
-    event field lands once enriched (BATCH1-ADDENDUM.md's "inputs at any
+    event field lands once enriched (_porting/BATCH1-ADDENDUM.md's "inputs at any
     depth" tolerance) — with a fallback into a JSON-typed ``filter`` or
     ``parameters`` input if the field was folded into one of those instead
     of emitted as its own input.
@@ -78,6 +78,7 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
     attr,
     elements,
     fail,
@@ -222,22 +223,18 @@ def node_inputs(el: ET.Element) -> list[ET.Element]:
     return el.findall(".//uipath:input", NS)
 
 
-def all_node_values(el: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in node_inputs(el):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
-
-
 def node_blob(el: ET.Element) -> str:
     return " ".join(all_node_values(el)).lower()
 
 
 def context_value(el: ET.Element, name: str) -> str:
+    """Case-insensitive input lookup.
+
+    NOT bpmn_check.context_value, which matches the input name exactly. The
+    Outlook trigger's registry context fields have been observed re-cased
+    between emits, so this grader matches loosely on purpose; keeping it local
+    stops that looseness leaking into every other grader.
+    """
     for inp in node_inputs(el):
         if inp.attrib.get("name", "").lower() == name.lower():
             return inp.attrib.get("value") or (inp.text or "")
@@ -295,7 +292,7 @@ def _resolve_binding(root: ET.Element, value: str) -> str:
     """Resolve a ``=bindings.<id>`` reference to its declared connection id.
     A literal (non-indirected) value is returned unchanged — Flow's own
     grader never required the bindings indirection, only a bound connection
-    (BATCH1-ADDENDUM.md T: the binding form is CLI/skill plumbing, not a
+    (_porting/BATCH1-ADDENDUM.md T: the binding form is CLI/skill plumbing, not a
     Flow-graded fact)."""
     m = re.match(r"^=bindings\.(\S+)$", value.strip())
     if not m:

@@ -36,7 +36,7 @@ Re-homing decisions vs the Flow grader:
     field is then matched by substring for "creat"/"updat" (a live
     Data Service connection has no local ``describe`` access here to pin the
     exact operation string the registry enrichment writes -- see
-    BATCH1-ADDENDUM.md -- so operation is matched by substring, tolerant of
+    _porting/BATCH1-ADDENDUM.md -- so operation is matched by substring, tolerant of
     any casing/spelling the enrichment produces); for the downstream
     activities, the same curated-or-generic ``objectName`` classification as
     the batch's CRUD checkers (``QueryEntityRecordsCurated|
@@ -47,7 +47,7 @@ Re-homing decisions vs the Flow grader:
   - Flow's ``entityName``/``objectName`` equality becomes "the entity string
     appears as the value of ANY ``uipath:input`` of that node/trigger (any
     target) or inside its context ``path`` field" -- the registry does not
-    pin where ``entityName`` lands (BATCH1-ADDENDUM.md).
+    pin where ``entityName`` lands (_porting/BATCH1-ADDENDUM.md).
   - Flow's trigger-side ``filterExpression``/``filter``/``configuration``
     blob scan for "duedate" + "2026-08-04" + "<" becomes the same blob scan
     over every ``uipath:input`` reachable at any depth under the trigger's
@@ -107,7 +107,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
     attr,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -138,28 +140,6 @@ GENERIC_OP_PATTERNS = {
 CREATED_RE = re.compile(r"creat", re.IGNORECASE)
 UPDATED_RE = re.compile(r"updat", re.IGNORECASE)
 LESS_THAN_RE = re.compile(r"<|lessthan|\blt\b", re.IGNORECASE)
-
-
-def node_inputs(el: ET.Element) -> list[ET.Element]:
-    return el.findall(".//uipath:input", NS)
-
-
-def context_value(el: ET.Element, name: str) -> str:
-    for inp in node_inputs(el):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
-
-
-def all_node_values(el: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in node_inputs(el):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
 
 
 def node_blob(el: ET.Element) -> str:

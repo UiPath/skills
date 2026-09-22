@@ -15,6 +15,9 @@ import bpmn_check  # noqa: E402
 import pytest  # noqa: E402
 from bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
+    context_value,
+    has_type,
     has_typed_uipath_extension,
     has_uipath_extension,
 )
@@ -170,3 +173,110 @@ def test_find_bpmn_file_without_hint_prefers_the_project_file(tmp_path, monkeypa
     (tmp_path / "project.uiproj").write_text("{}", encoding="utf-8")
     with pytest.raises(SystemExit):
         bpmn_check.find_bpmn_file()
+
+
+def test_context_value_strips_and_falls_back_to_element_text() -> None:
+    """One canonical reading of an input, so one artifact gets one verdict.
+
+    The copies this replaced disagreed on whitespace: some stripped, some did
+    not, so the same file read as two different values depending on which
+    grader opened it.
+    """
+    task = _service_task(
+        """
+        <bpmn:extensionElements>
+          <uipath:activity type="Intsvc.ActivityExecution">
+            <uipath:context>
+              <uipath:input name="objectName" value="  send_files_to_channel  " />
+              <uipath:input name="path">
+                /v1/messages
+              </uipath:input>
+              <uipath:input name="empty" value="" />
+            </uipath:context>
+          </uipath:activity>
+        </bpmn:extensionElements>
+        """
+    )
+
+    assert context_value(task, "objectName") == "send_files_to_channel"
+    # No value attribute: the element text carries it, stripped the same way.
+    assert context_value(task, "path") == "/v1/messages"
+    # An empty value attribute falls through to the (absent) text, not to the
+    # literal "" of the attribute -- either way the caller sees "".
+    assert context_value(task, "empty") == ""
+    assert context_value(task, "notThere") == ""
+    # Exact name matching: a re-cased name is a miss, not a loose hit.
+    assert context_value(task, "objectname") == ""
+    # all_node_values is the raw sweep: it keeps the attribute verbatim and
+    # strips only the text form, which is why callers substring-match on it.
+    assert sorted(all_node_values(task)) == [
+        "  send_files_to_channel  ",
+        "/v1/messages",
+    ]
+
+
+def test_has_type_matches_any_token_in_the_serialised_node() -> None:
+    task = _service_task(
+        '<uipath:activity type="Intsvc.ActivityExecution" version="v1" />'
+    )
+
+    assert has_type(task, "Intsvc.ActivityExecution")
+    assert not has_type(task, "Orchestrator.StartJob")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # The CLI quotes the identifier; this is the artifact that made CI run
+        # 35538478362 fail with `found 0` score-sorted nodes.
+        ("ORDER BY 'score' ASC", ("score", "asc")),
+        ("ORDER BY score DESC", ("score", "desc")),
+        ("order by [score]", ("score", "")),
+        ('ORDER BY "score"', ("score", "")),
+        ("`score`", ("", "")),
+        ("('active' = true)", ("", "")),
+        ("", ("", "")),
+    ],
+)
+def test_order_by_reads_every_identifier_quoting(text: str, expected: tuple) -> None:
+    assert bpmn_check.order_by(text) == expected
+
+
+def test_order_by_accepts_backticked_identifier() -> None:
+    assert bpmn_check.order_by("... ORDER BY `score` desc") == ("score", "desc")
+
+
+def test_query_filter_text_excludes_binding_values() -> None:
+    """The filter blob must not inherit an `=` from a binding reference.
+
+    With every input value in the blob, `=bindings.Binding_DataFabricFolder`
+    satisfied the `string` row's `equals|=` operator half for free, so the
+    operator assertion could not fail.
+    """
+    import importlib.util
+
+    here = Path(__file__).parent
+    spec = importlib.util.spec_from_file_location(
+        "_check_df_smoke_query_filter", here / "check_df_smoke_query_filter.py"
+    )
+    grader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(grader)
+
+    task = ET.fromstring(
+        f'<bpmn:sendTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" id="Q">'
+        "<bpmn:extensionElements><uipath:activity type=\"Intsvc.ActivityExecution\">"
+        '<uipath:input name="folderKey" value="=bindings.Binding_DataFabricFolder" />'
+        '<uipath:input name="queryExpression" target="query" '
+        "value=\"'title' LIKE 'FilterFixture-Matrix'\" />"
+        "</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+    _pairs, text = grader.node_representation(task)
+
+    assert "=bindings" not in text
+    assert "folderkey" not in text
+    field, tokens, operators = grader.EXPECTED["string"]
+    assert not grader.has_expected_filter(text, field, tokens, operators)
+    # The same node with a real equality operator still passes.
+    assert grader.has_expected_filter(
+        text + " 'title' = 'filterfixture-matrix'", field, tokens, operators
+    )

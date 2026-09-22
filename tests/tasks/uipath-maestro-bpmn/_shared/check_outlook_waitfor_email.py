@@ -26,7 +26,7 @@ Assertion map (Flow -> BPMN):
      Flow's own node-type marker embeds) + a stemmed, case/dash/underscore-insensitive match on
      "email received" across objectName/operation/the node's full input blob. The exact
      enrichment spelling was not confirmed locally -- no Outlook connection exists on this
-     machine (see BATCH1-ADDENDUM.md) -- so this tolerates EMAIL_RECEIVED, email-received, and
+     machine (see _porting/BATCH1-ADDENDUM.md) -- so this tolerates EMAIL_RECEIVED, email-received, and
      EmailReceived alike; evidence for EMAIL_RECEIVED as the connector's operation code is
      `outlook_trigger_inbox.yaml`'s `uip is triggers describe ... EMAIL_RECEIVED` discovery
      pattern (same connector, sibling Flow task).
@@ -48,6 +48,8 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -64,28 +66,6 @@ _JSONSTRING_PREFIX = "=jsonstring:"
 
 def _stem(text: str) -> str:
     return re.sub(r"[^a-z]", "", text.lower())
-
-
-def node_inputs(el: ET.Element) -> list[ET.Element]:
-    return el.findall(".//uipath:input", NS)
-
-
-def context_value(el: ET.Element, name: str) -> str:
-    for inp in node_inputs(el):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
-
-
-def all_node_values(el: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in node_inputs(el):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
 
 
 def node_blob(el: ET.Element) -> str:

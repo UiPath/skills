@@ -58,7 +58,14 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    context_inputs,
+    context_value,
+    elements,
+    fail,
+    has_type,
+    parse_bpmn,
+)
 
 PROJECT_NAME_HINT = "SpotifyProfileTest"
 # The generic HTTP connector -- the only managed path to a service with no
@@ -68,23 +75,6 @@ HTTP_CONNECTOR_KEY = "uipath-uipath-http"
 ME_ENDPOINT = "/me"
 ACTIVITY_TYPES = ("Intsvc.ActivityExecution", "Intsvc.HttpExecution")
 _IMPLICIT_CONNECTION = "implicitconnection"
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
-
-
-def context_inputs(task: ET.Element) -> list[ET.Element]:
-    # `.//` walks every uipath:input under the node at any depth -- agents
-    # sometimes nest body/query/path inputs inside uipath:context.
-    return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in context_inputs(task):
-        if inp.attrib.get("name") == name:
-            return (inp.attrib.get("value") or inp.text or "").strip()
-    return ""
 
 
 def body_input(task: ET.Element) -> ET.Element | None:

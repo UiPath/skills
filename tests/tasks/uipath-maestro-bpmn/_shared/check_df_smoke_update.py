@@ -4,7 +4,7 @@
 Ported from Flow `connector_features/datafabric_connector/smoke_update.yaml`'s
 two checkers, ``check_ops_present.py`` (generic op-presence walk) and
 ``check_smoke_update_partial.py`` (Update body-shape walk), combined into one
-script with a ``--ops`` / ``--partial`` mode flag (see BATCH1-ADDENDUM.md
+script with a ``--ops`` / ``--partial`` mode flag (see _porting/BATCH1-ADDENDUM.md
 "Batch 2 notes": "Flow `check_ops_present.py <Entity> <op-suffix>...` -> a
 grader step asserting one classified node per op (curated OR generic form)").
 
@@ -12,7 +12,7 @@ Node classification is copied from ``check_df_integration_create_get.py``
 (the passing pilot for this connector): a connector node is any
 ``bpmn:sendTask`` carrying ``Intsvc.ActivityExecution`` with connectorKey
 ``uipath-uipath-dataservice`` that mentions FlowCodeEvalEntity in a
-``uipath:input`` collected at ANY depth under the activity (BATCH1-ADDENDUM.md
+``uipath:input`` collected at ANY depth under the activity (_porting/BATCH1-ADDENDUM.md
 Lesson: agents sometimes nest body/query/path inputs inside ``uipath:context``).
 Each node is then classified Create / Update / Get / Delete by curated
 ``objectName`` OR by the generic entity-CRUD form (``objectName`` == entity,
@@ -29,7 +29,7 @@ Modes:
   --partial Assert the classified Update node's ``target="body"`` JSON has
             only the key ``score``, with value 9.0 -- OR an ``=`` expression,
             which passes any type check the same way Flow's grader waves
-            through ``=js:...`` (see BATCH1-ADDENDUM.md "Grader rule for body
+            through ``=js:...`` (see _porting/BATCH1-ADDENDUM.md "Grader rule for body
             fields"). Mirrors Flow's ``check_smoke_update_partial.py``.
 
 Assertion map (Flow -> BPMN):
@@ -61,6 +61,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -87,13 +88,6 @@ _DELETE_OP_RE = re.compile(r"^delete$", re.IGNORECASE)
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
     return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
 
 
 def mentions_entity(task: ET.Element, entity: str) -> bool:

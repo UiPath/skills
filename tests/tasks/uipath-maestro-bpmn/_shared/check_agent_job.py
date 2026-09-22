@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
+    has_type,
     parse_bpmn,
     require_di_for_visible_elements,
     require_no_private_connector_values,
@@ -27,10 +28,6 @@ from _shared.bpmn_check import (  # noqa: E402
 
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 TYPE_TOKEN = "Orchestrator.StartAgentJob"
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
 
 
 def uipath_children(task: ET.Element, local: str) -> list[ET.Element]:

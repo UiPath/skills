@@ -23,7 +23,7 @@ Re-homing decisions vs the Flow grader:
     CreateEntityRecord_V3``, ``QueryEntityRecordsCurated|
     QueryEntityRecords_V3``, ``UpdateEntityRecordV2|UpdateEntityRecord_V3``,
     ``GetEntityRecordByIdCurated|GetEntityRecord_V3`` -- from
-    ``dataservice-activities.json`` in BATCH1-ADDENDUM.md), since Flow's node
+    ``dataservice-activities.json`` in _porting/BATCH1-ADDENDUM.md), since Flow's node
     types did not distinguish them. The connector also exposes a GENERIC
     entity-CRUD form (``objectName`` is the entity name itself, e.g.
     "ContractRegistry", on every node; the operation is read off the context
@@ -46,7 +46,7 @@ Re-homing decisions vs the Flow grader:
   - Flow's ``queryParameters.queryExpression`` / ``.limit`` have no fixed
     field name in the Data Service registry contract available here (no
     local Data Service connection to ``describe`` request fields against --
-    BATCH1-ADDENDUM.md), so filter and limit checks scan every attribute
+    _porting/BATCH1-ADDENDUM.md), so filter and limit checks scan every attribute
     value / text blob reachable from a query node's inputs instead of one
     named field. The limit check requires the standalone token ``100``
     (digit-boundary matched) rather than a bare substring, so a coincidental
@@ -154,6 +154,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -190,24 +192,6 @@ UPDATE_TITLE_VAR_RE = re.compile(r"\bvars\.([A-Za-z0-9_]+)")
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
     return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
-
-
-def all_node_values(task: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in node_inputs(task):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
 
 
 def output_vars(task: ET.Element) -> list[str]:
@@ -249,7 +233,7 @@ NULL_RE = re.compile(r"\bnull\b|isnull")
 def matches_due_date_filter(task: ET.Element) -> bool:
     # The Data Service registry body shape for a comparison filter is not
     # documented here (no local connection to `describe` it against -- see
-    # BATCH1-ADDENDUM.md), so both a raw expression string (Flow's own
+    # _porting/BATCH1-ADDENDUM.md), so both a raw expression string (Flow's own
     # `dueDate < '2026-08-04'` shape, literal `<`) and a structured
     # filterGroup/operator encoding (`"operator": "LessThan"`, or the OData
     # `lt` token) are accepted -- either still proves the field + comparison

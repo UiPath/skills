@@ -40,7 +40,15 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    NS,
+    context_inputs,
+    context_value,
+    elements,
+    fail,
+    has_type,
+    parse_bpmn,
+)
 
 DRIVE_KEY = "uipath-google-drive"
 SLACK_KEY = "uipath-salesforce-slack"
@@ -54,21 +62,6 @@ ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 # (plural "files"). Match loosely on the concept rather than one exact
 # spelling so either "file" or "files", and any separator, passes.
 SEND_FILE_RE = re.compile(r"send[\s_-]*files?[\s_-]*to[\s_-]*channel", re.IGNORECASE)
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
-
-
-def context_inputs(task: ET.Element) -> list[ET.Element]:
-    return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in context_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
 
 
 def output_vars(task: ET.Element) -> list[str]:

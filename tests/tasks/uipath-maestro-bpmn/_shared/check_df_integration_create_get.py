@@ -14,7 +14,7 @@ Flow's grader matched node `type` suffixes (``.create-entity-record`` /
 home for those fields: the registry does not pin where ``entityName`` or
 ``expansionLevel`` land on the activity (path param, query param, or a JSON
 body key), so this checker accepts any of those homes -- see
-BATCH1-ADDENDUM.md "Where connector node values live in BPMN".
+_porting/BATCH1-ADDENDUM.md "Where connector node values live in BPMN".
 
 The skill's Data Service connector emits TWO valid activity shapes for the
 same operation (confirmed against a real CI artifact, 2026-09):
@@ -70,6 +70,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -90,13 +91,6 @@ _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
     return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
 
 
 def mentions_entity(task: ET.Element, entity: str) -> bool:

@@ -62,9 +62,10 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
-    NS,
+    context_value,
     elements,
     fail,
+    has_type,
     parse_bpmn,
 )
 
@@ -80,21 +81,6 @@ OPERATIONS = [
     ("assign test cases to the requirement", "AssignTestCasesToRequirement", {"post"}),
     ("get the assigned test cases for the requirement", "GetAssignedTestCasesForRequirement", {"get"}),
 ]
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
-
-
-def context_inputs(task: ET.Element) -> list[ET.Element]:
-    return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in context_inputs(task):
-        if inp.attrib.get("name") == name:
-            return (inp.attrib.get("value") or inp.text or "").strip()
-    return ""
 
 
 def connector_tasks(root: ET.Element) -> list[ET.Element]:

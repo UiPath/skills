@@ -11,7 +11,7 @@ upload+delete), translated from a JSON node/inputs.detail walk to an XML walk
 over the registry-driven ``Intsvc.ActivityExecution`` connector shell (see
 skills/uipath-maestro-bpmn/references/registry-workflow.md §2-4).
 
-Node identity (BATCH1-ADDENDUM.md "File-field activities ... have curated
+Node identity (_porting/BATCH1-ADDENDUM.md "File-field activities ... have curated
 names only"): Download/Upload/Delete are curated-only --
 DownloadFileFromRecordFieldV2|DownloadFileFromRecordField_V3,
 UploadFileToRecordFieldV2|UploadFileToRecordField_V3,
@@ -104,6 +104,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -133,24 +135,6 @@ def node_inputs(task: ET.Element) -> list[ET.Element]:
     # in practice: context/body/query/path/file inputs as direct siblings of
     # uipath:context, or nested inside it.
     return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
-
-
-def all_node_values(task: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in node_inputs(task):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
 
 
 def mentions(task: ET.Element, needle: str) -> bool:
