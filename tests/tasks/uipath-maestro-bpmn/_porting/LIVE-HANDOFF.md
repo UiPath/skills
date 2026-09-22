@@ -71,6 +71,10 @@ All eight remaining field-shape evals were ported after reading their Flow grade
 
 Skill findings added: Slack channel-id resolution/pagination is not taught (three tasks now hit it); WooCommerce connector node not produced; fixed literal values get parametrised into unbound variables.
 
+## Batch 14 and 15
+
+Run 35790934047: path_params green on iteration 2; enhanced_enum parked (no connector node in either run: the WooCommerce connector never materialises as a BPMN node); paginated_reference_lookup got past discovery but wrote the channel id with its last character dropped. Its third and final iteration is run 35791969905 (batch 15); record its result here.
+
 ## Probe bucket (16): pilot ported, 11 decided, 4 blocked
 
 `connector_features/ceql_where` is ported (commit fd6312fde), not yet run. The probe confirmed the filter carrier exists: `Intsvc.ActivityExecution` enrichment for the Entra `groups` List operation exposes a `where` parameter (type `query`, `FilterBuilder`, `hasCEQL: true`), and the CI-passing Data Fabric artifact carries the same tree as a `target="query" name="queryExpression" type="json"` input. As in Flow, the sandbox has no live tenant for enrichment, so the port grades the same standalone `where_detail.json` planning artifact plus the connector node and terminate end. No `bpmn validate` gate, matching Flow. Its one review flag: the groups-operation tolerance (objectName contains `group`, or `groups` + GET/list) has no CI-passed fixture yet.
