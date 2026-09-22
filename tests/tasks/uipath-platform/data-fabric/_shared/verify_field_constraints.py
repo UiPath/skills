@@ -26,6 +26,9 @@ Exit codes:
     1 — entity not found, field not found, or any assertion failed
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import re

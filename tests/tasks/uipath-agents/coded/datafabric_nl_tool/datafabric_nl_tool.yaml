@@ -5,10 +5,25 @@ description: >
   create_datafabric_tool with entity config, prompt forwarding, and
   lazy init.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../uipath-platform/data-fabric/_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 60
   turn_timeout: 1200
+
+reference:
+  directory: ../..
+
+pre_run:
+  - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedProductCatalog --include-folders"
+    timeout: 60
+    fail_on_error: false
+  - command: "$(command -v python3.13 || command -v python3) _setup/seed_entity.py --entity-name CE_CodedProductCatalog --schema-file _setup/seeds/coded_product_catalog.schema.json --records-file _setup/seeds/coded_product_catalog.records.json"
+    timeout: 180
+    fail_on_error: true
 
 initial_prompt: |
   Build me a coded agent called `product-explorer` that lets users
@@ -18,6 +33,9 @@ initial_prompt: |
   instructions should apply consistently everywhere.
 
   Scaffold and init only — don't run or deploy.
+post_run:
+  - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedProductCatalog --include-folders"
+    timeout: 60
 
 success_criteria:
   - type: skill_triggered
@@ -37,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "create_datafabric_tool import, entity config, prompt forwarding, binding"
-    command: "python3 $TASK_DIR/check_datafabric_nl_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_datafabric_nl_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

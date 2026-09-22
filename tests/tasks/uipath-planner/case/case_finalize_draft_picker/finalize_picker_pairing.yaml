@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I have a draft design document for our VendorOnboarding case-management
   solution — it's saved as `sdd.draft.md` in this folder. Please finalize it
@@ -59,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "Compliance Hold keeps its user-selected-stage entry and every eligible primary stage exposes it through wait-for-user"
-    command: "python3 $TASK_DIR/check_picker_pairing.py"
+    command: "python3 $REFERENCE_DIR/case/case_finalize_draft_picker/check_picker_pairing.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -67,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "finalized sdd.md passes the shared mechanical SDD contract"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
+    command: "python3 $REFERENCE_DIR/_shared/sdd_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

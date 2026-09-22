@@ -8,8 +8,12 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
 
 run_limits:
-  task_timeout: 2400
-  turn_timeout: 1800
+  # Claude nightlies pass at 1467s (09-14) and 1419s (09-15), then were
+  # killed mid-work at the 1800s turn cap (09-16). Budget matches
+  # external_wait/greenfield and nodes/contract_variant_wrappers (heavy
+  # single-turn BPMN authoring).
+  task_timeout: 3600
+  turn_timeout: 2700
   expected_turns: 28
   max_turns: 70
 
@@ -17,6 +21,9 @@ sandbox:
   template_sources:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
@@ -49,7 +56,7 @@ success_criteria:
     description: >
       Process is well-formed and carries the approval-chain mechanisms adapted
       to a parallel-then-sequential shape
-    command: "python3 $TASK_DIR/check_near_miss.py"
+    command: "python3 $REFERENCE_DIR/patterns/approval_chain/check_near_miss.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

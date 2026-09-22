@@ -316,7 +316,7 @@ Both mechanisms can co-exist for the same user; rows appear with separate `sourc
 - **`orphan: true` rows** still consume a lease until the rule is re-applied or the user is fully removed.
 - **`useExternalLicense`** in `groups rules get` is informational — set externally, not via these commands.
 - **`uip admin groups` does not answer licensing questions.** It lists group membership; it knows nothing about bundles or leases. Any question of the form "who in this group holds which bundle" is `groups rules details`.
-- **Group rule summary goes to stderr.** When piping `groups rules details` output, the rule header (entitled bundles, quotas) is on `stderr` so the JSON on `stdout` stays clean for `jq`.
+- **Group rule summary goes to stderr.** When piping `groups rules details` output, the rule header (entitled bundles, quotas) is on `stderr` so the JSON on `stdout` stays clean for `jq`. When saving to a file, redirect stdout alone (`> details.json`) — `2>&1` puts the header above the JSON and the file stops parsing.
 
 ---
 

@@ -10,7 +10,11 @@ description: >
   stays allowed. Grades the build succeeding via the sanctioned path, not
   a self-report.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 initial_prompt: |
   Create a UiPath Case Management project named "InvoiceReviewCase" with a
   HITL action review whose decision is recorded by a downstream process
@@ -156,7 +160,6 @@ initial_prompt: |
 
   The task is NOT complete until `uip maestro case validate` passes on the
   generated caseplan.json.
-
 success_criteria:
   - type: file_exists
     description: "caseplan.json was created at the conventional path"
@@ -188,9 +191,9 @@ success_criteria:
   # --- Rule 13 guards: no interpreter/stream-editor/helper-script assembly of a skill artifact ---
   # crypto.randomUUID() UUID subprocess (no fs, no redirection) is NOT matched by either pattern.
   - type: command_not_executed
-    description: "Rule 13: no inline interpreter or stream-editor manipulation of a skill artifact (sed -i, perl -i, gawk in-place, jq on/into an artifact, python open(), node -e ...fs. / require('fs'))"
+    description: "Rule 13: no inline interpreter or stream-editor writes to a skill artifact (read-only inspection is allowed)"
     tool_name: "Bash"
-    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|registry-resolved\.json|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*open\s*\(|(node|nodejs)\s+(-e|--eval)\b[^\n]*(fs\.|require\s*\(\s*[''"](node:)?fs[''"]))'
+    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|python[0-9]?\b[^\n]*(open\s*\([^)]*,[^)]*[wax]|\.write(_text|_bytes)?\s*\()|(node|nodejs)\s+(-e|--eval)\b[^\n]*(fs\.|require\s*\(\s*[''"](node:)?fs[''"]\s*\)\s*\.)(write|append|truncate|rm|unlink|rename))'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -206,7 +209,7 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
 
 run_limits:

@@ -60,6 +60,11 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 - **Cause:** Using `$context.outputs` without optional chaining when no outputs exist yet
 - **Fix:** Always use `$context?.outputs` in export patterns
 
+### Loop fails only when it runs zero times
+- **Symptom:** A ForEach (or DoWhile) works for a non-empty collection but the run errors when the collection is empty or the count is `0`. Non-zero inputs pass, so the bug survives casual testing.
+- **Cause:** `output.as` reads `$context.outputs.<Loop_N>` without optional chaining. With zero iterations the body never runs, nothing ever creates `$context.outputs`, and the property access throws. A trailing `?? { results: [] }` does not help — the throw happens before `??` is evaluated.
+- **Fix:** For now, every loop `output.as` needs the optional form: `${$context?.outputs?.For_Each_N}` / `${$context?.outputs?.Do_While_N}`. Apply it even when the loop "obviously" always iterates — the input that makes it zero usually shows up later.
+
 ### ForEach body export missing index reset
 - **Symptom:** Results array grows incorrectly across loop iterations
 - **Cause:** Using the simpler DoWhile accumulation pattern instead of the ForEach index-aware pattern

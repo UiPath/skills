@@ -137,7 +137,9 @@ duration and points here; nothing restates a response.
 | <case \| stage: <StageName> \| task: <TaskName>> | <that target's SLA Title> | <At-Risk \| Breached> | <notify-only \| start-task \| enter-stage \| exit-stage \| exit-case> | <— for notify-only; else the task name / stage name / produced exit row> | <— for notify-only and for every start-task; else Yes \| No matching the produced stage-entry row> | <why this response fits the source> |
 
 <!-- Section required whenever ANY SLA exists (case, stage, or action task); omit only in a case with no
-SLA at all. One row per (Scope, SLA, Status), at-risk and breached separately. Source states no response
+SLA at all. The case-level Scope cell is the bare word `case` — not `case: root` and not the case
+name; only the stage and task scopes take a `: <name>` qualifier. One row per (Scope, SLA, Status),
+at-risk and breached separately. Source states no response
 -> both statuses notify-only with Target and Interrupting `—`; never invent a stage, task, or routing
 change to carry a notification. Legal Response values and the Interrupting value each implies:
 case-design-layers-guide.md § Choosing the response. Two-way closure against the SDD's

@@ -35,10 +35,11 @@ Definitions in `definitions[]` are CLI-owned. `uip maestro flow node add` copies
 
 An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`. Author it through the Configuration workflow below like any other connector activity; `describe`/version mechanics are in [/uipath:uipath-platform — resources.md § `--activity-version`](../../../../../uipath-platform/references/integration-service/resources.md#--activity-version). Four deltas:
 
-1. **No `objectName` in `--detail`** — resolved from the configuration's `activityName` (`model.context.objectName` is empty).
-2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <activity-name> --activity-version 4.0.0`).
+1. **`objectName` source** — read the definition's `configuration` `objectName` (the `model.context[]` `objectName` entry is declared with no value). It is the `describe` positional, but do NOT pass it in `--detail` — `node configure` reads it from the definition itself. If configuration carries no `objectName`, the registry copy is stale: run `uip maestro flow registry pull --force`, delete the `definitions[]` entry, and re-add the node.
+2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <object-name> --activity-version 4.0.0`).
 3. **Operation label ≠ HTTP verb** — a semantic operation (e.g. `Update`) pairs with any verb (e.g. `POST /usergroups.users.update`). `flow validate` accepts it; do not "fix" the method to match the label.
 4. **Not connection-scoped** — `--connection-id` on `registry get` adds no custom fields.
+5. **Reference fields are script-backed** — `reference` carries `scriptRef` (e.g. `list_usergroups`) and no `objectName`. Resolve with `uip is resources run script --connection-id <id> --connector-key <connector-key> --script-ref <scriptRef> --output json`, never `run list`. `registry get` strips `scriptRef` — read it from the Step 3 `describe` (`--activity-version 4.0.0 --operation <method>`). Response parsing and matching rules: [/uipath:uipath-platform — reference-resolution.md § 4.0.0 Activities — Script References](../../../../../uipath-platform/references/integration-service/reference-resolution.md#400-activities--script-references-scriptref).
 
 ## No-Live-Tenant / Planned Configuration
 
@@ -47,7 +48,8 @@ If `node configure` cannot run:
 1. Run `uip maestro flow registry search <keyword>` and `registry get <node-type>` to confirm the operation; see [cli-commands.md — registry](../../../shared/cli-commands.md#uip-maestro-flow-registry).
 2. Run `uip maestro flow node add <file> <node-type> --output json`; inside a loop body, add `--parent <LOOP_NODE_ID>` as described in [loop/impl.md](../loop/impl.md).
 3. Write the planned `--detail` payload, including placeholder connection and folder UUIDs, to a separate file such as `<nodeId>.detail.json`. Do not put partial `inputs.detail` on the node.
-4. Report under **Missing connections** or **Open questions** that the node will not pass `flow validate` until real `node configure` runs.
+4. Author any filter as a tree under that payload's `filter` key, shaped per [Step 6a](#step-6a--filterbuilder-parameters) step 3. The step-1 `registry get` names the FilterBuilder parameter; if the activity has none, pass no `filter` and filter downstream. Never write compiled query text under the parameter name, such as `"queryParameters": { "where": "displayName='active'" }`; offline, the tree is the filter's only reviewable form.
+5. Report under **Missing connections** or **Open questions** that the node will not pass `flow validate` until real `node configure` runs.
 
 Do not replace a registered connector node with `core.logic.mock`. Use mocks only for genuinely unknown, unpublished, or not-yet-built non-connector resources. Preserve the registered connector key.
 
@@ -103,9 +105,11 @@ uip is resources describe "<connector-key>" "<objectName>" \
 
 Then run `cat <metadataFile path from response>` and read the full cached metadata. Pass `--operation` as the node definition's `model.context[].method` verbatim. E.g. Jira `curated_get_issue` → `GETBYID`; Data Service `QueryEntityRecordsCurated` → `POST`. Do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method` as the describe lookup key.
 
-> **`4.0.0` activities** — positional is the `activityName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<activityName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
+> **`4.0.0` activities** — positional is the `objectName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<objectName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
 
 Read `availableOperations[].method` and `availableOperations[].path` for method and endpoint; `parameters[]` for query/path parameters and `reference` objects; `requestFields[]` for body names, types, required status, descriptions, and `reference` objects; and `responseFields[]` for the response schema.
+
+> **Write only parameter names that `describe` listed, in the bucket it listed them under.** Never guess a key. Slack `send_message_to_channel_v2`: `send_as` is a required query parameter, not a body field; `username` is the bot display name, not a send-as switch.
 
 ### Step 3a — Resolve parent-field-driven custom fields
 
@@ -119,7 +123,11 @@ Do not skip this for Get/Retrieve: runtime may succeed while Studio Web lacks th
 
 Check **BOTH `requestFields` AND `parameters`** from the metadata for entries with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
 
+> **`4.0.0` activities use `run script`, not `run list`.** Their `reference` blocks carry `scriptRef` instead of `objectName`. Run `uip is resources run script --connection-id "<id>" --connector-key "<connector-key>" --script-ref "<reference.scriptRef>" --output json`, read the rows in `Data.Body` (an array), and match `lookupNames` → take `lookupValue`. The zero-match, multiple-match, failed-call, and connection-scoping rules below apply unchanged. See [§ 4.0.0 Activities](#400-activities) and [reference-resolution.md — 4.0.0 Activities — Script References](../../../../../uipath-platform/references/integration-service/reference-resolution.md#400-activities--script-references-scriptref).
+
 > **References are NOT body-field-only.** Query and path parameters carry `reference` objects too, and on some connectors the activity's PRIMARY input is a required **path parameter** whose `reference` is the design-time lookup behind a Studio Web dropdown. Scanning only `requestFields` misses it — the node then configures and passes `flow validate` with an unverified value and 404s at runtime. The same `reference` blocks appear on `connectorMethodInfo.parameters[]` in `registry get` output (with or without `--connection-id`) — when projecting parameter metadata for inspection, always include the `reference` key, not just `name`/`required`/`design.component`.
+
+> **A field with a `reference` takes a value a live lookup returned, never a value you typed.** Resolve it per [reference-resolution.md — Reference Fields](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-fields-critical). A plain word is right only when the lookup returns it (Slack `send_as` → `user` or `bot`). Jira `fields.reporter.id` wants the looked-up `accountId`, not `jane.doe@acmecorp.com`.
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../SKILL.md).
 
@@ -132,7 +140,9 @@ uip is resources run list "uipath-salesforce-slack" "curated_channels?types=publ
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, ask the user, with one option per match plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../SKILL.md)).
 
-> **Zero matches on a user-supplied value** — if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching a value the user provided, do NOT configure the node with it silently. Ask the user, presenting the closest candidates as options plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../SKILL.md)). Proceed with the unverified value only if the user confirms it.
+> **Zero matches on a user-supplied value** — if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching a value the user provided, do NOT configure the node with it silently. **Re-run the lookup against every other `State: Enabled` connection for this key first**, applying the two rules above per connection — `filterPattern` where the reference declares one, otherwise paginate, short-circuiting on the first match. The value is absent only once every Enabled connection has been searched to `HasMore: "false"`. If one resolves it, use that connection for this node and record the switch. If none do, ask the user, presenting the closest candidates as options plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../SKILL.md)). Their answer is another search term, not a value to write: re-run the lookup with it. If nothing resolves the field, stop and report it — writing an unresolved display name or a placeholder passes `flow validate` and faults at runtime.
+
+> **The lookup call itself failed** — a 403/401 on an expired or revoked grant, or a 5xx, means you have no ID and no candidate list to offer. Do NOT configure the node with the display name, a vendor well-known alias, or an ID from memory; each passes `flow validate` and faults at runtime. Stop and report the failed resolve, naming the connection and the vendor error. See [reference-resolution.md — When the Lookup Call Fails](../../../../../uipath-platform/references/integration-service/reference-resolution.md#when-the-lookup-call-fails-critical).
 
 > **Filter server-side before paginating.** If the field's `reference` carries a `filterPattern` (e.g. Teams `userId`: `"$filter=startswith(userPrincipalName,'{filter}')"`), substitute the search term for `{filter}` and pass the result as `--query` — one targeted call instead of walking a large directory. `filterPattern` appears only in `is resources describe` output; the flow `registry get` reference object strips it (keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`), so read it from the Step 3 describe metadata. Guessed params (`searchTerm=`/`where=`/`filter=`) are silently ignored. See [reference-resolution.md — Search References (filterPattern)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#search-references-filterpattern).
 
@@ -259,6 +269,12 @@ Illustrative supported activities (confirm against `registry get` for the specif
 | `uipath-microsoft-onedrive` | `AddListItem` | Add List Item | POST | method |
 | `uipath-sap-s4hanacloud` | `Entity` | Create Entity | POST | method |
 | `uipath-google-bigquery` | `projects::table` | List All Records | GET | method |
+
+> **Data Fabric record CRUD has native nodes — they are the default; everything else on this connector is not.** `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`, so for those four operations go native: confirm with `uip maestro flow registry get core.datafabric.read`, and on `NodeGetSuccess` leave this doc. Stay here when **any** of these hold — and they are common:
+>
+> - the operation is **not** one of those four (attachments, file-field downloads, entity metadata, bulk work) — no native node exists, so these activities are the only path, not a fallback;
+> - the **user asked for the connector by name** — an explicit request outranks the native default, so build it here as long as the activity exists;
+> - `registry get` ends at "Node not found" after [data-fabric/impl.md — Registry validation](../data-fabric/impl.md#registry-validation).
 
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 

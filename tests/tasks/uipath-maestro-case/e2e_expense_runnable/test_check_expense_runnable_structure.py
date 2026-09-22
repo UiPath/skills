@@ -13,6 +13,7 @@ from check_expense_runnable_structure import (  # noqa: E402
     _assert_bindings_v2_metadata,
     _assert_required_external_bindings,
 )
+from _shared.case_check import selected_stage_ids, stage_transitions  # noqa: E402
 
 
 class BindingsV2MetadataTests(unittest.TestCase):
@@ -76,6 +77,52 @@ class RunLimitTests(unittest.TestCase):
             if separator and name in {"task_timeout", "turn_timeout"}:
                 limits[name] = int(value.strip())
         self.assertEqual(limits["turn_timeout"], limits["task_timeout"])
+
+
+class StageTransitionTests(unittest.TestCase):
+    def test_selected_stage_ids_prefers_v30_plural_and_accepts_legacy_singular(self) -> None:
+        self.assertEqual(
+            selected_stage_ids({"selectedStageIds": ["first", "second"]}),
+            ["first", "second"],
+        )
+        self.assertEqual(selected_stage_ids({"selectedStageId": "legacy"}), ["legacy"])
+
+    def test_reads_v30_plural_and_legacy_singular_stage_ids(self) -> None:
+        plan = {
+            "nodes": [
+                {
+                    "id": "target",
+                    "type": "case-management:Stage",
+                    "data": {
+                        "entryConditions": [
+                            {
+                                "rules": [
+                                    [
+                                        {
+                                            "rule": "selected-stage-completed",
+                                            "selectedStageIds": ["first", "second"],
+                                        },
+                                        {
+                                            "rule": "selected-stage-exited",
+                                            "selectedStageId": "legacy",
+                                        },
+                                    ]
+                                ]
+                            }
+                        ]
+                    },
+                }
+            ]
+        }
+
+        self.assertEqual(
+            stage_transitions(plan),
+            [
+                {"source": "first", "target": "target"},
+                {"source": "legacy", "target": "target"},
+                {"source": "second", "target": "target"},
+            ],
+        )
 
 
 def _valid_resources() -> list[dict]:

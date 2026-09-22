@@ -229,6 +229,16 @@ Aggregation operations:
 | `first` | First item's field value | Yes |
 | `last` | Last item's field value | Yes |
 
+**One figure over the whole collection.** Aggregations are group-scoped, so a grand total needs a single group: set `groupByField: ""`. The node returns a one-element array; read the aggregate at `output[0].<alias>`.
+
+```json
+{ "id": "op1", "type": "groupBy", "config": {
+    "groupByField": "",
+    "aggregations": [{ "id": "a1", "field": "views", "operation": "sum", "alias": "total" }] } }
+```
+
+The group object also carries a `value` key holding the first row — read the alias, not `value`.
+
 ## Debug
 
 | Error | Cause | Fix |
@@ -238,4 +248,5 @@ Aggregation operations:
 | Collection is null/empty | `collection` uses `=js:` or an inline array literal | Use a plain path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; store static arrays in a variable default or upstream node |
 | Map output missing fields | `keepOriginalFields: false` and the field is unmapped | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match `groupByField` | Check that `groupByField` matches the actual data fields |
+| Need one total across every row, not per group | Aggregations are group-scoped | Set `groupByField: ""` for a single group; read `output[0].<alias>` |
 | Chained transform gets empty input although upstream had rows | Used `$vars.<transform>.output.items`; transform output is a bare array | Use `$vars.<transform>.output`; see [Output Shape](#collection-input-and-output-shape) |

@@ -17,7 +17,7 @@ CHECKER = Path(__file__).with_name("check_variable_defaults.py")
 def caseplan(*variables):
     return {
         "id": "case-Stub000001",
-        "version": "27.0.0",
+        "version": "30.0.0",
         "name": "Stub",
         "metadata": {},
         "variables": {"inputs": [], "outputs": [], "inputOutputs": list(variables)},

@@ -14,6 +14,8 @@ uip solution init "<SolutionName>" --output json
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
 
+Add `--automate` to create a Maestro Automate project instead of a Flow. Nothing else changes — same scaffold, same authoring, same `pack` / `publish` / `debug` / `eval`; the flag writes `runtimeOptions.profile` into the packaged `operate.json` and a `.maestro_automate` marker into the project root.
+
 Confirm `Data.SolutionRegistration.Status`: `Registered`, `AlreadyRegistered`, `OptedOut`, `Skipped`, `Failed`, or `NotInSolution`. Inside a solution, `flow init` auto-registers the project with the parent `.uipx`. Outside one, it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project, and adds `Data.AutoCreatedSolution`. `--skip-solution-registration` opts out with status `OptedOut`; do not manually wire an intentionally opted-out project. Manually wire `Skipped`, `Failed`, or the rare `NotInSolution`:
 
 ```bash
@@ -93,7 +95,7 @@ uip solution resources edit <KEY> --patch '{"maxNumberOfRetries":5}' --output js
 echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output json
 ```
 
-`add` is idempotent on `(kind, name, folder)` for local resources and on resource key for remote resources; retries return `Status: "Unchanged"`. `edit` alone mutates an existing resource spec; `refresh` never overwrites and skips resources already in the solution. These commands do not modify `bindings_v2.json`; a later `refresh` re-imports a still-bound resource. See [uipath-solution Step 9–11](/uipath:uipath-solution).
+`add` is idempotent on `(kind, name, folder)` for local resources and on resource key for remote resources; retries return `Status: "Unchanged"`. `edit` alone mutates an existing resource spec; `refresh` never overwrites and skips resources already in the solution. When the change you want was made **in the cloud** after the import, `edit --source remote --force` pulls it in (without `--force` it only reports the drift). These commands do not modify `bindings_v2.json`; a later `refresh` re-imports a still-bound resource. See [uipath-solution Step 9–11](/uipath:uipath-solution).
 
 <!--skill-flavor:upload-command-section:start-->
 ## uip solution upload
@@ -109,6 +111,7 @@ Pass the solution directory containing the `.uipx` file, or `.` from its root. F
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` and share the resulting URL.
 <!--skill-flavor:upload-command-section:end-->
 
+<!--skill-flavor:flow-debug-command-usage:start-->
 ## uip maestro flow debug
 
 Debug in the cloud through Studio Web + Orchestrator; require `uip login`. Always run `uip maestro flow validate` first, and run `uip solution resources refresh` before debugging:
@@ -121,6 +124,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```
+<!--skill-flavor:flow-debug-command-usage:end-->
 
 Pass the project directory containing `project.uiproj` (`<ProjectName>/` from the solution root, or `.` inside it). Use `--inputs` for a JSON object of flow input arguments. Repeat `--attachment <variableId>=<localPath>` to upload files for file-typed inputs; a bare path is rejected.
 
@@ -130,7 +134,9 @@ Pass the project directory containing `project.uiproj` (`<ProjectName>/` from th
 
 The CLI does not validate `<variableId>`; a mismatch can fault at runtime. Read `<flow>.flow`, inspect `variables.globals[]`, and use only entries with `direction:"in"` and `type:"file"`. If none exist, add `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`. In a Script node, read the uploaded name as `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
 
+<!--skill-flavor:flow-debug-help-pointer:start-->
 Run `uip maestro flow debug --help` for other options.
+<!--skill-flavor:flow-debug-help-pointer:end-->
 
 ### Reporting the run back to the user
 
@@ -209,7 +215,7 @@ Success output:
 { "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop.quick-form", "Label": "Invoice Review", "DefinitionAdded": true } }
 ```
 
-After adding, wire the `completed` port; an unwired `completed` blocks the flow. See the [Author HITL plugin reference](../author/plugins/hitl/impl.md).
+After adding, wire one `outcome-<outcome.id>` port per outcome; any outcome left unwired blocks the flow on that branch. See the [Author HITL plugin reference](../author/plugins/hitl/impl.md).
 
 ## uip maestro flow instance / uip maestro flow incident
 
@@ -262,7 +268,9 @@ The cache expires after 30 minutes. `registry search` returns a flat `Data` arra
 { "Data": [{ "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records", "Category": "connector.196536", "DisplayName": "List Records", "Description": "(Salesforce) List records in Salesforce", "Version": "1.0.0", "Tags": "connector, activity", "AvailableOnTenant": true }] }
 ```
 
-Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the node is not enabled or available for the tenant. Do not use unsupported flags such as `--include-unavailable`; choose an enabled alternative, use `--local` for in-solution resources, or report unavailability.
+Treat `AvailableOnTenant` as a usability gate: `true` permits `registry get <NodeType>` or `node add <NodeType>`; `false` means the type is missing from the manifest this CLI pulled. Despite the name it is not a tenant entitlement — the CLI asks for a fixed set of node manifests decided by its own build, so `false` usually means this CLI does not carry the node rather than that an administrator withheld it.
+
+Do not use unsupported flags such as `--include-unavailable`, and do not loop on the upgrade: try `uip tools update` **once**, and if the type is still absent treat it as absent by design for this build — choose an available alternative, use `--local` for in-solution resources, or report it as unavailable. Around ten of the node families the manifest knows about are deliberately outside the set this CLI requests (`agent-memory`, `queue-operations`, `form-trigger`, `http-standalone`, `agent-tool-http-request`, `classify-document`, `do-while`, `hitl-document`, …), so no upgrade will ever surface them and each extra `tools update` + `registry pull` is wasted work.
 
 `registry get` returns `Data.Node` verbatim for the `.flow` `definitions` array. Preserve its manifest casing, predominantly camelCase (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`); filter with `--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`.
 

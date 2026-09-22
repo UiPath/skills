@@ -10,11 +10,13 @@ edits (model override, system prompt, etc.).
 Checks:
   1. metadata.isConversational == true
   2. settings.engine == "conversational-v1"
-  3. settings.maxIterations absent
-  4. outputSchema.properties is empty {} (Rule 26 — never populate)
-  5. messages[1] (user role) content has no {{input.*}} template, and
+  3. outputSchema.properties is empty {} (Rule 26 — never populate)
+  4. messages[1] (user role) content has no {{input.*}} template, and
      contentTokens contain no `variable` entries (§ Messages)
-  6. entry-points.json schemas mirror agent.json (Rule 4 sync)
+  5. entry-points.json schemas mirror agent.json (Rule 4 sync)
+
+`settings.maxIterations` is reported but not graded: the value comes from
+`uip agent init`, not from the agent under test.
 """
 
 import json
@@ -52,13 +54,13 @@ def assert_conversational_essentials(agent: dict) -> None:
         )
     print('OK: settings.engine == "conversational-v1"')
 
+    # `settings.maxIterations` is NOT graded. `uip agent init --conversational`
+    # writes it (8 as of CLI 1.203.0), not the agent under test, so asserting it
+    # grades the CLI build rather than the skill.
     if "maxIterations" in settings:
-        sys.exit(
-            f'FAIL: settings.maxIterations must be absent for conversational '
-            f'(CLI omits it; conversational has no iteration cap), '
-            f'got {settings.get("maxIterations")!r}'
-        )
-    print("OK: settings.maxIterations absent")
+        print(f"INFO: settings.maxIterations present ({settings['maxIterations']!r}) — CLI-emitted, not graded")
+    else:
+        print("INFO: settings.maxIterations absent — not graded")
 
     output_props = (agent.get("outputSchema") or {}).get("properties") or {}
     if output_props:

@@ -12,9 +12,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parent
+SHARED = ROOT.parent / "_shared"
 SDD_CHECK = ROOT / "check_athena_cm_event_sdd.py"
-RULES_CHECK = ROOT / "check_athena_cm_event_rules.py"
-CASE_CHECK = ROOT / "check_athena_cm_event_case.py"
+RULES_CHECK = SHARED / "check_athena_cm_event_rules.py"
+CASE_CHECK = SHARED / "check_athena_cm_event_case.py"
 
 
 def run(script: Path, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -198,7 +199,7 @@ closes on required-stages-completed.
                 {"id": f"{task_id}_folder", "default": "Shared"},
             ])
         plan = {
-            "version": "27.0.0",
+            "version": "30.0.0",
             "name": "AthenaCMEventCase",
             "metadata": {
                 "caseIdentifier": "=vars.instanceExternalId",

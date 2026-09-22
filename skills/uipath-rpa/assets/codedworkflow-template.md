@@ -2,7 +2,7 @@
 
 Ready-to-use templates for UiPath coded files — workflows, test cases, helper/utility classes, and Before/After hooks. Replace placeholders in `{{PLACEHOLDER}}` format.
 
-> **Using statements:** These templates include only the minimal required usings. Add service-specific usings based on actual usage — see [operations-guide.md § Coding Guidelines](../references/coded/operations-guide.md#coding-guidelines) for the full mapping.
+> **Using statements:** These templates include only the minimal required usings — keep them even when an editor flags them as unnecessary; only `uip rpa validate` / `build` decide. Add service-specific usings based on actual usage — see [operations-guide.md § Coding Guidelines](../references/coded/operations-guide.md#coding-guidelines) for the full mapping.
 
 ---
 

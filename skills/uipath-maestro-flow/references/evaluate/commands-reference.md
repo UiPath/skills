@@ -145,22 +145,42 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 | `--component-description <text>` | No | Human-readable label for the component |
 | `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |
 | `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |
-| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved from the `.flow` file when omitted for `Llm` strategy** (top-level simulations only; required when using `--parent`). |
-| `--parent <component-id>` | No | Parent agent node component ID. When set, the simulation is added as a child tool simulation nested inside the parent agent node's simulation. If no parent simulation exists yet, one is auto-created (type `agent`, strategy `Llm`). `--component-type` defaults to `Node`. |
+| `--parent <component-id>` | No | Parent agent node component ID. When set, the simulation is added as a child tool simulation nested inside the parent agent node's simulation. If no parent *simulation* exists yet, one is auto-created (type `agent`, strategy `Llm`) — but the parent agent *node* must already exist in the `.flow`; see [Add the parent agent node first](#add-the-parent-agent-node-first). `--component-type` defaults to `Node`. |
 | `--path <path>` | No | (see Common Options) |
 
 **Strategy guide:**
 
 | Strategy | When to use | Key flags |
 |----------|-------------|-----------|
-| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |
+| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions` (output schema auto-resolved) |
 | `Static` | Output is fixed and deterministic | `--mock-value` |
 
-**`--output-schema` auto-resolution for Llm simulations:** When omitted, the CLI reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`). Fails with an actionable error if the node is not found or has no outputs. Pass `--output-schema` explicitly to override. The JSON Schema is sent alongside `--simulation-instructions` to the LLM, telling it what shape the output must conform to. Without it the LLM generates free-form text. For a connector that returns `{ status, message }` you would pass:
+**Output schema auto-resolution:** The CLI always auto-resolves the output schema for both top-level and child (`--parent`) simulations:
 
-```bash
---output-schema '{"type":"object","properties":{"status":{"type":"string"},"message":{"type":"string"}}}'
+- **Top-level simulations:** reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`).
+- **Child simulations (inline canvas agents):** finds the child tool node via edges in the `.flow` file and extracts its output schema.
+- **Child simulations (same-solution agents):** reads the inline agent's `agent.json` and matches the tool by name in the `resources[]` array.
+- **Child simulations (published agents):** calls the platform API (`simulatableComponents`) using the current login session to fetch the tool's schema. Requires `uip login`.
+
+Fails with an actionable error if the node/tool is not found or has no outputs.
+
+**Add the parent agent node first.** `--parent` with `--strategy Llm` requires the parent agent node to already be in `nodes[]`, wired to each child tool node by an edge on its `tool` port. Without it the call fails with `Parent agent "<component-id>" not found in the flow.` — an eval set and data point are not enough. `--strategy Static` does not read the flow and succeeds against a parent that does not exist, so a sequence mixing both strategies fails on the `Llm` call alone.
+
+The `--parent` value is the agent node's `id`; each `<component-id>` is a tool node's `id`:
+
+```json
+{ "nodes": [
+    { "id": "agent-1", "type": "uipath.agent.autonomous", "inputs": { "agentInputVariables": {}, "agentOutputVariables": {} } },
+    { "id": "Web_Search", "type": "core.logic.mock" },
+    { "id": "Send_Email", "type": "core.logic.mock" } ],
+  "edges": [
+    { "sourceNodeId": "agent-1", "sourcePort": "tool", "targetNodeId": "Web_Search", "targetPort": "input" },
+    { "sourceNodeId": "agent-1", "sourcePort": "tool", "targetNodeId": "Send_Email", "targetPort": "input" } ] }
 ```
+
+`core.logic.mock` tool nodes resolve schemas. See [plugins/inline-agent/impl.md](../author/plugins/inline-agent/impl.md) for a production agent node.
+
+**Static mock value validation:** For `Static` child simulations, the CLI validates that `--mock-value` keys match the auto-resolved schema properties, catching shape mismatches early.
 
 Example — LLM strategy:
 
@@ -189,14 +209,25 @@ uip maestro flow eval simulation add agent-lookup \
 Example — Child simulation (tool inside an agent node):
 
 ```bash
-# Add a child tool simulation. No separate parent simulation step needed —
-# --parent auto-creates the parent if it does not exist.
+# Add a child tool simulation (Static). No separate parent simulation step
+# needed — --parent auto-creates the parent simulation.
+# Output schema is auto-resolved from the agent's tool definitions.
 uip maestro flow eval simulation add Web_Search \
   --parent agent-lookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --strategy Static \
   --mock-value '{"results": [{"title": "Example", "url": "https://example.com"}]}' \
+  --path ./MySolution/MyFlow --output json
+
+# Add a child tool simulation (Llm). Output schema auto-resolved —
+# works for inline, same-solution, and published agents.
+uip maestro flow eval simulation add Send_Email \
+  --parent agent-lookup \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --strategy Llm \
+  --simulation-instructions "Return a success status with a generated messageId." \
   --path ./MySolution/MyFlow --output json
 ```
 

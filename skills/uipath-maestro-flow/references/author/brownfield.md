@@ -19,7 +19,7 @@ The result should be a thin flow delegating work to existing artifacts. Author i
 
 Before each node added or modified, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only: run `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`; this also applies when adding a connector node to an existing flow.
 
-Read [editing-operations.md](editing-operations.md) and the strategy selection matrix before modifying. Use `Edit` for in-place user-owned changes; use `Write` only when ≥70% of nodes change. For CLI-owned nodes, follow the plugin's `impl.md` configuration workflow (`node add` + `node configure`).
+Read [editing-operations.md](editing-operations.md) and the strategy selection matrix before modifying. Use `Edit` for in-place user-owned changes; use `Write` only when ≥70% of nodes change **and no CLI-owned node in the file has been configured yet**. On an existing flow that second condition rarely holds — `node configure` has already populated `inputs.detail` and `bindings[]`, so a full-file `Write` clobbers both and `flow validate` still passes. That makes `Edit` the default here for reasons greenfield does not have. If a `Write` is unavoidable, re-run `node configure` for every CLI-owned node afterwards as the last write to those fields. For CLI-owned nodes, follow the plugin's `impl.md` configuration workflow (`node add` + `node configure`).
 
 **Self-check before every mutation:** name the tool. If it is not `Edit`, `Write`, or `uip maestro flow ...`, STOP and ask the user under the dropdown question rule in [SKILL.md](../../SKILL.md). Treat `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs as last resorts requiring explicit user approval after surfacing trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
@@ -33,6 +33,7 @@ For edits touching multiple top-level arrays, follow [parallel same-file Edit ru
 |---|---|
 | **Change a script body or node inputs** | Use `Edit` on `inputs`; do not delete/re-add because node IDs and `$vars` expressions must remain stable. Script nodes must return an object (`return { key: value }`). See [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs). |
 | **Add a node between two existing nodes** | Remove the connecting edge; add the node; wire upstream → new → downstream. See [Edit/Write: Insert a node](editing-operations-json.md#insert-a-node-between-two-existing-nodes). |
+| **Move / reorder a node** | Re-wire the edges, then re-point every `$vars.<node>` read inside the moved node (a Decision's `expression`, a script body, input fields) to a node that still runs **before** it; a reference to a node that now runs later evaluates against nothing at runtime (`[400302]`/`[400300]`) even though `flow validate` passes. Nodes the branches rejoin at cannot read the Decision at all — recompute its condition from a node upstream of it, or carry the outcome in an `inout` global written per branch (see [decision/impl.md — Outputs](plugins/decision/impl.md#outputs)). See [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge) and [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs). |
 | **Add a branch (decision node)** | Remove an edge; add the decision; wire true/false branches. See [Edit/Write: Insert a decision branch](editing-operations-json.md#insert-a-decision-branch). |
 | **Remove a node** | Remove the node; sweep edges/definitions/variables; reconnect upstream to downstream. See [Edit/Write: Remove a node](editing-operations-json.md#remove-a-node-and-reconnect). |
 | **Remove an edge** | Find and remove its edge ID. See [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge). |
@@ -43,8 +44,9 @@ For edits touching multiple top-level arrays, follow [parallel same-file Edit ru
 | **Add a connector trigger** | Remove the manual trigger; add and configure the connector trigger with a connection. Use [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) and [connector-trigger/impl.md](plugins/connector-trigger/impl.md). |
 | **Add a resource node** | Discover through the registry (`--local` for in-solution, or tenant registry for published); add with `Edit`; wire edges. Use the relevant plugin's `impl.md` and [editing-operations-json.md](editing-operations-json.md). |
 | **Add an inline agent node** | Embed `uipath.agent.autonomous` with an inline agent definition in the flow project. See [inline-agent/planning.md](plugins/inline-agent/planning.md) for inline versus published selection and [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, JSON, and validation. |
+| **Add chat nodes** | Turn a flow into a text-based conversation: a chat experience looping with wait-for-message, started by `core.trigger.conversation` — the trigger is what marks the package conversational. See [conversational-agent/planning.md](plugins/conversational-agent/planning.md) for the rules and when chat beats voice, and [conversational-agent/impl.md](plugins/conversational-agent/impl.md) for node JSON and the `conversationalAgentSettings` wiring. |
 | **Add voice nodes** | Turn a flow into a phone conversation: a `uipath.agent.voice` inline conversational agent wired to a live call, plus the trigger, create-call, and end-call nodes. Binding an inbound number happens at deploy time, not in the `.flow`. See [inline-voice-agent/planning.md](plugins/inline-voice-agent/planning.md) for the two topologies and trunk requirements, and [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) for node JSON, `callContext` wiring, and number binding. |
-| **Add a HITL QuickForm node** | Insert the human approval/review/enrichment checkpoint and wire its `completed` port. See [Edit/Write: Add a node](editing-operations-json.md) and [hitl/impl.md](plugins/hitl/impl.md). |
+| **Add a HITL QuickForm node** | Insert the human approval/review/enrichment checkpoint and wire one `outcome-<outcome.id>` port per outcome. See [Edit/Write: Add a node](editing-operations-json.md) and [hitl/impl.md](plugins/hitl/impl.md). |
 
 OOTB structural CRUD uses Edit/Write only; there is no CLI opt-in path for other flow-graph edits.
 
@@ -81,9 +83,9 @@ Authoring ends here. For any selected option, read [operate/CAPABILITY.md](../op
 
 | Option | What it does |
 |---|---|
-| **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
-| **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first because debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../SKILL.md)). |
+| **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
+| **Debug the solution** | Execute the flow end-to-end against real systems. Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen; see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it. |
 
-Do not run any option without explicit user selection.
+When the original request already named the next step ("publish it", "deploy to Orchestrator", "run debug and iterate"), that instruction **is** the selection — act on it and skip the menu. Show the menu only when the next step was left unspecified, and then do not run any option without explicit user selection.

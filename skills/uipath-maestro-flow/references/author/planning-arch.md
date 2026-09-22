@@ -92,6 +92,7 @@ Read the relevant plugin `planning.md` when selecting a type.
 | `core.trigger.manual` | inline | On-demand user or API start |
 | `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/planning.md) | Recurring schedule |
 | IS connector trigger | [connector-trigger](plugins/connector-trigger/planning.md) | External event; type `uipath.connector.trigger.<key>.<trigger>` |
+| `core.trigger.conversation` | [conversational-agent](plugins/conversational-agent/planning.md) | Flow starts when a chat conversation is created, and emits its `conversationId` |
 | `core.trigger.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Flow starts when a phone call arrives on a bound number (inbound voice topology) |
 
 Every flow has exactly one trigger, first in topology. IS connector triggers replace manual or scheduled triggers. `core.trigger.manual` has no inputs and output port `output`.
@@ -104,12 +105,19 @@ Every flow has exactly one trigger, first in topology. IS connector triggers rep
 | `core.action.http.v2` | [http](plugins/http/planning.md) | REST API; connector or manual mode; replaces deprecated `core.action.http` |
 | `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by |
 | Wait for events | [connector-trigger](plugins/connector-trigger/planning.md) | Mid-flow external event; type `uipath.connector.event.<key>.<event>` with `input` |
-| `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns to CSV rows; gated by `canvas.nodes.batch-transform` |
-| `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Synthesis/Q&A over one document with optional citations; gated by `canvas.nodes.summarize` |
+| `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns to CSV rows |
+| `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Synthesis/Q&A over one document with optional citations |
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Duration or date wait |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Fire-and-forget robot work |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Robot work with result wait |
+| `core.datafabric.read` | [data-fabric](plugins/data-fabric/planning.md) | Read one record or a filtered list from a Data Fabric entity |
+| `core.datafabric.create` | [data-fabric](plugins/data-fabric/planning.md) | Insert a record and return the stored row |
+| `core.datafabric.update` | [data-fabric](plugins/data-fabric/planning.md) | Patch named columns on one record |
+| `core.datafabric.delete` | [data-fabric](plugins/data-fabric/planning.md) | Delete one record |
 | `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Inline human review, approval, or data entry |
+| `uipath.conversational.wait-for-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Pause until the user sends a chat message (initiates an exchange); returns the conversation context |
+| `uipath.conversational.send-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Write a message the flow composes itself into the chat |
+| `uipath.conversational.get-conversation-context` | [conversational-agent](plugins/conversational-agent/planning.md) | Read latest conversation context without waiting for a new user message |
 | `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Dial an outbound phone call and emit its `callContext` (outbound voice topology) |
 | `uipath.conversational.voice.end-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | End the active call in a voice flow |
 
@@ -135,6 +143,7 @@ Connector nodes are Integration Service nodes, not built-in. They appear after `
 | --- | --- | --- |
 | `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent scaffolded inside this flow via `uip agent init --inline-in-flow`, tightly coupled, not independently reused |
 | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Separate in-solution or published agent, reusable and independently versioned |
+| `uipath.agent.conversational` | [conversational-agent](plugins/conversational-agent/planning.md) | AI agent that runs a single response turn given a chat-history, streaming its messages and tool-calls to the conversation. In-solution and published chat agents use `uipath.core.agent.{key}` above |
 | `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (`settings.voice` in its `agent.json`) wired to a `callContext` |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table).
@@ -165,6 +174,14 @@ Prefer, in order:
 2. `core.action.http.v2` connector mode when the connector lacks the activity, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
 3. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
 
+**Data Fabric entity records are the one exception, and the split is by operation.** Record CRUD has two paths — the native `core.datafabric.*` nodes and the `uipath-uipath-dataservice` connector activities:
+
+- **Record CRUD (read / create / update / delete) — default to the native node** wherever Flow carries it natively. It needs no Integration Service connection.
+- **Every other Data Service operation — use the connector activities.** Only the four CRUD operations exist natively; attachments, file fields, entity metadata and everything else have no native node, so the connector is not a fallback there, it is the only path.
+- **An explicit request for connector activities wins over both.** If the user asks for the Data Service connector by name, build it with the connector as long as that activity exists — do not override them with the native node.
+
+Confirm the native node with the probe and recovery in [data-fabric/impl.md — Registry validation](plugins/data-fabric/impl.md#registry-validation), the single procedure for this error; on its final "use the connector" outcome, build with the connector activities. Never hand-write a `definitions[]` entry for a node the registry will not return. Rationale and the federated-entity case in [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--the-operation-decides).
+
 ## Standard Port Reference
 
 Every edge requires `sourcePort` and `targetPort`.
@@ -174,6 +191,7 @@ Every edge requires `sourcePort` and `targetPort`.
 | `core.trigger.manual` | — | `output` |
 | `core.trigger.scheduled` | — | `output` |
 | `uipath.connector.trigger.*` | — | `output` |
+| `core.trigger.conversation` | — | `output` |
 | `core.trigger.voice` | — | `output` |
 | `uipath.connector.event.*` | `input` | `output`, `error` |
 | `core.action.script` | `input` | `success`, `error` |
@@ -191,7 +209,11 @@ Every edge requires `sourcePort` and `targetPort`.
 | `core.subflow` | `input` | `output`, `error` |
 | `core.logic.mock` | `input` | `output` |
 | `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+| `uipath.agent.conversational` | `input` | `success`, `escalation`, `context`, `tool` |
 | `uipath.agent.voice` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+| `uipath.conversational.wait-for-message` | `input` | `output` |
+| `uipath.conversational.send-message` | `input` | `output` |
+| `uipath.conversational.get-conversation-context` | `input` | `output` |
 | `uipath.conversational.voice.create-outgoing-call` | `input` | `success`, `error` |
 | `uipath.conversational.voice.end-call` | `input` | `success`, `error` |
 | `uipath.core.agent.*` | `input` | `output`, `error` |
@@ -204,7 +226,11 @@ Every edge requires `sourcePort` and `targetPort`.
 | `uipath.connector.*` | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
-| `uipath.human-in-the-loop.quick-form` | `input` | `completed` |
+| `core.datafabric.read` | `input` | `output` |
+| `core.datafabric.create` | `input` | `output` |
+| `core.datafabric.update` | `input` | `output` |
+| `core.datafabric.delete` | `input` | `output` (sequencing only — the node produces no data) |
+| `uipath.human-in-the-loop.quick-form` | `input` | one `outcome-<outcome.id>` per outcome — see [hitl/impl.md](plugins/hitl/impl.md) |
 | `uipath.core.human-task.{key}` | `input` | `output` |
 
 `error` is an implicit source port on action nodes with `supportsErrorHandling: true`, off by default. Wire it only when requirements specify failure behavior; otherwise the node faults the flow. This differs from HTTP `inputs.branches` and content-based decision/switch routing. See [Implicit error port on action nodes](../shared/file-format.md#implicit-error-port-on-action-nodes).
@@ -217,7 +243,7 @@ Every edge requires `sourcePort` and `targetPort`.
 4. Every non-trigger node has at least one incoming edge.
 5. Every non-terminal node has at least one outgoing edge.
 6. Decisions have exactly one `true` and one `false` edge.
-7. Switches have one edge per case and optionally `default`.
+7. Switches have one edge per case, plus `default` unless the cases are provably exhaustive (an agent-authored discriminator never is).
 8. A loop's inner `start` feeds the body, the last body node returns to `continue`, and outer `success` continues after all iterations.
 9. Merge accepts one input per parallel path.
 10. Do not create cycles except through Loop's `continue` handle.
@@ -302,7 +328,7 @@ Before presenting the plan, validate every rule:
 9. Do not use semicolons.
 10. Do not put blank lines inside the mermaid block.
 11. Every defined node is connected; every node-table node appears in the diagram; every edge-table edge appears in the diagram.
-12. Decisions show `true` and `false`; switches show every case and optional `default`; loops show the body and `continue`; parallel branches fork and converge at Merge.
+12. Decisions show `true` and `false`; switches show every case plus `default` when the edge table has one; loops show the body and `continue`; parallel branches fork and converge at Merge.
 
 ## Node Selection Heuristics
 
@@ -313,13 +339,14 @@ Before presenting the plan, validate every rule:
 - **Wait:** duration or date -> [delay](plugins/delay/planning.md); external robot result -> [queue](plugins/queue/planning.md) `create-and-wait`.
 - **Human:** approval or data entry -> [hitl](plugins/hitl/planning.md), or `core.logic.mock` if unavailable.
 - **Agent:** tightly coupled low-code agent inside flow -> [inline-agent](plugins/inline-agent/planning.md), `uipath.agent.autonomous`; coded or separate in-solution/published agent -> [agent](plugins/agent/planning.md), `uipath.core.agent.{key}`.
+- **Chat:** text-based conversation the flow holds turn by turn -> [conversational-agent](plugins/conversational-agent/planning.md), `core.trigger.conversation` plus `uipath.conversational.wait-for-message` with responding chat agent(s) and `send-message` node(s); agent inside this flow -> `uipath.agent.conversational`; sibling or published agent -> [agent](plugins/agent/planning.md), `uipath.core.agent.{key}` with `isConversational`; single approval or data-entry without a full conversation -> [hitl](plugins/hitl/planning.md).
 - **LLM over CSV/document:** CSV row columns -> [batch-transform](plugins/batch-transform/planning.md), `uipath.pattern.batch-transform`; one-document synthesis/Q&A/citations -> [summarize](plugins/summarize/planning.md), `uipath.pattern.deep-rag`; multi-step tool reasoning -> inline or published agent; ordinary reshaping -> transform.
 - **Document extraction:** variable-layout PDF, scan, photo, or attachment -> [ixp](plugins/ixp/planning.md), `uipath.ixp.{modelName}.{fullyQualifiedName}`; structured source -> script or transform; free-form reasoning -> agent; untrained IxP model -> `core.logic.mock` plus Open Question.
 - **Missing capability:** use `core.logic.mock`; identify the needed artifact and owning skill (`uipath-rpa` for desktop/browser or coded C# workflows, `uipath-agents` for agents). Phase 2 replaces the mock if published.
 
 ## Handoff to Phase 2
 
-After explicit user approval, [Planning Phase 2: Implementation](planning-impl.md) must:
+Once the plan is approved, [Planning Phase 2: Implementation](planning-impl.md) must:
 
 1. Validate every node type with `uip maestro flow registry get`; read each plugin's `impl.md`.
 2. Resolve connector and resource nodes using relevant `impl.md` files, including [connector](plugins/connector/impl.md) and [rpa](plugins/rpa/impl.md).
@@ -329,4 +356,6 @@ After explicit user approval, [Planning Phase 2: Implementation](planning-impl.m
 6. Replace `core.logic.mock` nodes with real resources when available.
 7. Finalize implementation-ready details.
 
-**Do not proceed to Phase 2 until the user explicitly approves the architectural plan.**
+**Do not proceed to Phase 2 until the plan is approved, and route that approval through [SKILL.md](../../SKILL.md) rule #5 with the proceed option marked recommended.** Rule #5 then owns both branches: a user approves interactively, and its non-interactive fallback takes the marked option and records the unreviewed handoff. The mark is the whole mechanism — the fallback carries a headless run past a gate that has one and stops at a gate that does not.
+
+**Write the plan before asking, always.** Phase 2 and the build both read its node and edge tables; without them the topology gets re-derived from scratch at every step, which costs more than the plan it replaces.

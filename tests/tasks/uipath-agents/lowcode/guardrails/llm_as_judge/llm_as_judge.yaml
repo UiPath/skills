@@ -9,6 +9,9 @@ description: >
   llm_as_judge, an `enum` model parameter with a non-empty value, a `text`
   guardrailText parameter, and PascalCase scope values.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "JudgeAgent" that answers customer support questions
   about their accounts. Add an LLM as Judge guardrail at Agent scope with a block action
@@ -81,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "LLM as Judge guardrail shape (builtInValidator, llm_as_judge, enum model, text guardrailText, PascalCase)"
-    command: "python3 $TASK_DIR/check_llm_as_judge.py"
+    command: "python3 $REFERENCE_DIR/check_llm_as_judge.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

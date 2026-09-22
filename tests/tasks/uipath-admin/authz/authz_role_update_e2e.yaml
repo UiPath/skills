@@ -6,13 +6,23 @@ description: >
   update landed, and the check also confirms the granted permission survived
   (the update endpoint is a full replace, so a careless call silently drops it).
 tags: [uipath-admin, e2e, mode:build, lifecycle:setup, authz, role]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-update-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Provisional - pending review" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-update-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Provisional - pending review" python3 _setup/setup_authz_role.py'
     timeout: 90
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-update-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-update-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
 
 run_limits:
@@ -29,7 +39,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded role now carries the new description and kept its granted permission"
-    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_DESCRIPTION="Reviewed and approved by security" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_updated.py''))"'
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_DESCRIPTION="Reviewed and approved by security" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_role_updated.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

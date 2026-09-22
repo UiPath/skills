@@ -22,6 +22,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath coded RPA project exists at `CodedProc` in the current directory.
   Review the coded workflow for quality and best-practice issues, and produce
@@ -70,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "Report identifies >=2 coded-workflow structural defects"
-    command: "python3 $TASK_DIR/check_coded_structural.py"
+    command: "python3 $REFERENCE_DIR/coded-structural/check_coded_structural.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

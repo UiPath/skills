@@ -50,9 +50,23 @@ The performer's start event **is** the queue trigger, so this shape always begin
 the process. It cannot be inserted into an existing path or nested in a
 subprocess, and it has no Entry row in the droppable sense.
 
+**The performer's nodes carry no `uipath:*` payload — author them as bare
+structural BPMN.** Discovery still applies to the queue key itself (rule 2), but
+nothing in the performer's shape is a queue-specific registry template:
+
+- The start is a plain `bpmn:startEvent` (an optional `bpmn:messageEventDefinition`
+  child documents the trigger) — there is no `Orchestrator.QueueTrigger` registry
+  type; the queue binding is configured outside the BPMN.
+- `per_item_action` and the three outcome nodes (`set_successful`, `set_failed`,
+  `postpone`) are bare `bpmn:serviceTask`s with no extension payload. Marking the
+  queue item's transaction status happens at runtime; there is no
+  `Orchestrator.SetTransactionStatus` or `SetQueueItemStatus` type to fetch. (The
+  dispatcher's `bulk_add` is different: `Orchestrator.CreateQueueItem` is a real
+  OOTB template.)
+
 | Node | Element | Role |
 | --- | --- | --- |
-| `start` | `bpmn:startEvent` + message event definition, bound to the queue trigger | Mechanism |
+| `start` | `bpmn:startEvent` (optional `bpmn:messageEventDefinition`) — structural, no registry payload | Mechanism |
 | `per_item_action` | `bpmn:serviceTask` | Placeholder |
 | `outcome_gate` | `bpmn:exclusiveGateway` | Mechanism |
 | `set_successful` | `bpmn:serviceTask` | Mechanism |
@@ -100,11 +114,10 @@ already exists without touching whatever produces the items.
 - **`postpone`** — earliest reprocessing time, and a deadline if the item should
   eventually stop being retried.
 
-The queue activity types this shape needs are newer than the extension list
-bundled with the validator, so do not assume the names. Resolve them with
-`uip maestro bpmn registry list --output json` and fetch each template with
-`registry get` before authoring — see
-[registry-workflow.md](../registry-workflow.md).
+The dispatcher's queue activity (`Orchestrator.CreateQueueItem` /
+`Orchestrator.CreateAndWaitForQueueItem`) is a bundled OOTB type — fetch its
+template with `registry get` and see [registry-workflow.md](../registry-workflow.md).
+The performer's nodes need no such lookup (see the Performer section above).
 
 ## Adapting it
 

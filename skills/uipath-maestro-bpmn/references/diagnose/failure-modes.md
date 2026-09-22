@@ -23,6 +23,35 @@ Entry point inputs reference a start event through `elementId`, but the start ev
 `uipath:entryPointId` or the ID is duplicated.
 Fix root start event extensions and variable scoping.
 
+## Start or end variable mapping is missing
+
+An `input` variable scoped to a root StartEvent must map to the root
+`inputOutput` variable used by gateways and activities. Before completion, the
+result `inputOutput` variable must map on each returning root EndEvent to its
+scoped `output` variable. Without these mappings, conditions can evaluate
+against null values and a completed process can return null outputs.
+
+Inspect the StartEvent and EndEvent `BPMN.Variables` mappings and the process
+instance variables. Add the missing `input` → `inputOutput` or `inputOutput` →
+`output` mapping. Converge routes that return the same result before the
+returning EndEvent.
+
+## ScriptTask arguments or outputs are missing
+
+A ScriptTask can validate structurally yet fault because `vars` is undefined,
+or complete while its business output remains empty. Inspect the task mapping,
+its task-scoped variables, runtime variables, and the registry template that
+applies to that node.
+
+For a newly authored task whose registry result is the recognized older shell,
+compare it with the bundled compatibility template: a `BPMN.Variables`
+mapping, an input schema declaring `vars` and `metadata`, a parser-readable
+`args` body that passes both objects, and task-scoped `scriptResponse` / typed
+`Error` outputs. Return the intended value directly and map `scriptResponse`
+from `=result.response`. Do not migrate a brownfield ScriptTask solely because
+its shape differs. If runtime evidence identifies that node as the fault,
+present the evidence and obtain confirmation before migrating it.
+
 ## Binding reference missing
 
 A node context value refers to `=bindings.<id>` but no matching root binding or generated binding resource exists.
@@ -48,7 +77,9 @@ The model may adjust BPMN structure around the connector but must not invent con
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.
-Run `uip maestro bpmn update-metadata <file.bpmn> --dry-run` to identify drift, then `uip maestro bpmn update-metadata <file.bpmn>` to regenerate before upload or deploy.
+Run `uip maestro bpmn refresh <project-path> --output json` before upload or deploy: it regenerates the four
+derived files and reports the stale ones in `Data.WrittenFiles`. The deprecated `update-metadata` skips
+`Intsvc.*` connection bindings, so use `refresh` even when only a drift answer is wanted.
 
 Signs:
 

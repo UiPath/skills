@@ -17,14 +17,21 @@ skip: true
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 run_limits:
   task_timeout: 2400
   max_turns: 60
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/connector/testmanager_crud_grounded/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 30
 
 initial_prompt: |
@@ -85,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "Data-grounded: retrieved name == created (seeded) name — real data round-tripped through the executed workflow"
-    command: "python3 $TASK_DIR/check.py"
+    command: "python3 $REFERENCE_DIR/check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

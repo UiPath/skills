@@ -29,10 +29,10 @@ Single CLI call replaces the legacy `get-connection` + `case tasks describe --ty
 
 ## Step 3 — Required-event-param validation (HARD GATE)
 
-This is a hard gate — do NOT proceed to write the trigger node until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
+This is a hard gate — do NOT proceed to write the trigger node until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="body"].body.queryParams`.
 
 1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
-2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
+2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="body"].body.queryParams` and verify every required event parameter has a value.
 3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
 4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder per the Placeholder fallback section below if user declines.
 
@@ -66,6 +66,8 @@ For a **single-trigger case**, configure the existing `trigger_1` node. For **mu
 Set the trigger's display name from the SDD's Case Triggers row. Record `T<N> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — incl. the global-vars plugin resolving this event trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or, when this event trigger is the primary trigger T02, an In-arg with blank `sourceTriggers`).
 
 ### 7b. `data` structure
+
+Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache) — placeholders and minted ids are the only permitted modifications.
 
 ```json
 {
@@ -157,7 +159,7 @@ Three distinct conditions can trigger placeholder fallback for an event trigger.
 |---|---|---|---|
 | **Planning-time unresolved** (the resolved entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
 | **`case spec` failure at Phase 3** (the resource was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
-| **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="eventParameters"].body` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
+| **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="body"].body.queryParams` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
 
 **Why full placeholder (not `typeId`/`connectionId` preservation)?** Event triggers are sibling-file-coupled (`entry-points.json` entry, root variable bindings for In args). A partial in-place edit leaves siblings stale. Phase-3 `case spec` failure on event triggers therefore downgrades fully to placeholder — asymmetric with connector-task graceful-degradation, which preserves `data.typeId + data.connectionId` because the in-stage parent node can render without sibling-file coupling (see [`../../tasks/connector-activity/impl-json.md`](../../tasks/connector-activity/impl-json.md) for the connector-task fallback table — it preserves more state because the coupling profile is different).
 

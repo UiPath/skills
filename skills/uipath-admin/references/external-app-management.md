@@ -55,7 +55,7 @@ Any app with `--user-scope` requires `--redirect-uri` for authorization-code flo
 
 Run the following to generate a secret; its value is shown only once:
 ```bash
-uip admin external-apps generate-secret <CLIENT_ID> --description "Rotated secret" --expiration "2027-06-01" --output json
+uip admin external-apps generate-secret <CLIENT_ID> --description "Rotated secret" --expiration "<EXPIRATION_DATE>" --output json
 ```
 
 Confirm with the user first, then run the following to delete a secret; only the secret ID is required:

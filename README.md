@@ -102,32 +102,32 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 <!-- BEGIN GENERATED SKILL STATUS -->
 | Skill | Status |
 |-------|--------|
-| `uipath-admin` | In-development |
-| `uipath-agents` | In-development |
+| `uipath-admin` | Stable |
+| `uipath-agents` | Stable |
 | `uipath-aops` | Preview |
-| `uipath-api-workflow` | In-development |
+| `uipath-api-workflow` | Stable |
 | `uipath-automation-discovery` | Preview |
-| `uipath-automationhub` | In-development |
-| `uipath-coded-apps` | Preview |
+| `uipath-automationhub` | Stable |
+| `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
-| `uipath-governance` | In-development |
-| `uipath-human-in-the-loop` | In-development |
+| `uipath-governance` | Preview |
+| `uipath-human-in-the-loop` | Stable |
 | `uipath-insights` | Preview |
-| `uipath-ixp` | In-development |
+| `uipath-ixp` | Stable |
 | `uipath-maestro-bpmn` | In-development |
-| `uipath-maestro-case` | In-development |
-| `uipath-maestro-flow` | In-development |
+| `uipath-maestro-case` | Preview |
+| `uipath-maestro-flow` | Stable |
 | `uipath-mcp-servers` | In-development |
-| `uipath-planner` | Preview |
+| `uipath-planner` | Stable |
 | `uipath-platform` | Stable |
 | `uipath-process-mining` | Preview |
 | `uipath-review` | Preview |
 | `uipath-rpa` | Stable |
-| `uipath-solution` | Preview |
-| `uipath-tasks` | Preview |
-| `uipath-test` | In-development |
+| `uipath-solution` | Stable |
+| `uipath-tasks` | Stable |
+| `uipath-test` | Preview |
 | `uipath-troubleshoot` | Preview |
 
 **Status legend:**
@@ -181,17 +181,25 @@ codex plugin marketplace add UiPath/skills --ref main
 codex plugin add uipath@uipath-marketplace
 ```
 
-The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
+> **Codex prerequisite:** Use Codex CLI 0.142.0 or later. This repository uses the repository root as the plugin root, supported since [openai/codex#17066](https://github.com/openai/codex/issues/17066) was resolved.
 
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash
 > git clone -c core.symlinks=true https://github.com/UiPath/skills
 > ```
+>
 > If you've already cloned without symlink support, re-enable and re-checkout:
 > ```bash
 > git config core.symlinks true
 > git checkout -- .
 > ```
+>
+> If you encounter a `Filename too long` or `MAX_PATH` error during
+> checkout, enable Git long-path support:
+> ```bash
+> git config --global core.longpaths true
+> ```
+> Then retry the clone or checkout.
 
 ### Cursor IDE
 

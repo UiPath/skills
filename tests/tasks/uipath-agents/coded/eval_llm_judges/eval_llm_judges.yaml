@@ -14,9 +14,16 @@ run_limits:
   turn_timeout: 1200
   max_turns: 40
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/intent-classifier
+      mount_point: intent-classifier
+
+reference:
+  directory: ../..
+
 pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_llm_judges/_fixtures/intent-classifier ."
-    timeout: 10
   - command: "bash -c 'cd intent-classifier && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
     timeout: 300
 
@@ -46,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Both LLM-judge evaluator configs + eval-set + results shape"
-    command: "python3 $TASK_DIR/check_eval_llm_judges.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_eval_llm_judges.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

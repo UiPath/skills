@@ -320,18 +320,30 @@ jobs:
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
 
-      # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
-      # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
+      # Build the skills extension image (`@uipath/cli`, its tool plugins, and
+      # `@uipath/maestro-builder-sdk` on top of coder-eval-agent). Matches
+      # smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         env:
           DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
           CE_IMAGE_TAG: ${{ needs.partition.outputs.image_tag }}
+          FLOW_SDK_PKG_NAME: ${{ vars.FLOW_SDK_PKG_NAME }}
         run: |
+          # The image's ARG default is the post-rename package name; override it
+          # only when a repo var pins a different one. The pre-rename baseline
+          # needs BOTH this and FLOW_SDK_VERSION (see tests/docker/Dockerfile) —
+          # pinning the version alone asks for a version the new name never had.
+          pkg_name_arg=()
+          if [ -n "${FLOW_SDK_PKG_NAME:-}" ]; then
+            pkg_name_arg=(--build-arg "FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}")
+          fi
           docker build \
             --build-arg CODER_EVAL_IMAGE="ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}" \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
+            --build-arg FLOW_SDK_VERSION="${{ vars.FLOW_SDK_VERSION || 'latest' }}" \
+            ${pkg_name_arg[@]+"${pkg_name_arg[@]}"} \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
@@ -366,13 +378,13 @@ jobs:
       - name: Mint UiPath bot token (ROPC)
         env:
           UIPATH_URL:               https://alpha.uipath.com
-          UIPATH_ORGANIZATION_NAME: ${{ secrets.UIPATH_ORG_NAME }}
-          UIPATH_ORGANIZATION_ID:   ${{ secrets.UIPATH_ORG_ID }}
-          UIPATH_TENANT_NAME:       ${{ secrets.UIPATH_TENANT_NAME }}
-          UIPATH_TENANT_ID:         ${{ secrets.UIPATH_TENANT_ID }}
-          CLIENT_ID:                ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          UIPATH_ORGANIZATION_NAME: ${{ vars.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ vars.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ vars.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ vars.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ vars.UIPATH_ROPC_CLIENT_ID }}
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
-          CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_USERNAME:              ${{ vars.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: |
           bash .github/scripts/refresh-auth.sh
@@ -402,11 +414,11 @@ jobs:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION:               ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
+          AWS_REGION:               ${{ vars.AWS_REGION }}
+          BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
-          E2E_PROCESS_KEY:          ${{ secrets.E2E_PROCESS_KEY }}
-          E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
+          E2E_PROCESS_KEY:          ${{ vars.E2E_PROCESS_KEY }}
+          E2E_LONG_PROCESS_KEY:     ${{ vars.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
@@ -420,7 +432,7 @@ jobs:
           ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
           DELEGATE_MODEL:           ${{ vars.DELEGATE_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
-          CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
+          CODEX_BASE_URL:           ${{ vars.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
           # Delegate host debugging knobs, as repo variables rather than
           # workflow inputs (the dispatch input budget is nearly full and these
@@ -659,8 +671,8 @@ jobs:
           ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
-          E2E_PROCESS_KEY:           ${{ secrets.E2E_PROCESS_KEY }}
-          E2E_LONG_PROCESS_KEY:      ${{ secrets.E2E_LONG_PROCESS_KEY }}
+          E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
+          E2E_LONG_PROCESS_KEY:      ${{ vars.E2E_LONG_PROCESS_KEY }}
           UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: |
@@ -1048,8 +1060,8 @@ jobs:
           AUTHORITY: https://alpha.uipath.com
           EMAIL:    ${{ secrets.UIPATH_EMAIL }}
           PASSWORD: ${{ secrets.UIPATH_PASSWORD }}
-          TENANT:   ${{ secrets.UIPATH_TENANT }}
-          ORG:      ${{ secrets.UIPATH_ORG }}
+          TENANT:   ${{ vars.UIPATH_TENANT }}
+          ORG:      ${{ vars.UIPATH_ORG }}
           AUTH_DEBUG_DIR: ${{ github.workspace }}/auth-debug
         run: |
           set -euo pipefail
@@ -1095,13 +1107,13 @@ jobs:
         env:
           AUTH_FILE:                 ${{ github.workspace }}/.delegate-sdk-auth
           UIPATH_URL:                https://alpha.uipath.com
-          UIPATH_ORGANIZATION_NAME:  ${{ secrets.UIPATH_ORG_NAME }}
-          UIPATH_ORGANIZATION_ID:    ${{ secrets.UIPATH_ORG_ID }}
-          UIPATH_TENANT_NAME:        ${{ secrets.UIPATH_TENANT_NAME }}
-          UIPATH_TENANT_ID:          ${{ secrets.UIPATH_TENANT_ID }}
-          CLIENT_ID:                 ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          UIPATH_ORGANIZATION_NAME:  ${{ vars.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:    ${{ vars.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:        ${{ vars.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:          ${{ vars.UIPATH_TENANT_ID }}
+          CLIENT_ID:                 ${{ vars.UIPATH_ROPC_CLIENT_ID }}
           CLIENT_SECRET:             ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
-          CE_USERNAME:               ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_USERNAME:               ${{ vars.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:               ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: bash .github/scripts/refresh-auth.sh
 
@@ -1173,8 +1185,8 @@ jobs:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION:               ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
+          AWS_REGION:               ${{ vars.AWS_REGION }}
+          BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
@@ -1187,7 +1199,7 @@ jobs:
           ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
           DELEGATE_MODEL:           ${{ vars.DELEGATE_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
-          CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
+          CODEX_BASE_URL:           ${{ vars.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
           DELEGATE_AUTH_FILE:       ${{ github.workspace }}/.delegate-sdk-auth
           # Delegate host debugging knobs — see the Linux job's run step for what
@@ -1355,8 +1367,8 @@ jobs:
           ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
-          E2E_PROCESS_KEY:           ${{ secrets.E2E_PROCESS_KEY }}
-          E2E_LONG_PROCESS_KEY:      ${{ secrets.E2E_LONG_PROCESS_KEY }}
+          E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
+          E2E_LONG_PROCESS_KEY:      ${{ vars.E2E_LONG_PROCESS_KEY }}
           UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
           # This job mints its own ROPC token to a workspace file rather than

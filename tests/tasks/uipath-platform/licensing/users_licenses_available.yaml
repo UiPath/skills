@@ -79,5 +79,6 @@ success_criteria:
       backticks are equivalent. Score 0.0 if the reply shows only the raw code
       or only the friendly name. Ignore whether the CLI call succeeded — the
       rubric is solely about the reporting format.
+    include_reference: false
     weight: 2.0
     pass_threshold: 1.0

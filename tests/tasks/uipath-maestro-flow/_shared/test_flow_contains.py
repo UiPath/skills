@@ -48,6 +48,22 @@ def test_no_args_asserts_flow_exists(sandbox):
     assert main([]) == 0
 
 
+def test_no_args_accepts_one_root_level_sdk_emit(tmp_path, monkeypatch):
+    (tmp_path / "Demo.flow").write_text(FLOW_BODY)
+    monkeypatch.chdir(tmp_path)
+
+    assert main([]) == 0
+
+
+def test_solution_flow_beats_root_level_scratch(tmp_path, monkeypatch):
+    _make_project(tmp_path)
+    (tmp_path / "Demo.flow").write_text('{"nodes": ["scratch-only"]}')
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["quick-form"]) == 0
+    assert main(["scratch-only"]) == 1
+
+
 def test_substring_present(sandbox):
     assert main(['"uipath.human-in-the-loop.quick-form"']) == 0
 

@@ -42,19 +42,31 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
 }
 ```
 
+Wire the `default` port too — see § Wiring.
+
 ## Adding / Editing
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Wiring
 
-Each case creates a dynamic output port `case-{id}`. An optional `default` port handles unmatched values. Ensure edge `sourcePort` matches `case-{id}` exactly. See [editing-operations.md](../../editing-operations.md) for edge add procedures.
+Each case creates a dynamic output port `case-{id}`, plus a `default` port for unmatched values. Ensure edge `sourcePort` matches `case-{id}` exactly. See [editing-operations.md](../../editing-operations.md) for edge add procedures.
+
+**Wire `default` whenever the discriminator is not provably exhaustive.** A Switch with no matching case and no `default` edge does not fall through — the instance **faults** with `[400001] No condition for an outgoing flow was met. At least one outgoing flow condition needs to evaluate to true or have a default flow. (element <switchId>)`. `flow validate` does not catch it; the first signal is a Faulted debug run.
+
+Exhaustive means you can enumerate the values from the source: a script returning a fixed set, a Decision, an HTTP status branch. **An agent output is never exhaustive** — `$vars.<agent>.output.<field>` is `undefined` whenever the agent returned a different shape than planned (a bare `content` string, a refusal, a dropped field), and `undefined` matches no case. Cases over a model-authored value get a `default` edge to a path that terminates with the failure recorded, not a re-run.
+
+## Outputs
+
+`registry get` shows a Switch declaring `matchedCase` and `matchedCaseId`, exactly as a Decision does, and neither is ever assigned at runtime. **Ignore both.** Reading one from any downstream node passes validate with `[EXPRESSION_DIAGNOSTIC] Property '<switchId>' does not exist on type '{…}'` and then reads `undefined`, merge or no merge. See [decision/impl.md — Outputs](../decision/impl.md#outputs) for why, the `.output.` variant that fails validate outright, and the two supported ways to act on which branch ran.
+
+With three or more outcomes the condition is rarely worth recomputing per branch: prefer the `inout` global written on each branch.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| No case matched, no default wired | All case expressions false and no default edge | Add a `default` edge or ensure cases are exhaustive |
+| `[400001] No condition for an outgoing flow was met` — instance Faulted at the Switch | All case expressions false (commonly the discriminator is `undefined`) and no `default` edge | Add a `default` edge. Then check why nothing matched — for an agent-fed Switch, confirm the agent declares that field in its `outputSchema` and that `flow debug` shows it populated |
 | Case expression error | Invalid JavaScript in case expression | Check `=js:` expression syntax |
 | Wrong port name in edge | Port ID doesn't match case ID | Ensure edge `sourcePort` is `case-{id}` matching the case's `id` field |
 | `$vars.nodeId` is undefined | Upstream node not connected or wrong ID | Check edges and node IDs |

@@ -15,6 +15,9 @@ tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate
 sandbox:
   node: {}
 
+reference:
+  directory: ..
+
 # Reclaim the build's node_modules before artifact preservation. The build
 # installs a full ~200MB node_modules; the experiment-default prune (30s) can
 # time out on it, bloating the preserved artifact. This task-level prune runs
@@ -50,7 +53,7 @@ success_criteria:
   - type: run_command
     description: "Both metrics built via real SDK calls (getAll); no fabricated invocation-count method"
     command: >
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      python3 $REFERENCE_DIR/_shared/check_dashboard.py
       --min-metrics 2 --min-widgets 2 --require-substr "getAll" --forbid-substr "getInvocation"
     timeout: 30
     expected_exit_code: 0

@@ -13,10 +13,7 @@ planted loop must also still exist in the sandbox fixture (guards shell edits).
 import os
 import sys
 
-_shared = (os.path.join(os.environ["SKILLS_REPO_PATH"],
-                        "tests", "tasks", "uipath-review", "rpa", "_shared")
-           if os.environ.get("SKILLS_REPO_PATH")
-           else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "_shared"))
+_shared = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "_shared")
 sys.path.insert(0, _shared)
 from grader_common import report_text, asserts, asserts_any, fixture_contains  # noqa: E402
 

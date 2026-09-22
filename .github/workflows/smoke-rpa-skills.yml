@@ -2,7 +2,10 @@ name: Smoke RPA Skill Tests (Windows)
 
 concurrency:
   group: smoke-rpa-skills-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; `opened` and `reopened` can fire on a
+  # commit a run is already in flight for, and a cancelled run reports the
+  # required context as `cancelled`. See docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No `paths:` filter on purpose. This workflow is a required status
@@ -243,8 +246,8 @@ jobs:
           AUTHORITY: https://alpha.uipath.com
           EMAIL:    ${{ secrets.UIPATH_EMAIL }}
           PASSWORD: ${{ secrets.UIPATH_PASSWORD }}
-          TENANT:   ${{ secrets.UIPATH_TENANT }}
-          ORG:      ${{ secrets.UIPATH_ORG }}
+          TENANT:   ${{ vars.UIPATH_TENANT }}
+          ORG:      ${{ vars.UIPATH_ORG }}
           # Drop screenshots + DOM dumps here so we can upload them as an
           # artifact for post-mortem on auth failures.
           AUTH_DEBUG_DIR: ${{ github.workspace }}/auth-debug
@@ -313,8 +316,8 @@ jobs:
           # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # The gate's agent model, passed on the command line rather than pinned in
           # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal

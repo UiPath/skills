@@ -58,12 +58,14 @@ After grouping elements by target, compose the `slaRules` array and write it int
 ]
 ```
 
+> **`unit` is the sdd.md token verbatim**: `min` (minutes), `h` (hours), `d` (days), `w` (weeks), `m` (**months**). Never map `m` onto `min`, and never rewrite a unit or clamp a count to clear the 15–1000 floor — that floor applies to `min` only.
+
 ### Root-target shape
 
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "27.0.0",
+  "version": "30.0.0",
   "metadata": {
     "caseIdentifier": "<...>",
     "caseUnifiedSchemaEnabled": true,

@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -49,7 +52,7 @@ success_criteria:
 
   - type: run_command
     description: "BPMN has a randomness script task and an exclusive gateway on the result, with valid DI"
-    command: "python3 $TASK_DIR/check_dice_roller.py"
+    command: "python3 $REFERENCE_DIR/multi_node/dice_roller/check_dice_roller.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

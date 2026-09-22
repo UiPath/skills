@@ -2,7 +2,7 @@
 
 Resolve every implementation detail in the approved `.uipath.flow.arch.plan.md` and produce a build-ready `.uipath.flow.impl.plan.md`, using plugin `impl.md` files, wiring rules, and flow patterns.
 
-> **Prerequisite:** The user must explicitly approve `.uipath.flow.arch.plan.md` before this phase.
+> **Prerequisite:** `.uipath.flow.arch.plan.md` exists and its approval went through rule #5 ([planning-arch.md — Handoff to Phase 2](planning-arch.md#handoff-to-phase-2)).
 >
 > **Always validate with the registry**, including OOTB nodes. Port names, required inputs, and output schemas can change.
 
@@ -46,8 +46,14 @@ Use these plugin mappings:
 | `core.logic.terminate` | [terminate/impl.md](plugins/terminate/impl.md) |
 | `core.subflow` | [subflow/impl.md](plugins/subflow/impl.md) |
 | `core.trigger.scheduled` | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
+| `core.trigger.conversation` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.agent.conversational` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.conversational.wait-for-message` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.conversational.send-message` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.conversational.get-conversation-context` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
 | `core.trigger.voice` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `core.action.queue.*` | [queue/impl.md](plugins/queue/impl.md) |
+| `core.datafabric.*` | [data-fabric/impl.md](plugins/data-fabric/impl.md) |
 | `uipath.agent.autonomous` | [inline-agent/impl.md](plugins/inline-agent/impl.md) |
 | `uipath.agent.voice` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
@@ -199,7 +205,9 @@ Present a short chat summary containing:
 5. Required fields needing user input.
 6. Connections needing creation.
 
-Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. Do not build until the user explicitly approves.
+Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including its updated mermaid diagram and registry confirmations. **Do not build until the plan is approved, and route that approval through [SKILL.md](../../SKILL.md) rule #5 with the proceed option marked recommended** — rule #5 owns both branches, so a user approves interactively and its non-interactive fallback takes the marked option and records the unreviewed build.
+
+**Write the plan before asking, always.** The resolved node table, edge table, and bindings are what make the build mechanical instead of a per-node re-derivation.
 
 ## Product Heuristics
 

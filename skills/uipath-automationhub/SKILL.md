@@ -68,5 +68,6 @@ Every addition keeps the skill's three invariants: collect inputs before the fir
 ## Notes
 
 - **Cloud token only** — authorization is the user's real AH permissions; you see and can do exactly what their AH role allows.
+- **If Automation Hub isn't available on the tenant, say so plainly and stop** — never let it surface as a generic failure. Two cases with **different remedies**: *not enabled* (only an admin can fix it) and *reachable but never onboarded* (self-service). Signals, and the exact wording to quote verbatim rather than paraphrase, live in one home per transport: [`references/api-endpoints.md`](references/api-endpoints.md) → **Automation Hub not available on this tenant** for the raw-API flows, [`references/cli-commands.md`](references/cli-commands.md) → same heading for the CLI flows.
 - The publish flow fetches the idea-flow schema live, so it adapts automatically if fields change on the tenant.
 - **Open dependency:** in a hosted runtime (e.g. Process Scribe/Delegate) the cloud token is expected via the environment (Authentication, option 1). Confirm the runtime provides `UIPATH_CLI_AUTH_TOKEN` (or an equivalent) before relying on it in production.

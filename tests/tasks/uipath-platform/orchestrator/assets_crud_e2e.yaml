@@ -4,16 +4,22 @@ description: >
   seeded folder, with specific values reflecting an earlier update on one.
   Check queries tenant.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 initial_prompt: |
@@ -31,11 +37,10 @@ initial_prompt: |
   the value I want it to end up at.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant state: 3 assets exist with the final expected values"
-    command: "python3 $TASK_DIR/check_assets_crud.py"
+    command: "python3 $REFERENCE_DIR/check_assets_crud.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

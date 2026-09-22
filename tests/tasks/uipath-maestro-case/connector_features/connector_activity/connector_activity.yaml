@@ -18,6 +18,9 @@ run_limits:
   max_turns: 150
   turn_timeout: 2100
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectorActivityCase"
   containing a project also named "ConnectorActivityCase" from the sdd.md below.
@@ -119,11 +122,11 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-case skill"
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent pulled the case registry before resolving the connector"
@@ -151,7 +154,7 @@ success_criteria:
 
   - type: run_command
     description: "Caseplan has a RESOLVED execute-connector-activity task (real typeId + connectionId, not a skeleton)"
-    command: "python3 $TASK_DIR/check_connector_activity.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_connector_activity.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

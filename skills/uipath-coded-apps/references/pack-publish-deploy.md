@@ -222,7 +222,7 @@ The `deploy` command requires a folder **key** (GUID), not a folder name. Users 
 
 Resolution order:
 1. `--folder-key <key>` flag — explicit, idiomatic
-2. `UIPATH_FOLDER_KEY=<key>` env-var prefix — equivalent to the flag, useful in CI/CD where the value is already in env
+2. `UIPATH_FOLDER_KEY=<key>` env-var prefix — same deploy, and the only form that skips the flag's folder pre-check (see [below](#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible))
 3. Interactive folder selection (**must avoid** — see warning below)
 
 > **Pass the folder key explicitly via the flag or env var.** Running `uip codedapp deploy` with neither drops the command into an interactive folder picker that fails in non-TTY contexts (CI, agent shells, IDE terminals piped to a runner). When invoked from an agent, you MUST resolve the key up-front and pass it.
@@ -259,6 +259,30 @@ If the exact name is ambiguous (multiple exact matches) or not found, surface an
 - For a nested folder, use `--path "<prefix>"` (also requires `--all`).
 
 Each folder JSON object includes: `Key` (GUID — pass this to `--folder-key`), `Name`, `Path`, `Type` (`Personal` / `Solution` / `Standard`), `ParentKey`.
+
+#### Deploy rejects a valid folder key as "not found among folders accessible"
+
+```
+"Instructions": "Folder key '<GUID>' was not found among folders accessible to
+your account. Re-check the key with 'uip or folders list --output json'."
+```
+
+**Cause: a CLI-side pre-check, not the folder.** `uip codedapp deploy --folder-key` first fetches the account's folder list (`Folders/GetAllForCurrentUser`) in one unpaged call and looks the key up in whatever came back. On an account that can see a very large number of folders that copy can be incomplete, and any folder missing from it is reported "not found" — a folder created moments ago and a long-standing shared folder alike. Folder age does not matter, and neither do folder-level roles: granting yourself a role on the folder does not change the answer. `Retry: RetryWillNotFix` is accurate — retrying the same key does not help.
+
+**Fix — move the key into the env-var prefix and drop the flag.** The pre-check runs only for `--folder-key`; `UIPATH_FOLDER_KEY` skips it, and the deploy request itself still carries the key, so a genuinely wrong key still fails at the server:
+
+```bash
+UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy -n "<APP_NAME>" --output json
+```
+
+Keep every other flag from the failed call (`--path-name`, `--tags`, …); only `--folder-key` goes. Run it **once, immediately**.
+
+Rules when you see this error:
+
+1. **Confirm the key once:** `uip or folders list --all --name "<name>" --output json` returns a row with that `Key` → it is this pre-check; re-run with the env-var prefix. No row → the key is wrong; fix the key.
+2. **Do not sleep, back off, or loop the same `--folder-key` call.** Nothing is propagating; every retry returns the same answer and costs a full command.
+3. **Do not create another folder, re-`publish`, grant roles, or change `--permission-model`.** None of these affect the pre-check, and re-publishing yields `Package not found` on the next deploy.
+4. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem — the session lacks `OR.Default`; see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 #### Storing the resolved key
 
@@ -360,6 +384,8 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `App not found` on deploy | App genuinely not published | Run `uip codedapp publish` first |
 | `has not been published yet` / `still being indexed` right after a successful publish | Catalog **indexing lag** — not a missing package | CLI auto-retries ~15s (1/2/4/8s backoff). If it still fails, **wait a few seconds and rerun `deploy`**. If you passed `-v <version>`, drop it — deploy defaults to Latest. |
 | `Folder key required` / deploy hangs on prompt | Missing folder key | Resolve via `uip or folders list --output json`, then run `uip codedapp deploy --folder-key <key> ...` (or `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
+| `Folder key '<GUID>' was not found among folders accessible to your account` | Two causes, told apart by whether `uip or folders list` returns rows. **Rows returned:** the `--folder-key` pre-check worked from an incomplete copy of the account's folder list — the key is fine. **Zero rows** (with `Result: Success`): session scope is missing `OR.Default` | Rows → re-run once as `UIPATH_FOLDER_KEY=<GUID> uip codedapp deploy …` without `--folder-key`; no waiting, no retry loop ([details](#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible)). Zero rows → [debug.md](debug.md). |
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
+| `The clientId '<GUID>' provided in the package is not valid` on deploy | `uipath.json` shipped a placeholder or unknown `clientId` — the server validates it against External Applications you can access | Put a real client ID in `uipath.json` (an existing non-confidential app with the needed scopes — see [oauth-client-setup.md](oauth-client-setup.md#when-the-cli-cant-be-used)), rebuild, re-`pack`, re-`publish` with a bumped `--version`, then deploy. Retrying deploy alone cannot fix it. |
 | `dist/ not found` | App not built | Run `npm run build` |
 | Pack shows wrong clientId | Stale `uipath.json` | `pack` copies `uipath.json` verbatim — fix `clientId` there. |

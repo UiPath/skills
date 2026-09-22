@@ -41,7 +41,7 @@ Reason the shape from the process — never reach for the template first. Build 
 
 ### Task types
 
-<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- parsed at runtime by scripts/case/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
 
 The enum is closed — exactly these nine literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
@@ -112,7 +112,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 ### Lifecycle gates
 
-<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- parsed at runtime by scripts/case/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
 
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
@@ -400,7 +400,7 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 
 ### Naming rules
 
-<!-- named by the case SDD template's § Validation conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- parsed at runtime by scripts/case/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
 
 Safe display characters for stage labels, task display names, and condition/SLA/escalation titles:
 
@@ -408,7 +408,7 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ^[A-Za-z0-9 _-]+$
 ```
 
-**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character the template's § Validation checklist (item 11) gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
+**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character `audit_sdd.py` gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
 
 Everything else in that set is a **minting preference, not a platform limit** — the auditor reports it as an advisory that does not gate. Apply it to names YOU mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **A name the user, the source document, or a draft supplied is kept verbatim, punctuation included** (`Credit & Document Verification` stays). Rewriting one to fit the charset is the domain-fidelity defect the lane's authoring policy forbids, and it costs repair rounds for a display preference.
 
@@ -427,12 +427,12 @@ Comparison exact — case-sensitive, untrimmed. Never normalize external lookup 
 
 ## Layer closure — the design checklist
 
-ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — the case SDD template's § Validation conformance checklist owns them; run it on the written file.
+ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — `scripts/case/audit_sdd.py` owns them (enforcement list: template § Validation); run it on the written file.
 
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 
 1. **Other-path trigger source** — every modeled path's entry shape matches its trigger source (§ Secondary-lane entry shapes); interrupting flags set on the stage AND on every entry row; terminal `exit-only` vs returning `return-to-origin` chosen; a warning-only escalation stays a notification; an SLA response needing case work carries ONE `sla-status-change` entry with declared target + titles; never duplicate a global-event entry or exit across primary stages.
-2. **Reachability walk** — every stage reachable from a trigger or SLA source (walk entries forward); every primary stage's completion consumed downstream, referenced by another entry, or feeding a lane; ≥ 1 primary stage `Required: Yes`; `adhoc` never a stage entry. Decision-reachable lanes and duplicate-entry ambiguity per § Secondary-lane entry shapes.
+2. **Reachability walk** — every stage reachable from a trigger or SLA source: walk entries forward, and walk every conditional entry's FALSE branch too. A stage that does not enter never completes, so a downstream stage keying solely off its completion is unreachable on that branch — when a rule SKIPS a stage and the case continues, the bypass is an explicit extra entry row on the downstream stage (its own condition, negated); when the rule ENDS the case, that branch needs a terminal lane. Never write that a skipped stage "auto-completes" or "counts as complete" — that is an assertion, not a route, and the path stays dead. Every primary stage's completion consumed downstream, referenced by another entry, or feeding a lane; ≥ 1 primary stage `Required: Yes`; `adhoc` never a stage entry. Decision-reachable lanes and duplicate-entry ambiguity per § Secondary-lane entry shapes.
 3. **Entry producer** — every non-start entry names its concrete producer (source stage/task, connector event, paired `wait-for-user` exit, declared SLA reference); at-risk rows name the escalation, breach rows the SLA alone.
 4. **Decision-routing closure** — every decision outcome routes somewhere: no dead-end status values; an outcome targeting a lane keys that lane's entry; every routing button's variable+value is consumed downstream or a declared terminal; a fully-orphaned decision variable on a decision task is blocking.
 5. **Gate reads the producer** — no condition whose WHEN names a task reads a case variable that task writes (§ Gate on the producer).

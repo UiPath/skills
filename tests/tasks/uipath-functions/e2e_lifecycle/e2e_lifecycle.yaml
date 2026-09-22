@@ -13,6 +13,9 @@ run_limits:
   expected_turns: 31
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   I need a UiPath Python Coded Function named `invoice-validator` that checks
   whether invoice data is complete and well-formed.
@@ -61,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Correct typed I/O schema, uipath.json functions entrypoint, no LLM imports, init ran, SDK tracing present"
-    command: "python3 $TASK_DIR/check_e2e_lifecycle.py"
+    command: "python3 $REFERENCE_DIR/check_e2e_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

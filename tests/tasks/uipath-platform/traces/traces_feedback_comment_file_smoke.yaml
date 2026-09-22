@@ -8,9 +8,13 @@ description: >
   inline `--comment`. None of these flags are reached by any existing traces test.
   Auth/404 responses are acceptable outcomes — the graded behavior is command shape.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 pre_run:
-  - command: "sh $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_feedback_notes.sh"
+  - command: "sh _setup/seed_feedback_notes.sh"
     timeout: 15
 
 run_limits:
@@ -29,7 +33,6 @@ initial_prompt: |
 
   Both trace IDs come from a review export and may not resolve against this
   tenant — that is expected. File both records anyway and report what comes back.
-
 success_criteria:
   - type: command_executed
     description: "Agent sourced the first comment from review-note.md rather than retyping it"

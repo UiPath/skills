@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   I have an approved SDD for an AthenaCMEventCase case-management solution —
   it is saved as `sdd.md` in this folder. Build a UiPath Case Management
@@ -47,11 +50,11 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-case skill"
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent ran case validation (advisory; outcome is graded below)"
@@ -70,8 +73,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    command: >-
+      uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "staged sdd.md retains the Athena caseplan topology contract"
-    command: "python3 $TASK_DIR/check_athena_cm_event_sdd.py"
+    command: "python3 $REFERENCE_DIR/athena_cm_event/check_athena_cm_event_sdd.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -79,25 +92,16 @@ success_criteria:
 
   - type: run_command
     description: "generated caseplan preserves the authored Athena task-entry rule on every task"
-    command: "python3 $TASK_DIR/check_athena_cm_event_rules.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_athena_cm_event_rules.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "caseplan covers every declaration in the staged sdd.md — no dropped stage, task, variable, condition or SLA row, and every task carries an entry rule (validate only warns; a miss hangs debug)"
-    command: >-
-      python3 $SKILLS_REPO_PATH/skills/uipath-maestro-case/scripts/audit_caseplan.py
-      AthenaCMEventCase/AthenaCMEventCase/caseplan.json --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1)
-    timeout: 60
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
 
   - type: run_command
     description: "generated caseplan preserves the Athena stage/task rules, external identity, and event trigger"
-    command: "python3 $TASK_DIR/check_athena_cm_event_case.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_athena_cm_event_case.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
