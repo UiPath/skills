@@ -1,0 +1,70 @@
+task_id: skill-bpmn-drive-to-slack
+description: |
+  E2E cross-connector scenario — downloads a file from Google Drive and posts it into a Slack channel via the "Send File to channel" activity. Exercises binary file flow between two Integration Service connectors in a single Maestro BPMN process.
+  Ported from Flow `connector_features/drive_to_slack.yaml`; the connector activities are modeled as bpmn:sendTask nodes carrying the registry Intsvc.ActivityExecution wrapper (one per connector) instead of Flow connector nodes, and the file-output-to-input wire is a `vars.<id>` data binding instead of a Flow node-id reference.
+tags:
+  - uipath-maestro-bpmn
+  - integration
+  - "lifecycle:generate"
+  - "shape:multi-node"
+  - connector
+  - e2e
+  - uipath-google-drive
+  - uipath-salesforce-slack
+  - "mode:build"
+
+run_limits:
+  expected_turns: 49
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a new UiPath Maestro BPMN process project called "DriveToSlackTest" with a manual start.
+  It should download a file from Google Drive and then post that file into a
+  Slack channel named "coding-agent-testing" using Slack.
+  For slack, do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
+  Wire the file output of the download operation into the input of the Slack send-file node.
+  Validate the final BPMN file.
+  For the Google Drive Download File activity, use the first available file.
+  For Send File, send as `user`.
+  For google drive, use the connection name 'is.sandboxes.test@gmail.com', and for slack
+  use the connection name 'is-sandboxes'.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: uip maestro bpmn validate was called
+    tool_name: Bash
+    command_pattern: (uip|\$UIP)\s+(maestro\s+)?bpmn\s+validate
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: 'Drive→Slack BPMN checks: structure and connector wiring'
+    command: python3 $REFERENCE_DIR/_shared/check_drive_to_slack.py
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

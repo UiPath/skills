@@ -1,0 +1,98 @@
+task_id: skill-bpmn-datafabric-smoke-update-existing-flow
+description: >
+  Brownfield smoke: `pre_run` scaffolds a real `MovieReportBpmn` with one
+  Query Entity Records activity on FlowCodeEvalEntity and no filter or sort
+  and snapshots the initial bytes to pre_state.bpmn. Agent must set filter
+  + descending sort, then revert. Verifier diffs final vs snapshot to prove
+  the revert was clean.
+  Ported from Flow `connector_features/datafabric_connector/smoke_update_existing_flow.yaml`;
+  the single record-query activity is modeled as a bpmn:sendTask carrying the
+  registry Intsvc.ActivityExecution wrapper (connectorKey
+  uipath-uipath-dataservice, objectName
+  QueryEntityRecordsCurated|QueryEntityRecords_V3) instead of a Flow connector
+  node, and the grader diffs the final .bpmn against the pre_state.bpmn
+  snapshot the way Flow's grader diffs parsed JSON, re-homed to canonical XML
+  equality plus a targeted filter/sort-field comparison on the one query
+  node's uipath:input elements.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:edit", connector, uipath-uipath-dataservice]
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1500
+  task_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    # Brownfield scaffold, mounted ONLY here. It lands in the shared `_setup`
+    # mount but lives outside the shared source dir, so the sibling tasks
+    # that mount `_setup` cannot see a script that seeds a query node into a
+    # process they are supposed to build themselves.
+    - type: template_dir
+      path: _setup_brownfield
+      mount_point: _setup
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
+    timeout: 60
+  - command: 'python3 "_setup/scaffold_movie_report_bpmn.py"'
+    timeout: 120
+
+initial_prompt: |
+  MovieReportSolution/MovieReportBpmn/MovieReportBpmn.bpmn already exists
+  in your working directory. It has a single Query Entity Records activity
+  on FlowCodeEvalEntity with no filter and no sort.
+
+  Do the following on that one activity — do NOT touch any other node,
+  edge, definition, or variable:
+
+  1. Filter for records where active is true and score is at least 8.5.
+  2. Add descending ordering by score.
+  3. Then revert both changes so the activity is back to no
+     filter, no ordering, and its original settings.
+
+  The process is not complete until the final state matches the initial
+  state on those three fields and `uip maestro bpmn validate` passes.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "Final MovieReportBpmn validates cleanly"
+    command: "uip maestro bpmn validate MovieReportSolution/MovieReportBpmn/MovieReportBpmn.bpmn --output json | python3 -c \"import json,sys; sys.exit(0 if json.load(sys.stdin)['Result']=='Success' else 1)\""
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Revert restored the exact initial BPMN state"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_smoke_update_existing.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

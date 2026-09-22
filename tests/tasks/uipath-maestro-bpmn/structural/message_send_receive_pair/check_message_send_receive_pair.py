@@ -28,6 +28,7 @@ from _shared.bpmn_check import (  # noqa: E402
     NS,
     attr,
     fail,
+    has_type,
     parse_bpmn,
     require_di_for_visible_elements,
     require_sequence_integrity,
@@ -55,10 +56,6 @@ def child(el: ET.Element, kind: str) -> ET.Element | None:
         if c.tag.startswith(prefix) and c.tag[len(prefix):].lower() == kl:
             return c
     return None
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
 
 
 def context_name(el: ET.Element) -> str:

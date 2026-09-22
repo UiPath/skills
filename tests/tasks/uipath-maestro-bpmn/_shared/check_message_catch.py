@@ -13,13 +13,13 @@ from __future__ import annotations
 
 import os
 import sys
-import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     attr,
     elements,
     fail,
+    has_type,
     parse_bpmn,
     require_di_for_visible_elements,
     require_sequence_integrity,
@@ -27,10 +27,6 @@ from _shared.bpmn_check import (  # noqa: E402
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 TYPE_TOKEN = "Maestro.ReceiveMessageEvent"
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
 
 
 def main() -> None:

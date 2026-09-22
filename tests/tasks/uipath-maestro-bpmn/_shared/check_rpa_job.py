@@ -12,13 +12,13 @@ from __future__ import annotations
 
 import os
 import sys
-import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_assertions import mapping_inputs, mapping_outputs, variable_ids  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
+    has_type,
     parse_bpmn,
     require_di_for_visible_elements,
     require_no_private_connector_values,
@@ -26,10 +26,6 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 
 TYPE_TOKEN = "Orchestrator.StartJob"
-
-
-def has_type(task: ET.Element, token: str) -> bool:
-    return token in ET.tostring(task, encoding="unicode")
 
 
 def main() -> None:

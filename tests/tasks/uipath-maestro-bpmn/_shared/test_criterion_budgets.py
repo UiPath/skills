@@ -499,16 +499,31 @@ def _unsized_loops(path: str, subcommand: str | None) -> list[int]:
 _SEED_CASE_NAMES = ("cases", "seed_cases")
 
 
-def _seed_case_count(script: str) -> int | None:
+def _seed_case_count(script: str, yaml_dir: str | None = None) -> int | None:
     """Cases the task's ``seed.py`` writes, when stated literally — what makes
     ``manual xN`` checkable. None when absent, unnamed, or ambiguous: better no
-    cross-check than a wrong one."""
-    seed = os.path.join(os.path.dirname(script), "seed.py")
-    if not os.path.exists(seed):
-        # pre_run scripts moved into a sibling _setup/ (2026-09) so they can be
-        # staged via sandbox.template_sources without $SKILLS_REPO_PATH.
-        seed = os.path.join(os.path.dirname(script), "_setup", "seed.py")
-    if not os.path.exists(seed):
+    cross-check than a wrong one.
+
+    Checks beside ``script`` first (a checker that lives in the task's own
+    directory, alongside its ``_setup/seed.py``), then beside ``yaml_dir`` (a
+    checker that instead lives in ``_shared/`` — the _porting/BATCH1-ADDENDUM.md convention
+    for connector/e2e ports — whose seed.py is a sibling of the task's own
+    YAML, not of the shared script)."""
+    candidates = [os.path.dirname(script)]
+    if yaml_dir and yaml_dir not in candidates:
+        candidates.append(yaml_dir)
+    seed = None
+    for directory in candidates:
+        for rel in ("seed.py", os.path.join("_setup", "seed.py")):
+            # pre_run scripts moved into a sibling _setup/ (2026-09) so they can
+            # be staged via sandbox.template_sources without $SKILLS_REPO_PATH.
+            candidate = os.path.join(directory, rel)
+            if os.path.exists(candidate):
+                seed = candidate
+                break
+        if seed:
+            break
+    if not seed:
         return None
     counts = set()
     for node in ast.walk(ast.parse(open(seed).read())):
@@ -715,7 +730,11 @@ def test_criterion_clears_the_debug_budget(
     where = f"{os.path.basename(script)}{f' {subcommand}' if subcommand else ''}"
     assert criterion is not None, f"{yaml_path}: run_command has no timeout:"
 
-    seeded = _seed_case_count(script) if price.unsized else None
+    seeded = (
+        _seed_case_count(script, os.path.join(_SUITE_ROOT, os.path.dirname(yaml_path)))
+        if price.unsized
+        else None
+    )
     problem = _annotation_error(price, declared, seeded, where)
     if problem:
         pytest.fail(f"{yaml_path}: {problem}")
@@ -1370,3 +1389,20 @@ def test_while_condition_runs_once_more_than_the_body(tmp_path):
     it. Charging N left the criterion short by a whole debug_budget."""
     src = f"def main():\n    while {_ONE}:\n        {_ONE}\n"
     assert _price(src, tmp=str(tmp_path)) == _ONE_BUDGET * 2 + _ONE_BUDGET * 1
+
+
+@pytest.mark.parametrize("timeout", [180, 240, 300, 480, 600])
+def test_cli_poll_envelope_expires_before_run_cli_kills_it(timeout):
+    """The CLI must give up first, so its poll-timeout envelope is readable.
+
+    `run_cli` SIGKILLs at `timeout`; the CLI's own envelope lands at
+    CLI_MAX_POLLS * the interval and is the only thing that names the instance
+    and its last status. Sizing the interval off ~97% of the budget
+    (`CLI_MAX_POLLS - 10`) put the envelope AFTER the kill, so `run_debug`'s
+    ErrorCode == "timeout" branch could never run.
+    """
+    envelope = bpmn_live.CLI_MAX_POLLS * bpmn_live.poll_interval_ms(timeout) / 1000
+    assert envelope <= timeout, (
+        f"{timeout}s budget: CLI envelope at {envelope}s is not reachable "
+        "before run_cli's hard kill"
+    )

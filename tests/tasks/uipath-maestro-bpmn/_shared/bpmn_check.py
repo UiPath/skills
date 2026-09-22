@@ -8,7 +8,11 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from collections.abc import Iterable
 from pathlib import Path
+from typing import TypeVar
+
+_PathLike = TypeVar("_PathLike", str, Path)
 
 NS = {
     "bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL",
@@ -21,6 +25,17 @@ def fail(message: str) -> None:
     sys.exit(f"FAIL: {message}")
 
 
+def _project_files(paths: Iterable[_PathLike]) -> list[_PathLike]:
+    """The subset of ``paths`` that sit beside a ``project.uiproj``.
+
+    The single definition of "this is the real project file, not a stray draft
+    copy or fixture", shared by :func:`find_bpmn_file` and
+    :func:`resolve_project`. Items are returned as they were passed in, so a
+    caller working in ``str`` keeps its ``str``.
+    """
+    return [p for p in paths if (Path(p).parent / "project.uiproj").is_file()]
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
     paths = sorted(glob.glob("**/*.bpmn", recursive=True))
     if not paths:
@@ -28,10 +43,17 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
     if name_hint:
         matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
         if matches:
-            return matches[0]
+            # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
+            # left beside `Foo.bpmn` matches too, and sorts first. Apply
+            # resolve_project's rule here as well so the draft is never graded.
+            hinted = _project_files(matches)
+            return hinted[0] if len(hinted) == 1 else matches[0]
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
+    projects = _project_files(paths)
+    if len(projects) == 1:
+        return projects[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")
 
 
@@ -45,9 +67,7 @@ def resolve_project(bpmn_name: str) -> Path:
     it, so a stray draft copy is never graded (``find_bpmn_file`` would
     silently return the alphabetically-first match).
     """
-    candidates = [
-        p for p in Path.cwd().rglob(bpmn_name) if (p.parent / "project.uiproj").is_file()
-    ]
+    candidates = _project_files(Path.cwd().rglob(bpmn_name))
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
@@ -89,6 +109,46 @@ def text_content(element: ET.Element) -> str:
         if child.tail:
             parts.append(child.tail)
     return "\n".join(parts)
+
+
+def context_inputs(element: ET.Element) -> list[ET.Element]:
+    """Every ``uipath:input`` under ``element``, at any depth.
+
+    ``.//`` rather than a fixed path because both layouts occur in practice:
+    context/body/query/path inputs as direct children of ``uipath:activity``,
+    or nested inside ``uipath:context``.
+    """
+    return element.findall(".//uipath:input", NS)
+
+
+def context_value(element: ET.Element, name: str) -> str:
+    """The value of ``element``'s ``uipath:input`` named ``name``, else ``""``.
+
+    Reads the ``value`` attribute and falls back to the element text (agents
+    write either), then strips surrounding whitespace so one artifact reads the
+    same way in every grader. Name matching is exact.
+    """
+    for inp in context_inputs(element):
+        if inp.attrib.get("name") == name:
+            return (inp.attrib.get("value") or inp.text or "").strip()
+    return ""
+
+
+def all_node_values(element: ET.Element) -> list[str]:
+    """Every populated input value under ``element`` (attribute, then text)."""
+    values: list[str] = []
+    for inp in context_inputs(element):
+        value = inp.attrib.get("value")
+        if value:
+            values.append(value)
+        if inp.text and inp.text.strip():
+            values.append(inp.text.strip())
+    return values
+
+
+def has_type(element: ET.Element, token: str) -> bool:
+    """True when ``token`` appears anywhere in ``element``'s serialised XML."""
+    return token in ET.tostring(element, encoding="unicode")
 
 
 def has_uipath_extension(element: ET.Element, token: str) -> bool:
@@ -185,3 +245,41 @@ def require_no_private_connector_values(root: ET.Element) -> None:
     leaked = [value[:80] for value in values(root) if tenant_host.search(value)]
     if leaked:
         fail(f"connector boundary leaked a real tenant/cloud endpoint: {leaked}")
+
+
+# A sort can ride inside a CEQL-like query string ("... ORDER BY score DESC")
+# rather than a flat sort input. The CLI quotes the identifier -- the artifact
+# on CI run 35538478362 emits `ORDER BY 'score' ASC` -- and agents also write
+# it bare, double-quoted, backticked, or bracketed. One definition, so both
+# Data Fabric query graders read the same artifact the same way.
+ORDER_BY_RE = re.compile(
+    r"\border\s+by\s+['\"`\[]?([a-z0-9_]+)['\"`\]]?(?:\s+(asc|desc))?", re.IGNORECASE
+)
+
+
+def order_by(text: str) -> tuple[str, str]:
+    """``(field, direction)`` from the first ORDER BY clause in ``text``.
+
+    Both lowercased; ``("", "")`` when there is no ORDER BY, and the direction
+    is ``""`` when the clause omits ASC/DESC.
+    """
+    match = ORDER_BY_RE.search(text or "")
+    if not match:
+        return "", ""
+    return match.group(1).lower(), (match.group(2) or "").lower()
+
+
+def declared_variable_elements(root: ET.Element) -> list[ET.Element]:
+    """Every declared variable the canvas actually reads.
+
+    ``uipath:variables`` is honoured only on ``bpmn:process`` and
+    ``bpmn:subProcess``. A block hung off any other element (a ``bpmn:userTask``,
+    say) is dropped at runtime, so a document-wide ``.//uipath:variables/*``
+    would credit a declaration the product rejects.
+    """
+    scopes = elements(root, "process") + elements(root, "subProcess")
+    return [
+        var
+        for scope in scopes
+        for var in scope.findall("bpmn:extensionElements/uipath:variables/*", NS)
+    ]
