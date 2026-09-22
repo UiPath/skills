@@ -374,6 +374,57 @@ def delete_target_is_absent(
     )
 
 
+def poll_interval_ms(timeout: int) -> int:
+    """`--poll-interval` for a `bpmn debug` priced at `timeout` seconds.
+
+    The CLI polls at most CLI_MAX_POLLS times, so the interval decides how
+    long `bpmn debug` waits before giving up with its own poll-timeout
+    envelope (ErrorCode "timeout", Data.lastStatus still "Running", no
+    FinalStatus). A flat 500 ms capped that wait at 150 s and turned every
+    longer run into "final status was None" (CI run 35503094182,
+    jira_lifecycle and jira_search_triage), so the interval scales with the
+    budget.
+
+    80% of the budget, not ~97% (`CLI_MAX_POLLS - 10`): the CLI packs,
+    publishes and starts the instance before its first poll, so an envelope
+    sized at the full budget expires after run_cli's own SIGKILL and the
+    ErrorCode == "timeout" branch in run_debug never runs. The remaining 20%
+    pays for that startup and keeps the CLI's envelope — which names the
+    instance and its last status — the thing that fires first.
+    """
+    return max(500, math.ceil(timeout * 1000 * 0.8 / CLI_MAX_POLLS))
+
+
+def _as_text(raw: bytes | str | None) -> str:
+    """Decode captured child output.
+
+    ``subprocess.TimeoutExpired`` carries it as bytes even under ``text=True``,
+    unlike ``CompletedProcess``.
+    """
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", "replace")
+    return raw
+
+
+def _write_debug_log(log_file, text: str) -> None:
+    """Persist the debug CLI's combined output, best effort.
+
+    `log_file` is evidence for a human reading a failed run, never something a
+    check asserts on, so a filesystem error here must not turn a real verdict
+    into a crash.
+    """
+    if log_file is None:
+        return
+    path = Path(log_file)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    except OSError:
+        pass
+
+
 def run_debug(
     project_dir,
     inputs: dict,
@@ -387,14 +438,7 @@ def run_debug(
     price it, the same way flow_check.run_debug is priced in the flow suite.
     """
 
-    # The CLI polls at most CLI_MAX_POLLS times, so the poll interval decides
-    # how long `bpmn debug` waits before giving up with a poll-timeout envelope
-    # (ErrorCode "timeout", Data.lastStatus still "Running", no FinalStatus).
-    # 500 ms capped the wait at 150 s and turned every longer run into
-    # "final status was None" (CI run 35503094182, jira_lifecycle and
-    # jira_search_triage). Size the interval so the CLI keeps polling for the
-    # whole budget this call was priced at.
-    poll_ms = max(500, math.ceil(timeout * 1000 / (CLI_MAX_POLLS - 10)))
+    poll_ms = poll_interval_ms(timeout)
     try:
         completed = run_cli(
             [
@@ -409,20 +453,22 @@ def run_debug(
                 json.dumps(inputs, separators=(",", ":")),
             ],
             timeout=timeout,
-            # No --log-file here: the CLI buffers that file and a SIGKILL on
-            # timeout leaves it empty (run 35524004307). Streamed to stderr,
-            # the poll log (instance id, per-poll status) survives on the
-            # TimeoutExpired exception and is the only evidence of a stuck run.
+            # Not passed through as the CLI's own --log-file: the CLI buffers
+            # that file and a SIGKILL on timeout leaves it empty (run
+            # 35524004307). The poll log (instance id, per-poll status) is
+            # streamed to stderr instead, survives on the TimeoutExpired
+            # exception, and is written to `log_file` from here.
             log_file=None,
         )
     except subprocess.TimeoutExpired as exc:
-        partial = exc.stderr or exc.stdout or b""
-        if isinstance(partial, bytes):
-            partial = partial.decode("utf-8", "replace")
+        out, err = _as_text(exc.stdout), _as_text(exc.stderr)
+        _write_debug_log(log_file, out + err)
+        partial = err or out
         raise CheckFailure(
             f"bpmn debug did not reach a terminal status within the {timeout}s budget "
             f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
         ) from None
+    _write_debug_log(log_file, (completed.stdout or "") + (completed.stderr or ""))
     payload = parse_json_output(completed.stdout or completed.stderr, "debug")
     debug_data = get_ci(payload, "Data", {})
     if str(get_ci(payload, "ErrorCode", "")).casefold() == "timeout":
