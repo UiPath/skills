@@ -32,7 +32,7 @@ Assertion map (Flow -> BPMN):
   T  inputs at any depth under uipath:activity          -> all_inputs()
   T  structured FilterBuilder tree (savedFilterTrees.queryExpression) OR a
      runtime CEQL-like `where`/`filter` string OR ORDER BY in query text
-                                                        -> has_filter(), sorted_field(), ORDER_BY_RE
+                                                        -> has_filter(), sorted_field(), bpmn_check.order_by()
   T  sort field-name synonyms (sortField/sortBy/orderBy/_sortFieldName/sort)
                                                         -> SORT_FIELD_NAMES
   DROPPED  require_no_private_connector_values   (not in Flow grader)
@@ -48,7 +48,7 @@ values, which -- because the scaffold's initial value is always absent
 (None) -- reduces to "final must also have no queryExpression". BPMN has no
 single fixed field for a filter (curated separate query inputs, a runtime
 CEQL string, or a structured tree nested in the context `metadata` JSON are
-all legitimate; see BATCH1-ADDENDUM.md), so this checker asserts the BPMN
+all legitimate; see _porting/BATCH1-ADDENDUM.md), so this checker asserts the BPMN
 equivalent of that reduced condition directly: the query node carries no
 filter expression in any of those shapes. This is not a weaker check than
 Flow's for this fixture -- both ultimately require "no filter present";
@@ -83,7 +83,14 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, elements, fail  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    NS,
+    context_value,
+    elements,
+    fail,
+    has_type,
+    order_by,
+)
 
 BPMN = Path("MovieReportSolution/MovieReportBpmn/MovieReportBpmn.bpmn")
 SNAP = Path("MovieReportSolution/MovieReportBpmn/pre_state.bpmn")
@@ -97,7 +104,13 @@ FILTER_NAMES = {"queryexpression", "filterexpression", "filter", "where"}
 SORT_FIELD_NAMES = {"sortby", "sortfield", "orderby", "_sortfieldname", "sort"}
 DIRECTION_NAMES = {"isascending", "isdescending", "direction", "sortdirection"}
 
-ORDER_BY_RE = re.compile(r"\border\s+by\s+([a-z0-9_]+)(?:\s+(asc|desc))?", re.IGNORECASE)
+# The only inputs whose VALUE may carry a filter expression -- the same set
+# check_df_smoke_query_filter.py uses, for the same reason (see its
+# node_representation docstring). Flow's `node_filter_text` read one field;
+# putting every input value in the blob would let `=bindings.X` supply the
+# operator characters the assertions are supposed to find in the filter.
+FILTER_TEXT_NAMES = FILTER_NAMES | {"query", "metadata"}
+BINDING_VALUE_RE = re.compile(r"^\s*=\s*(bindings|vars)\.", re.IGNORECASE)
 
 
 def load(path: Path) -> ET.Element:
@@ -108,10 +121,6 @@ def load(path: Path) -> ET.Element:
         return ET.fromstring(raw)
     except ET.ParseError as exc:
         fail(f"{path} is not well-formed XML: {exc}")
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
 
 
 def activity_root(task: ET.Element) -> ET.Element | None:
@@ -127,13 +136,6 @@ def all_inputs(task: ET.Element) -> list[ET.Element]:
 
 def input_val(inp: ET.Element) -> str:
     return inp.attrib.get("value") or (inp.text or "")
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in all_inputs(task):
-        if inp.attrib.get("name") == name:
-            return input_val(inp)
-    return ""
 
 
 def is_query_node(task: ET.Element) -> bool:
@@ -213,29 +215,46 @@ def flatten_json_pairs(node, pairs: list) -> None:
             flatten_json_pairs(item, pairs)
 
 
-def node_signals(task: ET.Element) -> tuple[list, str]:
-    """(pairs, text) for a query node: `pairs` is every flat uipath:input
-    (name, value) plus every leaf of any JSON-shaped input's parsed value
-    (covers a sort/filter field nested inside the context `metadata` JSON
-    instead of a flat input); `text` is a lowercase search blob of every
-    input's raw name+value+text plus any structured FilterBuilder leaves
-    found in a JSON-shaped input. Mirrors
-    check_df_smoke_query_filter.py's node_representation()."""
+def node_signals(task: ET.Element) -> tuple[list, str, list]:
+    """(pairs, text, leaves) for a query node.
+
+    `pairs` is every flat uipath:input (name, value) plus every leaf of any
+    JSON-shaped input's parsed value (covers a sort/filter field nested
+    inside the context `metadata` JSON instead of a flat input).
+
+    `text` is a lowercase search blob of the VALUES of the filter-bearing
+    inputs only (FILTER_TEXT_NAMES, binding references excluded), plus any
+    structured FilterBuilder leaves found in a JSON-shaped input. Input
+    names and non-filter values stay out of it -- same narrowing, same
+    reason, as check_df_smoke_query_filter.py's node_representation().
+
+    `leaves` is those structured FilterBuilder leaves, returned separately
+    so has_filter() can see a tree nested in an input whose name is not in
+    FILTER_TEXT_NAMES without that input's whole JSON body entering `text`.
+    """
     inputs = all_inputs(task)
     pairs = [(inp.attrib.get("name") or "", input_val(inp)) for inp in inputs]
-    text_parts = [f"{k} {v}".lower() for k, v in pairs]
+    text_parts: list[str] = []
+    for name, value in pairs:
+        if name.lower() not in FILTER_TEXT_NAMES:
+            continue
+        if BINDING_VALUE_RE.match(value or ""):
+            continue
+        text_parts.append((value or "").lower())
+    leaves: list = []
     for inp in inputs:
         parsed = parse_json_maybe(input_val(inp))
         if parsed is None:
             continue
         flatten_json_pairs(parsed, pairs)
-        leaves = structured_filter_leaves(parsed)
-        if leaves:
-            text_parts.append(json.dumps(leaves).lower())
-    return pairs, " ".join(text_parts)
+        found = structured_filter_leaves(parsed)
+        if found:
+            leaves.extend(found)
+            text_parts.append(json.dumps(found).lower())
+    return pairs, " ".join(text_parts), leaves
 
 
-def has_filter(pairs: list, text: str) -> bool:
+def has_filter(pairs: list, text: str, leaves: list) -> bool:
     """True if the node carries ANY filter expression: a flat
     queryExpression/filter/where input with non-empty, non-trivial content,
     a structured FilterBuilder tree with at least one leaf, or a WHERE
@@ -243,6 +262,8 @@ def has_filter(pairs: list, text: str) -> bool:
     for k, v in pairs:
         if k.lower() in FILTER_NAMES and str(v).strip() not in ("", "{}", "[]"):
             return True
+    if leaves:
+        return True
     if re.search(r'"filters"\s*:\s*\[\s*[{"\[]', text):
         return True
     if re.search(r"\bwhere\b", text, re.IGNORECASE):
@@ -254,8 +275,7 @@ def sorted_field(pairs: list, text: str) -> str:
     for k, v in pairs:
         if k.lower() in SORT_FIELD_NAMES and str(v).strip():
             return str(v).strip().lower()
-    match = ORDER_BY_RE.search(text)
-    return match.group(1).lower() if match else ""
+    return order_by(text)[0]
 
 
 def ascending_flag(pairs: list, text: str) -> str:
@@ -263,9 +283,9 @@ def ascending_flag(pairs: list, text: str) -> str:
     equality between initial and final is what matters (mirrors Flow's
     `queryParameters.get("isAscending", False)` default-then-compare, not a
     judgment about which direction is "the" default)."""
-    match = ORDER_BY_RE.search(text)
-    if match and match.group(2):
-        return match.group(2).lower()
+    direction = order_by(text)[1]
+    if direction:
+        return direction
     for k, v in pairs:
         if k.lower() in DIRECTION_NAMES:
             return str(v).strip().lower()
@@ -307,13 +327,13 @@ def main() -> int:
             f"(pre_state={i_q is not None}, final={f_q is not None})"
         )
 
-    i_pairs, i_text = node_signals(i_q)
-    f_pairs, f_text = node_signals(f_q)
+    i_pairs, i_text, i_leaves = node_signals(i_q)
+    f_pairs, f_text, f_leaves = node_signals(f_q)
 
-    if has_filter(i_pairs, i_text):
+    if has_filter(i_pairs, i_text, i_leaves):
         fail("pre_state.bpmn's query node unexpectedly already carries a filter -- scaffold drifted")
 
-    if has_filter(f_pairs, f_text):
+    if has_filter(f_pairs, f_text, f_leaves):
         fail("final query node still carries a filter -- revert not clean (filter not removed)")
 
     i_sort = sorted_field(i_pairs, i_text)

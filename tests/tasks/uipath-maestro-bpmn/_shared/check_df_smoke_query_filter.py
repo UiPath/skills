@@ -23,7 +23,7 @@ Assertion map (Flow → BPMN):
   I                parse a target="body" CDATA as JSON when present (Flow read structured fields)  → validate_body_inputs() / parse_json_maybe()
   T                curated|generic entity-CRUD node classification                                 → query_entity_nodes()
   T                inputs at any depth                                                             → all_inputs() walks `.//uipath:input`
-  T                ORDER BY in query text                                                          → ORDER_BY_RE fallback in sorted_field()/is_descending()
+  T                ORDER BY in query text                                                          → bpmn_check.order_by() fallback in sorted_field()/is_descending()
   T                sort/limit/offset field-name synonyms (registry may name the field differently)  → SORT_FIELD_NAMES/LIMIT_NAMES/OFFSET_NAMES sets
   DROPPED          entity_referenced() gate on node classification    (Flow's node-type filter is entity-agnostic; not in Flow)
   DROPPED          connection-binding check (=bindings.<id> resolves to a declared Connection binding)  (Flow never checked connections)
@@ -66,9 +66,12 @@ BPMN equivalent lives):
          Flow's `structured_filter_leaves` walked `filters`/`groups`, and
          dumped back to text. A runtime CEQL-like expression string
          (`target="query"` input named `queryExpression`) is covered too,
-         since every input's raw name+value+text is part of the same search
-         blob -- both representations are searched together, the same
-         non-exclusive combination Flow's own `node_filter_text` uses.
+         since the VALUE of every filter-bearing input (FILTER_TEXT_NAMES) is
+         part of the same search blob -- both representations are searched
+         together, the same non-exclusive combination Flow's own
+         `node_filter_text` uses. Nothing else goes into that blob: see
+         node_representation() for why input names and binding references are
+         excluded.
 
   Flow `inputs.detail.queryParameters._sortFieldName` / `isAscending` /
   `limit` / `start`
@@ -112,7 +115,15 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    NS,
+    context_value,
+    elements,
+    fail,
+    has_type,
+    order_by,
+    parse_bpmn,
+)
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
@@ -122,12 +133,17 @@ ENTITY = "flowcodeevalentity"
 UUID_RE = re.compile(
     r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b"
 )
+# Every operator tuple carries BOTH spellings the two representations use: the
+# Flow FilterBuilder vocabulary word that appears in a structured tree leaf's
+# `operator`, and the CEQL token the CLI emits into a runtime queryExpression
+# string. `boolean` and `uuid` assert no operator at all (Flow does not either
+# -- the value/UUID shape is the assertion), so they stay empty.
 EXPECTED = {
     "boolean": ("active", ("true",), ()),
     "decimal": ("score", ("8.5",), ("greaterthanorequal", ">=")),
     "integer": ("viewcount", ("1000",), ("greaterthanorequal", ">=")),
     "string": ("title", ("filterfixture-matrix",), ("equals", "=")),
-    "multiline": ("description", ("sci-fi",), ("contains",)),
+    "multiline": ("description", ("sci-fi",), ("contains", "like")),
     "date": ("releasedate", ("2025-01-01",), ("lessthan", "<")),
     "datetime": ("lastupdated", ("2024-01-01",), ("greaterthanorequal", ">=")),
     "uuid": ("externalid", (), ()),
@@ -139,9 +155,26 @@ DIRECTION_NAMES = {"isascending", "isdescending", "direction", "sortdirection"}
 LIMIT_NAMES = {"limit", "top", "pagesize"}
 OFFSET_NAMES = {"start", "offset", "skip"}
 
+# The only inputs whose VALUE may carry a filter expression. Flow's
+# `node_filter_text` read exactly one field (`queryParameters.queryExpression`)
+# plus the structured tree; this is the BPMN equivalent set, widened only by
+# the alternate names a skill may pick for the same runtime string and by
+# `metadata`, the context input the observed artifacts nest the structured tree
+# inside. Everything else (`entityName`, `limit`, `start`, `isAscending`,
+# `connection`, `folderKey`, ...) is deliberately excluded.
+FILTER_TEXT_NAMES = {
+    "queryexpression",
+    "where",
+    "filter",
+    "filterexpression",
+    "query",
+    "metadata",
+}
 
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
+# A Maestro binding reference is not a filter: `=bindings.Binding_X` and
+# `=vars.Y` would otherwise put a free `=` into every node's search blob and
+# make the operator half of most EXPECTED rows unfalsifiable.
+BINDING_VALUE_RE = re.compile(r"^\s*=\s*(bindings|vars)\.", re.IGNORECASE)
 
 
 def activity_root(task: ET.Element) -> ET.Element | None:
@@ -159,13 +192,6 @@ def all_inputs(task: ET.Element) -> list[ET.Element]:
 
 def input_val(inp: ET.Element) -> str:
     return inp.attrib.get("value") or (inp.text or "")
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in all_inputs(task):
-        if inp.attrib.get("name") == name:
-            return input_val(inp)
-    return ""
 
 
 def query_entity_nodes(root: ET.Element) -> list[ET.Element]:
@@ -272,18 +298,29 @@ def node_representation(task: ET.Element) -> tuple[list, str]:
     value regardless of whether the skill put it in a flat query-string
     input or nested inside a JSON blob.
 
-    `text` is the Flow-style flattened lowercase search blob for the
-    nine-condition filter check: every input's raw name+value+text (this
-    alone already contains a CEQL queryExpression string's tokens, and a
-    JSON input's raw CDATA text verbatim), plus the structured FilterBuilder
-    leaves -- if a savedFilterTrees.queryExpression tree is found in any
-    JSON-shaped input -- dumped back to text. Mirrors Flow's
-    structured_filter_leaves/node_filter_text, which combines a structured
-    tree and a runtime expression string the same non-exclusive way.
+    `text` is the Flow-style lowercase search blob for the nine-condition
+    filter check, and carries ONLY what Flow's `node_filter_text` carried: the
+    VALUE of a filter-bearing input (FILTER_TEXT_NAMES -- Flow read
+    `queryParameters.queryExpression`), plus the structured FilterBuilder
+    leaves dumped back to text if a savedFilterTrees.queryExpression tree is
+    found in any JSON-shaped input. Both representations are searched together,
+    the same non-exclusive way Flow combined them.
+
+    Input NAMES, binding references (`=bindings.X`, `=vars.Y`) and the
+    non-filter inputs (`entityName`, `limit`, `start`, `isAscending`, ...) are
+    deliberately NOT in `text`: they guarantee an `=` and other operator
+    characters in every blob, which makes the operator half of most EXPECTED
+    rows unfalsifiable. They remain in `pairs`, which is name-keyed.
     """
     inputs = all_inputs(task)
     pairs: list = [(inp.attrib.get("name") or "", input_val(inp)) for inp in inputs]
-    text_parts = [f"{k} {v}".lower() for k, v in pairs]
+    text_parts: list[str] = []
+    for name, value in pairs:
+        if name.lower() not in FILTER_TEXT_NAMES:
+            continue
+        if BINDING_VALUE_RE.match(value or ""):
+            continue
+        text_parts.append((value or "").lower())
     for inp in inputs:
         parsed = parse_json_maybe(input_val(inp))
         if parsed is None:
@@ -308,22 +345,18 @@ def values_by_name(pairs: list, names: set) -> list:
     return [v for k, v in pairs if k.lower() in names and v not in (None, "")]
 
 
-# A sort may also ride inside the CEQL-like query string itself
-# ("... ORDER BY score DESC"), as the eval agent emitted on CI run 35489744689.
-ORDER_BY_RE = re.compile(r"\border\s+by\s+([a-z0-9_]+)(?:\s+(asc|desc))?", re.IGNORECASE)
-
-
 def sorted_field(pairs: list, text: str = "") -> str:
     values = values_by_name(pairs, SORT_FIELD_NAMES)
     if values:
         return values[0].lower()
-    match = ORDER_BY_RE.search(text)
-    return match.group(1).lower() if match else ""
+    # A sort may also ride inside the CEQL-like query string itself
+    # ("... ORDER BY 'score' ASC") -- bpmn_check.order_by() is the one
+    # definition of that clause, shared with check_df_smoke_update_existing.
+    return order_by(text)[0]
 
 
 def is_descending(pairs: list, text: str = "") -> bool:
-    match = ORDER_BY_RE.search(text)
-    if match and (match.group(2) or "").lower() == "desc":
+    if order_by(text)[1] == "desc":
         return True
     for k, v in pairs:
         key = k.lower()
