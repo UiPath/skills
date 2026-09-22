@@ -1,0 +1,59 @@
+name: Skill pairing gate
+
+# The GA and preview Flow skills describe the same product, and both are
+# maintained until preview goes GA. `skill-pairing.json` lists the topics that
+# exist in both; this fails a PR that changes one side of a topic without the
+# other.
+#
+# No `paths:` filter, for the same reason as validate-skill-flavors.yml: if this
+# is wired as a required check, a filtered-out PR reports nothing and blocks
+# forever. The job short-circuits internally instead — it reads the changed-file
+# list and exits clean when no paired file is in it, which is most PRs.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-pairing-${{ github.ref }}
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
+
+jobs:
+  pairing:
+    name: Paired skills change together
+    runs-on: uipath-ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with: { node-version: '20' }
+
+      # `labeled`/`unlabeled` are in the trigger list so adding the override
+      # re-runs the check rather than leaving a red one behind.
+      - name: Check the override label
+        id: override
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          if echo "$LABELS" | grep -q '"single-tree-ok"'; then
+            echo "single-tree-ok is set; a one-sided change is intentional here."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Paired topics changed on both sides
+        if: steps.override.outputs.skip != 'true'
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD)
+          git diff --name-only "$BASE_SHA"...HEAD > /tmp/changed.txt
+          echo "$(wc -l < /tmp/changed.txt) changed file(s)"
+          node scripts/check-skill-pairing.mjs --changed-from /tmp/changed.txt
