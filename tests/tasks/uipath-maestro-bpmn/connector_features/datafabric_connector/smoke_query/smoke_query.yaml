@@ -12,7 +12,20 @@ description: >
   payload, flat query inputs, or a runtime expression string) instead of
   Flow's `inputs.detail` dict, and the `core.datafabric.*` node contrast is
   dropped (BPMN has no native Data Fabric node).
+  Skipped: the curated Query Entity Records registry template exposes
+  `entityName, queryExpression, start, limit, expansionLevel, isAscending`
+  and no sort-field parameter (Flow's activity carried `_sortFieldName`), so
+  the "sorted by score" criterion has no sanctioned carrier in BPMN; agents
+  either invent a `sortField` input or omit the field (smoke runs 35674400362
+  attempts 1 and 2). Criteria are kept one-for-one with Flow; unskip once the
+  template gains a sort field.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector, uipath-uipath-dataservice]
+
+# Platform surface gap, not a port defect: the curated Data Fabric query
+# template has no sort-field parameter, so the sort criterion cannot be met
+# faithfully. Skipped so a known failure does not consume the smoke gate's
+# flake allowance; see the description for the evidence.
+skip: true
 
 run_limits:
   max_turns: 100
