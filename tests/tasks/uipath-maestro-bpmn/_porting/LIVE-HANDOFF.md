@@ -8,7 +8,9 @@ The Flow suite (`tests/tasks/uipath-maestro-flow/`) has 131 tasks; the BPMN suit
 
 Reading the Flow graders during the loop reclassified four "structural" tasks as live (their graders debug): `slack_http_fallback`, `bellevue_weather_simulated`, `cli_dice_roller_simulated`, `slack_channel_description_simulated`; and four "live" tasks as structural (their graders never debug): `smoke_error`, `jdbc_databricks_query`, `webhook_waitfor_parallel`, `testmanager_crud_grounded` (self-reported result file, as Flow). The live bucket is therefore 21 tasks.
 
-## Live bucket status
+## Status (as of 2026-09-22, after batch 15)
+
+Live bucket (21) and field-shape probes (9) on this branch. Every row is a CI result on the alpha tenant, codex driver.
 
 | Task | State | Evidence |
 |---|---|---|
@@ -16,64 +18,35 @@ Reading the Flow graders during the loop reclassified four "structural" tasks as
 | e2e/jira_get_issue | green | run 35501830119 |
 | e2e/jira_create_issue | green | run 35503094182 |
 | e2e/escalation_jira_ticket | green | run 35503094182 |
-| e2e/escalation_orchestrator_paths | green (7 debug runs) | run 35503094182 |
-| e2e/escalation_slack_alert | green on iteration 2 | run 35524004307; iteration 1 the agent omitted the Slack `folderKey` binding (runtime 102010) |
-| multi_node/slack_channel_description | green on iteration 2 | run 35525387843; iteration 1 the agent omitted the channel parameter |
-| multi_node/bellevue_weather | parked, skill gap | runs 35523787101 + 35525387843: identical runtime fault, the script task reads `temperature_2m` off an undefined HTTP response. The skill does not teach the `Intsvc.HttpExecution` response shape well enough for downstream scripts |
-| e2e/jira_search_triage | parked, skill/platform gap | run 35525387843: runtime 400008 "Failed to evaluate the input collection variable for the marker element" — `multiInstanceLoopCharacteristics` over a connector response (`=vars.Var_SearchResponse.issues`) does not evaluate |
-| e2e/jira_lifecycle | parked, needs live investigation | three different runtime failures in three runs (our CLI poll cap bug; instance never terminal in 720 s; `bpmn debug` exit 1 before creating an instance). Flow's own version is flaky (0.82 typical, 2/12 zero in the week's nightlies) |
-| multi_node/slack_weather_pipeline | FAIL 0.375, iteration 1 of 3 | run 35538279757: runtime 300501 "Slack channel office-bellevue was not found" in the agent's channel-select script; agent defect (channel exists, Flow finds it) |
-| multi_node/billing_invoice_lookup | green on the graded criteria (0.91); bindings advisory fixed, not re-run | run 35538279757; grader read its own ephemeral live solution as a second project |
-| multi_node/billing_discrepancy_detector | FAIL 0.30, iteration 1 of 3 | run 35538279757: Integration Services 400 "Expected a field name expression but got 'StringValue'" on the ERP query (malformed Data Service filter, agent authoring); accountTier not derived from CRM |
+| e2e/escalation_orchestrator_paths | green | run 35503094182 |
+| e2e/escalation_slack_alert | green it.2 | run 35524004307 |
+| multi_node/slack_channel_description | green it.2 | run 35525387843 |
 | connector_features/generic_dynamic_node | green | run 35538279757 |
-| connector_features/slack_http_fallback | 0.76; grader fixed, not re-run | run 35538279757: debug completed; grader wanted `emoji.list`, connector generic resource is `emoji_list_GET` |
 | connector_features/jdbc_databricks_query (structural) | green | run 35538279757 |
-| connector_trigger/webhook_waitfor_parallel (structural) | 0.47; grader fixed, not re-run | run 35538279757: agent used intermediateCatchEvent + WaitForEvent and Intsvc.UnifiedHttpRequest, both valid |
 | connector_features/datafabric_connector/smoke_error (structural) | green | run 35538279757 |
-| connector_features/testmanager_crud_grounded (self-report, Flow `skip:true` dropped) | 0.89; grader fixed, not re-run | run 35538279757: two byte-identical `.bpmn` (scaffold + solution copy) |
-| interactive/bellevue_weather_simulated | written, reviewed, not run | commit 80033663f; live criterion timeout 1050, task_timeout 2550 (sanctioned) |
-| interactive/cli_dice_roller_simulated | written, reviewed, not run | commit 8fc7a7692; task_timeout 2800 (sanctioned) |
-| interactive/slack_channel_description_simulated | written, reviewed, not run | commit f000d026d; all five Flow criteria kept, live timeout 1050 |
+| connector_features/slack_http_fallback | green | run 35783045540 |
+| connector_trigger/webhook_waitfor_parallel (structural) | green | run 35783045540 |
+| connector_features/testmanager_crud_grounded | green | run 35783045540 |
+| interactive/cli_dice_roller_simulated | green | run 35783045540 |
+| multi_node/billing_invoice_lookup | green | run 35785806030 |
+| multi_node/slack_weather_pipeline | green it.3 | run 35785806030 |
+| connector_features/enum | green | run 35789221753 |
+| connector_features/query_params | green | run 35789221753 |
+| connector_features/multiselect | green | run 35789221753 |
+| connector_features/searchable_joins | green | run 35789221753 |
+| connector_features/complex_array | green 0.875 (advisory miss only) | run 35789221753 |
+| connector_features/path_params | green it.2 | run 35790934047 |
+| connector_features/paginated_reference_lookup | green it.3 | run 35791969905 |
+| multi_node/bellevue_weather | parked, skill gap | HttpExecution response shape (`temperature_2m` of undefined), runs 35523787101 + 35525387843 |
+| interactive/bellevue_weather_simulated | parked, same gap | run 35785806030 |
+| e2e/jira_search_triage | parked, platform/skill gap | multi-instance over a connector response, 400008 (run 35525387843) |
+| e2e/jira_lifecycle | parked, needs live investigation | three different runtime failures; Flow flaky |
+| multi_node/billing_discrepancy_detector | parked, skill gap | Data Service where clause from a process variable, two different 400s (runs 35538279757, 35783045540) |
+| interactive/slack_channel_description_simulated | parked, skill gap | Slack channel pagination: page 1 only (run 35789221753); Flow 4/12 |
+| connector_features/ceql_where | parked, surface gap | agent writes the CEQL `where` string, never Flow's filter tree (runs 35783045540, 35785806030) |
+| connector_features/enhanced_enum | parked, skill gap | no WooCommerce connector node in either run (runs 35789221753, 35790934047) |
 
-Batch 10 landed; see "Batch 10 and after". The three interactive ports have never been dispatched.
-
-## Batch 10 and after
-
-Run 35538279757 (nine ports, one dispatch). Green: smoke_error, generic_dynamic_node, jdbc_databricks_query. Four more failed only on grader defects, all fixed on this branch and replayed green against the downloaded CI artifacts (`gh run download 35538279757`, `**/00/artifacts/`):
-
-1. `find_bpmn_file` with no hint now treats byte-identical `.bpmn` copies as one artifact (testmanager_crud_grounded: the agent copied its scaffold into the solution wrapper).
-2. `resolve_project(exclude_under=…)`: a live grader's own `uip solution projects import` leaves an identical project under its run directory; later criteria in the same task must exclude it (both billing graders pass `LIVE_RUN_DIR`). Any future multi-criterion live grader needs the same.
-3. Classify wait-for-event by the `Intsvc.WaitForEvent` wrapper, not the BPMN tag: the agent emits `bpmn:intermediateCatchEvent` + messageEventDefinition as well as `bpmn:receiveTask`, and both validate (webhook_waitfor_parallel; same lesson as trigger_lifecycle for EventTrigger).
-4. Accept `Intsvc.UnifiedHttpRequest` wherever a grader accepts `Intsvc.HttpExecution`; registry-workflow.md lists both for the managed HTTP sendTask.
-5. Slack's generic resource for the `emoji.list` endpoint is `emoji_list_GET`; the fallback grader matches `emoji[._]list`.
-
-Two real failures, one iteration spent each: billing_discrepancy_detector (Integration Services 400 on the ERP query filter, "Expected a field name expression but got 'StringValue'": the agent wrote a malformed Data Service filter; add to the skill findings as "Data Service query filter grammar") and slack_weather_pipeline (script task could not find channel `office-bellevue`, which exists and Flow's agent finds; likely channel-list pagination).
-
-Next dispatch, one batch: the four grader-fixed tasks for confirmation, the two real failures (iteration 2), the three interactive simulated ports and `ceql_where` (first run). Ten tasks.
-
-## Batch 11 (after the structural PR merged)
-
-Branch rebased onto main (PR #3426 squashed as 345c1da8a). Run 35783045540, ten tasks. Green: slack_http_fallback, webhook_waitfor_parallel, testmanager_crud_grounded (the three batch-10 grader fixes confirmed) and cli_dice_roller_simulated (first run). billing_invoice_lookup hit a platform 504 during polling (infra, rerun). bellevue_weather_simulated's simulation stopped on turn 1 with empty agent output (harness, rerun). Real failures: billing_discrepancy_detector parked after two different malformed Data Service where clauses (skill gap: where clause from a process variable); slack_channel_description_simulated (channel_not_found), slack_weather_pipeline (wrong Slack connection bound, 401 + MISSING_BINDING) and ceql_where (CEQL string instead of the canonical tree) get one more iteration. Flow's own nightlies for these three pass 4/12, 6/12 and 11/12, so the BPMN flakiness is at parity except ceql_where.
-
-Grader tolerance added this round: every live grader that classified managed HTTP by `Intsvc.HttpExecution` now also accepts `Intsvc.UnifiedHttpRequest` (both listed in registry-workflow.md). Also landed on main via #3476: `bpmn_check.body_object()` reads sendTask bodies in both registry forms (one JSON blob, or one typed input per field); any new grader that reads a body must use it.
-
-Batch 12 = billing_invoice_lookup (rerun), bellevue_weather_simulated (rerun), slack_channel_description_simulated (it.2), slack_weather_pipeline (it.3), ceql_where (it.2).
-
-## Batch 12
-
-Run 35785806030, five tasks. Green: billing_invoice_lookup, slack_weather_pipeline (iteration 3). Parked: bellevue_weather_simulated (same `temperature_2m` response-shape fault as its non-simulated twin) and ceql_where (the agent writes the connector's sanctioned CEQL `where` string, never Flow's numeric-groupOperator tree; the tree is a Flow-skill construct). slack_channel_description_simulated failed on a grader defect: an abandoned untyped draft under `<Name>Solution/` beside the real solution; `find_bpmn_file` now drops candidates with no registry-typed node. Iteration 3 goes in batch 13 with the field-shape ports.
-
-Field-shape family decision: assertions on wire parameters (path, query, pagination, enum, multiselect, complex_array) port; assertions on a Flow filter-tree shape do not (ceql_where parked; enhanced_enum and searchable_joins must be checked for the same trap before porting).
-
-## Batch 13 (field-shape family)
-
-All eight remaining field-shape evals were ported after reading their Flow graders: none asserts a filter tree, they grade wire parameters and validate. Run 35789221753: green on first run: enum, query_params, multiselect, searchable_joins, complex_array (advisory miss only). Agent failures at iteration 1: path_params (issue key left as an unbound variable), enhanced_enum (no connector node), paginated_reference_lookup (channel by name, no pagination); all three retried in batch 14 (run 35790934047). slack_channel_description_simulated parked after iteration 3 (page-1-only channel listing; Flow 4/12).
-
-Skill findings added: Slack channel-id resolution/pagination is not taught (three tasks now hit it); WooCommerce connector node not produced; fixed literal values get parametrised into unbound variables.
-
-## Batch 14 and 15
-
-Run 35790934047: path_params green on iteration 2; enhanced_enum parked (no connector node in either run: the WooCommerce connector never materialises as a BPMN node); paginated_reference_lookup got past discovery but wrote the channel id with its last character dropped. Its third and final iteration is run 35791969905 (batch 15); record its result here.
+Total: 23 green, 8 parked. Not started: the 4 probes that need tenant fixtures (billing_dispute_analyst / _resolution / _writer need a published agent substitute for Flow inline agents; single_node/file_attachment needs a file-typed process variable).
 
 ## Probe bucket (16): pilot ported, 11 decided, 4 blocked
 

@@ -84,6 +84,7 @@ Flow tasks: 131 · BPMN tasks: 82 · generated 2026-09-19
 | `connector_features/path_params.yaml` (it.2) | `connector_features/path_params/` | PASS 1.0 it.2 (run 35790934047) | agent used the curated Jira get-issue node with issueId=ENGCE-00000 as a path input |
 | `connector_features/enhanced_enum.yaml` (it.2) | `connector_features/enhanced_enum/` | PARKED (skill gap) after it.2 (run 35790934047) | both runs: no connector node in the artifact at all (types empty; only an enum-typed variable). The WooCommerce connector never gets a node in BPMN; Flow 12/12. |
 | `connector_features/paginated_reference_lookup.yaml` (it.2) | `connector_features/paginated_reference_lookup/` | FAIL 0.76 it.2 (run 35790934047); it.3 in batch 15 (run 35791969905) | discovery advisories now pass; the send node carries channel "C083AN4E61", the resolved id with its last character dropped. Agent transcription error, not grader. |
+| `connector_features/paginated_reference_lookup.yaml` (it.3) | `connector_features/paginated_reference_lookup/` | PASS 1.0 it.3 (run 35791969905) | discovery advisories and the resolved channel id all green |
 | `connector_features/testmanager_testcase_lifecycle/…` | `connector_features/testmanager_testcase_lifecycle/` | PASS (run 35488848026) | Flow's skip:true not carried over |
 
 ## Ported 1:1 (21)
