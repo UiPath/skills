@@ -22,7 +22,7 @@ ARG CLI_VERSION=dev
 # override this with an exact version for a reproducible comparison.
 ARG FLOW_SDK_VERSION=latest
 
-# Which published connector library the image carries. `latest` follows the
+# Which published connectors library the image carries. `latest` follows the
 # stable alias download.uipath.com/maestro/registry/library-json.zip, like
 # FLOW_SDK_VERSION follows the SDK's rolling release. A build number
 # (`connectors-library-2026.09.9`, or `2026.09.9`) pins that build's immutable
@@ -231,22 +231,22 @@ RUN set -euo pipefail && \
     registry_status=skipped && \
     source_check_status=skipped && \
     library_hash='' && \
-    library_version="${CONNECTORS_LIBRARY_VERSION:-latest}" && \
-    library_url='' && \
-    if [ "$library_version" != latest ]; then \
-      library_build="$(printf '%s' "$library_version" | \
+    connectors_library_version="${CONNECTORS_LIBRARY_VERSION:-latest}" && \
+    connectors_library_url='' && \
+    if [ "$connectors_library_version" != latest ]; then \
+      connectors_library_build="$(printf '%s' "$connectors_library_version" | \
         sed -nE 's/^(connectors-library-)?([0-9]{4}\.[0-9]{2}\.[0-9]+)$/\2/p')"; \
-      if [ -z "$library_build" ]; then \
-        echo "ERROR: CONNECTORS_LIBRARY_VERSION must be 'latest' or a build number such as connectors-library-2026.09.9, got '$library_version'" >&2; \
+      if [ -z "$connectors_library_build" ]; then \
+        echo "ERROR: CONNECTORS_LIBRARY_VERSION must be 'latest' or a build number such as connectors-library-2026.09.9, got '$connectors_library_version'" >&2; \
         exit 1; \
       fi; \
-      library_url="https://download.uipath.com/maestro/registry/versions/connectors-library-${library_build}/library-json.zip"; \
-      echo "Pinning the connector library to $library_url"; \
+      connectors_library_url="https://download.uipath.com/maestro/registry/versions/connectors-library-${connectors_library_build}/library-json.zip"; \
+      echo "Pinning the connectors library to $connectors_library_url"; \
     fi && \
     if [ "$sdk_status" = available ]; then \
       registry_status=failed; \
       if registry_output="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
-        uip maestro registry pull --force ${library_url:+--url "$library_url"} --output json 2>&1)"; then \
+        uip maestro registry pull --force ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
         printf '%s\n' "$registry_output"; \
         registry_snapshot=''; \
         if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
@@ -299,9 +299,9 @@ RUN set -euo pipefail && \
       --arg sdkStatus "$sdk_status" \
       --arg registryStatus "$registry_status" \
       --arg libraryHash "$library_hash" \
-      --arg libraryVersion "$library_version" \
+      --arg connectorsLibraryVersion "$connectors_library_version" \
       --arg sourceCheckStatus "$source_check_status" \
-      '{sdk: {requestedVersion: $requestedVersion, resolvedVersion: (if $resolvedVersion == "" then null else $resolvedVersion end), status: $sdkStatus}, registry: {requestedVersion: $libraryVersion, libraryHash: (if $libraryHash == "" then null else $libraryHash end), status: $registryStatus}, sourceCheck: {status: $sourceCheckStatus}}' \
+      '{sdk: {requestedVersion: $requestedVersion, resolvedVersion: (if $resolvedVersion == "" then null else $resolvedVersion end), status: $sdkStatus}, registry: {requestedVersion: $connectorsLibraryVersion, libraryHash: (if $libraryHash == "" then null else $libraryHash end), status: $registryStatus}, sourceCheck: {status: $sourceCheckStatus}}' \
       > "$FLOW_SDK_SETUP_STATUS" && \
     cat "$FLOW_SDK_SETUP_STATUS"
 
