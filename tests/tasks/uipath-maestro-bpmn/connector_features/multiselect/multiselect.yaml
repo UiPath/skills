@@ -1,0 +1,87 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+task_id: skill-bpmn-multiselect
+description: >
+  Tests the multiselect IS feature — configures a Slack group direct message
+  node whose members field takes multiple values, using an existing tenant
+  connection.
+  Ported from Flow `connector_features/multiselect.yaml`; the connector
+  activity is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper instead of a Flow connector node, and the
+  users multiselect is read from its target="body" JSON (whole blob or one
+  typed input per field) instead of Flow's inputs.detail.bodyParameters.
+tags:
+  - uipath-maestro-bpmn
+  - integration
+  - "lifecycle:generate"
+  - "shape:single-node"
+  - connector
+  - "mode:build"
+  - uipath-salesforce-slack
+
+run_limits:
+  expected_turns: 37
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
+
+# Each recipient must match exactly one Slack user, or the 3-entry check below
+# cannot pass. "Coder Eval" is deliberately NOT used: it is a prefix of "Coder
+# Eval Test", so a substring lookup returns two rows and the agent is then
+# required to stop and ask. Re-verify uniqueness before changing a name.
+initial_prompt: |
+  Create a UiPath Maestro BPMN process to create a Slack group direct message
+  between Coder Eval Test, IS-sandboxes@uipath.com and E2E Nightly Summary.
+  Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
+  Use the connection present in Shared/uipath-maestro-flow.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  # Name-agnostic: the prompt doesn't fix a project name.
+  - type: run_command
+    description: "A .bpmn file exists and parses"
+    command: "python3 $REFERENCE_DIR/_shared/check_multiselect.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Core check: Slack connector node present and the users multiselect
+  # field has exactly 3 entries (the three group-DM recipients).
+  - type: run_command
+    description: "Slack group-DM node present with 3 entries in the users multiselect"
+    command: "python3 $REFERENCE_DIR/_shared/check_slack_multiselect.py"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
