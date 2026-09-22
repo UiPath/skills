@@ -434,9 +434,12 @@ and honestly surfaced to the user as gaps when asked.
 17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
    workflow, agent) is a five-step sequence, in this order — stopping after
    handing the resource to its owning skill and getting hand-back notes is not
-   done.** (1) Create or open the solution **first** (`uip solution init`), and
+   done.**
+<!--skill-flavor:delegated-resource-solution-first:start-->
+   (1) Create or open the solution **first** (`uip solution init`), and
    author the resource's project **inside** it, so it registers in the
    `.uipx` — a project created outside any solution has no path to deployment.
+<!--skill-flavor:delegated-resource-solution-first:end-->
    (2) Delegate authoring to the resource's owning skill (e.g.
    `uipath-api-workflow`, `uipath-rpa`) with an explicit argument contract —
    declared inputs and outputs, not an unauthored scaffold. (3) Deploy the
