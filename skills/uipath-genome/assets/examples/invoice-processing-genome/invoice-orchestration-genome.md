@@ -54,7 +54,7 @@ Each queue item on the intake queue starts one instance of this process. The ins
 ## Workflow
 
 1. **Trigger**: a new item on the intake queue starts the instance with the item's specific content.
-2. **Extract and match** (input: `PdfBucketPath`; output: invoice record, `MatchResult`, `Discrepancies[]`): start the extraction robot's performer entry point and wait.
+2. **Extract and match** (input: `PdfBucketPath`; output: invoice record, `MatchResult`, `Discrepancies[]`): start the extraction robot's matching entry point and wait.
 3. **Route on match result**: `matched` and total ≤ auto-approval ceiling → step 6; otherwise → step 4.
 4. **Triage** (input: invoice record, discrepancies, PO summary; output: `Proposal`, `Confidence`, `Rationale`): start the triage agent and wait. If the agent fails or `Confidence` < 0.4, set `Proposal` = `manual`.
 5. **Human review** (input: record, discrepancies, proposal; output: `Decision` ∈ {approve-proposal, override, reject}, `CorrectedRecord`): create the Action Center task and wait. Boundary timer per Configuration Question 1 reassigns to the team lead.
@@ -90,6 +90,10 @@ Each queue item on the intake queue starts one instance of this process. The ins
 ### Global
 - Instance older than the stale limit: terminate, `Outcome` = `stale`, queue item Failed with the instance ID.
 - A second instance for an invoice number already open or already posted: `Outcome` = `duplicate`, queue item Failed.
+
+## Transactional Shape
+
+Not transactional: a coordinator — one instance per invoice retries, tracks and escalates its own item; the process genome's Transactional Shape declines the framework for this process.
 
 ## Acceptance Criteria
 

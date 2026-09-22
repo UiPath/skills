@@ -4,6 +4,7 @@
 Usage:
   genome_check.py component <genome.md> [--expect TOKEN ...] [--source-map TOKEN ...] [--part-of]
   genome_check.py process   <genome.md> --components <dir> --skills SKILL ... [--expect TOKEN ...]
+  … [--shape applied|declined|stub [--mode queue|direct]]   asserts the Transactional Shape verdict
 
 Exit 0 when every check passes; exit 1 with one diagnostic line per failure.
 """
@@ -29,12 +30,13 @@ RETIRED_SKILLS = {"uipath-rpa-workflows", "uipath-coded-workflows", "uipath-code
 COMPONENT_SECTIONS = [
     "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
     "Configuration Questions", "Workflow", "Business Rules", "Error Handling",
-    "Acceptance Criteria", "Complexity", "Tags",
+    "Transactional Shape", "Acceptance Criteria", "Complexity", "Tags",
 ]
 PROCESS_SECTIONS = [
     "Overview", "Actors and Systems", "Components", "Process Map", "Handoffs",
     "Platform Dependencies", "Configuration Questions", "Business Rules",
-    "Error Handling and Recovery", "Acceptance Criteria", "Deployment", "Complexity", "Tags",
+    "Error Handling and Recovery", "Transactional Shape", "Acceptance Criteria", "Deployment",
+    "Complexity", "Tags",
 ]
 
 # Code-level tokens that must not appear in the genome body (Source Map excluded).
@@ -62,6 +64,8 @@ def body_without_source_map(text: str) -> str:
 MIN_STEPS = 5
 MIN_CRITERIA = 5
 MIN_QUESTIONS = 3
+SHAPE: str | None = None   # --shape: assert the Transactional Shape verdict of the genome given on the command line
+MODE: str | None = None    # --mode: with --shape applied, the mode the Consumer row must name
 
 
 def common_checks(text: str, level: str, sections: list[str]) -> list[str]:
@@ -88,6 +92,15 @@ def common_checks(text: str, level: str, sections: list[str]) -> list[str]:
         for name in set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading))):
             if name in OPERATE_SKILLS:
                 errors.append(f"operate-only skill '{name}' used in {heading}; it belongs under Platform Dependencies")
+    ts = section_body(text, "Transactional Shape")
+    ts_stub = ts.strip().startswith("Not transactional")
+    if ts_stub and "**Recommendation:**" in ts:
+        errors.append("Transactional Shape: the stub carries a Recommendation line")
+    if ts and not ts_stub:
+        if "**Recommendation:**" not in ts:
+            errors.append("Transactional Shape: no Recommendation line and not the stub")
+        if "| Producer |" not in ts and "| Consumer |" not in ts:
+            errors.append("Transactional Shape: neither a Producer nor a Consumer table")
     criteria = re.findall(r"^- \[[ x]\] ", section_body(text, "Acceptance Criteria"), re.M)
     if len(criteria) < MIN_CRITERIA:
         errors.append(f"acceptance criteria: {len(criteria)} found, expected >= {MIN_CRITERIA}")
@@ -102,7 +115,38 @@ def criteria_lines(text: str) -> list[str]:
     return [l for l in section_body(text, "Acceptance Criteria").splitlines() if l.startswith("- [")]
 
 
-def check_component(path: Path, expect: list[str], source_map: list[str], part_of: bool) -> list[str]:
+def check_shape(text: str, shape: str, mode: str | None, standalone: bool) -> list[str]:
+    """Assert the Transactional Shape's verdict (--shape) and, when applied, its mode and seam."""
+    errors: list[str] = []
+    ts = section_body(text, "Transactional Shape")
+    rec = next((l for l in ts.splitlines() if l.startswith("**Recommendation:**")), "")
+    if shape == "stub":
+        if not ts.strip().startswith("Not transactional"):
+            errors.append("Transactional Shape: expected the 'Not transactional' stub")
+        return errors
+    if shape == "declined":
+        if not re.search(r"Not recommended|— not applied", rec):
+            errors.append("Transactional Shape: Recommendation is not the 'Not recommended' verdict")
+        return errors
+    if not re.search(r"\bApply\b|— applied", rec):
+        errors.append("Transactional Shape: Recommendation is not the 'Apply' verdict")
+    consumer_rows = [l for l in ts.splitlines() if l.startswith("|") and "Consumer" not in l and "---" not in l
+                     and re.search(r"\|\s*(queue|direct)\b", l)]
+    if not consumer_rows:
+        errors.append("Transactional Shape: no Consumer row with a queue/direct Mode cell")
+    elif mode and not any(re.search(rf"\|\s*{mode}\b[^|]*(—|-)[^|]*\|", l) for l in consumer_rows):
+        errors.append(f"Transactional Shape: no Consumer row whose Mode cell reads '{mode} — <reason>'")
+    if not re.search(r"retr(y|ie)", ts, re.I) or not re.search(r"consecutive", ts, re.I):
+        errors.append("Transactional Shape: outcomes do not state the per-item retry and the consecutive-failure stop")
+    if re.search(r"\{[a-z][^}]*\}", ts):
+        errors.append("Transactional Shape: unfilled template placeholder left in the section")
+    if standalone and not re.search(r"\bperformer\b", section_body(text, "Overview"), re.I):
+        errors.append("Transactional Shape applied on a standalone component, but the Overview names no 'performer'")
+    return errors
+
+
+def check_component(path: Path, expect: list[str], source_map: list[str], part_of: bool,
+                    shape_check: bool = True) -> list[str]:
     text = path.read_text(encoding="utf-8")
     errors = common_checks(text, "component", COMPONENT_SECTIONS)
     pos = h2_positions(text)
@@ -129,6 +173,8 @@ def check_component(path: Path, expect: list[str], source_map: list[str], part_o
                 errors.append(f"Source Map does not mention '{tok}'")
     if part_of and "Part of:" not in text:
         errors.append("component inside a process genome lacks the 'Part of:' line")
+    if SHAPE and shape_check:
+        errors.extend(check_shape(text, SHAPE, MODE, standalone="Part of:" not in text))
     for tok in expect:
         if tok.lower() not in text.lower():
             errors.append(f"expected token '{tok}' not found")
@@ -157,7 +203,9 @@ def check_process(path: Path, components_dir: Path, skills: list[str], expect: l
         if not target.exists():
             errors.append(f"linked component genome missing on disk: {link}")
         else:
-            component_errors.extend(check_component(target, [], [], part_of=True))
+            component_errors.extend(check_component(target, [], [], part_of=True, shape_check=False))
+    if SHAPE:
+        errors.extend(check_shape(text, SHAPE, MODE, standalone=False))
     handoffs = [l for l in section_body(text, "Handoffs").splitlines() if l.startswith("|")]
     if len(handoffs) < 4:  # header + separator + >= 2 rows
         errors.append(f"handoffs table: {max(0, len(handoffs) - 2)} rows, expected >= 2")
@@ -170,7 +218,7 @@ def check_process(path: Path, components_dir: Path, skills: list[str], expect: l
 
 
 def main() -> int:
-    global MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS
+    global MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS, SHAPE, MODE
     ap = argparse.ArgumentParser()
     ap.add_argument("level", choices=["component", "process"])
     ap.add_argument("genome")
@@ -185,8 +233,13 @@ def main() -> int:
                     help="minimum acceptance criteria (format guide: 3 simple, 5 medium, 7 complex)")
     ap.add_argument("--min-questions", type=int, default=MIN_QUESTIONS,
                     help="minimum configuration questions (format guide: stub allowed for simple, 3 medium, 5 complex)")
+    ap.add_argument("--shape", choices=["applied", "declined", "stub"], default=None,
+                    help="assert the Transactional Shape verdict of the given genome (components linked from a process are not checked)")
+    ap.add_argument("--mode", choices=["queue", "direct"], default=None,
+                    help="with --shape applied: the mode the Consumer row's Mode cell must name, with its reason")
     args = ap.parse_args()
     MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS = args.min_steps, args.min_criteria, args.min_questions
+    SHAPE, MODE = args.shape, args.mode
 
     path = Path(args.genome)
     if not path.exists():

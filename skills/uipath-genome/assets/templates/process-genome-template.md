@@ -111,6 +111,33 @@ flowchart LR
 
 - {Failure}: {recovery}
 
+## Transactional Shape
+
+{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Name the producers (any component type) and the consumers (RPA processes) across components; the Components table's Type cell carries `dispatcher` / `performer` for the roles the Recommendation applies. When no RPA consumer exists, one sentence naming what takes the items replaces the Consumer table. Component genomes carry their own role's detail.}
+
+**Unit of work:** one {item}; reference {identifying field(s)}; fields as in Handoffs row {N}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
+
+| Producer | Reads | Writes items to | Reference rule | Trigger |
+|---|---|---|---|---|
+| {component #} | {mailbox / folder / sheet / report / API} | {queue name} | {uniqueness; duplicates} | {schedule or event} |
+
+| Consumer | Takes items from | Mode | Once per run | Per item | At the end |
+|---|---|---|---|---|---|
+| {component #} | {queue name / the source} | {queue \| direct} — {reason} | {its steps} | {its steps} | {its steps} |
+
+| Outcome | When | Effect |
+|---|---|---|
+| Success | every per-item step completed | item recorded as done with {result} |
+| Business exception | {component #} Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
+| System exception | every other failure — {component #} Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
+
+**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
+**Traceability:** {per-item record and where it lands; screenshot on system exception; run summary; which component reports on them}.
+**Recommendation:** {Apply — {reason}. | Not recommended — {reason}.}
+**Alternative unit of work:** one {other item} — not chosen because {reason}; choose it when {condition}. *(only when a second granularity is viable)*
+
+*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's}."*
+
 ## Acceptance Criteria
 
 {End-to-end criteria that span components. Component-level criteria stay in the component genomes.}

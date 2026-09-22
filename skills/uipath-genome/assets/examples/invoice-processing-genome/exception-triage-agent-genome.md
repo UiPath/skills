@@ -73,6 +73,10 @@ Given an invoice record, its discrepancies, and the PO summary, the agent decide
 ### Global
 - Model error or timeout: the job fails; the orchestration process substitutes `manual`.
 
+## Transactional Shape
+
+Not transactional: an agent started once per invoice by the orchestration; the per-item lifecycle is the orchestration's.
+
 ## Acceptance Criteria
 
 - [ ] Given a single `unmatched-line` discrepancy where one PO line has the same description and price, the proposal is `repost-with-correction` with that PO line in `CorrectedRecord`.

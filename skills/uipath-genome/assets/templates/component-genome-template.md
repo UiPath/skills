@@ -12,7 +12,7 @@
 
 ## Overview
 
-{1-3 paragraphs: purpose, business problem, who it is for, what triggers it.}
+{1-3 paragraphs: purpose, business problem, who it is for, what triggers it. Standalone project whose Transactional Shape applies the shape: the first paragraph names its role — dispatcher, performer, dispatcher + performer.}
 
 ## Target Applications
 
@@ -78,6 +78,33 @@
 - Unhandled exception: {behaviour}
 
 *Stub when none: "Standard error handling — retry on transient failures, log and skip on permanent errors."*
+
+## Transactional Shape
+
+{Does the project iterate over units of work — items that succeed, fail, are retried and are tracked independently? Standalone project: the whole shape below, and the role word in the Overview when the Recommendation applies it. Component of a process: this project's role only (producer: source, reference rule, fate of the queued source item; consumer: step groups, outcomes, counts, configuration split, traceability) and the Recommendation `per the process genome — applied.` or `per the process genome — not applied.`; the process genome carries the tables across components.}
+
+**Unit of work:** one {item}; reference {identifying field(s)}; fields as in {Interface / Handoffs row}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
+
+| Producer | Reads | Writes items to | Reference rule | Trigger |
+|---|---|---|---|---|
+| {entry point} | {source} | {queue name / the consumer's own list} | {uniqueness; duplicates} | {schedule or event} |
+
+| Consumer | Takes items from | Mode | Once per run | Per item | At the end |
+|---|---|---|---|---|---|
+| {entry point} | {queue name / the source} | {queue \| direct} — {reason} | steps {n} | steps {p–q} | steps {r} |
+
+| Outcome | When | Effect |
+|---|---|---|
+| Success | every per-item step completed | item recorded as done with {result} |
+| Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
+| System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
+
+**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
+**Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
+**Recommendation:** {Apply — {reason}. | Not recommended — {reason}.}
+**Alternative unit of work:** one {other item} — not chosen because {reason}; choose it when {condition}. *(only when a second granularity is viable)*
+
+*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's}."*
 
 ## Acceptance Criteria
 

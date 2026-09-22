@@ -10,14 +10,15 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | Composite UI interaction **contract** (what a substep must carry) | `genome-format-guide.md` § Workflow |
 | Credential asset per login account; secrets never in genome, data file or report | `genome-format-guide.md` § Platform Dependencies |
 | Source Map contract rows; "genome files are the only output" (locators and rows stay in export) | `genome-format-guide.md` § Source Map |
+| Transactional Shape: the unit-of-work test and its granularity (alternative unit of work), producer and consumer roles and the Type-cell role word, queue-vs-direct choice, the three outcomes, step groups, configuration split, traceability, one Recommendation verdict, stub | `genome-format-guide.md` § Transactional Shape |
 | Extraction pipeline, evidence policy for blanket screen captures, completing and checking Source Map | `references/extraction-guide.md` |
 | Authoring steps, platform-capability suggestions, bounded follow-ups, authored edit table | `references/authoring-guide.md` |
 | Build With skill names, decision tree, operate-only skills | `references/skill-mapping-guide.md` |
-| Configuration and scaffolding questions, project/solution resolution, library gating, skill groups, owning-skill contract, subagents, acceptance verdicts, completion report | `references/execution-guide.md` |
+| Configuration and scaffolding questions, project/solution resolution, library gating, skill groups, owning-skill contract, subagents, acceptance verdicts, completion report, applying or declining the transactional shape at build (question, template creation, surface mapping, four-exit verification, report line) | `references/execution-guide.md` |
 | Migration preflight (including the secret scrub), what each **kind** of source step becomes at build time, link ordering and idempotency, Object Repository identity, composite **patterns** (build), verification on acting activity, Element Scope, the three verification verdicts per family, result parity, test-data pipeline, executor records | `references/source-migration-guide.md` |
 | Every UiPath-side selector fact: tag chain per technology, attribute catalog and tiers, matching semantics, rules 1–16 (criteria, purpose, `aaname`, anchors, position, tables, scope, identifiers, description, confidence, no-selector, one tag one node, driver verification, widget anatomy), § Checking a definition | `references/selector-translation-guide.md` |
 | Definition and anchor shapes when no application reachable (temporary) | `references/offline-definition-workarounds-guide.md` |
-| UiPath source facts: detection, inventory, signals per artifact type, platform resources, pitfalls | `references/uipath-source-guide.md` |
+| UiPath source facts: detection, inventory, signals per artifact type, platform resources, pitfalls, which REFramework file feeds which Transactional Shape row | `references/uipath-source-guide.md` |
 | What a framework pack must contain | `CONTRACT.md` in the framework migration pack — ask the user for its location |
 | Framework facts only: detection, inventory, signals, composite-action wording, locator formats, per-field translation tables, framework pitfalls, inventory scripts, worked examples | `<PACK_DIR>/<framework>/source-guide.md`, `selectors-guide.md`, `scripts/`, `examples/` in the framework migration pack — never in this skill |
 | Mode detection, framework pack resolution (ask for location, select row, run then read), one- or two-sentence rules naming subject and home, task navigation | `SKILL.md` § Source Frameworks |
@@ -44,4 +45,5 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | Framework's new action, locator format or pitfall | that framework's source or selectors guide |
 | New genome section or content rule | genome-format-guide (+ templates) |
 | New scaffolding question or report line | execution-guide |
+| A framework's transactional construct (queue, work list, per-item loop, framework template) | UiPath: uipath-source-guide § Signals — XAML › REFramework projects; any other framework: its source guide in the framework migration pack, pointing to genome-format-guide § Transactional Shape — nothing in this skill |
 | New framework | A `<framework>/` pack in the framework migration pack (source guide, selectors guide, script, example, smoke task) plus its row in its README § Frameworks — in one change there; nothing in this skill |

@@ -34,6 +34,7 @@ From the description, extract: target applications, human actors, workflow steps
 - **Who signs in.** Every persona or account that logs into a target system (administrator, recruiter, integration user, a proxied approver) is one credential asset in Platform Dependencies ([genome-format-guide.md § Platform Dependencies](genome-format-guide.md)).
 - **What varies per scenario.** When the description implies data-driven runs (per country, per organisation type, per integration, per worker), separate the fields that change per row from the constants; the row schema is what the Interface of a test component lists ([genome-format-guide.md § Interface](genome-format-guide.md)), the constants go to configuration.
 - **Whether the application is reachable at build time.** Note it; execution captures UI targets live when it is and ships placeholders when it is not (an authored genome has no source target catalog).
+- **What the unit of work is.** When the description iterates over items (each invoice, each row, each ticket, each file), name the item, its identifying reference, the daily volume, what produces the items and what consumes them; this is the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)). A run that succeeds or fails as one has none — the stub.
 
 ## Step 5 — Suggest platform capabilities
 
@@ -44,7 +45,7 @@ Add these even when the user did not name them:
 | PDFs, scanned documents, forms | Document Understanding activities in `uipath-rpa` step; `uipath-ixp` component when custom extraction model needed |
 | Clicking, typing, reading a screen, desktop app | UI automation in `uipath-rpa` |
 | REST APIs, connectors, SaaS systems | Integration Service connector activities (`uipath-rpa`) or `uipath-api-workflow` component when no UI involved |
-| Many items processed independently, retries, resilience | Orchestrator queue in Platform Dependencies; dispatcher/performer split as two workflow phases |
+| Many items processed independently, retries, resilience, several robots | Orchestrator queue in Platform Dependencies; Transactional Shape with producers, consumers and mode ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)) |
 | Coordinating several automations, waiting on events | `uipath-maestro-flow` (short-lived) or `uipath-maestro-bpmn` (long-running, human lanes) coordinator component |
 | Judgement, classification, summarisation, free-text decisions | `uipath-agents` component |
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in coordinator; actor row in Actors and Systems |
@@ -57,11 +58,11 @@ Add these even when the user did not name them:
 
 Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. After the last round, generate with defaults and stubs; never loop.
 
-Ask only for gaps that change the build: missing target system, unknown trigger, undefined decision outcome, unspecified failure behaviour for a critical step, unclear ownership of a handoff, which persona signs in for a scenario when several are implied, and whether the UI application is reachable at build time (live capture) or not (placeholders, indicated later). Do not ask for values a Configuration Question can carry as a default.
+Ask only for gaps that change the build: missing target system, unknown trigger, undefined decision outcome, unspecified failure behaviour for a critical step, unclear ownership of a handoff, which persona signs in for a scenario when several are implied, whether items must be shared across robots or survive a run failure when the description leaves it open (decides `queue` against `direct` in the Transactional Shape), and whether the UI application is reachable at build time (live capture) or not (placeholders, indicated later). Do not ask for values a Configuration Question can carry as a default.
 
 ## Step 7 — Generate
 
-Populate every template section per the format guide's population matrix. Build With rows come from the skill mapping guide, one skill per step. Business rules and error handling attach to the step where they fire. Acceptance criteria derive one-to-one from steps, rules, transformations, and handlers.
+Populate every template section per the format guide's population matrix. Build With rows come from the skill mapping guide, one skill per step. Business rules and error handling attach to the step where they fire. The Transactional Shape classifies those rules and handlers into per-item outcomes and names producers, consumers and mode — or carries its stub ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)). Acceptance criteria derive one-to-one from steps, rules, transformations, and handlers.
 
 Process genomes: write the process file first (Components table, Process Map, Handoffs), then each component genome with its `Part of:` line and an Interface matching the Handoffs row.
 
@@ -79,4 +80,8 @@ Write, then offer edits ([genome-format-guide.md § Write, Then Offer Edits](gen
 | "Use a different skill for step X" | Build With row and rationale, validated against mapping guide |
 | "Split this into components" | Promote to process genome: create process file, move component content into component files, add Handoffs |
 | "Scenario X signs in as persona Y" | Platform Dependencies (credential asset for Y), test component's row schema (asset name per row), Configuration Questions |
+| "Make it transactional" / "drop the transactional shape" / "queue instead of direct" | Transactional Shape (Recommendation, mode, tables); Components Type cell role words; Platform Dependencies (queue); Configuration Questions (retry counts) |
+| "Step X should be a business exception" | Transactional Shape outcomes table; the rule under Business Rules for step X; an acceptance criterion for the recorded reason |
+| "One row per transaction instead of one file" (change the unit of work) | Transactional Shape (Unit of work, Alternative unit of work, both tables, outcomes); Interface; Handoffs data passed; Platform Dependencies (queue); Acceptance Criteria (duplicate and retry cases) |
+| "Split the dispatcher into its own component" | Promote to a process genome (row above); the producer becomes its own component with a `dispatcher` Type cell; Handoffs row for the queue |
 | Edits to an extracted genome (rename / reorder / remove steps, "drop the Source Map") | [extraction-guide.md](extraction-guide.md) Step 7 |
