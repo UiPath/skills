@@ -2,12 +2,13 @@
 
 The complete default tree is published as **`@uipath/skills`**, versioned in lockstep with **`@uipath/cli`** so a given CLI release always resolves to a compatible skills package. Every directory under `skill-flavors/` also builds a marker-free package at the same version. Flavor publication is deliberately separate from the established default-package release path.
 
-> **Hook signing.** `publish-signed.yml` publishes to npmjs with
-> `hooks/*.ps1` Authenticode-signed by an Azure DevOps release gate, which
-> also runs FOSSA. It is manual-dispatch only. `publish.yml` is unchanged and
-> still publishes unsigned on its existing triggers — do not run both for the
-> same version, as npm rejects republishing an existing version. Flavor
-> packages ship no `hooks/` at all.
+> **Hook signing.** Every npmjs publish (`preview`, `latest`) carries
+> `hooks/*.ps1` Authenticode-signed by the Azure DevOps release gate
+> (`.pipelines/release-gate.yml`), which also runs FOSSA. A gate failure stops
+> the publish — there is no unsigned fallback. `dev` builds on GitHub Packages
+> are not signed, and flavor packages ship no `hooks/` at all. To exercise the
+> whole path, publish a `preview`: those versions are disposable and no
+> un-tagged install ever resolves them.
 
 ## Version model
 
