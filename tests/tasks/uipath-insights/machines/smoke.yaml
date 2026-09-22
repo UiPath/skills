@@ -27,22 +27,6 @@ description: >
   the backend answered.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
-# Dormant until `@uipath/cli@dev` carries `uip insights machines`. The five
-# commands ship in UiPath/cli#3849 (runtime-mix, details) and UiPath/cli#4111
-# (availability-timeline, top-failures, utilization); both are open as of
-# 2026-09-18, and the catalog snapshot (uip 1.203.0-dev.8703) lists no
-# `insights machines` verb. Running this task before then fails all five
-# --help gates, which is the task working correctly and the smoke check going
-# red for a reason that has nothing to do with the skill.
-#
-# A skipped task lands in RunSummary.skipped_tasks at resolution time and
-# never reaches the orchestrator (coder_eval 0.12.1, models/tasks.py:466, the
-# version tests/.coder-eval-version pins), so it writes no task.json and stays
-# out of the workflow's pass-rate denominator.
-#
-# Unskip in the PR that first runs against a dev build carrying the commands.
-# Check with: uip insights machines utilization --help
-skip: true
 
 run_limits:
   # Five reads plus a discovery call and a summary. Critical Rule 2 forbids
