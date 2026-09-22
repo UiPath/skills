@@ -30,11 +30,10 @@ Assertion map (Flow -> BPMN):
      EmailReceived alike; evidence for EMAIL_RECEIVED as the connector's operation code is
      `outlook_trigger_inbox.yaml`'s `uip is triggers describe ... EMAIL_RECEIVED` discovery
      pattern (same connector, sibling Flow task).
-  T  filter tree: structured JSON leaf match first (mirrors Flow's own `_filter_trees` /
-     `_iter_filter_leaves` walk over `essentialConfiguration.filter`), text-blob fallback across
-     every `uipath:input` reachable under the node when the shape can't be parsed structurally --
-     the same dual tolerance `check_df_trigger_lifecycle.py`'s `has_due_filter()` uses for its
-     own connector-trigger filter.
+  F  filter tree: structured JSON leaf only (mirrors Flow's own `_filter_trees` /
+     `_iter_filter_leaves` walk over `essentialConfiguration.filter`). NO text fallback:
+     Flow rejects a bare `filterExpression` string by design (MST-8802 -- the CLI rejects
+     it as an INPUT field), so a blob match would accept what Flow fails.
 """
 
 from __future__ import annotations
@@ -138,7 +137,7 @@ def _leaf_matches_subject_contains(leaf: dict) -> bool:
 
 
 def has_subject_contains_filter(task: ET.Element) -> bool:
-    # Structured leaf first -- mirrors Flow's own filter-tree walk.
+    # Structured leaf only -- mirrors Flow's own filter-tree walk.
     for value in all_node_values(task):
         tree = _parse_json_value(value)
         if tree is None:
@@ -152,12 +151,12 @@ def has_subject_contains_filter(task: ET.Element) -> bool:
         for candidate in candidates:
             if any(_leaf_matches_subject_contains(leaf) for leaf in _iter_filter_leaves(candidate)):
                 return True
-    # Text-blob fallback for a filter shape this checker cannot parse
-    # structurally (same dual tolerance as check_df_trigger_lifecycle.py's
-    # has_due_filter()).
-    blob = node_blob(task)
-    lowered = blob.lower()
-    return "subject" in lowered and "contain" in lowered and FILTER_VALUE in blob
+    # No text-blob fallback: Flow's grader rejects a bare filterExpression
+    # string on purpose ("the CLI rejects it as an INPUT field, MST-8802"), so
+    # accepting one here would pass the exact artifact Flow fails. The dual
+    # tolerance check_df_trigger_lifecycle.py uses does not transfer -- its
+    # Flow source never ruled the string form out.
+    return False
 
 
 def main() -> None:

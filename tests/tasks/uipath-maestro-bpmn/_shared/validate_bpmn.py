@@ -16,6 +16,12 @@ process read as a pass (CI run 35501830119, devcon_expense_approval). Flow's
 helper validates every flow under the project and fails on the first bad one;
 this does the same.
 
+Each file is parsed with ``xml.etree.ElementTree`` before the CLI sees it: the
+validator tokenizes tolerantly and reports ``Valid`` on XML with an unbound
+namespace prefix, so the CLI alone cannot carry a well-formedness criterion.
+The skill states the same rule for its own readers (``SKILL.md`` step 4,
+``references/structural-bpmn.md``).
+
 Discovery: EVERY ``.bpmn`` under the sandbox (excluding ``node_modules`` and
 tool caches). Not only project-registered files: on that same CI run the
 agent's real process sat outside the initialised project while the valid
@@ -45,6 +51,7 @@ import argparse
 import subprocess
 import sys
 import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 CRITERION_TIMEOUT_SECONDS = 180
@@ -91,6 +98,21 @@ def main(argv: list[str] | None = None) -> int:
     rc = 0
     for path in files:
         print(f"Validating {path}", flush=True)
+        # `validate` tokenizes with a tolerant parser and reports Valid on XML
+        # carrying an unbound namespace prefix (SKILL.md "Validate", and
+        # references/structural-bpmn.md: "Run the well-formed-XML parse before
+        # validate every time"). Without this the criterion passes malformed
+        # BPMN, so do what the skill tells its own readers to do.
+        try:
+            ET.parse(path)
+        except ET.ParseError as exc:
+            print(
+                f"FAIL: {path} is not well-formed XML: {exc}",
+                file=sys.stderr,
+                flush=True,
+            )
+            rc = 1
+            continue
         # Whatever is left of the aggregate budget, so a fast file hands its
         # unused share to a slow one. Never below 1s: a non-positive timeout
         # would raise instead of running.

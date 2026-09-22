@@ -302,3 +302,74 @@ def test_query_filter_text_excludes_binding_values() -> None:
     assert grader.has_expected_filter(
         text + " 'title' = 'filterfixture-matrix'", field, tokens, operators
     )
+
+
+def _load(name: str):
+    import importlib.util
+
+    path = Path(__file__).parent / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _outlook_receive_task(payload: str) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:receiveTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
+        f'id="Wait_1"><bpmn:extensionElements><uipath:event '
+        f'type="Intsvc.WaitForEvent">{payload}'
+        "</uipath:event></bpmn:extensionElements></bpmn:receiveTask>"
+    )
+
+
+def test_waitfor_rejects_a_bare_filter_expression_string() -> None:
+    """Flow rejects the bare string by design (MST-8802); the port must too.
+
+    A text-blob fallback also let the three tokens come from three unrelated
+    inputs, so "contain" could arrive inside an unrelated word.
+    """
+    grader = _load("check_outlook_waitfor_email")
+
+    bare = _outlook_receive_task(
+        '<uipath:input name="filterExpression" '
+        "value=\"subject contains 'TestWaitFor'\" />"
+    )
+    assert not grader.has_subject_contains_filter(bare)
+
+    scattered = _outlook_receive_task(
+        '<uipath:input name="subject" value="container" />'
+        '<uipath:input name="note" value="TestWaitFor" />'
+    )
+    assert not grader.has_subject_contains_filter(scattered)
+
+    structured = _outlook_receive_task(
+        '<uipath:input name="metadata" type="json"><![CDATA['
+        '{"essentialConfiguration":{"filter":{"filters":['
+        '{"id":"subject","operator":"Contains","value":"TestWaitFor"}]}}}'
+        "]]></uipath:input>"
+    )
+    assert grader.has_subject_contains_filter(structured)
+
+
+def test_validate_bpmn_fails_malformed_xml_without_calling_the_cli(tmp_path, monkeypatch) -> None:
+    """`validate` tokenizes tolerantly, so the CLI cannot carry this criterion.
+
+    An unbound namespace prefix is the case the skill calls out: the CLI
+    reports Valid, a real parser does not.
+    """
+    validate_bpmn = _load("validate_bpmn")
+
+    (tmp_path / "Broken.bpmn").write_text(
+        '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">'
+        '<bpmn:process id="p"><ghost:task id="t"/></bpmn:process></bpmn:definitions>',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    def _no_cli(*args, **kwargs):
+        raise AssertionError("CLI must not run on a file that does not parse")
+
+    monkeypatch.setattr(validate_bpmn.subprocess, "run", _no_cli)
+
+    assert validate_bpmn.main([]) == 1
