@@ -130,17 +130,19 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       #
-      # claude-agent-sdk 0.2.144 shipped without a win_amd64 wheel, so uv falls
-      # back to the sdist and nothing bundles claude.exe — every task here then
-      # dies at agent_crash ("Claude Code not found"). coder-eval asks for
-      # >=0.2.124 with no upper bound, so exclude that single release instead of
-      # capping: a later version that restores the wheel resolves normally.
+      # claude-agent-sdk releases that ship without a win_amd64 wheel make uv
+      # fall back to the sdist, which bundles no claude.exe — every task here
+      # then dies at agent_crash ("Claude Code not found"). coder-eval asks for
+      # >=0.2.124 with no upper bound, so exclude those single releases instead
+      # of capping: a later version that restores the wheel resolves normally.
+      # Known wheel-less releases: 0.2.144, 0.2.157 (verified on PyPI: 0.2.157
+      # publishes mac/linux wheels + sdist only; 0.2.156 has win_amd64).
       - name: Install coder-eval
         shell: bash
         run: |
           uv pip install --system \
             "coder-eval==${{ steps.ceref.outputs.version }}" \
-            "claude-agent-sdk!=0.2.144"
+            "claude-agent-sdk!=0.2.144,!=0.2.157"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
