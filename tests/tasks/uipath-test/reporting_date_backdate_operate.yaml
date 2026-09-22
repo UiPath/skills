@@ -131,7 +131,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent found the run on the named test set rather than guessing an id"
+    # Deliberately does not require --test-set-id: filtering by name, by set id
+    # or listing the project are all legitimate ways to find the one run. What
+    # is graded is that the id came from the CLI and not from thin air.
+    description: "Agent listed executions through the CLI rather than inventing an id"
     tool_name: "Bash"
     command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)uip\s+tm\s+executions?\s+list(-filtered)?\b'
     min_count: 1
