@@ -87,8 +87,8 @@ The agent's instructions determine effectiveness. Cover:
 
 - When to call `deep-rag` (e.g., "When the user asks to summarize or research uploaded documents")
 - What to pass as `prompt` (e.g., "Pass the user's question verbatim")
-- Nothing about citation format. DeepRAG's own system prompt fixes the format (bracketed page ids, never page numbers) and the pipeline parses only that; an instruction like "cite as (pg 1)" contradicts it, and citations written that way are never validated or returned.
-- What DeepRAG should answer when the documents hold nothing relevant (e.g., "If the documents do not cover this, reply exactly `No relevant information found.`"). An empty response counts as a failure and is retried, so a prompt with no way out retries until the model finally says nothing is there.
+- Nothing about citation format. DeepRAG's own system prompt fixes the format (bracketed page ids, never page numbers) and the pipeline parses only that; any instruction about citation format contradicts it, and citations written any other way are never validated or returned.
+- What DeepRAG should answer when the documents hold nothing relevant (e.g., "If the documents do not cover this, reply `No relevant information found.`"). An empty response counts as a failure and is retried, so a prompt with no way out retries until the model finally says nothing is there.
 - How to combine results (e.g., "Treat tool output as ground truth; do not paraphrase citations")
 
 Without explicit guidance, the agent under-uses DeepRAG or invokes it for tasks that don't need it.

@@ -102,7 +102,7 @@ citations = [c if isinstance(c, dict) else c.model_dump() for c in (raw_citation
 
 Pass `citation_mode=CitationMode.SKIP | INLINE` on `CreateDeepRag`. Default `SKIP` (lowest latency, no citations). `INLINE` interleaves citations in `content.text`. Verify the available enum values at your SDK version: `from uipath.platform.context_grounding import CitationMode; list(CitationMode)`.
 
-`citation_mode` is the only citation control. Never put a citation format in `prompt` (e.g., "cite as (pg 1)"): it contradicts DeepRAG's own system prompt, which requires bracketed page ids, and citations written any other way are never validated or returned in `citations`. For a different display format, render it from `citations` in `finalize`.
+`citation_mode` is the only citation control. Never put any citation format in `prompt`: it contradicts DeepRAG's own system prompt, which requires bracketed page ids, and citations written any other way are never validated or returned in `citations`. For a different display format, render it from `citations` in `finalize`.
 
 ## Local-Run Verification
 
