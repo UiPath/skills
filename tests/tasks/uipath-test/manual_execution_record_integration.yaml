@@ -1,0 +1,187 @@
+task_id: skill-test-manual-execution-record-integration
+description: >
+  Integration test: a tester ran three cases by hand and needs them recorded in
+  Test Manager — exercising the manual-execution lifecycle no existing task
+  covers (`executions create`, `executions testcaselogs list`, `testcaselog
+  start`/`finish`, `executions get-stats`). Every other execution task READS or
+  RE-RUNS executions the fixture seeded; this one is the only task that opens a
+  run and records results into it.
+
+  The interesting judgement is what the agent does NOT do. A manual run closes
+  itself when its last test case log finishes, so `executions finish` is not the
+  normal last step — it is the force-close for a run you want to end with logs
+  still open. An agent that reaches for `finish` here has misread the lifecycle.
+  The prompt carries no skill-load hint: the create-then-log-per-case shape, the
+  need to resolve each case's TestCaseId from the run's own logs, and
+  `--output json` are all left to the skill.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:execution]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 50
+  turn_timeout: 1200
+  task_timeout: 1500
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
+# EVFX- contract.
+#
+# This task APPENDS: every run opens a new execution on its set. Left alone that
+# grows without bound, and a later run reading "the latest execution" would find
+# a different one each time. pre_run therefore deletes the executions previous
+# runs left behind, which keeps growth flat at one. That is only possible
+# because `executions delete` exists; before it, a task like this had to either
+# repair one execution in place or leak.
+pre_run:
+  - command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-MANUAL-SET"
+      CASES = ["EVFX-MANUAL-TC1", "EVFX-MANUAL-TC2", "EVFX-MANUAL-TC3"]
+
+      # Provisioning failures exit NON-ZERO, so a setup fault is never reported
+      # as an agent regression.
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      # 1. test set — create if absent, never delete
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P,
+               "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      set_id = ts.get("Id")
+      if not set_key:
+          fail(f"{SET} has no key")
+
+      # 2. cases — create if absent, then assign (assign is idempotent)
+      keys = []
+      for name in CASES:
+          tc = by_name(f"case.find.{name}", "testcases", name)
+          if not tc:
+              call(f"case.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"case.refind.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      # 3. remove what earlier runs opened, so growth stays flat at one
+      if set_id:
+          d = call("execs.list", "tm", "executions", "list", "--project-key", P,
+                   "--test-set-id", set_id, "--limit", "100")
+          for row in (d.get("Data") or []):
+              eid = row.get("Id")
+              if eid:
+                  call(f"exec.delete.{eid[:8]}", "tm", "executions", "delete",
+                       "--execution-id", eid, "--project-key", P, "--yes")
+
+      print(f"FIXTURE: ready set_key={set_key!r} cases={keys!r}", flush=True)
+      EOF
+
+initial_prompt: |
+  I just finished a manual pass over the three cases in our "EVFX-MANUAL-SET"
+  test set in the CLAIM project (Test Manager). EVFX-MANUAL-TC1 and
+  EVFX-MANUAL-TC3 passed; EVFX-MANUAL-TC2 failed. Nothing is recorded yet —
+  I ran them by hand, outside any robot.
+
+  Please get that session into Test Manager as a run with those three results
+  against my name, qa@example.com, and then tell me the totals the run itself
+  reports. No need to check back with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent opened a manual execution over the test set (`executions create --test-set-key`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+create\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the run's own logs to resolve each TestCaseId (`executions testcaselogs list`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+testcaselogs\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started a log for each of the three cases (`testcaselog start`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--test-case-id\s+\S)uip\s+tm\s+testcaselog\s+start\b'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent recorded a result for each of the three cases (`testcaselog finish --result`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--result\s+\S)uip\s+tm\s+testcaselog\s+finish\b'
+    min_count: 3
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent recorded exactly one Failed result, for TC2"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--result\s+Failed)uip\s+tm\s+testcaselog\s+finish\b'
+    min_count: 1
+    max_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The point of the task. A manual run closes itself when its last log
+  # finishes, so reaching for the force-close means the lifecycle was misread.
+  - type: command_not_executed
+    description: "Agent did not force-close the run with `executions finish`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+finish\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent reported the run's own totals (`executions get-stats`), not a hand tally"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+get-stats\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
