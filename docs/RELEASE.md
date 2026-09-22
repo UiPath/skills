@@ -6,9 +6,9 @@ The complete default tree is published as **`@uipath/skills`**, versioned in loc
 > `hooks/*.ps1` Authenticode-signed by the Azure DevOps release gate
 > (`.pipelines/release-gate.yml`), which also runs FOSSA. A gate failure stops
 > the publish — there is no unsigned fallback. `dev` builds on GitHub Packages
-> are not signed, and flavor packages ship no `hooks/` at all. Add
-> `-f dry_run=true` to a dispatch to exercise the whole path — gate, overlay,
-> pack, signature check — without publishing.
+> are not signed, and flavor packages ship no `hooks/` at all. To exercise the
+> whole path, publish a `preview`: those versions are disposable and no
+> un-tagged install ever resolves them.
 
 ## Version model
 

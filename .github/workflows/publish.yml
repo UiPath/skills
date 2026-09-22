@@ -43,11 +43,6 @@ on:
           - preview
           - dev
           - latest
-      dry_run:
-        description: "Run the full flow but do not publish"
-        required: false
-        default: false
-        type: boolean
 
 # Serialize publishes by effective channel so equivalent automatic and manual
 # runs cannot race on the same dist-tag. A main push and manual dev dispatch
@@ -287,22 +282,10 @@ jobs:
       # a signed build attestation (allowed because the repo is public and the
       # job has id-token: write); package.json `repository.url` must match.
       - name: Publish to npmjs (OIDC trusted publishing)
-        if: github.event.inputs.dry_run != 'true'
         run: |
           npm config set @uipath:registry https://registry.npmjs.org/
           npm publish "${{ steps.pack.outputs.tarball }}" \
             --access public --provenance --tag ${{ steps.dist.outputs.tag }}
-
-      - name: Report what a real run would publish
-        if: github.event.inputs.dry_run == 'true'
-        env:
-          TARBALL: ${{ steps.pack.outputs.tarball }}
-          TAG: ${{ steps.dist.outputs.tag }}
-        run: |
-          echo "DRY RUN - nothing was published."
-          echo "  tarball:  $TARBALL"
-          echo "  dist-tag: $TAG"
-          echo "  version:  $(node -p "require('./package.json').version")"
 
   announce-latest:
     # `npm publish` returns before npmjs serves the version; the called
@@ -311,10 +294,7 @@ jobs:
     # and skill list from this run's ref (the release branch).
     name: Announce stable publish
     needs: [publish-npmjs]
-    if: >-
-      github.event_name == 'workflow_dispatch'
-      && github.event.inputs.channel == 'latest'
-      && github.event.inputs.dry_run != 'true'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'latest'
     uses: ./.github/workflows/announce-stable.yml
     secrets: inherit
 

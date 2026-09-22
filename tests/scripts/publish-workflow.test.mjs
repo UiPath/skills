@@ -75,20 +75,6 @@ test("the gate job pins its OIDC subject through an environment", () => {
   assert.match(sign, /^\s*id-token: write\s*$/m);
 });
 
-// Defaulting dry_run to true would silently turn every documented release
-// dispatch into a no-op.
-test("dry_run defaults to publishing", () => {
-  assert.match(PUBLISH, /dry_run:[\s\S]{0,160}?default: false[\s\S]{0,40}?type: boolean/);
-});
-
-test("a dry run publishes nothing and announces nothing", () => {
-  assert.match(
-    PUBLISH,
-    /- name: Publish to npmjs[\s\S]{0,120}?if: github\.event\.inputs\.dry_run != 'true'/,
-  );
-  assert.match(gate("announce-latest"), /dry_run != 'true'/);
-});
-
 // The npmjs trusted publisher names one workflow file. A second workflow
 // publishing to npmjs cannot authenticate, so there is exactly one.
 test("publish.yml is the only publish workflow", () => {
