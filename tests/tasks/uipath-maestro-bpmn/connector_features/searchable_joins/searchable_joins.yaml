@@ -1,0 +1,74 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+task_id: skill-bpmn-searchable-joins
+description: >
+  Tests the searchable joins IS feature — configures a connector node with
+  a join on a related object on the Salesforce connector.
+
+  Ported from Flow `connector_features/searchable_joins.yaml`; the Salesforce
+  query node is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper instead of a Flow connector node, and
+  validation runs via `bpmn validate` instead of `flow validate`.
+tags: [uipath-maestro-bpmn, integration, "lifecycle:generate", "shape:multi-node", connector, uipath-salesforce, "mode:build"]
+
+run_limits:
+  expected_turns: 56
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN process called "SearchableJoinsTest" with a
+  manual start.
+  Build a process that pulls Salesforce accounts and, for each account, also brings
+  back its related opportunities in the same query. Then branch on whether the account
+  has any opportunities and end the process on each path. Validate the BPMN process.
+  Use the connection present in Shared/uipath-maestro-flow.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "BPMN file exists and is well-formed XML"
+    command: "python3 $REFERENCE_DIR/_shared/check_searchable_joins.py check_exists"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN process has a connector node referencing uipath-salesforce-sfdc"
+    command: "python3 $REFERENCE_DIR/_shared/check_searchable_joins.py check_connector"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed BPMN process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
