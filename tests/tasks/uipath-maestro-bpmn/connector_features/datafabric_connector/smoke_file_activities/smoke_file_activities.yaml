@@ -12,13 +12,7 @@ description: >
   registry Intsvc.ActivityExecution wrapper instead of Flow connector nodes,
   and the grader walks the XML `uipath:input`/`uipath:output` tree instead of
   Flow's `inputs.detail` JSON.
-tags:
-  - uipath-maestro-bpmn
-  - smoke
-  - "mode:build"
-  - "lifecycle:generate"
-  - connector
-  - uipath-uipath-dataservice
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector, uipath-uipath-dataservice]
 
 run_limits:
   max_turns: 100

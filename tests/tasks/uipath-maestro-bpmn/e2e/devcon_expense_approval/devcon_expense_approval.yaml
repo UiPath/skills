@@ -24,6 +24,14 @@ description: >
   though the process is otherwise well-formed.
 tags: [uipath-maestro-bpmn, uipath-human-in-the-loop, e2e, devcon]
 
+# skip:true, tenant-gated. The `validate` criterion below (weight 3.0,
+# pass_threshold 1.0, gating) cannot pass until a deployed Action App exists in
+# the eval tenant: `Actions.HITL` resolves against a placeholder appId and the
+# validator reports MISSING_BINDING. Every other criterion passes today (runs
+# 35501830119, 35503094182), so the criteria stay untouched — unskip once the
+# eval tenant has a deployed Action App to bind against.
+skip: true
+
 run_limits:
   expected_turns: 29
   max_turns: 120

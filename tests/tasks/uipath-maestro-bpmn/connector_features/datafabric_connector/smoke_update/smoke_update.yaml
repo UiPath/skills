@@ -8,13 +8,7 @@ description: >
   Ported from Flow `connector_features/datafabric_connector/smoke_update.yaml`;
   connector activities are modeled as bpmn:sendTask nodes carrying the
   registry Intsvc.ActivityExecution wrapper instead of Flow connector nodes.
-tags:
-  - uipath-maestro-bpmn
-  - smoke
-  - "mode:build"
-  - "lifecycle:generate"
-  - connector
-  - uipath-uipath-dataservice
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector, uipath-uipath-dataservice]
 
 sandbox:
   template_sources:

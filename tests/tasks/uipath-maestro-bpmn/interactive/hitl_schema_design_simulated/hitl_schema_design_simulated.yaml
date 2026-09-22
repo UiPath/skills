@@ -14,6 +14,14 @@ description: >
   (read-only) and declared, var-bound outputs (fill-in).
 tags: [uipath-maestro-bpmn, uipath-human-in-the-loop, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl", simulation]
 
+# skip:true, tenant-gated. The `validate` criterion below (weight 3.0,
+# pass_threshold 1.0, gating) cannot pass until a deployed Action App exists in
+# the eval tenant: `Actions.HITL` resolves against a placeholder appId and the
+# validator reports MISSING_BINDING. Every other criterion passes today (runs
+# 35501830119, 35503094182), so the criteria stay untouched — unskip once the
+# eval tenant has a deployed Action App to bind against.
+skip: true
+
 run_limits:
   # Ceiling on agent turns across the whole dialog, with generous headroom so a
   # long build is never truncated mid-flow. The dialog length itself is bounded

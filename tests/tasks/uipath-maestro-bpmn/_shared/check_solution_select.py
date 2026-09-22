@@ -9,7 +9,7 @@ from a `.flow` JSON walk to a `.bpmn` project-tree walk.
 
 Assertion map (Flow -> BPMN):
   F check_solution_select.py:check_flow                new project lands under WeatherSelection-7K4M -> check_bpmn()/selected_bpmn()
-  F check_solution_select.py:check_existing_untouched  pre-existing solutions left alone            -> check_existing_untouched() (strengthened per task instructions: byte-identical to the shipped fixture, not just Projects == [])
+  F check_solution_select.py:check_existing_untouched  pre-existing solutions left alone            -> check_existing_untouched() (same semantic check: Projects == [] on both pre-existing .uipx files)
   F check_solution_select.py:check_project             selected solution contains an initialized project dir -> check_project()/resolve_project()
   F check_solution_select.py:check_solution            selected .uipx registers the new project type -> check_solution() (Type=='Flow' -> Type=='ProcessOrchestration')
   F check_solution_select.py:check_no_extra_solution   no stray default solution created before selection -> check_no_extra_solution()
@@ -114,13 +114,25 @@ def check_no_extra_solution() -> None:
     print("OK: no extra default solution was created")
 
 
+VALIDATE_TIMEOUT = 45
+
+
 def check_validate() -> None:
     path = selected_bpmn()
-    result = subprocess.run(
-        ["uip", "maestro", "bpmn", "validate", str(path), "--output", "json"],
-        capture_output=True,
-        text=True,
-    )
+    # Criterion budget is 60s. Cap the CLI below it so a hang still prints a
+    # FAIL line instead of being SIGKILLed by the harness with no output.
+    try:
+        result = subprocess.run(
+            ["uip", "maestro", "bpmn", "validate", str(path), "--output", "json"],
+            capture_output=True,
+            text=True,
+            timeout=VALIDATE_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        fail(
+            f"uip maestro bpmn validate {path} timed out after "
+            f"{VALIDATE_TIMEOUT}s"
+        )
     sys.stdout.write(result.stdout)
     sys.stderr.write(result.stderr)
     if result.returncode:
