@@ -1,47 +1,56 @@
 task_id: skill-insights-smoke-dashboard-update
 description: >
   Smoke test: agent uses the uipath-insights skill to change a Maestro
-  process's saved monitoring dashboard. Given a rename-and-reorder
-  request, the agent should read the process's dashboard first, take the
-  definition as a file rather than as captured stdout, and either update
-  from that file with the version the read reported, or say the slot holds
-  no saved dashboard and stop. Both outcomes are correct; which one
-  happens depends on the tenant, and the task does not control that.
+  process's saved monitoring dashboard. Given a rename request, the agent
+  should read the slot, follow the reported id into the by-id read so the
+  file carries the stored global filters (writes guide Rule 13), take the
+  definition as a file rather than as captured stdout, keep a backup
+  (Rule 15), and update once with the version the slot read reported
+  (Rules 11 and 12). The CLI is authenticated.
 
-  It grades the local flow and the command shape, never a round trip. An
-  update rewrites a real dashboard and, unlike a create, is not
-  self-limiting, so a task that graded a successful update would mutate
-  whatever the runner's tenant has. The prompt uses the same placeholder
-  process key create_smoke uses, which belongs to no Maestro process, and
-  create_smoke frees that slot in its pre_run, so the slot is free on any
-  run that follows a create task. On the eval tenant every dashboard read
-  answers not-found, because the tenant has no Insights Portal service.
-  The update branch is therefore exercised only on a tenant that serves
-  the routes and holds a saved dashboard in the slot; everywhere else the
-  agent reads, finds nothing saved, and stops, which the prompt calls
-  correct. Delete and copy are graded here only for the surface being
-  real; their own round trips need a seeded tenant and belong in the e2e
-  tier.
-
-  The two criteria naming update's own flags are advisory at
-  pass_threshold 0, because reaching an update at all depends on the slot
-  state. They record the shape when the agent gets there. Everything that
-  does not depend on the slot is gating.
+  The process key is a fresh GUID per run, written to seed.json in
+  pre_run and belonging to no Maestro process, and a second pre_run step
+  seeds its slot with a saved dashboard (post_run deletes it), so the update branch runs on every run
+  rather than only on a tenant that happened to hold one. That is what
+  lets the flags the guide teaches be gated instead of advisory, and what
+  lets the live read-back at the end prove the rename landed rather than
+  that a command was typed. Delete and copy are graded here only for the
+  surface being real; their round trips are delete_smoke and copy_smoke.
 tags: [uipath-insights, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 14
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  # A fresh key per run, then a saved row in its slot. slot.py never fails
+  # the task: a slot it cannot seed is left as it is, and the prompt's own
+  # rule tells the agent to stop on an empty slot. The fresh key is what
+  # keeps two gate runs on stacked PRs out of each other's slot (skills
+  # runs 35721927455 and 35721932318 collided on a fixed key).
+  - command: "python3 _setup/slot.py new"
+    timeout: 30
+    fail_on_error: false
+  - command: "python3 _setup/slot.py seed"
+    timeout: 180
+    fail_on_error: false
+
+post_run:
+  - command: "python3 _setup/slot.py clear"
+    timeout: 120
+
 initial_prompt: |
-  Rename the Insights monitoring dashboard on the Maestro process
-  00000000-0000-0000-0000-000000000000 to "Order intake health (EMEA)"
-  and move its failures chart to the front. Read the dashboard before you
-  change anything, and work from the definition as a file rather than
-  from what the command prints. Pass the version that read reported. If
-  the process has no saved dashboard, say so and stop rather than
-  creating one. Send the update once: if it fails or the outcome is
-  unclear, read the dashboard back and tell me what you found instead of
-  running it again. Do not delete anything. Report what the result proves
+  Rename the Insights monitoring dashboard on the Maestro process whose
+  key is the process_key in ./seed.json to "Order intake health (EMEA)".
+  Nothing else about it should change, its global filters included, and
+  I want a copy of what was there before you touch it. If the process has
+  no saved dashboard, say so and stop rather than creating one. Send the
+  update once and do not delete anything. Report what the result proves
   and what it does not.
 
 success_criteria:
@@ -70,13 +79,16 @@ success_criteria:
   # the flags the target accepts does that, which the flag patterns below do.
   #
   # Rule 10 and Rule 13: read before writing, and take the file from the
-  # artifact channel. --output-file is required rather than a bare read,
-  # because it is the only channel carrying the camelCase definition that
-  # update accepts.
+  # by-id read through the artifact channel. The slot read is what reports
+  # the id and the version; the by-id read is the only one whose file
+  # carries the stored global filters, so an update built from the slot
+  # read drops them in silence. \d+ keeps the slot read from satisfying
+  # this, and --output-file is required because it is the only channel
+  # carrying the camelCase definition update accepts.
   - type: command_executed
-    description: "Agent read the dashboard to a file before changing anything"
+    description: "Agent read the dashboard by id to a file before changing anything"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file'
+    command_pattern: 'uip\s+insights\s+dashboards\s+get\s+"?\d+\b(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -97,12 +109,43 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # The update itself, in the shape the guide teaches: a file (Rule 1),
+  # the version the read reported (Rule 11), and a backup (Rule 15). The
+  # three flags are matched in one pattern each rather than one combined
+  # pattern, so a run that misses one names the one it missed. --file and
+  # --expected-version are what the CLI requires; --backup-file is what
+  # the guide requires, because the backend keeps no history.
+  - type: command_executed
+    description: "Agent sent the update from a file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed the version the read reported on the update"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--expected-version[\s=]+"?\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent kept a backup of the definition the update replaces"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--backup-file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   # Rule 18: one write, never a blind repeat. The cap is 1 rather than 0,
   # so this is a bounded command_executed and not a command_not_executed:
   # the loader rewrites command_not_executed to min_count 0 / max_count 0
   # whatever the file says (coder_eval/models/tasks.py, the success_criteria
   # normalizer), which would fail the single legitimate update. min_count 0
-  # keeps a run that correctly stopped at an empty slot from failing here.
+  # keeps this criterion about the cap alone; the three above are what
+  # require the update to happen.
   - type: command_executed
     description: "Agent did not send the update more than once"
     tool_name: "Bash"
@@ -141,11 +184,11 @@ success_criteria:
   # carries, so a neighbour's `jq --arg $KEY` cannot satisfy it; --json and
   # --output are left in because both are real host global options
   # (packages/common/src/host-global-options.ts). The positional branch
-  # catches a variable dashboard id on the update and delete id forms.
+  # catches a variable dashboard id on the get, update and delete id forms.
   - type: command_not_executed
     description: "Agent did not use command substitution or a shell variable in a uip insights dashboard command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+\S+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(process-key|case|source-type|localization|output-file|file|backup-file|expected-version|from-process-key|to-process-key|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_{])|uip\s+insights\s+dashboards\s+(update|delete)\s+"?(\$\(|`|\$[A-Za-z_{])'
+    command_pattern: 'uip\s+insights\s+dashboards\s+\S+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(process-key|case|source-type|localization|output-file|file|backup-file|expected-version|from-process-key|to-process-key|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_{])|uip\s+insights\s+dashboards\s+(get|update|delete)\s+"?(\$\(|`|\$[A-Za-z_{])'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -153,9 +196,7 @@ success_criteria:
   # command_executed only greps the command string, so every pattern above
   # passes even when the verb exists in no installed CLI. --help is the
   # reality gate: it exits 0 only when the CLI registers the command and
-  # exits 3 on an unknown one. These three are why this task cannot pass
-  # before cli#4263, #4241 and #4262 reach main and republish
-  # @uipath/cli@dev, which is what the do-not-land line on the PR says.
+  # exits 3 on an unknown one.
   - type: run_command
     description: "CLI path is real: dashboards update is registered in the installed CLI"
     command: "uip insights dashboards update --help"
@@ -164,37 +205,16 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The rename landed. This is the one criterion the agent cannot satisfy
+  # by typing the right command: the slot read after the run carries the
+  # stored name, and the name is the ground-truth anchor the prompt set.
   - type: run_command
-    description: "CLI path is real: dashboards delete is registered in the installed CLI"
-    command: "uip insights dashboards delete --help"
+    description: "Live: the seeded slot now reads the new name"
+    command: >-
+      K=$(python3 -c 'import json; print(json.load(open("seed.json"))["process_key"])');
+      uip insights dashboards get --process-key "$K" --output json
+      | python3 -c 'import json,sys; d=json.load(sys.stdin)["Data"]; sys.exit(0 if d["Saved"] is True and d["Name"] == "Order intake health (EMEA)" else 1)'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
-
-  - type: run_command
-    description: "CLI path is real: dashboards copy is registered in the installed CLI"
-    command: "uip insights dashboards copy --help"
-    timeout: 60
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  # Advisory, per the description: whether the agent reaches an update at
-  # all depends on the slot state, which this task does not control. They
-  # record the shape when it does.
-  - type: command_executed
-    description: "Advisory: the update carried --expected-version"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--expected-version'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0
-
-  - type: command_executed
-    description: "Advisory: the update passed a file rather than inline JSON"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--file'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0
