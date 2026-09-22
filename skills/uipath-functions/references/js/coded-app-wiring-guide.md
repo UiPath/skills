@@ -16,6 +16,19 @@ Default: the app calls UiPath APIs directly with `@uipath/uipath-typescript` and
 
 **Honest boundary:** a function in front of *delegated* calls is not a security layer. The caller's `OR.Default` PKCE token already grants broad Orchestrator API access — anything the function does with `ctx.user.accessToken`, the browser could do directly with the same token. Folder RBAC, not the function layer, is the effective security boundary for delegated calls. A function only *adds* privilege through its own robot identity (`ctx.robot`, Secret Vault pattern → [calling-uipath-apis-guide.md](calling-uipath-apis-guide.md)).
 
+## Project Layout
+
+The app and its function backend are **two sibling projects**, each with its own `package.json` and `uipath.json`:
+
+```text
+<WORKSPACE>/
+├── <APP>/        # Coded App — Vite + React; uipath.json = clientId / scope / redirectUri (PKCE config)
+└── <BACKEND>/    # uip function new <BACKEND> -l ts; uipath.json = the functions map
+```
+
+1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts --empty` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: `uip function pack` inside the app happily produces `<APP>.<VERSION>.nupkg`, but once the app is published, `uip function publish` under that id is rejected — Orchestrator will not switch a published package between the two types.
+2. `<BACKEND>` is the `<PACKAGE_ID>` segment of the invoke URL ([deployment-guide.md](deployment-guide.md)) and the `Release.Name` callers see. Name it for the backend as a whole (`claims-backend`), not after one function — each function's `path` is its own slug beneath it.
+
 ## Token Flow
 
 The app sends its PKCE access token on every function call:
@@ -45,12 +58,29 @@ npm run dev           # terminal 2 — app dev server (Vite, :5173)
 
 ## Deployed Calls from the App
 
+Deployed, call the function through the SDK's `Functions` service (`@uipath/uipath-typescript` ≥ 1.7.0 — confirm `node_modules/@uipath/uipath-typescript/dist/functions/index.d.ts` exists; older installs need an upgrade or the raw `fetch` below). It looks the function up by its `defineFunction` `name` in the folder, resolves the invoke URL from the trigger, sends input as query string for `GET` and as JSON body otherwise, and acquires the caller's Studio Web license before invoking. Scope: `OR.Default` only (the SDK's shipped `docs/oauth-scopes.md`, § Functions).
+
+```ts
+import { Functions } from "@uipath/uipath-typescript/functions";
+
+const functions = new Functions(sdk); // the app's initialized UiPath instance
+const result = await functions.invoke<Input, Output>(
+  { name: "<FUNCTION_NAME>" },  // the defineFunction name — not the package or process name
+  input,
+  { folderKey: "<FOLDER_KEY>" }, // or folderId / folderPath; omit when the SDK was initialized with a folder context
+);
+```
+
+Non-2xx responses throw the SDK's error types (`statusCode` on the error); the function-side body shapes are in the error contract below. `Functions.invoke` targets the deployed trigger only — under the local two-server loop the app still fetches `http://localhost:7070/<PATH>`, so keep the `import.meta.env.DEV` switch in one wrapper and leave UI code identical.
+
+Raw `fetch` — the fallback when the service is unavailable, and always the local-dev path — sends the app's PKCE token from `sdk.getToken()`:
+
 ```ts
 const FN_BASE = import.meta.env.DEV
   ? "http://localhost:7070"
   : "https://api.<HOST>/<ORG_ID>/<TENANT_ID>/orchestrator_/t/<FOLDER_KEY>/<PACKAGE_ID>";
 
-async function callFn<T>(path: string, input?: unknown, token?: string): Promise<T> {
+async function callFn<T>(path: string, input?: unknown, token = sdk.getToken()): Promise<T> {
   const res = await fetch(`${FN_BASE}${path}`, {
     method: "POST",
     headers: {

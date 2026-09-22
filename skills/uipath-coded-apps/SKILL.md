@@ -107,6 +107,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 | **SDK: Governance — policy evaluations (Insights API)** | [references/sdk/governance.md](references/sdk/governance.md) |
 | **SDK: Agent Governance Decisions — runtime compliance (Insights RTM)** | [references/sdk/governance-traces.md](references/sdk/governance-traces.md) |
 | **UI Patterns (polling, BPMN, HITL, text overflow, table pagination)** | [references/patterns.md](references/patterns.md) |
+| **Call a JS/TS function backend from the app** (sibling project layout, SDK `Functions.invoke`, token, URL, CORS, 20 s budget) | the `uipath-functions` skill — its `references/js/coded-app-wiring-guide.md`; app-side scope is `OR.Default` ([references/oauth-scopes.md](references/oauth-scopes.md)) |
 | **Generate an admin dashboard from NLP** | [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) |
 
 ## CLI Setup
