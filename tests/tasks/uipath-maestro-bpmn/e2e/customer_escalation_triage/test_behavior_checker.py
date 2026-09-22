@@ -199,6 +199,39 @@ class ContractResolutionTests(unittest.TestCase):
         ):
             self._resolve(no_slack)
 
+    def test_every_curated_create_issue_object_resolves(self):
+        # All three create the same issue on the live tenant, and describe
+        # cannot rank them, so all three must resolve.
+        for object_name in (
+            "curated_create_issue",
+            "curated-issue-create",
+            "curated_issue",
+        ):
+            with self.subTest(object_name=object_name):
+                variant = SAMPLE_BPMN.replace(
+                    "/curated_create_issue", f"/{object_name}"
+                )
+                self.assertEqual(
+                    self._resolve(variant).jira_create_ids, ("JiraCreate1",)
+                )
+
+    def test_object_name_identifies_the_activity_when_the_path_does_not(self):
+        templated = SAMPLE_BPMN.replace(
+            '<uipath:input name="path" value="/curated_create_issue"/>',
+            '<uipath:input name="path" value="/{objectName}"/>'
+            '<uipath:input name="objectName" value="curated_issue"/>',
+        )
+        self.assertEqual(
+            self._resolve(templated).jira_create_ids, ("JiraCreate1",)
+        )
+
+    def test_generic_rest_path_is_rejected(self):
+        raw = SAMPLE_BPMN.replace(
+            "/curated_create_issue", "/rest/api/3/issue"
+        )
+        with self.assertRaisesRegex(checker.CheckFailure, "raw REST API"):
+            self._resolve(raw)
+
 
 class OutcomeAssertionTests(unittest.TestCase):
     def assert_fails(self, debug, variables, incidents, pattern):
