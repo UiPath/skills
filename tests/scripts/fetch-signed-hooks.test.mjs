@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { overlaySignedScripts } from "../../scripts/fetch-signed-hooks.mjs";
+import { artifactFileUrl, overlaySignedScripts } from "../../scripts/fetch-signed-hooks.mjs";
 
 const COMMIT = "a".repeat(40);
 const OTHER_COMMIT = "b".repeat(40);
@@ -133,4 +133,30 @@ test("writes bytes verbatim, without newline translation", () => {
   });
 
   assert.deepEqual(fs.readFileSync(path.join(hooksDir, "a.ps1")), content);
+});
+
+// The artifact downloadUrl arrives with `format=zip` already set. Two `format`
+// parameters means the service honours the first, returns a zip and ignores
+// `subPath`, so the manifest parse fails on the zip header.
+test("artifact file URL replaces the existing format instead of appending", () => {
+  const url = artifactFileUrl(
+    "https://artprod.example.com/_apis/artifact/abc123/content?format=zip",
+    "manifest.json",
+  );
+  const params = new URL(url).searchParams;
+
+  assert.deepEqual(params.getAll("format"), ["file"]);
+  assert.equal(params.get("subPath"), "/manifest.json");
+});
+
+test("artifact file URL preserves unrelated query parameters", () => {
+  const url = artifactFileUrl(
+    "https://artprod.example.com/content?format=zip&api-version=7.1",
+    "send-telemetry.ps1",
+  );
+  const params = new URL(url).searchParams;
+
+  assert.equal(params.get("api-version"), "7.1");
+  assert.deepEqual(params.getAll("format"), ["file"]);
+  assert.equal(params.get("subPath"), "/send-telemetry.ps1");
 });

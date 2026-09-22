@@ -175,10 +175,24 @@ class AzureDevOps {
    * pulling and unpacking a zip, for which Node has no built-in reader.
    */
   async downloadArtifactFile(artifact, fileName) {
-    const url = `${artifact.resource.downloadUrl}&format=file&subPath=${encodeURIComponent(`/${fileName}`)}`;
+    const url = artifactFileUrl(artifact.resource.downloadUrl, fileName);
     const response = await this.request(url, { headers: { Accept: "*/*" } });
     return Buffer.from(await response.arrayBuffer());
   }
+}
+
+/**
+ * URL that downloads a single file out of a pipeline artifact.
+ *
+ * `downloadUrl` already carries `format=zip`. Appending another `format`
+ * leaves two, and the service honours the first -- returning a zip and
+ * ignoring `subPath` -- so these must be set, never concatenated.
+ */
+export function artifactFileUrl(downloadUrl, fileName) {
+  const url = new URL(downloadUrl);
+  url.searchParams.set("format", "file");
+  url.searchParams.set("subPath", `/${fileName}`);
+  return url.toString();
 }
 
 function quote(value) {
