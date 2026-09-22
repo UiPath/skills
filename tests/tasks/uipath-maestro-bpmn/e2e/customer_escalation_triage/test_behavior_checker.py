@@ -239,6 +239,17 @@ class ContractResolutionTests(unittest.TestCase):
         with self.assertRaisesRegex(checker.CheckFailure, "raw REST API"):
             self._resolve(raw)
 
+    def test_curated_object_name_does_not_rescue_a_raw_rest_path(self):
+        # The node calls the provider's API directly whatever its objectName
+        # claims, so the accepted-object match must not read the name here.
+        conflicting = SAMPLE_BPMN.replace(
+            '<uipath:input name="path" value="/curated_create_issue"/>',
+            '<uipath:input name="path" value="/rest/api/3/issue"/>'
+            '<uipath:input name="objectName" value="curated_issue"/>',
+        )
+        with self.assertRaisesRegex(checker.CheckFailure, "raw REST API"):
+            self._resolve(conflicting)
+
 
 class OutcomeAssertionTests(unittest.TestCase):
     def assert_fails(self, debug, variables, incidents, pattern):

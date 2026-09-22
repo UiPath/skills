@@ -181,6 +181,10 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
             element_id
             for (key, path, object_name), element_ids in connectors.items()
             if key == connector_key
+            # A curated object name never rescues a raw REST path: a node
+            # carrying both calls the provider's API directly whatever its
+            # objectName claims, and the prompt forbids that outright.
+            and not path.startswith(GENERIC_REST_PREFIX)
             and any(
                 needle in path or needle in object_name for needle in needles
             )
