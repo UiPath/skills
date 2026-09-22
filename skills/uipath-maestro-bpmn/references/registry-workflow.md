@@ -99,15 +99,12 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 ### Picking the object: take it from the table, do not infer it
 
 A connector exposes several objects that perform the same operation, and
-`uip is resources describe` cannot tell you which one the product ships.
-Jira creates an issue under `curated_create_issue`, `curated-issue-create`,
-`curated_issue` and `create_issue`; all four accept the same body and return
-the same `{self, key, id}`. The live one is marked by `curated.isHidden:
-false` in the raw object metadata, and describe's summary drops that flag —
-it prints `Curated: "Create Issue"` for two of them. Neither `Type: curated`
-(set on a hidden legacy object here) nor the display name ranks them.
+`uip is resources describe` cannot rank them. Four Jira objects create an
+issue; describe prints `Curated: "Create Issue"` for two of them, because its
+summary drops the `curated.isHidden` flag that marks the live one. Ranking on
+`Type: curated` or on the display name picks a hidden legacy object instead.
 
-So take the object from this table. Confirm it with
+So take the object from this table rather than inferring it. Confirm it with
 `uip is resources describe <connectorKey> <object> --connection-id <id>
 --operation <Operation.Name>` before authoring, and read `RequestFields` and
 `Parameters` from that same call.
@@ -119,10 +116,12 @@ So take the object from this table. Confirm it with
 | `uipath-atlassian-jira` | `curated_edit_issue` | Update Issue | `Replace` |
 | `uipath-salesforce-slack` | `send_message_to_channel_v2` | Send Message to Channel | `Create` |
 
-For a connector or operation not listed, list the objects, describe each
-candidate, and pick the one whose `Operation.Curated` names the activity the
-user asked for. When two still tie, say which you chose and why rather than
-picking silently — the wrong one is accepted by `validate` and by `pack`.
+For a connector or operation not listed, describe every candidate and keep
+the ones whose `Operation.Curated` names the activity asked for. Expect more
+than one to survive — that is what happens on Jira — and treat the remainder
+as undecidable from the CLI: pick one, then say in your summary which object
+you used and which others tied. Never pick silently. The wrong one is
+accepted by `validate` and by `pack`, and fails only at run time.
 
 The response adds an enrichment block with the live field metadata. Match the
 key case-insensitively — the CLI's output formatter has changed key casing
