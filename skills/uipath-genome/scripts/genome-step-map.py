@@ -61,7 +61,8 @@ def table_rows(text):
 
 
 def components(path, text):
-    """[(number, name, genome path, project)] - the components of a process genome, or the file itself."""
+    """[(number, name, genome path, project, is_library)] - the components of a process genome, or the file itself.
+    A library (its Type cell says so) is consumed by the other components; reachability is seeded from the rest."""
     comp_section = section(text, 'Components')
     folder = {}  # component number -> folder inside the shared test project
     for row in comp_section.splitlines():
@@ -77,10 +78,11 @@ def components(path, text):
         proj = project_name(ctype)
         if proj and num in folder:
             proj = f"{proj}/{folder[num]}"
-        out.append((int(num), name, os.path.join(os.path.dirname(path), link.replace('/', os.sep)), proj))
+        out.append((int(num), name, os.path.join(os.path.dirname(path), link.replace('/', os.sep)), proj,
+                    bool(re.search(r'\blibrary\b', ctype, re.I))))
     if not out:  # a component genome on its own: the project is named in Build With (or anywhere after the blueprint blockquote)
         out = [(1, re.search(r'^# Genome:\s*(.+)$', text, re.M).group(1).strip(), path,
-                project_name(section(text, 'Build With')) or project_name(text))]
+                project_name(section(text, 'Build With')) or project_name(text), False)]
     return out
 
 
@@ -150,7 +152,7 @@ def main():
         return procs, rsets
 
     rows = []
-    for num, comp, cpath, project in components(a.genome, text):
+    for num, comp, cpath, project, is_library in components(a.genome, text):
         ctext = open(cpath, encoding='utf-8').read()
         names = {}
         for line in section(ctext, 'Workflow').splitlines():
@@ -169,11 +171,13 @@ def main():
                 warn.append(f"{comp} step {key}: no source process resolved")
                 continue
             rows.append((num, comp, os.path.basename(cpath), project, key,
-                         names.get(key) or (f"step {key}" if key[:1].isdigit() else key), procs, named))
+                         names.get(key) or (f"step {key}" if key[:1].isdigit() else key), procs, named, is_library))
 
-    # In scope = reachable from the processes the non-library components were built from. Recordsets passed in by a
-    # caller outside that set drive another scenario (the variant suite left unbuilt) and are noise on a shared step.
-    scope = {p['id'] for r in rows if r[0] > 1 for p in r[6]} or set(by_id)
+    # In scope = reachable from the processes the non-library components were built from (a library's own steps are
+    # reached through its consumers). Recordsets passed in by a caller outside that set drive another scenario (the
+    # variant suite left unbuilt) and are noise on a shared step. The Components table may list libraries first (build
+    # order) or last; the Type cell, not the position, says which rows seed the scope.
+    scope = {p['id'] for r in rows if not r[8] for p in r[6]} or set(by_id)
     frontier = list(scope)
     while frontier:
         for c in (by_id.get(frontier.pop()) or {}).get('calls', []):
@@ -188,7 +192,7 @@ def main():
                     passed.setdefault(c['calleeId'], set()).add(c['recordset'])
 
     steps = []
-    for num, comp, cfile, project, key, name, procs, named in rows:
+    for num, comp, cfile, project, key, name, procs, named, _ in rows:
         rs = []  # what drives the step: each process's own recordset, the ones it passes on, the ones passed to it
         for p in procs:
             if p['id'] not in scope:

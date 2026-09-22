@@ -232,7 +232,8 @@ Mechanics — creating screens and elements, updating definitions, fuzzifying, l
 - per data file: source recordset(s) it was filled from and, per argument, whether the value came from the source, stayed at its default, or had no source counterpart; credentials appear as asset names and environments only;
 - per workflow: validate result after linking, any activity still without a target;
 - per interaction family: live verdict (§ Verifying targets) or `offline-unverified`;
-- per test case: result parity table (§ Result parity) — source checkpoint, expected value, UiPath assertion, evidence, compare rule — and its counts.
+- per test case: result parity table (§ Result parity) — source checkpoint, expected value, UiPath assertion, evidence, compare rule — and its counts;
+- per source command family: what it was realised as in this build — the activity class, the property encoding the package's per-activity doc prescribed, the analyzer findings accepted — fetched at the version built against ([execution-guide.md § 2.2](execution-guide.md)). This record belongs to the build: a framework pack states the realisation at capability level only (its source guide's "Realised at execution" table) and never copies the class-level record, which is stale on the next package bump.
 
 Scripting (mapping files, registries, validators) is the executor's choice for the run; the reports are the deliverable. One `migration/` folder in the build — the derived `source/` catalogs, the configuration answers, one report per project, the local feed's sources files — keeps them reviewable together and out of every project.
 
