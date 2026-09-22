@@ -91,14 +91,16 @@ OUTPUT_TYPES = {
 # registry path or object name: the registry may emit versioned or templated
 # paths, and the runtime correlates on the element id either way.
 #
-# Jira exposes three objects that each create an issue -- verified live on
-# alpha: same request body, same {self, key, id} response, same resulting
-# issue. `uip is resources describe` cannot rank them, because the summary it
-# prints maps `curated` to its display name alone and drops the `isHidden`
-# flag that marks the live one (integrationservice-sdk
-# metadata/resource-metadata.ts). Pinning a single spelling therefore fails a
-# process that creates the right ticket. Accept any of them; the generic REST
-# fallback the prompt forbids is rejected separately.
+# Accept every Jira object that carries a curated Create-Issue marker.
+# Four objects create an issue on this connector and all four behave
+# identically (verified live: same body, same {self, key, id}, same ticket),
+# but `create_issue` carries no `curated` block, so it is the generic
+# operation the prompt rules out. Among the curated three, `uip is resources
+# describe` cannot rank: its summary maps `curated` to the display name and
+# drops the `curated.isHidden` flag that marks the live one
+# (integrationservice-sdk metadata/resource-metadata.ts), printing
+# `Curated: "Create Issue"` for two of them. Pinning one spelling therefore
+# fails a process that creates the right ticket.
 JIRA_CREATE = (
     escalation_is.JIRA_CONNECTOR,
     ("curated_create_issue", "curated-issue-create", "curated_issue"),

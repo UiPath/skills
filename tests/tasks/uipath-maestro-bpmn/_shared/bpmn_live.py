@@ -300,11 +300,9 @@ def index_runtime_connectors(
     may emit a connector activity as sendTask, serviceTask, or a plain task,
     and the runtime correlates on the element id either way.
 
-    Both route fields are carried because one connector can expose the same
-    curated operation under several objects whose paths differ only in
-    spelling -- Jira creates an issue under `curated_create_issue`,
-    `curated-issue-create` and `curated_issue` alike. A caller matching on
-    the path alone cannot state which of those it means.
+    Both route fields are carried: a connector can expose one operation under
+    several objects whose paths differ only in spelling, so a caller matching
+    on the path alone cannot say which of them it means.
 
     Returns ALL ids per key. Placing the same connector operation on more than
     one branch is a legitimate topology -- a Drive copy reached from two

@@ -225,6 +225,13 @@ class ContractResolutionTests(unittest.TestCase):
             self._resolve(templated).jira_create_ids, ("JiraCreate1",)
         )
 
+    def test_non_curated_create_issue_object_is_rejected(self):
+        # `create_issue` creates the same ticket but carries no curated
+        # marker, so it is the generic operation the prompt rules out.
+        generic = SAMPLE_BPMN.replace("/curated_create_issue", "/create_issue")
+        with self.assertRaisesRegex(checker.CheckFailure, "no uipath-atlassian-jira"):
+            self._resolve(generic)
+
     def test_generic_rest_path_is_rejected(self):
         raw = SAMPLE_BPMN.replace(
             "/curated_create_issue", "/rest/api/3/issue"
