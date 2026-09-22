@@ -1,7 +1,7 @@
 # case (root) — Planning
 
 <!--skill-flavor:root-planning-intro:start-->
-The root case definition — the top-level container that every other node lives inside. Created exactly once per project. The case plugin **also owns project scaffolding**: T01 writes the 5 boilerplate project files directly — never via `uip maestro case init`, which forks the solution ([SKILL.md](../../../SKILL.md) Rule 23) — see [impl-json.md](impl-json.md).
+The root case definition — the top-level container that every other node lives inside. Created exactly once per project. `uip maestro case init`, run from inside the solution directory, creates the project and seeds its scaffold ([SKILL.md](../../../SKILL.md) Rule 24); the case plugin writes whichever of the 5 boilerplate project files it did not seed — see [impl-json.md](impl-json.md).
 <!--skill-flavor:root-planning-intro:end-->
 
 ## When to Use
@@ -71,7 +71,7 @@ The case file lives inside a solution + project structure. After T01 completes, 
 <directory>/
   <SolutionName>/
     <SolutionName>.uipx            ← created by `uip solution init` (Step 6.0, CLI)
-    <ProjectName>/                 ← created + populated by T01 (case plugin)
+    <ProjectName>/                 ← created + seeded by `uip maestro case init` (Step 6.0a, CLI)
       project.uiproj               ← § Scaffold writes
       operate.json                 ← § Scaffold writes
       entry-points.json            ← § Scaffold writes (empty entryPoints[])
@@ -82,7 +82,7 @@ The case file lives inside a solution + project structure. After T01 completes, 
 ```
 
 <!--skill-flavor:planning-contract:start-->
-Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution projects add` bookend T01 as Step 6.0 and Step 6.0b.
+Planning-phase contract: `<SolutionDir>/<ProjectName>/` ends with all 5 scaffold files + `caseplan.json`, whether `case init` seeded each file or T01 wrote it. CLI `uip solution init` (Step 6.0) and `uip maestro case init` (Step 6.0a) precede T01; `uip solution projects add` (Step 6.0b) is the registration fallback.
 <!--skill-flavor:planning-contract:end-->
 
 <!--skill-flavor:naming-canonical:start-->

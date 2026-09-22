@@ -153,6 +153,25 @@ RUN --mount=type=secret,id=npm_auth_token \
     rm -f "$npmrc" && \
     uip tools list
 
+# Replace the feed's `@uipath/maestro-tool` with a build of an open UiPath/cli PR, when
+# the workflow left one in the build context. The CLI finds plugins by scanning
+# $(npm root -g)/@uipath/*, so a plain global install of the packed tarball is enough.
+#
+# Copy through a wildcard so the build still works when no tarball is present: COPY fails
+# on a missing literal path, and `maestro-tool-pr.tgz*` matches zero files happily. The
+# install is then conditional on the file existing.
+COPY tests/docker/.keep* maestro-tool-pr.tgz* /tmp/cli-pr/
+RUN if [ -f /tmp/cli-pr/maestro-tool-pr.tgz ]; then \
+      echo "--- maestro-tool before the PR overlay: $(node -e "console.log(require(\"$(npm root -g)/@uipath/maestro-tool/package.json\").version)")" && \
+      npm install -g /tmp/cli-pr/maestro-tool-pr.tgz && \
+      echo "--- maestro-tool after the PR overlay: $(node -e "console.log(require(\"$(npm root -g)/@uipath/maestro-tool/package.json\").version)")" && \
+      echo "--- the PR's new verbs must be present ---" && \
+      uip maestro case sdd --help; \
+    else \
+      echo "no maestro-tool-pr.tgz in the build context; keeping the feed build"; \
+    fi && \
+    rm -rf /tmp/cli-pr
+
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
 # Without it, RPA tasks running under driver: docker fail their build criterion
 # with `spawn dotnet ENOENT`. libicu is a runtime dependency of the SDK.

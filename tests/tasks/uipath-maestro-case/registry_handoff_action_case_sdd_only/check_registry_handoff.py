@@ -138,7 +138,7 @@ for display_name in DISPLAY_NAMES:
         f"registry lookup incorrectly substituted task display name {display_name}"
     )
 
-# Rule 8: an empty lookup stays visibly unresolved in the audit rather than being
+# Rule 9: an empty lookup stays visibly unresolved in the audit rather than being
 # silently dropped or fabricated. The marker may sit on any field of the entry.
 audit_text = registry_path.read_text(encoding="utf-8")
 for resource_name in (ACTION_RESOURCE, CASE_RESOURCE):

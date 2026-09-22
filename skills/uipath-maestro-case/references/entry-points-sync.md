@@ -15,7 +15,7 @@ Trigger plugins scaffold ([`plugins/case/impl-json.md`](plugins/case/impl-json.m
 
 In/Out formal args (`variables.inputs[]` / `outputs[]`) are final at 6.2 — Phase 3 never adds or renames them (the uniqueness rule suffixes `var`/`id`, never `name`, and this step keys on `name`). Running at 6.3 keeps the Phase-2 publish-for-review artifact correct.
 
-Re-run on regenerate-from-scratch (Rule 6). Idempotent — full recompute, never append.
+Re-run on regenerate-from-scratch (Rule 7). Idempotent — full recompute, never append.
 
 **Check 6** (end of Phase 3, [`implementation.md` § Step 12](implementation.md)) re-verifies parity as cheap insurance.
 
