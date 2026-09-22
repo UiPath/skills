@@ -164,7 +164,7 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Runtime check                    <- only when the user said yes
-<Passed in <duration> | Passed on run <n> after <k> fix(es) | Failed at <file>: <activity> — <exception type>: <first line of message>, after <k> fix(es), <u> undone | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
+<Passed in <duration> | Passed on run <n> after <k> <fix or fixes> | Failed at <file>: <activity> — <exception type>: <first line of message>, after <k> <fix or fixes>, <u> undone | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
 - <migration-related | not migration-related>: <why>. <what to do>     <- only when failed
 
 ### Next steps
