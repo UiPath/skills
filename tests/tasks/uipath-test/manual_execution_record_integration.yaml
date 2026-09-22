@@ -130,7 +130,7 @@ success_criteria:
   - type: command_executed
     description: "Agent opened a manual execution over the test set (`executions create --test-set-key`)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+create\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-set-key\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)uip\s+tm\s+executions?\s+create\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -138,33 +138,38 @@ success_criteria:
   - type: command_executed
     description: "Agent read the run's own logs to resolve each TestCaseId (`executions testcaselogs list`)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+testcaselogs\s+list\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)uip\s+tm\s+executions?\s+testcaselogs\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
+  # One criterion per result rather than min_count: 3 on a shared pattern —
+  # min_count counts TOOL CALLS, not occurrences, so an agent that chains its
+  # three logs into one `... && ...` call would be docked for doing the
+  # natural thing. The lookaheads are segment-scoped for the same reason: a
+  # call-wide `[\s\S]*` would let a flag from a neighbouring command satisfy
+  # this one.
   - type: command_executed
-    description: "Agent started a log for each of the three cases (`testcaselog start`)"
+    description: "Agent started a log for a case (`testcaselog start`)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--test-case-id\s+\S)uip\s+tm\s+testcaselog\s+start\b'
-    min_count: 3
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)uip\s+tm\s+testcaselog\s+start\b'
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent recorded a result for each of the three cases (`testcaselog finish --result`)"
+    description: "Agent recorded the two passes (`testcaselog finish --result Passed`)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--result\s+\S)uip\s+tm\s+testcaselog\s+finish\b'
-    min_count: 3
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--result\s+Passed\b)uip\s+tm\s+testcaselog\s+finish\b'
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent recorded exactly one Failed result, for TC2"
+    description: "Agent recorded the one failure (`testcaselog finish --result Failed`)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--result\s+Failed)uip\s+tm\s+testcaselog\s+finish\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--result\s+Failed\b)uip\s+tm\s+testcaselog\s+finish\b'
     min_count: 1
-    max_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
@@ -181,7 +186,7 @@ success_criteria:
   - type: command_executed
     description: "Agent reported the run's own totals (`executions get-stats`), not a hand tally"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+get-stats\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)uip\s+tm\s+executions?\s+get-stats\b'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
