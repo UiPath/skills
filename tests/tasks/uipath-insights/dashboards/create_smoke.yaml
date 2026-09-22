@@ -20,11 +20,13 @@ description: >
   the task passes once and fails forever, and an A/B of two variants fails
   whichever runs second.
 
-  On the eval tenant the slot read answers not-found, because the tenant
-  has no Insights Portal service. The prompt therefore asks for the create
-  unconditionally: the CLI's own preflight refuses it before any request,
-  and the criteria grade the command shape, which is all this tier can
-  prove.
+  The eval tenant is a Cloud tenant that serves the dashboard routes: the
+  first gate run of this task (skills run 35692311210) read the
+  placeholder slot live in pre_run and got the template back. So the
+  create lands on the orphan slot on every run, and the live read at the
+  end grades that it did. The prompt still asks for the create
+  unconditionally, so a file the CLI refuses is reported as a refusal
+  rather than hidden behind a stop.
 tags: [uipath-insights, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -188,4 +190,16 @@ success_criteria:
     command_pattern: 'uip\s+insights\s+dashboards\s+create(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(source-type|service-identifier|dashboard-id|body|data|definition|tenant|organization)\b'
     max_count: 0
     weight: 1.0
+    pass_threshold: 1.0
+
+  # The create landed. pre_run freed the slot, so a saved dashboard there
+  # after the run is this run's create and nothing else. No command string
+  # can fake it, and a file the CLI refused leaves the slot on the
+  # template and fails here, which is the round trip this task grades.
+  - type: run_command
+    description: "Live: the placeholder slot holds a saved dashboard after the run"
+    command: "uip insights dashboards get --process-key 00000000-0000-0000-0000-000000000000 --output json | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Data\"][\"Saved\"] is True else 1)'"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0

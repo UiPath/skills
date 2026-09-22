@@ -2,43 +2,62 @@ task_id: skill-insights-smoke-dashboard-reads
 description: >
   Smoke test: agent uses the uipath-insights skill to read a Maestro
   process's monitoring dashboard read-only. Given a prompt asking what a
-  process's Monitoring tab shows and which global filters it applies, the
-  agent should run the two dashboard reads, take the full definition
-  through the --output-file artifact rather than through captured stdout,
-  and treat an empty filter list or a missing dashboard as a bounded
-  answer rather than a reason to write. The CLI is authenticated; the
-  tenant may or may not hold a Maestro process or a saved dashboard, and
-  the dashboard routes are served only on Cloud and Dedicated SaaS, so a
-  not-found, empty, or configuration answer is a valid outcome.
+  process's Monitoring tab shows, what its stored global filters are, and
+  whether its case-management slot holds anything, the agent should run
+  the slot read, follow the numeric id it reports into the by-id read
+  (the slot read drops the stored global filters, reads guide Rule 6, so
+  the by-id read is the only one that carries them), take the full
+  definition through the --output-file artifact rather than through
+  captured stdout, read the case slot with --case, list the filters, and
+  treat an empty filter list as a bounded answer rather than a reason to
+  write. The CLI is authenticated.
 
-  Covers both shipped reads. The prompt supplies a placeholder process key
-  as a fallback so the read path runs on a tenant with no Maestro process:
-  a well-formed GUID passes the CLI's local validation and reaches the
-  slot read, and the criteria grade the invocation rather than the tenant's
-  answer.
+  Covers both shipped reads in every form the guide teaches: the slot
+  read, the by-id read, the --output-file artifact, --case, and the
+  filters list. The process key belongs to no Maestro process, and a
+  pre_run step seeds its slot with a saved dashboard (dashboards copy
+  from a template-only key), so the numeric id exists on every run and
+  the by-id read can be gated rather than accepted. The case slot of that
+  key still serves the case template, which is what the --case read
+  proves it can reach. The dashboard routes are served only on Cloud and
+  Dedicated SaaS. The eval tenant is a Cloud tenant that serves them: the
+  first gate run of this family (skills run 35692311210) read the create
+  task's placeholder slot live and got the template back, so a not-found
+  here is a defect and not a tenant limit. The --help gates below are what
+  fail on a CLI that never registered the verbs, and the live read at the
+  end is what fails when the seed did not land.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
-  expected_turns: 10
+  expected_turns: 12
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  # The by-id read needs a saved row. seed_slot.py copies a template into
+  # this task's own placeholder slot and never fails the task: a slot it
+  # cannot seed is left as it is, and the agent's own read says so.
+  - command: "python3 _setup/seed_slot.py 00000000-0000-0000-0000-000000000004"
+    timeout: 180
+    fail_on_error: false
 
 initial_prompt: |
-  I want a read-only picture of a Maestro process's monitoring dashboard.
-  Find a Maestro process on this tenant and read the dashboard its
-  Monitoring tab shows; if the tenant has no Maestro process, say so and
-  use 00000000-0000-0000-0000-000000000000 as the process key so we still
-  exercise the read. Tell me whether a dashboard has been saved for it or
-  whether the process still shows the built-in template, and summarize
-  what the dashboard contains. Save the full definition to a file so I can
-  edit it later, and use the CLI's own file option for that rather than
-  capturing what the command prints. Then list the global filters saved on
-  that dashboard, using the Id the read reported; if that read failed or
-  was not found, run the filters read anyway with the id
-  UiPath-Maestro-process-monitoring___00000000-0000-0000-0000-000000000000
-  so the read path is exercised. Do not create or change anything. If a
-  read comes back empty or not found, say so plainly and say what it does
-  and does not prove, then move on. If the output says more rows exist, page through
-  them before you summarize. Run each command at most once per page; do
-  not retry failures.
+  I want a read-only picture of the monitoring dashboard on the Maestro
+  process 00000000-0000-0000-0000-000000000004. Tell me whether a
+  dashboard has been saved for it or whether the process still shows the
+  built-in template, and summarize what the dashboard contains, global
+  filters included. Save the full definition, filters and all, to
+  ./dashboard.json so I can edit it later. Then list the global filters
+  saved on that dashboard. Also check whether the same process has
+  anything saved in its case-management slot. Do not create or change
+  anything. If a read comes back empty or not found, say so plainly and
+  say what it does and does not prove, then move on. If the output says
+  more rows exist, page through them before you summarize. Run each
+  command at most once per page; do not retry failures.
 
 success_criteria:
   - type: skill_triggered
@@ -72,28 +91,79 @@ success_criteria:
   # any of these: the grader compiles with re.DOTALL and it bleeds past the
   # end of the command entirely.
   - type: command_executed
-    description: "Agent ran dashboards get to read the process's dashboard"
+    description: "Agent ran the slot read on the process key"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+get\b(?!\s+(?:--help|-h)\b)'
+    command_pattern: 'uip\s+insights\s+dashboards\s+get\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--process-key'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
+  # Reads guide Rules 4 and 6 in one criterion, because they only hold
+  # together: the slot read omits the stored global filters, so the file
+  # the user asked for, filters included, can only come from the by-id
+  # read, and it can only come through --output-file, because redirected
+  # stdout is a PascalCase envelope that is valid input to nothing. Graded
+  # separately, an agent that wrote the slot read to the file and ran a
+  # bare by-id read would get full credit for a file with no filters. The
+  # positional id is numeric; \d+ keeps a slot read with a GUID from
+  # matching, and the template's string id is a filters-list argument, not
+  # a get argument. Gating rather than advisory, because the seeded slot
+  # guarantees there is a definition to write.
   - type: command_executed
-    description: "Agent ran dashboard-filters list to read the stored global filters"
+    description: "Agent followed the reported id into the by-id read and took the definition through --output-file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboard-filters\s+list\b(?!\s+(?:--help|-h)\b)'
+    command_pattern: 'uip\s+insights\s+dashboards\s+get\s+"?\d+\b(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file[\s=]+"?\.?/?dashboard\.json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # The file is the CLI's artifact, not the agent's prose: a camelCase
+  # definition with dataModel AO (writes guide Rule 7) whose charts and
+  # tables are arrays. The file name is the prompt's ground-truth anchor.
+  - type: json_check
+    description: "dashboard.json is the camelCase definition the CLI wrote"
+    path: "dashboard.json"
+    assertions:
+      - expression: "dataModel"
+        operator: equals
+        expected: "AO"
+      - expression: "charts"
+        operator: type
+        expected: "array"
+      - expression: "tables"
+        operator: type
+        expected: "array"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # --case selects the case-management slot of the same process key. On a
+  # process key it reads the case template, which is what the prompt's
+  # "anything saved in its case-management slot" asks.
+  - type: command_executed
+    description: "Agent read the case-management slot with --case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--case\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The filters list takes the id the slot read reported. Tied to a
+  # numeric id because a list on the template's string id answers 200 []
+  # on any tenant, so an agent that never followed the reported id would
+  # otherwise pass on the wrong dashboard.
+  - type: command_executed
+    description: "Agent ran dashboard-filters list on the reported id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboard-filters\s+list\s+"?\d+\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
-  # command_executed only greps the command string, so the two criteria
-  # above pass even when the verbs exist in no installed CLI. --help is the
-  # tenant-agnostic reality gate: it exits 0 only when the CLI registers the
-  # command and exits 3 on an unknown one, so it fails against a build that
-  # has not shipped the dashboard reads. A live read cannot serve as the
-  # gate here, because these routes answer ConfigError on Automation Suite
-  # and Service Fabric and not-found on a tenant with no Maestro process.
+  # command_executed only greps the command string, so the criteria above
+  # pass even when the verbs exist in no installed CLI. --help is the
+  # tenant-agnostic reality gate: it exits 0 only when the CLI registers
+  # the command and exits 3 on an unknown one, so it fails against a build
+  # that has not shipped the dashboard reads.
   - type: run_command
     description: "CLI path is real: dashboards get is registered in the installed CLI"
     command: "uip insights dashboards get --help"
@@ -149,15 +219,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Rule 4: the definition travels through the --output-file artifact, and
-  # redirected stdout is a PascalCase envelope that is valid input to
-  # nothing. Advisory rather than gating, because a user who only wants the
-  # summary counts never needs the file, and the prompt's own ask for it is
-  # what makes this worth measuring.
-  - type: command_executed
-    description: "Advisory: agent took the definition through the --output-file artifact"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0
+  # The seeded slot still holds its dashboard after a read-only run. This
+  # is the live proof that nothing above was a write in disguise, and that
+  # the seed the by-id gate depends on was there to read.
+  - type: run_command
+    description: "Live: the seeded slot still holds a saved dashboard after the run"
+    command: "uip insights dashboards get --process-key 00000000-0000-0000-0000-000000000004 --output json | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Data\"][\"Saved\"] is True else 1)'"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
