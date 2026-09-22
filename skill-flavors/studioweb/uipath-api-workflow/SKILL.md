@@ -49,6 +49,10 @@ Authentication and tenant context are inherited from the active Studio Web sessi
     **Static coverage:** malformed JSON; unknown `activityType` values; per-activity required keys; missing activity metadata (warnings); invalid evaluation settings; duplicate or empty-named variables; and empty task lists. **Runtime coverage:** resource and connection IDs, expression evaluation, designer normalization, and real connector behavior. After explicit consent, verify runtime coverage through the schema-inspected `RunProject` host operation.
 <!--skill-flavor:runtime-validation-limit:end-->
 
+<!--skill-flavor:response-key-external-caller:start-->
+      A scalar `response` reaches any external caller (an Orchestrator job's element output, a Maestro BPMN node reading `=result.<field>`, the `RunProject` host operation's returned Response) under the fixed generic key `Result` — the `output.schema` property name you declared does NOT become the key.
+<!--skill-flavor:response-key-external-caller:end-->
+
 <!--skill-flavor:response-roundtrip-validation:start-->
     - **On-disk is authoritative.** Every Studio Web designer save can re-trigger normalization passes that may corrupt the Response shape. After each designer roundtrip, run the offline static validator. When runtime revalidation is needed, obtain the explicit consent required by rule 21, invoke `RunProject`, inspect the Response, and re-apply the single-expression workaround when needed. Until the designer fix ships, treat the file on disk as the source of truth.
 <!--skill-flavor:response-roundtrip-validation:end-->

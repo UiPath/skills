@@ -6,6 +6,10 @@
 **String literals MUST be wrapped:** `"${'literal'}"` (a JS string inside an expression). Studio Web preserves the wrapped form and rewrites a plain literal to `${literal}` on save. See SKILL.md critical rule 5.
 <!--skill-flavor:assign-literal-roundtrip:end-->
 
+<!--skill-flavor:response-key-external-caller-example:start-->
+a scalar `response` surfaces to any caller (Orchestrator job output, a Maestro BPMN node, the `RunProject` host operation's returned Response) under the fixed generic key `Result`, not the `output.schema` property name.
+<!--skill-flavor:response-key-external-caller-example:end-->
+
 <!--skill-flavor:response-object-roundtrip:start-->
 - **Use a single-expression `${{ ... }}` for object payloads.** Studio Web preserves that form across designer saves.
 <!--skill-flavor:response-object-roundtrip:end-->

@@ -484,7 +484,11 @@ or
 ```json
 "response": "${'done'}"
 ```
-The simple single-expression form is fine for StudioWeb roundtrip; the designer corruption only affects object payloads. But it is NOT fine whenever an external caller needs the value under a named key — a scalar `response` surfaces to any caller (Orchestrator job output, a Maestro BPMN node, `uip api-workflow run`'s envelope) under the fixed generic key `Result`, not the `output.schema` property name. Use the object form (`"${{ <field>: <expr> }}"`) even for one field whenever something downstream reads a named field. See SKILL.md critical rule 15.
+The simple single-expression form is fine for StudioWeb roundtrip; the designer corruption only affects object payloads. But it is NOT fine whenever an external caller needs the value under a named key —
+<!--skill-flavor:response-key-external-caller-example:start-->
+a scalar `response` surfaces to any caller (Orchestrator job output, a Maestro BPMN node, `uip api-workflow run`'s envelope) under the fixed generic key `Result`, not the `output.schema` property name.
+<!--skill-flavor:response-key-external-caller-example:end-->
+Use the object form (`"${{ <field>: <expr> }}"`) even for one field whenever something downstream reads a named field. See SKILL.md critical rule 15.
 
 **Common mistakes:**
 <!--skill-flavor:response-object-roundtrip:start-->
