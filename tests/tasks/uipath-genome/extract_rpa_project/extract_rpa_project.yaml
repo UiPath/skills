@@ -1,0 +1,76 @@
+task_id: skill-genome-extract-rpa-project
+description: >
+  Smoke: agent uses the uipath-genome skill to extract a component genome from a
+  staged three-workflow XAML project (mailbox intake, PDF field extraction, vendor
+  validation, ERP queue handoff). Grades structure, behavioural wording, generalized
+  configuration questions with defaults, current skill names, and the Source Map.
+tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The UiPath Studio project in `InvoiceIntake/` was inherited from another team.
+  Extract a genome from it so we have a ground-truth blueprint of what it does.
+  Write the genome into the current directory.
+
+  Before starting, load the uipath-genome skill and follow its extraction workflow.
+  Do not ask me what the project does — read the files. Do not run any `uip` commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Component genome written with the slugified project name"
+    path: "invoice-intake-genome.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Genome passes structural, wording, skill-name, and Source Map checks"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py component
+      invoice-intake-genome.md
+      --expect uipath-rpa ERP_InvoicePosting
+      --source-map Main.xaml ValidateInvoice.xaml ExtractInvoiceFields.xaml
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Business rules and configuration carry the source thresholds and names as defaults"
+    path: "invoice-intake-genome.md"
+    includes:
+      - "credit limit"
+      - "approved vendor"
+      - "ERP_InvoicePosting"
+      - "ap-lead@contoso.com"
+      - "imap.contoso.com"
+    weight: 2.0
+    pass_threshold: 0.8
+
+  - type: file_contains
+    description: "Target applications resolve to real systems and the failure path is captured"
+    path: "invoice-intake-genome.md"
+    includes:
+      - "Excel"
+      - "IMAP"
+      - "PDF"
+      - "Failed"
+    weight: 1.0
+    pass_threshold: 0.75
+
+  - type: command_not_executed
+    description: "Extraction does not build or run the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0

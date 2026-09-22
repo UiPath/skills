@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="ExtractInvoiceFields" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:str="clr-namespace:System.Text.RegularExpressions;assembly=System.Text.RegularExpressions" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_PdfPath" Type="InArgument(x:String)" />
+    <x:Property Name="out_VendorName" Type="OutArgument(x:String)" />
+    <x:Property Name="out_InvoiceNumber" Type="OutArgument(x:String)" />
+    <x:Property Name="out_Amount" Type="OutArgument(x:Double)" />
+  </x:Members>
+  <Sequence DisplayName="Extract Invoice Fields">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="pdfText" />
+      <Variable x:TypeArguments="str:Match" Name="amountMatch" />
+    </Sequence.Variables>
+    <ui:ReadPDFText DisplayName="Read invoice text" FileName="[in_PdfPath]" Text="[pdfText]" PreserveFormatting="False" />
+    <Assign DisplayName="Vendor = first line">
+      <Assign.To><OutArgument x:TypeArguments="x:String">[out_VendorName]</OutArgument></Assign.To>
+      <Assign.Value><InArgument x:TypeArguments="x:String">[pdfText.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries).First().Trim]</InArgument></Assign.Value>
+    </Assign>
+    <Assign DisplayName="Invoice number after 'Invoice No'">
+      <Assign.To><OutArgument x:TypeArguments="x:String">[out_InvoiceNumber]</OutArgument></Assign.To>
+      <Assign.Value><InArgument x:TypeArguments="x:String">[Regex.Match(pdfText, "Invoice\s*(?:No|Number|#)[:.]?\s*([A-Z0-9-]+)", RegexOptions.IgnoreCase).Groups(1).Value]</InArgument></Assign.Value>
+    </Assign>
+    <Assign DisplayName="Total amount after 'Total'">
+      <Assign.To><OutArgument x:TypeArguments="str:Match">[amountMatch]</OutArgument></Assign.To>
+      <Assign.Value><InArgument x:TypeArguments="str:Match">[Regex.Match(pdfText, "Total\s*(?:Due)?[:.]?\s*[$€]?\s*([0-9][0-9,]*\.?[0-9]{0,2})", RegexOptions.IgnoreCase)]</InArgument></Assign.Value>
+    </Assign>
+    <If Condition="[Not amountMatch.Success OrElse String.IsNullOrEmpty(out_InvoiceNumber)]" DisplayName="Required fields found?">
+      <If.Then>
+        <Throw DisplayName="Missing invoice number or total" Exception="[New BusinessRuleException(&quot;Could not read invoice number or total from &quot; &amp; in_PdfPath)]" />
+      </If.Then>
+      <If.Else>
+        <Assign>
+          <Assign.To><OutArgument x:TypeArguments="x:Double">[out_Amount]</OutArgument></Assign.To>
+          <Assign.Value><InArgument x:TypeArguments="x:Double">[CDbl(amountMatch.Groups(1).Value.Replace(",", ""))]</InArgument></Assign.Value>
+        </Assign>
+      </If.Else>
+    </If>
+  </Sequence>
+</Activity>
