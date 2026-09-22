@@ -22,7 +22,7 @@ description: >
   agent that authors placeholder `<ACTION_APP_ID>` values (the correct move
   when no such app exists) will fail validate with `MISSING_BINDING` even
   though the process is otherwise well-formed.
-tags: [uipath-maestro-bpmn, uipath-human-in-the-loop, e2e, devcon]
+tags: [uipath-maestro-bpmn, uipath-human-in-the-loop, e2e, "mode:build", devcon]
 
 # skip:true, tenant-gated. The `validate` criterion below (weight 3.0,
 # pass_threshold 1.0, gating) cannot pass until a deployed Action App exists in
