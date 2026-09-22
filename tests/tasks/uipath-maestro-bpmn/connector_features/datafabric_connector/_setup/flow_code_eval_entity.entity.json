@@ -1,6 +1,6 @@
 {
   "displayName": "FlowCodeEvalEntity",
-  "description": "Coder-eval fixture — DF Flow connector CRUD/query/file surface for uipath-maestro-flow smokes and integration",
+  "description": "Shared coder-eval fixture entity used by the Maestro Flow and Maestro BPMN suites — Data Fabric connector CRUD/query/file surface",
   "fields": [
     {"name": "title",        "type": "STRING",         "lengthLimit": 200},
     {"name": "description",  "type": "MULTILINE_TEXT", "lengthLimit": 2000},
