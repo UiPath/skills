@@ -17,15 +17,21 @@ exists the live schema is read back with
 
     uip df entities get <ENTITY_ID> --output json
 
-and every field in the local definition must be present on the live entity
-with a compatible type (`Data.Fields[].FieldDataType.Name`). A missing or
-type-drifted field exits 1 with a `FAIL:` line on stderr — the fixture entity
-is shared by more than one suite, so a definition that gained a field the
-tenant entity never got must fail the pre_run gate loudly instead of letting
-the task run against a schema that cannot satisfy it.
+and every field in the local definition must be present on the live entity.
+A missing field exits 1 with a `FAIL:` line on stderr — the fixture entity is
+shared by more than one suite, so a definition that gained a field the tenant
+entity never got must fail the pre_run gate loudly instead of letting the task
+run against a schema that cannot satisfy it.
 
-Exits 0 when the entity was created, or already existed and reconciles.
-Exits non-zero on schema drift, or on real infrastructure failure (login
+Field TYPES are reported, not enforced: the live schema names types in Data
+Service's own vocabulary (`Data.Fields[].FieldDataType.Name`), which does not
+match the create-time names one for one — the shared tenant entity reads back
+INTEGER as DECIMAL, DATETIME as DATETIME_WITH_TZ and UUID as STRING (smoke run
+35673274828) while both suites' graders pass against it. A type difference
+prints a `WARN:` line so real drift stays visible without failing the gate.
+
+Exits 0 when the entity was created, or already existed with every field.
+Exits non-zero on a missing field, or on real infrastructure failure (login
 expired, CLI missing, etc.), which fails the pre_run gate and blocks the agent
 from running against a broken environment.
 """
@@ -85,22 +91,26 @@ def reconcile(name, definition, ent_id):
             continue
         got = live_field_type(live_field)
         # FILE fields surface as attachments on some tenants; accept either.
-        compatible = (
+        same = (
             not wanted
             or not got
             or got == wanted
             or (wanted == "FILE" and live_field.get("IsAttachment"))
         )
-        if not compatible:
-            problems.append(f"{field_name} (is {got}, definition needs {wanted})")
+        if not same:
+            print(
+                f"WARN: {name}.{field_name} reads back as {got}; definition "
+                f"says {wanted} (Data Service type vocabulary differs; not enforced)",
+                file=sys.stderr,
+            )
     if problems:
         print(
             f"FAIL: entity {name} exists but is missing fields: {problems}",
             file=sys.stderr,
         )
         print(
-            f"FAIL: reconcile against the shared definition or update the "
-            f"tenant entity ({ent_id}); the fixture is shared across suites.",
+            f"FAIL: add the missing field(s) to the tenant entity ({ent_id}) "
+            f"or reconcile the shared definition; the fixture is shared across suites.",
             file=sys.stderr,
         )
         sys.exit(1)
