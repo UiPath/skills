@@ -25,7 +25,7 @@ What can cause it:
 1. Get the failing job and read the exception:
    `uip or jobs get <job-key> --output json` — `Info` shows the `Win32Exception (6): The handle is invalid` at `CopyFromScreen`.
 2. Find the failing activity in traces:
-   `uip or jobs traces <job-key> --output json` — the screenshot / image-capture activity Faulted; prior non-screen activities succeeded.
+   `uip traces spans get --job-key <job-key> --output json` — the screenshot / image-capture activity Faulted; prior non-screen activities succeeded.
 3. Check the robot user's session configuration:
    `uip or users get <user-key> --output json` — `LoginToConsole` (**true** ⇒ the robot attaches to the machine's single physical console session; with no interactive logon there, it has no rendered desktop. **false** ⇒ the robot opens its own RDP session with a desktop — the recommended unattended setting) and whether this is an unattended user expected to have its own session.
 4. Check session stability around the failure: whether an RDP session was disconnected/logged off or the host locked at the failure timestamp (job history + host events).
