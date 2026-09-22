@@ -128,7 +128,7 @@ uip gov aops-policy product list --output json
 
 ## uip gov aops-policy product get
 
-Fetch a single product record to confirm a product name exists before using it.
+Fetch one product's catalog record — its `name`, display `label`, and its cloud/restricted/remote flags. This is the single-product catalog lookup, not the product's policy template.
 
 ```bash
 uip gov aops-policy product get <PRODUCT_NAME_OR_GUID> --output json
@@ -136,7 +136,7 @@ uip gov aops-policy product get <PRODUCT_NAME_OR_GUID> --output json
 
 The positional argument accepts either the product `name` (e.g. `StudioX`) or its GUID.
 
-**Output:** `Data` has `identifier`, `name`, `label`.
+**Output:** `Data` has `identifier`, `name`, `label`, and the `isCloud` / `isRestricted` / `isRemote` flags.
 
 > In the create flow, prefer the bootstrap from `template list` over `product list`. The bootstrap materializes every product's full schema plus catalog metadata in one call — see [configure-aops-policy-data-guide.md — Step 1](./configure-aops-policy-data-guide.md#step-1--bootstrap-load-all-products-and-their-templates-create-flow-only).
 
