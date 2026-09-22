@@ -1,6 +1,6 @@
-task_id: skill-admin-audit-exclusions-list-smoke
+task_id: skill-admin-audit-exclusions-list-e2e
 description: >
-  Smoke test (outcome-graded): the agent answers "which audit events are we not
+  Test (outcome-graded): the agent answers "which audit events are we not
   recording" by reading the organization's exclusion rules and saving the
   complete listing. Graded by corroborating the saved file against the rule set
   the harness reads back itself, so a fabricated or partial save cannot pass.
@@ -22,7 +22,16 @@ description: >
   (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
   organization. Until both ship the verifier reports that the rules could not be
   read.
-tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org, path-to-ga]
+
+  Tier note: this is a smoke-shaped check — one scenario, cheap, no build —
+  carried in the e2e tier because the surface it exercises is not deployed
+  yet. Every blocked task in this repo waits in e2e: the PR gate runs the
+  smoke tier against the live organization and enforces a pass rate, so a
+  task that cannot pass until `/api/EventConfig/rules` ships would redden
+  that gate on every PR touching uipath-admin. Re-tag it `smoke` (tag,
+  task_id and filename) in the same change that removes the Blocker note.
+
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org, path-to-ga]
 reference:
   directory: ..
 
