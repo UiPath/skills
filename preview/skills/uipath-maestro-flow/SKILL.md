@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER for authoring, operating or diagnosing UiPath Maestro Flow. Author and edit `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`): graph structure, expressions, nodes, bindings, connectors, brownfield edits, and the check/compile/validate loop on the emitted `.flow`. Operate: upload, publish, deploy, debug a real run, trigger a process, job status and traces, pause/resume/cancel/retry an instance. Diagnose: faulted runs, incidents, runtime variables, why validate passed but the run failed. Case plans (`caseplan.json`) → uipath-maestro-case; BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
+description: "TRIGGER for authoring, operating or diagnosing UiPath Maestro Flow. Author and edit `<Name>.flow.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`): graph structure, expressions, nodes, bindings, connectors, brownfield edits, and the check/compile/validate loop on the emitted `.flow`. Operate: upload, publish, deploy, debug a real run, trigger a process, job status and traces, pause/resume/cancel/retry an instance. Diagnose: faulted runs, incidents, runtime variables, why validate passed but the run failed. Evaluate: evaluators, eval sets, data points, simulations, eval runs and comparisons. Case plans (`caseplan.json`) → uipath-maestro-case; BPMN (`.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -603,10 +603,12 @@ look again. The builder removes several classic `.flow` defects and leaves
 others, including an expression that is really a literal. Read
 **[`references/diagnose.md`](references/diagnose.md)**.
 
-## Evaluation assets
+## Evaluating a flow
 
-An inline agent does not create evaluators, eval sets, or data points. Manage
-those project files with the Flow eval CLI; read
+An inline agent does not create evaluators, eval sets, data points or
+simulations — the Flow eval CLI manages them as project files. Simulate every
+side-effecting component before running a set, and never `solution upload` as
+part of an eval workflow without asking. Read
 **[`references/evaluate.md`](references/evaluate.md)**.
 
 ## Queue item
