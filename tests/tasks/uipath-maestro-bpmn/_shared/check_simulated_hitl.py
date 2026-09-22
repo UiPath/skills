@@ -44,64 +44,109 @@ succeeds -- never requiring both.
 Assertion map (Flow -> BPMN), citing check_simulated_hitl.py (Flow) lines:
 
   quick-form
-    F check_simulated_hitl.py:38-53   inline HITL quick-form node exists      -> >=1 bpmn:userTask carrying Actions.HITL (BPMN's Actions.HITL IS the inline
-                                                                                  form; there is no separate "quick" vs "form" node type to distinguish,
-                                                                                  and this holds for both Form 1 and Form 2)
+    F check_simulated_hitl.py:38-53   inline HITL quick-form node exists      -> >=1 bpmn:userTask carrying
+                                                                                  Actions.HITL (BPMN's Actions.HITL IS
+                                                                                  the inline form; there is no separate
+                                                                                  "quick" vs "form" node type to
+                                                                                  distinguish, and this holds for both
+                                                                                  Form 1 and Form 2)
 
   schema
-    F check_simulated_hitl.py:67-69   an input-direction (read-only) field    -> >=1 uipath:context/uipath:input presenting data to the reviewer (Form 1's
-                                                                                  own field inputs, or Form 2's fixed context -- both are >=1 input)
-    F check_simulated_hitl.py:70-71   an output/inOut (fill-in) field         -> >=1 uipath:output (var=) capturing reviewer-entered data (Form 1's typed
-                                                                                  per-field outputs, or Form 2's single opaque response output)
-    T check_simulated_hitl.py:72-74   "approve"+"reject" present in the       -> "approve"+"reject" present in the serialized uipath:activity subtree
-                                       dumped schema JSON                        (context inputs + outputs + taskTitle + Form 2's HitlTaskArguments body),
-                                                                                  OR in a conditionExpression/script that references the response
-                                                                                  variable (T: BPMN has no discrete outcomes list, so the same
-                                                                                  substring-presence check runs over the whole activity payload, widened
-                                                                                  to the response variable's downstream consumers for Form 2 where the
-                                                                                  node itself may only carry an indirection key like "decisionField")
+    F check_simulated_hitl.py:67-69   an input-direction (read-only) field    -> >=1 uipath:context/uipath:input
+                                                                                  presenting data to the reviewer (Form
+                                                                                  1's own field inputs, or Form 2's
+                                                                                  fixed context -- both are >=1 input)
+    F check_simulated_hitl.py:70-71   an output/inOut (fill-in) field         -> >=1 uipath:output (var=) capturing
+                                                                                  reviewer-entered data (Form 1's typed
+                                                                                  per-field outputs, or Form 2's single
+                                                                                  opaque response output)
+    T check_simulated_hitl.py:72-74   "approve"+"reject" present in the       -> "approve"+"reject" present in the
+                                       dumped schema JSON                         serialized uipath:activity subtree
+                                                                                  (context inputs + outputs + taskTitle
+                                                                                  + Form 2's HitlTaskArguments body), OR
+                                                                                  in a conditionExpression/script that
+                                                                                  references the response variable (T:
+                                                                                  BPMN has no discrete outcomes list, so
+                                                                                  the same substring-presence check runs
+                                                                                  over the whole activity payload,
+                                                                                  widened to the response variable's
+                                                                                  downstream consumers for Form 2 where
+                                                                                  the node itself may only carry an
+                                                                                  indirection key like "decisionField")
 
   priority
-    F check_simulated_hitl.py:78-83   "high" present anywhere in the dumped   -> "high" present anywhere in the serialized HITL userTask element (I:
-                                       JSON of the whole HITL node               ET.tostring of the element replaces json.dumps of the node dict; this
-                                                                                  already covers Form 2's body JSON since it's a descendant of the
-                                                                                  userTask -- unchanged by the two-form tolerance)
+    F check_simulated_hitl.py:78-83   "high" present anywhere in the dumped   -> "high" present anywhere in the
+                                       JSON of the whole HITL node                serialized HITL userTask element (I:
+                                                                                  ET.tostring of the element replaces
+                                                                                  json.dumps of the node dict; this
+                                                                                  already covers Form 2's body JSON
+                                                                                  since it's a descendant of the
+                                                                                  userTask -- unchanged by the two-form
+                                                                                  tolerance)
 
   outcome-wiring
-    F check_simulated_hitl.py:116-117 zero-outcome path: "completed" handle   -> HITL userTask has >=1 outgoing bpmn:sequenceFlow (T/DROPPED: BPMN
-                                       must be wired                             Actions.HITL has one completion path, not per-outcome ports, so
-    DROPPED check_simulated_hitl.py:98-115 per-outcome outcome-<id> handle       "every outcome gets its own wired port" collapses to "the task's single
-                                       wiring, outcome-completed placeholder      completion path is wired" -- the same reduction
-                                       rule                                       check_devcon_expense_approval.py and check_smoke_completed_wired.py
-                                                                                  already use for this exact construct; form-agnostic, unchanged.
+    F check_simulated_hitl.py:116-117 zero-outcome path: "completed" handle   -> HITL userTask has >=1 outgoing
+                                       must be wired                              bpmn:sequenceFlow (T/DROPPED: BPMN
+    DROPPED check_simulated_hitl.py:98-115 per-outcome outcome-<id> handle        Actions.HITL has one completion path,
+                                       wiring, outcome-completed placeholder      not per-outcome ports, so "every
+                                       rule                                       outcome gets its own wired port"
+                                                                                  collapses to "the task's single
+                                                                                  completion path is wired" -- the same
+                                                                                  reduction
+                                                                                  check_devcon_expense_approval.py and
+                                                                                  check_smoke_completed_wired.py already
+                                                                                  use for this exact construct;
+                                                                                  form-agnostic, unchanged.
 
   expense
-    I check_simulated_hitl.py:136-139 locate/parse the artifact, edges exist  -> parse_bpmn(), sequenceFlow elements always present in a well-formed .bpmn
-    F check_simulated_hitl.py:141-142 exactly 1 HITL node                     -> exactly 1 bpmn:userTask carrying Actions.HITL
+    I check_simulated_hitl.py:136-139 locate/parse the artifact, edges exist  -> parse_bpmn(), sequenceFlow elements
+                                                                                  always present in a well-formed .bpmn
+    F check_simulated_hitl.py:141-142 exactly 1 HITL node                     -> exactly 1 bpmn:userTask carrying
+                                                                                  Actions.HITL
     F check_simulated_hitl.py:148-149 HITL needs fields                      -> HITL activity has >=1 context input
-    F check_simulated_hitl.py:150-155 amount must be a number field          -> Form 1: a context input naming/presenting "amount" references a flat
-                                                                                  numeric declared vars.<id>. T/Form 2: a HitlTaskArguments-style body-JSON
-                                                                                  key naming/presenting "amount" holds an `=vars.<id>.<field>` expression
-                                                                                  whose <field> resolves to "number" in that variable's own JSON Schema
-                                                                                  (BPMN context inputs carry no type= of their own, so the type lives on
-                                                                                  the variable -- possibly nested -- behind the vars.<id> reference)
-    F check_simulated_hitl.py:156-174 decision: boolean field OR             -> Form 1: a typed HITL output field named approve/approved/decision,
-                                       approve/reject outcomes                    boolean OR string typed. T/Form 2: a body-JSON key named
-                                                                                  approve*/decision* (or its literal string VALUE, an indirection naming
-                                                                                  the response field, e.g. "decisionField":"approved") is actually
-                                                                                  dereferenced downstream off the response var (vars.<respVar>, tolerating
-                                                                                  a local script alias) and, wherever any declared JSON-Schema variable
-                                                                                  documents that field name, it is boolean or string typed (BPMN has no
-                                                                                  outcomes list, so "named outcomes" becomes a string/boolean-typed
-                                                                                  decision field read off the opaque response instead)
-    F check_simulated_hitl.py:175-185 text output field for rejection reason -> same Form 1/Form 2 split as decision, with REASON_RE and text typing
-    F check_simulated_hitl.py:186     outcome wiring (see outcome-wiring)    -> HITL userTask has >=1 outgoing sequence flow
-    F check_simulated_hitl.py:187-194 downstream core.action.script reads    -> T: some bpmn:scriptTask references vars.<HITL output var id> (no
-                                       $vars.<hitl_id>.output                     .output segment -- BPMN variables are flat, not node-scoped) in its
-                                                                                  <bpmn:script> source or a nested uipath:input/output value; unaffected
-                                                                                  by the two-form tolerance since it only needs the base var id, and a
-                                                                                  local script alias still contains that literal substring once
-                                                                                  (`var d = vars.X;`)
+    F check_simulated_hitl.py:150-155 amount must be a number field          -> Form 1: a context input
+                                                                                 naming/presenting "amount" references a
+                                                                                 flat numeric declared vars.<id>. T/Form
+                                                                                 2: a HitlTaskArguments-style body-JSON
+                                                                                 key naming/presenting "amount" holds an
+                                                                                 `=vars.<id>.<field>` expression whose
+                                                                                 <field> resolves to "number" in that
+                                                                                 variable's own JSON Schema (BPMN
+                                                                                 context inputs carry no type= of their
+                                                                                 own, so the type lives on the variable
+                                                                                 -- possibly nested -- behind the
+                                                                                 vars.<id> reference)
+    F check_simulated_hitl.py:156-174 decision: boolean field OR             -> Form 1: a typed HITL output field named
+                                       approve/reject outcomes                   approve/approved/decision, boolean OR
+                                                                                 string typed. T/Form 2: a body-JSON key
+                                                                                 named approve*/decision* (or its
+                                                                                 literal string VALUE, an indirection
+                                                                                 naming the response field, e.g.
+                                                                                 "decisionField":"approved") is actually
+                                                                                 dereferenced downstream off the
+                                                                                 response var (vars.<respVar>,
+                                                                                 tolerating a local script alias) and,
+                                                                                 wherever any declared JSON-Schema
+                                                                                 variable documents that field name, it
+                                                                                 is boolean or string typed (BPMN has no
+                                                                                 outcomes list, so "named outcomes"
+                                                                                 becomes a string/boolean-typed decision
+                                                                                 field read off the opaque response
+                                                                                 instead)
+    F check_simulated_hitl.py:175-185 text output field for rejection reason -> same Form 1/Form 2 split as decision,
+                                                                                 with REASON_RE and text typing
+    F check_simulated_hitl.py:186     outcome wiring (see outcome-wiring)    -> HITL userTask has >=1 outgoing sequence
+                                                                                 flow
+    F check_simulated_hitl.py:187-194 downstream core.action.script reads    -> T: some bpmn:scriptTask references
+                                       $vars.<hitl_id>.output                    vars.<HITL output var id> (no .output
+                                                                                 segment -- BPMN variables are flat, not
+                                                                                 node-scoped) in its <bpmn:script>
+                                                                                 source or a nested uipath:input/output
+                                                                                 value; unaffected by the two-form
+                                                                                 tolerance since it only needs the base
+                                                                                 var id, and a local script alias still
+                                                                                 contains that literal substring once
+                                                                                 (`var d = vars.X;`)
 
 Checks performed, per mode, against the discovered .bpmn (no name hint --
 the simulated dialog never pins a specific file to check, mirroring Flow's
@@ -120,6 +165,7 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
+    declared_variable_elements,
     NS,
     attr,
     elements,
@@ -153,7 +199,12 @@ def context_inputs(task: ET.Element) -> list[ET.Element]:
     """Form 1's per-field context inputs AND Form 2's fixed context inputs,
     plus any direct child input of uipath:activity (Form 2's single
     HitlTaskArguments body lands here too -- callers that care about the
-    difference filter on a leading '{' in the text, see amount_ok below)."""
+    difference filter on a leading '{' in the text, see amount_ok below).
+
+    NOT bpmn_check.context_inputs: this is deliberately narrower. The shared
+    helper walks ``.//uipath:input`` at any depth, which would also pick up
+    inputs nested below the two forms this grader distinguishes.
+    """
     return task.findall(
         "bpmn:extensionElements/uipath:activity/uipath:context/uipath:input", NS
     ) + task.findall("bpmn:extensionElements/uipath:activity/uipath:input", NS)
@@ -165,7 +216,7 @@ def activity_outputs(task: ET.Element) -> list[ET.Element]:
 
 def declared_var_types(root: ET.Element) -> dict[str, str]:
     types: dict[str, str] = {}
-    for var in root.findall(".//uipath:variables/*", NS):
+    for var in declared_variable_elements(root):
         ident = var.attrib.get("id") or var.attrib.get("name")
         if ident:
             types[ident] = (var.attrib.get("type") or "").lower()
@@ -173,7 +224,7 @@ def declared_var_types(root: ET.Element) -> dict[str, str]:
 
 
 def declared_variable_element(root: ET.Element, ident: str) -> ET.Element | None:
-    for var in root.findall(".//uipath:variables/*", NS):
+    for var in declared_variable_elements(root):
         if (var.attrib.get("id") or var.attrib.get("name")) == ident:
             return var
     return None
@@ -209,7 +260,7 @@ def declared_schema_properties(root: ET.Element) -> dict[str, str]:
     logging step's output shape -- rather than on the referenced variable
     itself)."""
     merged: dict[str, str] = {}
-    for var_el in root.findall(".//uipath:variables/*", NS):
+    for var_el in declared_variable_elements(root):
         for name, type_ in parse_schema_properties(var_el).items():
             merged.setdefault(name, type_)
     return merged

@@ -15,13 +15,15 @@ read the ``.bpmn`` rather than execute it.
 
 Assertion map (Flow → BPMN):
   F check_escalation_behavior.py:93     any trigger node                      -> elements(root, "startEvent")
-  F check_escalation_behavior.py:99-108 decision/switch/if/branch/agent node,  -> gateway (exclusive/inclusive) + agent
-                                         >=2 outcomes                            (Orchestrator.StartAgentJob) nodes; branch via
-                                                                                 sequenceFlow sourceRef fan-out or >=2 endEvents
-  F check_escalation_behavior.py:131-136 'urgent'/'urgen' and 'vip' referenced -> urgent/VIP text anywhere in the BPMN
-                                         anywhere on a node                       document (script bodies, conditions,
-                                                                                 agent prompts/inputs)
-  F check_escalation_behavior.py:139-140 'slack' referenced anywhere on a node -> "slack" text anywhere on a flow element
+  F check_escalation_behavior.py:99-108 decision/switch/if/branch/agent node,  -> gateway (exclusive/inclusive)
+                                         >=2 outcomes                            + agent (Orchestrator.StartAgentJob)
+                                                                                 nodes; branch via sequenceFlow
+                                                                                 sourceRef fan-out or >=2 endEvents
+  F check_escalation_behavior.py:131-136 'urgent'/'urgen' and 'vip' referenced -> urgent/VIP text on a flow element
+                                         anywhere on a node                       or a sequenceFlow (script bodies,
+                                                                                 edge conditions, agent prompts/inputs)
+  F check_escalation_behavior.py:139-140 'slack' referenced anywhere on a node -> "slack" text anywhere on a
+                                                                                 flow element
   F check_escalation_behavior.py:143-148 'outlook'/'office365'/                -> same substrings, anywhere on a
                                          'graph.microsoft.com' on a             non-startEvent flow element
                                          non-trigger node
@@ -29,19 +31,30 @@ Assertion map (Flow → BPMN):
                                          'createissue'/'ticket' on a node        flow element
   I               locate/parse .bpmn (file exists, well-formed XML)           -> parse_bpmn()
   T               substring/text search across the whole element XML          -> node_text() / any_element_refs(),
-                                         (any node type, any property slot)       mirrors Flow's json.dumps(node).lower()
-  T               'conditions' explicitly named as a valid urgency/VIP        -> urgent/VIP search covers the whole
-                                         signal location (sequenceFlow                document text, not just node
-                                         conditionExpression lives on an edge,        elements, since a BPMN
-                                         not a node)                                  conditionExpression is not itself
-                                                                                       a "node"
+                                         (any node type, any property slot)       mirrors Flow's
+                                                                                  json.dumps(node).lower()
+  T               'conditions' explicitly named as a valid urgency/VIP        -> urgent/VIP search covers node
+                                         signal location (sequenceFlow                elements AND sequenceFlow edges,
+                                         conditionExpression lives on an edge,        since a conditionExpression is
+                                         not a node)                                  not itself a "node"
   DROPPED         require_no_private_connector_values                        (not in Flow)
-  DROPPED         require_sequence_integrity                                 (not in Flow; `bpmn validate` criterion covers structure)
-  DROPPED         require_di_for_visible_elements                            (not in Flow; `bpmn validate` criterion covers structure)
+  DROPPED         require_sequence_integrity                                 (not in Flow; `bpmn validate`
+                                                                             criterion covers structure)
+  DROPPED         require_di_for_visible_elements                            (not in Flow; `bpmn validate`
+                                                                             criterion covers structure)
   DROPPED         connection-binding check (=bindings.<id> resolves to a      (Flow never checked connections)
                   declared Connection binding)
   DROPPED         gateway-precedes-branch sequence-flow reaches() ordering    (Flow only checked branch fan-out
                   check                                                        count, not order)
+
+The urgency/VIP search is scoped to those elements rather than to
+``ET.tostring(root)``: the Flow source scopes every signal search per node,
+"avoiding false positives from a dangling reference to a node that no longer
+exists", and a document-wide search here would let a ``bpmn:process`` name such
+as ``CustomerEscalationVIPUrgent``, a ``documentation`` string or a ``bpmndi``
+label satisfy the assertion with no classification logic in the process at all.
+Edges are in scope on top of nodes because BPMN puts a branch condition on a
+``sequenceFlow``'s ``conditionExpression``, which is not a node.
 
 Name is intentionally NOT checked here — it is a separately-weighted criterion
 so a working-but-misnamed process keeps most of its credit.
@@ -149,21 +162,23 @@ def main() -> None:
     if max_branches < 2 and len(terminals) < 2:
         fail("Routing does not fan out into >=2 branches (VIP-urgent vs standard)")
 
-    # 3. Both routing signals referenced anywhere in the BPMN text (a script
-    #    body, a sequenceFlow condition, or an agent prompt/input). Search the
-    #    whole document since a conditionExpression lives on an edge, not a
-    #    node, and the persona's own wording explicitly names "conditions" as
-    #    a valid signal location.
-    document_text = ET.tostring(root, encoding="unicode").lower()
-    if not any(needle in document_text for needle in ("urgent", "urgen")):
+    # 3. Both routing signals referenced on a real flow element (a script
+    #    body, an agent prompt/input) or on a sequence-flow edge, since a
+    #    conditionExpression lives on an edge, not a node, and the persona's
+    #    own wording explicitly names "conditions" as a valid signal
+    #    location. Deliberately NOT the whole document -- see the module
+    #    docstring: a process name, documentation or bpmndi label must not
+    #    stand in for classification logic.
+    signal_scope = nodes + elements(root, "sequenceFlow")
+    if not any_element_refs(signal_scope, "urgent", "urgen"):
         fail(
-            "No 'urgency' signal anywhere in the BPMN (process should "
-            "classify emails by urgency)"
+            "No 'urgency' signal on any flow element or sequence flow "
+            "(process should classify emails by urgency)"
         )
-    if "vip" not in document_text:
+    if not any_element_refs(signal_scope, "vip"):
         fail(
-            "No 'VIP' signal anywhere in the BPMN (process should classify "
-            "the sender as VIP or not)"
+            "No 'VIP' signal on any flow element or sequence flow (process "
+            "should classify the sender as VIP or not)"
         )
 
     # 4. Slack notification (VIP+urgent branch)

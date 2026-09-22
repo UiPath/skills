@@ -10,22 +10,70 @@ JSON node/edge walk to an XML walk over the registry-driven Actions.HITL
 skills/uipath-maestro-bpmn/references/registry-workflow.md and
 skills/uipath-maestro-bpmn/SKILL.md's Actions.HITL routing rule).
 
-Assertion map (Flow -> BPMN):
-  F   check_devcon_expense_approval.py:58-60   exactly one HITL node   -> exactly one bpmn:userTask carrying Actions.HITL
-  I                 locate/parse .bpmn                                       -> parse_bpmn("ExpenseApproval")
-  DROPPED           typeVersion v1.x check (line 66-68)                      -> Actions.HITL exposes no schema-version field on the BPMN uipath:activity shell; the registry template governs the schema instead, so there is nothing to assert here
-  F   check_devcon_expense_approval.py:71-74   HITL schema fields non-empty  -> HITL activity has >=1 output mapping (uipath:output) with var=, AND (context input(s) OR a single merged-body HitlTaskArguments input)
-  F   check_devcon_expense_approval.py:71,74   fields (outputs) must be typed -> at least one HITL output mapping carries a type= attribute
-  DROPPED           outcomes[] non-empty (line 75-76)                        -> BPMN Actions.HITL has no discrete outcomes list; decision capture is graded directly below via a typed output field / decisionField instead
-  F(T) check_devcon_expense_approval.py:78-82   amount field type number  -> T: TWO accepted forms, per CI run 35500726138's real registry-template artifact vs. the older per-field hypothesis:
-                    (T1, per-field form)  a context input naming/presenting "amount" references a declared vars.<id> whose <uipath:variables> type is numeric
-                    (T2, real Actions.HITL registry-template form -- skills/uipath-maestro-bpmn/validator/bpmn-spec.json extensionTypes["Actions.HITL"]) the single <uipath:input name="HitlTaskArguments" type="json" target="bodyField"> JSON body has a key naming "amount" whose value is an `=vars.<V>.<field>` (or bare `=vars.<V>`) expression, resolved against either a numeric-typed declared variable V, or V's declared jsonSchema CDATA `properties.<field>.type == number|integer` (Var_Expense in the CI artifact)
-  F(T) check_devcon_expense_approval.py:84-96   decision boolean OR approve/reject outcome -> T1: an HITL output field named approve/approved/decision, typed boolean OR string; T2 (recursive, CI runs 35500726138 + 35501830119): any HitlTaskArguments key at ANY depth matching approve/approved/decision whose value is a boolean literal, an `=`-expression resolving to a boolean-typed variable/schema property, or a bare string naming a field some downstream script actually dereferences (the original decisionField rule, generalized -- a stringly-typed literal like `"approved":"yes"` still fails, since "yes" is never dereferenced downstream); OR (fallback) a declared jsonSchema variable (e.g. Var_LogResponse) names a matching boolean/string property
-  F(T) check_devcon_expense_approval.py:98-105  text output field for the rejection reason -> T1: an HITL output field typed text/string named reason/comment/...; T2 (recursive): any HitlTaskArguments key at any depth matching reason/comment/explanation/justification/note whose value is any plain string (a literal default, empty allowed, or a field-name pointer -- both accepted unconditionally, unlike decision) or an `=`-expression resolving to string/text; OR (fallback) a declared jsonSchema variable names a matching text property
-  F/T check_devcon_expense_approval.py:107-118 input bound to upstream script output (vars.<node>.output.<field> or =js:$vars...) -> T: T1 checks a context input, T2 checks any HitlTaskArguments body value at any depth; either references a declared variable via vars.<id> (no .output. segment -- BPMN variables are flat, not node-scoped like Flow's $vars.<node>.output.<field>)
-  DROPPED           outcome-<id> port-per-outcome wiring mechanics (lines 120-138) -> BPMN bpmn:userTask has a single completion path, not a per-outcome handle; both of Flow's outcome ports wired to the SAME downstream node anyway, so the faithful reduction is "the HITL task has an outgoing sequence flow" (kept below)
-  F   check_devcon_expense_approval.py:127-138 HITL completion must be wired  -> the HITL userTask has >=1 outgoing bpmn:sequenceFlow
-  F   check_devcon_expense_approval.py:140-147 downstream script reads HITL output via $vars.<hitl_id>.output -> T: some bpmn:scriptTask in the process references vars.<HITL output var id> (no .output. segment), in its <bpmn:script> source or its uipath:mapping input/output value -- this substring match already covers the real form's `vars.Var_ManagerDecision.approved` shape
+Assertion map (Flow -> BPMN). One row per Flow assertion: the head line names the
+Flow-side assertion, the `->` line its BPMN re-homing, and any further indented line
+continues the row above.
+
+  F    check_devcon_expense_approval.py:58-60 - exactly one HITL node
+      -> exactly one bpmn:userTask carrying Actions.HITL
+  I    locate/parse .bpmn
+      -> parse_bpmn("ExpenseApproval")
+  DROPPED  typeVersion v1.x check (line 66-68)
+      -> Actions.HITL exposes no schema-version field on the BPMN uipath:activity shell; the
+         registry template governs the schema instead, so there is nothing to assert here
+  F    check_devcon_expense_approval.py:71-74 - HITL schema fields non-empty
+      -> HITL activity has >=1 output mapping (uipath:output) with var=, AND (context input(s) OR a
+         single merged-body HitlTaskArguments input)
+  F    check_devcon_expense_approval.py:71,74 - fields (outputs) must be typed
+      -> at least one HITL output mapping carries a type= attribute
+  DROPPED  outcomes[] non-empty (line 75-76)
+      -> BPMN Actions.HITL has no discrete outcomes list; decision capture is graded directly below
+         via a typed output field / decisionField instead
+  F(T) check_devcon_expense_approval.py:78-82 - amount field type number
+      -> T: TWO accepted forms, per CI run 35500726138's real registry-template artifact vs. the
+         older per-field hypothesis:
+         (T1, per-field form) a context input naming/presenting "amount" references a declared
+            vars.<id> whose <uipath:variables> type is numeric
+         (T2, real Actions.HITL registry-template form --
+            skills/uipath-maestro-bpmn/validator/bpmn-spec.json extensionTypes["Actions.HITL"]) the
+            single <uipath:input name="HitlTaskArguments" type="json" target="bodyField"> JSON body
+            has a key naming "amount" whose value is an `=vars.<V>.<field>` (or bare `=vars.<V>`)
+            expression, resolved against either a numeric-typed declared variable V, or V's declared
+            jsonSchema CDATA `properties.<field>.type == number|integer` (Var_Expense in the CI
+            artifact)
+  F(T) check_devcon_expense_approval.py:84-96 - decision boolean OR approve/reject outcome
+      -> T1: an HITL output field named approve/approved/decision, typed boolean OR string
+         T2 (recursive, CI runs 35500726138 + 35501830119): any HitlTaskArguments key at ANY depth
+            matching approve/approved/decision whose value is a boolean literal, an `=`-expression
+            resolving to a boolean-typed variable/schema property, or a bare string naming a field
+            some downstream script actually dereferences (the original decisionField rule,
+            generalized -- a stringly-typed literal like `"approved":"yes"` still fails, since "yes"
+            is never dereferenced downstream)
+         fallback: a declared jsonSchema variable (e.g. Var_LogResponse) names a matching
+            boolean/string property
+  F(T) check_devcon_expense_approval.py:98-105 - text output field for the rejection reason
+      -> T1: an HITL output field typed text/string named reason/comment/...
+         T2 (recursive): any HitlTaskArguments key at any depth matching
+            reason/comment/explanation/justification/note whose value is any plain string (a literal
+            default, empty allowed, or a field-name pointer -- both accepted unconditionally, unlike
+            decision) or an `=`-expression resolving to string/text
+         fallback: a declared jsonSchema variable names a matching text property
+  F/T  check_devcon_expense_approval.py:107-118 - input bound to upstream script output
+       (vars.<node>.output.<field> or =js:$vars...)
+      -> T: T1 checks a context input, T2 checks any HitlTaskArguments body value at any depth;
+         either references a declared variable via vars.<id> (no .output. segment -- BPMN variables
+         are flat, not node-scoped like Flow's $vars.<node>.output.<field>)
+  DROPPED  outcome-<id> port-per-outcome wiring mechanics (lines 120-138)
+      -> BPMN bpmn:userTask has a single completion path, not a per-outcome handle; both of Flow's
+         outcome ports wired to the SAME downstream node anyway, so the faithful reduction is "the
+         HITL task has an outgoing sequence flow" (kept below)
+  F    check_devcon_expense_approval.py:127-138 - HITL completion must be wired
+      -> the HITL userTask has >=1 outgoing bpmn:sequenceFlow
+  F    check_devcon_expense_approval.py:140-147 - downstream script reads HITL output via
+       $vars.<hitl_id>.output
+      -> T: some bpmn:scriptTask in the process references vars.<HITL output var id> (no .output.
+         segment), in its <bpmn:script> source or its uipath:mapping input/output value -- this
+         substring match already covers the real form's `vars.Var_ManagerDecision.approved` shape
 
 Real registry-template shape confirmed against two CI artifacts:
 run 35500726138 (ExpenseApprovalSolution/ExpenseApproval/ExpenseApproval.bpmn,
@@ -75,6 +123,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
+    declared_variable_elements,
     NS,
     attr,
     elements,
@@ -96,7 +145,7 @@ BOOLEAN_TYPES = {"boolean", "bool"}
 
 def declared_var_types(root) -> dict[str, str]:
     types: dict[str, str] = {}
-    for var in root.findall(".//uipath:variables/*", NS):
+    for var in declared_variable_elements(root):
         ident = var.attrib.get("id") or var.attrib.get("name")
         if ident:
             types[ident] = (var.attrib.get("type") or "").lower()
@@ -108,7 +157,7 @@ def declared_var_schemas(root) -> dict[str, dict]:
     jsonSchema and whose CDATA parses as JSON (e.g. Var_Expense in the real
     Actions.HITL registry-template artifact)."""
     schemas: dict[str, dict] = {}
-    for var in root.findall(".//uipath:variables/*", NS):
+    for var in declared_variable_elements(root):
         ident = var.attrib.get("id")
         if not ident or (var.attrib.get("type") or "").lower() != "jsonschema":
             continue
