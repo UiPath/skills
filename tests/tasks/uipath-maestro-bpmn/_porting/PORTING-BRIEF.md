@@ -78,7 +78,7 @@ Flow graders live in `tests/tasks/uipath-maestro-flow/**/check_*.py` and `_share
 | `check_connection_available.py <key>` preflight | copy the pattern; `uip is connections list <key> --output json` is connector-agnostic |
 | `flow_check.run_debug` | `_shared/bpmn_live.run_debug` (live tier only — not for this batch) |
 
-Grader files go in `tests/tasks/uipath-maestro-bpmn/_shared/check_<task>.py` and are called as `python3 $REFERENCE_DIR/_shared/check_<task>.py` with `reference: { directory: ../.. }` (depth-relative to the task YAML — count `..` so it resolves to `tests/tasks/uipath-maestro-bpmn`). This is main's convention: 75 of 76 BPMN tasks use `$REFERENCE_DIR`, none use `$TASK_DIR`. Exemplars: `single_node/http_weather/http_weather.yaml` + `_shared/check_http_weather.py`; `hitl/quality_boolean_decision/` + `_shared/check_quality_boolean_decision.py` (a completed port of Flow `hitl/quality_03_boolean_decision.yaml` — diff the pair to see the translation in practice).
+Grader files go in `tests/tasks/uipath-maestro-bpmn/_shared/check_<task>.py` and are called as `python3 $REFERENCE_DIR/_shared/check_<task>.py` with `reference: { directory: ../.. }` (depth-relative to the task YAML — count `..` so it resolves to `tests/tasks/uipath-maestro-bpmn`). This is main's convention: every BPMN task reaches its grader through `$REFERENCE_DIR`; the retired host-path variables are blocked by the task host-path gate. Exemplars: `single_node/http_weather/http_weather.yaml` + `_shared/check_http_weather.py`; `hitl/quality_boolean_decision/` + `_shared/check_quality_boolean_decision.py` (a completed port of Flow `hitl/quality_03_boolean_decision.yaml` — diff the pair to see the translation in practice).
 
 ## Task YAML skeleton
 
