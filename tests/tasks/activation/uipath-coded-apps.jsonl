@@ -58,3 +58,4 @@
 {"id": "uipath-coded-apps-060", "prompt": "add a governance violations widget to my existing dashboard", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-061", "prompt": "build me a runtime compliance dashboard showing ISO 42001 rule violations per agent", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-062", "prompt": "deploy my agent health dashboard to Automation Cloud", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-063", "prompt": "Add a button to my React coded app that calls my already-deployed TypeScript function through Functions.invoke from @uipath/uipath-typescript/functions and renders the returned JSON in a table — the function side is done, I only need the app code", "expected_skill": "uipath-coded-apps"}

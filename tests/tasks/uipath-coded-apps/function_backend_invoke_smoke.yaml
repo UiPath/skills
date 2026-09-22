@@ -1,0 +1,94 @@
+task_id: skill-coded-apps-function-backend-invoke-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to call the app's
+  already-deployed JS/TS function backend the way the skill routes it (Task
+  Navigation row -> uipath-functions coded-app wiring): through the SDK
+  `Functions` service from `@uipath/uipath-typescript/functions`, not a
+  hand-built `orchestrator_/t/...` URL, and with `OR.Default` added to the
+  app's runtime scope (the function's HTTP trigger rejects tokens without it —
+  oauth-scopes.md bundle row). Offline: no `uip` or `npm`; the SDK is
+  preinstalled so the agent can read the installed `dist/functions/index.d.ts`
+  as the coded-apps SDK reference protocol requires.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 10
+
+sandbox:
+  node:
+    env_packages:
+      - "@uipath/uipath-typescript"
+
+initial_prompt: |
+  This sandbox root is a UiPath Coded Web App. First write `uipath.json`
+  EXACTLY as shown (do not modify it in this step):
+
+  {
+    "clientId": "<CLIENT_ID>",
+    "scope": "openid profile email offline_access PIMS OR.Execution.Read",
+    "orgName": "<ORG_NAME>",
+    "tenantName": "<TENANT_NAME>",
+    "baseUrl": "https://api.uipath.com",
+    "redirectUri": "http://localhost:5173"
+  }
+
+  Then add `src/customer360.ts` exporting
+  `fetchCustomer360(sdk: UiPath, folderKey: string, input: { claimReference: string; customerId: string })`
+  that calls my already-deployed UiPath JS/TS coded function named
+  `customer-360` (a `POST` function in the folder identified by `folderKey`)
+  and returns its output. `sdk` is the app's initialized `UiPath` instance from
+  `@uipath/uipath-typescript/core`. The call must work from the deployed app
+  for a signed-in user, so fix the app's configuration if anything would block
+  it.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "Module file was created"
+    path: "src/customer360.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/customer360.ts invokes the function through the SDK Functions service"
+    path: "src/customer360.ts"
+    includes:
+      - "@uipath/uipath-typescript/functions"
+      - "new Functions("
+      - ".invoke("
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uipath.json scope gained the OR.Default token the function trigger requires"
+    command: "python3 -c \"import json,sys; s=json.load(open('uipath.json'))['scope'].split(); sys.exit(0 if 'OR.Default' in s else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Seeded uipath.json entries preserved"
+    path: "uipath.json"
+    includes:
+      - "\"clientId\""
+      - "PIMS"
+      - "https://api.uipath.com"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No hand-built trigger URL in executable code (the SDK resolves it; comments are allowed)"
+    command: "sed -E 's#(^|[[:space:]])//.*##' src/customer360.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E 'orchestrator_/t/'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Executable code never targets the portal domain (browsers must call api.*)"
+    command: "sed -E 's#(^|[[:space:]])//.*##' src/customer360.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E 'cloud\\.uipath\\.com'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 1.0
+    pass_threshold: 1.0
