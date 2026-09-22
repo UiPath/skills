@@ -213,8 +213,12 @@ def main() -> None:
     input_name = start_input_names[0]
 
     token = f"tok{uuid.uuid4().hex[:8]}"
+    # Literal, not DEBUG_TIMEOUT_SECONDS: test_criterion_budgets.py prices
+    # run_debug calls statically off the AST and refuses a non-literal
+    # timeout/budget argument. Keep this equal to DEBUG_TIMEOUT_SECONDS
+    # (bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT) above.
     debug_data, instance_id = run_debug(
-        project_dir, {input_name: token}, Path("debug.log"), timeout=DEBUG_TIMEOUT_SECONDS
+        project_dir, {input_name: token}, Path("debug.log"), timeout=480
     )
     print(f"OK: debug completed (instance {instance_id})")
 

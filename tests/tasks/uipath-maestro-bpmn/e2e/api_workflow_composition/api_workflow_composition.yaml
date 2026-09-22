@@ -16,13 +16,21 @@ run_limits:
   task_timeout: 3900
   turn_timeout: 2400
 
-# TASK_DIR is criterion-only (exposed to success_criteria run_command, not pre_run/post_run) — resolve via SKILLS_REPO_PATH.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: ../..
+
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/e2e/api_workflow_composition/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/e2e/api_workflow_composition/teardown.py"
+  - command: "python3 _setup/teardown.py"
     timeout: 300
 
 initial_prompt: |
@@ -84,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "Shape: solution wires the API workflow into the BPMN through the real v2 runtime contract (project registered + present, wrapper context fields correct, JobArguments by reference, no undeclared var reads, output mapped and published, entry-points.json contract complete, uip maestro bpmn validate clean)"
-    command: "python3 $TASK_DIR/check_shape.py"
+    command: "python3 $REFERENCE_DIR/e2e/api_workflow_composition/check_shape.py"
     timeout: 300
     expected_exit_code: 0
     weight: 3.0
@@ -92,7 +100,7 @@ success_criteria:
 
   - type: run_command
     description: "Behaviour: a freshly minted token round-trips live through the deployed process and specifically through the API workflow's own invoking node (per-node provenance in debug-instance variables-all)"
-    command: "python3 $TASK_DIR/check_behavior.py"
+    command: "python3 $REFERENCE_DIR/e2e/api_workflow_composition/check_behavior.py"
     timeout: 900
     expected_exit_code: 0
     weight: 5.0
