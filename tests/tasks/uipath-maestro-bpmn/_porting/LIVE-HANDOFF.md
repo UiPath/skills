@@ -65,6 +65,12 @@ Run 35785806030, five tasks. Green: billing_invoice_lookup, slack_weather_pipeli
 
 Field-shape family decision: assertions on wire parameters (path, query, pagination, enum, multiselect, complex_array) port; assertions on a Flow filter-tree shape do not (ceql_where parked; enhanced_enum and searchable_joins must be checked for the same trap before porting).
 
+## Batch 13 (field-shape family)
+
+All eight remaining field-shape evals were ported after reading their Flow graders: none asserts a filter tree, they grade wire parameters and validate. Run 35789221753: green on first run: enum, query_params, multiselect, searchable_joins, complex_array (advisory miss only). Agent failures at iteration 1: path_params (issue key left as an unbound variable), enhanced_enum (no connector node), paginated_reference_lookup (channel by name, no pagination); all three retried in batch 14 (run 35790934047). slack_channel_description_simulated parked after iteration 3 (page-1-only channel listing; Flow 4/12).
+
+Skill findings added: Slack channel-id resolution/pagination is not taught (three tasks now hit it); WooCommerce connector node not produced; fixed literal values get parametrised into unbound variables.
+
 ## Probe bucket (16): pilot ported, 11 decided, 4 blocked
 
 `connector_features/ceql_where` is ported (commit fd6312fde), not yet run. The probe confirmed the filter carrier exists: `Intsvc.ActivityExecution` enrichment for the Entra `groups` List operation exposes a `where` parameter (type `query`, `FilterBuilder`, `hasCEQL: true`), and the CI-passing Data Fabric artifact carries the same tree as a `target="query" name="queryExpression" type="json"` input. As in Flow, the sandbox has no live tenant for enrichment, so the port grades the same standalone `where_detail.json` planning artifact plus the connector node and terminate end. No `bpmn validate` gate, matching Flow. Its one review flag: the groups-operation tolerance (objectName contains `group`, or `groups` + GET/list) has no CI-passed fixture yet.
