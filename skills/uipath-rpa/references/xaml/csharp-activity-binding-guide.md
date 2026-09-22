@@ -10,7 +10,7 @@ For any activity property typed `InArgument<T>` or `OutArgument<T>`:
 - **Literal value with a direct type converter** (string literal on `<String>`, enum, number, boolean, `TimeSpan`, `{x:Null}`) → attribute form is safe.
 - **Anything non-literal** (variable reference, concatenation, method call, property access) → use the child-element form with `<CSharpValue>` (read) or `<CSharpReference>` (write).
 
-The XAML attribute parser defaults to VB for expression-bearing attribute values, **regardless of the project's expression language**. At runtime, the VB JIT is disabled on non-Legacy projects — so attribute-form expressions fail with `JIT compilation is disabled for non-Legacy projects`. Full failure modes: [§ C# Expression Pitfalls](#c-expression-pitfalls) below.
+The XAML attribute parser does not treat an attribute value as a C# expression, **regardless of the project's expression language**. On a property whose type accepts a string (`InArgument<Object>` above all) the text is kept as a literal, so the workflow validates, builds, and runs while using the expression's source text as its value. Full failure modes: [§ C# Expression Pitfalls](#c-expression-pitfalls) below.
 
 ## Property-surface sourcing
 
@@ -123,16 +123,15 @@ Which properties exist on a given activity, the `<Activity>.md` lookup order, an
 
 ## C# Expression Pitfalls
 
-Failure modes in scope: all pass static `validate` validation — they only surface at `CacheMetadata` time under `uip rpa build` or `uip rpa run`.
+Failure modes in scope: none of these are reported by `validate` or `build`. The worst of them produces no error at all.
 
-## Attribute-form expressions fail at runtime
+## Attribute-form input expressions silently become literals
 
-Any non-literal attribute value on an `InArgument<T>` / `OutArgument<T>` property (e.g. `Message="logMessage"`, `TextString="statusText"`) is deserialized as `VisualBasicValue<T>` by the XAML attribute parser — regardless of the project's `expressionLanguage`. On non-Legacy projects the VB JIT is disabled, so these fail at runtime:
+A non-literal attribute value on an `InArgument<T>` property whose `T` accepts a string — `Object` above all — is **not** parsed as an expression. `<ui:LogMessage Message="calcResult" />` deserializes the text `calcResult` as a literal value, so `validate` reports no diagnostics, `build` succeeds, the run succeeds, and the activity emits the string `calcResult` instead of the variable's contents.
 
-```
-System.InvalidOperationException: JIT compilation is disabled for non-Legacy projects.
-ExpressionToCompile { Code = "logMessage" ... } should have been compiled by the Studio Compiler.
-```
+There is no exception and no warning anywhere in the gate. The only symptom is wrong output, which is why a smoke test must have its **output inspected** rather than merely exiting clean.
+
+Where `T` has no string conversion, the same mistake surfaces loudly instead — as a deserialization failure naming the property (see `OutArgument<T>` below). Do not rely on that: the `Object` case is the common one, and it is silent.
 
 **Fix:** use `<CSharpValue>` (read) or `<CSharpReference>` (write) child-element form for anything non-literal.
 

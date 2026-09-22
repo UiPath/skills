@@ -77,7 +77,7 @@ Designed for a narrow split pane beside an approval form — fills its container
 ```typescript
 import { PdfViewer } from '@uipath/ui-widgets-pdf-viewer';
 import '@uipath/ui-widgets-pdf-viewer/PdfViewer.css';
-import { sdk } from '../uipath'; // action app: new UiPath() with host-injected session
+import { sdk } from '../uipath'; // action app: the shared instance (web app: useAuth())
 
 function DocumentPane({ folderKey, path }: { folderKey: string; path: string }) {
   return (

@@ -242,12 +242,12 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 ## Group B — Data + logging
 
 ### Assign
-**Class:** `System.Activities.Statements.Assign`1` (generic; preferred) — non-generic `Assign` only when both sides are `object`.
+**Class:** `System.Activities.Statements.Assign` — no type argument on the activity; the types go on its arguments.
 **XAML prefix:** standard activities namespace; no `ui:` prefix.
 
 **Snippet** (typed `Int32` example):
 ```xml
-<Assign x:TypeArguments="x:Int32" DisplayName="Assign">
+<Assign DisplayName="Assign">
   <Assign.To>
     <OutArgument x:TypeArguments="x:Int32">
       <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="counter" />
@@ -261,7 +261,7 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 </Assign>
 ```
 
-**Notes:** Prefer the generic `Assign<T>` form — typed args surface mismatch errors at `validate` time. `To` must be a writable expression (variable, argument, indexer) — Studio's emitter uses `VisualBasicReference` (or `CSharpReference` in C# projects) for the writable side and `VisualBasicValue` (or `CSharpValue`) for the readable side. One `Assign` per target — no multi-target form.
+**Notes:** Type safety comes from the arguments — the typed `OutArgument`/`InArgument` above surface mismatch errors at `validate` time. `To` must be a writable expression (variable, argument, indexer) — Studio's emitter uses `VisualBasicReference` (or `CSharpReference` in C# projects) for the writable side and `VisualBasicValue` (or `CSharpValue`) for the readable side. One `Assign` per target — no multi-target form.
 
 **Long-form:** [`activity-docs/UiPath.System.Activities/26.4/activities/Assign.md`](activity-docs/UiPath.System.Activities/26.4/activities/Assign.md)
 

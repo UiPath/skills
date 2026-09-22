@@ -11,12 +11,17 @@ name: Publish skills package
 #   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
 #         Committed `package.json` version. Stable is manual-only — there is
 #         no `release:` trigger; publishing a GitHub Release does not publish.
+#         Once npmjs serves the version, announce-stable.yml posts it to
+#         #team-coding-agents as Skills Buddy (see that workflow).
 #   - workflow_dispatch (channel: preview) -> `preview` : npmjs (pre-release)
 #   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
 #
 # npmjs publishes (`latest`, `preview`) use OIDC trusted publishing +
-# `--provenance`. GitHub Packages publishes (`dev`) use the built-in
-# GITHUB_TOKEN and carry no provenance. `npm install @uipath/skills` (no tag,
+# `--provenance`, and carry `hooks/*.ps1` Authenticode-signed by the Azure
+# DevOps release gate (.pipelines/release-gate.yml). `dev` builds are not
+# signed: they publish on every push to main, and a gate run per merge buys
+# nothing for a channel no end user installs. GitHub Packages publishes
+# (`dev`) use the built-in GITHUB_TOKEN and carry no provenance. `npm install @uipath/skills` (no tag,
 # from npmjs) always resolves the last stable release — `preview` and `dev`
 # are pre-release versions under their own dist-tags, so no un-tagged install
 # ever picks them. The version line tracks the CLI minor line so the CLI can
@@ -53,7 +58,12 @@ permissions:
 
 jobs:
   guard:
-    name: Validate version sync
+    # Deliberately NOT `Validate version sync` — that is the name of the
+    # required PR check produced by validate-version-sync.yml. This job runs on
+    # `push` and can land a same-named check on the merge commit, which makes
+    # the required context ambiguous about which run satisfied it. Same
+    # assertion, distinct check name.
+    name: Validate version sync (publish guard)
     runs-on: uipath-ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
@@ -108,9 +118,55 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  sign-hooks:
+    name: Sign hooks (Azure DevOps release gate)
+    needs: [guard]
+    # Exactly the npmjs gate below: every tarball that reaches npmjs is
+    # signed, and no other channel pays for a gate run.
+    if: >-
+      github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+          || (github.event_name == 'workflow_dispatch'
+              && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
+    runs-on: uipath-ubuntu-latest
+    # Pins the OIDC subject to `repo:UiPath/skills:environment:release-gate`,
+    # so one Entra federated credential covers every release line.
+    environment: release-gate
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      # Runs the gate against this exact commit and overlays the signed
+      # scripts. Asserts the returned manifest matches this commit and script
+      # set. A failure stops the publish -- there is no unsigned fallback.
+      - name: Sign hooks in Azure DevOps
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_SIGNING_CLIENT_ID }}
+          ADO_ORGANIZATION: ${{ vars.ADO_ORGANIZATION || 'uipath' }}
+          ADO_PROJECT: ${{ vars.ADO_PROJECT || 'skills' }}
+          ADO_PIPELINE_ID: ${{ vars.ADO_RELEASE_GATE_PIPELINE_ID }}
+          GATE_CHANNEL: ${{ github.event.inputs.channel || 'preview' }}
+          GATE_REF: ${{ github.ref }}
+          GATE_COMMIT: ${{ github.sha }}
+        run: node scripts/fetch-signed-hooks.mjs
+
+      - name: Upload signed hooks
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: signed-hooks
+          path: hooks/*.ps1
+          retention-days: 1
+          if-no-files-found: error
+
   publish-npmjs:
     name: Publish to npmjs (latest / preview)
-    needs: [guard]
+    needs: [guard, sign-hooks]
     # dispatch channel=latest              -> `latest`  (committed version).
     # release/v* push / dispatch preview   -> `preview` (stamped pre-release).
     if: >-
@@ -132,10 +188,26 @@ jobs:
         with:
           node-version: "22.x"
 
+      # Must precede `npm pack`: a signature covers the file's exact bytes, so
+      # the signed file has to be the one that gets packed.
+      - name: Overlay signed hooks
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: signed-hooks
+          path: hooks
+
       # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
+      #
+      # Pinned to a major, NOT `npm@latest`. This job is the only one that
+      # upgrades npm, so it is the only one exposed to a new npm major the
+      # moment it ships -- with no repo change to point at. npm 12 renamed the
+      # `npm pack --json` payload from an array to an object keyed by package
+      # name, which broke the nested pack inside our `prepack` hook and stalled
+      # npmjs at 1.199.0 for two release lines. Minor/patch upgrades still flow;
+      # moving majors is now a deliberate edit.
       - name: Upgrade npm for trusted publishing
         run: |
-          npm install -g npm@latest
+          npm install -g npm@12
           echo "npm $(npm --version) / node $(node --version)"
 
       # `preview` when: dispatch channel=preview, OR an auto push to a
@@ -144,6 +216,9 @@ jobs:
       # publishes the committed version. An explicit
       # `--tag preview` on a pre-release version never moves `latest`, so
       # `npm install @uipath/skills` still resolves the last stable release.
+      #
+      # Which preview tag depends on the line: only the highest release line
+      # owns the bare `preview`. See the guard in the step body.
       - name: Resolve dist-tag and stamp version
         id: dist
         env:
@@ -157,12 +232,49 @@ jobs:
             PREVIEW="${BASE}-preview.${RUN_NUMBER}"
             npm version "$PREVIEW" --no-git-tag-version --allow-same-version
             node scripts/sync-version.mjs
-            echo "tag=preview" >> "$GITHUB_OUTPUT"
-            echo "Publishing $PREVIEW to dist-tag preview"
+
+            # Only the highest release line owns the bare `preview` tag.
+            # `--tag preview` used to be unconditional, so whichever line
+            # published LAST took it regardless of version: on 2026-09-06,
+            # run 637 (release/v1.201) landed after run 635 (release/v1.202)
+            # and pointed `preview` back at the older line. That gets worse
+            # once a line goes stable while the next one previews -- every
+            # 1.201.x hotfix push would take `preview` from 1.202. A lower
+            # line publishes to `preview-v<M.N>` and leaves `preview` alone.
+            #
+            # Fails open: an unset tag or an unreachable registry keeps
+            # `preview`, which is the behaviour this guard replaced.
+            TAG=preview
+            CURRENT=$(npm view "@uipath/skills@preview" version --@uipath:registry=https://registry.npmjs.org/ 2>/dev/null || true)
+            if [ -n "$CURRENT" ]; then
+              # Compare release lines only; strip the -preview.<run> suffix.
+              HIGHEST=$({ echo "${CURRENT%%-*}"; echo "$BASE"; } | sort -V | tail -1)
+              if [ "$HIGHEST" != "$BASE" ]; then
+                TAG="preview-v${BASE%.*}"
+              fi
+            fi
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "Publishing $PREVIEW to dist-tag $TAG (preview is at ${CURRENT:-unset})"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
             echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
           fi
+
+      # Pack first and publish that exact tarball, so the bytes verified below
+      # are the bytes published. `prepack`/`postpack` run here as they would
+      # under a direct `npm publish`; publishing a tarball path does not re-run
+      # them.
+      - name: Pack the package
+        id: pack
+        run: |
+          rm -f uipath-skills-*.tgz
+          npm pack --pack-destination .
+          TARBALL=$(ls uipath-skills-*.tgz)
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "Packed $TARBALL"
+
+      - name: Verify signed hooks survived packing
+        run: node scripts/check-hook-signatures.mjs "${{ steps.pack.outputs.tarball }}"
 
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to
@@ -172,7 +284,19 @@ jobs:
       - name: Publish to npmjs (OIDC trusted publishing)
         run: |
           npm config set @uipath:registry https://registry.npmjs.org/
-          npm publish --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+          npm publish "${{ steps.pack.outputs.tarball }}" \
+            --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+
+  announce-latest:
+    # `npm publish` returns before npmjs serves the version; the called
+    # workflow waits for availability (failing if it never comes), then posts
+    # the stable-publish announcement as Skills Buddy. It reads the version
+    # and skill list from this run's ref (the release branch).
+    name: Announce stable publish
+    needs: [publish-npmjs]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'latest'
+    uses: ./.github/workflows/announce-stable.yml
+    secrets: inherit
 
   publish-studioweb-dev:
     name: Publish Studio Web dev to GitHub Packages

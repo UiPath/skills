@@ -1,7 +1,7 @@
 task_id: skill-hitl-quality-completed-handle-and-result
 description: >
-  Quality test: agent must wire the completed handle to a downstream node
-  and demonstrate how to read the human's decision using $vars.<nodeId>.output
+  Quality test: agent must wire the HITL node's outcome port to a downstream
+  node and demonstrate how to read the human's decision using $vars.<nodeId>.output
   in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
@@ -9,6 +9,9 @@ run_limits:
   expected_turns: 21
   max_turns: 50
   turn_timeout: 600
+
+reference:
+  directory: ../uipath-maestro-flow
 
 initial_prompt: |
   Create a flow called "PurchaseOrderApproval" with the following structure:
@@ -26,15 +29,15 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "HITL node is present in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name PurchaseOrderApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name PurchaseOrderApproval '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "completed handle is wired in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name PurchaseOrderApproval 'completed'"
+    description: "the HITL node's outcome port is wired, not the outcome-completed placeholder"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -50,8 +53,8 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

@@ -15,6 +15,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -61,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "BPMN forks into >=2 distinct parallel branches and synchronizes them at a join gateway, with full DI"
-    command: "python3 $TASK_DIR/check_fork_join.py"
+    command: "python3 $REFERENCE_DIR/parallel/fork_join/check_fork_join.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

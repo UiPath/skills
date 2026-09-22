@@ -6,16 +6,22 @@ description: >
   traces/traces_e2e.yaml — kept separate because trace ingestion lag
   (sometimes >3 min) is a platform SLA issue, not a skill signal.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:discover]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 initial_prompt: |
@@ -27,11 +33,10 @@ initial_prompt: |
   on a single line) so I can pull the logs afterwards.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant: job is terminal with at least one log entry"
-    command: "python3 $TASK_DIR/check_job_run_logs.py"
+    command: "python3 $REFERENCE_DIR/check_job_run_logs.py"
     timeout: 90
     expected_exit_code: 0
     weight: 5.0

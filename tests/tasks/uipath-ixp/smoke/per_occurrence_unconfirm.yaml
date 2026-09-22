@@ -7,11 +7,11 @@ description: >
   `unconfirm --group + --occurrence` (or `--updates`) — NOT plain
   `--fields` (which removes the field id from every occurrence,
   un-confirming the correct lines too). Mirrors per_occurrence_confirm;
-  locks in the unconfirm half of Critical Rules 13/14.
+  locks in the unconfirm half of Critical Rules 12/13.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
-tags: [uipath-ixp, smoke, lifecycle:execute]
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
 
 run_limits:
   expected_turns: 5

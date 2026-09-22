@@ -13,6 +13,9 @@ The catalog at `assets/uip-catalog-snapshot.json` is the source of truth for whi
 | `is resources execute` | `is resources run`   | uip 1.1.0  |
 | `resource`             | `or`                 | uip 1.196.0|
 | `functions`            | `function`           | uip 1.200.0|
+| `sc`                   | `aops`               | uip 1.201.0|
+| `cicd`                 | `aops`               | uip 1.201.0|
+| `or eval`              | `eval`               | uip 1.202.0|
 
 
 ## When to add an entry

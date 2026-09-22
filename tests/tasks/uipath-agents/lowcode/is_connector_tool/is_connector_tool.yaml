@@ -16,6 +16,9 @@ run_limits:
   expected_turns: 26
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "ResearchAgent" that can look things up.
   Give it a GenAI tool so it can research questions on demand. The solution
@@ -95,7 +98,7 @@ success_criteria:
 
   - type: run_command
     description: "IS tool resource.json shape (type=integration), bindings_v2.json authored, connection resource provisioned"
-    command: "python3 $TASK_DIR/check_is_connector_tool.py"
+    command: "python3 $REFERENCE_DIR/check_is_connector_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -9,13 +9,20 @@ outcomes.
 
 from __future__ import annotations
 
-import glob
 import json
 import sys
 from pathlib import Path
 
+SHARED_DIR = Path(__file__).resolve().parents[1] / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+try:
+    from flow_check import find_flow_file  # noqa: E402
+except ModuleNotFoundError as exc:
+    if exc.name != "flow_check":
+        raise
+    from _shared.flow_check import find_flow_file  # noqa: E402
 
-FLOW_GLOB = "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+FLOW_GLOB = "ExpenseApproval*.flow"
 
 
 def fail(message: str) -> None:
@@ -23,10 +30,7 @@ def fail(message: str) -> None:
 
 
 def load_flow() -> dict:
-    matches = glob.glob(FLOW_GLOB)
-    if not matches:
-        fail(f"No flow file matching {FLOW_GLOB}")
-    path = Path(matches[0])
+    path = Path(find_flow_file(flow_glob=FLOW_GLOB))
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError as exc:
@@ -113,12 +117,25 @@ def main() -> None:
             "or =js:$vars.<node>.output.<field>"
         )
 
-    if not any(
-        e.get("sourceNodeId") == hitl_id
-        and e.get("sourcePort") in ("completed", "outcome-completed")
-        for e in edges
-    ):
-        fail("HITL completed handle must be wired")
+    # Handle id is outcome-<id>, verbatim, per outcome: flow-workbench
+    # build-handle-customization.ts. `outcomes` is already guaranteed
+    # non-empty above. See hitl-node-quickform.md#edge-wiring for the full
+    # rule (zero-outcome placeholder, no-id-no-handle, etc).
+    outcome_ids = [o["id"] for o in outcomes if isinstance(o.get("id"), str) and o["id"]]
+    if len(outcome_ids) != len(outcomes):
+        fail("every outcome needs a non-empty string id — an outcome without one renders no handle")
+    wired_ports = {e.get("sourcePort") for e in edges if e.get("sourceNodeId") == hitl_id}
+    if (wired_ports & {"completed", "outcome-completed"}) and "completed" not in outcome_ids:
+        fail(
+            "outcome-completed is the zero-outcome placeholder; wire "
+            "outcome-<id> per outcome instead"
+        )
+    missing = [oid for oid in outcome_ids if f"outcome-{oid}" not in wired_ports]
+    if missing:
+        fail(
+            "every outcome needs its own wired handle; missing: "
+            + ", ".join(f"outcome-{oid}" for oid in missing)
+        )
 
     scripts = [
         str(n.get("inputs", {}).get("script", ""))

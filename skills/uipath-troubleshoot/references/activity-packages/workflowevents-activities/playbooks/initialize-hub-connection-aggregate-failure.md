@@ -24,7 +24,7 @@ What to look for:
 ## Investigation
 
 1. **Confirm the signature + activity.** `uip or jobs get <job-key> --output json` → `Info` shows `System.AggregateException`; the faulted activity is `InitializeHubConnection`.
-2. **Unwrap the inner exception.** Read the inner type/message from the `Info` stack and from `uip or jobs traces <job-key> --output json` / `uip traces spans get --job-key <job-key> --output json`. This selects the branch.
+2. **Unwrap the inner exception.** Read the inner type/message from the `Info` stack and from `uip traces spans get --job-key <job-key> --output json`. This selects the branch.
 3. **Branch on the inner cause:**
    - `WorkflowApplicationException: SignalR: Invalid SessionId ... OR Orchestrator Url ...` → blank session/URL context.
    - resource-URL / token failure → endpoint resolution or auth failure.

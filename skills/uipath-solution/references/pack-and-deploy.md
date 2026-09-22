@@ -85,6 +85,58 @@ uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --outpu
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
 
+<!--skill-flavor:publish-feed-discovery:start-->
+### Publishing to a non-tenant feed
+
+By default everything targets the **tenant** feed. A package can instead go to your
+Personal Workspace or to a specific **folder feed**. Start by listing what you can
+actually target — a raw folder key is not necessarily a publishable feed:
+
+```bash
+uip solution feeds list --output json
+```
+
+`Data` is a list of `{ Name, Key, Type, IsMyPersonalWorkspace }` where `Type` is
+`Tenant`, `PersonalWorkspace`, or `Folder`. Only feeds in this list can be
+targeted; passing anything else fails with *"is not an available publish
+location"*. Personal Workspaces belonging to other users are filtered out even
+when you can browse them.
+
+Then target a feed with `--feed <name-or-key>` (accepts either the feed's name or
+its folder key) or `--personal-workspace`:
+
+```bash
+# Publish into a folder feed
+uip solution publish ./output/MySolution_2.0.0.zip --feed "Finance" --output json
+
+# Publish into your own Personal Workspace
+uip solution publish ./output/MySolution_2.0.0.zip --personal-workspace --output json
+```
+<!--skill-flavor:publish-feed-discovery:end-->
+
+The same two flags scope the rest of the lifecycle, and they are **mutually
+exclusive** everywhere:
+
+| Command | What the flag scopes |
+|---|---|
+<!--skill-flavor:publish-feed-scope-row:start-->
+| `uip solution publish --feed / --personal-workspace` | Which feed the package is uploaded to |
+<!--skill-flavor:publish-feed-scope-row:end-->
+| `uip solution deploy run --feed / --personal-workspace` | Which feed the package is deployed **from** |
+| `uip solution deploy list --feed / --personal-workspace` | Which feed's deployments are listed |
+| `uip solution packages list --feed / --personal-workspace` | Which feed's packages are listed |
+| `uip solution packages delete --feed / --personal-workspace` | Which feed the version is deleted from |
+
+**Deploy from the feed you published to.** A package published to a folder feed or
+Personal Workspace is not in the tenant feed, so a plain `deploy run` cannot see
+it — pass the same `--feed` / `--personal-workspace` there too. Likewise, omitting
+the flag on `packages list` shows only tenant packages, which is the usual reason
+a freshly published feed package looks missing.
+
+`deploy run --feed` also accepts `--parent-folder-path` / `--parent-folder-key` to
+pick **where inside** the feed's folder the deployment lands; without them it goes
+to the feed folder itself.
+
 ## Step 3 (Alternative): Upload to Studio Web
 
 If the goal is browser-based editing rather than deployment, use `upload` instead of `publish`:
@@ -93,9 +145,11 @@ If the goal is browser-based editing rather than deployment, use `upload` instea
 uip solution upload ./MySolution --output json
 ```
 
-This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` refuses unless `--force` is passed (forcing replaces the cloud project in place and wipes its Studio Web version history).
+This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` overwrites that solution in place; otherwise it imports as new — see [develop-solution.md § `upload` decides import or overwrite from what the cloud holds](develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds) for the decision rules and snapshot recording.
 
+<!--skill-flavor:upload-tabs:start-->
 `upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution init` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
+<!--skill-flavor:upload-tabs:end-->
 
 ## Step 4: Deploy to Orchestrator
 
@@ -126,11 +180,44 @@ Key options:
 | `--parent-folder-path <path>` | Parent folder under which the new folder is created | -- |
 | `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
+| `--wait` | Wait for a `--personal-workspace` / `--feed` deploy to finish instead of returning as soon as it starts. Changes nothing on the tenant path, which always waits — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) | (off — return at `DeploymentStarted`) |
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
+
+### A deploy that stops in `Draft`
+
+`Draft` is where the server parks a deployment whose install never completed — nearly always because deploy-time validation rejected something (a virtual resource with no `value`, a resource conflict, a folder that no longer exists). Nothing advances it on its own, and it **cannot be activated**: `deploy activate` on it fails.
+
+One narrow exception: a deployment that was *just* requested sits in `Draft` for a moment before the pipeline promotes it to `InProgress`, so a `Draft` read seconds after firing the command says nothing yet. What is never normal is a `Draft` that is still there after the command returned, or after a wait has ended.
+
+How you find out depends on which feed you deployed from:
+
+- **Tenant feed** — `deploy run` always waits, and the failure carries the server's own reasons. `Message` is only `Deployment failed with status: …`; the detail is in **`Instructions`**, as `Validation: …`, `Conflicts: …`, `Schedule: …`, `Deployment: …` — read that field, it names the resource and the property.
+- **`--personal-workspace` / `--feed`** — the install is fire-and-forget by default. The command returns `Status: DeploymentStarted` the moment the request is accepted and never learns the outcome, so a deploy that fails validation seconds later still looks like a success. **Pass `--wait`** — the CLI then polls the deployment and puts the reason in `Message` (`Deployment '…' failed (OperationStatus: Draft): <reason>`). Without it, check afterwards with `uip solution deploy list` **carrying the same feed flag** — `deploy list` is tenant-scoped when none is passed and does not show a Personal Workspace or folder-feed deployment at all, so a missing row there is not an answer:
+
+  ```bash
+  uip solution deploy list --personal-workspace --output json
+  uip solution deploy list --feed "<name-or-key>" --output json
+  ```
+
+The fix is the deploy config, not a retry — rerunning the same command with the same config reproduces the same `Draft`:
+
+```bash
+uip solution deploy config get "MySolution" -d config.json --output json
+
+# fix what the validation named — set the missing value, or link to an existing resource
+uip solution deploy config set config.json MyQueue maxNumberOfRetries 5
+uip solution deploy config link config.json MyBucket --name "ExistingBucket" --folder-path "Shared"
+
+uip solution deploy run -n "MyDeployment" \
+  --package-name "MySolution" --package-version "2.0.0" \
+  --folder-name "MySolutionFolder" --config-file config.json --wait --output json
+```
+
+A `Draft` left by an **install** does not block that rerun — the CLI's "already deployed" guard deliberately lets it through, because rerunning is the fix. A `Draft` left by an **upgrade** does block: it sits against a deployment that is still live, so the retry verb there is `deploy upgrade`, not `deploy run` ([Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)).
 
 ## Step 5: Check Deployment Status
 

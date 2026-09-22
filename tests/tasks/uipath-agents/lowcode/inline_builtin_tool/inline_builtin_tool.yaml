@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 45
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project "DocsFlow" that uses an inline low-code agent to
   help users understand uploaded documents. Enable the built-in "Analyze Files"
@@ -101,7 +104,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline built-in tool: resource.json shape (type=internal, toolType) + flow node (tool.builtin.*) + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_builtin_tool.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_inline_builtin_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -5,13 +5,21 @@ description: >
   description, the product registration and the form-data payload can only come
   from a real retrieval.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, get]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-get" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Seeded for the aops-policy get scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-get" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Seeded for the aops-policy get scenario" python3 _setup/setup_aops_policy.py'
     timeout: 120
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+  - command: 'python3 _setup/cleanup_aops_policy.py'
     timeout: 120
 
 run_limits:

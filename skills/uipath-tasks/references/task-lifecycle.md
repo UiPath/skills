@@ -9,9 +9,18 @@ uip tasks list --output json
 # List tasks in a specific folder
 uip tasks list --folder-id <folder-id> --output json
 
+# Same, by folder path or key — the values `uip or folders list` prints.
+# Quote the path: folder paths may contain spaces.
+uip tasks list --folder-path "<folder-path>" --output json
+uip tasks list --folder-key <folder-key> --output json
+
 # List tasks as admin (elevated access)
 uip tasks list --as-admin --output json
 ```
+
+`--folder-id`, `--folder-path`, and `--folder-key` are mutually exclusive. Path
+and key are resolved to the numeric folder id before the task query runs, so
+all three scope the same way.
 
 ## Getting Task Details
 
@@ -38,6 +47,8 @@ Type-specific endpoints are faster because they avoid the generic OData lookup:
 # 1. List tasks and discover folder users
 uip tasks list --output json
 uip tasks users <folder-id> --output json
+# (or by path/key when the folder came from `uip or folders list`:
+#  uip tasks users --folder-path "<folder-path>" --output json)
 
 # 2. Assign to a user
 uip tasks assign <task-id> --user alice@company.com --output json

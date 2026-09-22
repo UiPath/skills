@@ -13,6 +13,9 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-llamaindex, feature:rag-coded]
 max_iterations: 1
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath coded agent named `hr-helper` that answers
   employee questions about HR policy. The agent reads the
@@ -62,7 +65,7 @@ success_criteria:
 
   - type: run_command
     description: "LlamaIndex Workflow shape + a uipath-llamaindex Context Grounding primitive (query engine or retriever) wired to the `hr-policy` index"
-    command: "python3 $TASK_DIR/check_llamaindex_rag.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_llamaindex_rag.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

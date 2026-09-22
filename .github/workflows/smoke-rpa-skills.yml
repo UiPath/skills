@@ -2,7 +2,10 @@ name: Smoke RPA Skill Tests (Windows)
 
 concurrency:
   group: smoke-rpa-skills-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; `opened` and `reopened` can fire on a
+  # commit a run is already in flight for, and a cancelled run reports the
+  # required context as `cancelled`. See docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No `paths:` filter on purpose. This workflow is a required status
@@ -19,7 +22,7 @@ on:
 # tests/.coder-eval-version still resolves — see smoke-skills.yml for the full
 # rationale. Workflow-level so any job added later inherits it.
 env:
-  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
 
 jobs:
   detect:
@@ -126,9 +129,20 @@ jobs:
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
+      #
+      # claude-agent-sdk releases that ship without a win_amd64 wheel make uv
+      # fall back to the sdist, which bundles no claude.exe — every task here
+      # then dies at agent_crash ("Claude Code not found"). coder-eval asks for
+      # >=0.2.124 with no upper bound, so exclude those single releases instead
+      # of capping: a later version that restores the wheel resolves normally.
+      # Known wheel-less releases: 0.2.144, 0.2.157 (verified on PyPI: 0.2.157
+      # publishes mac/linux wheels + sdist only; 0.2.156 has win_amd64).
       - name: Install coder-eval
         shell: bash
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        run: |
+          uv pip install --system \
+            "coder-eval==${{ steps.ceref.outputs.version }}" \
+            "claude-agent-sdk!=0.2.144,!=0.2.157"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
@@ -234,8 +248,8 @@ jobs:
           AUTHORITY: https://alpha.uipath.com
           EMAIL:    ${{ secrets.UIPATH_EMAIL }}
           PASSWORD: ${{ secrets.UIPATH_PASSWORD }}
-          TENANT:   ${{ secrets.UIPATH_TENANT }}
-          ORG:      ${{ secrets.UIPATH_ORG }}
+          TENANT:   ${{ vars.UIPATH_TENANT }}
+          ORG:      ${{ vars.UIPATH_ORG }}
           # Drop screenshots + DOM dumps here so we can upload them as an
           # artifact for post-mortem on auth failures.
           AUTH_DEBUG_DIR: ${{ github.workspace }}/auth-debug
@@ -304,8 +318,8 @@ jobs:
           # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # The gate's agent model, passed on the command line rather than pinned in
           # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal

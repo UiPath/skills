@@ -13,6 +13,15 @@ initial_prompt: |
 
   For any [SME REVIEW] items, use industry-standard defaults and proceed.
 
+  Save the SDD as `smart-invoice-validation-sdd.md` in the current directory.
+
+  Important:
+  - Before starting, load the uipath-planner skill. Read and follow its
+    workflow steps and product-selection guidance exactly — do not free-form
+    the SDD.
+  - Do NOT attempt to create a UiPath project or run any `uip` commands.
+  - Your only deliverable is the SDD markdown file.
+
   --- BEGIN PDD ---
 
   # Process Design Document: Smart Invoice Validation
@@ -124,7 +133,14 @@ success_criteria:
 run_limits:
   expected_turns: 16
   # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
-  # caps like product_selection.yaml: task_timeout for end-to-end wall clock,
-  # turn_timeout for the long authoring turn.
-  task_timeout: 2700
-  turn_timeout: 1800
+  # caps: task_timeout for end-to-end wall clock, turn_timeout for the long
+  # authoring turn. Keep turn_timeout <= task_timeout — the orchestrator warns
+  # when task_timeout is the larger of the two, because the agent's
+  # single-iteration budget IS turn_timeout and a bigger task_timeout cannot
+  # extend it.
+  # turn_timeout: 1800 was too tight: run 2026-08-27_04-13-44 hard-killed the
+  # turn at 1800s with NO SDD written (ERROR, score 0.000) — 86% of the budget
+  # went to reasoning blocks and Write was never reached. Match the proven
+  # constraint_gate budget: 2700s turn / 3600s task.
+  task_timeout: 3600
+  turn_timeout: 2700

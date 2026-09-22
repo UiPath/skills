@@ -53,15 +53,31 @@ if not tr: raise SystemExit('run.json has no task_results — run incomplete or 
 
 # --- keep the FULL result set for cross-cutting TAG aggregation (used below + Phase 2/3) ---
 tr_all = tr                                # every task_result, ALL variants
+# --- MATURITY CARRY-FORWARD: identify before any variant logic touches these rows ---
+# On a `--skip-mature` night the runner does NOT re-run a task that has passed 5 runs in a row; it
+# appends a synthetic SUCCESS row (`mature_skipped: true`, weighted_score 1.0, duration/cost 0) so the
+# suite denominator stays the full authored size. These are REAL suite members carried forward as
+# passes -- that is exactly how evalboard counts them, and the scorecard must match.
+# THE TRAP: `impute_mature_skips` writes those rows WITHOUT a `variant_id` key, while every genuinely
+# run row carries `variant_id: 'default'`. A naive variant filter therefore reads the carried rows as a
+# phantom `None` variant and drops EVERY ONE of them -- ~45% of a nightly run (545 of 1229 rows on
+# 2026-08-25) -- silently thinning every product row. That is the bug that published licensing 3/3 when
+# 12 licensing tasks exist and 9 of them were carried forward green.
+def matured(t): return bool(t.get('mature_skipped'))
+n_mature_rows = sum(1 for t in tr if matured(t))
+
 # --- multi-variant guard: score exactly one variant for the per-skill/dir tables ---
-variants = sorted({t.get('variant_id') for t in tr}, key=lambda v: (v is None, str(v)))  # None-safe sort
+# Derive the variant set from RUN rows only, so carried rows never invent a phantom variant.
+variants = sorted({t.get('variant_id') for t in tr if not matured(t)}, key=lambda v: (v is None, str(v)))  # None-safe sort
+if not variants: variants = [None]      # degenerate: every row carried forward
 TARGET = '<variant>' if '<variant>' in variants else ('default' if 'default' in variants else variants[0])
 if len(variants) > 1:
     # A/B variants put one result per task PER variant, so task_ids OVERLAP across variants and
     # scoring all of them double-counts. But if the variant task_id sets are DISJOINT (zero overlap)
     # they are NOT A/B arms — excluding one then silently drops real, distinct runs. Detect & surface.
     vof = defaultdict(set)
-    for t in tr_all: vof[t['task_id']].add(t.get('variant_id'))
+    for t in tr_all:
+        if not matured(t): vof[t['task_id']].add(t.get('variant_id'))
     overlap = sum(1 for vs in vof.values() if len(vs) > 1)
     print(f'NOTE multiple variants {variants}; scoring {TARGET!r}. task_ids shared across variants: {overlap}.')
     if overlap:
@@ -70,13 +86,20 @@ if len(variants) > 1:
         print('  → DISJOINT variant sets (no overlap) — NOT A/B arms; excluded variant(s) are distinct tasks.')
         for v in variants:
             if v != TARGET:
-                print(f'     dropped variant {v!r}: {sum(1 for t in tr_all if t.get("variant_id")==v)} distinct tasks (surface in notes, do not silently drop)')
-tr = [t for t in tr if t.get('variant_id') == TARGET]
+                print(f'     dropped variant {v!r}: {sum(1 for t in tr_all if t.get("variant_id")==v and not matured(t))} distinct tasks (surface in notes, do not silently drop)')
+# Keep the scored variant's run rows AND every maturity carry-forward row (they have no variant_id).
+tr = [t for t in tr if matured(t) or t.get('variant_id') == TARGET]
+if n_mature_rows:
+    mb = d.get('maturity') or {}
+    print(f'NOTE maturity carry-forward active: {n_mature_rows} of {len(tr)} scored rows were NOT re-run this '
+          f'night (mature after {mb.get("mature_after","?")} consecutive passes, re-validated 1 run in '
+          f'{mb.get("slot_count","?")}; run_index={mb.get("run_index","?")}, due_slot={mb.get("due_slot","?")}). '
+          f'They count as passes -- same as evalboard. Footnote every table with the carried share.')
 
 DIAG = {'diagnose','troubleshoot'}        # both merge into the Troubleshoot column
 STD  = ['build','operate','diagnose']     # the three scorecard eval columns
 TIERS = ['smoke','integration','e2e']     # for the org card's 2nd table (Skills Smoke vs Int+E2E)
-def new(): return {'pass':0,'total':0,'scores':[],'mode':defaultdict(list),
+def new(): return {'pass':0,'total':0,'carried':0,'scores':[],'mode':defaultdict(list),
                    'tier':{ti:[0,0] for ti in TIERS+['none']}}   # tier -> [pass,total]
 def tier_of(t):
     tags = t.get('tags') or []
@@ -85,12 +108,13 @@ def tier_of(t):
     return 'none'                          # untiered run tasks — counted in total, not in either tier
 def add(b, t, ws):                         # fold one task_result into a bucket
     b['total'] += 1
+    if matured(t): b['carried'] += 1       # counted as a pass, but NOT measured this night
     ok = t.get('status') == 'SUCCESS'
     if ok: b['pass'] += 1
     ti = tier_of(t); b['tier'][ti][1] += 1
     if ok: b['tier'][ti][0] += 1
-    if ws is not None:
-        b['scores'].append(ws)             # None scores excluded consistently
+    if ws is not None and not matured(t):   # carried rows carry a synthetic 1.0; averaging it in
+        b['scores'].append(ws)             # fabricates precision -> means stay EXECUTED-ONLY
         for tag in (t.get('tags') or []):
             if tag.startswith('mode:'):
                 v = tag[5:]; b['mode']['diagnose' if v in DIAG else v].append(ws)
@@ -129,7 +153,8 @@ def line(name, b):
     mean, c = cells(b)
     extra = {k: f"{pct(v)} (n={len(v)})" for k,v in b['mode'].items() if k not in STD}
     sm, ie, unt = tiers(b)
-    print(f"{name:32} {b['pass']}/{b['total']:<4} mean={mean}  "
+    car = f" carried={b['carried']}" if b['carried'] else ''
+    print(f"{name:32} {b['pass']}/{b['total']:<4}{car} mean={mean}  "
           f"build={c['build']}  operate={c['operate']}  troubleshoot={c['diagnose']}  "
           f"SMOKE={sm} INT+E2E={ie}{unt}"
           + (f"  NON-SCORECARD-MODES={extra}" if extra else ''))
@@ -163,10 +188,18 @@ for aliases, row in CROSS_CUTTING:
           f'host skills (footnote ⁷); do NOT use a `{row}` directory/psub bucket above (strict subset)')
 
 run_n = len(tr); succ = sum(1 for t in tr if t.get('status')=='SUCCESS')
-sc = [t['weighted_score'] for t in tr if t.get('weighted_score') is not None]
-print('\nTOTAL', run_n, 'run,', succ, 'passed,', (round(100*succ/run_n,1) if run_n else 0), '% success,',
-      'overall mean', (round(100*sum(sc)/len(sc),1) if sc else 0), '%')
+carried = sum(1 for t in tr if matured(t)); measured = run_n - carried
+meas_succ = sum(1 for t in tr if t.get('status')=='SUCCESS' and not matured(t))
+sc = [t['weighted_score'] for t in tr if t.get('weighted_score') is not None and not matured(t)]  # executed-only, as above
+print('\nTOTAL', run_n, 'scored,', succ, 'passed,', (round(100*succ/run_n,1) if run_n else 0), '% success,',
+      'overall mean', (round(100*sum(sc)/len(sc),1) if sc else 0), '% (executed-only)')
+if carried:   # headline = full suite (evalboard parity); the measured-only rate is a diagnostic, never the card
+    meas_pct = round(100*meas_succ/measured, 1) if measured else 0
+    print(f'  of which {carried} carried forward (mature, not re-run) and {measured} actually measured '
+          f'({meas_succ}/{measured} = {meas_pct}% on measured rows only '
+          f'-- DIAGNOSTIC ONLY, do NOT publish this as the pass rate)')
 print('status counts:', Counter(t.get('status') for t in tr))   # ERROR vs FAILURE vs MAX_TURNS …
+print('  (measured rows only:', Counter(t.get('status') for t in tr if not matured(t)), ')')
 print('skipped_tasks:', len(d.get('skipped_tasks') or []))
 if nonstd:   print('NON-SCORECARD mode values seen (surface, never drop/fold):', dict(nonstd))
 if unmapped: print('UNMAPPED task_ids (no tests/tasks/<skill>/ in path):', unmapped)
@@ -180,6 +213,14 @@ Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode
 1. **Mode tags are sparse — fall back PER COLUMN, not per skill.** Only mode-tagged tasks feed Build/Operate/Troubleshoot. For **each** of the three columns independently: if the skill has ≥1 task tagged for that mode, show that mode's mean; otherwise fill the cell with the skill's **overall mean** marked `*` (footnote: "overall mean — no `mode:<x>` tasks"). Consequences: a skill with zero mode tags shows `mean*` in all three (the original all-or-nothing case); a skill tagged only `build` shows its real Build % and `mean*` for Operate/Troubleshoot — never leave those two blank, which would falsely read as "no signal" when the skill ran many untagged tasks. The script's `cells()` does this; the `(n=…)` count rides on every non-fallback cell. Keep the `(n=…)` counts **only in the Source Data table** (not the Product scorecard, whose columns must match the org card exactly) so reviewers can see how thin a column is — e.g. a `build 0 (n=1)` is one bad task, not a systemic failure.
 2. **Status → pass.** `SUCCESS` = pass; `FAILURE`/`ERROR`/`MAX_TURNS_EXHAUSTED`/`TIMEOUT` = fail.
 3. **Skipped tasks.** `run.json.skipped_tasks` lists tasks the runner excluded (`skip: true` in the YAML). Pass/Fail denominators are *run* tasks, so authored-count may exceed run-count. Note skips in the per-skill table (e.g. HITL: "23 authored, 1 skipped → 19/22 run").
+
+3b. **Maturity carry-forward (`mature_skipped`) — count these as passes; do NOT let the variant filter eat them.** This is a *different* mechanism from nuance 3 and the two must not be conflated. On a `--skip-mature` night the nightly runner does not re-run a task that has passed `MATURE_AFTER` (5) runs in a row — it re-validates it one night in `SLOT_COUNT` (5) and on the other nights appends a **synthetic `SUCCESS` row** (`mature_skipped: true`, `weighted_score: 1.0`, `duration`/`total_cost_usd` 0) so the denominator stays the full authored suite size. Those rows are legitimate suite members carried forward as passes — **evalboard counts them, so the scorecard must too**, or the two numbers will never reconcile.
+   **The trap:** `impute_mature_skips` historically wrote those rows with **no `variant_id` key**, while every genuinely-run row carries `variant_id: 'default'`. A naive `t.get('variant_id') == TARGET` filter therefore reads all of them as a phantom `None` variant and **drops every single one**. On 2026-08-25 that was 545 of 1229 rows (~45% of the run); on 2026-08-21, 856 of 1208 (~71%). It thins **every** product row, and it is exactly the bug that published **licensing 3/3 when 12 licensing tasks exist** and 9 of them were carried forward green. The Phase 1 script above keeps `matured(t)` rows through the filter and derives the variant set from run rows only. Never "simplify" that back to a bare variant equality test.
+   **Two columns, two bases. Do not apply one rule to both.**
+   - **Tests Pass/Fail and the Smoke / Integration+E2E tiers → full known basis.** A carried task counts as a pass and sits in the denominator, so Licensing reads `12/12` rather than `3/3`. This is the org card's own definition of the column ("passes vs all known tests") and it is what evalboard reports, so the two finally reconcile.
+   - **Every eval score and every mean → EXECUTED-ONLY.** Carried rows are excluded from `scores` and from the `mode:` buckets. They all carry a uniform synthetic `weighted_score: 1.0`, which is not a measurement: on 2026-08-21, 28 tasks passed while scoring *below* 1.0, so a proportional share of the 856 carried tasks would have scored below 1.0 too, and not one of them does. Averaging them in inflated the overall mean by +3.9pp on that run (94.5 → 98.4) and by +24.6pp on 2026-08-25. A reader comparing week over week would read that as a quality improvement that never happened.
+   Prefer the `exec · known` dual-basis wording the published cards already use (e.g. `2/2 exec · 12/12 known`) so both bases stay visible in one cell. Neither basis is "the" pass rate: the **known** rate is optimistic (it assumes every carried task would still pass, and a regression inside one stays invisible until its slot comes up, up to 5 runs later), while the **exec** rate is pessimistic (never-mature tasks are the failure-prone tail and run every night, so they are enriched ~2.7-3.4x in the executed set — measured on 2026-08-21: 94.4% on the due slot vs 82.4% off it). Say which basis a number uses; never print one unlabelled. A product row that is 100% carried has **no fresh signal this night** — say so rather than presenting it as a green measurement.
+   Even once the producer starts stamping a `variant_id` on carried rows, **every historical run.json already in blob lacks the field** — so the guard above is permanent, not a stopgap. Any run predating that change is still scored through this script.
 4. **`mode:diagnose` ≡ `mode:troubleshoot`** (merged into the Troubleshoot column). **Every other mode value** — anything not in `{build, operate, diagnose, troubleshoot}` — has **no scorecard column**: `mode:inspect` (BPMN), `mode:edit-validate` (RPA legacy), and any future value. The script's `NON-SCORECARD-MODES` / `NON-SCORECARD mode values seen` output catches them all. Surface every such value in a note (per-skill in Source Data, plus a one-line global note) with its score and `(n=…)`; **never silently drop one or fold it into Troubleshoot.** Do not invent a column for it either — these tasks still count in the skill's overall mean and pass/fail, just not in a Build/Operate/Troubleshoot cell.
 5. **Multiple variants — and beware DISJOINT variant sets.** A/B experiments put one `task_result` per variant per task (task_ids OVERLAP), so scoring all of them double-counts; the script scores one variant (`--variant`, else `default`, else the only/first) and prints which. **But variants are not always A/B arms.** A run can carry two *disjoint* sets (zero shared task_ids) — e.g. an `activation`/second-phase set keyed `None` alongside the scored `default` set. There excluding the other variant silently drops real, distinct tasks (and can understate the headline). The script now computes task_id overlap and, when disjoint, prints the dropped per-variant counts — surface them in notes, do not pretend the run was only the scored variant. Cross-cutting tag rows (nuance below / Phase 2) deliberately count ALL variants for exactly this reason.
 6. **Skill in run not in product mapping.** Connector/aux skills (e.g. `uipath-troubleshoot`, `uipath-review`, `uipath-planner`, `uipath-tasks`, `uipath-feedback`, `uipath-salesforce-*`, `uipath-dev`) have run data but no product row. Include them in the **Source Data — Per Skill** table; do NOT force them into a product row. List any `UNMAPPED task_ids` to the user (malformed paths / tasks outside `tests/tasks/`).
@@ -265,7 +306,7 @@ Apply each sub-dir's pass/fail and the three eval cells (with the same per-colum
 
 Produce these sections, in this order:
 
-1. **Source + caveat panels** — `panel-info` with run id/path, variant scored, tasks run/passed/success-rate/overall-mean score, generated date. `panel-warning` listing column semantics: Tests Pass/Fail = run outcomes; Test Coverage = SUMMARY "Overall"; Eval `*` = **per-column** overall-mean fallback (no `mode:<x>` tasks for that column); non-scorecard mode tags (e.g. `inspect`, `edit-validate`) excluded from the three columns; platform rows (³) carry per-sub-product eval/pass-fail but the platform-wide coverage; run is a snapshot whose task counts may differ from the current repo; Product-Coverage/Exhaustive/FDE blank.
+1. **Source + caveat panels** — `panel-info` with run id/path, variant scored, tasks run/passed/success-rate/overall-mean score, generated date. `panel-warning` listing column semantics: Tests Pass/Fail = run outcomes; Test Coverage = SUMMARY "Overall"; Eval `*` = **per-column** overall-mean fallback (no `mode:<x>` tasks for that column); maturity carry-forward share (how many cells rest on a carried pass rather than a measurement this night) and the fact that Tests Pass/Fail uses the full known basis while every eval score is executed-only; non-scorecard mode tags (e.g. `inspect`, `edit-validate`) excluded from the three columns; platform rows (³) carry per-sub-product eval/pass-fail but the platform-wide coverage; run is a snapshot whose task counts may differ from the current repo; Product-Coverage/Exhaustive/FDE blank.
 2. **Gap-to-target headline** (`panel-note`, near the top) — state run success-rate vs the `--target` bar (default 95%): e.g. `78.8% vs 95% target → 16.2pp gap; ≈ N more passing tasks needed` where `N = ceil(target/100 × run_n) − succ`. List the products **below bar** (pass-rate < target), worst first, so the page answers the org's own stated question. If success-rate ≥ target, say so plainly.
 3. **Reproduce BOTH org-card tables — the scorecard has TWO product tables, fill the derivable cells in each.** The org card carries a *Product Level Scorecard* table AND a second *Product Capability Enumeration* table; reproduce both with their columns and rows **exactly as they appear on the parent revision you selected** (Stale-parent step — row sets drift, e.g. Agent Hub was added). Fill only what this run derives; leave everything else blank or carry the org card's value verbatim:
 
@@ -357,6 +398,7 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 | `mode:troubleshoot` vs `mode:diagnose` | Merged into Troubleshoot column | 1 |
 | `mode:inspect` / `mode:edit-validate` / any value ∉ {build,operate,diagnose,troubleshoot} | No scorecard column; surfaced via `NON-SCORECARD-MODES`, noted with score+`(n=)`, never dropped/folded | 1 |
 | Skipped tasks (`skip: true`) | Denominator = run tasks; authored = run + skipped (this snapshot), not current dir count; note authored vs run | 1 |
+| Maturity carry-forward rows (`mature_skipped: true`) | Keep through the variant filter (older runs omit `variant_id`, so a bare filter drops ~45-70% of the run — the licensing 3/3-of-12 bug). Then split by column: PASS/FAIL + tiers count them as passes on the full known basis; eval scores + means EXCLUDE them (their uniform synthetic 1.0 inflates the mean up to +24.6pp). Label every number `exec` or `known` | 1 |
 | Run task counts differ from current repo | Expected (run is a snapshot); note divergence, don't reconcile to dir counts | 1 |
 | `tests/reports/coverage.json` present | Prefer it over scraping `SUMMARY.md` (stable contract; gives top_untested + contributions too) | 2 |
 | `cross_cutting` coverage.json entry (e.g. `uipath-context-grounding`) | Maps to its standalone product row (ECS); Skill Coverage = its `overall_pct`; pass/fail from the Phase 1 CROSS-CUTTING TAGS block (by `tag`, ALL variants), non-additive (⁷, already in host skills). NEVER from a same-named directory/`psub` bucket — that subset wrongly yields 3/3 vs the true 13/14 | 1,2,3 |
@@ -395,6 +437,7 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 - **Don't double-count coverage from `SUMMARY.md`'s second table.** Parse the `## Overview` table only.
 - **Don't mix snapshots silently.** If the coverage source and run dates diverge, surface it in the warning panel and to the user.
 - **Don't double-count variants** — but don't blindly drop one either. Score one variant only when variants are true A/B arms (overlapping task_ids). If the variant sets are disjoint (no shared task_ids), the other variant is distinct tasks; surface the dropped count, don't pretend the run was just the scored variant.
+- **Don't drop maturity carry-forward rows, and don't average their scores in.** `mature_skipped: true` rows keep the pass/fail denominator at the full authored suite size; evalboard counts them and the card must match. Older runs omit `variant_id` on those rows, so a bare `variant_id == TARGET` filter silently deletes most of the run — that is the licensing 3/3-of-12 bug. But their `weighted_score` is a synthetic 1.0, never a measurement, so it must stay out of every mean and `mode:` bucket. Pass/fail counts them; eval scores do not. Label each number `exec` or `known`, and flag any product row that is 100% carried as "no fresh signal this night".
 - **Don't source a cross-cutting row's pass/fail from a same-named directory bucket.** ECS / Context Grounding (tag `context-grounding`) and Integration Service (tags `integration-service`/`ipe`) are TAG-selected across host skills and all variants — use the Phase 1 CROSS-CUTTING TAGS block. The `uipath-platform/context-grounding` directory/`psub` bucket is a strict subset and produced a wrong 3/3 instead of 13/14; `uipath-platform/integration-service` (~8 tasks) is the same trap for IS — it omits the IS tasks in agents/flow/troubleshoot/bpmn. Same trap for any future cross-cutting capability that also happens to have a like-named folder.
 - **Don't reduce Integration Service to the platform skill.** IS spans `uipath-platform`, `uipath-maestro-flow`, `uipath-troubleshoot`, `uipath-maestro-bpmn` (and `uipath-rpa` when present). A task belongs to IS iff it carries the tag `integration-service` OR `ipe` — count across ALL those skills, never just the platform dir.
 - **Don't create duplicate pages.** Same-title page exists → update it (default) or suffix the new one; never leave two identical-title pages.

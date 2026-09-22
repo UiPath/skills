@@ -4,56 +4,63 @@ Internal tooling and conventions for maintaining the `uipath-maestro-flow` skill
 
 ## Structure
 
-The skill is organized into three peer capabilities:
+The skill is organized into four peer capabilities:
 
 ```text
-SKILL.md                                ← capability router (universal rules + 3-bucket intent)
+SKILL.md                                ← capability router (universal rules + 4-bucket intent)
 references/
 ├── shared/                             ← cross-capability primitives
 │   ├── cli-commands.md                 ← flat CLI lookup
 │   ├── cli-conventions.md              ← --output json, login, FOLDER_KEY, etc.
 │   ├── file-format.md                  ← .flow JSON schema
 │   ├── variables-and-expressions.md    ← =js: Jint expressions
-│   └── node-output-wiring.md           ← canonical $vars wiring rule
+│   ├── node-output-wiring.md           ← canonical $vars wiring rule
+│   ├── action-nodes.md                 ← action-node boilerplate shared by plugin impl.md's
+│   └── ux-narration-and-todos.md       ← progress narration + todo engage rules
 ├── author/
 │   ├── CAPABILITY.md                   ← capability index
-│   └── references/                     ← author's supporting docs
-│       ├── greenfield.md               ← create-new-flow journey
-│       ├── brownfield.md               ← edit-existing-flow journey
-│       ├── editing-operations.md       ← strategy selection
-│       ├── editing-operations-json.md  ← Edit / Write recipes (default)
-│       ├── editing-operations-cli.md   ← CLI carve-outs
-│       ├── planning-arch.md            ← topology/plugin index
-│       ├── planning-impl.md            ← registry/binding/wiring
-│       └── plugins/                    ← per-node-type planning + impl
+│   ├── greenfield.md                   ← create-new-flow journey
+│   ├── brownfield.md                   ← edit-existing-flow journey
+│   ├── editing-operations.md           ← strategy selection
+│   ├── editing-operations-json.md      ← Edit / Write recipes (default)
+│   ├── editing-operations-cli.md       ← CLI carve-outs
+│   ├── planning-arch.md                ← topology/plugin index
+│   ├── planning-impl.md                ← registry/binding/wiring
+│   └── plugins/                        ← per-node-type planning + impl
 ├── operate/
 │   ├── CAPABILITY.md                   ← capability index
-│   └── references/                     ← operate's supporting docs
-│       ├── ship.md                     ← Studio Web upload + Orchestrator deploy
-│       ├── run.md                      ← debug + process run + job status/traces
-│       └── manage.md                   ← instance lifecycle (pause/resume/cancel/retry)
-└── diagnose/
+│   ├── ship.md                         ← Studio Web upload + Orchestrator deploy
+│   ├── run.md                          ← debug + process run + job status/traces
+│   └── manage.md                       ← instance lifecycle (pause/resume/cancel/retry)
+├── diagnose/
+│   ├── CAPABILITY.md                   ← capability index
+│   ├── troubleshooting-guide.md        ← diagnostic priority ladder
+│   └── failure-modes.md                ← pattern catalog (missing `=js:`, misshapen nodes, etc.)
+└── evaluate/
     ├── CAPABILITY.md                   ← capability index
-    └── references/                     ← diagnose's supporting docs
-        ├── troubleshooting-guide.md    ← diagnostic priority ladder
-        └── failure-modes.md            ← pattern catalog (MST-9107, MST-9061, etc.)
+    ├── commands-reference.md           ← `uip maestro flow eval` surface
+    ├── eval-sets-guide.md              ← eval set + data point design
+    ├── evaluators-guide.md             ← evaluator selection and config
+    ├── running-guide.md                ← Studio Web run start/status/results
+    └── upload-safety.md                ← never auto-upload to satisfy a prerequisite
 ```
 
-**Recursive pattern.** Skill = `SKILL.md` + `references/`. Capability = `CAPABILITY.md` + `references/`. The same "index next to its references" shape at two scales. Future capabilities (e.g., `governance/`) get the template for free.
+**Recursive pattern.** Skill = `SKILL.md` + `references/`. Capability = `CAPABILITY.md` + its sibling docs in the same folder. The same "index next to its references" shape at two scales. Future capabilities (e.g., `governance/`) get the template for free.
 
-**Convention:** each capability is a self-contained folder. Every file under `<capability>/references/` is implicitly that-capability-scoped — path = provenance. The `CAPABILITY.md` index is always at `<capability>/CAPABILITY.md` (uniform shape across all three).
+**Convention:** each capability is a self-contained folder. Every file in `<capability>/` is implicitly that-capability-scoped — path = provenance. The `CAPABILITY.md` index is always at `<capability>/CAPABILITY.md` (uniform shape across all four).
 
 ### Capability boundary
 
 - **Author** = on disk, locally, **without `uip login`** (`flow init`, `validate`, `format`, registry, JSON edits)
 - **Operate** = touches the cloud, **requires `uip login`** (`solution upload`, `flow debug`, `flow pack`, `process run`, `instance ...`)
 - **Diagnose** = postmortem on a failed run, **requires `uip login`** (`instance incidents`, `instance variables`, `instance asset`, `incident get`, `job traces`)
+- **Evaluate** = evaluations against a flow already in Studio Web; local eval-set/evaluator CRUD needs no login, **`eval run *` requires `uip login`** (`eval set`, `eval evaluator`, `eval run`)
 
-Author terminates at `validate` + `format` and hands off to Operate. Operate hands off to Diagnose when a run faults. Diagnose hands off back to Author for the underlying fix.
+Author terminates at `validate` + `format` and hands off to Operate. Operate hands off to Diagnose when a run faults. Diagnose hands off back to Author for the underlying fix. Evaluate attaches to a flow Operate has already uploaded.
 
 ### Capability-index template
 
-`AUTHOR.md`, `OPERATE.md`, `DIAGNOSE.md` all follow the same 6-section structure:
+Every `<capability>/CAPABILITY.md` follows the same 6-section structure:
 
 1. `# <Capability> — <one-line purpose>`
 2. `## When to use this capability`
@@ -80,7 +87,7 @@ Anchor links are computed exactly as GitHub does — getting them wrong silently
 | --- | --- | --- | --- |
 | `## 5. \`--folder-key\` requirement` | `#5--folder-key-requirement` | `#5---folder-key-requirement` | After `.` strips and backticks strip: `5 --folder-key requirement`. The space between `5` and `--` becomes a dash, joining the two literal dashes from `--folder-key` → 3 dashes |
 | `## Reused reference ID — cross-connection ID leakage` | `#reused-reference-id-cross-connection-id-leakage` | `#reused-reference-id--cross-connection-id-leakage` | The em-dash (`—`) is stripped (non-alphanumeric/space/dash), but the spaces on either side of it survive and both become dashes → 2 dashes |
-| `## MST-9107 — \`=js:\` prefix missing` | `#mst-9107-js-prefix-missing` | `#mst-9107--js-prefix-missing` | Backticks strip from around `=js:`, then the em-dash, `=`, and `:` strip (non-alphanumeric/space/dash). The space before and after the em-dash both survive → 2 consecutive dashes between `9107` and `js` |
+| `## \`variables.nodes[]\` missing → \`$vars.X.output\` resolves to undefined` | `#variablesnodes-missing-varsxoutput-resolves-to-undefined` | `#variablesnodes-missing--varsxoutput-resolves-to-undefined` | Backticks, `.`, `[`, `]`, `$` and the `→` all strip (non-alphanumeric/space/dash). The space before and after the arrow both survive → 2 consecutive dashes between `missing` and `varsxoutput` |
 
 ### Verifying anchor links
 
@@ -90,7 +97,7 @@ Run the anchor-checker script before committing changes that add or edit anchor 
 bash .maintenance/check-anchors.sh
 ```
 
-Returns `anchors_checked=N anchors_bad=0` on success. Any non-zero `anchors_bad` lists which file → which target slug failed to resolve.
+Returns `anchors_checked=N anchors_bad=0` on success. Exits non-zero on any bad anchor. Any non-zero `anchors_bad` lists which file → which target slug failed to resolve. An anchor resolves against either a heading slug or an explicit `<a id="...">` / `<a name="...">` tag in the target file — GitHub honors both.
 
 ## Verifying file-path links
 
@@ -100,7 +107,7 @@ Run the link-checker script to catch broken `[text](path)` links:
 bash .maintenance/check-links.sh
 ```
 
-Returns `checked=N broken=M`. Both checkers skip links inside fenced code blocks and inline code spans, so example links in this README and in REFACTOR-PROPOSAL.md don't trigger false positives.
+Returns `checked=N broken=M`. Exits non-zero on any broken link. Both checkers skip links inside fenced code blocks and inline code spans, so example links in this README don't trigger false positives.
 
 ## Verifying link text agrees with link URL
 
@@ -251,7 +258,7 @@ The checkers are not currently wired into CI or pre-commit hooks. They are kept 
 
 ## Reachability convention
 
-Plugin docs (`references/author/references/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
+Plugin docs (`references/author/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
 
 The depth checker (`check-depth.sh`) treats folder links as reachability for every `.md` file inside the folder, matching this agent-navigation model. A strict file-link-only reachability check would flag plugin docs as "unreachable" — that's a false negative.
 

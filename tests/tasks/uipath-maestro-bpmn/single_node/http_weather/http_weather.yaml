@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: ../../../../../skills/uipath-maestro-bpmn
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -66,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "HTTP sendTask is connectionless manual GET to Open-Meteo with a bound output variable"
-    command: "python3 $TASK_DIR/check_http_weather.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_http_weather.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

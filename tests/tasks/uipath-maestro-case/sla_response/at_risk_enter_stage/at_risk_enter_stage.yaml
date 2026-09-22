@@ -20,6 +20,9 @@ sandbox:
     - type: template_dir
       path: ../templates
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
   definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
@@ -51,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "One interrupting secondary lane entered by sla-status-change on the root SLA with the concrete at-risk escalationId declared on that same SLA; lane is isRequired false and exits return-to-origin; 4 stages total"
-    command: "python3 $TASK_DIR/check_at_risk_enter_stage.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_at_risk_enter_stage.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

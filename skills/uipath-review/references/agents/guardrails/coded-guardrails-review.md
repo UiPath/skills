@@ -2,7 +2,7 @@
 
 The read-only **review** counterpart of the `uipath-agents` coded guardrail recommend/validate capability. It
 powers the coded guardrail judgment rules in [`../agents-coded-rules.md`](../agents-coded-rules.md)
-§GuardrailsChecker. Run it during a **coded** agent review (SKILL.md Step 2.5b) **after** `uip codedagent review` <!-- uip-check-skip -->
+§GuardrailsChecker. Run it during a **coded** agent review (agent-review-guide.md Step 2.5b) **after** `uip codedagent review` <!-- uip-check-skip -->
 (Step 2.5a). Two modes:
 
 - **Audit Mode** — the agent already wires guardrails → are they *effective, appropriate, and actually wired*?
@@ -167,6 +167,10 @@ the mapping IS needed, fetch via `WebFetch`:
   (`uipath-langchain` in `pyproject.toml` or `from langchain…` / `from langgraph…` imports): middleware classes,
   their supported scopes/stages, and the `uipath_langchain.guardrails` import paths.
 
+The `Platform Availability` notes on these pages are product-wide, so never turn one into a review finding:
+tenant availability comes from `uip agent guardrails list`, and the fetched pages supply class, scope, and
+import names only.
+
 Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages,
 import_path } }` lookup by joining catalog entries with the SDK class names. Use the fetched content as the sole
 source of truth for class/enum/import names — never memory.
@@ -302,7 +306,7 @@ recommended action with the protection-vs-audit signal. Examples:
 
 ## Report
 
-Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
+Merge findings into the Step 5 Critical / Warning / Info findings tables (agent-review-guide.md Step 2.5b), one row per finding:
 
 ```
 | <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |

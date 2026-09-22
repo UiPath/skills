@@ -1338,10 +1338,15 @@ function packStagedPackages(staged, npmRoot, runNpmPack) {
     let filename;
     try {
       const parsed = JSON.parse(result.stdout);
-      if (!Array.isArray(parsed) || parsed.length !== 1 || typeof parsed[0]?.filename !== "string") {
+      // npm <= 11 prints an array of pack results; npm >= 12 prints an object
+      // keyed by package name. Accept both -- the npm major in play is the
+      // runner's, not ours: publish.yml installs npm for OIDC trusted
+      // publishing, and a contributor's global npm is whatever they have.
+      const results = Array.isArray(parsed) ? parsed : Object.values(parsed ?? {});
+      if (results.length !== 1 || typeof results[0]?.filename !== "string") {
         throw new Error("expected one npm pack result");
       }
-      filename = parsed[0].filename;
+      filename = results[0].filename;
     } catch (error) {
       throw new Error(`could not parse npm pack output for ${name}: ${result.stdout.trim()}`);
     }

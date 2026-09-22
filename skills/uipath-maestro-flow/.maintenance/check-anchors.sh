@@ -12,6 +12,9 @@
 # - same-file anchor-only links (#anchor without a path)
 # - links to files that don't exist (those are caught by check-links.sh, not this checker)
 #
+# An anchor resolves if the target file supplies it either as a heading slug or as an
+# explicit `<a id="...">` / `<a name="...">` tag (GitHub honors both).
+#
 # Slug rule (matches GitHub heading-anchor generation):
 # 1. Lowercase the heading
 # 2. Strip backtick, asterisk, underscore, and any non-alphanumeric/non-space/non-dash character
@@ -33,6 +36,18 @@ heading_anchors() {
       gsub(/ /, "-", anchor);
       print anchor;
     }' "$1"
+}
+
+# Explicit anchor tags authored inline (e.g. `<a id="attachment-preflight"></a>`).
+# Used where the link target is a paragraph or table row rather than a heading.
+explicit_anchors() {
+  /usr/bin/grep -oE '<a[[:space:]]+(id|name)="[^"]+"' "$1" \
+    | /usr/bin/sed -E 's/.*="([^"]+)"/\1/'
+}
+
+target_anchors() {
+  heading_anchors "$1"
+  explicit_anchors "$1"
 }
 
 # Per-file: strip fenced code blocks and inline code spans, then extract links.
@@ -70,7 +85,7 @@ while IFS= read -r srcfile; do
     resolved=$(cd "$(/usr/bin/dirname "$full")" 2>/dev/null && /bin/pwd)/$(/usr/bin/basename "$full")
     [ ! -f "$resolved" ] && continue
     checked=$((checked+1))
-    if heading_anchors "$resolved" | /usr/bin/grep -qx -- "$anchor"; then
+    if target_anchors "$resolved" | /usr/bin/grep -qx -- "$anchor"; then
       :
     else
       echo "BAD ANCHOR  $srcfile -> $raw"
@@ -81,3 +96,6 @@ done < <(/usr/bin/find . -name "*.md" -type f)
 
 echo ""
 echo "anchors_checked=$checked anchors_bad=$broken"
+
+[ "$broken" -gt 0 ] && exit 1
+exit 0

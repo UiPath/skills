@@ -6,7 +6,7 @@ Writes text into the input field that starts at the specified row and column pos
 
 **Package:** `UiPath.Terminal.Activities`  
 **Category:** App Integration.Terminals.Advanced  
-**Required Scope:** `TerminalSession`
+**Required Scope:** `TerminalSession` — place inside a `TerminalSession.Body` `Sequence`. See [child-activity skeleton](TerminalSession.md#child-activity-skeleton) for a multi-activity example.
 
 ## Properties
 
@@ -23,18 +23,15 @@ Writes text into the input field that starts at the specified row and column pos
 | `Row` | Row | `InArgument` | `int` | Yes | | The row of the field start (1-based). |
 | `Column` | Column | `InArgument` | `int` | Yes | | The column of the field start (1-based). |
 
-### Options / Configuration
+### Configuration
 
 | Name | Display Name | Kind | Type | Default | Description |
 |------|-------------|------|------|---------|-------------|
 | `BackwardsCompatible` | Backwards Compatible | `Property` | `bool?` | `true` (existing workflows); `false` (newly added) | Controls cursor movement behavior after writing. When `true`, the cursor jumps back to the field start position after writing (legacy behavior). When `false`, the cursor stays at the end of the written text. |
-| `TimeoutMS` | TimeoutMS | `InArgument` | `int` | `5000` | Milliseconds to wait for the operation to complete. |
-| `DelayMS` | DelayMS | `InArgument` | `int` | `300` | Milliseconds to wait after executing the activity. |
-| `WaitType` | WaitType | `Property` | `WaitMode` | `READY` | Determines how to wait for the terminal screen before writing. |
 
-### Enum Reference
+### Options
 
-**`WaitMode`**: `NONE`, `READY`, `COMPLETE`
+Standard `TimeoutMS` / `DelayMS` / `WaitType` (defaults `5000` / `300` / `READY`) — see [_common-options.md](TerminalSession/_common-options.md). Defaults work for typical sessions; tune only when scripted activities run faster than the host responds.
 
 ## Notes
 

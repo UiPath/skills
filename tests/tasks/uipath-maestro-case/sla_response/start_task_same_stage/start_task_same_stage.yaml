@@ -10,7 +10,8 @@ description: >
   answer (work in a separate lane); the rule authored as a Review STAGE-entry row, which
   re-enters Review and re-runs every task whose shouldRunOnlyOnce is false — the default;
   and a task with no entry condition, which the runtime never triggers.
-tags: [uipath-maestro-case, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
+
 max_iterations: 1
 
 run_limits:
@@ -22,6 +23,9 @@ sandbox:
   template_sources:
     - type: template_dir
       path: ../templates
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
@@ -53,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "The Manager Check action task lives in Review and carries the sla-status-change rule on its own task entry, against Review's own SLA with no escalationId (breach shape); no Review stage-entry row was added and no extra stage was minted"
-    command: "python3 $TASK_DIR/check_start_task_same_stage.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_start_task_same_stage.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

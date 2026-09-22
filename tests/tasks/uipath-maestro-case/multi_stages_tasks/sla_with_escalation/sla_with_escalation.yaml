@@ -22,7 +22,7 @@ description: >
   (≥2 recipients on one notification), regular-Stage data.slaRules,
   stage-level conditional-rule placement, and the d + w + m + min duration units. Recipient UUIDs are
   unresolved and stay as UNRESOLVED skeletons per the skill rules.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conditional-sla, feature:stage-sla]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conditional-sla, feature:stage-sla]
 max_iterations: 1
 
 run_limits:
@@ -30,6 +30,9 @@ run_limits:
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build a UiPath Case Management solution named "SlaWithEscalation"
@@ -90,7 +93,7 @@ initial_prompt: |
   ### 1.5 Case Variables
   | Variable | Category | Type | Default | Description |
   |---|---|---|---|---|
-  | - | - | - | - | No case-level variables declared. |
+  | priority | Variable | string | - | Case priority ("Urgent" or "Standard"); read by the case-level and Resolve-stage conditional SLA predicates. |
 
   ## Section 2: Stages & Tasks
 
@@ -118,9 +121,30 @@ initial_prompt: |
   |---|---|---|---|---|---|---|
   | 1 | Conditional | priority is Urgent | 2 | w | Resolve Urgent SLA | - |
   | 2 | Default | - | 1 | m | Resolve Default SLA | - |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `process.resolveHold` | Resolve Hold | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Resolve Hold (`process.resolveHold`)
+
+  **Type:** wait-for-timer
+  **Description:** Non-repeating fixed-delay timer that holds Resolve open while the case-level and stage-level SLA clocks run. Fires once after 5 seconds.
+
+  **Entry Condition**
+
+  | WHEN | IF | Display Name |
+  |---|---|---|
+  | current-stage-entered | - | Resolve Hold Entry |
+
+  ###### Timer Task Detail (type: `wait-for-timer`)
+
+  **Timer:** timeDuration
+  **Value:** PT5S
+  **Business Calendar:** —
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
@@ -137,7 +161,7 @@ success_criteria:
 
   - type: run_command
     description: "case-level slaRules (metadata.slaRules) has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with conditional priority-is-Urgent rule named Resolve Urgent SLA at 2w before default 1m AND data.description set; together SLA units min/d/w/m all exercised"
-    command: "python3 $TASK_DIR/check_sla_with_escalation.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_sla_with_escalation.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0

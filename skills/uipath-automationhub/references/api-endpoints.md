@@ -67,6 +67,8 @@ Body:
 | `OVR-PROCESS_OWNER` | `ah-section-ovr-0-0` | `"<email>"` (direct string) |
 | `OVR-OVERVIEW_PROCESS_SUBMITTER` | `ah-section-ovr-0-1` | `"<email>"` (direct string) |
 
+**Studio Web link** (optional): the schema's `OVR-OVERVIEW_STUDIO_WEB_LINK` question links the process to a Studio Web solution. Its `value` is a JSON **string** — `{"url": "<{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={id}>", "name": "<solution name>", "hasProcessMap": <bool>}` (`url` required; `hasProcessMap: true` only when the solution's orchestration project has a `.bpmn` — it drives AH's Maestro diagram preview). Settable at create or via the update path; empty string unlinks.
+
 When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — usually the un-flagged owner/submitter, but **tenant admins can mark additional questions required** (commonly "Applications used"/"Thin applications used"); diff the payload against every `required`-flagged question in the live schema.
 
 **Response 201** — the standard envelope with the created process **nested under `data`**: `{ "message": "Resource Created", "statusCode": 201, "data": { "process_id": …, "process_uuid": …, "process_name": … } }`. Read **`data.process_id`** — it is NOT at the top level. If you received a 201 the process WAS created — never re-POST because a field read came back undefined; re-read the response instead. *(Used by the publish flow.)*
@@ -109,7 +111,9 @@ A separate byte-upload route taking the same `EncodedFileValidator` shape. Docum
 The tenant's category tree (verified live): `data.levels` (level names) + `data.categories[]`, each with `category_id`, `category_name`, `category_is_active`, and nested `subcategories`. **This is how to resolve a valid `OVERVIEW_CATEGORY` id** — it works even on a tenant with zero processes. Only pick nodes with **`category_is_active: 1`** — `0` means archived and the write will be rejected or hidden. *(Used by the publish flow.)*
 
 ### GET `/users?limit=<n>`
-The Automation Hub users on the tenant (verified live): paged envelope with the list under **`data.users[]`**; each entry carries **`user_email`**, `user_first_name`/`user_last_name`, and `user_is_active`. **This is how to resolve a valid owner/submitter email** — both must be provisioned AH users (prefer `user_is_active: 1`), and this endpoint is the ground truth. *(Used by the publish flow.)*
+The Automation Hub users on the tenant (verified live): paged envelope with the list under **`data.users[]`**; each entry carries **`user_email`**, `user_first_name`/`user_last_name`, and `user_is_active`.
+
+**It is not the ground truth for who can own a process, and must never gate a publish.** Two defaults make it under-report: `invite` defaults to **activated users only**, so a user who has only ever used the API or CLI is missing from it while being perfectly able to own a process; and results are paged (default 20) under an ordering that is not deterministic when no search text is given, so a user can be absent from one page and present in another. Pass **`?s=<email>&invite=all`** for a scoped, server-side lookup — both parameters, since search alone still hides a not-invited user. The authority for the signed-in identity is the auth/identity call, and the authority for whether an owner is acceptable is the create response. *(Optional in the publish flow.)*
 
 ### GET `/appinventory?limit=<n>`
 The tenant's application inventory (paged; entries carry the application id, name, version, language). **This is the valid-answer set for tenant-required application questions** ("Applications used", "Thin applications used") in the publish flow. *(Used by the publish flow when the tenant requires application questions.)*
@@ -136,5 +140,27 @@ Linked components for the process.
 | 400 | Validation — missing required field, invalid enum, empty `user_inputs`, missing `OVERVIEW_NAME` |
 | 401 | Unauthorized — token missing/expired, or `x-ah-openapi-auth` was wrongly sent |
 | 403 | Forbidden — the user lacks the AH permission (authorization = the user's real AH role) |
-| 404 | Wrong URL, or AH not enabled on the tenant |
+| 404 | Wrong URL, or AH not available on the tenant — see **Automation Hub not available on this tenant** below |
 | 409 | Duplicate process name |
+
+### Automation Hub not available on this tenant
+
+Two distinct cases, with **different remedies** — don't collapse them, the advice differs:
+
+**1. AH is not enabled for the tenant.** The tenant has no Automation Hub service at all. Signals: a **404** whose body says `not found in organization`, or a **3xx redirect** to `portal_/unregistered` (following it would surface an HTML portal page as a JSON parse error). The user cannot fix this themselves — report exactly:
+
+> Please contact your administrator to enable Automation Hub on this tenant.
+
+**2. AH is reachable but the tenant was never onboarded into it.** The service answers **422 Tenant Lookup Error** on every call. This one *is* self-service — report exactly:
+
+> Automation Hub is reachable for this tenant but has not finished setup. Open Automation Hub in the browser once to complete it, then retry.
+
+In both cases: **stop after reporting** — do not retry, do not fall back to an admin OpenAPI token, and do not attempt the write against another tenant unless the user asks. Quote the message verbatim; don't paraphrase it.
+
+**Making the signals observable from `curl`.** `curl` reports the status but not *where* a 3xx points, so the first call each flow makes against the tenant asks for both:
+
+```bash
+curl -s -w "\n%{http_code} %{redirect_url}" …
+```
+
+The last line is then `<status> <redirect target>`: `%{redirect_url}` is empty on any non-3xx and carries the resolved `Location` on a 3xx — which is what makes the `portal_/unregistered` case above distinguishable from an ordinary redirect. **Never add `-L`.** Following the redirect throws away the one diagnosable signal and hands you an HTML portal page, which then fails as a JSON parse error — exactly the generic failure this section exists to prevent.

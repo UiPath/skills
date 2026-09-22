@@ -15,8 +15,7 @@ Capability index for diagnosing identity/auth failures, permission denials, IP r
 - Triage robot account authentication confusion (identity vs credential model).
 - Investigate PAT rejection (expired, revoked, insufficient scopes).
 - Diagnose SMTP email delivery failures (invitations not sending).
-- Investigate HTTP 403 / permission denied errors (missing role, wrong scope).
-- Triage role assignments not taking effect (ownerServiceName/scope-path mismatch).
+- Investigate HTTP 403 / permission denied — one scenario covering a missing permission, a role assignment that isn't taking effect, and cross-service role confusion.
 - Diagnose IP restriction lockout or unexpected enforcement behavior.
 - Investigate stuck or failed tenant lifecycle operations.
 - Identify service provisioning no-ops (platform-pinned services).
@@ -34,21 +33,21 @@ Capability index for diagnosing identity/auth failures, permission denials, IP r
 
 | Journey | Read |
 |---------|------|
-| Triage an identity/auth failure (sequential ladder) | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Recognize a known failure pattern (lookup) | [references/failure-modes.md](references/failure-modes.md) |
+| Triage an identity/auth failure (sequential ladder) | [references/troubleshooting-guide.md](troubleshooting-guide.md) |
+| Recognize a known failure pattern (lookup) | [references/failure-modes.md](failure-modes.md) |
 
 ## Common tasks
 
 | I need to... | Read |
 |---|---|
-| Investigate why a user can't log in | [troubleshooting guide → Step 1](references/troubleshooting-guide.md#step-1-identify-the-failure-domain) |
-| Diagnose HTTP 403 / permission denied | [troubleshooting guide → Step 3](references/troubleshooting-guide.md#step-3-check-effective-access) |
-| Check why a role assignment isn't working | [failure modes → Role assignment not taking effect](references/failure-modes.md#role-assignment-not-taking-effect) |
-| Diagnose an external app OAuth2 failure | [failure modes → External app OAuth2 failing](references/failure-modes.md#external-app-oauth2-flow-failing) |
-| Investigate PAT rejection | [failure modes → PAT rejected](references/failure-modes.md#pat-rejected) |
-| Diagnose SMTP delivery failure | [failure modes → SMTP not delivering](references/failure-modes.md#smtp-emails-not-delivering) |
-| Recover from IP restriction lockout | [failure modes → IP restriction lockout](references/failure-modes.md#ip-restriction-lockout) |
-| Investigate a stuck tenant operation | [failure modes → Tenant operation stuck](references/failure-modes.md#tenant-operation-stuck-or-failed) |
+| Investigate why a user can't log in | [troubleshooting guide → Step 1](troubleshooting-guide.md#step-1-identify-the-failure-domain) |
+| Diagnose HTTP 403 / permission denied, including a role assignment that isn't taking effect | [failure modes → Access denied](failure-modes.md#access-denied-http-403) |
+| Decide whether the permission is missing or merely mis-scoped | [failure modes → Step 3 branch](failure-modes.md#step-3--branch-on-the-comparison) |
+| Diagnose an external app OAuth2 failure | [failure modes → External app OAuth2 failing](failure-modes.md#external-app-oauth2-flow-failing) |
+| Investigate PAT rejection | [failure modes → PAT rejected](failure-modes.md#pat-rejected) |
+| Diagnose SMTP delivery failure | [failure modes → SMTP not delivering](failure-modes.md#smtp-emails-not-delivering) |
+| Recover from IP restriction lockout | [failure modes → IP restriction lockout](failure-modes.md#ip-restriction-lockout) |
+| Investigate a stuck tenant operation | [failure modes → Tenant operation stuck](failure-modes.md#tenant-operation-stuck-or-failed) |
 
 ## Anti-patterns
 
@@ -62,8 +61,8 @@ Capability index for diagnosing identity/auth failures, permission denials, IP r
 
 ### Diagnose-scoped
 
-- [troubleshooting-guide.md](references/troubleshooting-guide.md) — diagnostic priority ladder
-- [failure-modes.md](references/failure-modes.md) — recurring failure patterns
+- [troubleshooting-guide.md](troubleshooting-guide.md) — diagnostic priority ladder
+- [failure-modes.md](failure-modes.md) — recurring failure patterns
 
 ### Cross-capability
 

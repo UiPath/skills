@@ -13,6 +13,11 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
   to the project directory.
 
 For a new local project, place source files under a single project directory.
+`uip maestro bpmn init <ProjectName>` takes a name, not a path, and writes under
+the current directory; to land the project at a requested path, run it from that
+path's parent with the leaf as the name, and either pass
+`--skip-solution-registration` or make that parent a solution first — otherwise
+the default behavior below inserts the `<ProjectName>Solution/` level.
 `uip maestro bpmn init <ProjectName> --output json` nests that directory inside
 a solution. Inside a solution it registers the project with the parent `.uipx`;
 outside any solution it auto-scaffolds `<ProjectName>Solution/` and nests the
@@ -26,15 +31,27 @@ ProjectNameSolution/             ← auto-scaffolded when init runs outside a so
   ProjectName/
     ProjectName.bpmn
     project.uiproj
+    bindings_v2.json             ← generated; preserve as written
+    entry-points.json            ← generated
+    operate.json                 ← generated
+    package-descriptor.json      ← generated
 ```
 
-With `--skip-solution-registration`, the project lands bare instead, with no
-solution wrapper:
+`init` writes all six files. Preserve the four generated ones as written —
+that shape is the contract `pack` consumes.
+
+With `--skip-solution-registration` the project lands bare instead, with no
+solution wrapper (use it for a local-only project you do not intend to package
+or operate):
 
 ```text
 ProjectName/
   ProjectName.bpmn
   project.uiproj
+  bindings_v2.json
+  entry-points.json
+  operate.json
+  package-descriptor.json
 ```
 
 If a **non-empty** directory already exists at the path you typed, init warns
@@ -50,22 +67,34 @@ and leaves it untouched — the project still lands in
 
 Treat these JSON files as derived unless a CLI contract explicitly identifies a field as user-authored. For source fixes, edit BPMN or rerun CLI enrichment rather than patching generated output by hand.
 
-Local packaging requires the generated metadata set to exist. In particular,
-`uip maestro bpmn pack <project-path> <OutputDir> --output json` consumes
-`package-descriptor.json`; it does not create a missing descriptor from only
-the BPMN and `project.uiproj`.
+After source validation, generate the complete set with:
+
+```bash
+uip maestro bpmn refresh <project-path> --output json
+```
+
+Refresh regenerates all four files as one atomic set and local packaging
+consumes that set — see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+In particular,
+`uip maestro bpmn pack <project-path> <OutputDir> --output json` does not create
+a missing descriptor from only the BPMN and `project.uiproj`.
 
 For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
 
 ## Package content
 
 A synthetic local project authored without a CLI generator must still match the
-executable and metadata contract before packing: the BPMN root process includes
-`isExecutable="true"`, `project.uiproj` has lowercase `"main"`,
-`operate.json` has `"main"` plus `"contentType": "ProcessOrchestration"`, and
-`package-descriptor.json` has top-level `"content"` entries under `content/`.
-For the exact minimal JSON, see
-[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
+metadata contract before packing: the root process follows the initializer's
+shape (`isExecutable` omitted, or the equivalent `"false"` — never forced to
+`"true"`), each root start event carries
+`<uipath:entryPointId value="<uuid>" />`, `operate.json` has `"main"` plus
+`"contentType": "ProcessOrchestration"`, and `package-descriptor.json` maps the
+BPMN file and generated JSON. `uip maestro bpmn refresh <project-path>`
+produces that shape; for the exact JSON, see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#source-only-fallback).
+Prefer the files produced by `uip maestro bpmn init`, and do not translate a
+descriptor shape from another UiPath project type.
 
 A Process Orchestration package content folder contains:
 
@@ -75,7 +104,7 @@ A Process Orchestration package content folder contains:
 - `operate.json`.
 - `package-descriptor.json`.
 
-The package descriptor maps BPMN and generated JSON files under `content/`. The entry point file path references the BPMN file and start event, using the root start event's unique entry point ID.
+The package descriptor maps the BPMN file and generated JSON by name. The entry point file path references the BPMN file and start event as `/content/<bpmn-file>#<start-event-id>`, using the root start event's unique entry point ID.
 
 ## Authoring boundary
 

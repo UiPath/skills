@@ -7,7 +7,8 @@ description: >
   is unchanged, no sla-status-change rule exists anywhere in the file, and no follow-up
   task was minted. Edits a staged solution, so no scaffolding, registry, or tenant is
   needed; grading is caseplan.json + local validate only.
-tags: [uipath-maestro-case, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
+
 max_iterations: 1
 
 run_limits:
@@ -19,6 +20,9 @@ sandbox:
   template_sources:
     - type: template_dir
       path: ../templates
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
@@ -45,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "The breach is a notification only: an sla-breached escalation with a recipient on Review's own SLA, zero sla-status-change rules anywhere, still 3 stages, and no follow-up task added to Review"
-    command: "python3 $TASK_DIR/check_notify_only.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_notify_only.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

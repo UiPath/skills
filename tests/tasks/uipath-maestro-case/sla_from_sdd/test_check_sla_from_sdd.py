@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parent
-CHECKER = HERE / "check_sla_from_sdd.py"
+CHECKER = HERE.parent / "_shared" / "check_sla_from_sdd.py"
 
 
 def sla(title: str, count: int, unit: str = "d", expr: str = "=js:true") -> dict:

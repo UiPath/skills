@@ -3,6 +3,10 @@ description: >
   Brownfield edit: insert a new script task into an existing, valid Maestro BPMN
   between two adjacent tasks, rewiring the sequence flow and diagram while
   preserving element ids, uipath:* payloads, and uipath:migrationVersion.
+  Grades insertion, rewiring, and preservation only — whether the inserted
+  node carries a mapping or declares variables is deliberately out of scope
+  (a bare node and a mapped one both pass; added declarations are validated,
+  not required).
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
 
 run_limits:
@@ -16,6 +20,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -28,8 +35,9 @@ initial_prompt: |
   and update the diagram so the new node and its flows render.
 
   Make a SURGICAL edit: preserve everything you did not author — the existing
-  element ids, the uipath:* extension payloads, uipath:migrationVersion, and the
-  process variables must round-trip untouched.
+  element ids, the uipath:* extension payloads, uipath:migrationVersion, and
+  every existing process variable declaration must round-trip untouched. You
+  may declare new variables for the node you add.
 
   Validate the edited file locally before finishing. Do not upload, publish,
   deploy, debug, run, or pack anything, and do not pause for approval — make the
@@ -53,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "New script node inserted and wired, untouched content preserved, file still structurally sound"
-    command: "python3 $TASK_DIR/check_add_node.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_add_node.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -3,7 +3,7 @@ description: >
   Quality test: agent correctly references a HITL action task's output in a
   downstream task using the `=vars.<varId>` runtime path. Tests cross-task
   binding from an action task to a follow-up task in a later stage.
-tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 initial_prompt: |
   Create a UiPath Case Management project named "ExpenseApprovalCase" with
   this shape:
@@ -159,10 +159,10 @@ initial_prompt: |
   - Treat the generated plan as pre-approved — do not block on any HARD STOP
     / AskUserQuestion approval step.
   - If either resource is unresolved, write a skeleton task per the
-    skeleton-tasks reference. tasks.md MUST still record the cross-task
-    references in a fenced wiring-notes code block (e.g.
-    `approved <- "Review"."Review Expense".approved`). When both tasks
-    resolve, the downstream input MUST be bound via `=vars.<varId>`.
+    skeleton-tasks reference. Its `tasks/registry-resolved.json` entry MUST
+    still record the cross-task references in a fenced wiring-notes code
+    block (e.g. `approved <- "Review"."Review Expense".approved`). When both
+    tasks resolve, the downstream input MUST be bound via `=vars.<varId>`.
   - Do NOT run `uip maestro case debug`.
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
@@ -171,7 +171,7 @@ initial_prompt: |
     "action_task_id": "<id of Review Expense>",
     "downstream_task_id": "<id of Log Decision>",
     "skeleton_action": <true|false>,
-    "result_path_used": "<actual binding string used in caseplan.json or wiring-notes — e.g. =vars.<varId> or 'Review'.'Review Expense'.approved>",
+    "result_path_used": "<actual binding string used in caseplan.json or the registry-audit wiring notes — e.g. =vars.<varId> or 'Review'.'Review Expense'.approved>",
     "validation_passed": true
   }
 
@@ -198,18 +198,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Cross-task wiring is recorded — `=vars.` in caseplan.json OR Review Expense.approved reference in tasks.md"
-    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'Review Expense.*approved' tasks/tasks.md"
+    description: "Cross-task wiring is recorded — `=vars.` in caseplan.json OR a Review Expense.approved reference in the registry audit"
+    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'Review Expense.*approved' tasks/registry-resolved.json"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "tasks.md records the action output binding for approved"
-    path: "tasks/tasks.md"
-    includes:
-      - "approved"
+  - type: run_command
+    description: "the action output binding for `approved` is recorded (caseplan on the resolved path, registry audit on the skeleton path)"
+    command: "grep -q 'approved' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'approved' tasks/registry-resolved.json"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

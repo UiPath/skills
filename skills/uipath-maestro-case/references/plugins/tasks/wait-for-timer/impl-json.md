@@ -1,6 +1,6 @@
 # wait-for-timer task — Implementation (Direct JSON Write)
 
-> **Phase split.** Written in Phase 2 only. The timer task has no variable inputs to bind — `timerType` + duration come from `tasks.md` planning. Phase 3 does not revisit this plugin. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Written in Phase 2 only. The timer task has no variable inputs to bind — `timerType` + duration come from the SDD's tinning. Phase 3 does not revisit this plugin. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Write the timer task directly to `caseplan.json`. No CLI command needed.
 
@@ -16,6 +16,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
   "shouldRunOnlyOnce": false,
+  "description": "Holds the stage open for three minutes so the approver can respond before escalation.",
   "skipCondition": "=js:vars.skipReview === true",
   "data": {
     "timerType": "timeDuration",
@@ -24,7 +25,8 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 }
 ```
 
-> **Envelope source.** `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from timer task type.
+> **`description` is a copy.** The task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
+> **Envelope source.** `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from timer task type.
 > **`data` holds ONLY `timerType` + the duration field.** `skipCondition` and all other envelope fields are top-level siblings of `data`, never nested inside it (a misplaced one passes `validate` silently but is never applied). See [case-schema.md](../../../case-schema.md) §7 Tasks — BaseTask shape.
 
 ## Procedure
@@ -43,13 +45,14 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
   "shouldRunOnlyOnce": false,
+  "description": "Holds the stage open for three minutes so the approver can respond before escalation.",
   "data": {}
 }
 ```
 
 **Step 2 — Populate timer details:**
 
-4. Read the timer type from tasks.md (`every`, `at`, or `time-cycle`)
+4. Read the timer type from the SDD (`every`, `at`, or `time-cycle`)
 5. Set `data.timerType` and the corresponding duration field (see below)
 
 **Step 3 (separate):** Entry conditions are added in Step 10
@@ -64,7 +67,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 
 ISO 8601 duration format (e.g., `PT3M`, `PT1H30M`, `P2D`). Time units use `PT` prefix, date units use `P` (no `T`). Weeks → `P7D` (Luxon doesn't output `W`).
 
-**Bounded repetition** — when tasks.md specifies `repeat: N`, add `data.repeat` as a string alongside `timeDuration`. Omit `data.repeat` entirely for a single fire.
+**Bounded repetition** — when the SDD specifies a repeat count, add `data.repeat` as a string alongside `timeDuration`. Omit `data.repeat` entirely for a single fire.
 
 ```json
 "data": { "timerType": "timeDuration", "timeDuration": "PT1H", "repeat": "5" }

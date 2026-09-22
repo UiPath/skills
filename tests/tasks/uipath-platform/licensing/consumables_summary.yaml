@@ -4,7 +4,7 @@ description: >
   summary report (default mode). Verifies the agent calls `uip platform
   licenses consumables get --output json` (summary is the default `--mode`,
   so the flag is optional). CLI auth failure is expected offline.
-tags: [uipath-platform, smoke, licensing, consumables]
+tags: [uipath-platform, smoke, licensing, consumables, mode:operate, lifecycle:discover]
 
 sandbox:
   # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a

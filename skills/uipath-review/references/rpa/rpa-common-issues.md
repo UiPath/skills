@@ -1,16 +1,16 @@
 # RPA Common Issues
 
-Catalog of frequently found issues in UiPath RPA projects, with detection methods and recommended fixes.
+Catalog of frequently found UiPath RPA project issues, with detection methods, severity guidance, and fixes.
 
 ## Structural Issues
 
 ### Missing .cs.json Metadata Files
 
-**Symptom:** Coded workflow `.cs` files exist without companion `.cs.json` files.
+**Symptom:** Coded workflow `.cs` files lack companion `.cs.json` files.
 
-**Impact:** The workflow won't appear in Studio's entry points or be invocable from other workflows. Arguments won't be discoverable.
+**Impact:** The workflow is absent from Studio entry points, cannot be invoked reliably, and has undiscoverable arguments.
 
-**Detection:**
+**Detection:** Run:
 ```bash
 # Find .cs files that should have .cs.json companions
 # (files with [Workflow] or [TestCase] attributes)
@@ -19,686 +19,616 @@ grep -rl "\[Workflow\]\|\[TestCase\]" --include="*.cs" . | while read f; do
 done
 ```
 
-**Fix:** Use `uipath-rpa` skill to regenerate metadata, or run `uip rpa validate` which will flag missing metadata.
+**Fix:** Use `uipath-rpa` skill to regenerate metadata, or run `uip rpa validate` to flag missing metadata.
 
 ### Broken Entry Points
 
-**Symptom:** `entryPoints` in project.json references files that don't exist or have been renamed.
+**Symptom:** `project.json` `entryPoints` references missing or renamed files.
 
-**Detection:** Read project.json → `entryPoints` → verify each `filePath` exists on disk.
+**Detection:** Read `project.json` → `entryPoints` and verify every `filePath` exists.
 
-**Fix:** Update `entryPoints` array to match actual workflow files, or remove stale entries.
+**Fix:** Update `entryPoints` to actual workflow files or remove stale entries.
 
 ### Windows-Legacy Compatibility Lock-In
 
-**Symptom:** Project uses Windows-Legacy compatibility (`project.json` has no `targetFramework` or `targetFramework: "Legacy"` — the reliable marker; expression language is usually VisualBasic but Legacy C# projects exist).
+**Symptom:** `project.json` lacks `targetFramework` or has `targetFramework: "Legacy"`; this is the reliable marker. Expression language is usually VisualBasic, but Legacy C# projects exist.
 
-**Support status:** Legacy is supported **indefinitely** in Studio LTS (2024.10, 2025.10, 2026.10, and all future LTS releases). It is NOT a deployment blocker. It is NOT a mid-term support risk. Deprecation means "no new features in Legacy," not "Legacy will be removed."
+**Support status:** Legacy is supported **indefinitely** in Studio LTS (2024.10, 2025.10, 2026.10, and all future LTS releases). It is NOT a deployment blocker or mid-term support risk. Deprecation means no new Legacy features, not removal.
 
-**NEVER flag as Critical based on framework alone.** Severity is Warning if blocking desired modern features, Info if Studio LTS is the organizational standard.
+**Severity:** NEVER flag as Critical based on framework alone. Use Warning when it blocks desired modern features, or Info when Studio LTS is the organizational standard.
 
-**When recommending migration, lead with the 2-3 features most relevant to the project's actual pain points** — heavy UI maintenance → Healing Agent + Unified Target + Object Repository; weak testing → coded tests + Test Manager; AI use cases → Autopilot + Agents.
+**Migration guidance:** Lead with the 2-3 features relevant to actual pain points: heavy UI maintenance → Healing Agent + Unified Target + Object Repository; weak testing → coded tests + Test Manager; AI use cases → Autopilot + Agents. SOAP web services are a valid reason to stay on Legacy because they are supported only in Legacy.
 
-**Valid reason to stay on Legacy:** SOAP web services (only supported in Legacy).
-
-**Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).** The standard `uip rpa` tooling targets Windows/Cross-platform projects; Legacy mode in `uipath-rpa` uses the `uip rpa-legacy` CLI internally.
+**Tooling:** Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode). Standard `uip rpa` tooling targets Windows/Cross-platform projects; Legacy mode in `uipath-rpa` uses the `uip rpa-legacy` CLI internally.
 
 Ranked feature list, severity matrix, migration tooling and blockers, pre-flight order, and post-migration checks: [rpa-review-checklist.md §10 "Windows-Legacy Compatibility"](rpa-review-checklist.md).
 
 ### Wrong Expression Language
 
-**Symptom:** XAML files contain expressions in a language that doesn't match the project's `expressionLanguage` setting.
+**Symptom:** XAML expressions do not match the project's `expressionLanguage`.
 
-**Impact:** Expressions fail to compile. VB.NET expressions in a CSharp project (or vice versa) cause validation errors.
+**Impact:** Expressions fail to compile.
 
-**Detection:** Read project.json `expressionLanguage`, then check XAML files for mismatched expression syntax.
+**Detection:** Read `project.json` `expressionLanguage`, then inspect XAML for mismatched syntax.
 
-**Fix:** Rewrite expressions in the correct language, or change the project setting (requires rewriting all expressions).
+**Fix:** Rewrite expressions in the configured language, or change the project setting and rewrite all expressions.
 
 ## Performance Issues
 
 ### Oversized XAML Files
 
-**Symptom:** XAML workflow files exceeding 500KB, with critical issues above 5MB.
+**Symptom:** XAML exceeds 500KB; files above 5MB are critical and files above 7MB can hang Studio.
 
-**Impact:** Studio becomes slow to open, edit, and save. Files >7MB can hang Studio entirely.
+**Impact:** Studio is slow to open, edit, and save.
 
-**Detection:**
+**Detection:** Run:
 ```bash
 find . -name "*.xaml" -size +500k -exec ls -lh {} \;
 ```
 
-**Fix:** Break large workflows into smaller sub-workflows using Invoke Workflow File. Extract reusable sequences into separate files.
+**Fix:** Split workflows with Invoke Workflow File and extract reusable sequences.
 
 ### Hardcoded Delay Activities
 
-**Symptom:** `Delay` activities with fixed time values instead of element-based waits.
+**Symptom:** Fixed-time `Delay` activities replace element-based waits.
 
-**Impact:** Wastes execution time on fast systems, causes timeout failures on slow systems. Non-deterministic behavior.
+**Impact:** Delays waste time on fast systems and fail on slow systems.
 
-**Detection:** Workflow Analyzer rules ST-DBP-026 and ST-PRR-004. Also grep XAML for `Delay` activities.
+**Detection:** Run Workflow Analyzer rules ST-DBP-026 and ST-PRR-004; also grep XAML for `Delay` activities.
 
-**Fix:** Replace with `Element Exists`, `Check App State`, `On Element Appear`, or `Retry Scope` with element-based conditions.
+**Fix:** Use `Element Exists`, `Check App State`, `On Element Appear`, or `Retry Scope` with element-based conditions.
 
 ### Progressive Slowdown in Long-Running Processes
 
-**Symptom:** Automation starts fast (30 sec/item) and progressively slows to minutes per item after 1+ hours. No crash — just gets slower.
+**Symptom:** Processing slows progressively after 1+ hours without crashing.
 
-**Impact:** Jobs that should take 1 hour take 8. Timeouts, missed SLAs, wasted robot licenses.
+**Root causes:** Orphaned `EXCEL.EXE`, browser DOM growth, uncleared DataTables, and per-iteration logging.
 
-**Root causes:** Excel processes not killed between iterations (dozens of orphaned EXCEL.EXE accumulate), browser DOM growth in web loops, DataTable variables growing with uncleared temp data, Log Message flooding inside tight loops.
+**Detection:** For loops over 50 iterations, verify `KillAllProcesses.xaml` kills Excel/browser processes; verify browsers close and reopen every 50-100 web iterations; check for growing DataTables and `Log Message` inside tight loops.
 
-**Detection:** For processes looping >50 times: verify `KillAllProcesses.xaml` kills Excel/browser processes; check that browser is closed/reopened every 50-100 iterations for web loops; verify no growing DataTable variables inside loops; check for Log Message inside tight loops.
-
-**Fix:** Add periodic resource cleanup. Kill Excel in Finally blocks. Close/reopen browser every N iterations. Clear temp variables between iterations. Log summaries before/after loops instead of per-iteration.
+**Fix:** Clean resources periodically; kill Excel in Finally blocks; close/reopen browsers every N iterations; clear temporary variables; log summaries before/after loops instead of every iteration.
 
 ### Nested Loops Over Large DataTables
 
-**Symptom:** `For Each Row` nested inside another `For Each Row`, processing large datasets.
+**Symptom:** Nested `For Each Row` or `For Each` activities process large datasets.
 
-**Impact:** O(n^2) complexity. A 1000-row table with nested loops executes 1,000,000 iterations.
+**Impact:** O(n^2) work; 1000 rows can produce 1,000,000 iterations.
 
 **Detection:** Search XAML for nested `ForEachRow` or `ForEach` activities.
 
-**Fix:** Use LINQ queries, `Filter Data Table`, `Join Data Table`, or `Dictionary`/`HashSet` lookups instead.
+**Fix:** Use LINQ, `Filter Data Table`, `Join Data Table`, or `Dictionary`/`HashSet` lookups.
 
 ### Excessive Logging in Loops
 
-**Symptom:** `Log Message` activities inside tight loops logging every iteration.
+**Symptom:** `Log Message` runs on every iteration of a tight loop.
 
-**Impact:** Floods Orchestrator logs, degrades performance, increases storage costs.
+**Impact:** Orchestrator log flooding, slower execution, and higher storage cost.
 
-**Detection:** Check for Log Message activities inside For Each / While loops.
+**Detection:** Inspect `For Each` and `While` loops for `Log Message` activities.
 
-**Fix:** Log summary before/after the loop. Use counters and log at intervals (every 100 items). Set production log level to Info.
+**Fix:** Log summaries before/after loops, or counters at intervals such as every 100 items. Set production logging to Info.
 
 ### Unoptimized Selectors
 
-**Symptom:** Selectors using unstable attributes (`idx`, dynamic IDs, session-specific values).
+**Symptom:** Selectors use unstable attributes such as `idx`, dynamic IDs, or session-specific values.
 
-**Impact:** Intermittent failures, flaky automation runs.
+**Impact:** Intermittent, flaky runs.
 
-**Detection:**
+**Detection:** Run:
 ```bash
 grep -r 'idx=' --include="*.xaml" .
 ```
 
-**Fix:** Use stable attributes (`id`, `name`, `automationid`). Use wildcards for dynamic portions. Use Anchor Base for elements near stable anchors. Use Object Repository for centralized selector management.
+**Fix:** Prefer stable `id`, `name`, and `automationid`; wildcard dynamic portions; use Anchor Base and Object Repository.
 
 ## Security Issues
 
 ### Hardcoded Credentials
 
-**Symptom:** Passwords, API keys, or connection strings embedded directly in workflow files, Config.xlsx, or source code.
+**Symptom:** Passwords, API keys, or connection strings are embedded in XAML, `Config.xlsx`, or source code.
 
-**Impact:** Credentials exposed in source control, logs, and package files. Critical security vulnerability.
+**Impact:** Credentials may appear in source control, logs, and packages. **Severity: Critical.**
 
-**Detection:**
+**Detection:** Run:
 ```bash
 # Check for common credential patterns in all project files
 grep -ri "password\s*=" --include="*.xaml" --include="*.cs" --include="*.json" .
 grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --include="*.json" .
 ```
 
-**Fix:** Use Orchestrator Credential Assets, external credential stores (CyberArk, Azure Key Vault, HashiCorp Vault), or Windows Credential Manager. Retrieve with `Get Credential` activity.
+**Fix:** Use Orchestrator Credential Assets, CyberArk, Azure Key Vault, HashiCorp Vault, or Windows Credential Manager. Retrieve with `Get Credential`.
 
 ### SecureString Misuse
 
-**Symptom:** `SecureString` values converted to plain `String` via `.ToString()` or `new NetworkCredential("", secureString).Password`.
+**Symptom:** `SecureString` becomes plain `String` through `.ToString()` or `new NetworkCredential("", secureString).Password`.
 
-**Impact:** Defeats the purpose of SecureString protection. Password visible in memory and potentially in logs.
+**Impact:** Protection is defeated and the password may enter memory or logs.
 
-**Detection:** Workflow Analyzer rule ST-SEC-009. Grep for `NetworkCredential` or `SecureStringToString` patterns.
+**Detection:** Run Workflow Analyzer rule ST-SEC-009 and grep for `NetworkCredential` or `SecureStringToString` patterns.
 
-**Fix:** Keep passwords as `SecureString` throughout the workflow. Use `Type Secure Text` for UI entry. Pass as `SecureString` arguments.
+**Fix:** Keep passwords as `SecureString`; use `Type Secure Text` and `SecureString` arguments.
 
 ### Sensitive Data in Logs
 
-**Symptom:** Log messages containing PII, credentials, or business-sensitive data.
+**Symptom:** Logs contain PII, credentials, or business-sensitive values.
 
-**Impact:** Sensitive data visible in Orchestrator logs, potentially accessible to unauthorized users.
+**Impact:** Sensitive information is exposed through Orchestrator logs.
 
-**Detection:** Review all Log Message activities for variable interpolation that includes sensitive fields.
+**Detection:** Review all `Log Message` interpolations for sensitive fields.
 
-**Fix:** Redact or mask sensitive values before logging. Use Add Log Fields selectively. Review log output in Orchestrator after test runs.
+**Fix:** Redact or mask values, use Add Log Fields selectively, and review Orchestrator output after testing.
 
 ## Maintainability Issues
 
 ### God Workflows
 
-**Symptom:** Single workflow file containing 50+ activities with deeply nested logic.
+**Symptom:** One file has 50+ activities and deeply nested logic; >200KB is suspicious.
 
-**Impact:** Difficult to understand, debug, test, and modify. High risk of regression when changing anything.
+**Impact:** Difficult understanding, debugging, testing, and safe modification.
 
-**Detection:** Check XAML file size (>200KB is suspicious). Count activities in each workflow. Check nesting depth (Workflow Analyzer rule ST-MRD-009).
+**Detection:** Count activities and nesting depth; run ST-MRD-009.
 
-**Fix:** Extract logical sections into sub-workflows. Each workflow should have a single responsibility. Target 15-30 activities per workflow.
+**Fix:** Extract logical sections into single-responsibility sub-workflows. Target 15-30 activities per workflow.
 
 ### Default Activity Names
 
-**Symptom:** Activities with names like "Sequence", "Assign", "If", "Click", "Type Into".
+**Symptom:** Names remain `Sequence`, `Assign`, `If`, `Click`, or `Type Into`.
 
-**Impact:** Impossible to understand workflow logic without reading each activity's properties. Debugging becomes a guessing game.
+**Impact:** Logic cannot be understood without opening properties.
 
-**Detection:** Workflow Analyzer rule ST-MRD-002.
+**Detection:** Run Workflow Analyzer rule ST-MRD-002.
 
-**Fix:** Rename every activity to describe its purpose: "Click 'Login' Button", "Assign Invoice Total", "Check if Customer Exists".
+**Fix:** Rename activities by purpose, such as `Click 'Login' Button`, `Assign Invoice Total`, or `Check if Customer Exists`.
 
 ### Magic Strings and Numbers
 
-**Symptom:** Hardcoded string values and numbers scattered throughout workflows (column indices, status codes, file paths, email addresses).
+**Symptom:** Repeated literals such as column indices, status codes, paths, and email addresses are scattered through workflows.
 
-**Impact:** Changes require finding and updating every occurrence. Easy to miss one, causing bugs.
+**Impact:** Changes require error-prone manual replacement.
 
-**Detection:** Workflow Analyzer rule ST-USG-005 (hardcoded activity arguments). Manual review for repeated literal values.
+**Detection:** Run ST-USG-005 and review repeated literals.
 
-**Fix:** Extract to variables, Config.xlsx settings, or Orchestrator assets. Use named constants for status codes and column names.
+**Fix:** Use variables, `Config.xlsx`, Orchestrator assets, and named constants.
 
 ### Unused Variables and Dependencies
 
-**Symptom:** Variables declared but never referenced. NuGet packages in dependencies but no activities from them used.
+**Symptom:** Variables are never referenced or packages provide no used activities.
 
-**Impact:** Clutters the project, causes confusion, increases package restore time.
+**Impact:** Clutter, confusion, and slower package restore.
 
-**Detection:** Workflow Analyzer rules ST-USG-009 (unused variables) and ST-USG-010 (unused dependencies).
+**Detection:** Run ST-USG-009 and ST-USG-010.
 
-**Fix:** Remove unused variables and uninstall unused packages.
+**Fix:** Remove unused variables and packages.
 
 ### Deep Nesting
 
-**Symptom:** If-Else inside If-Else inside If-Else (>3 levels). For Each inside For Each inside For Each.
+**Symptom:** More than three nested If-Else levels or deeply nested loops.
 
-**Impact:** Extremely difficult to follow logic flow. Error-prone modifications.
+**Impact:** Logic is difficult to follow and modify.
 
-**Detection:** Workflow Analyzer rules ST-MRD-007 (nested If) and ST-MRD-009 (deeply nested activities).
+**Detection:** Run ST-MRD-007 and ST-MRD-009.
 
-**Fix:** Extract nested logic into separate workflows. Use Switch/Flowchart instead of deeply nested If-Else. Use early returns (Flowchart decision nodes) to reduce nesting.
+**Fix:** Extract workflows, use Switch/Flowchart, and use early-return decision nodes.
 
 ## Error Handling Issues
 
 ### Throw Used Instead of Rethrow (Stack Trace Lost)
 
-**Symptom:** Catch block uses `Throw` activity with `New Exception(exception.Message)` instead of `Rethrow`.
+**Symptom:** A Catch uses `Throw` with `New Exception(exception.Message)` instead of `Rethrow`.
 
-**Impact:** Original stack trace destroyed. Exception appears to originate at the Throw activity's location, not the real failure point. Production debugging becomes guesswork. .NET equivalent of `throw ex` vs `throw`.
+**Impact:** Original stack trace is lost. **Severity: Warning.**
 
-**Detection:** Grep XAML for `<Throw>` activities inside `<Catch>` blocks creating new exception objects. Should use `Rethrow` activity (no arguments) to preserve stack trace.
+**Detection:** Inspect `<Throw>` inside `<Catch>` that creates a new exception. It should use argument-free `Rethrow`.
 
-**Fix:** Replace `Throw New Exception(...)` with `Rethrow`. If you must wrap the exception, pass the original as `InnerException`: `Throw New Exception("context", exception)`.
-
-**Severity:** Warning
+**Fix:** Replace with `Rethrow`; if wrapping is required, use `Throw New Exception("context", exception)`.
 
 ### Global Exception Handler Causing Cascading Retry Storms
 
-**Symptom:** Project has `GlobalHandler.xaml` that sets `result = Retry` without filtering which activities should retry.
+**Symptom:** `GlobalHandler.xaml` unconditionally sets `result = Retry`.
 
-**Impact:** Nested activity failures trigger the Global Handler at every parent level. A 3-retry configuration actually produces dozens of retries (6 inner × 3 outer = 18 total). Documented cases of infinite loops.
+**Impact:** Parent handlers multiply nested retries: a 3-retry configuration nested one level produces `6 inner × 3 outer = 18` executions, with documented cases of infinite loops. **Severity: Warning.**
 
-**Detection:** Read `GlobalHandler.xaml`. If `result` is set to `Retry` unconditionally (no filtering by activity type / exception type), flag.
+**Detection:** Read `GlobalHandler.xaml`; flag unconditional retry without activity- or exception-type filtering.
 
-**Fix:** Conditionalize retry by activity type — exclude Throw, Rethrow, Try-Catch, and Retry Scope. Only retry specific transient-failure-prone activities (HTTP, UI actions).
-
-**Severity:** Warning
+**Fix:** Exclude Throw, Rethrow, Try-Catch, and Retry Scope. Retry only selected transient-prone activities such as HTTP and UI actions.
 
 ### Global Exception Handler + REFramework (Redundant and Conflicting)
 
-**Symptom:** Project has both `Framework/` folder (REFramework) AND `GlobalHandler.xaml`.
+**Symptom:** Both `Framework/` and `GlobalHandler.xaml` exist.
 
-**Impact:** REFramework already has comprehensive Try-Catch in every state and uses specific exceptions for state transitions. The Global Handler catches exceptions REFramework needs to propagate, interfering with retry/recovery logic.
+**Impact:** The global handler interferes with REFramework state transitions and recovery. **Severity: Warning.**
 
-**Detection:** Check for both `Framework/` directory and `GlobalHandler.xaml` in the project.
+**Detection:** Check for both paths.
 
-**Fix:** Remove `GlobalHandler.xaml` in REFramework projects. Use REFramework's built-in error handling (`SetTransactionStatus`, `RetryCurrentTransaction`).
-
-**Severity:** Warning
+**Fix:** Remove `GlobalHandler.xaml` from REFramework projects and use `SetTransactionStatus` and `RetryCurrentTransaction`.
 
 ### Empty Catch Blocks
 
-**Symptom:** Try-Catch with empty Catch body — exception is silently swallowed.
+**Symptom:** Catch body is empty.
 
-**Impact:** Errors go undetected. Process appears to succeed but produces incorrect results.
+**Impact:** Errors are silently swallowed.
 
-**Detection:** Workflow Analyzer rule ST-DBP-003.
+**Detection:** Run ST-DBP-003.
 
-**Fix:** At minimum, log the exception. Decide whether to re-throw, handle, or escalate.
+**Fix:** At minimum log the exception; then handle, rethrow, or escalate deliberately.
 
 ### No Business vs System Exception Distinction
 
-**Symptom:** All exceptions treated identically — either all retried or all failed.
+**Symptom:** All exceptions are treated identically.
 
-**Impact:** Business exceptions (data issues) get retried unnecessarily. System exceptions (transient failures) don't get retried.
+**Impact:** Business errors are retried and system errors are not appropriately retried.
 
-**Detection:** Grep all `.xaml` and `.cs` files for `BusinessRuleException` — if absent, the distinction is missing entirely. Also check exception handling in REFramework's SetTransactionStatus or equivalent logic.
+**Detection:** Grep `.xaml` and `.cs` for `BusinessRuleException`; inspect REFramework status handling.
 
-**Fix:** Throw `BusinessRuleException` for data/validation issues (e.g., `Throw New BusinessRuleException("Invoice amount is negative")`) — marked Failed-Business, not retried. Let system exceptions propagate for transient failures (auto-retry).
+**Fix:** Throw `BusinessRuleException` for data/validation issues, such as `Throw New BusinessRuleException("Invoice amount is negative")`; let system exceptions propagate for transient retry.
 
 ### ContinueOnError Overuse
 
-**Symptom:** `ContinueOnError=True` set on multiple activities as a blanket error suppression.
+**Symptom:** Multiple activities use `ContinueOnError=True` or `ContinueOnError="{x:Null}"` as blanket suppression.
 
-**Impact:** Errors silently ignored. Process continues with invalid state, producing incorrect results downstream.
+**Impact:** Invalid state continues downstream.
 
 **Detection:** Grep XAML for `ContinueOnError="True"` or `ContinueOnError="{x:Null}"`.
 
-**Fix:** Remove ContinueOnError. Use proper Try-Catch blocks. Only use ContinueOnError with explicit annotation explaining why.
+**Fix:** Remove it and use Try-Catch. Retain only with an explicit reason annotation.
 
 ### Missing Finally Blocks for Resource Cleanup
 
-**Symptom:** Try-Catch blocks without Finally blocks when using external resources (file handles, database connections, application scopes).
+**Symptom:** Resource-wrapping Try-Catch lacks Finally cleanup.
 
-**Impact:** Resource leaks. Files remain locked, database connections remain open, applications accumulate across retries and Init cycles.
+**Impact:** Files, database connections, and applications leak across retries and Init cycles.
 
-**Detection:** Check Try-Catch activities that wrap file I/O, database, or application scope activities — verify Finally section exists and contains cleanup logic.
+**Detection:** Inspect Try-Catch around file I/O, database, and application scopes for a cleanup-containing Finally.
 
-**Fix:** Add Finally blocks to close/dispose resources. Use `Close Application` or `Kill Process` in Finally for UI scopes. Use `Close Workbook` in Finally for Excel. Critical in REFramework Process.xaml and SetTransactionStatus workflows.
+**Fix:** Close/dispose resources in Finally: `Close Application`, `Kill Process`, or `Close Workbook`. This is critical in REFramework `Process.xaml` and `SetTransactionStatus`.
 
 ### Generic Exception Catching
 
-**Symptom:** All Catch blocks catch only `System.Exception` instead of specific exception types.
+**Symptom:** Every Catch handles only `System.Exception`.
 
-**Impact:** All exceptions treated identically. Cannot distinguish between transient network failures (should retry), data validation errors (should not retry), and application crashes (should recover). Leads to inappropriate retry behavior and missed root causes.
+**Impact:** Transient, business, and application failures receive inappropriate handling.
 
-**Detection:** Check Catch blocks for exception type. All catching `System.Exception` without any specific type catches is a code smell.
+**Detection:** Inspect Catch types; generic-only handling is a code smell.
 
-**Fix:** Catch specific exception types first with targeted handling: `TimeoutException` for transient waits, `SelectorNotFoundException` for UI issues, `BusinessRuleException` for data problems. Add a generic `System.Exception` catch last as a safety net that logs full details and re-throws.
+**Fix:** Catch specific types first, such as `TimeoutException`, `SelectorNotFoundException`, and `BusinessRuleException`. Add a final `System.Exception` safety catch that logs full details and rethrows.
 
 ### Missing Retry Logic for External Calls
 
-**Symptom:** HTTP requests, API calls, or database operations with no retry mechanism.
+**Symptom:** HTTP, API, or database operations are outside Retry Scope.
 
-**Impact:** Transient network failures or service unavailability causes permanent failure.
+**Impact:** Transient failures become permanent failures.
 
-**Detection:** Check for HTTP Request, Invoke Method, and database activities outside Retry Scope.
+**Detection:** Inspect HTTP Request, Invoke Method, and database activities.
 
-**Fix:** Wrap transient-failure-prone activities in Retry Scope with appropriate retry count and interval. Use exponential backoff for API rate limiting.
+**Fix:** Use Retry Scope with suitable count and interval; use exponential backoff for API rate limiting.
 
 ## Queue and Transaction Issues
 
 ### No Queue for High-Volume Processing
 
-**Symptom:** Process reads all items from a source and processes them sequentially in a single run, with no queue.
+**Symptom:** More than 50 independent items are processed sequentially without Orchestrator queues.
 
-**Impact:** No per-item retry, no audit trail per item, no distributed processing, single point of failure.
+**Impact:** No per-item retry, audit trail, or distributed processing.
 
-**Detection:** Check if process reads a dataset and loops through it without using Orchestrator queues.
+**Detection:** Check whether a dataset is read and looped without queue use.
 
-**Recommendation:** If volume >50 items/run AND items are independent, recommend Dispatcher-Performer with queues. Flag as **Info** — the current approach may be intentional for low-volume scenarios.
+**Recommendation:** For volume >50 items/run AND independent items, recommend Dispatcher-Performer with queues. Flag **Info** because low-volume or dependent processing may be intentional.
 
 ### Hardcoded Queue Names
 
-**Symptom:** Queue name embedded as a string literal in workflows instead of using Config.xlsx or assets.
+**Symptom:** Queue names are literal strings in `Add Queue Item` or `Get Transaction Item`.
 
-**Impact:** Queue name change requires modifying and republishing the process. Different environments can't use different queues.
+**Impact:** Environment changes require republishing.
 
-**Detection:** Grep for `Add Queue Item` and `Get Transaction Item` activities with literal queue names.
+**Detection:** Inspect those activities for literal names.
 
-**Fix:** Store queue name in Config.xlsx or Orchestrator asset. Reference via `Config("QueueName")`.
+**Fix:** Store names in `Config.xlsx` or Orchestrator assets and use `Config("QueueName")`.
 
 ### Missing Transaction Status Updates
 
-**Symptom:** Queue items processed but `Set Transaction Status` not called on all paths (especially failure paths).
+**Symptom:** `Set Transaction Status` is absent on success or failure paths.
 
-**Impact:** Items remain "In Progress" for ~24 hours before being marked "Abandoned". No proper audit trail.
+**Impact:** Items remain In Progress for ~24 hours before abandonment.
 
-**Detection:** Check all code paths in ProcessTransaction for Set Transaction Status calls.
+**Detection:** Inspect every `ProcessTransaction` path.
 
-**Fix:** Ensure Set Transaction Status is called in both success and failure/catch paths. Use Finally blocks.
+**Fix:** Set status on success and failure/catch paths, using Finally where appropriate.
 
 ### Queue Items Stuck "In Progress" After Bot Crash
 
-**Symptom:** Bot crashes mid-transaction (network failure, VM restart, Robot Service stop). The queue item remains "In Progress" for 24 hours before auto-abandonment.
+**Symptom:** A crash leaves an item In Progress for 24 hours; HITL work may be abandoned while legitimately waiting.
 
-**Impact:** During the 24-hour window, the item cannot be retried. No built-in auto-reset mechanism. For HITL workflows, this is worse — if the human takes >24 hours, the item is abandoned even though the workflow is legitimately waiting.
+**Detection:** Check Init for orphan cleanup querying old In Progress items and resetting them; check long-running/HITL workflows for the long-running workflow template.
 
-**Detection:** Check if the Init state includes orphan cleanup logic — querying for In Progress items older than a threshold and resetting them. Check if long-running/HITL workflows use the long-running workflow template.
-
-**Fix:** Build an orphan cleanup step in Init: `Get Queue Items` filtered by `InProgress` status and age >2 hours, then set them to Failed for retry. For HITL, use the long-running workflow framework template.
+**Fix:** In Init, run `Get Queue Items` filtered by `InProgress` and age >2 hours, then set stale items to Failed for retry. Use the long-running workflow framework for HITL.
 
 ## REFramework-Specific Issues
 
 ### Double-Retry Configuration
 
-**Symptom:** Both `MaxRetryNumber > 0` in Config.xlsx AND `Max # of Retries > 0` on the Orchestrator Queue.
+**Symptom:** `MaxRetryNumber > 0` in `Config.xlsx` and `Max # of Retries > 0` on the Orchestrator Queue.
 
-**Impact:** Retries multiply. With MaxRetryNumber=3 and Queue MaxRetries=3, a single failed item gets up to 9 attempts. Confuses error tracking and wastes processing time.
+**Impact:** Retries multiply; values of 3 and 3 allow up to 9 attempts.
 
-**Detection:** Read Config.xlsx Constants sheet for MaxRetryNumber. Check Orchestrator Queue configuration for max retries.
+**Detection:** Read `Config.xlsx` Constants and the queue configuration.
 
-**Fix:** Use one mechanism, not both. For queue-based: set MaxRetryNumber=0 and configure retries on the queue. For non-queue: use MaxRetryNumber only.
+**Fix:** Use one mechanism. For queue-based processing set `MaxRetryNumber=0` and configure queue retries; otherwise use `MaxRetryNumber`.
 
 ### Transaction Shape: One-to-Many (Bulk-in-Transaction / Thick Transaction)
 
-**What it is:** The declared contract (queue schema, input args, flow input, agent input schema) says one invocation represents ONE entity, but the execution body iterates over a sub-collection of that entity and performs external effects per sub-item. One declared transaction actually performs many units of external work.
+**Definition:** A declared input represents one entity, but the execution body iterates over a collection of business entities and performs external effects per sub-item. This applies to RPA queues, flows, agents, and API workflows.
 
-This shape applies to **any project type**:
-- **RPA queue:** queue item = company, execution body loops employees
-- **Flow:** flow input = one request, body fans out to N downstream calls
-- **Agent:** one agent invocation produces N tool calls that should be separate sessions
-- **API workflow:** one request triggers N writes
+**Mechanical classification:** Both conditions must hold:
+1. The body uses `ForEach`, `While`, `for`, or `foreach` over a collection field of the declared input.
+2. The loop body performs an external effect: side-effecting workflow invocation, HTTP call, queue operation, DB write, persistent UI action, file write outside Temp, or email send.
 
-**Shape detection (mechanical — this is classification, not a verdict):**
-
-The shape is one-to-many when BOTH:
-1. The execution body iterates (`ForEach` / `While` / `for` / `foreach`) over a field of the declared input that is a collection of business entities, AND
-2. The loop body performs at least one external effect (workflow invocation with side effects, HTTP call, queue op, DB write, persistent UI action, file write outside Temp, email send)
-
-Session scope, shared credentials, "one portal" / "one browser" framing, or PDD wording do NOT change the shape. Only the loop body's actual external effects determine it.
-
-**Remediation depends on two independent questions:**
+Session scope, shared credentials, one-portal framing, and PDD wording do not change the shape.
 
 **Question A — Are sub-units independently splittable?**
+- **Yes:** Invoices, orders, records, and files are free-standing; use dispatcher/performer so each is one atomic item.
+- **No:** Sequential domains such as carrier group-plan enrollment, SAP multi-step transactions, or bank wire setup require in-place partial-failure hardening.
+- If unclear, default to “yes, probably splittable” and recommend investigation.
 
-- **Yes** (invoices, orders, records, files — each sub-unit is a free-standing transaction): the correct architectural fix is dispatcher/performer. Split the queue so each sub-unit is one atomic item.
-- **No** (carrier group-plan enrollment, SAP multi-step transaction, bank wire setup — the domain forces one sequential session): queue splitting is infeasible. The fix shifts to hardening partial-failure recovery in place.
+**Question B — What recovery exists?** Count any of these as an idempotency or progress guard:
+- Read-check-before-write: `Get X`, SELECT, HTTP GET, or `File Exists` immediately before the corresponding write.
+- Conditional skip based on already exists/processed state.
+- Queue dedup with `UniqueReference`.
+- SQL `MERGE`, `INSERT ... ON CONFLICT`, `UPSERT`, or `INSERT ... WHERE NOT EXISTS`.
+- HTTP `Idempotency-Key`, `If-Match`, or `If-None-Match` ETag.
+- Status filter such as `WHERE Status != 'Processed'`.
+- Pre-check workflow invocation whose display name or purpose contains, case-insensitively, `check`, `verify`, `exists`, `processed`, `already`, `idempoten`, or `skip`.
+- Persistent per-sub-item progress written to queue `Output`, Data Service, or external state.
 
-Answering "splittable?" requires understanding the domain. When unclear, default to "yes, probably splittable" and recommend investigation.
+Look semantically, not by filename. A filename like `CheckIfEmployeeExists.xaml` is one manifestation, not the signal itself — inline checks, SQL patterns, HTTP headers, queue `UniqueReference`s, and conditional branches all count.
 
-**Question B — What partial-failure recovery exists today?**
+**Severity and finding framing:**
 
-Look semantically, not by filename. Any of these counts as an idempotency guard:
-
-| Pattern | What to look for |
-|---|---|
-| Read-check-before-write | `Get X` / SELECT / HTTP GET / `File Exists` immediately before each write for the same entity |
-| Conditional skip | `If` / `Switch` skipping the write based on "already exists / processed" |
-| Queue dedup | `Add Queue Item` with `UniqueReference` populated |
-| SQL idempotency | `MERGE`, `INSERT ... ON CONFLICT`, `UPSERT`, `INSERT ... WHERE NOT EXISTS` |
-| HTTP idempotency | `Idempotency-Key` header, `If-Match` / `If-None-Match` ETag |
-| Status filter on reads | `WHERE Status != 'Processed'` |
-| Pre-check workflow invocation | Workflow invoked before writes whose display name or purpose contains (case-insensitive) `check`, `verify`, `exists`, `processed`, `already`, `idempoten`, `skip` — one common form, not the only form |
-| Per-sub-item progress writes | Writing to queue `Output` / Data Service / external state after each sub-unit |
-
-Filenames like `CheckIfEmployeeExists.xaml` are one manifestation. Inline checks, SQL patterns, HTTP headers, queue UniqueReferences, and conditional branches all count.
-
-**Severity and finding framing (combines Questions A and B):**
-
-| A: Splittable? | B: Recovery posture | Severity | Finding framing |
+| Splittable? | Recovery posture | Severity | Finding framing |
 |---|---|---|---|
-| Yes | No guards + `MaxRetryNumber` < 2 | **Critical** | "Split into dispatcher/performer. Current architecture risks partial-state corruption on transient failure." |
-| Yes | Guards exist + weak progress output | **Warning** | "Consider dispatcher/performer split for better analytics and retry isolation." |
-| No | No guards, no progress tracking | **Warning** | "Sub-units cannot be queued independently, but current code has no idempotency or progress tracking — one failure at item N forces replaying items 1..N−1. Add idempotency guards and per-sub-item progress markers." |
-| No | Guards + adequate retry but no per-sub-item progress output | **Info** | "Partial-failure recovery could be improved with per-sub-item progress markers written to queue Output for observability." |
-| Yes | Guards + retry + per-sub-item output | **Info** | "Working with compensation; consider dispatcher/performer if volume grows." |
+| Yes | No guards + `MaxRetryNumber` < 2 | **Critical** | Split into dispatcher/performer; current architecture risks partial-state corruption on transient failure. |
+| Yes | Guards + weak progress output | **Warning** | Consider dispatcher/performer for better analytics and retry isolation. |
+| No | No guards, no progress tracking | **Warning** | Add idempotency guards and per-sub-item progress markers; replay currently repeats prior work. |
+| No | Guards + adequate retry but no per-sub-item progress output | **Info** | Add per-sub-item progress markers to queue Output for observability. |
+| Yes | Guards + retry + per-sub-item output | **Info** | Working with compensation; consider dispatcher/performer if volume grows. |
 
 #### When it cannot be split — hardening checklist
 
-If the domain forces a one-to-many shape that cannot be decomposed into separate queue items (e.g., SAP multi-step enrollment, carrier portal group submission, bank wire requiring sequential steps in one session), the reviewer MUST verify ALL of these safeguards. Each missing safeguard is a separate finding.
+Verify every safeguard below. Report each missing safeguard as a separate numbered finding:
 
-| # | Safeguard | What to verify | Severity if missing |
+| # | Safeguard | Verification | Severity if missing |
 |---|---|---|---|
-| 1 | **Per-sub-item try-catch** | Every sub-item write inside the loop is wrapped in its own Try-Catch (not one Try-Catch around the entire loop) | Critical — one failure kills the entire batch |
-| 2 | **Per-sub-item status tracking** | After each sub-item succeeds or fails, the result is recorded somewhere persistent (queue Output field, Data Service, database, status column in Excel/DataTable) | Warning — no visibility into partial progress |
-| 3 | **Resumability after crash** | If the robot crashes mid-loop (power failure, session drop, OOM), the process can resume from the last completed sub-item on retry, not from the beginning | Warning — crash forces full replay |
-| 4 | **Idempotency on each sub-item write** | Re-executing a sub-item that already succeeded does not create duplicates (check-before-write, UPSERT, UniqueReference, conditional skip) | Critical — retry creates duplicate records |
-| 5 | **Error classification per sub-item** | Each sub-item failure is classified as Business (skip, move to next) or System (retry sub-item or abort loop) — not all treated the same | Warning — business errors trigger unnecessary retries |
-| 6 | **Bounded retry per sub-item** | Failed sub-items have a max retry count (not infinite retry inside the loop) | Warning — infinite retry hangs the robot |
-| 7 | **Screenshot/evidence on sub-item failure** | When a sub-item fails, screenshot and error details are captured before moving to the next | Info — debugging production failures without evidence |
-| 8 | **Summary logging after loop** | After the loop completes, a log entry reports: total sub-items, succeeded count, failed count, skipped count | Warning — Orchestrator shows "1 transaction succeeded" when 47/50 sub-items actually succeeded |
-| 9 | **Application state recovery between sub-items** | After a sub-item failure, the application is returned to a known state before processing the next sub-item (e.g., navigate back to list view, close dialog, clear form) | Critical — failed sub-item leaves app in corrupt state, next sub-item fails on stale UI |
-| 10 | **Timeout per sub-item** | Each sub-item has a reasonable timeout (not relying only on the global job timeout) | Info — one hanging sub-item blocks all remaining items |
+| 1 | **Per-sub-item try-catch** | Each sub-item write has its own Try-Catch, not one Try-Catch around the loop. | Critical |
+| 2 | **Per-sub-item status tracking** | Each success/failure is persisted in queue Output, Data Service, database, status column, or equivalent. | Warning |
+| 3 | **Resumability after crash** | Retry resumes after the last completed sub-item rather than replaying from the beginning. | Warning |
+| 4 | **Idempotency on each sub-item write** | Re-execution cannot create duplicates: check-before-write, UPSERT, UniqueReference, or conditional skip. | Critical |
+| 5 | **Error classification per sub-item** | Business errors skip/move on; system errors retry or abort; they are not treated identically. | Warning |
+| 6 | **Bounded retry per sub-item** | Failed sub-items have a maximum retry count; no infinite inner retry. | Warning |
+| 7 | **Screenshot/evidence on sub-item failure** | Capture screenshot and error details before moving to the next item. | Info |
+| 8 | **Summary logging after loop** | Report total, succeeded, failed, and skipped counts. | Warning |
+| 9 | **Application state recovery between sub-items** | Return the application to a known state after failure before processing the next item. | Critical |
+| 10 | **Timeout per sub-item** | Each item has a reasonable timeout independent of only the global job timeout. | Info |
 
-Report each missing safeguard as a numbered finding. Example:
+Anchor findings on activity display names, never XAML line numbers. Use formats such as:
 - `[W-005] One-to-many loop in Process.xaml (For Each 'Process Employees'): no per-sub-item status tracking — partial progress invisible after crash`
 - `[C-003] One-to-many loop in Process.xaml (For Each 'Process Employees'): no idempotency guard on sub-item write — retry creates duplicate records`
 
-Anchor findings on activity display names, never XAML line numbers — line numbers are meaningless in Studio.
+**Why weak remediation matters:** One failure makes the invocation non-atomic; retries replay prior work; Orchestrator analytics report one transaction instead of N operations; `SetTransactionStatus` captures only the first inner failure; and long transactions lose work on host failure while occupying a robot.
 
-**Why this shape is a real problem (when remediation is weak):**
-
-1. Non-atomic — sub-item #15 of 50 fails and the whole invocation is marked failed despite 14 succeeded
-2. Retry replays everything — one transient failure re-executes every prior sub-item (wasted time, duplicate risk without guards)
-3. Analytics lie — Orchestrator reports "1 processed" when N sub-operations ran
-4. Partial-success invisibility — `SetTransactionStatus` captures only the first inner failure
-5. Blocking runtime — long single transactions tie up a robot; host crash loses in-progress work
-
-**Common misreadings that do NOT change the shape:**
-
-- "The portal models this as one transaction" — UX framing ≠ atomicity
-- "It's all in one `Use Application/Browser`" — session ≠ atomicity
-- "They share one credential / connection" — auth reuse ≠ atomicity
-- "The PDD calls this one transaction" — declared intent ≠ execution reality
-- "Guards exist, so it's fine" — guards are a *remediation* signal (affect severity); they do not re-shape a one-to-many into a one-to-one
-
-The shape is what the execution body does. Remediation posture and business constraints govern severity and the recommended fix — not the shape label.
+**Misreadings that do not change the shape:** Portal transaction framing, one `Use Application/Browser`, shared credentials or connections, PDD terminology, and the existence of guards. Guards affect severity and remediation, not classification.
 
 ### System Exception Swallowed by Try-Catch in ProcessTransaction
 
-**Symptom:** System exceptions in ProcessTransaction are caught by a Try-Catch block inside the workflow that does NOT re-throw. The exception never reaches the state machine, so the framework marks the transaction as Success instead of retrying.
+**Symptom:** A Try-Catch in `Process.xaml` catches `System.Exception` without rethrowing.
 
-**Impact:** The single most common REFramework production failure. Transactions that should retry are silently marked successful. Data goes unprocessed with no error trail.
+**Impact:** REFramework marks the transaction Success instead of retrying; this is a common production failure.
 
-**Detection:** Read Process.xaml — check every Catch block. If a Catch handles `System.Exception` without a Rethrow, the framework's retry mechanism is bypassed. Only `BusinessRuleException` should be caught and NOT rethrown.
+**Detection:** Inspect every Catch in `Process.xaml`.
 
-**Fix:** Ensure all Catch blocks in ProcessTransaction either (a) rethrow system exceptions so they propagate to the state machine, or (b) only catch `BusinessRuleException`. The REFramework only retries when the exception reaches the state machine transition level.
+**Fix:** Rethrow system exceptions so they reach the state machine, or catch only `BusinessRuleException` without rethrowing.
 
 ### Config.xlsx Environment-Specific Values in Wrong Sheet
 
-**Symptom:** Environment-specific values (URLs, paths, queue names) stored in Config.xlsx Settings or Constants sheets instead of the Assets sheet.
+**Symptom:** URLs, paths, queue names, or credentials are in Settings or Constants instead of Assets.
 
-**Impact:** Deploying to a new environment requires manually editing Config.xlsx and republishing. Secrets leak into version control.
+**Impact:** Environment deployment requires editing and republishing; secrets may enter source control.
 
-**Detection:** Read Config.xlsx — verify: Constants sheet contains only truly constant values (MaxRetryNumber, timeouts). Settings sheet contains only environment-agnostic settings. All environment-specific values (URLs, paths, credentials, queue names) are in the Assets sheet, referencing Orchestrator Asset names.
+**Detection:** Verify Constants contains only true constants such as `MaxRetryNumber` and timeouts; Settings contains environment-agnostic settings; Assets contains environment-specific values referencing Orchestrator asset names.
 
-**Fix:** Move environment-specific values to the Assets sheet. Create corresponding Orchestrator Assets in each environment folder. Reference via `Config("AssetName")`.
+**Fix:** Move environment-specific values to Assets, create assets per environment, and use `Config("AssetName")`.
 
 ### MaxConsecutiveSystemExceptions Disabled
 
-**Symptom:** `MaxConsecutiveSystemExceptions` set to 0 (disabled) in Config.xlsx Constants sheet.
+**Symptom:** `MaxConsecutiveSystemExceptions` is `0` in `Config.xlsx` Constants.
 
-**Impact:** The bot continues processing even when every single transaction fails with System Exceptions. Can run indefinitely, consuming resources and generating noise.
+**Impact:** The bot can process indefinitely while every transaction fails.
 
-**Detection:** Read Config.xlsx Constants sheet.
+**Detection:** Read the Constants sheet.
 
-**Fix:** Set to a reasonable value (typically 3-5). This acts as a circuit breaker — if N consecutive transactions fail with System Exceptions, the process stops entirely.
+**Fix:** Set a circuit-breaker value, typically 3-5.
 
 ### Empty CloseAllApplications and KillAllProcesses
 
-**Symptom:** These scaffolding files shipped empty and were never implemented.
+**Symptom:** `Framework/CloseAllApplications.xaml` or `Framework/KillAllProcesses.xaml` contains only the default empty Sequence.
 
-**Impact:** Applications accumulate across retries and Init cycles. Causes memory leaks, session conflicts, selector mismatches from stale windows.
+**Impact:** Applications accumulate, causing leaks, session conflicts, and stale selectors.
 
-**Detection:** Read `Framework/CloseAllApplications.xaml` and `Framework/KillAllProcesses.xaml` — check if they contain only the default empty Sequence.
+**Detection:** Read both files.
 
-**Fix:** Implement CloseAllApplications with graceful Close Application activities for each app. Implement KillAllProcesses with Kill Process for each app process name.
+**Fix:** Implement graceful `Close Application` activities and `Kill Process` for each required application process.
 
 ### Business Logic in Framework Folder
 
-**Symptom:** Custom code added to files in the `Framework/` folder (InitAllSettings.xaml, framework-level GetTransactionData.xaml, etc.).
+**Symptom:** Custom logic is added to `Framework/` files such as `InitAllSettings.xaml`, framework-level `GetTransactionData.xaml`, or similar.
 
-**Impact:** Upgrading the REFramework template overwrites customizations. Makes the project non-standard and harder for other developers to understand.
+**Impact:** Template upgrades can overwrite it and the project becomes non-standard.
 
-**Detection:** Compare Framework/ files against the original REFramework template on GitHub.
+**Detection:** Compare Framework files with the original REFramework template on GitHub.
 
-**Fix:** Move customizations to root-level files (Process.xaml, root GetTransactionData.xaml, root SetTransactionStatus.xaml).
+**Fix:** Move customizations to root-level `Process.xaml`, root `GetTransactionData.xaml`, or root `SetTransactionStatus.xaml`.
 
 ## Production Environment Issues
 
 ### Unattended Robot Session Failures
 
-**Symptom:** Automation works in development but fails in production with "Desktop disconnected", selector not found, or "Cannot bring target application in foreground" errors.
+**Symptom:** Production-only desktop, selector, or foreground errors.
 
-**Common causes:**
-- Different screen resolution or DPI scaling between dev and production machines
-- RDP session disconnect due to network issues or Group Policy timeouts
-- UAC prompts blocking robot UI interaction
-- Windows "Display information about previous logons" policy preventing session creation
+**Causes:** Screen resolution/DPI differences, RDP disconnects or Group Policy timeouts, UAC prompts, or the Windows “Display information about previous logons” policy.
 
-**Detection:** Check production robot logs for session-related errors. Compare dev and prod machine resolution/DPI settings.
+**Detection:** Inspect production logs and compare development/production resolution and DPI.
 
-**Fix:** Develop at the same resolution as production. Disable idle session timeouts via Group Policy. Disable UAC prompt-triggering auto-start programs. Ensure RDP session settings match.
+**Fix:** Develop at production resolution; disable idle session timeouts through Group Policy; prevent UAC-triggering auto-start programs; align RDP settings.
 
 ### Excel Process Hanging
 
-**Symptom:** Excel Application Scope completes but Excel process stays alive in background. Robot hangs indefinitely waiting for Excel.
+**Symptom:** Excel scope completes but `EXCEL.EXE` remains and the robot hangs.
 
-**Detection:** Check for orphaned EXCEL.EXE processes after automation runs. Check for timeout errors in Excel activities.
+**Detection:** Check for orphaned `EXCEL.EXE` and Excel activity timeouts.
 
-**Fix:** Add Kill Process for EXCEL.EXE in KillAllProcesses.xaml AND in Finally blocks. Use `System.Diagnostics.Process.GetProcessesByName("EXCEL")` in coded workflows to force-kill.
+**Fix:** Add `Kill Process` for `EXCEL.EXE` in `KillAllProcesses.xaml` and Finally blocks. In coded workflows use `System.Diagnostics.Process.GetProcessesByName("EXCEL")` to force-kill.
 
 ### Selector Breakage After Deployment
 
-**Symptom:** Selectors built on dev machine fail on production machines.
+**Symptom:** Development selectors fail in production.
 
-**Common causes:**
-- Browser version differences (Chrome upgrades frequently break selectors)
-- Screen resolution / DPI scaling differences
-- OS version differences (Windows Server vs Windows 10/11)
-- Application version differences (SAP GUI versions, web app deployments)
+**Causes:** Browser, OS, application-version, resolution, or DPI differences.
 
-**Detection:** Compare browser versions, OS versions, resolution, and DPI between dev and prod environments.
+**Detection:** Compare all those versions and settings.
 
-**Fix:** Validate selectors on production machines. Use stable attributes (automationId, name, role). Avoid idx-based selectors. Use Object Repository for centralized selector management. Consider Healing Agent for self-healing selectors.
+**Fix:** Validate on production machines; use automationId, name, and role; avoid idx; use Object Repository and consider Healing Agent.
 
 ### Large Output Data Failures
 
-**Symptom:** Automations processing large volumes fail with message size errors.
+**Symptom:** Large DataTables or JSON outputs cause message-size failures.
 
-**Impact:** Output arguments exceeding the `maxMessageSizeInMegabytes` parameter cause job failures.
+**Impact:** Output arguments exceed `maxMessageSizeInMegabytes`.
 
-**Detection:** Check for large DataTables or JSON objects being passed as output arguments.
+**Detection:** Inspect large output arguments.
 
-**Fix:** Store large outputs in Storage Buckets or Data Service instead of output arguments. Process data in batches.
+**Fix:** Store large outputs in Storage Buckets or Data Service and process in batches.
 
 ### Browser Auto-Update Breaking Selectors
 
-**Symptom:** Chrome/Edge auto-update breaks all Active Accessibility (AA) mode selectors overnight. Chrome v114 and v117 broke AA selectors for iFrames and PDFs specifically.
+**Symptom:** Browser updates break AA-mode selectors, including known Chrome v114 and v117 failures involving iFrames and PDFs.
 
-**Impact:** Mass production failure with no code change. All web automations fail simultaneously.
+**Detection:** Check whether browser updates are controlled and inspect browser selectors for `aaname` or `role`.
 
-**Detection:** Check if browser auto-update is controlled in production environment. Check for AA-mode selectors on browser targets (most vulnerable). Grep for `aaname` or `role` attributes in selectors — these are AA-dependent.
-
-**Fix:** Pin browser versions in production (disable auto-update). Use UIA mode instead of AA where possible. Consider `--force-renderer-accessibility=complete` browser flag as workaround. Configure Unified Target Method (Strict + Fuzzy + Image + Anchor) for resilience.
+**Fix:** Pin production browser versions by disabling auto-update; prefer UIA over AA; consider `--force-renderer-accessibility=complete`; configure Unified Target Method (Strict + Fuzzy + Image + Anchor).
 
 ## Silent Failure Patterns
 
-Issues where the bot reports success but the outcome is wrong. These are the costliest production issues because they are discovered hours or days later.
-
 ### No Output Verification After Data Writes
 
-**Symptom:** Bot writes data (Excel, database, web form, API POST) but does not verify the write succeeded. The target system may accept the command but fail to save.
+**Symptom:** Excel, database, web-form, or API writes are not verified.
 
-**Impact:** Bot reports success. The next morning someone discovers blank reports, missing records, or duplicate entries. Rare but extremely costly.
+**Impact:** The bot reports success despite missing or duplicate records.
 
-**Detection:** After every write operation (`Write Range`, `Submit Form`, HTTP POST, database INSERT), check for a verification step — read-back, count check, or status code validation.
+**Detection:** After every `Write Range`, `Submit Form`, HTTP POST, or database INSERT, check for read-back, count, or status-code validation. APIs require specific success-code validation, not merely 2xx.
 
-**Fix:** Add verification after critical writes. For Excel: read back and compare row count. For APIs: validate HTTP response status code (not just 2xx — check for specific success codes). For databases: verify affected row count.
+**Fix:** Add verification; read back Excel and compare row counts, validate API response codes, and verify database affected-row counts.
 
 ### No Record Count Validation After Data Processing
 
-**Symptom:** Bot filters or transforms a DataTable but does not compare input count to output count.
+**Symptom:** Filters, LINQ, or DataTable transformations do not compare input and output counts.
 
-**Impact:** Rows silently dropped during filtering or LINQ operations go undetected. Partial processing reported as complete.
+**Impact:** Dropped rows are reported as complete.
 
-**Detection:** After `Filter Data Table`, LINQ `.Where()`, or any DataTable transformation, check for row count comparison logging (e.g., `Log Message: "Processed {output.Rows.Count} of {input.Rows.Count} rows"`).
+**Detection:** Check for count comparison after `Filter Data Table`, LINQ `.Where()`, and other transformations.
 
-**Fix:** Log input and output counts after every data transformation. Flag if output < input without explanation.
+**Fix:** Log input and output counts after every transformation and flag unexplained output < input.
 
 ## Coded Workflow Pitfalls (C#)
 
-Issues specific to coded workflows that differ from XAML patterns.
-
 ### Namespace Clashes with Activity Packages
 
-**Symptom:** Coded workflow class named `Mail`, `Excel`, `Http`, or other common name conflicts with UiPath activity package namespaces.
+**Symptom:** Classes are named `Mail`, `Excel`, `Http`, `Browser`, `SAP`, or `PDF` and conflict with package namespaces.
 
-**Impact:** Cryptic compilation errors that do not point to the real problem. Build fails with unhelpful messages.
+**Impact:** Cryptic compilation errors.
 
-**Detection:** Check `.cs` file class names against common UiPath namespace names. Grep for `class (Mail|Excel|Http|Browser|SAP|PDF)[\s{]` patterns.
+**Detection:** Check class names and run:
+```bash
+grep -r "class (Mail|Excel|Http|Browser|SAP|PDF)[\\s{]" --include="*.cs" .
+```
 
-**Fix:** Use project-specific prefixes for class names. Avoid single-word names that match activity package names.
+**Fix:** Use project-specific prefixes and avoid single-word package names.
 
 ### Global Using Directives Break Publishing
 
-**Symptom:** C# 10 global using directives with non-primitive types cause compilation errors when publishing coded workflow libraries.
+**Symptom:** C# 10 `global using` directives reference complex types.
 
-**Impact:** Code compiles locally but fails during NuGet packaging for Orchestrator publishing.
+**Impact:** Local compilation succeeds but NuGet packaging/publishing fails.
 
-**Detection:** Grep `*.cs` files for `global using` statements that reference complex types (not `System`, `System.Linq`, etc.).
+**Detection:** Grep `*.cs` for `global using` statements referencing non-primitive types.
 
-**Fix:** Remove global using directives for non-primitive types. Use regular `using` statements in each file instead.
+**Fix:** Remove such global directives and use regular `using` statements per file; primitive `System` and `System.Linq` imports are acceptable.
 
 ### Library Invocation NullReferenceException
 
-**Symptom:** Invoking a coded workflow from a library in an external project throws `NullReferenceException` because `CodedWorkflow` service accessors (`system`, `uiAutomation`) are not initialized.
+**Symptom:** A coded workflow works internally but fails from an external library consumer because `CodedWorkflow` accessors such as `system` or `uiAutomation` are uninitialized.
 
-**Impact:** Library works in its own project but fails when consumed by another project.
+**Detection:** Test external invocation and inspect service accessor use.
 
-**Detection:** Check if coded library workflows use service accessors. Test library invocation from an external project.
-
-**Fix:** Ensure library workflows are properly bootstrapped. Invoke via the generated strongly-typed `workflows.<NAME>()` accessors instead of direct class instantiation.
+**Fix:** Bootstrap the library correctly and invoke through generated strongly typed `workflows.<NAME>()` accessors, not direct class instantiation.
 
 ## Concurrency Issues
 
 ### Parallel Activity With Shared UI Resources
 
-**Symptom:** `Parallel` activity with child branches that interact with the same UI application, keyboard, or mouse.
+**Symptom:** `Parallel` branches interact with the same UI, keyboard, mouse, or application.
 
-**Impact:** UiPath's Parallel activity executes branches cooperatively on the same thread, but branches share the same desktop session. Clicks land on wrong elements, Type Into targets wrong fields. One branch can monopolize the UI while others block. `Isolated = True` does not fix this.
+**Impact:** Branches share one desktop session; clicks and typing target incorrectly. `Isolated = True` does not fix this. **Severity: Warning.**
 
-**Detection:** Grep XAML for `Parallel` activities whose child branches contain UI activities (`Click`, `TypeInto`, `UseApplicationBrowser`) targeting the same application.
+**Detection:** Inspect `Parallel` children for `Click`, `TypeInto`, or `UseApplicationBrowser` targeting the same application.
 
-**Fix:** Use `Parallel` only for I/O-bound work (HTTP calls, file writes, independent sub-processes). For UI parallelism, use multiple robots with queue work distribution.
-
-**Severity:** Warning
+**Fix:** Use `Parallel` for I/O-bound work such as HTTP or independent file operations. Use multiple robots with queue distribution for UI parallelism.
 
 ## Deployment Issues
 
 ### NuGet Feed Unreachable in Production (Offline Robots)
 
-**Symptom:** Production robot machines cannot reach the NuGet feed (no internet, no Orchestrator feed, custom feed unreachable).
+**Symptom:** Production robots cannot reach required NuGet feeds.
 
-**Impact:** Robot fails at process start with package restore errors. Cannot run any process if even one dependency is missing. Common in air-gapped enterprise environments.
+**Impact:** Package restore fails at process start. **Severity: Warning.**
 
-**Detection:** Check `project.json` for custom NuGet feed references. Verify target environment has network access to all feeds, OR that `NUGET_FALLBACK_PACKAGES` environment variable is configured with pre-downloaded packages.
+**Detection:** Inspect `project.json` custom feed references. Verify network access to every feed, OR verify `NUGET_FALLBACK_PACKAGES` points to pre-downloaded packages.
 
-**Fix:** Configure fallback package location with required packages pre-downloaded, or ensure Orchestrator feed is accessible from all robot machines.
-
-**Severity:** Warning
+**Fix:** Configure fallback packages or make the Orchestrator feed reachable from all robots.
 
 ### NuGet NU1107 Assembly Version Conflict
 
-**Symptom:** Project depends on multiple activity packages that transitively depend on conflicting versions of the same assembly (e.g., `Microsoft.CodeAnalysis.Common`). Works in Studio but fails on robot with `NU1107: Version conflict detected`.
+**Symptom:** Transitive dependencies require conflicting assembly versions, producing `NU1107: Version conflict detected` on a clean robot restore.
 
-**Impact:** Silent in development (Studio's cache masks it), breaks in production. CI/CD pipelines without full package restore don't catch it.
+**Impact:** Studio cache hides the issue; production and CI/CD fail. **Severity: Warning.**
 
-**Detection:** Check for projects with >15 direct dependencies (high risk). Run a clean package restore — NU1107 errors surface immediately.
+**Detection:** Projects with >15 direct dependencies are high risk. Run a clean package restore.
 
-**Fix:** Explicitly pin the conflicting transitive dependency to a compatible version, or remove one of the packages causing the conflict.
-
-**Severity:** Warning
+**Fix:** Pin the conflicting transitive dependency to a compatible version or remove the causing package.
 
 ### Invoke Workflow Argument Drift
 
-**Symptom:** Workflow arguments added, renamed, or removed over time, but existing `Invoke Workflow File` call sites still reference stale argument names. Caller sends outdated arguments; callee receives nulls for new required arguments.
+**Symptom:** Workflow arguments changed but `Invoke Workflow File` call sites retain stale bindings.
 
-**Impact:** No XAML compile-time error. Surfaces only at runtime with NullReferenceException or missing-argument errors. In mature projects with many maintainers, drift accumulates silently.
+**Impact:** No XAML compile-time error; runtime null or missing-argument errors occur. **Severity: Warning.**
 
-**Detection:** For each workflow, extract argument list. For each `InvokeWorkflowFile` call of that workflow, extract the argument bindings. Flag any arg name in the definition that's missing from the call site, or vice versa.
+**Detection:** Extract each workflow's arguments and compare them with every `InvokeWorkflowFile` binding. Flag missing or extra names.
 
-**Fix:** Re-import each invocation in Studio (right-click → Import Arguments). Better: organizational discipline to re-import after every argument change.
-
-**Severity:** Warning
+**Fix:** Re-import arguments in Studio after every argument change.
 
 ### Get Asset Used for Credential Type (Wrong Activity)
 
-**Symptom:** `Get Asset` activity used to retrieve a Credential-type Orchestrator asset (instead of `Get Credential`).
+**Symptom:** `Get Asset` retrieves a Credential-type Orchestrator asset instead of `Get Credential`.
 
-**Impact:** `Get Asset` cannot retrieve credential-type assets — depending on Orchestrator version it errors at runtime or yields no usable password. Either way the downstream login fails.
+**Impact:** Runtime failure or unusable password. **Severity: Warning.**
 
-**Detection:** In Config.xlsx Assets sheet, identify credential assets (by name convention or known usage). Grep XAML for `GetAsset` activities retrieving those names — should be `GetCredential`.
+**Detection:** Identify credential assets in Config.xlsx and inspect XAML `GetAsset` use for those names.
 
-**Fix:** Replace `Get Asset` with `Get Credential` for credential-type assets. In REFramework, put credential asset names in the Settings sheet (retrieved via `Get Credential`), not the Assets sheet (retrieved via `Get Asset`).
-
-**Severity:** Warning
+**Fix:** Replace with `Get Credential`. In REFramework, put credential asset names in the Settings sheet for `Get Credential`, not the Assets sheet for `Get Asset`.
 
 ### Per-Robot Asset Values Missing for Production Robots
 
-**Symptom:** Orchestrator asset configured as per-robot/per-user but values not set for all robots that execute the process.
+**Symptom:** Per-robot/per-user assets lack values for one or more production robots.
 
-**Impact:** Robots without a per-robot value either fall back to the global default (if defined) or get Nothing — surfacing as "asset does not have a value associated with this robot" errors. Works in dev (developer's robot has value), fails in production.
+**Impact:** Robots receive a global fallback or Nothing and fail with “asset does not have a value associated with this robot.” **Severity: Warning.**
 
-**Detection:** For each per-robot asset, verify values are set for all production robots/machines assigned to the deployment folder.
+**Detection:** Verify every per-robot asset has values for all robots/machines assigned to the deployment folder.
 
-**Fix:** Assign values for all production robots, or reconsider whether per-robot scoping is necessary (global with a single value is simpler when all robots need the same value).
-
-**Severity:** Warning
+**Fix:** Assign all production values or use a global asset when every robot needs the same value.

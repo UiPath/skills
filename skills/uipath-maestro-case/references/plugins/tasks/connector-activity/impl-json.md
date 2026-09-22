@@ -4,11 +4,11 @@
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
+Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides:
+The SDD row provides:
 
 | Field | Example |
 |---|---|
@@ -23,23 +23,23 @@ The `tasks.md` entry provides:
 
 ## Configuration Workflow
 
-### Step 1 — Build `--input-details` JSON from tasks.md
+### Step 1 — Build `--input-details` JSON from the resolved entry
 
 **Filter preflight:** run Step 4 for any top-level `filter:` before Step 2.
 
-Construct the input-details object from `tasks.md`, rewriting every value containing a reference to its canonical sink form (connector body fields use `=js:(<expr>)`):
+Construct the input-details object from `registry-resolved.json`, rewriting every value containing a reference to its canonical sink form (connector body fields use `=js:(<expr>)`):
 
 ```jsonc
 {
-    // bodyParameters from tasks.md input-values.bodyParameters (dotted keys preserved;
+    // bodyParameters from the resolved input-values.bodyParameters (dotted keys preserved;
     // each value rewritten to canonical form per Step 1.a)
     "bodyParameters": "<input-values.bodyParameters with values rewritten>",
-    // queryParameters from tasks.md input-values.queryParameters (same rewrite rule)
+    // queryParameters from the resolved input-values.queryParameters (same rewrite rule)
     "queryParameters": "<input-values.queryParameters with values rewritten>",
-    // pathParameters from tasks.md input-values.pathParameters (same rewrite rule)
+    // pathParameters from the resolved input-values.pathParameters (same rewrite rule)
     "pathParameters":  "<input-values.pathParameters with values rewritten>",
-    // filter — FilterTree object from tasks.md (or omit when not authored)
-    "filter": "<filter from tasks.md or omit>"
+    // filter — FilterTree object from registry-resolved.json (or omit when not authored)
+    "filter": "<filter from registry-resolved.json or omit>"
 }
 ```
 
@@ -51,7 +51,7 @@ Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-i
 
 Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) require `=js:(...)` wrap for every reference. Resolve cross-task refs first, then apply the wrap:
 
-| Value in tasks.md | Value passed to CLI |
+| Value in the SDD | Value passed to CLI |
 |---|---|
 | `"=vars.X"` | `"=js:(vars.X)"` |
 | `"=metadata.X"` | `"=js:(metadata.X)"` |
@@ -67,16 +67,24 @@ Full per-sink rule and FE source-of-truth: [bindings-and-expressions.md § Canon
 
 Before passing `bodyParameters` to the CLI, scan for keys containing literal `[*]`. Halt if any are present — the binding is malformed.
 
-The `[*]` in `inputs.bodyFields[].name` is **schema notation** (JSONPath-style "array of") for documentation only — NOT a valid input key. Array-of-object body fields MUST be expressed in tasks.md `input-values.bodyParameters` as real JSON arrays under the parent name (see [`planning.md` § Array-of-object body fields](planning.md)). The planner is responsible for emitting the correct shape; this step is a safety net.
+The `[*]` in `inputs.bodyFields[].name` is **schema notation** (JSONPath-style "array of") for documentation only — NOT a valid input key. Array-of-object body fields MUST be expressed in `input-values.bodyParameters` as real JSON arrays under the parent name (see [`planning.md` § Array-of-object body fields](planning.md)). The planner is responsible for emitting the correct shape; this step is a safety net.
 
 **Halt condition.** If any `bodyParameters` key contains literal `[*]`, halt with explicit error:
 ```
 ERROR: bodyParameters key '<key>' contains literal '[*]'.
         Spec field was: <spec field name>. Expected: '<parent>' with a real JSON array value.
-        Fix in tasks.md input-values.bodyParameters; do NOT pass [*] keys to the CLI.
+        Fix in the resolved input-values.bodyParameters; do NOT pass [*] keys to the CLI.
 ```
 
 The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passes, but runtime APIs reject with HTTP 400 `UnableToDeserializePostBody`. The check repeats as a post-write verification — see [Step 8 Post-Write Verification](#post-write-verification) item #12.
+
+#### Step 1.c — Copy `input-values` verbatim; the escaping is already done (MANDATORY)
+
+`registry-resolved.json` is JSON and its `input-values` is a real JSON object, so a `=js:` value in it already carries `\\n` where the JavaScript needs `\n`. This step is JSON to JSON: **copy it byte for byte and re-escape nothing.** Adding a level here writes `\\\\n`, which reaches the runtime as a literal backslash-n printed in the message body — wrong output with no error anywhere. Dropping a level writes `\n`, which JSON decodes to a raw line break and faults the element with `Invalid or unexpected token`.
+
+The one place a level is added is planning, where the sdd.md cell becomes ledger JSON: [`planning.md` § 8 Build input-values](planning.md#8-build-input-values).
+
+**Pass the payload single-quoted.** Bash strips one backslash level inside double quotes, so `--input-details "…\\n…"` delivers `\n` and reintroduces the fault. Single quotes pass it through unchanged.
 
 ### Step 2 — Run `case spec` with input-details
 
@@ -84,23 +92,28 @@ The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passe
 uip maestro case spec --type activity \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
-  --input-details "<json from Step 1>" \
-  --output json
+  --input-details '<json from Step 1>' \
+  --output json > tasks/spec-cache.<elementId>.json
 ```
+
+**Precondition.** `.Data.CaseShape.context` must resolve. If it is `null`, the CLI is too old to emit `caseShape` in its final shape — upgrade; never adapt the splice to an older response.
+
+**The redirect is the only way this file is created.** It holds the CLI's raw response envelope (`Result` / `Code` / `Data`) byte-for-byte. Do NOT author it, and do NOT invent a wrapper of your own around `caseShape` — a hand-built cache is not a cache, and every downstream check compares against it.
+
+**Do not hand-write this file.** The response reaches tens of KB (68 KB for Slack `send_message_to_channel_v2`). A copy written from reasoning drops subtrees silently — observed: an 8.4 KB cache holding 4 of 102 `ResponseFields`, leaving the built node with 4 of 13 response properties while `validate` stayed green. This `>` is the one redirect [SKILL.md](../../../../SKILL.md) Rule 13 permits.
 
 The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full `caseShape` populated with values from `--input-details`.
 
 Save the response. The interesting parts:
 
-> **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree is re-cased to camelCase on the way to disk — see Step 6.
 
 | Variable | Source |
 |---|---|
 | `spec.identity` | `.Data.Identity` — connectorKey, connectorName, connectorVersion, objectName, objectDisplayName, full TypeCache entry |
 | `spec.connection.folderKey` | `.Data.Connection.FolderKey` — needed for the FolderKey binding |
-| `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
-| `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — response (JSON Schema body) / curated / Error |
-| `spec.caseShape.context[]` | `.Data.CaseShape.Context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
+| `spec.caseShape.inputs[]` | `.Data.CaseShape.inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
+| `spec.caseShape.outputs[]` | `.Data.CaseShape.outputs` — response (JSON Schema body) / curated / Error |
+| `spec.caseShape.context[]` | `.Data.CaseShape.context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
 
 > **Each connector task runs its own `case spec`.** Even when two tasks share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `httpMethod`, `inputs`, `outputs`). Never reuse another task's spec output.
@@ -118,7 +131,7 @@ This is a hard gate — do NOT proceed to write the task until every required fi
 
 ### Step 4 — FilterBuilder detection (when planning authored a filter)
 
-When `tasks.md` carries a `filter:` object, the activity's operation must declare a `FilterBuilder` design parameter. The CLI rejects the filter at configure time when no FilterBuilder param exists; the planning step 7 should already have caught this by checking `spec.filter` presence, but verify here as a safety net.
+When the resolved entry carries a `filter` object, the activity's operation must declare a `FilterBuilder` design parameter. The CLI rejects the filter at configure time when no FilterBuilder param exists; the planning step 7 should already have caught this by checking `spec.filter` presence, but verify here as a safety net.
 
 - `spec.filter` present (with `builder: "ceql"` and `fields[]`) → CEQL filter is supported. Pass the structured tree under `--input-details.filter`. The CLI compiles it into both halves of the contract: the runtime CEQL string at `caseShape.inputs[name="queryParameters"].body.<filterParamName>` AND the design-time tree under `essentialConfiguration.savedFilterTrees.<filterParamName>` (inside the `=jsonString:` blob in `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration`).
 - **Do NOT pass raw CEQL under `queryParameters` for a FilterBuilder operation.** Plain filter fields are normal native-syntax inputs, not authored FilterTrees.
@@ -128,7 +141,7 @@ If `spec.filter` is undefined, a top-level `filter:` is malformed. Repair it bef
 
 1. Find the matching plain query/body field and retain its sink.
 2. Copy the exact native value from the SDD Inputs row (or same-session confirmed model); never derive it from the FilterTree.
-3. In the same T-entry, remove `filter:`, add the value to the declared `input-values` sink, preserve siblings, then restart Step 1.
+3. In the same resolved entry, remove `filter:`, add the value to the declared `input-values` sink, preserve siblings, then restart Step 1.
 
 If the field or exact value is unavailable or ambiguous, halt and ask; non-interactive runs report a blocker. Never drop the requirement or invent downstream filtering.
 
@@ -162,9 +175,9 @@ Replace the two placeholders with the minted ids:
 - `{{CONN_BINDING_ID}}` → `<connBindingId>` (Step 5)
 - `{{FOLDER_BINDING_ID}}` → `<folderBindingId>` (Step 5; entry only present when folderKey was non-null)
 
-The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the keys-only re-casing in Step 8.a. **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract (live responses carry keys no doc lists, e.g. `TelemetryData`). Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+The **entire** `caseShape.context[]` array is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above — see [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache).
 
-> **Two-pass mechanical contract — never combine the passes.** At gather time (Step 2), persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task). Pass 1 (Step 8): Read that file and transcribe `Data.CaseShape.Context` / `.Inputs` / `.Outputs` into the task **exactly as emitted — PascalCase keys included**; the copy pass transforms NOTHING except the two placeholders above (unique literal strings — substitute inline or via a later Edit). Pass 2 (Step 8.a): re-case keys with per-key `Edit` calls. Re-casing WHILE transcribing forces re-composition from memory, and that is where subtrees get dropped — observed: `multipartParameters` lost → runtime `400 "Unable to parse multipart body"` while `validate` stays green. **Never retype `context` content from agent reasoning.**
+> **Splice, never compose.** Persist the full `case spec` response at Step 2, then copy from that file at Step 8 — never from reasoning. Contract and rationale: [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache).
 
 ### Step 7 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -176,7 +189,7 @@ For each entry in `caseShape.inputs[]`:
 - `elementId` = the task's elementId
 
 For each entry in `caseShape.outputs[]`:
-- Same fields, plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
+- For an entry the SDD does not reference — neither as a bare name nor as the first segment of a `->` path — auto-mint it: `id` = `camelCase(name)`, `var` = same as `id`, `elementId` = the task's elementId. **NOT** the `v` + 8 form the inputs use above. An entry the SDD does reference is emitted by the Output binding step below; do not auto-mint it here. Plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
@@ -189,9 +202,9 @@ When `caseShape.inputs[]` contains an entry with `target: "file"` (multipart sin
 - No `source`, no `body`, no `displayName` on the multipart file input entry — `case spec` returns just `{name, type, target}`; mint `var` / `id` / `elementId` / `value` per Step 7 and stop.
 - The runtime adapter dereferences `=vars.<fileVarId>` to the JobAttachment record at execution time and streams bytes from the JobAttachment store into the multipart `file` part of the outbound HTTP request.
 
-### Step 8 — Build `data` and write to caseplan.json (splice pass — PascalCase-verbatim)
+### Step 8 — Build `data` and write to caseplan.json (verbatim splice)
 
-Transcribe the three `caseShape` subtrees from `tasks/spec-cache.<elementId>.json` **verbatim — PascalCase keys included** (Step 6 contract). Step 7's minted fields (`var`/`id`/`elementId`) are additive and OK to include while writing; nothing else changes during transcription. Re-casing happens in Step 8.a, immediately after this write.
+Copy the three `caseShape` subtrees per [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache). Step 7's minted fields (`var`/`id`/`elementId`) are additive; nothing else changes.
 
 Generate the task skeleton:
 
@@ -199,10 +212,11 @@ Generate the task skeleton:
 {
   "id": "<taskId>",
   "type": "execute-connector-activity",
-  "displayName": "<display-name from tasks.md>",
+  "displayName": "<display name from sdd.md>",
   "elementId": "<stageId>-<taskId>",
-  "isRequired": "<from tasks.md, default true>",
-  "shouldRunOnlyOnce": "<from tasks.md runOnlyOnce, default false>",
+  "isRequired": "<from sdd.md Required, default true>",
+  "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
+  "description": "<the task's **Description:** line from sdd.md, word for word>",
   "data": {
     "serviceType": "Intsvc.ActivityExecution",
     "context": "<caseShape.context — placeholders substituted in Step 6>",
@@ -213,31 +227,16 @@ Generate the task skeleton:
 }
 ```
 
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
+
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
-
-#### Step 8.a — Re-case spec keys via `Edit` (mandatory, immediately after the write)
-
-The write above left the spec subtrees PascalCase; the disk schema is camelCase. Lower-case the first character of every spec-subtree KEY with per-key `Edit` calls — never by retyping the JSON:
-
-1. **List every distinct PascalCase key** visible in the transcribed subtrees. Standard set: `Name` `Type` `Value` `Target` `Source` `Body` `DisplayName` `DataType` `Required` `Reference` `ActivityPropertyConfiguration` `ActivityMetadata` `InputMetadata` `TelemetryData` `UiPathActivityTypeId` `Configuration` `ErrorState` `Multipart` `MultipartParameters` `BodyFieldName` `Properties` `Definitions` `Title` `Items` — plus ANY other `"Xxx…":` key you can see. The CLI also PascalCases the payload keys it folded from `--input-details` (`Message`, `ToRecipients`, `SaveToSentItems`, …) — lowering restores the connector-contract names; list those too.
-2. **One `Edit` per key, `replace_all: true`**, old/new including BOTH quotes AND the trailing colon:
-
-   ```
-   "Name":                    → "name":
-   "MultipartParameters":     → "multipartParameters":
-   ```
-
-   The quote-colon anchor makes each edit keys-only **by construction**: a value sits after a colon (`: "Name"` — no trailing colon) and a key inside a `=jsonString:` blob is escaped (`\"Name\":`), so neither can match. This mechanically implements "keys only — never values".
-3. **Verify.** Read the task's `data` back: NO capital-first `"Xxx…":` key may remain anywhere in `context` / `inputs` / `outputs`. Each leftover = one more Edit. `validate` catches mis-cased schema fields but NOT content fields — a missing or Pascal `multipartParameters` passes `validate` and fails at runtime with `400 "Unable to parse multipart body"` — so this scan is the only build-time gate for those.
-
-Full rule + rationale: [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
 
 ### Step 9 — Append root-level bindings
 
 Read [bindings/impl-json.md § Full binding shape — connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-task value sources:
 
-- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this task's `tasks.md` entry
-- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
+- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this task's `registry-resolved.json` entry
+- `<connectorKey>` (drives ConnectionBinding templated `name`): from `registry-resolved.json`
 - `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
 - Binding IDs `<connBindingId>` / `<folderBindingId>` come from Step 5.
 
@@ -275,17 +274,15 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
-13. **Lossless inputs (HARD GATE).** Every `tasks.md input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
-14. **No PascalCase keys remain (HARD GATE).** Scan the written task's `data.context` / `data.inputs` / `data.outputs` for any capital-first `"Xxx…":` key — every one must have been re-cased in Step 8.a. `validate` does NOT catch content-level leftovers (a Pascal or missing `multipartParameters` passes validate and fails at runtime).
-
+13. **Lossless inputs (HARD GATE).** Every resolved `input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
+14. **Spliced subtree is byte-identical to the cache (HARD GATE).** Compare the written `data.context` / `data.inputs` / `data.outputs` against `tasks/spec-cache.<elementId>.json` — identical apart from the placeholder substitutions and the minted `var`/`id`/`elementId`. `validate` does NOT catch content-level loss: a missing `multipartParameters` passes validate and fails at runtime with `400 "Unable to parse multipart body"`.
 ## What NOT to Do
 
 - **Do NOT add `operation` or `_label` to `data.context[]`.** The FE only adds `operation` for triggers; activity context must not have it.
 - **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
-- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and transcribe PascalCase-verbatim. See Step 6 / Step 8.
-- **Do NOT leave spec PascalCase keys in the finished task — and do NOT re-case by retyping.** The write is PascalCase-verbatim (Step 8); the re-case is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Step 8.a). Retyping the subtree to change casing is the memory-reconstruction failure above wearing a different hat. See [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
+- **Do NOT compose or transform the spliced subtree** — see [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache).
 - **Do NOT translate, drop, or reroute an SDD filter.** Use FilterTree only with `spec.filter`; otherwise preserve the exact SDD value in a declared plain sink or halt (Step 4).
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.

@@ -18,7 +18,7 @@ description: >
   there, hand-writing UUIDs is a documented anti-pattern.
   Deliberately scoped to a SINGLE eval run. `uip agent eval run
   compare` needs a second run, and observed cloud-run duration varies ~4x
-  (393s-1476s). Compare and `uip or eval run-offline-evals` belong in their own
+  (393s-1476s). Compare and `uip eval run-offline-evals` belong in their own
   task.
 tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code, feature:eval]
 
@@ -42,9 +42,19 @@ run_limits:
   # job to get right, and max_turns carries the headroom for the detour.
   turn_timeout: 1800
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/EvalSol
+      mount_point: EvalSol
+
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+reference:
+  directory: .
+
 pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/eval_run/_fixtures/EvalSol ."
-    timeout: 10
   # The fixture carries a literal SolutionId. Give each run its own so parallel
   # replicates never share one cloud solution — an eval run here spans many
   # minutes, long enough for a sibling replicate's upload or its post_run delete
@@ -164,7 +174,7 @@ success_criteria:
 
   - type: run_command
     description: "Eval suite authoring shape: evaluator type/category valid, eval set resolves its evaluatorRefs, test cases carry a consistent evalSetId and inputs matching entry-points.json"
-    command: "python3 $TASK_DIR/check_eval_run.py"
+    command: "python3 $REFERENCE_DIR/check_eval_run.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
@@ -173,5 +183,5 @@ success_criteria:
 # The task uploads EvalSol to the tenant; delete it afterward (best-effort, never
 # affects pass/fail). Set AGENT_E2E_CLEANUP=never to keep it for inspection.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

@@ -107,10 +107,11 @@ If the user names a profile, check that profile explicitly:
 uip login status --profile dev --output json
 ```
 
-**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. In a non-interactive or automated session, do NOT run it yourself — tell the user to run it and wait.
-```bash
-uip login --output json
+**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. **Never run an interactive login through your own shell tool — with or without `--no-browser`.** Run by an agent, the person who must sign in sees only a spinner: the printed URL and the blocking wait live in your tool output, not in front of them. `--no-browser` does not make the command agent-runnable — it exists for automation that opens the URL *itself*; it still blocks until the sign-in callback arrives, and relaying the printed URL by copy/paste is fragile (a line-wrapped or truncated copy is rejected by the identity server with an opaque browser-side error). Instead, ask the user to run the command directly in their own terminal — in Claude Code, prefixing it with `!` runs it inside the session:
+```text
+! uip login
 ```
+Then confirm with `uip login status --output json` once they say it's done. If a retry fails with `EADDRINUSE` / "Port 8104 is already in use", an abandoned earlier attempt is still holding the callback port — it releases itself within 5 minutes, or the user can end the stale `uip login` process.
 
 For a named interactive login:
 ```bash
@@ -181,6 +182,7 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Assign user/group license bundles** | [references/licensing/user-licenses-allocations.md](references/licensing/user-licenses-allocations.md) |
 | **Report on license consumption** | [references/licensing/consumables-report.md](references/licensing/consumables-report.md) |
 | **Understand licensing concepts** | [references/licensing/licensing.md](references/licensing/licensing.md) |
+| **Diagnose a licensing symptom** | [references/licensing/diagnose/CAPABILITY.md](references/licensing/diagnose/CAPABILITY.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
@@ -292,7 +294,7 @@ Every `uip` command accepts:
 >
 > **To narrow `list` results, use the noun's own filter flag** (`--state Faulted`, `--type Text`, `--status New`, `--name`, `--process-name`, `--search`). The backend filters before sending; pagination stays correct. Per-noun flags: [references/uip-commands.md](references/uip-commands.md). Never list-everything-then-filter-mentally.
 >
-> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "Data[].{id: id, name: name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute.
+> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "[].{id: Id, name: Name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute. Two things make a filter silently return nothing, since JMESPath reports no match and no error for either. The expression is evaluated against the `Data` payload, so it starts inside `Data` and never names it: write `[].Key`, never `Data[].Key`, which looks for a `Data` key inside `Data`. And field lookups are case-sensitive against keys the CLI PascalCases before filtering: match `DisplayName`, not `displayName`, unless the command is one of the few that preserves its raw casing (`maestro flow registry get`, `api-workflow registry`, conversational commands).
 
 ## Deployment Notes
 
@@ -305,7 +307,9 @@ Every `uip` command accepts:
 - **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
 - **[Resources](references/orchestrator/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
+<!--skill-flavor:solutions-index-row:start-->
 - **[Solutions](/uipath:uipath-solution)** — Solution lifecycle (`uip solution init/pack/publish/deploy/activate`)
+<!--skill-flavor:solutions-index-row:end-->
 - **[Planner](/uipath:uipath-planner)** — PDD/SDD design + multi-skill task planning (Process → Solution Design Document → task list)
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments
@@ -313,7 +317,7 @@ Every `uip` command accepts:
 - **[Data Fabric](references/data-fabric/data-fabric.md)** — Entity schemas, records CRUD, query filters and aggregates, choice sets, file attachments, CSV bulk import, folder scoping
 - **[LLM Gateway — BYO Connections](references/llmgateway/byo-connections.md)** — Register tenant-owned LLM keys against UiPath products
 - **[Guardrails — BYOG Configurations](references/guardrails/byo-configurations.md)** — Manage tenant-registered bring-your-own guardrail (BYOG) configurations and diagnose their underlying Integration Service connections
-- **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting
+- **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting, [diagnose](references/licensing/diagnose/CAPABILITY.md)
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

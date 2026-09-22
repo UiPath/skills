@@ -7,7 +7,9 @@ description: >
   `list detailed` subcommand is untested today. Choosing it over plain `list`
   is itself graded: the prompt asks for span context, which plain `list` cannot
   return. Criteria bind to the requested values, not just flag presence, so
-  `--sort-order asc` against a "newest first" ask does not score.
+  `--sort-order asc` against a "newest first" ask does not score, while omitting
+  the flag does (`desc` is the CLI default — grade the outcome, never a literal
+  flag). Graders are segment-scoped so batched calls grade per command.
   Auth/404 responses are acceptable outcomes — the graded behavior is command
   shape plus a captured CLI response envelope.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces, feedback]
@@ -33,8 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Last-24-hours pass used the relative lookback (--since 24h)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=[\s\S]*--since[\s=]["'']?24h)'
-    exclude_pattern: '--before'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--since[\s=]["'']?24h)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--before)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -42,16 +43,15 @@ success_criteria:
   - type: command_executed
     description: "Second pass bounded by the requested explicit --after/--before window"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=[\s\S]*--after[\s=]["'']?2026-07-01)(?=[\s\S]*--before[\s=]["'']?2026-07-08)'
-    exclude_pattern: '--since'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--after[\s=]["'']?2026-07-01)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--before[\s=]["'']?2026-07-08)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--since)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Second pass filtered to the requested category and ordered newest-first (--sort-order desc)"
+    description: "Second pass filtered to the requested category and not explicitly re-ordered oldest-first (`desc` is the CLI default)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=[\s\S]*--category-id[\s=]["'']?3f9a2b71)(?=[\s\S]*--sort-order[\s=]["'']?desc)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category-id[\s=]["'']?3f9a2b71)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--sort-order[\s=]["'']?asc)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

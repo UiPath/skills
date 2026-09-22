@@ -7,6 +7,10 @@ description: >
   are exercised anywhere. The paging assertion is the sharp one: the second page
   of a five-per-page walk is `--limit 5 --offset 5`, so an agent that treats
   `--offset` as a page number rather than a zero-based item offset fails it.
+  Graders are segment-scoped (a lookahead stops at newline, `&&`, `;`, `|`, or the
+  next `uip`) so batched calls grade per command, and `list detailed` is accepted
+  for the paged cross-trace read — same filters, same data; the span read must
+  stay plain `list`.
   Auth/404 responses are acceptable outcomes — the graded behavior is command shape.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces, feedback]
 
@@ -31,8 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scoped the first read to a single span with --span-id"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?!\s+detailed)(?=[\s\S]*--span-id)'
-    exclude_pattern: '--agent-id'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?!\s+detailed)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--span-id)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -40,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Cross-trace read filtered by sentiment and agent attribution"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?!\s+detailed)(?=[\s\S]*--negative)(?=[\s\S]*--agent-id)(?=[\s\S]*--agent-version)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?:\s+detailed)?(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--negative)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-version)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -48,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Second page of that same filtered walk is --limit 5 --offset 5 (zero-based offset)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?!\s+detailed)(?=[\s\S]*--negative)(?=[\s\S]*--limit[\s=]5(\s|$))(?=[\s\S]*--offset[\s=]5(\s|$))'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?:\s+detailed)?(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--negative)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--limit[\s=]5(?:\s|$))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--offset[\s=]5(?:\s|$))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

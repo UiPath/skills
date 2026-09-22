@@ -39,8 +39,9 @@
 #   ENVELOPE (top-level)  -> toolName, toolUseId, permissionMode,
 #                            durationMs, effortLevel (effort.level), agentType,
 #                            source (-> session_source), reason (session-end),
-#                            model (-> agent_model; Claude sends it on
-#                            SessionStart, Codex on every event)
+#                            model (-> agent_model; string or {id,display_name}.
+#                            Claude Code omits it on most events, so the
+#                            transcript is the fallback -- PILOT-7497)
 #   tool_input            -> skillName, uipSubcommand (command), fileExtension
 #                            (file_path), subagentType (subagent_type, or
 #                            agent_type for a Codex spawn_agent call)
@@ -65,14 +66,16 @@
 # values ever leave the machine.
 #
 # Non-blocking by contract: registered as an async hook in hooks.json
-# ("async": true) on every event EXCEPT SessionEnd, so Claude Code runs it in
-# the background and never waits for it. SessionEnd is registered
-# SYNCHRONOUSLY (30s timeout): async hooks still running at session teardown
-# are killed after a short grace window — shorter than this hook's PowerShell
-# + `uip track` startup — which would silently drop the session-end event.
-# Always exits 0 and swallows every error. Runs under Windows PowerShell 5.1
-# and PowerShell 7+ (pwsh) on Windows, macOS, and Linux — no jq, node, or
-# python.
+# ("async": true) on every event EXCEPT SessionEnd, so the agent runs it in the
+# background and never waits for it. SessionEnd is registered SYNCHRONOUSLY
+# (30s timeout): async hooks still running at session teardown are killed after
+# a short grace window — shorter than this hook's PowerShell + `uip track`
+# startup — which would silently drop the session-end event. The hand-off
+# therefore runs INLINE on every event: the HOST owns non-blocking dispatch, and
+# detaching it here would defeat the synchronous SessionEnd registration by
+# letting the hook return before `uip track` has flushed. Always exits 0 and
+# swallows every error. Runs under Windows PowerShell 5.1 and PowerShell 7+
+# (pwsh) on Windows, macOS, and Linux — no jq, node, or python.
 #
 # Structure: pure helpers (below), driven by Main (bottom). Configuration is
 # env only:
@@ -101,12 +104,60 @@ $SCHEMA_VERSION = 3
 function Get-Prop($Obj, [string]$Name) {
   if ($null -eq $Obj) { return $null }
   $p = $Obj.PSObject.Properties[$Name]
-  if ($p) { return $p.Value }
+  # Unary comma stops PowerShell unrolling a single-element array on return.
+  if ($p) { return ,$p.Value }
   return $null
 }
 
 function Test-JsonObject($Value) {
   return ($Value -is [System.Management.Automation.PSCustomObject])
+}
+
+# JSON strings only; any other shape -> ''. A [string] cast would render
+# 'True' / '@{id=...}' where the .sh twin yields ''.
+function ConvertTo-JsonString($Value) {
+  if ($Value -is [string]) { return $Value }
+  return ''
+}
+
+# Fallback when the envelope carried no `model` (PILOT-7497). Reads the LAST
+# assistant entry, so a mid-session /model switch is tracked. Subagent turns go
+# to <session>/subagents/agent-<id>.jsonl, so this yields the main-loop model.
+# 256KB tail: the last assistant entry is within ~28KB of EOF even at 5MB.
+# An absent, unreadable or not-yet-written transcript resolves to empty.
+# FileShare::ReadWrite: the agent still holds the file open.
+function Resolve-AgentModel([string]$TranscriptPath) {
+  if ([string]::IsNullOrEmpty($TranscriptPath)) { return '' }
+  if (-not (Test-Path -LiteralPath $TranscriptPath -PathType Leaf)) { return '' }
+  $text = ''
+  try {
+    $fs = [System.IO.File]::Open(
+      $TranscriptPath,
+      [System.IO.FileMode]::Open,
+      [System.IO.FileAccess]::Read,
+      [System.IO.FileShare]::ReadWrite)
+    try {
+      if ($fs.Length -gt 262144) {
+        [void]$fs.Seek(-262144, [System.IO.SeekOrigin]::End)
+      }
+      $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::UTF8)
+      try { $text = $sr.ReadToEnd() } finally { $sr.Dispose() }
+    }
+    finally { $fs.Dispose() }
+  }
+  catch { return '' }
+  $model = ''
+  foreach ($line in ($text -split "`n")) {
+    # Whitespace-tolerant: the transcript format is undocumented.
+    if (-not [regex]::IsMatch($line, '"type"[ \t\r]*:[ \t\r]*"assistant"')) { continue }
+    $m = [regex]::Match($line, '"model"[ \t\r]*:[ \t\r]*"([^"]*)"')
+    if ($m.Success) {
+      $v = $m.Groups[1].Value
+      # <synthetic> is a local turn (interrupt/error), not a model id.
+      if ($v -and $v -ne '<synthetic>') { $model = $v }
+    }
+  }
+  return $model
 }
 
 # JSON booleans -> the literal strings 'true'/'false'; everything else -> ''.
@@ -275,32 +326,46 @@ function Main {
   if (-not (Test-JsonObject $payload)) { exit 0 }
 
   # ENVELOPE region.
-  $hookEvent      = [string](Get-Prop $payload 'hook_event_name')
-  $tool           = [string](Get-Prop $payload 'tool_name')
-  $toolUseId      = [string](Get-Prop $payload 'tool_use_id')
-  $permissionMode = [string](Get-Prop $payload 'permission_mode')
+  $hookEvent      = ConvertTo-JsonString (Get-Prop $payload 'hook_event_name')
+  $tool           = ConvertTo-JsonString (Get-Prop $payload 'tool_name')
+  $toolUseId      = ConvertTo-JsonString (Get-Prop $payload 'tool_use_id')
+  $permissionMode = ConvertTo-JsonString (Get-Prop $payload 'permission_mode')
   $durationMs     = Get-Prop $payload 'duration_ms'
-  $agentType      = [string](Get-Prop $payload 'agent_type')
-  $sessionSource  = [string](Get-Prop $payload 'source')
-  $reason         = [string](Get-Prop $payload 'reason')
-  $agentModel     = [string](Get-Prop $payload 'model')
+  $agentType      = ConvertTo-JsonString (Get-Prop $payload 'agent_type')
+  $sessionSource  = ConvertTo-JsonString (Get-Prop $payload 'source')
+  $reason         = ConvertTo-JsonString (Get-Prop $payload 'reason')
+  # String, or object with id preferred over display_name.
+  $agentModel = ''
+  $modelRaw = Get-Prop $payload 'model'
+  if (Test-JsonObject $modelRaw) {
+    $agentModel = ConvertTo-JsonString (Get-Prop $modelRaw 'id')
+    if (-not $agentModel) {
+      $agentModel = ConvertTo-JsonString (Get-Prop $modelRaw 'display_name')
+    }
+  }
+  else {
+    $agentModel = ConvertTo-JsonString $modelRaw
+  }
+  if (-not $agentModel) {
+    $agentModel = Resolve-AgentModel (ConvertTo-JsonString (Get-Prop $payload 'transcript_path'))
+  }
 
   $effortLevel = ''
   $effort = Get-Prop $payload 'effort'
-  if (Test-JsonObject $effort) { $effortLevel = [string](Get-Prop $effort 'level') }
+  if (Test-JsonObject $effort) { $effortLevel = ConvertTo-JsonString (Get-Prop $effort 'level') }
 
   # tool_input region.
   $skill = ''; $command = ''; $filePath = ''; $subagentType = ''
   $toolInput = Get-Prop $payload 'tool_input'
   if (Test-JsonObject $toolInput) {
-    $skill        = [string](Get-Prop $toolInput 'skill')
-    $command      = [string](Get-Prop $toolInput 'command')
-    $filePath     = [string](Get-Prop $toolInput 'file_path')
-    $subagentType = [string](Get-Prop $toolInput 'subagent_type')
+    $skill        = ConvertTo-JsonString (Get-Prop $toolInput 'skill')
+    $command      = ConvertTo-JsonString (Get-Prop $toolInput 'command')
+    $filePath     = ConvertTo-JsonString (Get-Prop $toolInput 'file_path')
+    $subagentType = ConvertTo-JsonString (Get-Prop $toolInput 'subagent_type')
     # Codex spawn_agent carries the spawned type in tool_input.agent_type;
     # normalize it to subagentType so it lands in the same field as Claude and
     # never collides with the envelope agent_type (agentType).
-    if (-not $subagentType) { $subagentType = [string](Get-Prop $toolInput 'agent_type') }
+    if (-not $subagentType) { $subagentType = ConvertTo-JsonString (Get-Prop $toolInput 'agent_type') }
   }
 
   # tool_response region. Presence of the KEY (any value shape) marks the
@@ -312,7 +377,7 @@ function Main {
   if (Test-JsonObject $toolResponse) {
     $interrupted   = ConvertTo-BoolString (Get-Prop $toolResponse 'interrupted')
     $success       = ConvertTo-BoolString (Get-Prop $toolResponse 'success')
-    $resolvedModel = [string](Get-Prop $toolResponse 'resolvedModel')
+    $resolvedModel = ConvertTo-JsonString (Get-Prop $toolResponse 'resolvedModel')
   }
 
   # Map the hook event to a canonical eventName; drop unrecognized events.
@@ -392,11 +457,13 @@ function Main {
   # disappears). Send no envelope, no `source` (the CLI overrides it), and no
   # session id (the CLI resolves its own and drops a payload one).
   #
-  # `uip track` is never-fail (exits 0, emits nothing when telemetry is opted
-  # out); piping to it is harmless even if the CLI is absent (the catch
-  # swallows the command-not-found error). The hook is registered async in
-  # hooks.json (sync with a 30s timeout on SessionEnd — see header), so the
-  # agent never waits on this call mid-session.
+  # INLINE, never detached: hooks.json registers this hook async on every event
+  # except SessionEnd (see header), so the host — not this script — owns
+  # non-blocking dispatch. A detached hand-off would return before `uip track`
+  # flushed, silently dropping the very session-end event the synchronous
+  # SessionEnd registration exists to protect. `uip track` is never-fail (exits
+  # 0, emits nothing when telemetry is opted out); piping to it is harmless even
+  # if the CLI is absent (the catch swallows the command-not-found error).
   try { $json | & uip track *> $null } catch { }
 
   exit 0

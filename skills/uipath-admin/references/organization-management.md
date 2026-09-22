@@ -1,59 +1,53 @@
 # Organization Management
 
-Multi-step workflows for managing the caller's organization via `uip admin organizations`. For per-command flag tables, output codes, and single-command examples, see [organizations-commands.md](organizations-commands.md).
+Manage the caller's organization with `uip admin organizations`. For per-command flag tables, output codes, and single-command examples, see [organizations-commands.md](organizations-commands.md).
 
-## Concept
+## Scope
 
-The Organization Management Service (OMS) owns the org record, the region catalog, org-level service catalog (read-only), and the shared async-operation poll endpoint that tenant lifecycle ops use.
+The Organization Management Service (OMS) owns the organization record, region catalog, read-only org-level service catalog, and shared async-operation poll endpoint for tenant lifecycle operations.
 
-- **Org surface is read + update only.** `uip admin organizations` exposes `get`, `update`, `regions list`, `services list / list-available`, and `operation get`. **No `create` / `delete`** — those are not exposed by the CLI; org creation/deletion goes through the UiPath Portal or support flow.
-- **All org commands are synchronous.** Async polling on this command tree is for *tenant* lifecycle ops (see [tenant-management.md](tenant-management.md)) — the poll endpoint just happens to live under `organizations operation get`. See [Polling procedure](#polling-procedure-auto-poll-then-hand-off).
-- **Login-tenant default** does NOT apply to org commands — they always operate on the caller's organization.
+- The org surface is read/update only: `get`, `update`, `regions list`, `services list / list-available`, and `operation get`. There is no CLI `create` or `delete`; redirect organization creation/deletion to the UiPath Portal or support flow.
+- Organization commands are synchronous. `organizations operation get` polls tenant lifecycle operations (`create / update / delete / enable / disable`) and may support future async operations.
+- The login-tenant default does not apply; always target the caller's organization.
 
-## Workflow: Inspect the Organization
+## Inspect and Update
 
-The common read-side scenario — show the caller their org record.
-
-### Compact view (just the org record)
+Run the compact organization view:
 
 ```bash
 uip admin organizations get --output json
 ```
 
-Returns the organization name, id, region, country, language, lifecycle state, and timestamps.
+Report it beginning with **`Organization: <ORG_NAME> (region: <REGION>)`**. It includes organization name, id, region, country, language, lifecycle state, and timestamps; never show the raw `id` alone—pair it with the name.
 
-When surfacing the result to the user, lead with **`Organization: <ORG_NAME> (region: <REGION>)`** so they see at a glance which org the session is on. Do not show the raw `id` field alone — pair it with the name.
-
-### Bundled view (org + tenants + service catalog in one call)
+Run the bundled view **only** when tenants or services are also needed:
 
 ```bash
 uip admin organizations get --full --output json
 ```
 
-Use `--full` when you need to answer a follow-up about tenants or services in the same response — it avoids the second round-trip to `tenants list` or `services list`.
+`--full` returns a **nested `{Organization, Tenants, Logos}` envelope — NOT the flat org record** (it has no top-level `Id`). For "show / save the organization record" requests, use the plain compact `organizations get` above and save that `Data` object (name + top-level `Id`).
 
-### Discover provisioning regions for `tenants create`
+Run this to discover regions for `tenants create`, and use returned region names directly with `--region` on `tenants create`:
 
 ```bash
 uip admin organizations regions list --output json
 ```
 
-The returned region names go directly into `--region` on `tenants create`.
+Before `organizations update`, run `organizations get --output json` to resolve the target, then echo:
 
-## Workflow: Update the Organization
+```
+Organization: <ORG_NAME> (region: <REGION>, id: <ORG_ID>)
+Action: update
+```
 
-Two shapes:
+Use inline flags for one or two simple fields (`--name`, `--logical-name`, `--language`); use a file for the full `UpdateOrganizationCommand` body when changing multiple structured fields. See [organizations-commands.md — `organizations update`](organizations-commands.md#organizations-update). The operation is synchronous and its response contains the final state. Do not run the mutation against only the active login session implicitly.
 
-- **Inline** for one or two simple fields (`--name`, `--logical-name`, `--language`).
-- **File** for the full `UpdateOrganizationCommand` body when changing multiple structured fields.
+Do not attempt `organizations create` or `organizations delete`; redirect those requests to the UiPath Portal or support flow.
 
-See [organizations-commands.md — `organizations update`](organizations-commands.md#organizations-update). Synchronous — the response carries the final state.
+## Poll an Async Operation
 
-> **No CLI `organizations create` / `delete`.** If a user asks to create or delete an organization, redirect them to the UiPath Portal or support flow — the CLI does not expose those verbs.
-
-## Workflow: Poll an Async Operation
-
-Canonical poll endpoint for OMS async operations. Today every async op comes from a `tenants` lifecycle verb (`create / update / delete / enable / disable`); the endpoint lives under `organizations operation get` and works for any future async ops as well:
+Run:
 
 ```bash
 uip admin organizations operation get <OPERATION_ID> --output json
@@ -61,58 +55,56 @@ uip admin organizations operation get <OPERATION_ID> --output json
 
 ### Polling procedure (auto-poll then hand off)
 
-Auto-poll briefly, then hand control back to the user. Bounded — never indefinite.
-
-1. **Echo the operationId and the resume command** so the user can always pick up later:
+1. Echo the operationId and this resume command:
    ```bash
    uip admin organizations operation get <OPERATION_ID> --output json
    ```
-2. **Auto-poll up to 3 times at 5-second intervals** (≈15 s total). Between polls, sleep 5 s. After each call, surface the current status — e.g. *"Poll 2/3: status=`Running`"*. Never loop silently.
-3. **Stop polling on any terminal status.** Treat anything that is not `Pending` / `Running` / `InProgress` as terminal (`Succeeded`, `Failed`, `Cancelled`). On terminal, report final state and re-fetch the affected resource (`organizations get` / `tenants get <ID>`).
-4. **Still non-terminal after 3 polls → hand off with a numbered menu** (`<ROUND>` starts at 1; increment each time the user picks `1`):
+2. Auto-poll up to 3 times at 5-second intervals (about 15 s total). Sleep 5 s between calls and surface each status, for example *"Poll 2/3: status=`Running`"*. Never loop silently.
+3. Stop on any terminal status. Treat anything other than `Pending`, `Running`, or `InProgress` as terminal (`Succeeded`, `Failed`, `Cancelled`). Report the final state and re-fetch the affected resource with `organizations get` or `tenants get <ID>`.
+4. If still non-terminal after 3 polls, show this numbered menu; `<ROUND>` starts at 1 and increments whenever the user selects `1`:
    ```
    Operation <OP_ID> is still `<STATUS>` after round <ROUND> (3 × 5 s polls). Choose:
      1. Keep polling (another 3 × 5 s)
      2. Poll once more
      3. Stop and return the operationId for later
    ```
-   - `1` → resume one more auto-poll cycle; increment `<ROUND>`. After **round 2 (≈30 s total)**, drop option `1` from the menu — only `2` and `3` remain. The user cannot extend auto-polling beyond ~30 s.
-   - `2` → one more `operation get` call, then re-prompt with the same menu (option `1` still gated by the round cap).
-   - `3` → print the resume command and exit; the user can come back and run `operation get <OP_ID>` later.
-5. **Never auto-poll indefinitely.** Total auto-poll window is capped at ~30 s (2 rounds). Beyond that the user must drive every additional poll via option `2` or walk away via `3`.
+   - Select `1` to run another 3 × 5 s cycle and increment `<ROUND>`. After round 2 (about 30 s total), remove option `1`; only `2` and `3` remain. Do not extend auto-polling beyond about 30 s.
+   - Select `2` to make one `operation get` call, then show the same menu; option `1` remains subject to the round cap.
+   - Select `3` to print the resume command and exit; the user can run `operation get <OP_ID>` later.
+5. Never auto-poll indefinitely. The total auto-poll window is capped at about 30 s (2 rounds); afterward, the user must drive each poll with option `2` or select option `3`.
 
 ### Status vocabulary
 
-The response's `status` field uses these values (treat case-insensitively in match logic, but show the user the exact case from the response):
+Match case-insensitively but display the exact response case:
 
 | Family | Examples | Action |
 |---|---|---|
-| In-progress | `Pending`, `Running`, `InProgress` | Continue polling (within the 3-poll cap) |
-| Terminal — success | `Succeeded` | Stop, re-fetch the resource, report success |
-| Terminal — failure | `Failed`, `Cancelled` | Stop, surface the error payload (`Data.error` / `Data.message`), do NOT retry the original mutation automatically — ask the user |
+| In-progress | `Pending`, `Running`, `InProgress` | Continue within the 3-poll cap |
+| Terminal — success | `Succeeded` | Stop, re-fetch the resource, and report success |
+| Terminal — failure | `Failed`, `Cancelled` | Surface `Data.error` / `Data.message`; do not automatically retry the original mutation—ask the user |
 
-If the response lacks a `status` field altogether, treat the operation as in-progress for that poll and try once more; if the field is missing across all 3 polls, surface the raw response to the user and stop.
+If `status` is absent, treat that poll as in-progress and try once more. If it is absent across all 3 polls, surface the raw response and stop.
 
-## Workflow: List Org-Level Services — Provisioned vs. Available
+## List Org-Level Services
 
-Two distinct surfaces — never merge them:
+Do not merge these surfaces:
 
-| Verb | Returns | Has lifecycle status? |
+| Verb | Returns | Lifecycle status? |
 |---|---|---|
-| `organizations services list` | **Provisioned** org-level service instances (what currently exists on this org) | Yes — `Enabled`, `Disabled`, or `Deleted` (soft-deleted) |
-| `organizations services list-available` | **Catalog** of service types that *can* be provisioned at the org level | No — catalog entries are not provisioned |
+| `organizations services list` | Provisioned org-level service instances | Yes: `Enabled`, `Disabled`, or `Deleted` (soft-deleted) |
+| `organizations services list-available` | Catalog of service types available for org-level provisioning | No |
 
-### Currently provisioned (with status)
+### Provisioned services
+
+Run:
 
 ```bash
 uip admin organizations services list --output json
 ```
 
-Surface to the user as **"Provisioned services on `<ORG_NAME>`"**. For each row, show: service type, **status** (`Enabled` / `Disabled` / `Deleted`), region. Flag any soft-deleted (`Deleted`) entries explicitly so the user knows they were removed but are still recoverable.
+Report under **"Provisioned services on `<ORG_NAME>`"**. For each row, show service type, **status** (`Enabled` / `Disabled` / `Deleted`), and region. Explicitly flag `Deleted` entries as removed but recoverable. If empty, say: *"No org-level services are currently provisioned."* Do not show an empty table.
 
-If the result is empty, say so explicitly: *"No org-level services are currently provisioned."* — do not show an empty table.
-
-Optional filters (client-side, applied after the API call):
+Apply optional client-side filters after the API call:
 
 ```bash
 uip admin organizations services list --status Enabled --output json
@@ -120,27 +112,14 @@ uip admin organizations services list --service orchestrator --output json
 uip admin organizations services list --region "<REGION>" --output json
 ```
 
-### Available to provision (catalog only)
+### Available service catalog
+
+Run:
 
 ```bash
 uip admin organizations services list-available --output json
 ```
 
-Surface to the user as **"Available service catalog (org-level)"**. Do NOT add a status column — catalog entries have no lifecycle state. Visually separate this from the provisioned list (different header, ideally a different table).
+Report under **"Available service catalog (org-level)"**. Do not add a status column: catalog entries have no lifecycle state. Visually separate this from provisioned services, preferably with a different table.
 
-### When the user's intent is ambiguous
-
-If the user says "show me the services" without specifying provisioned vs. available, run both and present them in two clearly labeled sections so they can pick.
-
-## Before Mutating the Organization — Name the Target
-
-Before `organizations update`, echo the resolved target back so the user knows exactly which organization will change:
-
-```
-Organization: <ORG_NAME> (region: <REGION>, id: <ORG_ID>)
-Action: update
-```
-
-`organizations get --output json` returns the name and region — resolve them up-front; do not run the mutation against just the active login session implicitly.
-
-> The CLI does not expose `organizations delete`, so this echo only ever covers `update`. If the user asks to delete the org, redirect to the Portal / support flow.
+If the user asks to "show me the services" without distinguishing provisioned from available, run both commands and present two clearly labeled sections.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Verify every plugin folder under references/author/references/plugins/ has both
+# Verify every plugin folder under references/author/plugins/ has both
 # `planning.md` and `impl.md` (the per-plugin convention from skill-structure.md).
 # Usage: bash .maintenance/check-plugin-pairs.sh
 # Output: MISSING lines per failure, then "plugins_checked=N missing_files=M" summary.
@@ -9,7 +9,7 @@
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1
 
-PLUGINS_DIR="$ROOT/references/author/references/plugins"
+PLUGINS_DIR="$ROOT/references/author/plugins"
 
 if [ ! -d "$PLUGINS_DIR" ]; then
   echo "ERROR: plugins directory not found at $PLUGINS_DIR" >&2

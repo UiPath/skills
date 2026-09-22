@@ -9,7 +9,7 @@ description: >
   register before the skeleton can be upgraded. Greenfield generation
   path (Rule 6 regenerate-from-scratch); in-place brownfield edits are a
   separate journey (see references/brownfield.md).
-tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl, skeleton]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, skeleton]
 initial_prompt: |
   Create a UiPath Case Management project named "ContractReviewCase" with
   this shape:

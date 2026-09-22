@@ -18,6 +18,11 @@ skip: true
 run_limits:
   expected_turns: 25
   max_turns: 60
+  # task_timeout must be >= turn_timeout or the nightly default (1200s) silently
+  # caps this regardless of the larger per-turn budget below — see e2e_01's
+  # history (34aa3c773, re-fixed 2026-09-10) for the failure mode this avoids.
+  # Currently skip: true, so dormant until the test is unblocked.
+  task_timeout: 1800
   turn_timeout: 1800
 
 initial_prompt: |

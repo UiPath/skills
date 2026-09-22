@@ -1,1 +1,1 @@
-{"projectType": "CodedAgent"}
+{"projectType": "CodedAgent", "agents": {"agent": "main.py:main"}}

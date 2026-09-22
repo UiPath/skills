@@ -39,7 +39,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   Investigate my last job in Orchestrator folder Shared — it faulted. I also see a Healing Agent log line on that job and I'm worried: was the Healing Agent actually engaged on this run, did it consume any AI units / credits, and what does that log line actually mean?
@@ -55,7 +55,9 @@ success_criteria:
     description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
     include_dialog: true
     include_agent_output: true
     prompt: |

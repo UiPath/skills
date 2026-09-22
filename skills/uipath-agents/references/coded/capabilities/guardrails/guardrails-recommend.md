@@ -14,6 +14,11 @@ Both workflows are driven by live data — the catalog (`uip agent guardrails ca
 
 > Full three-fetch mandate applies to **Recommend mode**. In **Validate mode** of an existing guardrail the SDK docs are the authoritative, sufficient source for a validator's scope/stage — `catalog` (relevance metadata) and `list` (tenant entitlement) are recommended cross-checks, not a hard prerequisite for a scope/placement fix. See [Validate Mode](#validate-mode).
 
+> **The SDK docs are authoritative for shape, never for availability.** They carry `Platform Availability`
+> notes for features still rolling out (BYOG, LLM-as-judge). Those are product-wide statements, not facts
+> about this tenant — only `uip agent guardrails list` decides that. Never withhold or down-rank a
+> recommendation because a fetched page called the feature "not enabled on every tenant yet".
+
 **Required first operation in both modes:** use `WebFetch` on
 `https://uipath.github.io/uipath-python/core/guardrails/` before catalog calls,
 project inspection, analysis, or edits. A coded guardrail recommendation or
@@ -234,6 +239,8 @@ Report to the user:
 Use when the agent already has guardrails and the user asks whether they are correctly configured or appropriate.
 
 **Fetch the SDK docs first (WebFetch) — they are the authoritative source** for which Python class corresponds to which `validator_id` and which scopes/stages each class supports; a scope/placement diagnosis is grounded there. Also run the `catalog` and `list` fetches to support the Relevance (`when_not_to_use`) and entitlement checks below — recommended, but not a hard prerequisite once the SDK docs settle the scope question.
+
+**Do NOT use `uip codedagent review --checks guardrails` as the verdict.** It checks structure and presence, not scope/stage placement or entity/threshold correctness — a misplaced or misconfigured guardrail can score `PASS` / `A+` (see [guardrails.md § Critical Rules](guardrails.md#critical-rules) Rule 19). The three checks below are the authority for validate mode.
 
 For each existing guardrail discovered in the Python file (Step 1 from Recommend Mode):
 

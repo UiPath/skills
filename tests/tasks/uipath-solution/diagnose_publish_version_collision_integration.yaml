@@ -45,5 +45,6 @@ success_criteria:
       Score 0.0 if it blames a CLI bug, auth, or a transient error, or
       tells the user to retry the same version / force-overwrite without
       changing the version.
+    include_reference: false
     weight: 3.0
     pass_threshold: 0.7

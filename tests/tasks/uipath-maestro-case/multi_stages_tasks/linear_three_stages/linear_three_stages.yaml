@@ -20,11 +20,18 @@ description: >
   of caseplan.json.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger]
 max_iterations: 1
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build a UiPath Case Management solution named "LinearThreeStages" containing
@@ -229,12 +236,11 @@ initial_prompt: |
   | Required | Yes (default) |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
-
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
@@ -246,7 +252,7 @@ success_criteria:
 
   - type: run_command
     description: "3 stages chained via condition-driven transitions (Review←Intake, Decision←Review via selected-stage-completed, edges retired) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry in one shared parallel task set; root carries 7 variables exercising a spread of Variable types/shapes (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, jsonSchema caseMetadata with body.type=object, jsonSchema attachments with body.type=array, jsonSchema caseSchema with body.type=object) including the trigger output mapping for caseRef In argument"
-    command: "python3 $TASK_DIR/check_linear_three_stages.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_linear_three_stages.py"
     timeout: 720
     expected_exit_code: 0
     weight: 5.0
@@ -257,12 +263,12 @@ success_criteria:
       Every variable `default` is a JSON string. An object or array default is silently deleted by
       the caseplan -> BPMN serializer, leaving the variable null at runtime while `uip maestro case
       validate` still reports Valid.
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_variable_defaults.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_variable_defaults.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

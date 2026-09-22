@@ -9,6 +9,9 @@ tags: [uipath-human-in-the-loop, integration, schema-design, developer-mistake]
 run_limits:
   expected_turns: 21
   max_turns: 75
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
   Build a UiPath Flow named "ExpenseReview" for expense claim approval:
 
@@ -24,7 +27,9 @@ initial_prompt: |
   4. Script node — logs: "Approved: <approved>, Amount: <approved_amount>"
   5. End node
 
-  Wire: Trigger → Script → HITL →|completed| Script (log) → End
+  Wire: Trigger → Script → HITL → Script (log) → End, with both outcomes
+  (Approve and Reject) routed to the log Script node — every outcome needs
+  its own wired port.
 
   Validate the flow after building.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
@@ -32,15 +37,15 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "approved field uses boolean type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseReview '\"boolean\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ExpenseReview '\"boolean\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -48,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "amount fields use number type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseReview '\"number\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ExpenseReview '\"number\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

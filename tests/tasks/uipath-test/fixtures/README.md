@@ -22,8 +22,12 @@ and therefore exact for this scheme.
 | `flaky_tests_analysis` | CLAIM | `EVFX-FLAKY-SET`, `EVFX-FLAKY-TC{1,2,3}` | 3 Finished executions; TC2 fails in one |
 | `test_report_junit_export` | CLAIM | `EVFX-JUNIT-SET`, `EVFX-JUNIT-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` |
 | `release_signoff_wait_report_e2e` | CLAIM | `EVFX-SIGNOFF-SET`, `EVFX-SIGNOFF-TC{1,2}` | No execution; both cases automation-linked |
-| `organize_testcases_into_testsets` | CLAIM | the `EVFX-ORG-*` namespace | Nothing pre-created; the task creates `EVFX-ORG-<YYYYMMDD-HHMMSS>-*` and `pre_run` clears earlier days |
+| `organize_testcases_into_testsets` | CLAIM | the `EVFX-ORG-*` namespace: `EVFX-ORG-SRC-TC{1,2,3}` (inputs) + `EVFX-ORG-SET-*` (outputs) | 3 source test cases, no execution; the task creates `EVFX-ORG-SET-<YYYYMMDD-HHMMSS>-*` and `pre_run` seeds the sources create-if-absent and clears earlier days' sets |
 | `integration_release_readiness_qa_lead` | BANK | the existing regression suite (no `EVFX-` names) | 1 Finished execution mixing `Passed`/`Failed`/`Restricted`/`None` |
+| `project_scaffold_build` | its own throwaway project | the `EVFX-SCAFFOLD-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
+| `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -69,6 +73,31 @@ row here misleads the next maintainer into reusing or removing live state.
    Rule 10). `pre_run` attempts the run first and only pins a folder if that
    genuinely fails, so a working project default is never overwritten.
 
+## Why `organize` owns its INPUTS, not just its outputs
+
+`organize_testcases_into_testsets` used to read unowned CLAIM data: the prompt
+asked it to filter test cases by `disbursement`, matching
+`Claim Payout - ACH Disbursement` and `Claim Payout - Check Disbursement`. That
+combination cannot work, because **`tm testcases list --filter` is a PREFIX
+match** (verified: `--filter sync` against `Auto-sync Test …` returns 0) and
+`disbursement` is a *suffix* of those names. The filtered lookup the task grades
+could never return the cases it needed.
+
+So the task passed or failed on which recovery branch the model happened to
+pick: abandon `--filter` and list the whole project (passes), or retry a shorter
+prefix like `d` and stop when that is also empty (fails). It failed the
+2026-08-24 codex nightly that way and passed 2026-08-25 by listing unfiltered —
+same code, same tenant, opposite outcome.
+
+It now seeds `EVFX-ORG-SRC-TC{1,2,3}` and filters on `EVFX-ORG-SRC-TC`, which is
+a genuine prefix of names the task owns. Every model takes the same single path,
+and the graded `--filter` call returns exactly three cases every run.
+
+**Authoring rule this generalises to:** a `--filter` term in a prompt MUST be a
+real prefix of the target names. Never use a distinguishing word that appears
+mid-name or at the end — it turns the task into a coin flip on model recovery
+behaviour.
+
 ## Steady state
 
 Four test sets and eleven test cases, fixed — `EVFX-RERUN-SET`,
@@ -85,6 +114,40 @@ them wrote to it. `execution_rerun` consumed the failures that
 the suite converged on 3-pass/0-fail — so both tasks failed for reasons that
 had nothing to do with the skill under test. Scores moved every night while
 the code under test never changed.
+
+## Self-contained build tasks
+
+The three `mode:build` tasks — `project_scaffold_build`,
+`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — sit
+outside the seeded-fixture model entirely. Each one **creates its own throwaway
+project, does all its work inside it, and deletes it as the final graded step.**
+They read and write nothing in CLAIM, HEALTH or BANK.
+
+This is the pattern tests/README.md prescribes: *"There is no `post_run`. The
+agent creates and deletes its own ephemeral resources as part of the test
+scenario."* Deleting the project removes the test cases, labels, test sets and
+custom field definitions inside it in one call, so cleanup is a single command
+rather than a per-object sweep.
+
+Consequences worth knowing before you edit one:
+
+1. **The delete is graded, not a hook.** It is both the cleanup mechanism and the
+   only coverage of `project delete` in this directory. Removing that criterion
+   silently turns the task into a tenant-litterer.
+2. **The prompt must pre-authorize the delete.** SKILL.md Critical Rule 6 tells
+   the agent to confirm before any delete, and the eval agent is
+   non-interactive — nobody can answer, so an unauthorized delete is a
+   guaranteed fail. This is the exact failure mode that took
+   `testcase-steps-lifecycle-integration` down on the 2026-08-19 nightly. Each
+   prompt therefore grants approval for that specific project in as many words.
+3. **`pre_run` seeds nothing.** It is an orphan sweep for the run that dies
+   between create and delete, which would otherwise strand a project forever. It
+   spares today's stamp, because two models run the nightly concurrently and a
+   whole-prefix sweep would delete the other run's project mid-run.
+4. **Names still carry the `EVFX-` prefix** even though nothing persists. A run
+   that dies leaves a project behind, and the prefix is what makes that residue
+   identifiable and sweepable. The namespaces are registered in
+   `check-collisions.py` like any other.
 
 ## Automation-linked fixtures
 

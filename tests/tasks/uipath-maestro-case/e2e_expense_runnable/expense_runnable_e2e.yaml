@@ -10,7 +10,7 @@ description: >
   harness runs uip maestro case debug to prove the case executes to
   finalStatus=Completed across the Submission -> Manager Approval -> Finance
   Approval -> Payment -> Approved happy path, binding real deployed resources
-  (WeatherAPI, CountLetters, ProcurementProcess, ProjectEuler, CaseTest).
+  (WeatherAPI, CountLetters, ProcurementProcess, HelpDeskLookup, CaseTest).
 tags:
   - uipath-maestro-case
   - e2e
@@ -38,6 +38,12 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
+
 initial_prompt: |
   I have an approved SDD for our ExpenseReimbursementRunnable case-management
   solution — it's saved as `sdd.md` in this folder. Build a UiPath Case
@@ -57,15 +63,15 @@ initial_prompt: |
     with "Node already added to the graph" in this eval environment.
   - The SDD resource labels are aliases for deployed resource NAMES. Map alias →
     deployed name exactly: `WeatherAPI` → `WeatherAPI`, `CountLetters` →
-    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `ProjectEuler` →
-    `RPA Workflow`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
+    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `HelpDeskLookup`
+    → `HelpDeskLookup`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
     alias for a deployed name. The alias on the left is NOT a resource key: keep
     every `resourceKey` — and the matching `bindings_v2.json` `key` — as the
     composite `<folderPath>.<deployed name>` (e.g.
     `Shared/uipath-agents/WeatherAPI.WeatherAPI`).
-  - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval, Phase 2 publish-for-review, and Phase 6 debug. Choose the
-    continue / skip-publish path and keep going.
+  - Treat all hard stops after the SDD as pre-approved, including the Phase 2
+    publish-for-review and Phase 6 debug. Choose the continue / skip-publish
+    path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Do NOT run `uip maestro case debug` yourself — the harness runs it.
   - The task is NOT complete until
@@ -92,8 +98,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    command: >-
+      uip maestro case validate ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "caseplan encodes the 7-stage expense topology: Submission -> Manager Approval -> Finance Approval -> Payment -> Approved happy path, Rejected/Withdrawn terminal lanes, expense_requests event trigger, the automated task-type mix (api-workflow/agent/process/rpa/wait-for-timer), and the Payment Tracking child case"
-    command: "python3 $TASK_DIR/check_expense_runnable_structure.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_expense_runnable_structure.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
@@ -101,12 +117,12 @@ success_criteria:
 
   - type: run_command
     description: "case executes end-to-end: uip solution resources refresh then uip maestro case debug reaches finalStatus=Completed across the automated happy path"
-    command: "python3 $TASK_DIR/check_expense_runnable_debug.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_expense_runnable_debug.py"
     timeout: 900
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

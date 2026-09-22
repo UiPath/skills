@@ -16,6 +16,9 @@ run_limits:
   max_turns: 130
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Build a UiPath Case Management solution named "MultiTriggerIOCase" containing
   a project also named "MultiTriggerIOCase" from the sdd.md below. Write the
@@ -86,7 +89,7 @@ initial_prompt: |
   | Duration | 1 m |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug`. Do NOT ask for approval, confirmation, or feedback. Build
   end-to-end in a single pass and finish with `uip maestro case validate`
@@ -111,7 +114,7 @@ success_criteria:
 
   - type: run_command
     description: "entry-points.json scopes each trigger's input to its own In-arg (claimId and priority land on separate triggers' entries, no overlap) and projects the Out-arg to every entry (Step 6.3)"
-    command: "python3 $TASK_DIR/check_entry_points_io_multi_trigger.py MultiTriggerIOCase/MultiTriggerIOCase/entry-points.json"
+    command: "python3 $REFERENCE_DIR/check_entry_points_io_multi_trigger.py MultiTriggerIOCase/MultiTriggerIOCase/entry-points.json"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

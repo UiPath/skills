@@ -1,0 +1,181 @@
+task_id: skill-insights-smoke-machine-scoped-query
+description: >
+  Smoke test: agent uses the uipath-insights skill to scope a jobs query to
+  specific machines and to report timestamps in the user's own timezone.
+  Given a prompt naming a local timezone and asking to compare two machines,
+  the agent should discover the real machine names with `filter-machines list`
+  rather than guessing them, pass them as repeated `--machine-name` filters on
+  the jobs read, and pass `--timezone-offset` so the returned timeline is
+  bucketed in local time. The CLI is authenticated.
+
+  This task depends on tenant state, deliberately and unlike its siblings. The
+  repeated-flag criterion needs discovery to return two machines, so a tenant
+  reporting one costs the correct answer 2.0. A tenant reporting none costs
+  4.5, both `--machine-name` criteria, and the 2.0 timezone criterion too if
+  the agent stops without any jobs read, since that pattern needs no machine
+  filter. A
+  prompt-level fallback was tried and dropped, because telling the agent to
+  pass fabricated machine names rewards inventing a filter value, which is
+  what Critical Rule 2 and this task's own sibling guards forbid, and no judge
+  here could tell that apart from the honest branch. The `--machine-name`
+  patterns match the flag, never its value, so none of them checks that the
+  names came from discovery.
+
+  Covers the two `jobs` filter flags no other task exercises. The sibling
+  `smoke_filtered_query.yaml` owns `--process-name` and `--folder-key`, so
+  this one stays on the machine and timezone pair and on the rule that paging
+  flags do not belong on a `jobs` command.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  I am in Pacific time, UTC minus 8, and two of our machines feel slower than
+  the rest. Find out which machines have reported Insights activity recently,
+  pick the two with the most, and give me their combined job health for the
+  last 7 days: overall counts and the completed-jobs timeline. I want the
+  timeline bucketed in my local time, not UTC. Scope the query to just those
+  two machines using the command's own filters rather than pulling everything
+  and filtering the output. Do not guess machine names. If a command comes
+  back empty, say so plainly and say what that does and does not prove. Run
+  each command at most once per page; do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Discovery before the scoped read: there is no key-based machine flag, so
+  # the exact MachineName from this list is the only thing --machine-name
+  # accepts. The inline negative lookahead keeps a help probe of this same
+  # command from being credited as the read; tests/README.md rules out
+  # exclude_pattern here because it is searched over the whole Bash call.
+  - type: command_executed
+    description: "Agent discovered real machine names with filter-machines list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-machines\s+list(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The flag must sit in the same invocation as the verb, so
+  # (?:(?!uip\s)[^&;|])* rather than a \n-excluding class: the grader also
+  # matches a shlex-normalized haystack where newlines collapse to spaces
+  # (coder_eval/criteria/command_executed.py, _normalize_shell), and a batched
+  # pair bleeds across the boundary on that form.
+  - type: command_executed
+    description: "Agent scoped a jobs read with --machine-name"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+(summary|completed-timeline|uncompleted-timeline|top-failures|failures-by-reason|process-details|failure-details)(?:(?!uip\s)[^&;|])*--machine-name\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Two machines means the flag repeats. The CLI declares
+  # `--machine-name <name>` with the shared `collect` reducer
+  # (packages/insights-tool/src/commands/jobs.ts), so repeating it accumulates
+  # rather than overwriting; a single-valued option would silently keep only
+  # the last machine and answer a different question than the prompt asked.
+  # Verified against the source CLI 2026-09-11: two --machine-name flags plus a
+  # negative --timezone-offset returns a Success envelope.
+  - type: command_executed
+    description: "Agent repeated --machine-name for the second machine"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+(?:(?!uip\s)[^&;|])*--machine-name(?:(?!uip\s)[^&;|])*--machine-name\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The prompt asks for local-time buckets, which is what this flag is for.
+  # Accepts a signed or unsigned value: the option runs through
+  # parseIntOption("timezone-offset") and -480 parses.
+  - type: command_executed
+    description: "Agent passed --timezone-offset for local-time buckets"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+(?:(?!uip\s)[^&;|])*--timezone-offset[\s=]+-?\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the criteria above pass
+  # against a CLI that never shipped these flags. These two gates re-run the
+  # surface at grading time and are tenant-agnostic: neither reaches the
+  # backend.
+  - type: run_command
+    description: "CLI path is real: filter-machines list is registered in the installed CLI"
+    command: "uip insights filter-machines list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Proves `jobs summary` is registered. It does NOT prove --machine-name or
+  # --timezone-offset are wired: a CLI that dropped both still exits 0 here.
+  # The flags themselves are covered by the paging gate below, which is a
+  # real parse rejection, and by the live two-machine call the criteria above
+  # require.
+  - type: run_command
+    description: "CLI path is real: jobs summary is a registered subcommand"
+    command: "uip insights jobs summary --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The paging rule enforced against the CLI rather than the agent: no jobs
+  # subcommand takes addListPaginationOptions, so --limit is an unknown option
+  # and exits 3. Verified against the source CLI 2026-09-11.
+  - type: run_command
+    description: "Paging is not a jobs flag: jobs summary rejects --limit"
+    command: "uip insights jobs summary --time-range 60 --limit 5"
+    timeout: 60
+    expected_exit_code: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not page a jobs command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+(?:(?!uip\s)[^&;|])*(--limit|--offset)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # There is no key-based flag for machines or processes, and jobs has no queue
+  # filter at all. An agent that pattern-matches from --folder-key would invent
+  # exactly these.
+  - type: command_not_executed
+    description: "Agent did not invent a machine key or queue filter on jobs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+(?:(?!uip\s)[^&;|])*--(machine-key|machine-id|queue-name|queue-key|process-key)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The filter-* commands take no time range; passing one is the documented
+  # mistake the filters smoke also guards. Kept here because this task is the
+  # one that pairs a filter read with a time-ranged jobs read, which is where
+  # the flag is most likely to leak across.
+  - type: command_not_executed
+    description: "Agent did not pass a time range to filter-machines"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-machines(?:(?!uip\s)[^&;|])*--(time-range|since|until)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Critical Rule 9: `uip login` opens an interactive browser flow that hangs
+  # the session, and no task in this skill's corpus asserted it before. The
+  # four subcommands (refresh, status, tenant, which) are all non-interactive,
+  # so only the bare form and its flag forms are forbidden.
+  - type: command_not_executed
+    description: "Agent did not run the interactive uip login flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

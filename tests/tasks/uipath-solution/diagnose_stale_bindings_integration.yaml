@@ -57,5 +57,6 @@ success_criteria:
       Score 0.0 if the reply blames the wrong cause (e.g. a CLI bug, a
       caching issue, the wrong project path) or fails to prescribe a
       resources refresh before re-packing.
+    include_reference: false
     weight: 3.0
     pass_threshold: 0.7

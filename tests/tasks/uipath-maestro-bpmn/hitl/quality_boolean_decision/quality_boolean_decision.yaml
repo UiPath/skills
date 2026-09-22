@@ -10,6 +10,9 @@ run_limits:
   expected_turns: 24
   max_turns: 105
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a local BPMN project named "VendorApprovalBpmn" for vendor onboarding:
 
@@ -34,7 +37,7 @@ initial_prompt: |
   - The gateway condition MUST reference the boolean variable via `vars.<id>`
     and treat it as a boolean (e.g. `== true`), not compare it to a quoted
     string.
-  - Declare process variables with the registry BPMN.Variables template.
+  - Declare process variables in `<uipath:variables>`, each with an `elementId`.
   - Use synthetic placeholder resource names only.
   - Include BPMN DI for every visible node and sequence flow.
   - Do not upload, publish, deploy, debug, or run the process. Do not pause for
@@ -57,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "Boolean approval is typed boolean and routed as a boolean (not stringly-typed)"
-    command: "python3 $TASK_DIR/check_quality_boolean_decision.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_quality_boolean_decision.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

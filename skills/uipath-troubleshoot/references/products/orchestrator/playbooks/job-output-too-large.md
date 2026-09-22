@@ -10,7 +10,7 @@ A job runs to the end of its workflow but faults at the very last step because t
 
 What this looks like:
 - `Could not retrieve the result of the job execution. This might be because a message was too large to process.`
-- Job state Faulted, but `jobs traces` shows every activity Succeeded and the workflow reached its end
+- Job state Faulted, but `traces spans get` shows every activity Succeeded and the workflow reached its end
 - `OutputArguments` on `jobs get` is empty, truncated, or malformed
 - More likely on processes that return bulk data (DataTables, byte arrays, large strings/JSON) as output arguments
 
@@ -21,7 +21,7 @@ What can cause it:
 
 What to look for:
 - The process's declared output arguments (`project.json` `entryPoints[].output`, or the Main workflow's `Out_*` arguments) — is any of them a bulk type?
-- `jobs traces`: did the workflow actually finish? (If yes, the failure is result hand-back, not workflow logic.)
+- `traces spans get`: did the workflow actually finish? (If yes, the failure is result hand-back, not workflow logic.)
 - Whether the same process succeeds when its output payload is small (few rows) and fails when large
 
 ## Investigation
@@ -29,7 +29,7 @@ What to look for:
 1. Get the failing job and read `Info` + `OutputArguments`:
    `uip or jobs get <job-key> --output json` — the `Info` names the result-retrieval failure; `OutputArguments` is empty/truncated.
 2. Confirm the workflow actually completed (distinguishes hand-back failure from a mid-run fault):
-   `uip or jobs traces <job-key> --output json` — all activities Succeeded, execution reached the end.
+   `uip traces spans get --job-key <job-key> --output json` — all activities Succeeded, execution reached the end.
 3. Read logs for the point of failure:
    `uip or jobs logs <job-key> --level Error --output json` — work-complete logs followed by the result-retrieval error.
 4. Inspect the process output-argument definition in the project source: `project.json` `entryPoints[].output` (or the Main `.xaml` `Out_*` arguments). Identify the bulk output argument.

@@ -56,10 +56,12 @@ Accepted `--time-cycle` values: raw ISO 8601 repeating interval (e.g., `R/PT1H` 
 
 Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations + "Something else".
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T<n>: Add wait-for-timer task "<display-name>" to "<stage>"
+Timers are a built-in type with no registry dependency, so a wait-for-timer task produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
+```text
+wait-for-timer task "<display-name>" in stage "<stage>"
 - every: 1h
 - at: 2026-04-26T09:00:00.000Z   # optional
 - repeat: 5                       # optional
@@ -68,7 +70,6 @@ Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations 
 - runOnlyOnce: false
 - activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
 - entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```

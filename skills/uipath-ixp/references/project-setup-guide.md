@@ -1,6 +1,6 @@
 # Project Setup Guide
 
-Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically.
+Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically. Deployment is a separate, optional final step — [Deployment Guide](deployment-guide.md).
 
 > **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
@@ -26,7 +26,7 @@ This uploads documents and auto-suggests a taxonomy based on the document conten
 
 **Option B — Blank project + import taxonomy from file:**
 
-If the user provides a taxonomy file, create a blank project and import separately:
+Use this when the taxonomy comes from somewhere else — a file the user provides, or another project's taxonomy. Create the project blank, then import:
 
 ```bash
 uip ixp projects create "<name>" <folder-path> --skip-taxonomy --output json
@@ -35,8 +35,8 @@ uip ixp projects import-taxonomy <project-name> <taxonomy-file> --output json
 
 The taxonomy file can be in either format — the CLI auto-detects based on which keys are present:
 
-- `{ "field_types": [...], "label_group": {...} }` — use when importing a taxonomy suggested by a previous `project create` run
-- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
+- `{ "field_types": [...], "label_group": {...} }` — the suggestion format; no CLI command writes it to disk, so expect it only if the user hands you such a file
+- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or copying another project's taxonomy into this one. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
@@ -87,4 +87,11 @@ Skip this step if the user already provided a meaningful name in Step 1.
 
 ## Step 4 — Label All Documents
 
-Follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
+**Default:** follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
+
+Labelling is optional — it produces the **project score** (`get-metrics` reports nothing until documents are confirmed) and is not required for a callable model (a trained version appears on its own within seconds of `projects create`). Skip it only when:
+
+- **The model unblocks a larger build in this session** — the deliverable is something else (a flow, an automation) waiting on a callable model, and no score, metrics, or accuracy target was named. Deploy per the [Deployment Guide](deployment-guide.md) and resume the build. Canonical case: the inbound `uipath-maestro-flow` handoff (see *When NOT to Use This Skill* in [SKILL.md](../SKILL.md)).
+- **The user opts out** — says to skip labelling, or that somebody else will handle labelling. Stop after Step 3 and hand over the project name; labelling can happen later, in-product or via the [Label Documents Guide](label-documents-guide.md).
+
+Skipping is never silent: state that the model is unscored and that labelling is the fix if fields come back wrong.

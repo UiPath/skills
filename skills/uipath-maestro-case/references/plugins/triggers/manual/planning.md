@@ -16,22 +16,23 @@ If the sdd.md says the case runs on a schedule, use [timer](../timer/planning.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md (optional at the T-entry; required in output) | Defaults to auto-generated `Trigger N` where `N = existingTriggerCount + 1`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
-| `description` | sdd.md (optional at the T-entry; **required in output**) | Always emitted. If sdd.md omits it, the LLM infers a natural-language description from the surrounding context (e.g., trigger's role in the sdd flow diagram or narrative). |
+| `display-name` | sdd.md (optional at the element; required in output) | Defaults to auto-generated `Trigger N` where `N = existingTriggerCount + 1`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
+| `description` | sdd.md (optional at the element; **required in output**) | Always emitted. If sdd.md omits it, the LLM infers a natural-language description from the surrounding context (e.g., trigger's role in the sdd flow diagram or narrative). |
 
-Position is NOT a T-entry input. It is auto-computed at execution time following the same stateful pattern as stages — see `impl-json.md` for the formula.
+Position is NOT a element input. It is auto-computed at execution time following the same stateful pattern as stages — see `impl-json.md` for the formula.
 
 ## Registry Resolution
 
 **None.** Manual triggers have no registry representation.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T02: Configure manual trigger "Start Manually"
+A manual trigger has no registry dependency, so it produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
+```text
+manual trigger "Start Manually"
 - display-name: "Start Manually"
 - description: "Operator kicks off a case from the portal"
-- order: after T01
 - verify: Confirm node appended to caseplan.json.nodes and matching entry appended to entry-points.json.entryPoints; capture TriggerId
 ```
 

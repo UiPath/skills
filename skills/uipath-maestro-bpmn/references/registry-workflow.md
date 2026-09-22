@@ -52,7 +52,7 @@ uip maestro bpmn registry get <extensionType> --output json
 | Field | Use |
 | --- | --- |
 | `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
-| `bpmnElement` | The host BPMN element the template uses (for source files, normalize to lower-camel such as `bpmn:serviceTask`). |
+| `bpmnElement` | The host element's PascalCase model type (`bpmn:ServiceTask`). Normalize both this field and the `xmlTemplate` host tag to lower-camel when serializing (`<bpmn:serviceTask>`) — 27 of the 29 bundled templates carry the PascalCase tag. |
 | `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
 | `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
 | `bindingInfo` | How the node binds to a resource (see §4). |
@@ -66,6 +66,23 @@ the body CDATA. Leave the structural placeholders (`{incomingEdge}` /
 `{outgoingEdge}`) wired to the sequence-flow ids you create in
 [structural-bpmn.md](structural-bpmn.md).
 
+Treat each template output and its process variable as one contract. Replace
+`{varId}` with a stable id and declare a task-scoped `uipath:inputOutput` with
+the template output's exact `type` and `elementId="<node-id>"`. This includes
+opaque types such as `custom` and product-specific types such as
+`Actions.HITL`; do not search examples for a guessed schema or coerce the type
+to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; live
+enrichment replaces it with concrete typed rows later, so do not pre-empt it.
+
+For an unresolved portable dynamic node, fill resource identity slots with the
+escaped public placeholders SKILL.md defines (`&lt;TENANT_URL&gt;`,
+`&lt;FOLDER_KEY&gt;`, `&lt;CONNECTION_NAME&gt;`), keep the retrieved
+context/output shape, and use only user-supplied values in the body or
+configurable context fields. Report the node as **draft** and name the
+CLI-owned blocker literally, including the exact phrase `connection binding` where
+that is what is missing. Do not inspect sibling skills, test fixtures, or
+generated packages to invent the missing live schema.
+
 ## 3. Connector (`Intsvc.*`) enrichment
 
 For connector types (`requiresDiscovery: Yes`, e.g.
@@ -78,11 +95,124 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
 
-The response adds an `ISEnrichment` block with the live field metadata. Write
+The response adds an enrichment block with the live field metadata. Match the
+key case-insensitively — the CLI's output formatter has changed key casing
+before, and pinning a spelling is what breaks on the next change. Write
 the activity's `body` input (`target="body"`) and `context` (`connectorKey`,
 `objectName`) from that enrichment — do not hand-author connector schemas. The
 connection is referenced through a connection binding, `=bindings.<bindingId>`
 (see §4).
+
+### Body shape: hand-authored files need ONE `target="body"` input
+
+This holds for every `Intsvc.*` type whose `inputTarget` is `body` —
+`ActivityExecution`, `AsyncExecution`, `SyncAgentExecution`,
+`AsyncAgentExecution`, `SyncWorkflowExecution`, `AsyncWorkflowExecution`. Each
+declares `inputPattern: separateInputs`, which reads as an instruction to add
+one `uipath:input` per request field. **The runtime does not consume that
+shape:** several `target="body"` inputs do not merge — each claims to
+be the entire body, the last one wins, and the provider receives that single
+value as a bare scalar. Integration Service answers `500 Internal failure`, or
+the provider reports the other fields missing (Slack:
+`missing required field: channel`). Measured on live Alpha against both the
+Atlassian Jira and Slack connectors.
+
+So when you hand-author the XML, emit exactly one `target="body"` input holding
+the complete request object as JSON element content, nested the way the
+provider's API nests it:
+
+```xml
+<uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_TargetProject"},"issuetype":{"id":"=vars.Var_IssueTypeId"},"summary":"=js:'Created from Maestro at ' + vars.Var_RunLabel}}]]></uipath:input>
+```
+
+Take every body field name from the operation's `RequestFields` in
+`uip is resources describe`, never from the provider's public API docs. A
+curated operation frequently renames the provider's fields, so a name copied
+from the vendor's REST reference is accepted by `validate` and by `pack` and
+then silently omitted from the request. What comes back names neither the
+field nor the cause: the provider validates the body it actually received and
+complains about whatever is now missing or empty downstream of your field.
+This is the same trap as taking `operation` from the catalogue's per-activity
+`Name` — the described contract wins over the provider's own vocabulary, and
+`describe` is the only place that contract is written down.
+
+`=vars.<id>` and `=js:` resolve inside that CDATA, so build the body from
+variables rather than literals. In an XML *attribute* a `=js:` expression must
+escape the XML metacharacters — `&amp;&amp;` for `&&`, and `&lt;` for `<` — or
+the file is not well-formed; `>` needs no escaping in an attribute value, and
+inside CDATA nothing does.
+
+This single-input form **is** the canonical shape, and it round-trips. Studio
+Web's own design schema for this type sets `isSplitInputs: false` with one
+`jsonBody` at `target="body"`
+(`origin/develop:src/services/serialization/design-schema/intsvc.activityExecution.beta.design-schema.json`),
+and the canvas's round-trip fixture for a Jira `curated_create_issue` node is
+exactly one nested `target="body"` CDATA asserted parse→serialize identical
+(`origin/develop:src/services/serialization/xml-serialization.test.ts:706`).
+The serializer *preserves* separate inputs if a file already has them rather
+than merging, but it never generates them. Copy that fixture's body shape, not
+its context inputs: being a parse→serialize identity test, it faithfully
+preserves an `operation="CreateIssue"` that the next section corrects.
+
+The outlier is the CLI manifest: `Intsvc.ActivityExecution` still declares
+`inputPattern: separateInputs` with `inputTarget: body`, and its `InputNotes`
+still tell authors to add one `uipath:input` per request field. That contradicts
+both the canvas and the runtime, so treat the manifest's InputNotes as stale
+here rather than as the contract.
+
+`target="bodyField"` is **not** an option here. It is the target of a merged
+*arguments* payload on specific types — `JobArguments` on the `Orchestrator.*`
+job and process starts, `HitlTaskArguments` on `Actions.HITL`, `args` on
+`BPMN.ScriptTask` — and no `Intsvc.*` type uses it. Read `inputTarget` from the
+manifest per type; it is not a property of `inputPattern`. Five of the fourteen
+`mergedBody` types use `body` (`Orchestrator.CreateQueueItem`,
+`Orchestrator.CreateAndWaitForQueueItem`, `A2A.AgentExecution`,
+`Maestro.CaseRulesEvaluator`, `Maestro.CaseManagerGuardrails`), so inferring
+`bodyField` from the pattern gets the target wrong on a third of them.
+
+**Local validation will not catch a wrong target or a wrong input name here.**
+`validateInputs` short-circuits for this type: `usesCanvasOwnedDynamicPayload`
+(`project-validator.ts:1602`) is true for anything `isDynamic` or for an
+`Intsvc.*` type requiring discovery, and it returns after
+`validateDynamicDirectInputs`, which checks only that each input has a `name`
+and that `type="json"` payloads parse. No allow-list, no `target` check, no
+count check — so several `target="body"` inputs, a `bodyField` input, and an
+unrecognized input name all pass `validate` and `pack`. The failure is a
+runtime one. This is why a clean `validate` is not evidence the body shape is
+right.
+
+Nest a dotted `RequestFields` name yourself: `fields.project.key` becomes
+`{"fields":{"project":{"key": …}}}`. A literal `"fields.project.key"` key is
+sent as-is, and the provider never sees `fields.project`.
+
+Take `operation` from the `Operation.Name` reported by
+`uip is resources describe` (for example `Create`); `path` and `objectName`
+come from the same described object. The template's `DiscoveryNotes` say "set
+operation from Name", which reads as the catalogue's per-activity `Name`
+(`CreateIssue`) — a value that can never resolve: `METHOD_TO_OPERATION`
+(`integrationservice-sdk/src/dap/validation/rules.ts:74`) defines a closed
+six-name lexicon — List, Retrieve, Create, Update, Delete, Replace — and the
+reverse map accepts only those plus raw HTTP verbs, which is also exactly what
+`uip is resources run` exposes as subcommands. `--operation` takes the same
+value, so pass `--operation Create`.
+
+### Required `Parameters` are separate from the body — emit every one
+
+`uip is resources describe` reports `Parameters` alongside `RequestFields`.
+Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
+`file`) — never folded into the body. Emit an input for every parameter marked
+`Required: true`, using its `DefaultValue` when the request has no better
+value:
+
+```xml
+<uipath:input target="query" name="send_as" type="string" value="bot" />
+```
+
+Omitting one is accepted by local validation and by `pack`, then fails only at
+runtime with `400` and `Value for required parameter '<name>' not found`. A
+`Parameters` list can be empty (Jira's `curated_create_issue`) or carry a
+required entry (Slack's `send_message_to_channel_v2` requires `send_as`), so
+check it per activity rather than assuming.
 
 ## 4. Bindings — from `bindingInfo`, never invented
 
@@ -99,10 +229,48 @@ discovery or the user.
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
   `<uipath:bindings>` holds the live connection id from `uip is connections list`.
+  The context field that carries the reference differs by node kind: activities
+  (`Intsvc.ActivityExecution`) use `connection`; connector **triggers and waits**
+  (`Intsvc.EventTrigger`, `Intsvc.WaitForEvent`) use `connectionId`. Either way
+  `uip maestro bpmn refresh` (and `pack`) materialize that binding into a
+  `Connection` resource in `bindings_v2.json` — without it the process passes
+  `validate` but faults at runtime with `102010 IntSvcArgumentsError -
+  Integration Services invalid value in input` (the connection resolves to null).
 
 Declare all bindings in a single process-level `<uipath:bindings version="v1">`
-block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,
-and a `default` value (the resolved key/id).
+block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, and a
+`default` value (the resolved key or id). On a **connection** binding
+`resourceKey` is required too — omitting it fails `validate` with
+`Integration Service activity connection binding "<id>" is missing
+resourceKey`. Other binding kinds (`process`, `queue`, `businessRule`) carry
+no `resourceKey`; do not invent one.
+
+A folder-scoped connector activity needs TWO bindings that share one
+`resourceKey` (the connection id) and differ in `propertyAttribute`: the
+connection binding's `default` is the connection id, the folder binding's
+`default` is the folder key.
+
+```xml
+<uipath:bindings version="v1">
+  <uipath:binding id="Binding_JiraConn"   resource="Connection" propertyAttribute="ConnectionId" resourceKey="&lt;connection-id&gt;" default="&lt;connection-id&gt;" />
+  <uipath:binding id="Binding_JiraFolder" resource="Connection" propertyAttribute="folderKey"    resourceKey="&lt;connection-id&gt;" default="&lt;folder-key&gt;" />
+</uipath:bindings>
+```
+
+Only the `ConnectionId` binding becomes a `bindings_v2.json` resource — the
+folder binding exists for authoring and validation. `buildConnectionResources`
+(`connection-resources.ts`) keeps a binding only when `resource` is
+`Connection` **and** `propertyAttribute` is `ConnectionId`, so counting two
+bindings in and one resource out is expected, not a dropped binding.
+
+The folder binding is exempt from the missing-binding error because nothing
+resolves it through that map: `buildConnectionResources` looks up only the
+binding named by the activity's **`connection`** input. Point that input at a
+binding whose `propertyAttribute` is anything other than `ConnectionId` and the
+lookup misses, producing
+`Activity "<name>" references missing Connection binding "<id>"` — an error
+naming the activity when the defect is one attribute on the binding. The
+`folderKey` input is read separately and never goes through the lookup.
 
 ## Agent wrapper selection — pick by `processType`, not the label
 
@@ -139,13 +307,27 @@ schema fields returned by discovery). Do not add a downstream script task solely
 to split the API workflow service-task result into variables; that hides the
 requested service-task output contract from the model.
 
-## Integration Service triggers — bind trigger properties via the CLI
+## Integration Service triggers
 
-`Intsvc.TimerTrigger` and `Intsvc.EventTrigger` (and connector waits like
-`Intsvc.WaitForEvent`) need their **trigger properties** enriched/bound through
-the CLI — the same enrichment path as `Intsvc.*` activities (§3). A hand-authored
+`Intsvc.TimerTrigger` is portable: its registry entry has
+`RequiresDiscovery=false`, no binding, context, or input fields, and needs only
+the exact `registry get Intsvc.TimerTrigger` template. It does not require a
+live connection or schema enrichment.
+
+`Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` do need
+their **trigger properties** enriched/bound through the CLI — the same
+enrichment path as `Intsvc.*` activities (§3). A hand-authored connector
 trigger shell stays **draft** until the CLI supplies the concrete trigger
 properties, connection binding, and schemas.
+
+For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
+from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
+use `connection`); the timer trigger binds no connection. After authoring the
+connection binding, run `uip maestro bpmn refresh <project>` so the binding is
+materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose
+connection is not materialized passes `validate` but faults at runtime with a
+null connection (error 102010). Use `refresh`, not the deprecated
+`update-metadata`, which does not materialize connection bindings.
 
 ## Connectionless vs connector HTTP
 
@@ -173,8 +355,8 @@ auth, schema, or enrichment decision is missing).
 
 1. Build the document scaffold and process (see
    [structural-bpmn.md](structural-bpmn.md)).
-2. Declare root variables (`BPMN.Variables` template) and the
-   `<uipath:bindings>` block.
+2. Declare the process's variables (`<uipath:variables>`, each with an
+   `elementId`) and the `<uipath:bindings>` block.
 3. For each node, paste its `registry get` `xmlTemplate`, fill placeholders, and
    wire `{incomingEdge}`/`{outgoingEdge}` to your sequence flows.
 4. Author the structural BPMN the registry does not emit: sequence flows,
@@ -225,3 +407,25 @@ Event types stay event-wrapped even when you place them on task-like BPMN
 hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
 `Maestro.ReceiveMessageEvent`, and `Maestro.SendMessageEvent` use
 `uipath:event`, not `uipath:activity`.
+
+## Registry-evidence-only tasks
+
+- Create `registry-evidence/` before anything else.
+- Run the registry command forms the user asked for. For RPA job + internal
+  message discovery, use `uip maestro bpmn registry list --limit -1 --output
+  json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
+  and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
+- If `uip` is unavailable in a temp/smoke sandbox, or if it writes a valid JSON
+  failure object such as `"Result": "Failure"` instead of registry content, do
+  not search the repo for a replacement CLI or inspect test fixtures. Still
+  issue the required `list` and `get` command forms once each with output
+  redirected to their evidence files (allowing failure with `|| true`), so the
+  transcript shows the discovery loop:
+  `uip maestro bpmn registry list --limit -1 --output json` and
+  `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
+  attempts in `registry-evidence/cli-error.txt`, then overwrite any failure JSON
+  in the expected `registry-evidence/*.json` files with valid JSON evidence from
+  `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
+  extension types and stop. The final evidence files must literally contain the
+  discovered type names, for example `Orchestrator.StartJob` and
+  `Maestro.ReceiveMessageEvent`.

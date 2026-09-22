@@ -36,8 +36,10 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
 2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,
    and `incident get` requires `--folder-key`.
 3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture
-   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you
-   are explicitly debugging the mock harness.
+   files are present in a test harness, treat them as CLI backing data and do not read those files **by any means** —
+   no shell read such as `cat`, `less`, `head`, `tail`, `grep`, `jq`, or `sed`, and no file-read or editor tool — on a
+   `mocks/`, `fixtures/`, or response-cache path, unless you are explicitly debugging the mock harness. Capturing a CLI
+   response to your own file and reading that back is fine; it is the CLI's own output.
 4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.
 5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,
    or extension that needs Author work.
@@ -53,19 +55,19 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
 
 | Journey | Read |
 | --- | --- |
-| Triage a failed run | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Recognize recurring failure patterns | [references/failure-modes.md](references/failure-modes.md) |
+| Triage a failed run | [references/troubleshooting-guide.md](troubleshooting-guide.md) |
+| Recognize recurring failure patterns | [references/failure-modes.md](failure-modes.md) |
 
 ## Common tasks
 
 | I need to... | Read these |
 | --- | --- |
-| Find the faulting element | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Compare local and deployed BPMN | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Inspect runtime variables, cursors, or element executions | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Diagnose binding or generated JSON issues | [failure modes](references/failure-modes.md), [project layout](../shared/project-layout.md) |
-| Diagnose Integration Service runtime issues | [failure modes](references/failure-modes.md) |
-| Decide whether retry is safe | [troubleshooting guide](references/troubleshooting-guide.md), [manage guide](../operate/references/manage.md) |
+| Find the faulting element | [references/troubleshooting-guide.md](troubleshooting-guide.md) |
+| Compare local and deployed BPMN | [references/troubleshooting-guide.md](troubleshooting-guide.md) |
+| Inspect runtime variables, cursors, or element executions | [references/troubleshooting-guide.md](troubleshooting-guide.md) |
+| Diagnose binding or generated JSON issues | [failure modes](failure-modes.md), [project layout](../shared/project-layout.md) |
+| Diagnose Integration Service runtime issues | [failure modes](failure-modes.md) |
+| Decide whether retry is safe | [troubleshooting guide](troubleshooting-guide.md), [manage guide](../operate/manage.md) |
 | Fix the source | [registry-workflow.md](../registry-workflow.md) |
 
 For Integration Service enrichment details, read
@@ -84,8 +86,8 @@ For Integration Service enrichment details, read
 
 ### Diagnose-scoped
 
-- [troubleshooting-guide.md](references/troubleshooting-guide.md) - diagnostic priority ladder
-- [failure-modes.md](references/failure-modes.md) - recurring failure patterns
+- [troubleshooting-guide.md](troubleshooting-guide.md) - diagnostic priority ladder
+- [failure-modes.md](failure-modes.md) - recurring failure patterns
 
 ### Cross-capability
 

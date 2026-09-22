@@ -9,16 +9,22 @@ description: >
   Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
   `uip login`, not the tempdir gate.
 tags: [uipath-solution, e2e, mode:operate, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../uipath-platform/_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 120
 
 run_limits:
@@ -39,7 +45,6 @@ initial_prompt: |
   5. Confirm the package is no longer in the feed.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: command_executed
     description: "Agent published the package to the feed (set-up step)"
@@ -73,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Feed: artifact downloaded and no uuid8 package remains after delete"
-    command: "python3 $TASK_DIR/check_packages_deleted.py"
+    command: "python3 $REFERENCE_DIR/check_packages_deleted.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

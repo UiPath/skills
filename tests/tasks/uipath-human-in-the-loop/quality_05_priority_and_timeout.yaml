@@ -10,18 +10,21 @@ run_limits:
   task_timeout: 500
   turn_timeout: 600
 
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
   Add a Human-in-the-Loop node to a new flow called "FinanceCompliance".
   This is a financial compliance check — set it to HIGH priority.
 
-  Wire the completed handle to a script node that logs the approval.
+  Wire the node's outcome port(s) to a script node that logs the approval.
   Validate the flow after adding.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: run_command
     description: "HITL node priority is set to High"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name FinanceCompliance '\"High\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name FinanceCompliance '\"High\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -29,7 +32,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node is present in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name FinanceCompliance '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name FinanceCompliance '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -45,8 +48,8 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

@@ -23,6 +23,7 @@ Activate deployed solutions, uninstall deployments, and manage published solutio
 graph LR
     A[deploy activate] --> B[deploy status]
     C[deploy list] --> D[deploy uninstall]
+    D --> H[deploy delete]
     C --> E[packages list]
     E --> F[packages delete]
     G[solution delete]
@@ -65,24 +66,30 @@ uip solution deploy list --output json
 
 ## Upgrade a Deployment In Place
 
-> **Preview command.** Available only on prerelease (preview/alpha) CLI builds.
-
 `deploy run` fails with HTTP 400 when a deployment for the solution **already exists** — you can't redeploy over it, you have to upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
 
 ```bash
-# Upgrade to the newest published version (default)
+# Upgrade to the newest published version (default), waiting for it to finish
 uip solution deploy upgrade <deployment-key> --output json
 
 # A deployment in your Personal Workspace feed
 uip solution deploy upgrade <deployment-key> --personal-workspace --output json
+
+# Start it and return immediately
+uip solution deploy upgrade <deployment-key> --no-wait --output json
 ```
 
-Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status: "UpgradeInitiated", DeploymentName, FromVersion, ToVersion }`.
+Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, DeploymentName, FromVersion, ToVersion, VersionChangeKey }`. `Status` is the deployment operation status — `Successful` once the upgrade landed, or `Draft` with `--no-wait`.
 
 **Behavior and limits:**
-- It **initiates** the upgrade — the deployment's version moves to the target, but the operation lands in a `Draft`/in-progress state. Track completion with `uip solution deploy list` (the deployment shows the new version and its operation state).
+- The deployment's **existing configuration is preserved** — values already set on the deployment carry over instead of being reset to the package defaults, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
+- **The upgrade takes two server steps, and the command does both.** The upgrade call only *queues* the move: it creates a second deployment record (operation `VersionChange`, status `Draft`) and leaves the live version alone. Nothing advances that draft on its own — it sits in `Draft` indefinitely — so the command then installs it. `VersionChangeKey` in the output is that new record's key; it is **not** the key you passed in.
+- By default the command **waits** for the install to reach a terminal state (`--timeout <seconds>`, default 300; `--poll-interval <ms>`, default 5000). Pass `--no-wait` to return as soon as the install is accepted.
+- A failed install reports the server's reason (for example `Solution folder not found` when the deployment's solution folder was deleted), not a bare `Failed`.
+- **`Status: Draft` after the command returned is only normal with `--no-wait`.** Everywhere else it means the install of the version-change record never completed — validation rejected something. The draft does not advance on its own and cannot be activated; the live version stays on the old one. The command's message carries the server's reason — act on that, then retry `deploy upgrade`. Note the retry can itself be refused with `Another upgrade has already started for this deployment` while the draft record is still queued. There is no `--config-file` on this path (the upgrade keeps the deployment's existing configuration), and `deploy run` is refused too, because the original deployment is still there. See [A deploy that stops in `Draft`](pack-and-deploy.md#a-deploy-that-stops-in-draft) for the equivalent on a fresh deploy.
+- After a successful upgrade the deployment can land in `ReadyToActivate` rather than `Active`. Check with `uip solution deploy list` and run `uip solution deploy activate <deployment-name>` if activation is pending.
 - Only the **latest** published version is a valid target today. Omit `--version` to take the newest; passing an older `--version` is rejected.
-- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server.
+- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server. Re-running an upgrade that is already queued fails with `Another upgrade has already started for this deployment`.
 
 ## Step 3: Uninstall a Deployment
 
@@ -102,6 +109,26 @@ uip solution deploy uninstall "MyDeployment" --timeout 600 --poll-interval 10000
 | `--poll-interval <ms>` | Polling interval | 5000 |
 
 This is destructive -- it removes the Orchestrator folder and all resources that were provisioned by the deployment.
+
+### Then Delete the Deployment Record
+
+Uninstall does not remove the deployment itself. It stays in `deploy list`, and Orchestrator refuses to uninstall it a second time. Remove it with:
+
+```bash
+uip solution deploy delete "MyDeployment" --yes --output json
+```
+
+The service offers one action per state, and `deploy list` reports which in `Actions`:
+
+| Deployment state | `Actions` | What removes it |
+|---|---|---|
+| Installed | `SetupActivation, Uninstall, Upgrade` | `deploy uninstall` |
+| Uninstalled | `Delete` | `deploy delete` |
+| Never installed (`Draft`, e.g. a failed install) | `Install, Delete` | `deploy delete` |
+
+So a full clean-up is two commands, and the two are never interchangeable. `deploy delete` reads the action list first: when the record lists actions but not `Delete` it refuses locally and names the command to run instead, so it cannot remove a live deployment's resources. A record that lists no actions at all is the exception — nothing is known about it, so the request goes to the server and the server decides.
+
+The leftover record does not block a redeploy of the same package, so the delete is housekeeping. Do it when a tenant is shared, where uninstalled and failed deployments otherwise accumulate in every `deploy list`.
 
 ## Step 4: List Published Packages
 
@@ -183,6 +210,9 @@ uip solution deploy list --limit 20 --output json
 # Uninstall the old deployment
 uip solution deploy uninstall "MySolution-v1" --output json
 
+# Remove the record it leaves behind
+uip solution deploy delete "MySolution-v1" --yes --output json
+
 # Verify it was removed
 uip solution deploy list --output json
 
@@ -202,6 +232,7 @@ These are different operations targeting different systems:
 | Command | What it removes | System |
 |---------|----------------|--------|
 | `deploy uninstall <name>` | Orchestrator folder, provisioned resources | Orchestrator |
+| `deploy delete <name>` | The deployment left behind by an uninstall, a superseded version, or a failed install | Orchestrator |
 | `solution delete <id>` | Solution project | Studio Web |
 
 Uninstalling a deployment does not remove the package from the solution feed. Deleting from Studio Web does not affect Orchestrator deployments.

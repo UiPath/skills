@@ -306,14 +306,14 @@ Use when the issue is a **missed optimization** or **minor convention deviation*
 
 ## Report Format Specification
 
-The review report follows a fixed markdown structure. Produce it in chat — do NOT write it to a file.
+The review report follows a fixed markdown structure. Produce it in chat; **and when the task asks you to save it to a path (e.g. `./_review_report.md`), also write it to that exact path.** The read-only rule forbids creating or editing files **inside the project under review** — it does NOT forbid writing the requested report file.
 
 ```markdown
 ## Review Report: <Solution/Project Name>
 
 ### Summary
 - **Overall Quality:** Good / Needs Improvement / Critical Issues
-- **Agent Grade:** <A–F> — <verdict label> (<binding constraint>) — *agent projects only; see SKILL.md Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md). Omit if no agent projects.*
+- **Agent Grade:** <A–F> — <verdict label> (<binding constraint>) — *agent projects only; see [agent-review-guide.md](agents/agent-review-guide.md) Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md). Omit if no agent projects.*
 - **Business Value:** <1-2 sentence description of what this solution does>
 - **Project Types Found:** <list with counts>
 - **Validation Status:** <pass/fail per project>
@@ -368,14 +368,14 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 **Final grade: <A–F>**
 ```
 
-> **`Final grade:` is the report's last line — nothing follows it.** No notes, caveats, or commentary, inside the report or after it. It restates the Summary's `Agent Grade` letter (the two must match) so the grade stays visible at the tail. Letter only — no label, no derivation. Agent projects only; omit when the review has no agent projects. See SKILL.md Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md).
+> **`Final grade:` is the report's last line — nothing follows it.** No notes, caveats, or commentary, inside the report or after it. It restates the Summary's `Agent Grade` letter (the two must match) so the grade stays visible at the tail. Letter only — no label, no derivation. Agent projects only; omit when the review has no agent projects. See [agent-review-guide.md](agents/agent-review-guide.md) Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md).
 
 **Overall Quality determination** (all project types):
 - **Good** — 0 Critical findings, 0-3 Warnings
 - **Needs Improvement** — 0 Critical findings, 4+ Warnings OR 1 Critical with clear fix
 - **Critical Issues** — 2+ Critical findings OR 1 Critical with security implications
 
-**Agent Grade** (agent projects only): the A–F letter is `min(G_det, G_jud)` computed in SKILL.md Step 4.5 — full rubric, bands, edge cases, and worked examples in [agent-grading-rubric.md](agents/agent-grading-rubric.md). It maps to the same verdict labels (A/B = Good, C/D = Needs Improvement, F = Critical Issues). Non-agent projects carry the Quality verdict only (grading for RPA / flows / coded apps is a future phase).
+**Agent Grade** (agent projects only): the A–F letter is `min(G_det, G_jud)` computed in [agent-review-guide.md](agents/agent-review-guide.md) Step 4.5 — full rubric, bands, edge cases, and worked examples in [agent-grading-rubric.md](agents/agent-grading-rubric.md). It maps to the same verdict labels (A/B = Good, C/D = Needs Improvement, F = Critical Issues). Non-agent projects carry the Quality verdict only (grading for RPA / flows / coded apps is a future phase).
 
 ## Optimization Evaluation Framework
 
