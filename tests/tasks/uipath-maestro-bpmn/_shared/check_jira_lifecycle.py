@@ -199,7 +199,10 @@ def _record_key(key: str) -> None:
 
 
 def main() -> None:
-    seed = json.loads(Path("seed.json").read_text())
+    seed_path = Path("seed.json")
+    if not seed_path.is_file():
+        _fail("seed.json is missing from the sandbox (pre_run seed did not run)")
+    seed = json.loads(seed_path.read_text(encoding="utf-8"))
     issues = seed["issues"]
     project = seed["project_key"]
     issuetype_id = seed["issuetype_id"]
