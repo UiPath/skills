@@ -100,11 +100,27 @@ Leave `.metadata`'s `Anchor0`–`Anchor3` as `null` — an anchor persists and r
 
 ## Screens — `TargetApp` definitions offline
 
-A screen's definition is a `uix:TargetApp` (the stored screen carries `Selector`, `Version="V3"` and `Area="0, 0, 0, 0"`), obtained like an element's: write a minimal seed, mutate it only through `uip rpa uia target-app update-definition` (`--name`, `--description`, `--selector` — it also writes the `.metadata` sibling in the CLI's own shape), then `object-repository create-app` → `create-screen` → `link-screen`. The command exposes no launch URL or file path, so an application card linked to an offline screen can only *attach*: the launch itself is a Start Process ([source-migration-guide.md § Composite interactions](source-migration-guide.md), "actions without a control") and the live pass may move the open into the card. A window-level screen with no elements is the legitimate shape for maximise, close and "window exists" steps, and for the scope a Start Process-launched application is attached through.
+A screen's definition is a `uix:TargetApp`, obtained like an element's: write the seed below, mutate it only through `uip rpa uia target-app update-definition` (`--name`, `--description`, `--selector` — it also writes the `.metadata` sibling in the CLI's own shape, and prints nothing on success, § CLI behaviour observed offline), then register and link it in the order of § Order of commands, offline. The command exposes no launch URL or file path, so an application card linked to an offline screen can only *attach*: the launch itself is a Start Process ([source-migration-guide.md § Composite interactions](source-migration-guide.md), "actions without a control") and the live pass may move the open into the card. A window-level screen with no elements is the legitimate shape for maximise, close and "window exists" steps, and for the scope a Start Process-launched application is attached through.
+
+The whole seed `create-screen` accepts — `Area` zeros are fine offline, `Selector` is what `update-definition --selector` fills:
+
+```xml
+<uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='chrome.exe' url='https://host.example.com/*' /&gt;" Version="V3" />
+```
+
+## Order of commands, offline
+
+One definition file per command. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move — the relay commands print little or nothing on success.
+
+1. Screen seed → `target-app update-definition --name --description --selector`.
+2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --activity-type` per element; `--full-selector` on every element and an own `Guid` per copy (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling.
+3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with the element definitions under that screen.
+4. `link-screen` on the card's workflow, then `link-elements` — never two link commands on one file at once.
 
 ## CLI behaviour observed offline
 
 - `uip rpa uia …` relay commands (`object-repository *`, `target-anchorable *`, `target-app *`) reject `--output`; read what they print.
+- `target-app update-definition` prints nothing on success; confirm the write by reading the definition file back (`--name` / `--description` land in its `.metadata` sibling).
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
 - Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). Carry positional indexes as selector variables ([selector-translation-guide.md](selector-translation-guide.md) rule 7) and write the change back with `target-anchorable update-definition` → `object-repository replace-elements`.
 - `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change.
