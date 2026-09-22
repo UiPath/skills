@@ -93,6 +93,10 @@ When the classification confidence falls below a configurable threshold, the aut
 ### Global
 - Unhandled exception: log the document path and error, mark the job faulted.
 
+## Transactional Shape
+
+Not transactional: one item's work started per item by the caller that passes the document path; a caller that iterates over documents is the candidate consumer and carries the shape.
+
 ## Acceptance Criteria
 
 - [ ] Given a document file, the automation returns a document type from the configured set with a confidence score.

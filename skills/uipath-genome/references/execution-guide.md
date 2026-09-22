@@ -19,6 +19,7 @@ Gather facts the 1.3 scaffolding questions are built from before asking anything
 3. For every skill named in Build With / Components, run that skill's discovery commands for installed packages; record activity packages and versions available to the authoring host. When a project already exists in the build location, also record its declared dependencies and versions from its manifest.
 4. Determine candidate build location: the folder containing the genome file, never the current working directory when that is a different repository.
 5. **Export check.** When the Source Map names a framework other than UiPath, read the export path and identity it records and check the export is where it says (manifest matches recorded identity). Record the outcome for the scaffolding questions below; derive nothing yet — that is [source-migration-guide.md § Migration preflight](source-migration-guide.md), after the questions. The framework migration pack is asked for in 1.3, not searched for here ([SKILL.md § Source Frameworks](../SKILL.md)).
+6. **Template check.** When the genome's Transactional Shape names a consumer ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)), run the owning skill's template discovery for the REFramework (`uipath-rpa` searches the template feed) and record whether an official template is available to this host. The result informs 1.4; it never removes the scaffolding question below — the owning skill's template-selection rules decide what happens at creation when no official template is found.
 
 ### 1.3 Configuration questions — never skipped
 
@@ -40,6 +41,7 @@ Two sources of questions, asked in this order:
 | Runtime (non-RPA projects) | Owning skill's scaffold choices — runtime version, framework, template (Python version and agent framework, Node and SDK version, Flow or BPMN template) | Value the owning skill's init defaults to; alternatives it lists |
 | Source export (extracted genomes only) | Where is the source export the Source Map names, for migrating UI targets and test data? | Recorded path when 1.2 step 5 found it there; another path (free text); no export available — build with live capture or placeholders and say so in the report |
 | Framework migration guide (extracted genomes from a framework other than UiPath only) | Where is the framework migration guide ([SKILL.md § Source Frameworks](../SKILL.md))? | Path given in the request; another path or a git URL to clone (free text); not available — same outcome as "no export available", stated in the report |
+| Transactional shape (each RPA consumer the genome's Transactional Shape names) | Build `<component>` on the REFramework template, as the genome's Transactional Shape describes? | Apply — REFramework template in the mode the Consumer table names (Recommended when the Recommendation is `Apply`); Plain project — the per-item loop, outcomes, retries and per-item records authored from the genome's Error Handling and Transactional Shape (Recommended when the Recommendation declines); Apply in the other mode (queue ↔ direct) |
 
 Rules:
 
@@ -49,6 +51,7 @@ Rules:
 4. Record answers as a `Configuration Answers` list with a `Scaffolding` group; the project-creation step in 1.4 receives the scaffolding answers, and every later build step receives the answers relevant to it.
 5. A default in the genome, a value found by discovery, a stub section, a "(Recommended)" option or a silent user never licenses skipping the question. Only the user answers it.
 6. Process genomes: ask the process-level genome questions first, then each component's genome questions in Components order, then the scaffolding questions per project.
+7. The transactional-shape question is asked once per consumer the Transactional Shape names — also when the Recommendation declines, since the user may opt in — and never when the section is the stub line. A component that is not an RPA process cannot be a consumer ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 2); a genome that names one has a defect: report it and do not ask. The answer is recorded under `Scaffolding` as `Transactional shape: apply (<mode>) | plain` per project. A "Plain" answer changes the project template, never the behaviour owed: every outcome, retry and per-item record the genome states is still built.
 
 Autonomous runs — only when the user's current request explicitly says not to ask (for example "take the defaults", "run unattended"): take the default for every question, record "(default)" next to each answer, and list them in the completion report. Absence of a reply, a long-running session, or a subagent context is not authorisation to run autonomously; the executor asks and waits.
 
@@ -69,6 +72,8 @@ Every project is created with the `Scaffolding` answers from 1.3: location, targ
 
 If the genome's Deployment section says "independent packages", skip the solution and treat each component as a standalone project.
 
+**Transactional shape applied** (a consumer whose 1.3 answer is Apply): create that project from the REFramework template through the owning skill's project-creation step and its template-selection rules (it searches the template feed and never silently picks a Marketplace template), with the same scaffolding answers. The template's own files — the state-machine entry point, the configuration loader, the item fetch and status surfaces, retry, close and kill, screenshot — are the framework's: keep them and configure them in § 2.2. Never scaffold a blank project and hand-write a state machine, and never rewrite a framework file from memory.
+
 ### 1.5 Library components and their consumers
 
 A component of type library is consumed by the other components as a package dependency, so it gates them:
@@ -84,7 +89,7 @@ A component of type library is consumed by the other components as a package dep
 
 ### 2.1 Plan skill groups
 
-Component genome: read Build With top to bottom; merge consecutive rows with the same skill into one group. Process genome: one group per component in Components order, unless a Handoffs row requires a consumer to exist before its producer (queue definitions, entry points) — then reorder only as far as needed and say so. Test components remain separate groups (one folder each) but all target the single test project; the shared `Config/` workflow is built with the first test group.
+Component genome: read Build With top to bottom; merge consecutive rows with the same skill into one group. Process genome: one group per component in Components order, unless a Handoffs row requires a consumer to exist before its producer (queue definitions, entry points) — then reorder only as far as needed and say so. Test components remain separate groups (one folder each) but all target the single test project; the shared `Config/` workflow is built with the first test group. A consumer with the transactional shape applied lists the surface each of its steps lands on — once per run → initialisation, per item → the per-item process, at the end → close — taken from the step groups the genome's Transactional Shape names; producers plan as ordinary groups.
 
 Report plan before building:
 
@@ -92,6 +97,7 @@ Report plan before building:
 Genome build plan:
   Group 1: Steps 1, 3, 4 → uipath-rpa (3 steps)
   Group 2: Step 2 → uipath-agents (1 step)
+  Transactional shape: Group 1 on the REFramework template (queue) — once per run: 1; per item: 3, 4; at the end: none
   Total: 2 groups, 4 steps
 ```
 
@@ -107,7 +113,16 @@ For each group, in order:
    - **Do this once per activity kind, before the generator runs.** A generator multiplies whatever shape it was given, so one unchecked fragment becomes hundreds of identical defects that validate, build and pack cleanly. List the activity kinds the group will emit, fetch the default XAML and read the per-activity doc for each, and record the list in the group report — an activity kind that appears in the output but not in that list was written from memory.
    - **Migration groups.** When the run is a migration (an export was resolved in 1.3), the group's UI activities are built without targets and receive Object Repository targets in 2.2b; the placeholder-selector stub pattern applies only when no export and no live application exist. Before authoring, classify every UI step of an extracted genome against [source-migration-guide.md § Composite interactions](source-migration-guide.md) (substep wording plus the per-control `actions` in the derived catalog), build each pattern once as a shared helper workflow per § Object Repository identity there, read the owning skill's control-interaction guidance for the controls involved as that skill mandates, and list the classified steps, their patterns and the helpers in the group plan. Verification is built per [source-migration-guide.md § Verification](source-migration-guide.md): `VerifyOptions` on the acting activity, a Check activity only for a genuine branch.
    - **Test components** follow the owning skill's testing guidance for shape and registration (Given-When-Then, data variations, test-case registration in the project manifest). Genome-specific rules on top: a source loop over data rows becomes runner-level data variations with an execute-flag skip gate inside the case; the row carries only the fields that vary per scenario and constants live in the shared configuration workflow or argument defaults ([genome-format-guide.md § Interface](genome-format-guide.md) states the argument cap); every case ends with a verification of the source's success criterion, records a one-line result the business consumer can read, and captures a screenshot in its exception handler through the library's screenshot workflow when the genome has one.
-3. **Verify the group:** every file the group needed exists, the owning skill's validate command passed, no unresolved errors remain. When the group produced Object Repository targets, verify them per [source-migration-guide.md § Verifying targets](source-migration-guide.md) before reporting the group complete — one element per interaction family against the live driver when the application is reachable, the offline read-back and `offline-unverified` label otherwise.
+   - **Transactional shape applied.** Build the consumer on the template's surfaces per the owning skill's REFramework guidance, never from memory:
+     1. **Mode.** `queue`: the queue named in Platform Dependencies goes into the settings and the template's item fetch and status surfaces stay as shipped. `direct` (the owning skill's tabular mode): the source is read once in the initialisation surface, the item fetch returns the next row or file and nothing when the source is exhausted, and the status surface writes back where the Transactional Shape's Traceability line says instead of updating a queue item.
+     2. **Steps.** Once-per-run steps into the application-open surface; per-item steps into the per-item process surface as one invoked workflow per Workflow step, UI workflows apart from decision workflows; at-the-end steps into the close surface.
+     3. **Outcomes.** Every rule the outcomes table lists as a business exception is thrown as a business-rule exception carrying the genome's reason wording; everything else propagates as a system exception; the retry and consecutive-failure counts go into the constants from the Configuration Answers.
+     4. **Configuration.** Settings and constants from the Configuration Answers per the section's split; the assets sheet from Platform Dependencies; no secret in any sheet.
+     5. **Traceability.** The per-item status carries the outcome reason; the template's screenshot on system exception stays.
+     6. **Checklist.** The owning skill's REFramework customisation checklist is worked through before the group is reported complete: queue name set or blanked per mode, item fetch and status surfaces adjusted for `direct`, the item type migrated consistently, no global exception handler added.
+
+     The framework's own files are configured, not authored, and are not workflow steps in the group report.
+3. **Verify the group:** every file the group needed exists, the owning skill's validate command passed, no unresolved errors remain. When the group produced Object Repository targets, verify them per [source-migration-guide.md § Verifying targets](source-migration-guide.md) before reporting the group complete — one element per interaction family against the live driver when the application is reachable, the offline read-back and `offline-unverified` label otherwise. When the transactional shape was applied, the group also reports the customisation checklist complete and, where the owning skill offers a local run, drives one synthetic item through each exit — success, business exception, system exception retried, system exception stopping the run — and reports each exit as passed, failed with the observed behaviour, or not runnable; a failed exit blocks the group from being reported complete.
 4. **Report and advance without pausing:**
 
 ```
@@ -184,6 +199,7 @@ Files created: <count>
 Source export: <path> (<identity>) | none — live capture / placeholders
 UI targets: <screens>/<elements> from the derived catalog (high/medium/low); <created>/<reused>/<parametrised>; <n> placeholders left
 Test data: <files> filled from source rows, <n> credential assets declared (values to enter in Orchestrator)
+Transactional shape: applied — <component> (<mode>; exits exercised: …) | plain — <component> (declined) | not applicable
 Acceptance criteria: N/total met
 Configuration answers: … (defaults marked)
 Scaffolding: <target framework>, <expression language>, <package@version, …> (pinned | latest) per project
@@ -204,3 +220,4 @@ Extracted genomes add the healing-pass note: inferred targets are verified on th
 7. **Skipping acceptance validation** because "everything compiled". Criteria are the definition of done.
 8. **Building past the owning skill.** Emitting activity XML from memory or from templates nobody derived from the skill's discovery commands and package docs, or dispatching subagents without the skill's mandatory reads (2.2 step 2).
 9. **Skipping the export question, or deriving nothing because no catalog sat beside the genome**, and so shipping placeholder targets or generated test rows for a reachable export (1.3, 2.2b, 2.2c). Every other migration mistake — naive composite translation, per-step Object Repository entries, Check activities instead of `VerifyOptions`, copied credentials — is prohibited in [source-migration-guide.md § Anti-patterns](source-migration-guide.md).
+10. **Framework by habit or by hand.** Building a consumer on the REFramework that the genome's Transactional Shape does not name, wrapping a linear flow in a state machine, skipping the transactional-shape question because the Recommendation seemed clear, scaffolding a blank project and hand-writing the state machine or its plumbing, adding a Global Exception Handler to a framework project, writing a secret into a configuration sheet, or reporting a framework group complete without the customisation checklist and the exits it exercised (1.3, 1.4, 2.2).

@@ -64,7 +64,7 @@ Test projects (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outp
 
 | Signal | Where | Tells you | Example |
 |---|---|---|---|
-| Root element inside `<Activity>` | `<Sequence>`, `<Flowchart>`, `<StateMachine>` | Control-flow style; StateMachine usually dispatcher/performer (REFramework) | `<StateMachine>` |
+| Root element inside `<Activity>` | `<Sequence>`, `<Flowchart>`, `<StateMachine>` | Control-flow style; a `<StateMachine>` root in `Main.xaml` beside a `Framework/` folder is the REFramework (§ REFramework projects below) | `<StateMachine>` |
 | `xmlns` declarations on `<Activity>` | root | Packages in use → target applications | `xmlns:umam="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail…"` |
 | Activity elements in the body | e.g. `<ui:NTypeInto>`, `<umam:GetNewestEmail>`, `<p:ReadRange>`, `<ui:NClick>` | Business action of each step; `DisplayName` is best plain-language hint | `DisplayName="Read invoice sheet"` |
 | `<x:Members>` → `<x:Property Type="InArgument(x:String)">` | header | Workflow interface: In / Out / InOut arguments | `Name="in_InvoicePath"` |
@@ -81,6 +81,25 @@ Test projects (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outp
 | `SearchSteps="SemanticSelector"` with `SemanticSelectorArgument` | target | Element located by natural-language description, usually because no stable selector exists → Source Map note | |
 
 Skip `<sap2010:WorkflowViewState.ViewStateManager>` and every `sap:VirtualizedContainerService.HintSize` — designer layout, not logic.
+
+### REFramework projects
+
+A project built on the Robotic Enterprise Framework template is recognised by its shape, not by a manifest flag: `Main.xaml` is a `<StateMachine>` whose states are Init, Get Transaction Data, Process Transaction and End Process; a `Framework/` folder holds the framework workflows; `Data/Config.xlsx` has the sheets Settings, Constants and Assets. The framework **is** the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); the business logic is the Workflow. Which file feeds which row:
+
+| Source | Feeds | How |
+|---|---|---|
+| `Data/Config.xlsx` Settings sheet: `OrchestratorQueueName`, `OrchestratorQueueFolder` | Transactional Shape mode; Platform Dependencies (queue) | A queue name that the item-fetch workflow actually reads → `queue` mode, name kept as the source value. Blank, or the template's sample `ProcessABCQueue` beside a customised item fetch → `direct` mode, data source from that fetch |
+| Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Configuration Questions with the sheet value as default; the two counts in the outcomes table | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
+| Assets sheet rows | Platform Dependencies | One row per asset name; Credential when the description or the consuming activity says so, otherwise Text |
+| `Framework/InitAllApplications.xaml` (`GetAppCredentials.xaml` in older templates) | Once-per-run steps; credential assets | Open and sign-in per application |
+| `Framework/Process.xaml` (root `Process.xaml` in older templates) and every workflow it invokes | Per-item steps — the Workflow's numbered steps | The call graph starts here, not at `Main.xaml` |
+| `Throw` of a `BusinessRuleException` inside the per-item workflows | Business Rules (the condition) and the business-exception row of the outcomes table | The exception message is the reason wording |
+| `Framework/GetTransactionData.xaml` when customised — a table row, a file, a screen list instead of the queue item | Mode `direct` and its source; the once-per-run read | The shipped queue fetch is plumbing |
+| `Framework/SetTransactionStatus.xaml` when customised — write-back to a column, a file, a reporting queue | Traceability line of the Transactional Shape | The shipped three status updates are plumbing |
+| `Framework/CloseAllApplications.xaml`, `Framework/KillAllProcesses.xaml` | At-the-end steps; Error Handling § Global (forced close between retries) | |
+| `Main.xaml` and its transitions, `InitAllSettings.xaml`, `RetryCurrentTransaction.xaml`, `TakeScreenshot.xaml`, the template's `Tests/`, `Exceptions_Screenshots/`, `Documentation/` | **Not steps.** Source Map row `Framework files` listing them; `Tests/` is test-coverage evidence | Execution recreates them from the template when the shape is applied |
+
+A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it (§ Call Graph Rules rule 3).
 
 ## Signals — Coded C#
 
@@ -230,7 +249,7 @@ Skip `bpmndi:` diagram elements.
 3. Edges across components (handoffs): Flow resource nodes, BPMN `uipath:type` values that start a job or agent, Case task types `process` / `rpa` / `agent` / `api-workflow` / `action`, agent tools with `type` `process` / `api` / `agent`, `sdk.processes.invoke`, `StartJob` activities, queue producers and consumers sharing a queue name, Action Center task creation and the coded app that renders it.
 4. Missing entry point: `outputType: Library` → each public workflow is an independent capability, listed as separate steps; `Process` without `main` → `Main.xaml` / `Main.cs` by convention, else alphabetical with `*[Inferred]*`.
 5. Unreachable workflows: list in Source Map as dead code; exclude from Workflow.
-6. REFramework / StateMachine: map states to phases — Init → step "Initialize and read config", Get Transaction Data → "Fetch next item", Process → the business steps, End → "Close applications and report". Queue is a Platform Dependency; retries and business/system exception classification go under Error Handling.
+6. REFramework / StateMachine: the Workflow's call graph starts at the per-item process workflow and adds the once-per-run and at-the-end workflows as steps of their own (§ Signals — XAML › REFramework projects); the state machine, its transitions and the framework's retry and status workflows are not steps. The queue is a Platform Dependency; the business/system outcome classification and the counts go to the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)).
 
 ## Expression Translation
 
@@ -244,6 +263,7 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 | `bindings.json` (coded agents) | Same mapping |
 | `.flow` top-level `bindings[]` | Processes, agents, API workflows invoked; folders |
 | XAML queue / asset / credential / bucket / StartJob activities; `.cs` `system.` calls | Queues, assets, credentials, buckets, jobs |
+| `Data/Config.xlsx` Assets sheet (REFramework) | One Platform Dependencies row per asset name; Credential when the sheet's description or the consuming activity says so, otherwise Text |
 | BPMN `<uipath:context>` inputs (`folderPath`, `releaseKey`, `appId`, `connection`) | Processes, HITL apps, connections |
 | `entry-points.json` | Interface inputs and outputs per component |
 | Triggers: `.flow` scheduled/connector trigger nodes, BPMN start event types, Case trigger `serviceType`, `bindings_v2.json` `HttpTrigger` | Deployment → Entry points and triggers |
@@ -284,3 +304,5 @@ Variation row holding a password-looking field (`*password*`, `*pwd*`, `*secret*
 8. `.app/` and `*.Generated.xaml` are generated trigger plumbing for apps and Action Center — skip.
 9. `resources/solution_folder/**` mirrors the manifest and is regenerated; read `.uipx` instead.
 10. A `[TestCase]` `.cs` file or `Test` project is evidence, not a component.
+11. The REFramework template's sample values survive customisation: `ProcessABCQueue` in the settings sheet of a project whose item fetch reads rows, the template's own `Tests/` cases, `Exceptions_Screenshots/`. A queue is evidence only when the item fetch actually reads it (§ Signals — XAML › REFramework projects).
+12. Framework workflows look like logic and are the template: the state machine, the retry counter, the three status updates and the screenshot on exception describe the Transactional Shape, not steps — transcribing them doubles the shape in the genome.

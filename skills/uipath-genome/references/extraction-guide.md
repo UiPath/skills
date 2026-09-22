@@ -34,6 +34,7 @@ Per artifact, in inventory order, using source guide's signal tables. Collect in
 | Invocation edges across components, queues, tasks, events | Handoffs (process genome) |
 | Triggers, schedules, entry points | Workflow step 1, Deployment |
 | Queues, assets, credentials, buckets, connections, folders | Platform Dependencies |
+| Per-item iteration with per-item outcomes: queue item fetch and status updates, a loop over rows or files with a per-item catch, a work-list read; framework state machines and their configuration workbook | **Transactional Shape** — unit of work, producers, consumers, mode, outcomes ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); the framework's plumbing is not steps (source guide's framework section) |
 | Hardcoded literals: paths, URLs, addresses, names, thresholds, columns | Configuration Questions |
 | Test cases, eval sets, assertions | Acceptance Criteria evidence |
 | Prompts and instructions (agents) | Business Rules (paraphrased) |
@@ -85,7 +86,8 @@ Write the **process genome first** (when applicable), then each **component geno
 | Configuration Questions | Every hardcoded literal and every application choice: `N. {Question}? (default: {source value})`. |
 | Workflow / Process Map | Ordered from call graph; substeps for every multi-field, conditional, or transforming step; `(input: …; output: …)` annotations. |
 | Business Rules | Conditions translated per format guide, attached to their step. Agent prompts paraphrased into rules. |
-| Error Handling | Constructs translated to behaviour, attached to their step; `### Global` for global handlers and REFramework-style classification. |
+| Error Handling | Constructs translated to behaviour, attached to their step; `### Global` for global handlers. The business/system classification of per-item outcomes goes to the Transactional Shape. |
+| Transactional Shape | Source guide's transactional signals, written per [genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 10 (framework sources fill it from their files; candidates carry `*[Inferred]*`; no unit of work → the stub); framework files go to the Source Map as a `Framework files` row. |
 | Handoffs | One row per cross-component edge from Step 4. |
 | Acceptance Criteria | One per step, per transformation, per rule, per handler, plus edge cases. Existing test cases and eval sets become criteria directly (behavioural wording). |
 | Deployment | Solution vs independent packages, triggers, folders from manifest and bindings. Count buildable projects: non-test components plus exactly one test project when test components exist. |
@@ -127,3 +129,4 @@ Write all files, then ask "Want to adjust anything?" ([genome-format-guide.md §
 9. **Extracting the behaviour and losing the provenance** — Source Map without the export's location or without per-step source objects — or its mirror, copies of the export's catalogs beside the genome (Step 6b; [genome-format-guide.md § Source Map](genome-format-guide.md)).
 10. **Flattening a composite action to its data** — "Enter Voluntary into Primary Reason" for a type-ahead pick, "choose Terminate Employee" for a two-level menu path, "select row 2" for a row found by content ([genome-format-guide.md § Workflow](genome-format-guide.md)).
 11. **Transcribing blanket screen captures as steps or dropping them entirely.** They are the evidence policy (Step 3). A genome that mentions screenshots only in an unhandled-exception handler has dropped the suite's whole audit trail.
+12. **Transcribing framework plumbing as steps** — state transitions, retry counters, status updates, screenshots on exception — or dropping the framework's configuration workbook instead of turning its rows into Configuration Questions and Platform Dependencies ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 10).

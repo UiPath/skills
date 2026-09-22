@@ -1,0 +1,96 @@
+task_id: skill-genome-author-transactional-shape
+description: >
+  Smoke: agent uses the uipath-genome skill to author a component genome from a
+  described sheet-to-web-client process worked by several robots. Grades the genome's
+  structure and, above all, its Transactional Shape: the shape applied in queue mode
+  with a reason, producer and consumer tables filled (no template placeholders left),
+  business and system exceptions classified with the per-item retry and the
+  consecutive-failure stop, the role word carried in the Overview — plus configuration
+  defaults and business rules taken from the description.
+tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
+
+initial_prompt: |
+  Write a genome for an automation called "Customer Address Sync" and save it in the
+  current directory.
+
+  Every weekday at 07:00 a robot reads the "Pending" sheet of the address-change workbook
+  on the operations share (around 200 rows a day: customer number, new street address,
+  postcode, city, country, requester email) and hands each row to a pool of two robots
+  that update the customer's address in the Dynamics 365 web client (sign in with the CRM
+  robot account, open the customer, replace the address, save, read back the change
+  number) and email the requester the change number. A row whose customer number is
+  unknown in Dynamics 365, or whose postcode fails the country's format, must be rejected
+  with an email to the requester and never retried; a web client timeout or a lost session
+  must be retried before the row is given up on. Operations wants to see the status of
+  every row of the day and a summary when the run ends. Document it as one project with
+  two entry points.
+
+  Before starting, load the uipath-genome skill and follow its authoring workflow. Do not
+  ask follow-up questions — take the defaults. Do not run any `uip` commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Component genome written with the slugified automation name"
+    path: "customer-address-sync-genome.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Genome passes the structural, wording and skill-name checks"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py component
+      customer-address-sync-genome.md
+      --expect uipath-rpa "Dynamics 365"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Transactional Shape applies queue mode with a reason, states retry and consecutive-failure stop, leaves no placeholder, and the Overview carries the performer role word"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py component
+      customer-address-sync-genome.md
+      --shape applied --mode queue
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Transactional Shape carries the unit of work, both role tables and the three outcome rows"
+    path: "customer-address-sync-genome.md"
+    includes:
+      - "## Transactional Shape"
+      - "Unit of work"
+      - "| Producer |"
+      - "| Consumer |"
+      - "| Business exception |"
+      - "| System exception |"
+    weight: 2.0
+    pass_threshold: 0.85
+
+  - type: file_contains
+    description: "Business rules, schedule and notification target come from the description"
+    path: "customer-address-sync-genome.md"
+    includes:
+      - "postcode"
+      - "07:00"
+      - "requester"
+      - "customer number"
+    weight: 1.5
+    pass_threshold: 0.75
+
+  - type: command_not_executed
+    description: "Authoring does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0

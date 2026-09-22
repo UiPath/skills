@@ -100,6 +100,10 @@ The automation maintains a lightweight state file tracking the last known missio
 ### Step 8: Send email
 - Delivery failure: log recipient, subject, and error; write the unsent body to the `unsent/` folder. Mark the event IDs as reported anyway so the next run does not retry.
 
+## Transactional Shape
+
+Not transactional: the run is one unit of work — one poll, one change decision, at most one email; a failed poll is retried by the next scheduled run, not per item.
+
 ## Acceptance Criteria
 
 - [ ] Given the Spaceflight News API returns a new Artemis II event not present in the state file, the automation sends an email containing the event description and timestamp to the configured recipients.

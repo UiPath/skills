@@ -38,7 +38,7 @@ Build order follows the table: the BPMN process references the robot's entry poi
 ## Process Map
 
 1. **Intake** — component 2 (dispatcher entry point): every 15 minutes, new mailbox attachments become queue items; each item starts one instance of component 1.
-2. **Extract and match** — component 1 invokes component 2 (performer entry point): fields extracted, PO looked up, three-way match evaluated; exits with `matched` or `exception` plus the discrepancy list.
+2. **Extract and match** — component 1 invokes component 2 (matching entry point): fields extracted, PO looked up, three-way match evaluated; exits with `matched` or `exception` plus the discrepancy list.
 3. **Post** — on `matched`, component 1 invokes component 2 (posting entry point); exits when an ERP document number is returned.
 4. **Triage** — on `exception`, component 1 invokes component 3 with the invoice record and discrepancies; exits with a proposed resolution (`repost-with-correction`, `request-supplier-credit-note`, `reject`) and a confidence score.
 5. **Human review** — component 1 creates an Action Center task for the AP clerk carrying the invoice, the discrepancies, and the agent's proposal; exits when the clerk submits `Approve proposal`, `Override`, or `Reject`.
@@ -113,7 +113,7 @@ flowchart LR
 | From | To | Mechanism | Data passed | Failure behaviour |
 |------|----|-----------|-------------|-------------------|
 | Component 2 (dispatcher) | Component 1 | Queue item on `AP_InvoiceIntake`; queue trigger starts one process instance per item | `MailId`, `PdfBucketPath`, `ReceivedAt`, `SenderAddress` | Queue item retried 2× by Orchestrator, then Failed with the mail ID in the reason |
-| Component 1 | Component 2 (performer) | Start job, wait for completion | In: `PdfBucketPath`; out: invoice record (`VendorId`, `VendorName`, `InvoiceNumber`, `InvoiceDate`, `PoNumber`, line items, `Subtotal`, `Tax`, `Total`, `Currency`), `MatchResult` (`matched` / `exception`), `Discrepancies[]` (field, expected, actual) | Job faulted → retry once after 5 minutes, then route to Triage with a single discrepancy `extraction-failed` |
+| Component 1 | Component 2 (matching) | Start job, wait for completion | In: `PdfBucketPath`; out: invoice record (`VendorId`, `VendorName`, `InvoiceNumber`, `InvoiceDate`, `PoNumber`, line items, `Subtotal`, `Tax`, `Total`, `Currency`), `MatchResult` (`matched` / `exception`), `Discrepancies[]` (field, expected, actual) | Job faulted → retry once after 5 minutes, then route to Triage with a single discrepancy `extraction-failed` |
 | Component 1 | Component 3 | Agent job | Invoice record, `Discrepancies[]`, PO summary | Agent unavailable or confidence below 0.4 → proposal `manual`, straight to Human review |
 | Component 1 | AP clerk | Action Center task (Validation app) | Invoice record, discrepancies, agent proposal and rationale, PDF link | Task not completed within 1 business day → reassign to team lead and flag SLA breach |
 | Component 1 | Component 2 (posting) | Start job, wait for completion | Invoice record (possibly corrected) | ERP rejects (duplicate or locked period) → Discrepancy `erp-rejected` with the ERP message, back to Triage; second rejection → Reject and notify supplier |
@@ -152,6 +152,27 @@ flowchart LR
 - Process instance stuck longer than 5 business days: terminate with reason `stale`, queue item marked Failed with the instance ID, invoice listed in the digest.
 - Duplicate queue item for the same mail ID: second instance detects the existing invoice in SAP or an open instance for the same invoice number and closes itself as `duplicate`.
 
+## Transactional Shape
+
+**Unit of work:** one supplier invoice; reference the mail id at intake, with vendor plus invoice number as the duplicate key; fields as in Handoffs row 1; ≈400 a day, dispatched every 15 minutes; chosen because one invoice is matched, triaged and posted on its own and vendor plus invoice number identify it in SAP.
+
+| Producer | Reads | Writes items to | Reference rule | Trigger |
+|---|---|---|---|---|
+| Component 2, entry point A (dispatcher) | the AP mailbox folder | `AP_InvoiceIntake` | one item per mail id; a second item for the same mail id is closed as `duplicate` by the orchestration | every 15 minutes |
+
+No RPA consumer: `AP_InvoiceIntake` is taken by component 1's queue trigger, one process instance per item, and every per-invoice retry, status and SLA lives in that instance; component 2's matching and posting entry points run one item's work per job the instance starts.
+
+| Outcome | When | Effect |
+|---|---|---|
+| Success | every per-item step completed — component 1 steps 3 and 6 route the invoice to posting and component 2 step 9 returns a document number | item recorded as done with the ERP document number |
+| Business exception | component 2 steps 5–7 rules — unreadable field, unknown vendor, no open PO, unmatched line, tolerance, duplicate — and an ERP rejection at step 9 | no retry of the item; component 1 routes it to triage and human review (Process Map steps 4–6); the item ends posted or rejected by a clerk's decision |
+| System exception | every other failure — component 2 steps 2, 5 and 9 handlers: mailbox, Document Understanding, SAP session | the job faults; component 1 retries it once after 5 minutes (Handoffs row 2), then routes the invoice to triage with `extraction-failed`; a robot pool outage leaves items `New` and alerts the team lead after 4 hours (Error Handling and Recovery) |
+
+**Configuration:** settings — questions 1, 5, 6 (mailbox, digest recipient, company codes); constants — questions 2, 3, 4 (ceiling, tolerance, confidence floor); assets — every Credential and Text row of Platform Dependencies.
+**Traceability:** the queue item's status and the process instance record each invoice's outcome and reason; the robot screenshot on a SAP failure (component 2 Error Handling § Global); the daily digest to the AP team lead is the run summary.
+**Recommendation:** Not recommended — the queue is consumed by the orchestration's trigger, one instance per invoice, and every per-invoice retry, status and SLA lives in component 1; a per-item loop inside component 2 would duplicate that lifecycle.
+**Alternative unit of work:** one mail with all its PDF attachments — not chosen because one mail can carry several invoices that are matched, triaged and posted independently; choose it when suppliers send exactly one invoice per mail and the intake must answer each mail once.
+
 ## Acceptance Criteria
 
 - [ ] Given a PDF invoice arrives in the AP mailbox, a queue item exists within 15 minutes and exactly one process instance starts for it.
@@ -166,7 +187,7 @@ flowchart LR
 ## Deployment
 
 - **Packaging:** one solution `InvoiceProcessing` (`uipath-solution`) containing the three projects; queues, bucket, asset, and connection declared as solution resources.
-- **Entry points and triggers:** component 2 dispatcher on a 15-minute time trigger; component 1 on a queue trigger for `AP_InvoiceIntake`; components 2 (performer, posting) and 3 started only by component 1.
+- **Entry points and triggers:** component 2 dispatcher on a 15-minute time trigger; component 1 on a queue trigger for `AP_InvoiceIntake`; components 2 (matching, posting) and 3 started only by component 1.
 - **Environments:** folder `Finance/AP` in tenant `Finance`; a `Finance/AP-Test` folder with the same resources for UAT.
 
 ## Complexity
