@@ -1,4 +1,4 @@
-"""The eval image's FLOW_SDK_LIBRARY_VERSION pin, run as the Dockerfile runs it.
+"""The eval image's CONNECTORS_LIBRARY_VERSION pin, run as the Dockerfile runs it.
 
 On 2026-09-22 the stable connector-library alias was overwritten with a
 2-connector build and the image followed it. The pin maps a build number to
@@ -19,7 +19,7 @@ VERSIONS = "https://download.uipath.com/maestro/registry/versions"
 
 
 def _pin_block() -> str:
-    start = TEXT.index('    library_version="${FLOW_SDK_LIBRARY_VERSION:-latest}"')
+    start = TEXT.index('    library_version="${CONNECTORS_LIBRARY_VERSION:-latest}"')
     end = TEXT.index('    if [ "$sdk_status" = available ]; then', start)
     # Dockerfile line continuations → one shell script.
     return re.sub(r"\\\n", "\n", TEXT[start:end]).rstrip().removesuffix("&&")
@@ -28,14 +28,14 @@ def _pin_block() -> str:
 def _resolve(version: str | None) -> subprocess.CompletedProcess:
     env = {"PATH": "/usr/bin:/bin"}
     if version is not None:
-        env["FLOW_SDK_LIBRARY_VERSION"] = version
+        env["CONNECTORS_LIBRARY_VERSION"] = version
     script = f'set -eu\n{_pin_block()}\nprintf "URL=%s\\n" "$library_url"'
     return subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True)
 
 
 def test_arg_defaults_to_latest_and_is_persisted_as_env():
-    assert "ARG FLOW_SDK_LIBRARY_VERSION=latest" in TEXT
-    assert "ENV FLOW_SDK_LIBRARY_VERSION=${FLOW_SDK_LIBRARY_VERSION}" in TEXT
+    assert "ARG CONNECTORS_LIBRARY_VERSION=latest" in TEXT
+    assert "ENV CONNECTORS_LIBRARY_VERSION=${CONNECTORS_LIBRARY_VERSION}" in TEXT
     assert 'uip maestro registry pull --force ${library_url:+--url "$library_url"}' in TEXT
     assert "requestedVersion: $libraryVersion" in TEXT
 
@@ -58,4 +58,4 @@ def test_build_number_pins_the_immutable_copy(version):
 def test_anything_else_fails_the_build(version):
     run = _resolve(version)
     assert run.returncode == 1
-    assert "FLOW_SDK_LIBRARY_VERSION must be 'latest' or a build number" in run.stderr
+    assert "CONNECTORS_LIBRARY_VERSION must be 'latest' or a build number" in run.stderr

@@ -33,9 +33,9 @@ ARG FLOW_SDK_VERSION=latest
 # The pin applies twice. The build-time pull below fetches the pinned archive,
 # and that is the library `flow compile` reads (FLOW_SDK_LIBRARY_JSON). The value
 # is also persisted as ENV, so an agent's own bare `uip maestro registry pull`
-# stays on the same build: the SDK honours FLOW_SDK_LIBRARY_VERSION from the
+# stays on the same build: the SDK honours CONNECTORS_LIBRARY_VERSION from the
 # release carrying UiPath/flow-builder-sdk#769 (older SDKs ignore it).
-ARG FLOW_SDK_LIBRARY_VERSION=latest
+ARG CONNECTORS_LIBRARY_VERSION=latest
 
 # The package NAME is a build arg for the same reason the version is: the rename
 # split the published history. `@uipath/maestro-builder-sdk` starts at 5.0.0;
@@ -231,13 +231,13 @@ RUN set -euo pipefail && \
     registry_status=skipped && \
     source_check_status=skipped && \
     library_hash='' && \
-    library_version="${FLOW_SDK_LIBRARY_VERSION:-latest}" && \
+    library_version="${CONNECTORS_LIBRARY_VERSION:-latest}" && \
     library_url='' && \
     if [ "$library_version" != latest ]; then \
       library_build="$(printf '%s' "$library_version" | \
         sed -nE 's/^(connectors-library-)?([0-9]{4}\.[0-9]{2}\.[0-9]+)$/\2/p')"; \
       if [ -z "$library_build" ]; then \
-        echo "ERROR: FLOW_SDK_LIBRARY_VERSION must be 'latest' or a build number such as connectors-library-2026.09.9, got '$library_version'" >&2; \
+        echo "ERROR: CONNECTORS_LIBRARY_VERSION must be 'latest' or a build number such as connectors-library-2026.09.9, got '$library_version'" >&2; \
         exit 1; \
       fi; \
       library_url="https://download.uipath.com/maestro/registry/versions/connectors-library-${library_build}/library-json.zip"; \
@@ -313,7 +313,7 @@ ENV FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}
 
 # Persisted for the same reason: task-time pulls must resolve to the library the
 # image was built with (see the ARG above).
-ENV FLOW_SDK_LIBRARY_VERSION=${FLOW_SDK_LIBRARY_VERSION}
+ENV CONNECTORS_LIBRARY_VERSION=${CONNECTORS_LIBRARY_VERSION}
 
 ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
     FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md \
