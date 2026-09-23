@@ -34,8 +34,8 @@ The run drives real applications, and a rerun must start from the state the firs
 
    **With a snapshot:**
    1. Capture again and diff against the baseline, following the same section's "Diff and close leaked windows" part.
-   2. A new window or a new browser tab whose title, process or URL the project's XAML in `<OUTPUT_DIR>` accounts for is a leftover of the failed run: close it by its ref from the latest snapshot, a tab ref for a tab, so a leaked tab inside the user's own browser window goes without touching that window.
-   3. Windows of the skill's own tooling, the headless Studio, process `uipath.studio.exe`, titled `<project name> - UiPath Studio`, and `uipath.uiautomation.exe`, are never leftovers even though they carry the project's name: never close them, never list them.
+   2. A new window or a new browser tab whose title, process or URL the project's XAML in `<OUTPUT_DIR>` accounts for is a leftover of the failed run: close it by its ref from the latest snapshot: a new window by its window ref; a new tab inside a baseline window by its tab ref, so a leaked tab inside the user's own browser window goes without touching that window.
+   3. Windows that carry the project's name but are not the project's applications are never leftovers: the user's Studio, process `uipath.studio.exe` or `uipath.studio.project.exe`, titled `<project name> - UiPath Studio` or `<project name>`, and the UI Automation driver windows of `uipath.uiautomation.exe` that every run and snapshot spawns. Never close them, never list them. The headless host the skill runs in has no top-level window.
    4. A new window or tab that no XAML property accounts for, for example one started by a script or command activity, is listed and left to the user.
    5. Any other new window is the user's, opened while the skill worked: never close it, never mention it.
 
