@@ -735,7 +735,10 @@ deploy-readiness checks:
 uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
+Exit 0 means the document passes every rule the CLI enforces, which is not
+the same as every rule in the contract: `FAKE_JOIN` is registered but never
+reported (see [Gateways](#gateways)), so a clean exit is not proof of the
+hand-checked invariant in item 5 below. Exit 1 lists the blocking errors,
 each with its rule code (gateway/condition, superfluous-gateway,
 error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,

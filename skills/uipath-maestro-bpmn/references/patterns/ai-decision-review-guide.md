@@ -17,10 +17,9 @@ These four carry the shape. Change one and you are building something else.
 - **One action step, reached two ways.** Both the auto path and the approve
   edge converge on `merge_gate`, whose single outgoing flow feeds the action
   node. The action is implemented, bound, and configured once. Route the two
-  edges straight into the action node instead and you have a "fake join": the
-  canvas rule set rejects an activity with more than one incoming flow
-  (`FAKE_JOIN`), and `uip maestro bpmn validate` does not report it, so nothing
-  local tells you the file is wrong. See
+  edges straight into the action node instead and you have a "fake join",
+  which the canvas contract forbids for an activity (`FAKE_JOIN`). Nothing
+  local tells you: `uip maestro bpmn validate` does not report that rule. See
   [structural-bpmn.md](../structural-bpmn.md#gateways).
 - **Every item exits through a named outcome.** Auto-actioned, or rejected by a
   reviewer. That is what makes the decision auditable afterwards.
@@ -131,10 +130,12 @@ Fetch every payload through
 
 The commonest reduction: the process already scores the item. Insert only
 `validate` onward, bind the gate to the existing score variable, and add no
-second analyzer. The action step already exists too, so insert `merge_gate`
-immediately before it and retarget the existing inbound flow at the gate.
-That keeps the one node the process already has, still reached through a
-single incoming flow.
+second analyzer. The action step already exists too, so keep it and give it
+`merge_gate`: point the action's existing inbound flow at the first node you
+insert (`validate`, or `confidence_gate` when validation is vacuous), put
+`merge_gate` immediately before the action, and let both the auto and
+approved routes converge there. Retargeting that flow at `merge_gate`
+instead would route every item straight past the review you are adding.
 
 `validate` is the one load-bearing step you can remove, and only when its
 mechanism is vacuous rather than unwanted: if the analyzer's output is
