@@ -1,0 +1,95 @@
+task_id: skill-bpmn-bellevue-weather
+description: >
+  Create a UiPath Maestro BPMN process that fetches today's weather in
+  Bellevue from open-meteo, formats a summary, and branches on temperature:
+  if > 60F output 'nice day', otherwise 'bring a jacket'. Exercises a managed
+  HTTP activity and a decision gateway, then grades by executing the process
+  (`bpmn debug`) and asserting one of the two verdict strings appears in the
+  process outputs.
+
+  Ported from Flow `multi_node/bellevue_weather/bellevue_weather.yaml`; the
+  Managed HTTP Request node (core.action.http.v2) becomes a bpmn:sendTask
+  carrying the registry Intsvc.HttpExecution wrapper in manual
+  (connectionless) mode -- BPMN has no curated Open-Meteo connector, so the
+  Flow grader's connector-fallback option has nothing to translate to and is
+  dropped -- the Decision node becomes a bpmn:exclusiveGateway, Flow's single
+  inline `flow debug` payload read becomes an ephemeral-solution import +
+  `bpmn debug` + `debug-instance variables-all`/`incidents` read, and the
+  live-check criterion timeout grows from 600s to 1050s to fund that larger
+  live-debug surface (LIVE-ADDENDUM budget rule); the graded assertions
+  themselves (a weather-HTTP node exists; the run's outputs contain one of
+  the two verdict strings) are unchanged from Flow's own grader.
+tags: [uipath-maestro-bpmn, e2e, "lifecycle:generate", "shape:multi-node", "node:decision", "feature:http"]
+
+# Parked (skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# skill gap: the summarize script reads `temperature_2m` off an undefined Intsvc.HttpExecution response in every run (CI runs 35523787101, 35525387843); the skill does not teach the managed-HTTP response shape.
+skip: true
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+run_limits:
+  expected_turns: 32
+  turn_timeout: 1200
+  # task_timeout bounds turns AND grading under one watchdog (tests/README.md),
+  # and grading only gets what the turn did not spend. Flow's own bellevue_weather
+  # relies on the 1200s experiment default, which BPMN's larger live-debug
+  # surface (see check_weather_bpmn.py's budget comment) would not leave room
+  # for: 1200 (unchanged turn cap) + 180 (validate) + 1050 (weather live check)
+  # = 2430; rounded up for per-criterion spawn overhead.
+  task_timeout: 2500
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build the process inside a solution of the same name.
+
+  Create a UiPath Maestro BPMN process project named "BellevueWeather" that
+  gets today's weather in Bellevue from open-meteo, formats a summary, and if
+  the temperature is greater than 60F returns a summary with a message field
+  'nice day', otherwise the message field should be 'bring a jacket'.
+  Use a Managed HTTP Request activity (Intsvc.HttpExecution) in manual
+  (connectionless) mode to call the open-meteo API directly — do not use an
+  Integration Service connector.
+
+  Validate the process.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  # ── BPMN file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro bpmn validate passes on the bpmn file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution checks ──────────────────────────────────────────────────
+  - type: run_command
+    description: "BPMN debug runs and output contains 'nice day' or 'bring a jacket'"
+    command: "python3 $REFERENCE_DIR/_shared/check_weather_bpmn.py"
+    timeout: 1050
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

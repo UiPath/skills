@@ -1,0 +1,131 @@
+task_id: skill-bpmn-devcon-billing-discrepancy-detector
+description: |
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a Maestro
+  BPMN process that queries the BillingDisputeERP and BillingDisputeCRM
+  entities as parallel branches joined by a parallel-gateway merge, then
+  computes an invoice overcharge; graded by validate plus one bpmn debug run
+  against seeded tenant data.
+
+  Ported from Flow `multi_node/billing_discrepancy_detector/billing_discrepancy_detector.yaml`;
+  the two Data Service reads are modeled as bpmn:sendTask nodes carrying the
+  registry Intsvc.ActivityExecution wrapper (connectorKey
+  uipath-uipath-dataservice, Query Entity Records) instead of Flow connector
+  nodes, the fan-out/merge as a bpmn:parallelGateway fork and join instead of
+  `core.logic.merge`, and `flow debug`'s single-call inline payload becomes an
+  ephemeral-solution import + `bpmn debug` + `debug-instance
+  variables-all`/`incidents` read. The live grading criterion's timeout is
+  raised from Flow's 600s to 1050s to cover the extra CLI steps (`solution
+  init`/`solution projects import`, separate `variables-all`/`incidents`
+  reads) that BPMN's live surface needs beyond Flow's single `flow debug`
+  call, matching multi_node/slack_weather_pipeline's precedent for the same
+  deviation.
+tags:
+  - uipath-maestro-bpmn
+  - e2e
+  - mode:build
+  - lifecycle:execute
+  - shape:multi-node
+  - connector
+  - path-to-ga
+
+# Parked (skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# skill gap: the Data Service where clause built from a process variable is malformed in both runs (400 'Expected a field name expression', then an empty interpolated value; CI runs 35538279757, 35783045540).
+skip: true
+
+run_limits:
+  max_turns: 120
+  turn_timeout: 2400
+  task_timeout: 3840
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+reference:
+  directory: ../..
+
+post_run:
+  - command: python3 _setup/cleanup_solutions.py
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath Maestro BPMN process "BillingDiscrepancyDetector" (in a
+  solution of the same name) with a manual start, that checks a disputed
+  invoice line against the contracted amount and pulls the customer's account
+  tier.
+
+  - Inputs: process variables `invoiceNumber` (string), `accountNumber`
+    (string), `disputedLineNumber` (number), `disputedUnitPrice` (number),
+    `disputedQuantity` (number).
+  - Look up two existing Data Service entities:
+      - `BillingDisputeERP` — rows for `invoiceNumber`; each has a `lineNumber`
+        and contracted `amount`.
+      - `BillingDisputeCRM` — the account row for `accountNumber`; it has an
+        `accountTier`.
+  - The two lookups are independent. Run them as parallel branches that fan out
+    from the start event and rejoin at a parallel-gateway join before computing
+    the result — do not chain them one after the other.
+  - Compute: invoiced = `disputedUnitPrice` x `disputedQuantity`; contracted =
+    the `amount` of the ERP row whose `lineNumber` equals `disputedLineNumber`;
+    `totalOvercharge` = invoiced minus contracted when positive, else 0;
+    `discrepancyCount` = 1 when overcharge is positive, else 0.
+  - Outputs: `totalOvercharge` (number), `discrepancyCount` (number),
+    `matchedInvoiceNumber` (string, first ERP row), `accountTier` (string, from
+    CRM).
+
+  Build both lookups on the UiPath Data Service Integration Service connector
+  (`uipath-uipath-dataservice`) Query Entity Records activity, not a native
+  Data Fabric node: the tenants this ships to do not all enable one.
+
+  Validate the final BPMN file — the task is not complete until `uip maestro
+  bpmn validate` passes. Grading then runs the process under `bpmn debug`
+  against live tenant data, so build it to actually run, not merely validate.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+
+success_criteria:
+  - type: run_command
+    description: uip maestro bpmn validate passes on the BPMN file
+    command: python3 $REFERENCE_DIR/_shared/validate_bpmn.py
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: Check requires a parallel-gateway join (parallel branches) and debugs once; process computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise
+    command: python3 $REFERENCE_DIR/_shared/check_billing_discrepancy_detector.py detector
+    timeout: 1050
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: 'Advisory: packed bindings_v2.json Connection resources exist and carry no stub UUIDs'
+    command: python3 $REFERENCE_DIR/_shared/check_billing_discrepancy_detector.py bindings
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
+  - type: run_command
+    description: 'Advisory: STRUCTURAL (covering): two DS queries (ERP + CRM) on MUTUALLY UNREACHABLE branches from the start event, converging on one bpmn:parallelGateway join that continues downstream; each filter computed from its own input; no answer literals; each output read from its own side'
+    command: python3 $REFERENCE_DIR/_shared/check_billing_discrepancy_detector.py advisory
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
