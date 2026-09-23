@@ -454,7 +454,10 @@ and honestly surfaced to the user as gaps when asked.
    running the process (`uip maestro bpmn debug`) and reading the invoking
    node's own output in `debug-instance variables-all` — a clean
    `validate`/`pack` proves nothing about whether the resource was ever
-   reached at runtime.
+   reached at runtime, or which key its output landed under. Map
+   `=result.<key>` to the key the real response used, never the declared
+   output-schema property name — a scalar output can surface under a
+   generic key instead, and a stale assumed key breaks the mapping silently.
 18. **Job-wrapper registry templates ship a resolvable-looking but broken
    context; do not paste it as served.** `Orchestrator.StartJob`,
    `Orchestrator.ExecuteApiWorkflowAsync`, `Orchestrator.BusinessRules`, and
