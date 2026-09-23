@@ -69,7 +69,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+"?core\.datafabric\.'
     min_count: 1
-    weight: 0
+    weight: 2.0
     pass_threshold: 0.0
 
   - type: command_executed
