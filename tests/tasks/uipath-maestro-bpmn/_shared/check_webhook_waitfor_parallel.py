@@ -59,6 +59,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     attr,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -86,17 +87,6 @@ def manual_start_events(root: ET.Element) -> list[ET.Element]:
         ):
             out.append(s)
     return out
-
-
-def node_inputs(el: ET.Element) -> list[ET.Element]:
-    return el.findall(".//uipath:input", NS)
-
-
-def context_value(el: ET.Element, name: str) -> str:
-    for inp in node_inputs(el):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
 
 
 def _is_empty_json_field(value: str) -> bool:

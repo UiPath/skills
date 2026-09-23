@@ -60,7 +60,7 @@ Assertion map (Flow → BPMN):
                     tolerance and same open GUESS as check_non_catalog_http_fallback.py)
                                   → ACTIVITY_TYPES tuple checked via has_type()
   T                collect uipath:input elements at any depth under the node
-                                  → all_inputs() uses `.//uipath:input`
+                                  → context_inputs() uses `.//uipath:input`
   T                endpoint value found in a context field, a sibling uipath:input's own
                     value/text, or inside the target="body" JSON payload (the skill does not pin
                     where the endpoint lands)
@@ -102,7 +102,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, fail, find_bpmn_file, parse_bpmn, resolve_project  # noqa: E402
+from _shared.bpmn_check import NS, context_inputs, fail, find_bpmn_file, has_type, parse_bpmn, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
@@ -146,19 +146,9 @@ COMPLETED_STATUSES = {"Completed", "Successful"}
 # (LIVE-ADDENDUM: a property of the CLI surface, not of what is graded).
 
 
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
-
-
-def all_inputs(el: ET.Element) -> list[ET.Element]:
-    # `.//` walks every uipath:input under the node at any depth -- agents
-    # sometimes nest body/query/path inputs inside uipath:context.
-    return el.findall(".//uipath:input", NS)
-
-
 def node_blob(el: ET.Element) -> str:
     parts = [ET.tostring(el, encoding="unicode")]
-    for inp in all_inputs(el):
+    for inp in context_inputs(el):
         parts.append(inp.attrib.get("name") or "")
         parts.append(inp.attrib.get("value") or "")
         parts.append(inp.text or "")

@@ -57,6 +57,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    context_inputs,
+    context_value,
     elements,
     fail,
     has_typed_uipath_extension,
@@ -74,23 +76,8 @@ _CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)
 _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
 
 
-def node_inputs(task: ET.Element) -> list[ET.Element]:
-    return task.findall(".//uipath:input", NS)
-
-
-def input_val(inp: ET.Element) -> str:
-    return inp.attrib.get("value") or (inp.text or "")
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return input_val(inp)
-    return ""
-
-
 def mentions_entity(task: ET.Element, entity: str) -> bool:
-    for inp in node_inputs(task):
+    for inp in context_inputs(task):
         value = inp.attrib.get("value") or ""
         text = inp.text or ""
         if entity in value or entity in text:

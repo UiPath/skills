@@ -133,6 +133,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
+    context_inputs,
+    context_value,
     elements,
     fail,
     find_bpmn_file,
@@ -203,37 +206,8 @@ COMPLETED_STATUSES = {"Completed", "Successful"}
 #    check_df_contractregistry_crud_filters.py -- no new _shared module) ─────
 
 
-def activity_root(task: ET.Element) -> ET.Element | None:
-    return task.find(".//uipath:activity", NS)
-
-
-def all_inputs(task: ET.Element) -> list[ET.Element]:
-    root_el = activity_root(task)
-    if root_el is None:
-        return []
-    return root_el.findall(".//uipath:input", NS)
-
-
 def input_val(inp: ET.Element) -> str:
     return inp.attrib.get("value") or (inp.text or "")
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in all_inputs(task):
-        if inp.attrib.get("name") == name:
-            return input_val(inp)
-    return ""
-
-
-def all_node_values(task: ET.Element) -> list[str]:
-    values: list[str] = []
-    for inp in all_inputs(task):
-        v = inp.attrib.get("value")
-        if v:
-            values.append(v)
-        if inp.text and inp.text.strip():
-            values.append(inp.text.strip())
-    return values
 
 
 def output_vars(task: ET.Element) -> list[str]:
@@ -482,7 +456,7 @@ def lookup() -> None:
 
 
 def has_nonempty_filter(task: ET.Element) -> bool:
-    for inp in all_inputs(task):
+    for inp in context_inputs(task):
         name = (inp.attrib.get("name") or "").strip().lower()
         value = input_val(inp)
         if name in FILTER_INPUT_NAMES and str(value).strip() not in ("", "{}", "[]"):
@@ -613,7 +587,7 @@ def derives_from(var_id: str, targets: set, var_sources: dict, extra_refs: dict,
 
 def filter_reference_ids(task: ET.Element) -> set:
     ids: set = set()
-    for inp in all_inputs(task):
+    for inp in context_inputs(task):
         value = input_val(inp)
         ids.update(re.findall(r"vars\.([A-Za-z0-9_]+)", value))
         parsed = parse_json_maybe(value)

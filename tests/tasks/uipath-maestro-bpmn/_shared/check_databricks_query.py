@@ -33,7 +33,7 @@ Assertion map (Flow -> BPMN):
   I  locate/parse .bpmn (file exists, well-formed XML)                       -> parse_bpmn("DatabricksQuery")
   T  inputs collected at any depth under uipath:activity (Flow read a
      single JSON `inputs.detail` dict; BPMN may nest context/path/query/
-     body inputs)                                                            -> node_inputs() / node_text_blob() walk `.//uipath:input`
+     body inputs)                                                            -> context_inputs() / node_text_blob() walk `.//uipath:input`
   T  curated objectName/method spelling as an alternate to a literal
      operation-name token match (registry curated activity; no
      generic-CRUD alternate form exists for this operation)                  -> references_op()
@@ -81,7 +81,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import NS, context_inputs, context_value, elements, fail, has_type, parse_bpmn  # noqa: E402
 
 JDBC_KEY = "uipath-uipath-jdbc"
 NATIVE_DATABRICKS_KEY = "uipath-databricks-databricks"
@@ -91,23 +91,6 @@ OP_TOKEN = "executequerysynchronously"
 
 def _normalize(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", text.lower())
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
-
-
-def node_inputs(task: ET.Element) -> list[ET.Element]:
-    # Any depth under the sendTask: agents sometimes nest body/query/path
-    # inputs inside uipath:context rather than as its siblings.
-    return task.findall(".//uipath:input", NS)
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in node_inputs(task):
-        if inp.attrib.get("name") == name:
-            return inp.attrib.get("value") or (inp.text or "")
-    return ""
 
 
 def node_text_blob(task: ET.Element) -> str:
