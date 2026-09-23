@@ -435,6 +435,18 @@ Author the field's helper call and keep going:
 channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 ```
 
+`.byEmail` is an **alias**, and aliases are generated onto the descriptor.
+`lookup()` takes two forms, and only one of them carries them:
+
+| form | when | helpers |
+| --- | --- | --- |
+| `lookup(SendMessageToUser, 'channel')` | you imported the descriptor `prepare` generated | `.byEmail(v)`, `.byRealName(v)`, … plus `.by(name, v)` |
+| `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | Generic CRUD, or no descriptor in hand | `.by(name, v)` only |
+
+Do not carry an alias from the first row into the second.
+There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
+Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
+
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
 and it is the only tenant call the whole loop needs:
