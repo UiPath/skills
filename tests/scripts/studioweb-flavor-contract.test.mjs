@@ -70,6 +70,7 @@ test("the default flavor keeps `uip solution init` (the guard is not vacuous)", 
 // `uip rpa init`.
 const RPA_SKILL = join("uipath-rpa", "SKILL.md");
 const RPA_READ_ONLY_HEADING = "## Studio Web Scope: Read and Analyze Only";
+const RPA_CLI_UNAVAILABLE = "The `uip rpa` CLI tool is not available in Studio Web.";
 const RPA_FORBIDDEN_INIT = "`uip rpa init <NAME>`";
 
 test("the built studioweb uipath-rpa skill is scoped to reading and analyzing", (t) => {
@@ -79,6 +80,7 @@ test("the built studioweb uipath-rpa skill is scoped to reading and analyzing", 
   const skill = readFileSync(join(output, RPA_SKILL), "utf8");
 
   assert.ok(skill.includes(RPA_READ_ONLY_HEADING), "studioweb uipath-rpa must open with the read-only scope");
+  assert.ok(skill.includes(RPA_CLI_UNAVAILABLE), "studioweb uipath-rpa must state that the uip rpa CLI is unavailable");
   assert.ok(
     skill.indexOf(RPA_READ_ONLY_HEADING) < skill.indexOf("## When to Use This Skill"),
     "the read-only scope must precede the When to Use section so the agent reads it first",
@@ -94,6 +96,7 @@ test("the default uipath-rpa skill keeps its full authoring scope", (t) => {
   const skill = readFileSync(join(output, RPA_SKILL), "utf8");
 
   assert.ok(!skill.includes(RPA_READ_ONLY_HEADING));
+  assert.ok(!skill.includes(RPA_CLI_UNAVAILABLE));
   assert.ok(skill.includes("## When to Use This Skill"));
   assert.ok(!skill.includes("skill-flavor:"), "built output must be marker-free");
 });

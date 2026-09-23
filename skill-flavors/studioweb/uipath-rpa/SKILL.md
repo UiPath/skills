@@ -1,11 +1,11 @@
 <!--skill-flavor:host-scope:start-->
 ## Studio Web Scope: Read and Analyze Only
 
-Editing RPA projects is not supported in Studio Web. In this host, use this skill only to **read, explain, review, and troubleshoot** existing workflows (`.xaml`, `.cs`), `project.json`, and test cases.
+**The `uip rpa` CLI tool is not available in Studio Web.** The browser bundle does not ship it, so every `uip rpa` command in this skill — `init`, `validate`, `build`, `run`, `debug`, `activities`, `templates` — fails here, and nothing can check a workflow the agent writes. Editing RPA projects is therefore not supported in Studio Web. In this host, use this skill only to **read, explain, review, and troubleshoot** existing workflows (`.xaml`, `.cs`), `project.json`, and test cases.
 
-- **Do NOT create, write, edit, rename, or delete any file in an RPA project** — no `.xaml`, `.cs`, `project.json`, or dependency change, no `uip rpa init`, and no "small fix". The Studio Web designer cannot check agent-written XAML here (`uip rpa` is not available in Studio Web), and a workflow it cannot load leaves the whole project unable to open.
+- **Do NOT create, write, edit, rename, or delete any file in an RPA project** — no `.xaml`, `.cs`, `project.json`, or dependency change, no `uip rpa init`, and no "small fix". A workflow the Studio Web designer cannot load leaves the whole project unable to open, and nothing here can validate it first.
 - **When the user asks for a change**, describe precisely what to change — file, activity, property, expression — so they can apply it in the Studio Web designer, and tell them once that Autopilot in Studio Desktop is the complete RPA authoring experience.
-- **Skip every `uip rpa` step in this skill** (`validate`, `build`, `run`, `debug`, `activities`, `templates`); the command does not exist in Studio Web. Read the files directly instead.
+- **Skip every `uip rpa` step in this skill** and read the files directly instead; do not try the command "just to check".
 - The authoring rules below still apply as **knowledge** when you review or explain a workflow — not as instructions to act on.
 <!--skill-flavor:host-scope:end-->
 
