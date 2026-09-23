@@ -189,6 +189,9 @@ initial_prompt: |
     skeleton warnings. Validation tolerates the skeleton warning; mocks
     cause harder-to-diagnose failures downstream.
   - Do NOT run `uip maestro case debug`.
+  - Stage "Closed" is deliberately task-less. `uip maestro case validate
+    --strict` reports `STRICT_STAGE_NO_TASKS` for it; that is expected here.
+    Log it and move on — do NOT add a task or a placeholder to silence it.
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
   {
@@ -204,6 +207,9 @@ initial_prompt: |
     "external_resources_to_register": ["<list of resource references the user must register, e.g. action-apps-index.json — Approve Contract>"],
     "validation_passed": true
   }
+  The task is NOT complete until `uip maestro case validate` has passed AND
+  report.json exists at the sandbox root. Write report.json before any
+  optional polish — it is the graded deliverable.
 
 success_criteria:
   - type: run_command
@@ -285,6 +291,6 @@ success_criteria:
 
 run_limits:
   expected_turns: 73
-  task_timeout: 900
-  max_turns: 120
-  turn_timeout: 900
+  task_timeout: 1200
+  max_turns: 150
+  turn_timeout: 1200

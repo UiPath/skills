@@ -2,11 +2,11 @@
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`.
+> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement` (when applicable per Case A vs B below), `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`.
 
 ## Purpose
 
-Append one secondary manual trigger to the schema. This plugin performs **two file writes as an atomic pair**:
+Add a manual trigger to a case. Adapts shape to whether any Trigger node already exists in `schema.nodes`: emits the initial `trigger_1` minimal shape if none, or a secondary trigger with full render fields if one or more exist. This plugin performs **two file writes as an atomic pair**:
 
 1. Append a `uipath.case.trigger` node to `caseplan.json.nodes`.
 2. Append a matching entry to `entry-points.json.entryPoints` (sibling of `caseplan.json`).
@@ -30,7 +30,16 @@ Position is not a user input. It is computed statefully (see below).
 
 ## ID generation
 
-- **Trigger node ID** — `trigger_` + 6 random chars from `[A-Za-z0-9]`. Algorithm per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
+- **Trigger node ID** — count existing Trigger nodes in `schema.nodes` **before** writing and branch:
+
+  ```text
+  existingTriggers = schema.nodes.filter(n => n.type === "uipath.case.trigger")
+  ```
+
+  - First-trigger path (zero existing): literal `trigger_1` (no randomness).
+  - Secondary path (one or more existing): `trigger_` + 6 random chars from `[A-Za-z0-9]`. Algorithm per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
+
+  Never mint a random id for the first trigger in a fresh caseplan — `trigger_1` is a fixed literal, same as the [timer](../timer/impl-json.md#id-generation) and [event](../event/impl-json.md) plugins.
 - **Entry-point `uniqueId`** — `crypto.randomUUID()`. Generate inline:
 
   ```bash
@@ -52,7 +61,30 @@ With `trigger_1` pre-seeded, the first secondary trigger without a display name 
 
 ## Recipe — `caseplan.json` (append to `schema.nodes`)
 
-Append (not prepend) the trigger node:
+Append (not prepend) the trigger node, in the shape the existing-trigger count selects.
+
+### Case A — zero existing triggers (first-trigger path)
+
+Emit the canonical first-trigger shape:
+
+```json
+{
+  "id": "trigger_1",
+  "type": "uipath.case.trigger",
+  "data": {
+    "description": "<description from sdd.md or LLM-inferred>",
+    "typeVersion": "1.0.0",
+    "display": { "label": "<displayName or \"Trigger 1\">" },
+    "inputs": { "serviceType": "None" }
+  }
+}
+```
+
+No `data.parentElement` in Case A. Studio Web hydrates layout on load.
+
+### Case B — one or more existing triggers (secondary-trigger path)
+
+Emit a secondary trigger with `data.parentElement` included:
 
 ```json
 {
@@ -104,12 +136,12 @@ If the second write fails, the `caseplan.json` mutation must be rolled back to a
 
 After writing, confirm:
 
-- `caseplan.json.nodes` contains the new node with the generated `trigger_XXXXXX` id, at the end of the array.
+- `caseplan.json.nodes` contains the new node with the branch-correct id (`trigger_1` in Case A, generated `trigger_XXXXXX` in Case B), at the end of the array.
 - `nodes[].type === "uipath.case.trigger"`.
 - `nodes[].data.display.label` matches the resolved `displayName`.
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
 - `nodes[].data.typeVersion === "1.0.0"`.
-- `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
+- `nodes[].data.parentElement` present in Case B, absent in Case A. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
 - `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
 - **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
