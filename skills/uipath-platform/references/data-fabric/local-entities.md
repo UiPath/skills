@@ -245,6 +245,20 @@ validates the project rather than building it.
 debug session through the solution's resources; it just is not editable as a
 project in the browser. A `solution download` will not contain it.
 
+Two consequences worth knowing before you reach for `upload`:
+
+- **An Entity-only solution has nothing to upload.** Omitting every project
+  would leave an empty cloud solution reported as a success, so `upload`
+  fails instead. That is a real shape — `entities create Product --local`
+  with no other project scaffolds exactly it. Ship it with
+  `uip solution pack` / `publish`, which is the path that deploys the
+  entity anyway.
+- **Upload the directory, not a prebuilt `.uis`.** The `.uis` bytes pass
+  through untouched, so nothing can omit a project from one; an archive
+  that already holds an Entity project is refused up front rather than sent
+  to fail with a bare `20039`. `uip solution upload <solution-dir>` is the
+  form that omits and reports.
+
 ---
 
 ## Validate is the loop
