@@ -76,6 +76,8 @@ For each entry in `caseShape.inputs[]`:
 
 For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
 
+> **The SDD never removes an entry.** `data.outputs[]` carries every `caseShape.outputs[]` entry with its `body` — `response`, `Error`, and any curated scalar — regardless of what the SDD references. An SDD row decides an entry's SHAPE only, never whether it exists: the bound leaves are emitted as ADDITIONAL bodyless extract rows alongside the spliced schema entry, not in place of it. A node whose bound leaves appear as standalone outputs with no `response` is a failed build. Full contract: [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache).
+
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
 ### Step 7 — Build task and write to caseplan.json
