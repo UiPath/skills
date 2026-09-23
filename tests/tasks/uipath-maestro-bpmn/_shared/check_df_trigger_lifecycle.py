@@ -39,10 +39,8 @@ Re-homing decisions vs the Flow grader:
     _porting/BATCH1-ADDENDUM.md -- so operation is matched by substring, tolerant of
     any casing/spelling the enrichment produces); for the downstream
     activities, the same curated-or-generic ``objectName`` classification as
-    the batch's CRUD checkers (``QueryEntityRecordsCurated|
-    QueryEntityRecords_V3``, ``GetEntityRecordByIdCurated|
-    GetEntityRecord_V3``, ``DeleteEntityRecordCurated|
-    DeleteEntityRecord_V3``, or the generic entity-object form with a
+    the batch's CRUD checkers (every catalog spelling of the operation --
+    plain, curated, ``_V3`` -- or the generic entity-object form with a
     matching ``operation``/``method``).
   - Flow's ``entityName``/``objectName`` equality becomes "the entity string
     appears as the value of ANY ``uipath:input`` of that node/trigger (any
@@ -123,9 +121,9 @@ TRIGGER_TYPE = "Intsvc.EventTrigger"
 CONTRACT_ENTITY = "ContractRegistry"
 FILE_ENTITY = "FileUploadVerify_20260618"
 
-QUERY_OBJECTS = {"QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
-GET_OBJECTS = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
-DELETE_OBJECTS = {"DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
+QUERY_OBJECTS = {"QueryEntityRecords", "QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
+GET_OBJECTS = {"GetEntityRecord", "GetEntityRecordById", "GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
+DELETE_OBJECTS = {"DeleteEntityRecord", "DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
 
 # The Data Service connector also has a GENERIC entity-CRUD form: objectName
 # is the entity name itself, and the operation is distinguished by the

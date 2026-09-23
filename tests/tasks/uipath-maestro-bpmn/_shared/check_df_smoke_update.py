@@ -72,10 +72,15 @@ ENTITY = "FlowCodeEvalEntity"
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 
-CREATE_CURATED_NAMES = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
-GET_CURATED_NAMES = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
-UPDATE_CURATED_NAMES = {"UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
-DELETE_CURATED_NAMES = {"DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
+CREATE_CURATED_NAMES = {"CreateEntityRecord", "CreateEntityRecordCurated", "CreateEntityRecord_V3"}
+GET_CURATED_NAMES = {
+    "GetEntityRecord",
+    "GetEntityRecordById",
+    "GetEntityRecordByIdCurated",
+    "GetEntityRecord_V3",
+}
+UPDATE_CURATED_NAMES = {"UpdateEntityRecord", "UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
+DELETE_CURATED_NAMES = {"DeleteEntityRecord", "DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
 
 EXPECTED_SCORE = "9.0"
 

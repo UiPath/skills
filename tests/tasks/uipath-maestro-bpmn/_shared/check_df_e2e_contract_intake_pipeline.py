@@ -22,9 +22,9 @@ modules" rule):
 CRUD-chain re-homing decisions vs the Flow grader:
   - ``node.type`` suffix matching (``.create-entity-record`` etc.) becomes an
     ``Intsvc.ActivityExecution`` sendTask matched on ``objectName`` against
-    the Data Service catalog: both the curated and ``_V3``/``V2`` spellings
-    are accepted for every operation, since Flow's node types did not
-    distinguish them. The connector also exposes a GENERIC entity-CRUD form
+    the Data Service catalog: every spelling the catalog serves for an
+    operation is accepted -- plain, curated/``V2``, and ``_V3`` -- since
+    Flow's node types did not distinguish them. The connector also exposes a GENERIC entity-CRUD form
     (``objectName`` is the entity name itself, operation read off context
     ``operation``/``method``) -- accepted alongside the curated form,
     matching this batch's other Data Fabric checkers.
@@ -142,11 +142,11 @@ CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 ENTITY = "ContractRegistry"
 
-CREATE_OBJECTS = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
-GET_OBJECTS = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
-QUERY_OBJECTS = {"QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
-UPDATE_OBJECTS = {"UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
-DELETE_OBJECTS = {"DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
+CREATE_OBJECTS = {"CreateEntityRecord", "CreateEntityRecordCurated", "CreateEntityRecord_V3"}
+GET_OBJECTS = {"GetEntityRecord", "GetEntityRecordById", "GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
+QUERY_OBJECTS = {"QueryEntityRecords", "QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
+UPDATE_OBJECTS = {"UpdateEntityRecord", "UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
+DELETE_OBJECTS = {"DeleteEntityRecord", "DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
 
 # The Data Service connector also has a GENERIC entity-CRUD form: objectName
 # is the entity name itself ("ContractRegistry") on every node, and the
