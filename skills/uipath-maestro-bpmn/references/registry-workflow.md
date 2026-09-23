@@ -145,6 +145,8 @@ against the live tenant, and its create and delete verbs leave records behind.
 The answer is already in `Parameters`/`RequestFields`. A failed `describe` is
 not a contract either. If it errors with `Operation '<x>' not found`, take the
 operation it lists and re-run, rather than authoring the node from a guess.
+The listed operation wins even when the verb reads oddly for the activity:
+Data Service models `DownloadFileFromRecordFieldV2` as `Create`, not `List`.
 
 The response adds an enrichment block with the live field metadata. Match the
 key case-insensitively — the CLI's output formatter has changed key casing
@@ -250,10 +252,10 @@ value, so pass `--operation Create`.
 ### Required `Parameters` are separate from the body — emit every one
 
 `uip is resources describe` reports `Parameters` alongside `RequestFields`.
-Each parameter is its own input, never folded into the body. Set the input's
-`target` to the parameter's own `Type`. `path`, `query` and `multipart` are
-what describe emits. Emit an input for every parameter marked `Required: true`,
-using its `DefaultValue` when the request has no better value:
+Each parameter is its own input, and its `target` is the parameter's own
+`Type`: `path`, `query`, `body` or `multipart` (`validator/bpmn-spec.json`).
+Emit an input for every parameter marked `Required: true`, using its
+`DefaultValue` when the request has no better value:
 
 ```xml
 <uipath:input name="entityName" target="path"      type="string" value="FlowCodeEvalEntity" />
@@ -266,6 +268,12 @@ using its `DefaultValue` when the request has no better value:
 A path parameter is required even though the context `path` field already
 shows it as a `{placeholder}`: the placeholder is the template, the input is
 the value.
+
+A `body`-typed parameter is the one exception to "its own input". The node
+already carries exactly one `target="body"` input holding the whole request
+object, and a second one does not merge: the last wins and the provider
+receives a bare scalar (see *Body shape* above). Carry that parameter as a
+field inside that single body object, under the name describe gives it.
 
 Omitting one is accepted by local validation and by `pack`, then fails only at
 runtime with `400` and `Value for required parameter '<name>' not found`. A
