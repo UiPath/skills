@@ -32,7 +32,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 1. **Windows only.** Check the OS before anything else. On macOS or Linux, stop and tell the user to run the migration from a Windows machine that holds the project. The tool is a .NET 8 desktop process and cannot run elsewhere.
 2. **Never run the tool in console mode.** Always pass `--output-format sarif` and redirect stdout to a file. Console mode opens an HTML report in the browser and prints no machine-readable result.
 3. **Never trust the exit code.** The tool exits 0 whether the migration succeeded, partially succeeded, or failed. Status comes only from the SARIF results, classified per [sarif-triage-guide.md](references/sarif-triage-guide.md).
-4. **Analyze before upgrade, every time.** Run `analyze`, triage it, and only then run `upgrade`. When the analyze triage shows no stop condition, proceed to `upgrade` without asking.
+4. **Analyze before upgrade, every time.** Run `analyze`, triage it, and only then run `upgrade`. When the analyze triage shows no stop condition, proceed to `upgrade` without asking, unless the user asked only for an analysis, a report or a plan: then stop after the triage, present the findings with the proposed treatment of each needs-attention item, and run `upgrade` only on the user's go.
 5. **Never write into the source project.** `upgrade` writes to a fresh sibling folder. Never point `--output-path` at `<PROJECT_DIR>`, never copy the output back over the source, never delete the source. The tool's own `.upgrade/` report folder inside the source is the only thing it writes there.
 6. **Never pass secrets through the agent.** Do not type `--orchestrator-pat` or `--orchestrator-application-secret` values yourself. When a tenant feed is required, rely on the tool's fallback to the local Studio or Robot connection; if that fails, hand the user the complete command with `<PLACEHOLDER>` values to run themselves.
 7. **Resolve the target UIAutomation package line explicitly.** When the project uses `UiPath.UIAutomation.Activities`, resolve the latest stable patch of a release line per [Step 2](#step-2--resolve-the-target-package-line) and pass it as `--uia-package-version=<UIA_VERSION>`. Extension options bind only in the `--name=value` form; the space-separated form parses without error and is silently ignored. Accept the tool default only when the feed is unreachable, and say so in the report. The target version is settled before the migration runs; the skill never edits package versions on the output afterwards to reach it.
@@ -116,7 +116,7 @@ Read the UIAutomation version in the summarizer's `Packages:` line (the `to` val
 
 | Analyze outcome | Action |
 |---|---|
-| No stop condition | Continue to Step 4 without asking. |
+| No stop condition | Continue to Step 4 without asking. When the user asked only for an analysis, a report or a plan (Rule 4), stop here instead: present the summary with the proposed treatment of each needs-attention item, and continue to Step 4 only on the user's go. |
 | `RESTORE-MISSING-PACKAGE` / `RESTORE-INCOMPATIBLE-PACKAGE` | Stop. Explain which package, offer the Orchestrator-feed command with placeholders (Rule 6) or `--ignore-missing-dependencies` with its consequences. Rerun analyze after the user acts. |
 | `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED` | Rule 9. Stop. |
 | Package guide stop condition | Follow the guide. |
