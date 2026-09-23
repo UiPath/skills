@@ -166,7 +166,7 @@ dropping and merging items while summarizing, then building from the summary.
 
 ## Workflow
 
-Work the five steps quickly, but keep the path matched to the user's ask. Treat
+Work the six steps quickly, but keep the path matched to the user's ask. Treat
 requests to discover before authoring, save raw registry JSON/evidence, or "do
 not author yet" as discovery-only even if they describe an eventual BPMN. In
 that mode, immediately create `registry-evidence/`, run and save `registry pull
@@ -221,8 +221,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
-   expression/error mappings, retry attributes), then run
-   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For a new local project, initialize the
+   expression/error mappings, retry attributes). Leave the diagram to step 5;
+   do not hand-author `bpmndi:*` while the source is still moving. For a new local project, initialize the
    supported scaffold with `uip maestro bpmn init <ProjectName> --output json`,
    edit at the returned `Data.Path`, and preserve its generated metadata. For a
    source-only draft the user has not asked to package or operate, pass
@@ -335,7 +335,22 @@ For registry-evidence-only tasks, follow the command-first recipe in
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-5. **Refresh derived metadata when package-ready output is required.** After
+5. **Lay out the diagram.** Once `validate` passes, after the last edit to the
+   `.bpmn`:
+
+   ```bash
+   uip maestro bpmn format <file.bpmn>
+   ```
+
+   This overwrites the file's `bpmndi:BPMNDiagram` in place, so the canvas
+   renders the process arranged instead of stacked at the origin. A node added
+   or renamed after a run has no shape — edit the source again and re-run it.
+   Every deliverable gets this, source-only drafts included. If `format`
+   reports `unknown command`, update the CLI (see
+   [references/cli-conventions.md](references/cli-conventions.md)); if
+   upgrading is unavailable, hand-author the fallback DI structure in
+   [references/structural-bpmn.md](references/structural-bpmn.md).
+6. **Refresh derived metadata when package-ready output is required.** After
    source validation passes, regenerate the four CLI-owned package files:
 
    ```bash
