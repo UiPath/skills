@@ -53,6 +53,7 @@ Until 2026-09-23 all 87 of these tasks copied `skills/uipath-maestro-bpmn` (368 
 No other skill family does this, nothing reads it — the skill arrives through the plugin catalog — and under the preview arm it put the *other* generation's guidance in the agent's cwd, which agents then read and followed instead of the SDK skill.
 That defeats the stated purpose of `flow-v2-preview.yaml` ("measures the Flow v2 authoring path rather than a mix of both generations").
 `template_sources` is for pre_run/post_run tooling and fixtures only; see tests/README.md.
+`scripts/check-task-driver.py` enforces this now — the README alone did not hold, because `_porting/PORTING-BRIEF.md` went on telling authors to add the line.
 
 **2. Prompts state the outcome, never the mechanism.**
 These two both prescribe the v1 path, and the second asks by hand for work the builder SDK's serializer and `bpmn format` do on their own:
@@ -75,6 +76,15 @@ The exception is a task that grades registry usage itself (`smoke/registry_disco
 `connector/registry_discovery.yaml`, `single_node/timer_start/timer_start.yaml`, and the
 `connector_features/` tasks whose criteria assert `registry pull`/`get`).
 There the registry IS the subject under test, so naming it is correct.
+
+**3. Never name a `references/*.md` file in a prompt.**
+`preview/skills/uipath-maestro-bpmn/references/` holds exactly one file, `bpmn-runtime.md`.
+`structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
+Read those documents as a task AUTHOR; write what the output must contain, and let each arm's skill decide how.
+
+**What is still open.** `flow-v2-preview.yaml` binds `$SKILLS_REPO_PATH` read-only, so the v1 skill tree stays *readable* from inside the preview container even though the working-directory copy is gone.
+Invariant 3 is what keeps that from mattering: nothing points an agent at it, so nothing finds it.
+Removing the mount is a separate change — plugin discovery depends on it.
 
 ## Contributor Commands
 

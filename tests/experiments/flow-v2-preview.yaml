@@ -10,8 +10,15 @@ description: >-
 # undo it from its own side. Until 2026-09-23 every uipath-maestro-bpmn task
 # staged the shipped v1 skill into the agent's working directory via
 # sandbox.template_sources, and preview-arm agents read that copy instead of the
-# SDK skill; their prompts also mandated the v1 registry/raw-XML mechanism. Both
-# are fixed — see the "Arm neutrality" section of
+# SDK skill; their prompts also mandated the v1 registry/raw-XML mechanism, and
+# named v1-only reference files that do not exist under preview/.
+#
+# Those are fixed, but the leak is NARROWED, NOT CLOSED: extra_mounts below still
+# binds $SKILLS_REPO_PATH read-only, so skills/uipath-maestro-bpmn/SKILL.md and
+# its references/ stay readable from inside the preview container. The cwd copy
+# — where agents demonstrably tripped over it — is gone; a `grep -r` or a prompt
+# naming references/structural-bpmn.md still lands there. So prompts must not
+# name a v1 reference file. See the "Arm neutrality" section of
 # tests/tasks/uipath-maestro-bpmn/README.md before adding tasks or prompts here.
 
 defaults:

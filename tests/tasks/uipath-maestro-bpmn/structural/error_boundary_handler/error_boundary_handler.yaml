@@ -20,8 +20,8 @@ initial_prompt: |
   Author a single Maestro BPMN file `InvoiceServiceRecovery.bpmn` in the working
   directory that recovers from a service failure with a boundary event:
     - a manual start,
-    - a task that posts an invoice to a downstream service (use the registry
-      service/HTTP node type of your choice),
+    - a task that posts an invoice to a downstream service (any service/HTTP
+      node type your skill offers),
     - an INTERRUPTING error boundary event (cancelActivity="true") attached to
       that task, referencing a declared bpmn:error that carries an errorCode,
     - on the happy path the task flows to a normal end event; when the boundary
@@ -30,8 +30,8 @@ initial_prompt: |
   Requirements:
   - Resolve any UiPath extension node's type and payload the way your skill
     prescribes; do not invent uipath:* XML from prose. Structural BPMN (boundary
-    event attachedToRef/cancelActivity, sequence flows, the declared bpmn:error)
-    comes from the skill's structural reference.
+    event attachedToRef/cancelActivity, sequence flows, the declared
+    bpmn:error) is yours to author.
   - The error referenced by the boundary event MUST declare an errorCode, and
     there must be at most one catch-all (no errorRef) error boundary per task.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for

@@ -29,7 +29,7 @@ initial_prompt: |
     prescribes; declare any variables in `<uipath:variables>`, each with an
     `elementId`. Do not invent uipath:* XML from prose.
   - Author the structural BPMN (definitions/process scaffold, sequence flows,
-    gateway conditions + default) per the skill's structural reference.
+    gateway conditions + default) the way your skill prescribes.
   - The emitted `.bpmn` MUST carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.
   - Validate the file with an explicit Bash command before finishing: run a

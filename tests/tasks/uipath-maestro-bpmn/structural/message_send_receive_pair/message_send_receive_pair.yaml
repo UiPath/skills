@@ -38,8 +38,8 @@ initial_prompt: |
     bpmn:messageEventDefinition.
   - The two events MUST share a consistent message reference (the same message
     name / correlation key) so the receive matches the send.
-  - Structural BPMN (sequence flows, the scaffold) comes from the skill's
-    structural reference. The emitted `.bpmn` must carry a complete
+  - Structural BPMN (sequence flows, the scaffold) is yours to author the way
+    your skill prescribes. The emitted `.bpmn` must carry a complete
     bpmndi:BPMNDiagram — a shape for every node (including both message events)
     and an edge for every sequence flow.
   - Validate the file locally before finishing by running

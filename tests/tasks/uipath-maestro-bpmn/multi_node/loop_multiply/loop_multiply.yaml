@@ -28,11 +28,11 @@ initial_prompt: |
   Requirements:
   - Apply `bpmn:multiInstanceLoopCharacteristics` with `isSequential="true"` to
     the script task, and bind the collection through the
-    `uipath:loopCharacteristics` extension (`inputCollection` and `inputElement`)
-    per the skill's structural reference — the registry serves no template for
-    this, author it from the canvas contract.
-  - Declare variables and author the script-task payload per the skill's
-    structural reference; do not invent uipath:* XML from prose.
+    `uipath:loopCharacteristics` extension (`inputCollection` and
+    `inputElement`) the way your skill prescribes. No registry template covers
+    the loop marker; author it from the canvas contract.
+  - Declare variables and author the script-task payload the way your skill
+    prescribes; do not invent uipath:* XML from prose.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.
 

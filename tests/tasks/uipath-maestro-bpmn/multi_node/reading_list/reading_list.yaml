@@ -36,8 +36,8 @@ initial_prompt: |
   Requirements:
   - Model filter and map as two distinct sequential script tasks (do not collapse
     both into one).
-  - Declare variables and author script-task payloads per the skill's structural
-    reference; do not invent uipath:* XML from prose.
+  - Declare variables and author script-task payloads the way your skill
+    prescribes; do not invent uipath:* XML from prose.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.
 

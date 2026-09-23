@@ -31,8 +31,8 @@ initial_prompt: |
   Requirements:
   - Resolve any UiPath extension node's type and payload the way your skill
     prescribes; do not invent uipath:* XML from prose. Structural BPMN (boundary
-    event attachedToRef/cancelActivity, timerEventDefinition, sequence flows)
-    comes from the skill's structural reference.
+    event attachedToRef/cancelActivity, timerEventDefinition, sequence flows) is
+    yours to author the way your skill prescribes.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node (including the boundary event) and an edge for every sequence
     flow.

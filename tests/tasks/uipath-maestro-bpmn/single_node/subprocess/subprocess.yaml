@@ -25,9 +25,9 @@ initial_prompt: |
     start event, an inner activity such as a scriptTask, and a nested end event)
     OR a bpmn:callActivity.
   - The top-level flow is: start -> container -> end.
-  - Author the structural BPMN per the skill's structural reference; do not
-    invent uipath:* XML from prose. If you add a scriptTask, keep it Jint-safe
-    (no Node.js/browser APIs).
+  - Author the structural BPMN the way your skill prescribes; do not invent
+    uipath:* XML from prose. If you add a scriptTask, keep it Jint-safe (no
+    Node.js/browser APIs).
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every visible node (including the container and its inner nodes) and an edge
     for every sequence flow.

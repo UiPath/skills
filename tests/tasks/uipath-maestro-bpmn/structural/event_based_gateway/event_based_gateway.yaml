@@ -34,8 +34,8 @@ initial_prompt: |
     events (that is the only valid target for an event-based gateway).
   - Resolve any UiPath extension node's type and payload the way your skill
     prescribes; do not invent uipath:* XML from prose. Structural BPMN (the
-    gateway, catch events, event definitions, sequence flows) comes from the
-    skill's structural reference.
+    gateway, catch events, event definitions, sequence flows) is yours to author
+    the way your skill prescribes.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.
   - Validate the file locally before finishing by running

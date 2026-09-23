@@ -26,8 +26,8 @@ initial_prompt: |
     variable, then reaches an end event.
 
   Requirements:
-  - Declare variables and author script-task payloads per the skill's structural
-    reference; do not invent uipath:* XML from prose.
+  - Declare variables and author script-task payloads the way your skill
+    prescribes; do not invent uipath:* XML from prose.
   - The exclusive gateway must have a condition on each non-default outgoing flow
     and exactly one default flow.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for

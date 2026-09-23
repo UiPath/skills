@@ -34,8 +34,8 @@ initial_prompt: |
   Requirements:
   - Resolve any UiPath extension node's type and payload the way your skill
     prescribes; do not invent uipath:* XML from prose. Plain structural BPMN
-    (start/end events, tasks, gateway, subprocess, sequence flows) comes from
-    the skill's structural reference.
+    (start/end events, tasks, gateway, subprocess, sequence flows) is yours to
+    author the way your skill prescribes.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node (including the event subprocess container and its nested nodes)
     and an edge for every sequence flow.

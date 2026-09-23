@@ -189,8 +189,61 @@ class TestDriverGate:
         assert "redundant with the Linux default" in out
 
 
-def test_live_corpus_passes_both_gates():
+class TestStagedSkillGate:
+    """Gate 3 — a skill directory in template_sources feeds the preview arm the
+    shipped v1 guidance and destroys the v1-vs-v2 comparison. Every
+    uipath-maestro-bpmn task did it until 2026-09-23; the README said not to and
+    the porting brief said to, so it needs a gate rather than a convention."""
+
+    def _write(self, tmp_path: Path, src_path: str) -> Path:
+        path = tmp_path / "task.yaml"
+        path.write_text(
+            textwrap.dedent(
+                f"""\
+                task_id: fixture-task
+                description: "fixture"
+                initial_prompt: "do a thing"
+                sandbox:
+                  template_sources:
+                    - type: template_dir
+                      path: {src_path}
+                success_criteria:
+                  - type: file_exists
+                    description: "exists"
+                    path: out.txt
+                    weight: 1.0
+                """
+            )
+        )
+        return path
+
+    def test_staged_skill_dir_fails(self, tmp_path):
+        rc, out = _run(self._write(tmp_path, "../../../../../skills/uipath-maestro-bpmn"))
+        assert rc == 1, out
+        assert "stage a skill directory" in out
+
+    def test_deeper_relative_path_is_caught_too(self, tmp_path):
+        # The porting brief told authors to "adjust the .. count to depth", so the
+        # gate must not key on one spelling.
+        rc, out = _run(self._write(tmp_path, "../../../../../../skills/uipath-maestro-flow"))
+        assert rc == 1, out
+        assert "stage a skill directory" in out
+
+    def test_setup_and_fixture_entries_are_left_alone(self, tmp_path):
+        rc, out = _run(self._write(tmp_path, "../_setup"))
+        assert rc == 0, out
+        assert "stage a skill directory" not in out
+
+    def test_a_fixture_dir_named_skills_something_is_not_a_skill(self, tmp_path):
+        # `skills/<name>` is the shape; a fixture that merely contains the word is not.
+        rc, out = _run(self._write(tmp_path, "fixtures/skills-inventory"))
+        assert rc == 0, out
+        assert "stage a skill directory" not in out
+
+
+def test_live_corpus_passes_every_gate():
     rc, out = _run(REPO_ROOT / "tests" / "tasks", REPO_ROOT / "tests" / "experiments")
     assert rc == 0, out
     assert "no task pins `sandbox.driver: tempdir`" in out
     assert "Windows-reachable hook command(s) are single-line" in out
+    assert "stage a skill directory" not in out

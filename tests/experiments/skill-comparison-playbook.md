@@ -128,18 +128,24 @@ Common false positives to watch for:
   A response's `messages[]` parts each carry a share of that response's duration, so group by
   `(started_at, completed_at)` to get one row per API call:
 
+  Walk every iteration, not just the first — with `--repeats 5` a `task.json` holds five,
+  and reading `iterations[0]` alone would have missed the 2026-09-22 stall had it landed in
+  iteration 3:
+
   ```bash
   python3 - path/to/task.json <<'PY'
   import json, sys
   from datetime import datetime
-  calls = {}
-  for m in json.load(open(sys.argv[1]))['iterations'][0]['messages']:
-      k = (m['started_at'], m['completed_at'])
-      s, t = calls.get(k, (0.0, 0))
-      calls[k] = (s + (m.get('generation_duration_ms') or 0) / 1000, t + (m.get('output_tokens') or 0))
-  for (start, end), (secs, tok) in sorted(calls.items()):
-      wall = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).total_seconds()
-      print(f"{start[11:19]}  gen={secs:7.1f}s  wall={wall:7.1f}s  {tok:5d} tok  {tok / secs if secs > 0.05 else 0:6.1f} tok/s")
+  for i, it in enumerate(json.load(open(sys.argv[1]))['iterations']):
+      calls = {}
+      for m in it['messages']:
+          k = (m['started_at'], m['completed_at'])
+          s, t = calls.get(k, (0.0, 0))
+          calls[k] = (s + (m.get('generation_duration_ms') or 0) / 1000, t + (m.get('output_tokens') or 0))
+      for (start, end), (secs, tok) in sorted(calls.items()):
+          wall = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).total_seconds()
+          rate = tok / secs if secs > 0.05 else 0
+          print(f"it{i}  {start[11:19]}  gen={secs:7.1f}s  wall={wall:7.1f}s  {tok:5d} tok  {rate:6.1f} tok/s")
   PY
   ```
 

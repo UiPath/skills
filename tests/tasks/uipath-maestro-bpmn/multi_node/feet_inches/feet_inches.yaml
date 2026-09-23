@@ -30,8 +30,8 @@ initial_prompt: |
   Requirements:
   - Each script task after the first must read a variable produced by an upstream
     script task (variable passing through the chain).
-  - Declare variables and author script-task payloads per the skill's structural
-    reference; do not invent uipath:* XML from prose.
+  - Declare variables and author script-task payloads the way your skill
+    prescribes; do not invent uipath:* XML from prose.
   - The tasks form one linear path (no gateways needed).
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.

@@ -30,8 +30,8 @@ initial_prompt: |
   - The exclusive gateway has at least 3 conditioned outgoing branches plus
     exactly one default branch; each branch reaches its own end event.
   - Author the structural BPMN (definitions/process scaffold, sequence-flow
-    conditions, gateway default) per the skill's structural reference; do not
-    invent uipath:* XML from prose.
+    conditions, gateway default) the way your skill prescribes; do not invent
+    uipath:* XML from prose.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.
   - Validate the file locally before finishing by running

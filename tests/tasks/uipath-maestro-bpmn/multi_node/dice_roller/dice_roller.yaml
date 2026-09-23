@@ -26,9 +26,9 @@ initial_prompt: |
     low branch, each reaching its own end event.
 
   Requirements:
-  - Declare variables and author the script-task payload per the skill's
-    structural reference; do not invent uipath:* XML from prose. The script runs
-    under Jint.
+  - Declare variables and author the script-task payload the way your skill
+    prescribes; do not invent uipath:* XML from prose. The script runs under
+    Jint.
   - The gateway must have a condition on the non-default branch and exactly one
     default flow.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
