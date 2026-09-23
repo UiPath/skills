@@ -92,7 +92,7 @@ success_criteria:
 
   - type: command_executed
     description: "Agent did not read the mocked inputs under mocks/ or fixtures/ directly"
-    command_pattern: '(?:(?:^|[\s;&|(`$"''])(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<).)*?(?<![\w.=!-])(?<!exclude=")(?<!exclude='')(?<!exclude ")(?<!exclude '')(?<!exclude )(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/[\w.*?\[-])|(?:(?:^|[\s;&(`$"''])(?<!\|\s)(?<!\|)(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<).)*?(?<=\s)(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/?(?=\s*(?:$|\||;|&|\n|\d*>|-|["'')])))|(?:"(?:file_path|path|file|filePath)":\s*"(?:[^"]*/)?(?:mocks|fixtures)(?:/|"))'
+    command_pattern: '(?:(?:^|[\s;&|(`$"''])(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|!).)*?(?<![\w.=!-])(?<!exclude=")(?<!exclude='')(?<!exclude ")(?<!exclude '')(?<!exclude )(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/[\w.*?\[-])|(?:(?:^|[\s;&(`$"''])(?<!\|\s)(?<!\|)(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|!).)*?(?<=\s)(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/?(?=\s*(?:$|\||;|&|\n|\d*>|-|["'')])))|(?:"(?:file_path|path|file|filePath)":\s*"(?:[^"]*/)?(?:mocks|fixtures)(?:/|"))'
     min_count: 0
     max_count: 0
     weight: 1.0
