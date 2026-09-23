@@ -14,11 +14,10 @@ tags:
   - feature:conversational
   - feature:escalation
   - feature:trigger
-  - no-sdd-input
 
-# Inherit agent from the experiment; override only allowed_tools — the Rule 16
+# Inherit agent from the experiment; override only allowed_tools — the Rule 15
 # design handoff loads the uipath-planner skill in the same conversation
-# (Skill tool); Agent/Task stay allowed for the Rule 18 inline-create path.
+# (Skill tool); Agent/Task stay allowed for the Rule 17 inline-create path.
 
 agent:
   type: claude-code

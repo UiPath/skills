@@ -11,7 +11,6 @@ tags:
   - shape:multi-node
   - feature:approval-gate
   - feature:conversational
-  - no-sdd-input
 
 run_limits:
   # Aligned to the design-task family (finalize_from_draft 4200/3600,
