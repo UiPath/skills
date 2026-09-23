@@ -1,0 +1,200 @@
+{
+  "SKILL.md": {
+    "Build gate": 1,
+    "Build-review preference": 2,
+    "Convert before authoring": 5,
+    "Empty lookup gate": 3,
+    "Handoff contract": 2,
+    "Phase 1 registry gate": 3,
+    "Read references to EOF before mutation": 1,
+    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 2,
+    "SDD is the sole post-design input, across sessions": 1,
+    "The build is lossless against the SDD": 2,
+    "Unresolved resources": 2
+  },
+  "references/brownfield.md": {
+    "Artifact I/O": 2,
+    "Never auto-debug or publish to Orchestrator": 2,
+    "Runnable resources and sidecars": 1,
+    "The build is lossless against the SDD": 1
+  },
+  "references/case-commands.md": {
+    "Artifact I/O": 1,
+    "Runnable resources and sidecars": 1,
+    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 2,
+    "The build is lossless against the SDD": 1
+  },
+  "references/case-editing-operations.md": {
+    "Artifact I/O": 3,
+    "Layout": 7,
+    "No authored edges": 6,
+    "Runnable resources and sidecars": 4
+  },
+  "references/case-schema.md": {
+    "Closed task types": 1,
+    "Design handoff and SDD authority": 4,
+    "Layout": 3,
+    "No authored edges": 3
+  },
+  "references/connector-integration.md": {
+    "Resolution audit": 1
+  },
+  "references/connector-trigger-impl.md": {
+    "Artifact I/O": 2,
+    "Empty lookup gate": 1,
+    "Unresolved resources": 1
+  },
+  "references/connector-trigger-planning.md": {
+    "Empty lookup gate": 2
+  },
+  "references/entry-points-sync.md": {
+    "The build is lossless against the SDD": 1
+  },
+  "references/implementation.md": {
+    "Artifact I/O": 1,
+    "Build-review preference": 1,
+    "Convert before authoring": 2,
+    "Empty lookup gate": 4,
+    "Never auto-debug or publish to Orchestrator": 2,
+    "No authored edges": 2,
+    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 1,
+    "The build is lossless against the SDD": 1
+  },
+  "references/phased-execution.md": {
+    "Build-review preference": 3,
+    "Empty lookup gate": 2,
+    "Never auto-debug or publish to Orchestrator": 2,
+    "No authored edges": 1,
+    "Runnable resources and sidecars": 3,
+    "The build is lossless against the SDD": 3,
+    "Unresolved resources": 1
+  },
+  "references/placeholder-tasks.md": {
+    "Empty lookup gate": 3,
+    "Resolution audit": 4
+  },
+  "references/planning.md": {
+    "Closed task types": 1,
+    "Empty lookup gate": 4,
+    "Handoff contract": 2,
+    "No authored edges": 1,
+    "Phase 1 registry gate": 1,
+    "Resolution audit": 3,
+    "SDD is the sole post-design input, across sessions": 2
+  },
+  "references/plugins/case/impl-json.md": {
+    "The build is lossless against the SDD": 2
+  },
+  "references/plugins/case/planning.md": {
+    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 1
+  },
+  "references/plugins/conditions/stage-entry-conditions/planning.md": {
+    "No authored edges": 1,
+    "SDD is the sole post-design input, across sessions": 1
+  },
+  "references/plugins/sla/impl-json.md": {
+    "Design handoff and SDD authority": 2,
+    "SDD is the sole post-design input, across sessions": 2
+  },
+  "references/plugins/sla/planning.md": {
+    "Design handoff and SDD authority": 1
+  },
+  "references/plugins/stages/impl-json.md": {
+    "Layout": 2,
+    "No authored edges": 2
+  },
+  "references/plugins/stages/planning.md": {
+    "No authored edges": 1
+  },
+  "references/plugins/tasks/agent/impl-json.md": {
+    "Empty lookup gate": 1
+  },
+  "references/plugins/tasks/agent/planning.md": {
+    "Empty lookup gate": 4,
+    "Resolution audit": 1
+  },
+  "references/plugins/tasks/api-workflow/impl-json.md": {
+    "Empty lookup gate": 1
+  },
+  "references/plugins/tasks/api-workflow/planning.md": {
+    "Empty lookup gate": 4,
+    "Resolution audit": 1
+  },
+  "references/plugins/tasks/case-management/planning.md": {
+    "Resolution audit": 1
+  },
+  "references/plugins/tasks/connector-activity/impl-json.md": {
+    "Artifact I/O": 2,
+    "Closed task types": 1,
+    "Unresolved resources": 5
+  },
+  "references/plugins/tasks/connector-activity/planning.md": {
+    "Empty lookup gate": 5,
+    "Resolution audit": 1
+  },
+  "references/plugins/tasks/connector-trigger/impl-json.md": {
+    "Closed task types": 1,
+    "Unresolved resources": 5
+  },
+  "references/plugins/tasks/connector-trigger/planning.md": {
+    "Empty lookup gate": 3,
+    "Resolution audit": 1
+  },
+  "references/plugins/tasks/create-inline-common.md": {
+    "Empty lookup gate": 1
+  },
+  "references/plugins/tasks/process/planning.md": {
+    "Resolution audit": 1
+  },
+  "references/plugins/tasks/rpa/planning.md": {
+    "Resolution audit": 1
+  },
+  "references/plugins/triggers/event/impl-json.md": {
+    "Artifact I/O": 1,
+    "Build gate": 1,
+    "Layout": 2,
+    "No authored edges": 2,
+    "The build is lossless against the SDD": 3
+  },
+  "references/plugins/triggers/event/planning.md": {
+    "Empty lookup gate": 3,
+    "No authored edges": 1,
+    "Resolution audit": 1
+  },
+  "references/plugins/triggers/manual/impl-json.md": {
+    "Layout": 2,
+    "No authored edges": 1
+  },
+  "references/plugins/triggers/timer/impl-json.md": {
+    "Layout": 2,
+    "No authored edges": 1
+  },
+  "references/plugins/variables/bindings/impl-json.md": {
+    "Empty lookup gate": 1
+  },
+  "references/plugins/variables/global-vars/impl-json.md": {
+    "Convert before authoring": 1,
+    "The build is lossless against the SDD": 1
+  },
+  "references/plugins/variables/global-vars/planning.md": {
+    "The build is lossless against the SDD": 1
+  },
+  "references/plugins/variables/io-binding/impl-json.md": {
+    "Empty lookup gate": 7
+  },
+  "references/registry-discovery.md": {
+    "Artifact I/O": 1,
+    "Closed task types": 2,
+    "Empty lookup gate": 2,
+    "Handoff contract": 2,
+    "Phase 1 registry gate": 2,
+    "Resolution audit": 2,
+    "Runnable resources and sidecars": 1
+  },
+  "references/sla-response-shapes.md": {
+    "Global events and SLA responses": 1
+  },
+  "references/validator-codes.md": {
+    "The build is lossless against the SDD": 1
+  }
+}
