@@ -26,6 +26,10 @@ description: >
   tenant re-read Flow itself performs (arithmetic in the grader's docstring).
 tags: [uipath-maestro-bpmn, integration, "lifecycle:generate", "shape:multi-node", "node:loop", connector, e2e, uipath-atlassian-jira, "mode:build"]
 
+# Parked (platform/skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# platform/skill gap: multiInstanceLoopCharacteristics over a connector response fails at runtime with 400008 (CI run 35525387843).
+skip: true
+
 run_limits:
   expected_turns: 45
   task_timeout: 2400

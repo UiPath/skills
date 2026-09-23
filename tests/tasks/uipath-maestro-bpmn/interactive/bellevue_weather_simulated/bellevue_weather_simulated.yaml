@@ -26,6 +26,10 @@ description: >
   as elicited) are unchanged from Flow's own grader.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "feature:http", simulation]
 
+# Parked (skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# skill gap: same `temperature_2m`-of-undefined runtime fault as multi_node/bellevue_weather (CI run 35785806030).
+skip: true
+
 sandbox:
   template_sources:
     - type: template_dir

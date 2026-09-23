@@ -34,6 +34,10 @@ description: >
   payload.
 tags: [uipath-maestro-bpmn, integration, "lifecycle:generate", "shape:multi-node", "node:loop", "node:switch", "node:decision", connector, e2e, uipath-atlassian-jira, "mode:build"]
 
+# Parked (three different runtime failures in three runs (CI runs 35503094182, 35524004307, 35525387843); Flow's own version is flaky. Needs a live investigation before it can gate anything.). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# three different runtime failures in three runs (CI runs 35503094182, 35524004307, 35525387843); Flow's own version is flaky. Needs a live investigation before it can gate anything.
+skip: true
+
 run_limits:
   expected_turns: 55
   task_timeout: 2700

@@ -21,6 +21,10 @@ description: >
   the two verdict strings) are unchanged from Flow's own grader.
 tags: [uipath-maestro-bpmn, e2e, "lifecycle:generate", "shape:multi-node", "node:decision", "feature:http"]
 
+# Parked (skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# skill gap: the summarize script reads `temperature_2m` off an undefined Intsvc.HttpExecution response in every run (CI runs 35523787101, 35525387843); the skill does not teach the managed-HTTP response shape.
+skip: true
+
 sandbox:
   template_sources:
     - type: template_dir

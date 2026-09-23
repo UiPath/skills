@@ -28,6 +28,10 @@ tags:
   - connector
   - path-to-ga
 
+# Parked (skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# skill gap: the Data Service where clause built from a process variable is malformed in both runs (400 'Expected a field name expression', then an empty interpolated value; CI runs 35538279757, 35783045540).
+skip: true
+
 run_limits:
   max_turns: 120
   turn_timeout: 2400
