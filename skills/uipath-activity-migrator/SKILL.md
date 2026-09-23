@@ -161,7 +161,7 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 <items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
 ### Fixes applied (<F>)              <- only when the post-migration fix or the runtime loop edited the output
-- <file>: <activity> — <what was changed>   <- loop fixes end with (fix <n>, fix guide | annotation | hypothesis); a delegated edit adds its hand-back path
+- <file>: <activity> — <what was changed>   <- loop fixes end with (fix <n>, fix guide | annotation | hypothesis)
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Runtime check                    <- only when the user said yes
@@ -171,7 +171,6 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 ### Next steps
 - Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.   <- drop the Debug clause when the runtime check passed
 - <package-specific runtime prerequisites, only when a package guide lists one>
-- <a concern a delegated edit handed back that needs your decision, and the reason it was left as is>   <- only when the runtime loop delegated an edit; one line per decision, per the runtime guide's Report section; the rest is in the saved hand-back
 ```
 
 ## Package Routing
