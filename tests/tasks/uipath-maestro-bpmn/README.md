@@ -82,9 +82,9 @@ There the registry IS the subject under test, so naming it is correct.
 `structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
 Read those documents as a task AUTHOR; write what the output must contain, and let each arm's skill decide how.
 
-**What is still open.** `flow-v2-preview.yaml` binds `$SKILLS_REPO_PATH` read-only, so the v1 skill tree stays *readable* from inside the preview container even though the working-directory copy is gone.
+**What is still open.** `flow-v2-preview.yaml`'s `extra_mounts` binds the repo root read-only, so the v1 skill tree stays *readable* from inside the preview container even though the working-directory copy is gone.
 Invariant 3 is what keeps that from mattering: nothing points an agent at it, so nothing finds it.
-Removing the mount is a separate change — plugin discovery depends on it.
+Removing that mount is a separate change — plugin discovery depends on it.
 
 ## Contributor Commands
 
