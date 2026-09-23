@@ -1,0 +1,192 @@
+task_id: skill-bpmn-slack-channel-description-simulated
+description: >
+  Single-connector Slack BPMN process (read a channel's description and output
+  it), driven by a simulated non-technical user who withholds the channel and
+  project name until asked. Tests the agent's ability to clarify an ambiguous
+  ask before building. Executes: builds a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper for the uipath-salesforce-slack connector,
+  validates, then runs an ephemeral-solution import + `bpmn debug` and asserts
+  the fetched channel description (the Bellevue office address) lands in the
+  runtime outputs — needs a live Slack connection.
+  Ported from Flow `interactive/slack_channel_description_simulated/slack_channel_description_simulated.yaml`;
+  the connector node is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper (connectorKey uipath-salesforce-slack;
+  `uip is activities list uipath-salesforce-slack`: curated GetConversationInfo,
+  objectName ConversationsInfo_GET, method GETBYID) instead of a Flow
+  connector node, `flow debug`'s single-call inline payload becomes an
+  ephemeral-solution import + `bpmn debug` + `debug-instance
+  variables-all`/`incidents` read (mirroring the CI-passing non-simulated BPMN
+  sibling, multi_node/slack_channel_description), and the live criterion's
+  timeout is raised from Flow's 600s to 1050s for the same reason that
+  sibling's was: the extra CLI steps (`solution init`/`solution projects
+  import`, separate `variables-all`/`incidents` reads) that BPMN's live
+  surface needs beyond Flow's single `flow debug` call. All five of Flow's
+  success criteria are carried over one-for-one, in Flow's order, with Flow's
+  weights and pass_thresholds: validate, an advisory `command_executed` on
+  `bpmn debug` (translating Flow's advisory on `flow debug`), the live domain
+  grader, a static `office-bellevue`/channel-ID check (translating Flow's
+  `flow_contains.py --regex` call into an inline `python3 -c` scan of every
+  `.bpmn` file, since BPMN has no `flow_contains.py` equivalent), and the
+  withheld-project-name advisory.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", connector, simulation]
+
+# Parked (skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# skill gap: the agent lists only page 1 of Slack conversations, so the target channel never appears (CI run 35789221753); Flow's version fully passes 4/12 nightlies.
+skip: true
+
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below. Flow's run_limits, verbatim.
+  max_turns: 70
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+reference:
+  directory: ../..
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical office manager. You have heard of UiPath but have
+    never built a process yourself. You speak in plain English, never in code.
+    You are friendly but impatient: if the agent dithers, prod it to just
+    build something. You cannot read or write code — if the agent shows you
+    code, say "I trust you, just make it work."
+
+  goal: |
+    You want a UiPath Maestro BPMN process that grabs the description text off
+    one of your team's Slack channels and shows it to you.
+
+    OPENING MESSAGE: open the way you would to a colleague — a couple of short
+    sentences covering the outcome you want plus the details that matter to
+    you: the channel is #office-bellevue in Slack, you want that channel's
+    description text as the result, and it has to work on its own without you
+    supplying the channel every time it runs. Say that it has to be built as a
+    UiPath Maestro BPMN process — not an API workflow, not a standalone
+    script — inside a solution of the same name, and that you want it
+    validated before you sign off. Do not name files or paths and do not use
+    technical wording. Close by inviting the agent to ask you anything it
+    needs before it starts building. Keep the withheld items below to
+    yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "SlackChannelDescription".
+      - You do not require the project to execute before signing off.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'connector' or 'node' unless the agent brings them up first."
+    - "The process must work for #office-bellevue without you supplying anything at run time. If the agent asks you to provide a channel ID when it runs, tell it to wire the #office-bellevue channel in directly so it runs unattended."
+    - "Do not reveal the project name 'SlackChannelDescription' unless asked what to name it."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro BPMN process at all (e.g. an API workflow), tell it you specifically want a Maestro BPMN process — i.e. a `.bpmn` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the process, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-salesforce-slack=uipath-maestro-flow'
+    timeout: 120
+
+success_criteria:
+  # Name-agnostic: any unambiguous generated .bpmn must validate. The exact
+  # project name is scored separately below.
+  - type: run_command
+    description: "uip maestro bpmn validate passes (any .bpmn)"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory (non-gating): did the agent itself run `bpmn debug` during the
+  # session, translating Flow's "Advisory: live-v1 agent ran flow debug"
+  # command_executed check (same weight/pass_threshold/description).
+  - type: command_executed
+    description: "Advisory: live-v1 agent ran flow debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+
+  # Runtime check (mirrors the non-simulated BPMN sibling's
+  # check_channel_description.py, and Flow's own check_channel_description_simulated.py):
+  # a node targets the Slack connector AND bpmn debug retrieves the channel
+  # description into the runtime outputs (the Bellevue office address).
+  # Supersedes a static connector-key grep, which a process that never
+  # executes would still pass. THIS is the authoritative proof the correct
+  # channel was targeted — a wrong or unresolved channel fails here regardless
+  # of whether the process still names #office-bellevue anywhere.
+  # Timeout raised from Flow's 600s to 1050s — see the module docstring in
+  # check_channel_description_simulated.py for the arithmetic (solution init +
+  # import + debug + variables-all + incidents), the same raise the
+  # non-simulated sibling already made for the identical live sequence.
+  - type: run_command
+    description: "BPMN debug runs; Slack connector executed and output has the channel description"
+    command: "python3 $REFERENCE_DIR/_shared/check_channel_description_simulated.py"
+    timeout: 1050
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # The channel #office-bellevue is a withheld requirement the persona reveals only
+  # when asked which channel. The runtime debug check above already PROVES the right
+  # channel was read (its description IS the Bellevue office address); this static
+  # check separately reports whether a specific channel was elicited and wired in.
+  #
+  # The Slack "Get Channel Info" activity (/ConversationsInfo/{conversationsInfoId})
+  # is keyed by channel ID, so a correct process resolves "#office-bellevue" -> its
+  # channel ID (e.g. C0B50H7DE2F) and stores the ID — the human-readable name
+  # legitimately never survives into the .bpmn. A bare `office-bellevue` substring
+  # grep therefore FALSE-FAILS every correct implementation. So we pass on EITHER:
+  #   (a) the process still names #office-bellevue (e.g. kept on an element label), OR
+  #   (b) the connector node has a resolved Slack channel ID hardwired into the
+  #       conversationsInfoId path parameter (a specific channel, not a run-time
+  #       input the persona explicitly forbade). Case (b) is not coupled to any one
+  #       workspace's ID — it matches the Slack channel-ID shape, and the runtime
+  #       check above confirms it's the *correct* channel.
+  # Non-gating (pass_threshold 0): a legitimate ID-based encoding must never
+  # hard-fail the whole task — see the block comment; scored for signal only.
+  # Translates Flow's `flow_contains.py --regex '...'` call (identical regex) into
+  # an inline python3 scan of every .bpmn under the sandbox, since BPMN has no
+  # flow_contains.py equivalent in _shared/.
+  - type: run_command
+    description: "Flow targets the #office-bellevue channel (elicited from the user)"
+    command: "python3 -c 'import glob, re, sys; pat = re.compile(r\"(?i)(office-bellevue|conversationsInfoId[^A-Za-z0-9]+C[A-Z0-9]{6,})\"); paths = [p for p in glob.glob(\"**/*.bpmn\", recursive=True) if \"node_modules\" not in p]; sys.exit(0 if any(pat.search(open(p, encoding=\"utf-8\").read()) for p in paths) else 1)'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it
+  # only if asked what to name it) — the process behaves identically whatever
+  # it's called. Non-gating: reports whether the agent elicited the exact name
+  # (score 1/0), but pass_threshold 0 keeps a cosmetic miss from failing the
+  # task and the low weight keeps it from dominating the score.
+  - type: run_command
+    description: "Project/BPMN file is named SlackChannelDescription (elicited from the user)"
+    command: 'find . -name "SlackChannelDescription.bpmn" | grep -q .'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
