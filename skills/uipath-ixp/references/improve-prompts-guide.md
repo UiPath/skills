@@ -185,7 +185,7 @@ For each field marked REFINE, rewrite its `instructions`:
 Focus on **what** to extract and **where** to find it. Do NOT specify format — the entity_def (field type) already handles that.
 
 - **Minimum length**: 120+ characters. Short instructions like "Extract the date" are too vague.
-- **Maximum length**: 4096 characters, at every level (field, field group, overall project prompt). The CLI rejects a longer value before sending it, so trim before you submit.
+- **Maximum length**: 4096 characters, at every level (field, field group, overall project prompt). A longer value is rejected and nothing is saved, so trim before you submit.
 - **Location hint**: describe WHERE in the document (section, header area, table, near a label). Keywords: "section", "header", "table", "top of", "labeled", "near".
 - **Real example**: include an actual value from the documents (e.g., "Example: '2106732'", "Example: 'SINV0077023'").
 - **Disambiguation**: if similar fields exist, clarify what NOT to extract (e.g., "Do NOT confuse with PO Number").
