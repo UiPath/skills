@@ -8,8 +8,9 @@
 // stdout is a short summary: status, counts, blockers, and what needs attention grouped by reason
 // and by file. Items are listed inline only when there are few (INLINE_LIMIT).
 // Status: failed = the tool stopped the run (an error-level result with no file location, its own stop rule)
-// or an extension reported a project-level blocker; unknown = validation never reported (a project without
-// workflows, or the Validate step failed as a whole); partial = anything left to do; success = notes only.
+// or an extension reported a project-level blocker; unknown = no validation result found (a project without
+// workflows, the Validate step failed as a whole, or a tool build with other validation rule ids); partial =
+// anything left to do; success = notes only.
 // A `failed` without blockers and every `unknown` carry a Reason line.
 // Input may be UTF-8 (with or without BOM) or UTF-16 (PowerShell 5.1 redirection).
 // No dependencies. Node 18+.
@@ -230,7 +231,7 @@ else if (results.length === 0) {
   // Validation reports once per workflow it reached; a completed run always carries that or a project copy.
   const why = stepFailures.length
     ? `a step failed as a whole (${stepFailures.map((e) => e.message).join('; ')})`
-    : 'no workflow reached validation, as for a project without workflows or one whose every workflow failed earlier';
+    : 'a project without workflows, one whose every workflow failed earlier, or a tool build that reports validation under other rule ids, listed below under rules outside the known families';
   status = byLevel.error > 0 ? 'failed' : 'unknown';
   statusReason = `validation never reported: ${why}${byLevel.error > 0 ? `; ${byLevel.error} error-level result(s) explain it, see the per-file issues` : ''}`;
 } else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'partial';
@@ -378,6 +379,7 @@ if (outFile) {
   section('Productivity warnings', productivity.warnings, itemLine);
   section('UIA warnings (activity and property), informational', uia.warnings.filter((e) => !e.message.includes(ACTION_TAG)), itemLine);
   section('UIA workflow-level', uia.workflow, (e) => `- ${e.file || '(project)'} — ${e.rule}: ${e.message}`);
+  section('Rules outside the known families (read their descriptions in tool.driver.rules)', unknownRules, ([id, v]) => `- ${id} [${v.level}] ×${v.count}`);
   md.push('', '## Rule counts', '| Rule | Level | Count |', '|---|---|---|');
   for (const [id, v] of Object.entries(byRule).sort((a, b) => b[1].count - a[1].count)) md.push(`| ${id} | ${v.level} | ${v.count} |`);
   writeFileSync(outFile, md.join('\n') + '\n', 'utf8');
