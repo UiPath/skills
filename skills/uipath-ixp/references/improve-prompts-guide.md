@@ -21,7 +21,7 @@ Before starting, understand the limits of prompt iteration:
 
 Prompts live at two levels and are edited by two separate commands:
 
-- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name.
+- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
 - **`uip ixp groups update-prompts <project> --updates <json>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
 
 Each command matches by its supplied identity and updates only the named entries, preserving every definition you didn't change. Field updates are identified by group name plus field name; group updates are identified by group name. To update both field and group instructions in the same iteration, run the two commands back-to-back.

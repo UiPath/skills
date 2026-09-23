@@ -56,10 +56,10 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  # An entry is addressed by `group` + `name`, and `update-prompts` reports an
-  # unmatched entry WITHOUT failing — so a reworded name is a silent no-op. Both
-  # names are exact from _setup/fixtures/taxonomy.json (`Invoice Header` >
-  # `Invoice Number`); the mock fails every read, so the prompt supplies them.
+  # An entry is addressed by `group` + `name`, and `update-prompts` fails when
+  # either combination is not found. Both names are exact from
+  # _setup/fixtures/taxonomy.json (`Invoice Header` > `Invoice Number`); the
+  # mock fails every read, so the prompt supplies them.
   - type: file_matches_regex
     description: "CLI received the structured `Invoice Header` > `Invoice Number` update with the requested instruction"
     path: "mocks/calls.log"
