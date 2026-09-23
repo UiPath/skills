@@ -13,18 +13,31 @@ teardown, because Flow's own checker never re-reads the tenant or deletes the
 posted message and this task's Flow `post_run` never sweeps Slack either).
 
 Assertion map (Flow → BPMN):
-  F check_escalation_slack_alert.py:44        assert_flow_uses_connector_target(SLACK_KEY)          -> resolve_contract(): ids_for(*SLACK_SEND) via index_runtime_connectors
-  F check_escalation_slack_alert.py:45        assert_connector_send_identity(key, "user", ...)      -> resolve_contract(): send_as input == "user" on every slack_send_id
-  F check_escalation_slack_alert.py:58        run_debug(inputs=case["inputs"], retries=1)           -> ephemeral `solution init` + `solution projects import` (sha256-pinned) + bpmn_live.run_debug(project_dir, inputs, log)
-  F flow_check.py:551-552 (run_debug's own exact-match status gate)                                  -> assert_outcome(): FinalStatus == "Completed"
-  F check_escalation_slack_alert.py:63-64     assert_named_equals(payload, name, expected)          -> assert_outcome(): assert_named_equals(actual, name, expected) per output (severity, engineeringNeeded, caseKey)
-  F flow_check.py:1445-1464                   completed_node_ids_of_type(payload, "script")         -> resolve_contract(): classifier_ids = every bpmn:scriptTask id
-  F check_escalation_slack_alert.py:66-88     sev_scripts / next_steps binding (same node, both fields) -> bind_classifier(): severity AND nextSteps must come from the SAME scriptTask's own output
-  F flow_check.py:1328-1334                   slackMessageId ts-shape gate                          -> assert_outcome(): SLACK_TS_RE match on the exposed output
-  F flow_check.py:1339-1355                   >=1 Completed connector node in the debug trace        -> assert_outcome(): >=1 "completed" element among contract.slack_send_ids
-  F flow_check.py:1357-1384                   mapped id must equal an executed send's OWN response ts -> assert_outcome(): match slackMessageId against a slack_send_ids element's response["ts"]
-  F flow_check.py:1386-1394                   posted channel must equal expected_channel              -> assert_outcome(): matched response["channel"] == SLACK_CHANNEL
-  F flow_check.py:1395-1405                   must_contain: correlationId, severity, nextSteps        -> assert_outcome(): matched response["message"]["text"] contains all three
+  F check_escalation_slack_alert.py:44        assert_flow_uses_connector_target(SLACK_KEY)
+      -> resolve_contract(): ids_for(*SLACK_SEND) via index_runtime_connectors
+  F check_escalation_slack_alert.py:45        assert_connector_send_identity(key, "user", ...)
+      -> resolve_contract(): send_as input == "user" on every slack_send_id
+  F check_escalation_slack_alert.py:58        run_debug(inputs=case["inputs"], retries=1)
+      -> ephemeral `solution init` + `solution projects import` (sha256-pinned) + bpmn_live.run_debug(project_dir,
+         inputs, log)
+  F flow_check.py:551-552 (run_debug's own exact-match status gate)
+      -> assert_outcome(): FinalStatus == "Completed"
+  F check_escalation_slack_alert.py:63-64     assert_named_equals(payload, name, expected)
+      -> assert_outcome(): assert_named_equals(actual, name, expected) per output (severity, engineeringNeeded, caseKey)
+  F flow_check.py:1445-1464                   completed_node_ids_of_type(payload, "script")
+      -> resolve_contract(): classifier_ids = every bpmn:scriptTask id
+  F check_escalation_slack_alert.py:66-88     sev_scripts / next_steps binding (same node, both fields)
+      -> bind_classifier(): severity AND nextSteps must come from the SAME scriptTask's own output
+  F flow_check.py:1328-1334                   slackMessageId ts-shape gate
+      -> assert_outcome(): SLACK_TS_RE match on the exposed output
+  F flow_check.py:1339-1355                   >=1 Completed connector node in the debug trace
+      -> assert_outcome(): >=1 "completed" element among contract.slack_send_ids
+  F flow_check.py:1357-1384                   mapped id must equal an executed send's OWN response ts
+      -> assert_outcome(): match slackMessageId against a slack_send_ids element's response["ts"]
+  F flow_check.py:1386-1394                   posted channel must equal expected_channel
+      -> assert_outcome(): matched response["channel"] == SLACK_CHANNEL
+  F flow_check.py:1395-1405                   must_contain: correlationId, severity, nextSteps
+      -> assert_outcome(): matched response["message"]["text"] contains all three
   I    locate/parse .bpmn; resolve the project dir; import into an ephemeral solution (sha256-pinned);
        read runtime evidence via `debug-instance variables-all`/`incidents` — `bpmn debug` returns an
        instance id rather than inline variables, so this whole sequence stands in for Flow's single

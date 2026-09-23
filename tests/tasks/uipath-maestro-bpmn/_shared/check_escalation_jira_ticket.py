@@ -23,47 +23,82 @@ Outcome-based, tenant-confirmed:
      ticket, not a fabricated key.
 
 Assertion map (Flow -> BPMN):
-  I    locate/parse .bpmn (no pinned path -- prompt names only the process)  -> bpmn_check.parse_bpmn("EscalationJiraTicket") + resolve_project()
-  F    check_escalation_jira_ticket.py:53-56   .flow references JIRA_KEY     -> .bpmn source text contains JIRA_KEY substring
-  I    uipath:variables output ids / Jira Create-Issue element ids /         -> resolve_contract() (mirrors check_customer_escalation_behavior.py's Contract, Jira-only)
+  I    locate/parse .bpmn (no pinned path -- prompt names only the process)
+      -> bpmn_check.parse_bpmn("EscalationJiraTicket") + resolve_project()
+  F    check_escalation_jira_ticket.py:53-56   .flow references JIRA_KEY
+      -> .bpmn source text contains JIRA_KEY substring
+  I    uipath:variables output ids / Jira Create-Issue element ids /
+      -> resolve_contract() (mirrors check_customer_escalation_behavior.py's Contract, Jira-only)
        scriptTask ids needed to address runtime evidence by id
-  T    flow_check.run_debug(inputs=..., retries=1) -- single attempt,        -> ephemeral solution import (sha256-pinned) + bpmn_live.run_debug();
-       finalStatus == "Completed" checked inline                               FinalStatus/incidents asserted explicitly afterward (LIVE-ADDENDUM
-                                                                                 canonical live pattern; bpmn debug already makes one attempt, no backoff)
-  F    check_escalation_jira_ticket.py:64-68    no whole-run retries          -> bpmn_live.run_debug has no retry/backoff parameter to begin with
+  T    flow_check.run_debug(inputs=..., retries=1) -- single attempt,
+      -> ephemeral solution import (sha256-pinned) + bpmn_live.run_debug();
+       finalStatus == "Completed" checked inline                               FinalStatus/incidents asserted
+       explicitly afterward (LIVE-ADDENDUM
+                                                                                 canonical live pattern; bpmn debug
+                                                                                 already makes one attempt, no
+                                                                                 backoff)
+  F    check_escalation_jira_ticket.py:64-68    no whole-run retries
+      -> bpmn_live.run_debug has no retry/backoff parameter to begin with
        (a retried Create-Issue would duplicate the ticket)
-  F    check_escalation_jira_ticket.py:70-90    except-branch: on a debug     -> on subprocess.TimeoutExpired from run_debug, scrape partial
-       timeout, best-effort scrape partial output for <PROJECT>-\\d+             stdout/stderr for <PROJECT>-\\d+ candidates, keep only ones whose
-       candidates, keep only ones owned (summary carries correlationId)         summary carries correlationId, journal them, then fail
-  F    check_escalation_jira_ticket.py:104-106  Jira Create-Issue node        -> Jira Create-Issue element has exactly one Completed
+  F    check_escalation_jira_ticket.py:70-90    except-branch: on a debug
+      -> on subprocess.TimeoutExpired from run_debug, scrape partial
+       timeout, best-effort scrape partial output for <PROJECT>-\\d+             stdout/stderr for <PROJECT>-\\d+
+       candidates, keep only ones whose
+       candidates, keep only ones owned (summary carries correlationId)         summary carries correlationId, journal
+       them, then fail
+  F    check_escalation_jira_ticket.py:104-106  Jira Create-Issue node
+      -> Jira Create-Issue element has exactly one Completed
        specifically must have completed (not merely any Jira node)              ElementExecutions record
-  F    check_escalation_jira_ticket.py:108-111  candidate keys from           -> connector_response_values() on the Create-Issue element's OWN
-       collect_outputs()/raw debug text, ISSUE_KEY_RE-shaped                     Outputs (element_output_records), value "key"
-  F    check_escalation_jira_ticket.py:118-123  persist proven-created keys   -> journal the harvested key to `.created_keys` BEFORE the tenant
-       BEFORE the fallible tenant reread                                        reread, mirroring the exemplar's harvest-before-assert order
-  F    check_escalation_jira_ticket.py:129-140  tenant reread: get_issue(),   -> jira_is.get_issue(conn, key) (copied verbatim from Flow), summary
+  F    check_escalation_jira_ticket.py:108-111  candidate keys from
+      -> connector_response_values() on the Create-Issue element's OWN
+       collect_outputs()/raw debug text, ISSUE_KEY_RE-shaped                     Outputs (element_output_records),
+       value "key"
+  F    check_escalation_jira_ticket.py:118-123  persist proven-created keys
+      -> journal the harvested key to `.created_keys` BEFORE the tenant
+       BEFORE the fallible tenant reread                                        reread, mirroring the exemplar's
+       harvest-before-assert order
+  F    check_escalation_jira_ticket.py:129-140  tenant reread: get_issue(),
+      -> jira_is.get_issue(conn, key) (copied verbatim from Flow), summary
        summary contains correlationId, never an unrelated pre-existing issue    contains correlationId
-  F    check_escalation_jira_ticket.py:143-149  created key must be in the    -> inherent by construction: jira_key is sourced ONLY from the
-       executed Create-Issue node's OWN output                                  Create-Issue element's own Outputs (see harvest above)
-  F    check_escalation_jira_ticket.py:154-155  assert_named_equals(          -> declared output `jiraIssueKey` resolved via its uipath:variables
-       "jiraIssueKey", match, case_sensitive=True)                              output id (root scope Globals), compared case-sensitively
-  F    check_escalation_jira_ticket.py:158-160  assert_named_equals per       -> same, via declared output ids; severity case-insensitive,
-       seed["expected"] (severity case-insensitive, caseKey case-sensitive)      caseKey case-sensitive (CASE_SENSITIVE set, ported verbatim)
-  F    check_escalation_jira_ticket.py:162-186  severity AND engineeringNeeded -> same binding, over bpmn:scriptTask elements' own Outputs
-       bound to the SAME executed Script node, not split across two nodes        (element_output_records); a node's response value-pool must
-                                                                                  contain both the expected severity and engineeringNeeded value
-  T    check_escalation_jira_ticket.py's severity/engineeringNeeded lookup     -> matched against the VALUES of the scriptTask's own response
-       is by normalized field NAME (find_node_output_value)                      dict rather than by key name (mirrors check_customer_escalation_
-                                                                                  behavior.py's `carries()`, the CI-proven pattern for this exact
-                                                                                  runtime shape, since BPMN scriptTask output key-naming is agent-
-                                                                                  chosen and not part of the registry contract)
+  F    check_escalation_jira_ticket.py:143-149  created key must be in the
+      -> inherent by construction: jira_key is sourced ONLY from the
+       executed Create-Issue node's OWN output                                  Create-Issue element's own Outputs
+       (see harvest above)
+  F    check_escalation_jira_ticket.py:154-155  assert_named_equals(
+      -> declared output `jiraIssueKey` resolved via its uipath:variables
+       "jiraIssueKey", match, case_sensitive=True)                              output id (root scope Globals),
+       compared case-sensitively
+  F    check_escalation_jira_ticket.py:158-160  assert_named_equals per
+      -> same, via declared output ids; severity case-insensitive,
+       seed["expected"] (severity case-insensitive, caseKey case-sensitive)      caseKey case-sensitive
+       (CASE_SENSITIVE set, ported verbatim)
+  F    check_escalation_jira_ticket.py:162-186  severity AND engineeringNeeded
+      -> same binding, over bpmn:scriptTask elements' own Outputs
+       bound to the SAME executed Script node, not split across two nodes        (element_output_records); a node's
+       response value-pool must
+                                                                                  contain both the expected severity
+                                                                                  and engineeringNeeded value
+  T    check_escalation_jira_ticket.py's severity/engineeringNeeded lookup
+      -> matched against the VALUES of the scriptTask's own response
+       is by normalized field NAME (find_node_output_value)                      dict rather than by key name (mirrors
+       check_customer_escalation_
+                                                                                  behavior.py's `carries()`, the
+                                                                                  CI-proven pattern for this exact
+                                                                                  runtime shape, since BPMN scriptTask
+                                                                                  output key-naming is agent-
+                                                                                  chosen and not part of the registry
+                                                                                  contract)
 
-  DROPPED  check_customer_escalation_behavior.py's OUTPUT_TYPES exact_type()  (not in Flow -- assert_named_equals never type-checks output values)
+  DROPPED  check_customer_escalation_behavior.py's OUTPUT_TYPES exact_type()  (not in Flow -- assert_named_equals
+  never type-checks output values)
            check on output values
-  DROPPED  check_customer_escalation_behavior.py's Jira project.key/          (not in Flow -- Flow only checks the summary contains correlationId)
+  DROPPED  check_customer_escalation_behavior.py's Jira project.key/          (not in Flow -- Flow only checks the
+  summary contains correlationId)
            issuetype.id remote-field re-check
-  DROPPED  assert_live_target() tenant-lock guard                            (not in Flow's jira_is.py, which this task's _setup/jira_is.py is a
-                                                                                verbatim copy of; not adding it keeps that copy faithful)
+  DROPPED  assert_live_target() tenant-lock guard                            (not in Flow's jira_is.py, which this
+  task's _setup/jira_is.py is a
+                                                                                verbatim copy of; not adding it keeps
+                                                                                that copy faithful)
 
 Budget arithmetic (LIVE-ADDENDUM): bpmn_live.debug_budget() default (480) +
 SOLUTION_INIT_TIMEOUT (90) + SOLUTION_IMPORT_TIMEOUT (180) +
@@ -351,7 +386,8 @@ def main() -> None:
             detail.append(f"non-completed elements: {faulted}")
         if records:
             detail.append(f"incidents: {json.dumps(records)[:1500]}")
-        _fail(f"bpmn debug did not complete (finalStatus={final_status})" + ("; " + "; ".join(detail) if detail else ""))
+        suffix = "; " + "; ".join(detail) if detail else ""
+        _fail(f"bpmn debug did not complete (finalStatus={final_status})" + suffix)
     print("OK: bpmn debug completed")
 
     records = incident_records(incidents_data)

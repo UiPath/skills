@@ -72,8 +72,8 @@ CONNECTOR_KEY = "uipath-salesforce-slack"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 CHANNEL_ID = "C083AN4E61E"
 
-# GUESS: registry-workflow.md §3's example table names `send_message_to_channel_v2`
-# for this connector/operation; match loosely on the concept (any separator,
+# Loose match: the agent's objectName was `send_message_to_channel_v2` (CI run
+# 35791969905); match on the concept (any separator,
 # optional "_v2"/"v2" suffix, either "message" spelling) rather than pin one
 # exact objectName spelling.
 SEND_MESSAGE_RE = re.compile(r"send[\s_-]*messages?[\s_-]*to[\s_-]*channel", re.IGNORECASE)

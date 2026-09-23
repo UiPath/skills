@@ -111,7 +111,8 @@ from _shared.bpmn_live import (  # noqa: E402
 
 SLACK_CONNECTOR_KEY = "uipath-salesforce-slack"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
-# registry-workflow.md lists Intsvc.UnifiedHttpRequest beside HttpExecution for the managed HTTP sendTask; the eval agent emits either (CI run 35538279757).
+# registry-workflow.md lists Intsvc.UnifiedHttpRequest beside HttpExecution for the managed HTTP sendTask; the eval
+# agent emits either (CI run 35538279757).
 HTTP_TYPES = ("Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest")
 HTTP_TYPE = HTTP_TYPES[0]
 WEATHER_HINTS = ("open-meteo", "openmeteoapis")

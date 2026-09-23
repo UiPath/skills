@@ -17,7 +17,8 @@ this check only reads the tenant through the process it grades, never
 directly.
 
 Assertion map (Flow → BPMN):
-  F check_jira_get_issue.py:43   JIRA_KEY not in raw ('"nodes"' marker dropped -- XML has no JSON "nodes" key, see I below)
+  F check_jira_get_issue.py:43   JIRA_KEY not in raw ('"nodes"' marker dropped -- XML has no JSON "nodes" key, see I
+  below)
                                   → JIRA_KEY not in raw text of the .bpmn
   F check_jira_get_issue.py:46   GET_OP_RE.search(raw) (Get-Issue op referenced)
                                   → find_get_issue_nodes(): a sendTask carrying Intsvc.ActivityExecution

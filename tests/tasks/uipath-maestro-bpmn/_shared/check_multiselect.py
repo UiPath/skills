@@ -10,7 +10,8 @@ in its users multiselect" assertion (Flow criterion 2) lives in the shared
 
 Assertion map (Flow -> BPMN):
   F criterion 1  flow_contains.py '"nodes"' '"edges"' (file exists and is
-                 valid JSON, name-agnostic)                    -> parse_bpmn() locates and parses the .bpmn, no name hint
+                 valid JSON, name-agnostic)
+                     -> parse_bpmn() locates and parses the .bpmn, no name hint
   I              locate/parse .bpmn, no name hint (Flow's prompt
                  names no project)                             -> parse_bpmn()
 """

@@ -15,23 +15,49 @@ runtime response to carry a real message timestamp — Slack only returns one
 when a message is really delivered, not merely reached.
 
 Assertion map (Flow -> BPMN):
-  F check_escalation_orchestrator_paths.py:106  assert_flow_uses_connector_target(SLACK_KEY)          -> Contract.slack_ids non-empty (resolve_contract)
-  F check_escalation_orchestrator_paths.py:144  assert_connector_error_handlers(SLACK_KEY, ...)        -> assert_error_handlers(): boundary errorEventDefinition on each Slack sendTask reaches a connector-free, acyclic, terminating path
-  F check_escalation_orchestrator_paths.py:145  assert_connector_send_identity(SLACK_KEY, "user", ...) -> assert_send_identity(): every Slack sendTask carries target=query name=send_as value=user
-  F check_escalation_orchestrator_paths.py:55   assert_named_equals(payload, name, expected, ...)      -> public_value_present(): normalized value present among root Globals leaves + non-classifier element Outputs leaves (see NOTE below)
-  F check_escalation_orchestrator_paths.py:65   assert_slack_message_posted(payload, "slackMessageId", ...) -> assert_slack_posted(): fired Slack sendTask's own Outputs.response carries a ts-shaped id, the seeded channel, and correlationId + escalationPath in its text
-  F check_escalation_orchestrator_paths.py:78-90 completed_node_ids_of_type(payload,"script") + is_classifier -> classifier candidate set per case: a scriptTask whose OWN Outputs.response dict carries all four CLASSIFICATION_FIELDS matching expected
-  F check_escalation_orchestrator_paths.py:95   assert_node_type_executed(payload,"core.logic.decision") -> per-case fired_gateways non-empty
-  F check_escalation_orchestrator_paths.py:97-98 completed_node_ids_of_type(payload, "core.logic.decision"/"core.control.end") -> per-case fired_gateways / fired_ends via debug_data.ElementExecutions
-  F check_escalation_orchestrator_paths.py:132-139 common_classifier = intersection(per_case_classifiers)  -> same intersection, same failure message shape
-  F check_escalation_orchestrator_paths.py:149-158 escalation/triage Slack-node disjointness             -> same set overlap check
-  F check_escalation_orchestrator_paths.py:167-169 routing_decisions + assert_decision_branches_reach     -> assert_decision_branches_reach(): exclusiveGateway's two outgoing sequenceFlows separate the fired Slack node sets (graph.reachable)
-  F check_escalation_orchestrator_paths.py:179   assert_distinct_branch_ends(escalation_nodes, triage_nodes) -> assert_distinct_branch_ends(): each fired-Slack-node set reaches its own endEvent, the other's not reachable (graph.reachable)
-  F check_escalation_orchestrator_paths.py:180-189 runtime escalation_ends/triage_ends disjointness       -> same runtime disjointness check over per-case fired_ends
-  I               locate/parse .bpmn, resolve project directory                                          -> resolve_project() / resolve_contract()
-  I               ephemeral solution init + import + sha256 pin, run bpmn debug per case, read variables-all -> LIVE-tier canonical pattern (bpmn_live.py; copied from e2e/customer_escalation_triage/check_customer_escalation_behavior.py)
-  T               finalStatus/elementExecutions completion check (flow_check.run_debug does this inline for `flow debug`; `bpmn debug` does not) -> per-case FinalStatus check in verify_case()
-  T               vars.<VarId> / element Outputs in place of Flow's globals["<nodeId>.output"]            -> element_output_records() / root_scope() (bpmn_live.py)
+  F check_escalation_orchestrator_paths.py:106  assert_flow_uses_connector_target(SLACK_KEY)
+      -> Contract.slack_ids non-empty (resolve_contract)
+  F check_escalation_orchestrator_paths.py:144  assert_connector_error_handlers(SLACK_KEY, ...)
+      -> assert_error_handlers(): boundary errorEventDefinition on each Slack sendTask reaches a connector-free,
+         acyclic, terminating path
+  F check_escalation_orchestrator_paths.py:145  assert_connector_send_identity(SLACK_KEY, "user", ...)
+      -> assert_send_identity(): every Slack sendTask carries target=query name=send_as value=user
+  F check_escalation_orchestrator_paths.py:55   assert_named_equals(payload, name, expected, ...)
+      -> public_value_present(): normalized value present among root Globals leaves + non-classifier element Outputs
+         leaves (see NOTE below)
+  F check_escalation_orchestrator_paths.py:65   assert_slack_message_posted(payload, "slackMessageId", ...)
+      -> assert_slack_posted(): fired Slack sendTask's own Outputs.response carries a ts-shaped id, the seeded
+         channel, and correlationId + escalationPath in its text
+  F check_escalation_orchestrator_paths.py:78-90 completed_node_ids_of_type(payload,"script") + is_classifier
+      -> classifier candidate set per case: a scriptTask whose OWN Outputs.response dict carries all four
+         CLASSIFICATION_FIELDS matching expected
+  F check_escalation_orchestrator_paths.py:95   assert_node_type_executed(payload,"core.logic.decision")
+      -> per-case fired_gateways non-empty
+  F check_escalation_orchestrator_paths.py:97-98 completed_node_ids_of_type(payload,
+     "core.logic.decision"/"core.control.end")
+      -> per-case fired_gateways / fired_ends via debug_data.ElementExecutions
+  F check_escalation_orchestrator_paths.py:132-139 common_classifier = intersection(per_case_classifiers)
+      -> same intersection, same failure message shape
+  F check_escalation_orchestrator_paths.py:149-158 escalation/triage Slack-node disjointness
+      -> same set overlap check
+  F check_escalation_orchestrator_paths.py:167-169 routing_decisions + assert_decision_branches_reach
+      -> assert_decision_branches_reach(): exclusiveGateway's two outgoing sequenceFlows separate the fired Slack node
+         sets (graph.reachable)
+  F check_escalation_orchestrator_paths.py:179   assert_distinct_branch_ends(escalation_nodes, triage_nodes)
+      -> assert_distinct_branch_ends(): each fired-Slack-node set reaches its own endEvent, the other's not reachable
+         (graph.reachable)
+  F check_escalation_orchestrator_paths.py:180-189 runtime escalation_ends/triage_ends disjointness
+      -> same runtime disjointness check over per-case fired_ends
+  I               locate/parse .bpmn, resolve project directory
+      -> resolve_project() / resolve_contract()
+  I               ephemeral solution init + import + sha256 pin, run bpmn debug per case, read variables-all
+      -> LIVE-tier canonical pattern (bpmn_live.py; copied from
+         e2e/customer_escalation_triage/check_customer_escalation_behavior.py)
+  T               finalStatus/elementExecutions completion check (flow_check.run_debug does this inline for `flow
+     debug`; `bpmn debug` does not)
+      -> per-case FinalStatus check in verify_case()
+  T               vars.<VarId> / element Outputs in place of Flow's globals["<nodeId>.output"]
+      -> element_output_records() / root_scope() (bpmn_live.py)
   T               NOTE (LIVE-ADDENDUM): a BPMN process with two end events may declare the SAME public
                   output name twice (once per end event, elementId-scoped per structural-bpmn.md), and
                   the branch that did not run has been observed to read back null even when the OTHER
@@ -41,7 +67,8 @@ Assertion map (Flow -> BPMN):
                   The classifier's OWN Outputs are excluded from that search (see CLASSIFICATION_FIELDS
                   binding above) so a value that was only ever computed, never mapped to a public output,
                   cannot satisfy this check by coincidence.
-  DROPPED         Flow's exact_type check on public outputs (customer_escalation_triage-style)            (not in this Flow task's grader)
+  DROPPED         Flow's exact_type check on public outputs (customer_escalation_triage-style)            (not in this
+  Flow task's grader)
 """
 
 from __future__ import annotations

@@ -11,10 +11,12 @@ criteria, which are project-name-specific (Flow's task fixes the project name
 
 Assertion map (Flow -> BPMN):
   F criterion 1  flow_contains.py --flow-name ComplexArrayTest '"nodes"'
-                 '"edges"' (file exists and is valid JSON)             -> parse_bpmn("ComplexArrayTest") locates and parses the .bpmn
+                 '"edges"' (file exists and is valid JSON)
+                     -> parse_bpmn("ComplexArrayTest") locates and parses the .bpmn
   I              locate/parse .bpmn with the ComplexArrayTest name hint -> parse_bpmn("ComplexArrayTest")
   F criterion 3  flow_contains.py --flow-name ComplexArrayTest
-                 'U0B7Y855WGG' 'U05Q882RHFZ' (advisory, threshold 0)    -> check_ids(): same two literals searched in the located .bpmn's raw text (same weight/threshold)
+                 'U0B7Y855WGG' 'U05Q882RHFZ' (advisory, threshold 0)
+                     -> check_ids(): same two literals searched in the located .bpmn's raw text (same weight/threshold)
 
 Usage:
     python3 check_complex_array.py           # criterion 1: locate + parse
