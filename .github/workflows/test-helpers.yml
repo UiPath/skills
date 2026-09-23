@@ -248,12 +248,10 @@ jobs:
       - name: Install pytest
         run: pip install pytest
 
-      # Runs BOTH twins of each hook (.sh under bash, .ps1 under pwsh — both
-      # preinstalled on ubuntu runners) against the same assertions, enforcing
-      # the twin keep-in-sync rule: send-telemetry with a stubbed uip
-      # (eventName mapping, lifecycle fields, drop paths) and set-session-env
-      # against a temp CLAUDE_ENV_FILE (export line, host-wins, idempotence,
-      # sanitization).
+      # Runs the Node hook scripts (hooks/*.mjs — node is preinstalled on
+      # ubuntu runners): send-telemetry with a stubbed uip (eventName mapping,
+      # lifecycle fields, drop paths) and set-session-env against a temp
+      # CLAUDE_ENV_FILE (export line, host-wins, idempotence, sanitization).
       - name: Run telemetry hook tests
         run: pytest tests/scripts/test_send_telemetry_hook.py tests/scripts/test_set_session_env_hook.py -v
 

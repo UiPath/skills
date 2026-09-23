@@ -1,9 +1,5 @@
-"""Contract guard for the skills telemetry hook — BOTH twins
-(``hooks/send-telemetry.sh`` under bash, ``hooks/send-telemetry.ps1`` under
-pwsh). Every test is parametrized over the two implementations, so this suite
-is the executable form of the twin keep-in-sync rule in CLAUDE.md: a
-behavioral change to one twin without the equivalent change to the other
-fails here.
+"""Contract guard for the skills telemetry hook
+(``hooks/send-telemetry.mjs`` under node).
 
 Runs the hook as a subprocess with a stubbed ``uip`` on ``PATH``, pipes a Claude
 Code hook payload on stdin, and asserts the single flat JSON object the hook
@@ -23,13 +19,12 @@ forwards to ``uip track``. Covers:
 * the drop paths — a non-UiPath tool call, an unrecognized event, and opt-out.
 
 The stubbed ``uip`` writes the payload to a capture file and we poll for it
-(we never parse the hook's stdout). The hand-off itself is INLINE on both
-twins -- see ``test_hand_off_is_inline_not_detached``.
+(we never parse the hook's stdout). The hand-off itself is INLINE -- see
+``test_hand_off_is_inline_not_detached``.
 
-POSIX-only: the hooks run under ``bash`` and ``pwsh`` (both preinstalled on
-GitHub ubuntu runners) and the stub is a shebang script invoked via a real
-``uip`` name on ``PATH``. Skipped on native Windows (PATHEXT resolution makes
-the stub unreliable) — CI runs it on ubuntu.
+POSIX-only: the stub is a shebang script invoked via a real ``uip`` name on
+``PATH``. Skipped on native Windows (PATHEXT resolution makes the stub
+unreliable) — CI runs it on ubuntu (``node`` is preinstalled on the runners).
 
 Run from repo root:
     pytest tests/scripts/test_send_telemetry_hook.py
@@ -50,32 +45,19 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOKS_DIR = REPO_ROOT / "hooks"
 
-# One argv per twin. The autouse fixture below parametrizes EVERY test over
-# both, enforcing the keep-in-sync rule (CLAUDE.md).
-TWINS = [
-    pytest.param(["bash", str(HOOKS_DIR / "send-telemetry.sh")], id="bash"),
-    pytest.param(
-        ["pwsh", "-NoProfile", "-File", str(HOOKS_DIR / "send-telemetry.ps1")],
-        id="pwsh",
-    ),
-]
+HOOK_ARGV = ["node", str(HOOKS_DIR / "send-telemetry.mjs")]
 
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32",
     reason="stub uip requires a POSIX filesystem (CI runs this on ubuntu)",
 )
 
-HOOK_ARGV = None
 
-
-@pytest.fixture(autouse=True, params=TWINS)
-def hook_argv(request):
-    """Select the twin under test; skip if its interpreter is absent."""
-    global HOOK_ARGV
-    argv = request.param
-    if shutil.which(argv[0]) is None:
-        pytest.skip(f"{argv[0]} not available")
-    HOOK_ARGV = argv
+@pytest.fixture(autouse=True)
+def require_node():
+    """Skip the suite if node is absent."""
+    if shutil.which("node") is None:
+        pytest.skip("node not available")
 
 
 # ── event-mapping tests ────────────────────────────────────────────────────
@@ -118,8 +100,8 @@ def test_session_start_maps_and_carries_source():
     ],
 )
 def test_session_start_agent_model_is_shape_tolerant(model_value, expected):
-    """String or object (id, else display_name); any other shape -> "".
-    Both twins must agree — a [string] cast renders `True` / `@{id=...}`."""
+    """String or object (id, else display_name); any other shape -> "" —
+    a naive string coercion would render `true` / `[object Object]`."""
     event = run_hook(
         {
             "hook_event_name": "SessionStart",
@@ -507,7 +489,7 @@ def test_opt_out_drops_everything():
     ],
 )
 def test_hand_off_is_inline_not_detached(hook_event, expected_name):
-    """Both twins must hand off to ``uip track`` INLINE, never detached.
+    """The hook must hand off to ``uip track`` INLINE, never detached.
 
     hooks.json registers this hook async everywhere except SessionEnd, so the
     HOST owns non-blocking dispatch. A script-level detach (``( cmd & )``,
