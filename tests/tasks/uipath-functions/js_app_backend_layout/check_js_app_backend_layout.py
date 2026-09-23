@@ -22,10 +22,12 @@ uipath-functions coded-app wiring guide:
      (`orchestrator_/t/`) nor names the portal domain `cloud.uipath.com`. A
      `fetch` to `http://localhost:7070` (the local serve loop) is allowed.
   6. `quote-app/vite.config.ts` gained no `proxy`.
+  7. The `invoke` call names the function as Orchestrator registers it:
+     `quote-backend_quote` (process name + `_` + `defineFunction` name).
 
 Run as `check_js_app_backend_layout.py layout` (checks 1 minus the backend
-package shape, 3-6) or `... backend` (backend package.json, functions map and
-quote.ts shape); no argument runs everything. Exits 0 on PASS, with a
+package shape, 3-6), `... backend` (backend package.json, functions map and
+quote.ts shape) or `... name` (check 7); no argument runs everything. Exits 0 on PASS, with a
 `FAIL: ...` message on the first violation.
 """
 
@@ -188,6 +190,13 @@ def check_app_wiring() -> None:
     print("OK: app calls the function via the SDK Functions service")
 
 
+def check_invoke_name() -> None:
+    src = _strip_comments(_read_text(APP / "src" / "api" / "quote.ts"))
+    if not re.search(r"""name\s*:\s*["'`]quote-backend_quote["'`]""", src):
+        sys.exit("FAIL: invoke must name the function as registered — process name + '_' + defineFunction name: 'quote-backend_quote'")
+    print("OK: invoke uses the registered function name")
+
+
 def check_no_vite_proxy() -> None:
     src = _strip_comments(_read_text(APP / "vite.config.ts"))
     if re.search(r"\bproxy\s*:", src):
@@ -205,13 +214,19 @@ LAYOUT_CHECKS = (
     check_no_vite_proxy,
 )
 BACKEND_CHECKS = (check_backend_package, check_backend_manifest, check_quote_ts)
+NAME_CHECKS = (check_invoke_name,)
 
 
 def main() -> None:
     part = sys.argv[1] if len(sys.argv) > 1 else "all"
-    groups = {"layout": LAYOUT_CHECKS, "backend": BACKEND_CHECKS, "all": LAYOUT_CHECKS + BACKEND_CHECKS}
+    groups = {
+        "layout": LAYOUT_CHECKS,
+        "backend": BACKEND_CHECKS,
+        "name": NAME_CHECKS,
+        "all": LAYOUT_CHECKS + BACKEND_CHECKS + NAME_CHECKS,
+    }
     if part not in groups:
-        sys.exit(f"FAIL: unknown check group {part!r} (layout | backend | all)")
+        sys.exit(f"FAIL: unknown check group {part!r} (layout | backend | name | all)")
     for check in groups[part]:
         check()
     print("PASS")

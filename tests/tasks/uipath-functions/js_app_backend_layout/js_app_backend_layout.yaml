@@ -93,3 +93,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "invoke names the function as registered: process name + '_' + defineFunction name (quote-backend_quote)"
+    command: "python3 $REFERENCE_DIR/check_js_app_backend_layout.py name"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

@@ -27,7 +27,7 @@ The app and its function backend are **two sibling projects**, each with its own
 ```
 
 1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: once the app is published, `uip function publish` under that id is rejected (`400`, `Project type has changed since the latest published version`).
-2. `<BACKEND>` is the package id — name it for the backend as a whole (`claims-backend`), not after one function; one project holds every function, each with its own `defineFunction` `name` and `path`.
+2. `<BACKEND>` is the package id and becomes the process name that prefixes every function name the app invokes — name it for the backend as a whole (`claims-backend`), not after one function; one project holds every function, each with its own `defineFunction` `name` and `path`.
 
 ## Token Flow
 
@@ -51,13 +51,13 @@ npm run dev           # terminal 2 — app dev server (Vite, :5173)
    ```ts
    if (import.meta.env.DEV) {
      const token = sdk.getToken();
-     const res = await fetch("http://localhost:7070/quote", {
+     const res = await fetch("http://localhost:7070/quotes", {
        method: "POST",
        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
        body: JSON.stringify(input),
      });
      const body = await res.json();
-     if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+     if (!res.ok) throw Object.assign(new Error(body.error ?? `HTTP ${res.status}`), { statusCode: res.status });
      return body as QuoteOutput;
    }
    ```
@@ -66,7 +66,7 @@ npm run dev           # terminal 2 — app dev server (Vite, :5173)
 
 ## Deployed Calls from the App
 
-Deployed, the app calls the function through the SDK's `Functions` service — never a hand-built `…/orchestrator_/t/…` trigger URL, even though the function has HTTP semantics; the trigger URL is not an app-facing API. `invoke` takes the function's `defineFunction` `name` — not the package or process name — plus typed input, and handles route, transport and token itself. Use `@uipath/uipath-typescript` 1.7.2 or later. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey` (the SDK's shipped `docs/oauth-scopes.md`, § Functions).
+Deployed, the app calls the function through the SDK's `Functions` service — never a hand-built `…/orchestrator_/t/…` trigger URL, even though the function has HTTP semantics; the trigger URL is not an app-facing API. `invoke` takes the function's name as Orchestrator registers it: the process name, `_`, then the `defineFunction` `name` (`get-quote` in process `pricing-backend` → `pricing-backend_get-quote`). `Functions.getAll({ folderKey })` lists these names. A bare `defineFunction` name throws `404`, and the message lists the names the folder exposes. `invoke` also takes typed input, and handles route, transport and token itself. Use `@uipath/uipath-typescript` 1.7.2 or later. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey`.
 
 ```ts
 import type { UiPath } from "@uipath/uipath-typescript/core";
@@ -74,7 +74,7 @@ import { Functions } from "@uipath/uipath-typescript/functions";
 
 export async function requestQuote(sdk: UiPath, input: QuoteInput): Promise<QuoteOutput> {
   return new Functions(sdk).invoke<QuoteInput, QuoteOutput>(
-    { name: "quote" },
+    { name: "pricing-backend_get-quote" },
     input,
     { folderKey: "<FOLDER_KEY>" },
   );
@@ -110,8 +110,8 @@ A resolved `invoke` is the function's declared output. Any non-2xx answer is thr
 | Input schema validation failure | `400` | Client bug — fix the request shape |
 | Plain `throw` in the handler | `500` | Generic failure UI; treat as transient |
 | 18 s guard above | `504` | Retryable |
-| No function with that `name` in the folder context | `404` | Wiring bug — check the `defineFunction` name and the folder option |
-| Gateway (no function reached) | `403` missing `OR.Default` | Wiring bug — recheck the app's scope string |
+| No function with that name in the folder context | `404` | Wiring bug — check the process-name prefix and the folder option |
+| `OR.Default` missing from the app's scope | `403` | Wiring bug — recheck the app's scope string |
 
 4xx is user-actionable, 5xx is transient/retryable. Full status semantics → [http-semantics-guide.md](http-semantics-guide.md).
 
