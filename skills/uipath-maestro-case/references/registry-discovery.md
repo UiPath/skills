@@ -32,7 +32,7 @@ Read two fields of the response:
 | `reason` | What it means | What to do |
 |---|---|---|
 | `absent` | No index entry carries the name | § Procedure step 1's cross-type fallback, then § 3's in-solution sibling check, then the [MUST Confirm gate](#must-confirm-before-placeholder-fallback) |
-| `ambiguous` | Several exact-name entries, and the SDD's folder did not narrow them | Match priority 3 in § Procedure step 2: take the first exact-name match and name the alternatives in `rationale` |
+| `ambiguous` | Several exact-name entries, and the SDD's folder did not narrow them | Never pick by position — the [MUST Confirm gate](#must-confirm-before-placeholder-fallback), one option per candidate named by its folder; unanswered, `<UNRESOLVED>` |
 
 Edit each outcome into that task's entry in `resolved`. Never re-search a task resolve selected.
 
@@ -75,6 +75,8 @@ Options:
   - Use placeholders for all
       → build nothing; EVERY missing resource (all <N>) becomes an `<UNRESOLVED>` placeholder (per-plugin Unresolved Fallback).
 ```
+
+**Ambiguous resources join the same batch** as their own group — one option per candidate, labelled by its folder, plus `Use a placeholder` — and follow the same default: unanswered or non-interactive, the task stays `<UNRESOLVED>`.
 
 **Apply once per planning batch, not per-task.** Each option is batch-level — never a per-task yes/no chain. The gate **question groups the empties by resource** (unique `name` + `type`), listing each resource's usages (`<Stage>/<Task>`) for readability — one line per resource, not one per task. **Both the gate question and § 1 Select group by `(name, type)`** — one row per resource. The per-task-reference mapping (a name → several tasks) is tracked internally only, for [§ 1c](#1c--dedup-the-selected-builds-one-resource-per-name-and-type)'s I/O partition and to bind every usage to the built resource. Force pull loops back to this same prompt for whatever stays empty. The **Create** option covers **agents and API workflows only** (never regular RPA process, action apps, child cases, connectors, or agentic processes); it appears only when ≥1 still-empty is creatable AND the CLI supports `registry --local` (capability probe — see [§ Create-on-Missing](#create-on-missing-build-and-rediscovery)). When `--local` is absent the gate degrades to Force pull / Use placeholders for all exactly as before.
 
@@ -275,7 +277,7 @@ for item in data:
 **Match priority:**
 1. **Exact name + exact folder** — strongest match, use directly.
 2. **Exact name, multiple folders** — pick the one matching the sdd.md folder path.
-3. **Exact name, no folder specified in sdd.md** — pick the first exact-name match; note alternatives in `registry-resolved.json`.
+3. **Exact name, several matches, no folder to narrow them** — do not pick one. Order is not evidence: the cache lists resources in the order the tenant registered them, so "first" is whichever was deployed earliest, and it silently changes when that one is deleted. Record every candidate in `matches`, leave `selected: null` with the `<UNRESOLVED>` identity-slot marker, and send it to the [MUST Confirm gate](#must-confirm-before-placeholder-fallback) — one option per candidate, named by its folder.
 4. **No match in primary cache file** — apply the compatible cross-type fallback above. For `action` and `case-management`, do not search another cache type; proceed to the empty-result gate.
 
 ### 3. Handle Empty Results

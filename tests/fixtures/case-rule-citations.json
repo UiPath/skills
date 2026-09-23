@@ -3,7 +3,7 @@
     "Build gate": 1,
     "Build-review preference": 2,
     "Convert before authoring": 5,
-    "Empty lookup gate": 4,
+    "Empty lookup gate": 5,
     "Handoff contract": 2,
     "Phase 1 registry gate": 6,
     "Read references to EOF before mutation": 1,
