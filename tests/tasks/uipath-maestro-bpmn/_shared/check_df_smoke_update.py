@@ -26,7 +26,9 @@ same as ``check_df_integration_create_get.py``.
 Modes:
   --ops     Assert >=1 classified node per {create, update, get, delete} on
             FlowCodeEvalEntity. Mirrors Flow's ``check_ops_present.py``.
-  --partial Assert the classified Update node's ``target="body"`` JSON has
+  --partial Assert the classified Update node's request body (its
+            ``target="body"`` inputs decoded by ``bpmn_check.body_object()``
+            -- one JSON blob or one typed input per field) has
             only the key ``score``, with value 9.0 -- OR an ``=`` expression,
             which passes any type check the same way Flow's grader waves
             through ``=js:...`` (see _porting/BATCH1-ADDENDUM.md "Grader rule for body
@@ -42,6 +44,7 @@ Assertion map (Flow -> BPMN):
   T  inputs at any depth                              -> node_inputs() (`.//uipath:input`)
   T  GETBYID/GET equivalence                          -> is_retrieval_node() List/GET + has_id_filter() branch
   T  expression strings (=...) passing type checks    -> check_partial() `score.startswith("=")` branch
+  T  per-field target="body" inputs → bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
   DROPPED  require_no_private_connector_values  (not in Flow grader)
   DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
@@ -51,7 +54,6 @@ Assertion map (Flow -> BPMN):
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
 import sys
@@ -61,6 +63,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    body_object,
     context_value,
     elements,
     fail,
@@ -97,14 +100,6 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
         if entity in value or entity in text:
             return True
     return False
-
-
-def body_inputs(task: ET.Element) -> list[ET.Element]:
-    return [
-        inp
-        for inp in node_inputs(task)
-        if inp.attrib.get("name") == "body" and inp.attrib.get("target") == "body"
-    ]
 
 
 def connector_nodes(root: ET.Element) -> list[ET.Element]:
@@ -226,22 +221,9 @@ def check_partial() -> None:
     # Flow reads bodyParameters as a plain dict (`{}` when absent) -- no Flow
     # equivalent polices a node's target="body" input count. Zero inputs is
     # an empty body (fails the key check below with a clear message); more
-    # than one takes the last (the runtime does not merge them -- the last
-    # one silently wins), rather than treating either shape as a hard error.
-    bodies = body_inputs(task)
-    if not bodies:
-        body: dict = {}
-    else:
-        text = (bodies[-1].text or "").strip()
-        if not text:
-            body = {}
-        else:
-            try:
-                body = json.loads(text)
-            except json.JSONDecodeError as exc:
-                fail(f"{path}: Update node's body is not valid JSON: {text[:200]!r} ({exc})")
-            if not isinstance(body, dict):
-                fail(f"{path}: Update node's body is not a JSON object: {text[:200]!r}")
+    # than one is decoded together, later inputs winning on a key collision,
+    # rather than treating either shape as a hard error.
+    body = body_object(task)
 
     keys = set(body.keys())
     if keys != {"score"}:

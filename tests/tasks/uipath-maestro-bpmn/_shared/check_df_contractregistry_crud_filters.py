@@ -10,8 +10,8 @@ translated from a JSON node/``inputs.detail`` walk to an XML walk over the
 registry-driven ``Intsvc.ActivityExecution`` connector shell (see
 skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4 and
 skills/uipath-maestro-bpmn/references/structural-bpmn.md on public outputs).
-Conventions (``context_value``/``all_node_values``/one ``target="body"``
-input/entity-anywhere) match this batch's sibling ports
+Conventions (``context_value``/``all_node_values``/``bpmn_check.body_object``
+request body/entity-anywhere) match this batch's sibling ports
 (``check_df_integration_create_get.py``, ``check_df_smoke_create_all_types.py``)
 for consistency.
 
@@ -39,10 +39,11 @@ Re-homing decisions vs the Flow grader:
     §4), so the variable-indirection branch is dropped rather than guessed;
     this also matches how the batch's other Data Fabric checkers resolved the
     same rule.
-  - Flow's ``bodyParameters`` dict becomes the ONE ``target="body"`` CDATA
-    JSON object (registry-workflow.md §3); more than one ``target="body"``
-    input on a node is treated as a failure (the runtime does not merge them
-    -- the last one silently wins), not just ignored.
+  - Flow's ``bodyParameters`` dict becomes the dict
+    ``bpmn_check.body_object()`` decodes from the node's ``target="body"``
+    inputs: the canonical ONE CDATA JSON object (registry-workflow.md §3),
+    or one typed input per field (CI run 35777886090) coerced back to its
+    JSON literal.
   - Flow's ``queryParameters.queryExpression`` / ``.limit`` have no fixed
     field name in the Data Service registry contract available here (no
     local Data Service connection to ``describe`` request fields against --
@@ -90,10 +91,10 @@ Re-homing decisions vs the Flow grader:
     ``target="body"`` input. Neither has a Flow counterpart -- Flow's
     grader has no concept of connections, and Flow reads
     ``bodyParameters`` as a plain dict (empty when absent, last-key-wins
-    semantics don't apply to a Flow JSON object). ``body_json`` now mirrors
+    semantics don't apply to a Flow JSON object). ``body_object`` mirrors
     that: zero ``target="body"`` inputs yields an empty body (fields report
-    as missing, same failure Flow would produce), and more than one takes
-    the last (matching runtime silently-last-wins behavior) instead of
+    as missing, same failure Flow would produce), and more than one is
+    decoded together, later inputs winning on a key collision, instead of
     failing outright.
   - NOT ported: a non-null-value check on the Create body's six fields.
     Flow only asserts the keys are present (``FIELDS - set(body)``); it
@@ -103,8 +104,8 @@ Re-homing decisions vs the Flow grader:
 Checks performed:
   1. BPMN file exists and is well-formed XML.
   2. A root-level manual start event (no event definition / uipath:event).
-  3. One ContractRegistry Create Entity Record sendTask with a
-     ``target="body"`` JSON holding all six fields.
+  3. One ContractRegistry Create Entity Record sendTask whose decoded
+     ``target="body"`` request body holds all six fields.
   4. >=2 ContractRegistry Query Entity Records sendTasks, each carrying a
      standalone ``100`` limit token; across them, a dueDate < 2026-08-04
      filter and a contractTitle-is-null filter.
@@ -129,7 +130,8 @@ Assertion map (Flow -> BPMN):
   I                                                locate/parse .bpmn                 -> parse_bpmn()
   T  curated|generic entity-CRUD node classification -> is_kind()
   T  entity name anywhere in inputs/objectName/path   -> entity_ok()
-  T  inputs at any depth                              -> node_inputs()/all_node_values()
+  T  inputs at any depth                              -> all_node_values()/body_object()
+  T  per-field target="body" inputs → bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
   T  expression strings (=...) passing type checks    -> UPDATE_TITLE_VAR_RE match on `=vars.<id>`
   T  vars.<VarId> references in place of Flow node-id refs -> Get-by-Id wired_var check
   T  transitive variable derivation through BPMN.Variables copy tasks -> derives_from_crud()
@@ -144,7 +146,6 @@ Assertion map (Flow -> BPMN):
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -155,6 +156,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     all_node_values,
+    body_object,
     context_value,
     elements,
     fail,
@@ -188,10 +190,6 @@ GENERIC_OP_PATTERNS = {
 # An expression (leading "=") that reads a declared variable: `=vars.X` or
 # `=js:... vars.X ...`. A literal string title is the regression this catches.
 UPDATE_TITLE_VAR_RE = re.compile(r"\bvars\.([A-Za-z0-9_]+)")
-
-
-def node_inputs(task: ET.Element) -> list[ET.Element]:
-    return task.findall(".//uipath:input", NS)
 
 
 def output_vars(task: ET.Element) -> list[str]:
@@ -247,26 +245,6 @@ def matches_null_title_filter(task: ET.Element) -> bool:
     return "contracttitle" in blob and bool(NULL_RE.search(blob))
 
 
-def body_json(task: ET.Element, label: str) -> dict:
-    # Flow reads `bodyParameters` as a plain dict, defaulting to `{}` when
-    # absent -- no Flow equivalent polices a node's input count. Mirror that:
-    # zero target="body" inputs is an empty body (downstream field checks
-    # then fail on their own with a clear "missing fields" message); more
-    # than one takes the last (the runtime does not merge them -- the last
-    # one silently wins), rather than treating either shape as a hard error.
-    body_inputs = [inp for inp in node_inputs(task) if inp.attrib.get("target") == "body"]
-    if not body_inputs:
-        return {}
-    raw = body_inputs[-1].text or ""
-    try:
-        body = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        fail(f'{label} node target="body" input is not valid JSON: {exc}\n  raw={raw!r}')
-    if not isinstance(body, dict):
-        fail(f'{label} node target="body" JSON must be an object, got {type(body).__name__}')
-    return body
-
-
 def connector_nodes(root: ET.Element) -> list[ET.Element]:
     return [
         task
@@ -317,7 +295,7 @@ def main() -> None:
     if not creates:
         fail(f"no {ENTITY} Create Entity Record sendTask found")
     create = creates[0]
-    create_body = body_json(create, "Create")
+    create_body = body_object(create)
     missing = FIELDS - set(create_body)
     if missing:
         fail(f"Create body missing fields: {sorted(missing)}")
@@ -337,7 +315,7 @@ def main() -> None:
     if not updates:
         fail(f"no {ENTITY} Update Entity Record sendTask found")
     update = updates[0]
-    update_body = body_json(update, "Update")
+    update_body = body_object(update)
     if "contractTitle" not in update_body:
         fail("Update body does not update contractTitle")
     title_value = update_body["contractTitle"]
