@@ -12,7 +12,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 # Working style
 - **Understand first, then decide.** Read this skill's SKILL.md and understand the scripts it ships before you act. Then plan accordingly, such as run a script as-is when it fits, change a script when it's close, or write extra scripts to complement — based on what the scripts actually do, not a guess.
 - **Plan the whole path up front, then chain.** Outline the full sequence of steps before running anything, batch independent steps into one turn, and pipeline the whole plan in as few turns as possible. Don't do things that can be pipelined into one call turn-by-turn.
-- **Inspect an input ONCE.** To learn a file's structure (sheets/columns, pages, form fields, keys), dump it once — ideally to a file you then grep — never re-open the same file field-by-field or retry it with several libraries.
+- **Inspect an input ONCE.** To learn a file's structure (sheets/columns, pages, form fields, keys), dump it once — ideally to a file you then grep — never re-open the same file field-by-field or retry it with several libraries. A source image is the exception: look at it again whenever it is no longer visible in your context (see [Authoring from an image](#authoring-from-an-image)).
 - **Don't repeat work.** Do not rerun a command when its inputs and relevant state are unchanged, and do not reread an unchanged file, script, or SKILL.md already in context. After a tool or command may modify a file, reread the affected content before relying on it.
 - **Write code once and reuse.** If a step needs code, write it once as a small script (paths/params as CLI args) and call it; don't paste near-duplicate inline python across turns. Keep it terse — no comment banners or narration in inline scripts.
 - **Keep outputs small.** Don't put large tool results and outputs into the context, instead write them into a file and use tools to inspect them. If there is no tool available, you should write your own scripts to inspect the file.
@@ -33,7 +33,8 @@ references below.
 
 ## When to use
 
-- Create a Maestro `.bpmn` from a description.
+- Create a Maestro `.bpmn` from a description, or from an image of a process
+  (sketch, whiteboard or sticky-note photo, screenshot of another diagram).
 - Edit `.bpmn` structure: gateways, events, boundary events, subprocesses, call
   activities, multi-instance loops, sequence-flow conditions, variables.
 - Add a UiPath extension node (RPA job, agent, HITL, queue, business rule, API
@@ -125,6 +126,43 @@ Using more than one pattern in one process? Read
 first — which pattern keeps its start event, the four ways the rest join it, how
 variables cross a nesting boundary, and the two placements the engine
 constrains. A single pattern needs only its own guide.
+
+## Authoring from an image
+
+When the process comes from an image, the job is transcription: every item in the
+image becomes a node and every visible connector becomes a flow. A plausible
+process "inspired by" the image is not a transcription. The usual failure is
+dropping and merging items while summarizing, then building from the summary.
+
+1. **Inventory before you interpret.** Before proposing any topology, write
+   down every visible item: its exact wording, its colour/shape, and its rough
+   position. Then list every visible connector as source → target, with its
+   label and whether it is certain or ambiguous. Mark unreadable or crossed-out
+   items instead of guessing or skipping them. Keep this list in a notes file
+   outside the project folder.
+2. **Confirm the inventory, not a summary.** The structure you confirm under
+   Rule 4 must list every node and flow from the inventory. Never offer a
+   condensed or "interpreted" topology as the recommended option. Ask a
+   separate question for each ambiguity, and for anything you would add that
+   the image does not show (start/end events, merge gateways the canvas
+   requires, a reading of an implied link).
+3. **Transcribe 1:1.** One node per item, keeping the image's wording and its
+   Yes/No branch labels. Add technical scaffolding only where the canvas
+   requires it, and name each addition in your final report.
+4. **Keep the image in view.** Earlier-turn images may leave your context:
+   hosts can replace them with a text placeholder, especially after the user
+   sends a new message. Before any fidelity work, including when the user says
+   the result does not match, check that you can actually see the image. If
+   you cannot, re-read it from its file path (the attachment path the host
+   provided). If that also fails, ask the user to re-attach it. Never rebuild
+   from memory of the image, from your earlier summary, or from a sub-agent's
+   text description. If a sub-agent transcribed the image, check its result
+   against the image yourself before editing.
+5. **Verify fidelity before finishing.** After `validate` passes, look at the
+   image again and compare it with the BPMN node by node and flow by flow.
+   Report any remaining mismatch rather than calling the result done.
+   Validation proves the file is structurally valid, not that it matches the
+   image.
 
 ## Workflow
 
@@ -371,7 +409,9 @@ and honestly surfaced to the user as gaps when asked.
    `<bpmn:scriptTask>`, and `<bpmn:endEvent>`. Do not write PascalCase tags
    like `<bpmn:IntermediateCatchEvent>`.
 4. **Confirm before authoring.** Confirm the chosen connector/connection/process
-   and the process structure with the user (AskUserQuestion).
+   and the process structure with the user (AskUserQuestion). When the source
+   is an image, confirm the full inventory, not a summary — see
+   [Authoring from an image](#authoring-from-an-image).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
 6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
