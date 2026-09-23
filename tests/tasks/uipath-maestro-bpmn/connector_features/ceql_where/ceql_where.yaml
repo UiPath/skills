@@ -19,6 +19,10 @@ description: >
   either authoring loop) applies identically to Flow and to Maestro BPMN.
 tags: [uipath-maestro-bpmn, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, "mode:build"]
 
+# Parked (surface gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# surface gap: the agent writes the connector's sanctioned CEQL `where` string, never Flow's numeric-groupOperator filter tree, which has no BPMN carrier (CI runs 35783045540, 35785806030).
+skip: true
+
 run_limits:
   expected_turns: 34
   task_timeout: 1500

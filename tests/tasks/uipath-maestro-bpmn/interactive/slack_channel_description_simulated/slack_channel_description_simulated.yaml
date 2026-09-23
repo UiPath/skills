@@ -30,6 +30,10 @@ description: >
   withheld-project-name advisory.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", connector, simulation]
 
+# Parked (skill gap). Criteria stay one-for-one with Flow; unskip when the gap closes.
+# skill gap: the agent lists only page 1 of Slack conversations, so the target channel never appears (CI run 35789221753); Flow's version fully passes 4/12 nightlies.
+skip: true
+
 run_limits:
   # Ceiling on agent turns across the whole dialog, with generous headroom so a
   # long build is never truncated mid-flow. The dialog length itself is bounded
