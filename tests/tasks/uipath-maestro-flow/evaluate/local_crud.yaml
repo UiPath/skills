@@ -58,7 +58,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
@@ -66,7 +66,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0.0
 
   - type: run_command
@@ -106,7 +106,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+(evaluator\s+list|set\s+list)'
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0.0
 
   - type: run_command

@@ -65,6 +65,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list)\b[^\n]*\b(ixp|document|extract))'
     min_count: 1
+    weight: 0
     pass_threshold: 0.0
 
   # A listing/Q&A task should not create a Flow artifact.

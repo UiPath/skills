@@ -145,7 +145,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?i)(uip|\$UIP)\s+maestro\s+flow\s+registry\s+search'
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0
 
   # Advisory until a real run proves it latches. impl.md requires the
@@ -157,5 +157,5 @@ success_criteria:
     description: "Advisory: handoff payload names the documents folder"
     command_pattern: 'uipath-ixp[\s\S]{0,600}documents'
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0

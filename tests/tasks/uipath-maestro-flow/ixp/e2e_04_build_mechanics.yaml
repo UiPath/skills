@@ -123,7 +123,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?i)(uip|\$UIP)\s+ixp\s+projects\s+create'
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0
 
   - type: command_executed
@@ -131,7 +131,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?i)(uip|\$UIP)\s+ixp\s+deployments\s+create\b[^\n]*--folder-key'
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0
 
   # Primary gate: project created + folder-deployed this run, then the .flow

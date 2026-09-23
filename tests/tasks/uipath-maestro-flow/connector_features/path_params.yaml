@@ -46,7 +46,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list"
     min_count: 1
-    weight: 1.0
+    weight: 0
     pass_threshold: 0.0
 
   - type: run_command

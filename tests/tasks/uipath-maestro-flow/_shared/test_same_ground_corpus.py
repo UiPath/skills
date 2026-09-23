@@ -42,6 +42,22 @@ FORBIDDEN_PROMPT_EXCEPTIONS = {
 
 DEBUG_SOLUTION_ALLOWLIST = set()
 
+# Non-gating `command_executed` criteria must also be weightless — see
+# `test_non_gating_command_telemetry_is_weightless`.
+#
+# `smoke/registry_discovery` is the one task whose ENTIRE grade is command
+# telemetry: it "deliberately produces no artifact", so all four of its criteria
+# grep the shell. Zeroing them leaves a total weight of 0, and
+# `calculate_weighted_score` reports 0.0 for that — the task would score nothing
+# whatever the agent did. The real fix is an outcome-graded criterion over the
+# agent's REPORT (the prompt asks it to name the two node types and their
+# schemas), which is a task redesign rather than a reweight. Until then it keeps
+# its weights and stays arm-biased by construction: an SDK-loop agent can answer
+# this from the SDK's own `api-index.md` without touching `flow registry` at all.
+NON_GATING_WEIGHT_ALLOWLIST = {
+    "smoke/registry_discovery.yaml",
+}
+
 # The two billing lookups name only a "Data Service entity", which since #3041
 # denotes two node families. Their prompts pin the connector so the graded
 # structure is deterministic; the sibling dispute-resolution task pins it in the
@@ -182,6 +198,50 @@ def test_v1_only_authoring_commands_match_the_temporary_allowlist() -> None:
             if threshold is None or float(threshold.group(1)) > 0:
                 offenders.add(relative)
     assert offenders == V1_AUTHORING_ALLOWLIST
+
+
+def test_non_gating_command_telemetry_is_weightless() -> None:
+    """A `command_executed` that does not gate must not move the score either.
+
+    THE GAP THIS EXISTS FOR. `pass_threshold: 0` was read as "this criterion is
+    advisory", and the sibling test above enforces only that. It is half the
+    idiom. coder_eval's own field docs spell out the other half: "weight=0
+    excludes from the score but NOT from the pass/fail gate ... To make a
+    criterion truly non-gating, also set pass_threshold=0." A criterion with
+    `pass_threshold: 0` and `weight: 1.5` still lands in both halves of the
+    weighted mean, so failing it costs score without ever failing the task.
+
+    That is not neutral between arms, because a `command_executed` grades the
+    SHELL COMMAND an arm ran, and the two arms run different commands by
+    construction. In the 2026-09-23 same-ground run, 15 such criteria across
+    10 flow tasks scored 1.0 for v1 and 0.0 for v2 — `flow node add`,
+    `flow registry get`, `agent init --conversational`, `is connections list`
+    — dragging tasks that passed every graded check down to 0.55, 0.59, 0.71.
+    `datafabric_integration_create_get` returned SUCCESS at 0.55.
+
+    The outcome those criteria stand in for is graded by a `run_command`
+    against the artifact, which is route-blind. So the telemetry keeps
+    reporting and stops scoring.
+
+    Criteria carrying `stop_early` are exempt: there `weight` is load-bearing
+    for the pass-stop floor, not just for the score (see `ixp/routing.yaml`,
+    whose sentinel says so).
+    """
+    offenders = set()
+    for relative, _, text in _tagged_tasks():
+        for criterion_type, criterion in _criterion_blocks(text):
+            if criterion_type != "command_executed":
+                continue
+            threshold = re.search(r"(?m)^\s+pass_threshold:\s*([0-9.]+)", criterion)
+            if threshold is None or float(threshold.group(1)) > 0:
+                continue
+            if re.search(r"(?m)^\s+stop_early:", criterion):
+                continue
+            weight = re.search(r"(?m)^\s+weight:\s*([0-9.]+)", criterion)
+            # An absent `weight` defaults to 1.0, so silence is not compliance.
+            if weight is None or float(weight.group(1)) != 0:
+                offenders.add(relative)
+    assert offenders == NON_GATING_WEIGHT_ALLOWLIST
 
 
 def test_gating_skill_telemetry_matches_the_temporary_allowlist() -> None:
