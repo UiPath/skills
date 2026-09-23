@@ -413,11 +413,10 @@ authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
   incoming flow — join with a gateway, not a "fake join" (`FAKE_JOIN`). A
   join gateway is two or more in, one out; it needs no `conditionExpression`
   and no `default`, and it does not trip `SUPERFLUOUS_GATEWAY`. **`validate`
-  does not report `FAKE_JOIN`** (checked on CLI 1.204.0: the rule is
-  registered and severity ERROR, but its node test compares against the
-  abstract types `bpmn:Activity`/`bpmn:Event`, which no parsed node carries).
-  A clean `validate` is therefore not evidence that a multi-inbound activity
-  is legal. Author the join gateway.
+  does not report `FAKE_JOIN`** (CLI 1.204.0), so a clean run is not evidence
+  that a multi-inbound activity is legal. Author the join gateway anyway.
+  When a CLI starts reporting the rule, delete this caveat and the one in
+  validation checklist item 5.
 
 ## Events and the event-definition matrix
 
@@ -762,7 +761,10 @@ the same blocking rules:
 4. Each XOR gateway: non-default flows have conditions; exactly one default.
 5. No activity/event has more than one incoming flow. The CLI never reports
    this one (see [Gateways](#gateways)), so check it by hand whether or not
-   `validate` is available.
+   `validate` is available. One open exception: an end event that converges
+   the normal routes returning one shared public result, which
+   [Variables](#variables) prescribes. Leave those as prescribed rather than
+   rebuilding them behind a gateway.
 6. Each event subprocess has exactly one start event, and it carries an event
    definition (with `isInterrupting`).
 7. Every `vars.<id>` reference resolves to a declared variable.
