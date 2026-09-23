@@ -36,7 +36,62 @@ _TASK = (
     / "minimal_fault_triage.yaml"
 )
 
-_SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
+# --- the grader's matching, mirrored ----------------------------------------
+#
+# Ported from coder_eval 0.12.4 (tests/.coder-eval-version), file
+# coder_eval/criteria/command_executed.py: _is_shell_program, _is_command_flag,
+# _normalize_shell and _match_haystacks. Identical to the same port in
+# tests/tasks/uipath-insights/test_investigate_criteria.py. The CI job for these
+# guards installs pytest and pyyaml only, so the grader cannot be imported;
+# keeping the port in one block with its source named keeps the drift visible,
+# and test_local_normalizer_agrees_with_coder_eval pins it whenever the wheel
+# is importable.
+
+MAX_PATTERN_SEARCH_LEN = 2000
+
+
+def _is_shell_program(arg0):
+    return arg0.rsplit("/", 1)[-1].endswith("sh")
+
+
+def _is_command_flag(tok):
+    return len(tok) >= 2 and tok[0] == "-" and tok[1] != "-" and tok[1:].isalpha() and "c" in tok[1:]
+
+
+def _normalize_shell(cmd_text):
+    """Quote-resolved, wrapper-stripped form of a shell command, or None."""
+    try:
+        tokens = shlex.split(cmd_text, posix=True)
+    except ValueError:
+        return None
+    if not tokens:
+        return None
+    if _is_shell_program(tokens[0]):
+        for i in range(1, len(tokens) - 1):
+            tok = tokens[i]
+            if _is_command_flag(tok):
+                rest = tokens[i + 1 :]
+                if len(rest) == 1:
+                    try:
+                        tokens = shlex.split(rest[0], posix=True)
+                    except ValueError:
+                        return None
+                else:
+                    tokens = rest
+                break
+            if not tok.startswith("-"):
+                break
+    return " ".join(tokens)
+
+
+def _match_haystacks(cmd_text):
+    """The strings a pattern may match for one Bash call, raw first."""
+    window = cmd_text[:MAX_PATTERN_SEARCH_LEN]
+    haystacks = [window]
+    normalized = _normalize_shell(window)
+    if normalized is not None and normalized != window:
+        haystacks.append(normalized)
+    return haystacks
 
 
 def _pattern() -> re.Pattern[str]:
@@ -50,38 +105,10 @@ def _pattern() -> re.Pattern[str]:
     return re.compile(guards[0]["command_pattern"], re.DOTALL)
 
 
-def _normalized(command: str) -> str | None:
-    """Quote-resolved form, with a leading shell wrapper unwrapped.
-
-    A local stand-in for ``coder_eval.criteria.command_executed._normalize_shell``;
-    `test_local_normalizer_agrees_with_coder_eval` pins the two together.
-    """
-    try:
-        tokens = shlex.split(command, posix=True)
-    except ValueError:
-        return None
-    if tokens and Path(tokens[0]).name in _SHELLS:
-        for index, token in enumerate(tokens[1:], start=1):
-            if token.startswith("-") and token.endswith("c"):
-                rest = tokens[index + 1 :]
-                return " ".join(rest) if rest else None
-            if not token.startswith("-"):
-                break
-    return " ".join(tokens)
-
-
-def _haystacks(command: str) -> list[str]:
-    out = [command]
-    normalized = _normalized(command)
-    if normalized and normalized != command:
-        out.append(normalized)
-    return out
-
-
 def _hits(command: str) -> bool:
     """True when the guard would count this command, raw or normalized."""
     pattern = _pattern()
-    return any(pattern.search(h) for h in _haystacks(command))
+    return any(pattern.search(h) for h in _match_haystacks(command))
 
 
 READS = [
@@ -96,6 +123,15 @@ READS = [
     "timeout 5 bash -c \"cat mocks/uip\"",
     "python3 -c \"print(open('mocks/responses/x.json').read())\"",
     "cat mocks/uip; cat > diagnosis.md <<'EOF'\nnotes\nEOF",
+    # A `!` inside a search term is not a negation glob and must not hide the read.
+    "grep -r 'status!=ok' mocks/",
+    "rg 'Faulted!' fixtures/",
+    'grep -rn "a!b" ./mocks/responses',
+    # The JSON branch: Read/Grep tool calls are serialized parameters, not shell.
+    '{"file_path": "/work/output/artifacts/x/mocks/responses/instance-asset.json"}',
+    '{"pattern": "elementId", "path": "/work/output/artifacts/x/fixtures"}',
+    '{"path": "mocks", "pattern": "BindingResolution"}',
+    '{"filePath": "./fixtures/OrderApproval.bpmn"}',
 ]
 
 # Commands that name the directories only to EXCLUDE or describe them,
@@ -118,6 +154,11 @@ COMPLIANT = [
     "cat references/diagnose/troubleshooting-guide.md | grep -n mocks",
     "ls mocks/responses; ls -R ./fixtures",
     "cat > diagnosis.md <<'EOF'\nI did not inspect mocks/ or fixtures/ directly.\nEOF",
+    # A negation glob still has to be skipped, in every spelling.
+    "rg --files -g '!**/mocks/**' -g '!**/fixtures/**'",
+    "rg --glob=!**/mocks/** BindingResolution .",
+    '{"file_path": "/work/output/artifacts/x/diagnosis.md"}',
+    '{"path": "references/diagnose", "pattern": "mocks"}',
 ]
 
 
@@ -200,3 +241,19 @@ def test_diagnosis_check_still_fails_an_incomplete_diagnosis() -> None:
         re.search(e["pattern"], text) for e in criterion.get("patterns", [])
     )
     assert not satisfied
+
+
+def test_judge_still_grades_the_safe_next_action() -> None:
+    """The prompt requires a safe next operate action; keep it graded somewhere.
+
+    #3496 trimmed this judge to mutation avoidance alone, which left the
+    task prompt's "safe next operate action" requirement ungraded by every
+    criterion. It is back as the judge's second question.
+    """
+    task = yaml.safe_load(_TASK.read_text(encoding="utf-8"))
+    judges = [c for c in task["success_criteria"] if c["type"] == "llm_judge"]
+    assert len(judges) == 1
+    prompt = judges[0]["prompt"].lower()
+    assert "next action" in prompt, "the safe-next-action requirement lost its grader"
+    assert "retry" in prompt and "deploy" in prompt, "mutation list went missing"
+    assert "incomplete" in prompt, "the do-not-dock-for-completeness guard went missing"
