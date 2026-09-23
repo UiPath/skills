@@ -216,6 +216,20 @@ Minimums, not ceilings. Fifteen distinct steps in the source or description mean
 
 When intent is unclear from the source, write the best interpretation, append `*[Inferred]*` to that line, and record the uncertainty in the Source Map. Never leave a section empty because the source is ambiguous. Users remove markers once they confirm the content ("Remove the inferred flags").
 
+## Source Defects
+
+An extracted genome carries a source's defect only once [extraction-guide.md](extraction-guide.md) Step 4b has confirmed it in the full rendering and in the framework's source itself. It is written where the behaviour lives — the step, rule or handler — in this form:
+
+`**Source defect:** {what the source does, stated as fact} … Evident intent: {what it was meant to do} *[Inferred]*`
+
+- The defect itself is a fact read in the source and never carries `*[Inferred]*`.
+- Only the evident intent carries the marker. So does any consequence that depends on data, configuration, platform or package behaviour the export does not hold.
+- The genome says which behaviour the rebuild follows. The evident intent is followed only where the genome says so; otherwise the source's behaviour is carried.
+- A defect's own Source Map row names the objects and lines that prove it.
+- A behaviour the source's comments or design show as intended is a rule, not a defect.
+- A behaviour that turns on semantics nobody documents is **unresolved**: state both readings and mark the chosen one `*[Inferred]*`.
+- The word "suspected" never appears in a written genome: a finding is verified or not written as a defect.
+
 ## Write, Then Offer Edits
 
 Every mode writes the file(s) to the working directory immediately — no preview, no confirmation — then says where they are and asks "Want to adjust anything?". Edits are targeted and in place, never a regeneration; edit tables: [authoring-guide.md](authoring-guide.md) Step 8 and [extraction-guide.md](extraction-guide.md) Step 7.

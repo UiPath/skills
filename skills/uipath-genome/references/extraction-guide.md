@@ -60,6 +60,32 @@ Read every relevant file. No sampling, no "the helpers are similar".
 - **Call graph per component** with source guide's Call Graph Rules → ordered workflow steps. An invocation made from a result or error route (run this process when the step fails) is an edge too, a conditional one; objects named alike are separate nodes — every edge names its callee by id, a step is described from the copy its caller runs, and two live copies are both carried. Dead code goes to the Source Map — but a branch is dead only when the conditions on every path to it contradict it for every value; prove that from the condition text before writing "dead" (an inner `contains X` under an outer `is empty OR contains X` is reachable for every value the outer condition admits). A wrong dead-code row drops behaviour from the build, and execution never edits the genome to restore it.
 - **Handoff graph across components** from cross-component edges → Components order and Handoffs table. Each edge records mechanism, data passed, and failure behaviour visible in the source (error port, retry, boundary event, dead-letter queue).
 
+### Step 4b — Verify every suspected source defect
+
+A finding that the source misbehaves is a **suspected defect** until this step settles it. Examples: a flag set but never tested, an exit that cannot fire, a result checked but never captured, a retry an exception bypasses, a notice prepared but never sent, a branch whose test contradicts its own comment, one copy of a template doing what its sibling does not. The inventory output is a rendering the pack's script produced, and extraction has read it, not the source. So the finding may belong to the source, or to the rendering. Settle each one before anything is written about it, in two passes.
+
+1. **The rendering, in full.** Re-read every object the finding rests on in the uncompressed rendering, never a compact or folded one. That includes:
+   - the call's argument and result bindings, in both directions;
+   - the callee's error and final blocks;
+   - the disabled code (a superseded flow often explains a value the live flow only carries);
+   - the sibling copies.
+   Then follow the effect through the bindings to where it lands: what the caller does next, and what a later or resumed run does with what was, or was not, written.
+2. **The framework's source, directly.** Open the source objects the finding rests on in the export itself, located by the identity the source guide uses (object id, editor line, node path). Read them with a generic reader:
+   - For a structured export (JSON, XML, a database dump): parse the file, select the object, and print every key. Drop only empty values and binary blobs.
+   - For code: read the lines themselves.
+   Compare field by field with what the rendering showed for exactly the facts the finding rests on: operators and every operand of a condition chain, bindings, flags, defaults, the presence or absence of a command. Never check through a projection that names the fields it keeps. It hides every key it did not name, such as a chained condition kept under its own key or a result binding held on the node rather than in its attributes. A reader that misses such a key produces a "discrepancy" that is the reader's own. Read the objects targeted, not whole files. The source guide's warnings against reading raw exports are about bulk reading, and this is a lookup.
+
+Classify each finding by what the two passes show, and write it accordingly:
+
+| Finding | When | Genome | Also |
+|---|---|---|---|
+| **Rendering artefact** | the source differs from the rendering | write the behaviour from the source; no defect | report the renderer defect for the pack, with the object and the field |
+| **Source defect** | rendering and source agree, and the behaviour contradicts the evident intent — the source's own comment or log text, a sibling copy, the step's purpose | marked **Source defect** per [genome-format-guide.md § Source Defects](genome-format-guide.md); evidence in the Source Map | the consequence traced through the source; the parts that depend on data, configuration, platform or package behaviour flagged `*[Inferred]*` |
+| **Source rule** | rendering and source agree, and the source's comment or design shows the behaviour is intended | the rule, unmarked | nothing |
+| **Unresolved** | the structure is certain, but the behaviour turns on a setting or platform or package semantics that neither the export nor the pack documents | both readings stated, the one the rebuild follows marked `*[Inferred]*` | report the undocumented semantics for the pack |
+
+Each finding gets its own Source Map row, with the object ids, the line numbers and the classification. Each component also gets one Verification row saying that both passes were made and whether the rendering matched the source. A finding nobody verified is not written as a defect. When time does not allow both passes, it is written as the behaviour the rendering shows, flagged `*[Inferred]*`, with its Source Map row saying which pass is missing.
+
 ### Step 5 — Infer complexity (component)
 
 | Signal | Simple | Medium | Complex |
@@ -98,7 +124,7 @@ Write the **process genome first** (when applicable), then each **component geno
 | Acceptance Criteria | One per step, per transformation, per rule, per handler, plus edge cases. Existing test cases and eval sets become criteria directly (behavioural wording). |
 | Deployment | Solution vs independent packages, triggers, folders from manifest and bindings. Count buildable projects: non-test components plus exactly one test project when test components exist. |
 | Complexity, Tags | Step 5; applications + domain + platform features. |
-| Source Map | Step → file / workflow / node label; component → project. Dead code, unresolved references, inferred steps. Plus migration-contract rows of Step 6b. |
+| Source Map | Step → file / workflow / node label; component → project. Dead code, unresolved references, inferred steps, every Step 4b finding with its classification and one Verification row per component. Plus migration-contract rows of Step 6b. |
 
 ### Step 6b — Complete the Source Map as the migration contract
 
@@ -121,6 +147,7 @@ Write all files, then ask "Want to adjust anything?" ([genome-format-guide.md §
 | "Re-extract, the source changed" | Rerun from Step 1; preserve user edits the source does not contradict and say which were kept |
 | "Merge these two components" / "split this one" | Adjust Components, Handoffs, component files; re-check Interface agreement |
 | "Rename / reorder / remove steps" | Workflow and Source Map together, so every step still names its source objects |
+| "Is this really a defect?" / "check it against the source" | Rerun Step 4b for that finding, both passes, and re-mark it in the body and its Source Map row by what the passes show |
 
 ## Anti-patterns
 
@@ -138,3 +165,4 @@ Write all files, then ask "Want to adjust anything?" ([genome-format-guide.md §
 12. **Transcribing framework plumbing as steps** — state transitions, retry counters, status updates, screenshots on exception — or dropping the framework's configuration workbook instead of turning its rows into Configuration Questions and Platform Dependencies ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 10).
 13. **Writing a value from its rendering** — a count read as "once" because the rendering showed nothing, a case-insensitive test written as case-sensitive, a status text paraphrased or retyped with different spacing, a parsing rule worded from the command's name instead of from its use (Step 3).
 14. **Making a scripting wrapper a library of verbs** — "Click by id", "Type by id" as public workflows — instead of the calling steps' UI actions on the elements its identities name (Step 3).
+15. **Writing a suspected defect from a rendering.** A defect is marked only after Step 4b's two passes, the full rendering and then the framework's source itself. The mirror failure is just as bad: calling a rendering artefact, or a reader's own blind spot, a defect of the source. Other forms: a defect labelled "suspected" and left for the reader to check, a consequence asserted without tracing it through the bindings, and platform semantics nobody documented presented as fact.
