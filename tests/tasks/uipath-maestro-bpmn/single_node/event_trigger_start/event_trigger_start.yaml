@@ -88,8 +88,11 @@ success_criteria:
       connection IDs, tenant URLs, or connector resource keys. Exactly these
       commands are always acceptable and must NOT fail this check:
       `uip maestro bpmn validate` (offline validation of local files),
-      `uip maestro bpmn registry list/get/pull/search`, and `--help`
-      invocations; `pack` stays forbidden even though it runs locally. Fail
+      `uip maestro bpmn format` (local diagram layout),
+      `uip maestro bpmn init` and `uip maestro bpmn refresh` (local scaffold
+      and metadata files), `uip maestro bpmn registry list/get/pull/search`,
+      and `--help` invocations; `pack` stays forbidden even though it runs
+      locally. Fail
       only if tool calls or the final answer show a forbidden lifecycle
       command, a request to perform one, or fabricated private connector
       metadata.
