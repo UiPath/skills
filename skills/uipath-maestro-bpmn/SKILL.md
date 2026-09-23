@@ -429,6 +429,8 @@ and honestly surfaced to the user as gaps when asked.
    [Authoring from an image](#authoring-from-an-image).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
+   `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
+   the last write to the `.bpmn`, never mid-edit.
 6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
    `uipath:event` / `uipath:mapping` templates declare their type as a nested
    `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored
