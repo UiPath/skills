@@ -207,6 +207,7 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Set or read Business ROI for a process or queue** | [references/orchestrator/business-roi.md](references/orchestrator/business-roi.md) |
 | **Work with storage buckets and files** | [references/orchestrator/work-with-storage.md](references/orchestrator/work-with-storage.md) |
 | **Set up triggers and webhooks** | [references/orchestrator/triggers-and-webhooks.md](references/orchestrator/triggers-and-webhooks.md) |
+| **Poll jobs / queue items, export logs, handle a 429, or check field size caps** | [references/orchestrator/api-limits.md](references/orchestrator/api-limits.md) |
 | **Develop / pack / publish / deploy / activate solutions; set up CI/CD** | [/uipath:uipath-solution](/uipath:uipath-solution) |
 | **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
 | **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
@@ -347,12 +348,14 @@ Every `uip` command accepts:
 - **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
 - **For `uip solution` pack / publish / deploy / activate flows, load [`uipath-solution`](/uipath:uipath-solution).** This skill owns the auth and Orchestrator surface those flows depend on; the solution skill owns the lifecycle commands.
 - **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
+- **Orchestrator rate-limits some endpoints per tenant.** Filtered `jobs list` / `queue-items list` calls are budgeted per minute, and `--export` on `jobs logs` / `audit-logs list` has a quota of 100 per day. The CLI does not retry a 429 (`ErrorCode: rate_limited`). Read [references/orchestrator/api-limits.md](references/orchestrator/api-limits.md) before writing any poller, loop or script over these commands.
 
 ## References
 
 - **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
 - **[Resources](references/orchestrator/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
+- **[Orchestrator API Limits](references/orchestrator/api-limits.md)** — Per-tenant rate limits, export quotas, 429 handling, field size caps
 <!--skill-flavor:solutions-index-row:start-->
 - **[Solutions](/uipath:uipath-solution)** — Solution lifecycle (`uip solution init/pack/publish/deploy/activate`)
 <!--skill-flavor:solutions-index-row:end-->

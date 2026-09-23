@@ -14,7 +14,7 @@ All `uip or` commands share a set of cross-cutting options:
 |------|-------|---------|
 | `--tenant <name>` | All commands | Override the default tenant (set during `uip login tenant set`). |
 | `--output json` | All commands | Emit structured JSON instead of table output. Always use this when parsing output programmatically. |
-| `--limit <n>` | List commands | Number of items to return (default 50). |
+| `--limit <n>` | List commands | Number of items to return (default 50). On `queue-items list` keep it at 100 or below — Orchestrator rejects a larger `$top` with HTTP 400. |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
 | `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
 | `--all-fields` | Most get/list commands | Return the full API DTO instead of the curated summary. Use when you need a field the curated view drops. Note: curated keys are PascalCase, raw DTO keys are camelCase — the shapes do not share casing. |
@@ -36,6 +36,7 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Manage Sessions | [manage-sessions.md](manage-sessions.md) | Sessions, runtimes, maintenance mode |
 | Tenant Admin | [tenant-admin.md](tenant-admin.md) | Settings, calendars, audit logs, credential stores, feeds, attachments |
 | Business ROI | [business-roi.md](business-roi.md) | Per-process and per-queue ROI inputs (`process-roi`, `queue-roi`) |
+| API Limits | [api-limits.md](api-limits.md) | Per-tenant rate limits, export quotas, 429 handling, field size caps |
 
 ---
 
@@ -95,6 +96,8 @@ The CLI uses GUID keys for all entity references. Numeric IDs are never exposed 
 ## REST API Fallback
 
 When the CLI does not cover an operation, you can fall back to the Orchestrator REST API using the access token stored in `~/.uipath/.auth`. Always check `uip or --help` first — most operations are covered by the CLI, and a command is safer and more consistent than hand-rolled REST. Only reach for REST when there is genuinely no command for what you need (and consider reporting the gap so the CLI can cover it).
+
+REST callers are subject to the same per-tenant rate limits and export quotas as the CLI. Honor `Retry-After` on a 429. See [api-limits.md](api-limits.md).
 
 ---
 
