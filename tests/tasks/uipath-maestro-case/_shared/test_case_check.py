@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from case_check import (  # noqa: E402
     _get_ci,
     collect_outputs,
+    exit_type,
     find_caseplan,
     find_project_dir,
     find_solution_dir,
@@ -255,6 +256,19 @@ def test_normalization_does_not_mutate_the_input():
     before = json.dumps(SDD_RESOLVE_LEDGER, sort_keys=True)
     registry_audit_entries(SDD_RESOLVE_LEDGER)
     assert json.dumps(SDD_RESOLVE_LEDGER, sort_keys=True) == before
+
+
+def test_exit_type_reads_an_absent_type_as_exit_only():
+    # The runtime treats an exit condition without `type` as exit-only, and so does
+    # `validate --strict --sdd`; a grader comparing `.get("type")` would say None.
+    assert exit_type({"marksStageComplete": True}) == "exit-only"
+    assert exit_type({"type": None}) == "exit-only"
+
+
+def test_exit_type_keeps_a_declared_routing_type():
+    assert exit_type({"type": "return-to-origin"}) == "return-to-origin"
+    assert exit_type({"type": "wait-for-user"}) == "wait-for-user"
+    assert exit_type({"type": "exit-only"}) == "exit-only"
 
 
 def test_get_ci_reads_camelcase_and_pascalcase():

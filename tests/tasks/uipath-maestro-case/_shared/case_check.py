@@ -79,6 +79,19 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+def exit_type(condition: dict) -> str:
+    """A stage exit condition's type, reading an absent `type` as `exit-only`.
+
+    `type` is optional on exit conditions, and the runtime treats a condition
+    without one as exit-only: the case-schema converter only branches on
+    `wait-for-user` and `return-to-origin`. `validate --strict --sdd` reads it the
+    same way. A grader that compares `condition.get("type")` to "exit-only"
+    instead fails a correct plan the runtime and the audit both accept — so read
+    it through here. A declared routing type is still only ever the declared one.
+    """
+    return condition.get("type") or "exit-only"
+
+
 def is_non_required(item: dict) -> bool:
     """Accept the Case SDK's omitted default and the explicit false form."""
     value = item.get("isRequired")

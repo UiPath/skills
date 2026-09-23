@@ -33,7 +33,6 @@
   },
   "references/case-schema.md": {
     "Closed task types": 1,
-    "Design handoff and SDD authority": 4,
     "Layout": 3,
     "No authored edges": 3
   },
@@ -59,6 +58,7 @@
     "Never auto-debug or publish to Orchestrator": 2,
     "No authored edges": 2,
     "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 1,
+    "SDD is the sole post-design input, across sessions": 1,
     "The build is lossless against the SDD": 1
   },
   "references/phased-execution.md": {
@@ -94,11 +94,7 @@
     "SDD is the sole post-design input, across sessions": 1
   },
   "references/plugins/sla/impl-json.md": {
-    "Design handoff and SDD authority": 2,
-    "SDD is the sole post-design input, across sessions": 2
-  },
-  "references/plugins/sla/planning.md": {
-    "Design handoff and SDD authority": 1
+    "SDD is the sole post-design input, across sessions": 1
   },
   "references/plugins/stages/impl-json.md": {
     "Layout": 2,

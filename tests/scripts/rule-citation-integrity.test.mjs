@@ -11,6 +11,9 @@ import {
   materializeComposition,
 } from "../../scripts/compose-skill-flavor.mjs";
 
+// `Rule N` preceded by a condition-name word (`Entry Rule 1`, `SLA Rule 1`) is a NAME, not a
+// citation. Code spans can't be excluded wholesale: `…placeholder task per Rule 9` sits in one
+// and is a real citation. Measured: 8 hits in code spans, 6 names, 2 citations.
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const FLAVOR_ROOT = join(REPO_ROOT, "skill-flavors");
 
@@ -99,7 +102,7 @@ test("every `Rule N` citation resolves, in every built tree", (t) => {
       );
       const dangling = [];
       for (const file of markdownFiles(skillRoot)) {
-        for (const m of readFileSync(file, "utf8").matchAll(/\bRule (\d+)\b/g)) {
+        for (const m of readFileSync(file, "utf8").matchAll(/(?<!\b(?:Entry|Exit|Complete|Completion|SLA|Case|Stage)\s)\bRule (\d+)\b/g)) {
           if (!present.has(Number(m[1]))) {
             dangling.push(`${relative(root, file)} cites Rule ${m[1]}`);
           }

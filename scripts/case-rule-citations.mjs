@@ -11,6 +11,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// `Rule N` preceded by a condition-name word (`Entry Rule 1`, `SLA Rule 1`) is a NAME, not a
+// citation. Code spans can't be excluded wholesale: `…placeholder task per Rule 9` sits in one
+// and is a real citation. Measured: 8 hits in code spans, 6 names, 2 citations.
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const SKILL_DIR = join(REPO_ROOT, "skills", "uipath-maestro-case");
 
@@ -42,7 +45,7 @@ export function citationMap(skillDir = SKILL_DIR) {
   const map = {};
   for (const file of mdFiles(skillDir)) {
     const hits = [];
-    for (const m of readFileSync(file, "utf8").matchAll(/\bRule (\d+)\b/g)) {
+    for (const m of readFileSync(file, "utf8").matchAll(/(?<!\b(?:Entry|Exit|Complete|Completion|SLA|Case|Stage)\s)\bRule (\d+)\b/g)) {
       const n = Number(m[1]);
       hits.push(titles.get(n) ?? `<<UNRESOLVED Rule ${n}>>`);
     }
