@@ -27,8 +27,8 @@ from pathlib import Path
 # simulated user), which must not move with the agent under test.
 AGENT_MODEL = os.environ.get("AGENT_MODEL", "").strip()
 
-# Rounded recall.yes baseline (in %) per skill, measured 2026-06-17 over each
-# skill's FULL positive set on claude-sonnet-4-6 via Bedrock at max_turns: 1 —
+# Rounded recall.yes baseline (in %) per skill, measured 2026-09-23 over each
+# skill's FULL positive set on claude-opus-5-5 via Bedrock at max_turns: 1 —
 # the same model and full-set measurement the gate itself runs. The gate task
 # pins run_limits.max_turns: 1 (task layer overrides the experiment's 3 via
 # per-key field-merge) so baseline and gate stay directly comparable; at 3
@@ -45,30 +45,20 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-mcp-servers": 100,
     "uipath-tasks": 100,
     "uipath-human-in-the-loop": 100,
-    "uipath-rpa": 100,
+    "uipath-rpa": 90,
     "uipath-test": 100,
     "uipath-platform": 100,
     "uipath-maestro-flow": 95,
-    "uipath-maestro-bpmn": 95,
-    "uipath-admin": 95,
-    "uipath-review": 95,
-    # uipath-planner re-measured 2026-08-07 on the current gate model
-    # (claude-sonnet-5). The prior 95% figure predates the #2132 model
-    # retarget, and no PR between the retarget and this measurement changed
-    # planner frontmatter, so the gate never ran on the new model. Measured
-    # recall over the full positive set: main's own unchanged frontmatter
-    # 65.9% and 59.3% (two dispatches: actions/runs/31219477420,
-    # actions/runs/31220789082); the planner-sole-sdd-author branch 59.3%,
-    # 52.7%, 51.6%. Run-to-run spread is ~7pp on this skill's ambiguous
-    # positives, so 60 sits between the two arms' means; DROP_PP absorbs the
-    # spread. Re-baseline again after the next full activation run.
-    "uipath-planner": 60,
+    "uipath-maestro-bpmn": 100,
+    "uipath-admin": 100,
+    "uipath-review": 90,
+    "uipath-planner": 95,
     "uipath-coded-apps": 90,
-    "uipath-solution": 90,
-    "uipath-agents": 90,
-    "uipath-maestro-case": 90,
-    "uipath-api-workflow": 90,
-    "uipath-functions": 95,
+    "uipath-solution": 100,
+    "uipath-agents": 100,
+    "uipath-maestro-case": 95,
+    "uipath-api-workflow": 100,
+    "uipath-functions": 100,
 }
 
 DROP_PP = 10
