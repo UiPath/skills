@@ -4,14 +4,14 @@
 
 Call a curated or generic Integration Service operation.
 
-**Data Fabric entity operations are Integration Service connector actions.**
+**Some Data Fabric entity operations are Integration Service connector actions.**
 "Data Fabric" and "Data Service" name one product — the tenant displays connector
-key `uipath-uipath-dataservice` as *UiPath Data Fabric* — so a task naming either
-one routes here for every entity operation EXCEPT read-one
-(`dataFabricRead()`) and update-one (`dataFabricUpdate()`), the only two verbs
-`core.datafabric.*` has. Create, delete, get-by-id, query-many with a row limit
-and the file record fields are connector actions; see
-[`data-fabric.md`](data-fabric.md) for the routing table.
+key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE:
+`core.datafabric.*` has all four verbs (`dataFabricRead()`,
+`dataFabricCreate()`, `dataFabricUpdate()`, `dataFabricDelete()`), and the read
+verb covers filters, paging, sort, and get-by-id (filter on `Id`). What still
+routes here is the file record fields and the Record Created / Updated events;
+see [`data-fabric.md`](data-fabric.md) for the routing table.
 
 Signatures:
 

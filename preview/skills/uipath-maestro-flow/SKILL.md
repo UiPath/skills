@@ -236,9 +236,11 @@ under `examples/` resolve inside this skill folder.
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
-| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric / Data Service — **every** entity op: create, get-by-id, query, update, delete, file fields, events: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
-| Data Fabric read | `core.datafabric.read` (transitional — prefer the connector row above unless the scenario names this node) | `dataFabricRead(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
-| Data Fabric update | `core.datafabric.update` (transitional — prefer the connector row above unless the scenario names this node) | `dataFabricUpdate(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric / Data Service — the ops the native family lacks: file record fields, events: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
+| Data Fabric read | `core.datafabric.read` (`resultMode: 'multiple'` selects its 1.4 definition; `limit` caps at 1000) | `dataFabricRead(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric create | `core.datafabric.create` | `dataFabricCreate(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric update | `core.datafabric.update` | `dataFabricUpdate(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric delete | `core.datafabric.delete` (declares NO outputs) | `dataFabricDelete(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Subflow | `core.subflow` | `subflow(...)` | [Subflow](#subflow) | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
 | Human task | `uipath.human-in-the-loop` | `hitl(...)` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/GallerySubmission.flow.ts` |
 | Human quick form | `uipath.human-in-the-loop.quick-form` | `hitl({ variant: 'quick-form', ... })` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
@@ -631,18 +633,19 @@ Check tenant uniqueness/schema settings; wait only when a consumer exists and it
 
 ## Data Fabric
 
-**One product, one surface — the connector.** "Data Fabric" and "Data Service" are one product (key `uipath-uipath-dataservice` shows as *UiPath Data Fabric*).
-**Every entity operation is `connector('uipath-uipath-dataservice', …)`** — create, get-by-id, query, update, delete, file fields, Record Created/Updated events — even when the scenario says "Data Fabric".
-Body fields come from the entity, so `compile` refuses them until `registry prepare … -f entityName=<Entity>` resolves the schema once.
+**One product, two surfaces.** "Data Fabric" and "Data Service" are one product (key `uipath-uipath-dataservice` shows as *UiPath Data Fabric*).
+**CRUD is NATIVE** — `dataFabricRead` / `dataFabricCreate` / `dataFabricUpdate` / `dataFabricDelete`, no connection binding, no `registry prepare`.
 
 ```ts
-.step('listInvoices', connector('uipath-uipath-dataservice', 'query-entity-records',
-  { entityName: 'Invoices', queryExpression: tmpl`Amount gt ${input('min')}`, limit: 20 },
-  { connection: 'dataservice', folder: 'shared' }))
+.step('open', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
+  filters: [{ field: 'Status', value: 'Open' }], limit: 200, sort: { field: 'CreateTime' } }))
 ```
 
-`core.datafabric.*` compiles (`dataFabricRead`, `dataFabricUpdate`) but covers only 2 of those 7 verbs and declares no output schema, so it strands the rest of the flow on the connector: two bindings, two payload shapes, one entity.
-**Do not reach for the native nodes unless the scenario names them** — a routing default, not a rule; `examples/BeeHiveLedger.flow.ts` shows that native pair.
+`resultMode: 'multiple'` publishes matches under `output.results` and selects the read node's 1.4 definition; plain `dataFabricRead()` stays on 1.0 and reads one record.
+**Wrong here fails SILENTLY** — a bad column is dropped, not rejected, so `validate` passing is not evidence. Resolve columns with `uip df entities get` first.
+Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity needs `folderKey` AND `resourceKey`.
+
+**Still connector-only**: file record fields and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
 **Reference: [`references/data-fabric.md`](references/data-fabric.md)**
 
 ## Error handling
