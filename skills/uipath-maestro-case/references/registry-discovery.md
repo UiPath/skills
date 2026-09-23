@@ -202,6 +202,7 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | HITL | `action-apps-index.json` |
 | RPA | `process-index.json` |
 | AGENT | `agent-index.json` |
+| FUNCTION | `function-index.json` |
 | CASE_MANAGEMENT | `caseManagement-index.json` |
 | CONNECTOR_ACTIVITY | `typecache-activities-index.json` |
 | CONNECTOR_TRIGGER | `typecache-triggers-index.json` |
@@ -211,7 +212,7 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 
 For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. `TIMER` → emit the `wait-for-timer` plugin shape. **`EXTERNAL_AGENT` has no generation plugin here — never write `type: external-agent`; model as `api-workflow` / `execute-connector-activity` per Rule 16.**
 
-**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action` or `case-management` lookup.** An Action App ID is valid only from `action-apps-index.json`, and a child-case `entityKey` is valid only from `caseManagement-index.json`; a same-named process is not a compatible substitute for either task type.
+**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action`, `case-management`, or `function` lookup.** An Action App ID is valid only from `action-apps-index.json`, a child-case `entityKey` is valid only from `caseManagement-index.json`, and a function `entityKey` is valid only from `function-index.json`; a same-named process, agent, or API workflow is not a compatible substitute for any of these task types.
 
 ### 2. Search by Name and Folder Path
 
@@ -219,7 +220,7 @@ For each task in the sdd.md, extract its concrete portable name from the type-sp
 
 | Task type | Portable name query | Folder hint |
 |---|---|---|
-| `process` / `agent` / `rpa` / `api-workflow` | `Resolved Resource` | `Folder Path` |
+| `process` / `agent` / `rpa` / `api-workflow` / `function` | `Resolved Resource` | `Folder Path` |
 | `action` | `Action App: <deploymentTitle>` in `HITL Implementation` | `Deployment Folder` |
 | `case-management` | `Child Case` | `Folder Path` |
 
@@ -246,7 +247,7 @@ for item in data:
 1. **Exact name + exact folder** — strongest match, use directly.
 2. **Exact name, multiple folders** — pick the one matching the sdd.md folder path.
 3. **Exact name, no folder specified in sdd.md** — pick the first exact-name match; note alternatives in `registry-resolved.json`.
-4. **No match in primary cache file** — apply the compatible cross-type fallback above. For `action` and `case-management`, do not search another cache type; proceed to the empty-result gate.
+4. **No match in primary cache file** — apply the compatible cross-type fallback above. For `action`, `case-management`, and `function`, do not search another cache type; proceed to the empty-result gate.
 
 ### 3. Handle Empty Results
 
@@ -284,6 +285,7 @@ After finding a match, map the **cache file type** (not the sdd.md component typ
 | `agent-index.json` | `agent` | `entityKey` |
 | `process-index.json` | `rpa` | `entityKey` |
 | `api-index.json` | `api-workflow` | `entityKey` |
+| `function-index.json` | `function` | `entityKey` |
 | `processOrchestration-index.json` | `process` | `entityKey` |
 | `caseManagement-index.json` | `case-management` | `entityKey` |
 | `action-apps-index.json` | `action` | `id` |
