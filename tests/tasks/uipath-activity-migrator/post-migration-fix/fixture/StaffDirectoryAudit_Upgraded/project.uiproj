@@ -1,0 +1,6 @@
+{
+  "Name": "StaffDirectoryAudit",
+  "ProjectType": "Process",
+  "Description": "Reads the staff directory from the HR reference portal, verifies the headcount budget figures against the desktop calculator, and writes a run summary.",
+  "MainFile": "Main.xaml"
+}

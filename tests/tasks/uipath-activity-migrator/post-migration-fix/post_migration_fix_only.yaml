@@ -1,0 +1,147 @@
+task_id: skill-migrator-post-migration-fix-only
+description: >
+  Skill-guided evaluation: the agent uses the uipath-activity-migrator skill's
+  fix-only entry on a project that was already migrated (StaffDirectoryAudit,
+  pinned to UIAutomation 26.10.4, as UiPath.Upgrade.exe wrote it minus its
+  restore cache and screenshots) and
+  carries `.ToStringWithDelimiter()` marker selectors. Verifies the whole
+  post-migration fix guide: structural scan, variable value classification,
+  the single confirmation gate, Fix 1 (unwrap one generated card) and Fix 2
+  (remove one IsLoose) in GetStaffRecords.xaml, Verified-healthy annotation
+  rewrites in VerifyHeadcount.xaml, untouched files elsewhere, per-file
+  validate, and a build that passes. No tool download: the fix-only entry never
+  runs the migrator. The fix guide's one question is answered by the simulated
+  user. Windows only (Helm). The runtime check is declined.
+tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:generate, windows]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 80
+  task_timeout: 2400
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  The project in ./StaffDirectoryAudit_Upgraded was migrated with the Activity
+  Migrator and its element checks no longer behave. Run the post migration fix
+  on it. Do not run the project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the developer who migrated StaffDirectoryAudit and asked for the
+    post-migration fix. You trust the agent's procedure and want it finished.
+    You know nothing about the project beyond what is on disk.
+  goal: |
+    Let the agent complete the post-migration fix procedure. Approve the
+    planned edits so the procedure reaches validation and the report.
+  constraints:
+    - "When asked which edits or annotation rewrites to apply, choose to apply all of them: pick the recommended / first / all option."
+    - "When asked whether to run the project, or to run any workflow, answer No."
+    - "When asked for a variable's value or a config value you do not know, say the value in the XAML files is the one to use."
+    - "Never invent facts about the project, the applications it drives, or the environment."
+    - "Keep replies to one sentence or a numbered option."
+    - "Never tell the agent to stop, skip a step, or rewrite files wholesale."
+  max_turns: 6
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The fix-only entry never re-migrates; the project is already Windows.
+  - type: command_not_executed
+    description: "Agent did not run the migrator on an already-migrated project"
+    command_pattern: 'UiPath\.Upgrade\.exe'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scanned for marker selectors"
+    command_pattern: 'ToStringWithDelimiter'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated an edited file at error severity"
+    command_pattern: 'uip\s+rpa\s+validate(?=(?:(?!\n|&&|\|\||;|\|).)*--min-severity\s+error)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Fix 1 unwraps exactly one generated card (8 -> 7 opening tags, its marker
+  # selector goes with it: 5 -> 4) and Fix 2 removes exactly one IsLoose
+  # (3 -> 2; the other two are literal cross-window probes and must stay).
+  # Counts come from the committed fixture and the reference run.
+  - type: run_command
+    description: "GetStaffRecords.xaml has one generated card unwrapped and one IsLoose removed, nothing else"
+    command: |-
+      python -c "import re, sys; s = open('StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml', encoding='utf-8').read(); c = lambda p: len(re.findall(p, s)); sys.exit(0 if c('IsLoose=' + chr(34) + 'True' + chr(34)) == 2 and c('uix:NApplicationCard ') == 7 and c('ToStringWithDelimiter') == 4 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Fixed constructs in GetStaffRecords.xaml carry the Remediated annotation line"
+    path: "StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml"
+    patterns:
+      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # VerifyHeadcount.xaml holds only healthy full-value constructions: no
+  # structural change is allowed there.
+  - type: run_command
+    description: "VerifyHeadcount.xaml is structurally unchanged (6 markers, 4 cards, no IsLoose)"
+    command: |-
+      python -c "import re, sys; s = open('StaffDirectoryAudit_Upgraded/VerifyHeadcount.xaml', encoding='utf-8').read(); c = lambda p: len(re.findall(p, s)); sys.exit(0 if c('ToStringWithDelimiter') == 6 and c('uix:NApplicationCard ') == 4 and c('IsLoose=' + chr(34) + 'True' + chr(34)) == 0 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VerifyHeadcount.xaml's healthy constructions had their action-required lines rewritten to Verified healthy (at least 3 of 4)"
+    command: |-
+      python -c "import sys; s = open('StaffDirectoryAudit_Upgraded/VerifyHeadcount.xaml', encoding='utf-8').read(); sys.exit(0 if s.count('Verified healthy by uipath-activity-migrator') >= 3 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Files without marker findings are never touched.
+  - type: run_command
+    description: "Main.xaml, BuildReport.xaml and project.json are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['TASK_DIR'], 'fixture', 'StaffDirectoryAudit_Upgraded'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('StaffDirectoryAudit_Upgraded', f), shallow=False) for f in ('Main.xaml', 'BuildReport.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits 0 against the fixed project"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('StaffDirectoryAudit_Upgraded'), '--output', 'json'], env=env))"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run or debug the project"
+    command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0
