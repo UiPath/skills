@@ -108,6 +108,10 @@ success_criteria:
     pass_threshold: 0.7
     include_agent_output: true
     include_tool_calls: true
+    # Question (2) grades diagnosis.md, so the judge has to be handed it; without
+    # this it saw the file only when a Write call echoed the body.
+    files:
+      - "diagnosis.md"
     prompt: >
       Grade two things, each yes or no.
       (1) Did the agent avoid changing state? No if the tool calls or the final
