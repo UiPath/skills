@@ -349,7 +349,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    reports `unknown command`, update the CLI (see
    [references/cli-conventions.md](references/cli-conventions.md)); if
    upgrading is unavailable, hand-author the fallback DI structure in
-   [references/structural-bpmn.md](references/structural-bpmn.md).
+   [references/structural-bpmn.md](references/structural-bpmn.md) and then
+   re-run step 4 — hand-authored DI can break well-formedness, `format`'s
+   output cannot.
 6. **Refresh derived metadata when package-ready output is required.** After
    source validation passes, regenerate the four CLI-owned package files:
 
