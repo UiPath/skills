@@ -148,7 +148,7 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
 2. Offer the runtime check when the conditions in [runtime-verification-guide.md](references/runtime-verification-guide.md) hold: one yes/no question, default no, no time limit proposed. On yes, run it as the guide says, attribute a failure with its table, offer the guide's fix and rerun loop for a migration-related failure, and fill the Runtime check block below.
-3. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Activities the tool left classic are not defects: they compile and run as classic, so they appear as the `<L>` count on the status line and in the full list, never as lines. `<M>` is the summarizer's needs-attention count minus every finding the fix guide reported as fixed or healthy, plus any defect introduced by the skill's own edit that is still open; fixed findings appear under Fixes applied, healthy ones nowhere, and the by-reason and by-file lines are derived from the remaining items only. `<status>` is the summarizer's, except that a `partial` whose every needs-attention item was fixed by the fix guide or the runtime loop, with nothing left classic, is reported as `success`. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. Name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. The report is these blocks and nothing else: no sentences between or after them. Shape:
+3. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Activities the tool left classic are not defects: they compile and run as classic, so they appear as the `<L>` count on the status line and in the full list, never as lines. `<M>` is the summarizer's needs-attention count minus every finding the fix guide reported as fixed or healthy, plus any defect introduced by the skill's own edit that is still open; fixed findings appear under Fixes applied, healthy ones nowhere, and the by-reason and by-file lines are derived from the remaining items only. `<status>` is the summarizer's, except that a `partial` whose every needs-attention item was fixed by the fix guide or the runtime loop, with nothing left classic, is reported as `success`. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. Name a specific replacement activity only when the tool's message names one. Do not list constructions that were checked and left alone, and do not restate that edited files validated; the build result covers it. The report is these blocks and nothing else: no sentences before, between or after them. Shape:
 
 ```markdown
 ## Migration result: <status>
@@ -161,14 +161,14 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 <items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
 ### Fixes applied (<F>)              <- only when the post-migration fix or the runtime loop edited the output
-- <file>: <activity> — <what was changed>   <- loop fixes end with (fix <n>, fix guide | annotation | hypothesis)
+- <file>: <activity> — <what was changed>   <- one line per fix, no sub-bullets; loop fixes end with (fix <n>, fix guide | annotation | hypothesis)
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Runtime check                    <- only when the user said yes
 <Passed in <duration> | Passed on run <n> after <k> <fix or fixes> | Failed at <file>: <activity> — <exception type>: <first line of message>, after <k> <fix or fixes>, <u> undone | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
 - <migration-related | not migration-related>: <why>. <what to do>     <- only when failed
 
-### Next steps
+### Next steps                       <- these lines only; when the runtime check did not run, one more line saying what makes it possible
 - Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.   <- drop the Debug clause when the runtime check passed
 - <package-specific runtime prerequisites, only when a package guide lists one>
 ```
