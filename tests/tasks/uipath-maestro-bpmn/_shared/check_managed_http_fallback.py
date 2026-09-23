@@ -13,17 +13,23 @@ per _porting/BATCH1-ADDENDUM.md, mirroring Flow's own single shared script.
 Assertion map (Flow -> BPMN):
   F check_managed_http_fallback.py:110 "connector_key in full_text" (native  -> whole-document blob search for
     connector present, whole-flow blob search)                                 connector_key (main(), same leniency)
-  F check_managed_http_fallback.py:57-66  _check_path_params required        -> FALLBACK_CHECKS["path_params"]["required"]
-    evidence ["engce-00000","method","get"]                                     checked against each candidate node's blob
-  F check_managed_http_fallback.py:69-81  _check_query_params required       -> FALLBACK_CHECKS["query_params"]["required"]
+  F check_managed_http_fallback.py:57-66  _check_path_params required
+      -> FALLBACK_CHECKS["path_params"]["required"]
+    evidence ["engce-00000","method","get"]                                     checked against each candidate node's
+    blob
+  F check_managed_http_fallback.py:69-81  _check_query_params required
+      -> FALLBACK_CHECKS["query_params"]["required"]
     evidence [...]
   F check_managed_http_fallback.py:84-95  _check_enum required evidence      -> FALLBACK_CHECKS["enum"]["required"]
     ["gmail.googleapis.com","method","post","importance","medium"] (Flow's    (kept verbatim, including "medium" --
-    own literal list, kept as-is even though the scenario asks for "high":     see GUESS below)
+    own literal list, kept as-is even though the scenario asks for "high":     see the note below)
     faithfulness contract forbids "fixing" a Flow assertion during a port)
-  F check_managed_http_fallback.py:32-40  http-fallback node selection        -> is_managed_http_node(): Intsvc.HttpExecution
-    (flow node type == core.action.http.v2)                                      or Intsvc.UnifiedHttpRequest (construct-
-                                                                                   translation table's "Managed HTTP" row)
+  F check_managed_http_fallback.py:32-40  http-fallback node selection
+      -> is_managed_http_node(): Intsvc.HttpExecution
+    (flow node type == core.action.http.v2)                                      or Intsvc.UnifiedHttpRequest
+    (construct-
+                                                                                   translation table's "Managed HTTP"
+                                                                                   row)
   I               locate/parse .bpmn                                        -> parse_bpmn(NAME_HINT)
   T               curated OR generic connectorKey match for the native       -> is_native_connector_node(): matches on
                   branch (BATCH1-ADDENDUM: classify by connectorKey, not       connectorKey alone, regardless of
@@ -41,23 +47,20 @@ Assertion map (Flow -> BPMN):
   T               collect uipath:input elements at any depth under the node -> context_inputs()/all_node_values() via
                                                                                  node_blob()
 
-GUESS (flag for reviewer): Flow's `_check_enum` requires the literal substring
-"medium" in the HTTP fallback node's blob even though the enum.yaml scenario's
-fixed value is "importance": "high". This reads like a latent bug or an
-intentional check that the fallback node's schema/enum documentation (which
-may enumerate "low, medium, high") is present, not that the request body VALUE
-is "medium". The faithfulness contract's "Never" column forbids weakening a
-criterion to make it pass, and there is no directive here to fix a suspected
-Flow defect during a port, so this checker keeps "medium" as a required
-substring verbatim. Report this upstream if the intent was "importance" +
-"high".
+Note on the enum fallback list: Flow's `_check_enum` requires the literal
+substring "medium" in the HTTP fallback node's blob although the scenario's
+fixed value is "importance": "high" (a schema/enum-documentation check, or a
+latent Flow bug). Kept verbatim: the port never weakens or corrects a Flow
+assertion. In CI the native-connector branch has carried every run so far
+(run 35789221753), so the fallback list has not been exercised.
 
 No Flow assertions dropped: the native-connector short-circuit, all three
 required-evidence lists, and the http-fallback-node-must-exist precondition
 all have a BPMN counterpart above.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $REFERENCE_DIR/_shared/check_managed_http_fallback.py <NAME_HINT> <connector_key> <path_params|query_params|enum>
+    python3 $REFERENCE_DIR/_shared/check_managed_http_fallback.py <NAME_HINT> <connector_key>
+    <path_params|query_params|enum>
 """
 
 from __future__ import annotations
@@ -95,7 +98,7 @@ HTTP_TYPES = ("Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest")
 GENERIC_HTTP_CONNECTOR_KEY = "uipath-uipath-http"
 
 # Required evidence per check, kept verbatim from Flow's own literal lists
-# (see GUESS above re: "enum"'s "medium").
+# (see the module note on "enum"'s "medium").
 FALLBACK_CHECKS: dict[str, dict[str, object]] = {
     "path_params": {
         "label": "Jira Get Issue path-params HTTP fallback",

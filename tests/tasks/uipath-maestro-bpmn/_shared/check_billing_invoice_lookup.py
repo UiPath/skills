@@ -527,7 +527,9 @@ def bindings() -> None:
             doc = json.loads(archive.read(by_basename["bindings_v2.json"]))
 
         resources = [
-            r for r in (doc.get("resources") or []) if isinstance(r, dict) and str(r.get("resource") or "").lower() == "connection"
+            r
+            for r in (doc.get("resources") or [])
+            if isinstance(r, dict) and str(r.get("resource") or "").lower() == "connection"
         ]
         # Flow's own check only requires non-empty + non-stub, never an exact
         # count (a connector port always needs >=1, unlike Flow's native-read
@@ -536,7 +538,10 @@ def bindings() -> None:
             fail("packed bindings_v2.json declares no Connection resources")
         stubbed = [r.get("key") for r in resources if not is_real_connection_key(r.get("key"))]
         if stubbed:
-            fail(f"packed bindings_v2.json Connection keys must be real connection ids, not unresolved stubs: {stubbed}")
+            fail(
+                "packed bindings_v2.json Connection keys must be real connection ids, "
+                f"not unresolved stubs: {stubbed}"
+            )
         print(f"OK: {len(resources)} connection binding(s) across bindings_v2.json, all non-stub")
 
 
@@ -668,7 +673,10 @@ def advisory() -> None:
     http_nodes = [
         task.attrib.get("id")
         for task in (*elements(root, "sendTask"), *elements(root, "serviceTask"))
-        if any(has_typed_uipath_extension(task, "activity", t) for t in ("Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest"))
+        if any(
+            has_typed_uipath_extension(task, "activity", t)
+            for t in ("Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest")
+        )
     ]
     if http_nodes:
         fail(f"the process calls Data Service over raw HTTP ({http_nodes}); use the connector action")
@@ -695,7 +703,10 @@ def advisory() -> None:
         fail(f"the bpmn contains the literal {CANONICAL!r} -- the invoice number must be COMPUTED, never written in")
     for bad in RAW_INPUTS:
         if bad in raw:
-            fail(f"the bpmn contains the test input {bad!r} as a literal -- normalising by matching known inputs generalises to nothing")
+            fail(
+                f"the bpmn contains the test input {bad!r} as a literal -- "
+                "normalising by matching known inputs generalises to nothing"
+            )
 
     # 5. outputs declared with the contract's names AND types (F: :98-108)
     outputs = declared_outputs(root)

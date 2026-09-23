@@ -15,14 +15,18 @@ BPMN ports; each task's own `check_<task>.py` handles its remaining,
 task-specific criteria (locate/parse, advisory id search).
 
 Assertion map (Flow -> BPMN):
-  F check_multiselect_flow.py:86-91   "slack" in node.type.lower()              -> slack_tasks(): sendTask carrying Intsvc.ActivityExecution with connectorKey == uipath-salesforce-slack
-  F check_multiselect_flow.py:93-104  find_users(node.inputs), count/populated  -> find_users(body_object(task)), same count/populated check
+  F check_multiselect_flow.py:86-91   "slack" in node.type.lower()
+      -> slack_tasks(): sendTask carrying Intsvc.ActivityExecution with connectorKey == uipath-salesforce-slack
+  F check_multiselect_flow.py:93-104  find_users(node.inputs), count/populated
+      -> find_users(body_object(task)), same count/populated check
   F check_multiselect_flow.py:26-48   parse_users(): native list, or a string
                                        wrapping an array literal (JSON array or
-                                       a `=js:(['U1','U2'])`-style expression)  -> parse_users(): identical regex + ast.literal_eval tolerance
+                                       a `=js:(['U1','U2'])`-style expression)
+                                           -> parse_users(): identical regex + ast.literal_eval tolerance
   F check_multiselect_flow.py:51-57   is_users_key(): 'users' with an optional
                                        array-notation suffix                    -> is_users_key(): identical regex
-  F check_multiselect_flow.py:60-76   find_users(): recursive dict/list search  -> find_users(): identical recursive search over the merged body object
+  F check_multiselect_flow.py:60-76   find_users(): recursive dict/list search
+      -> find_users(): identical recursive search over the merged body object
   I   locate/parse .bpmn, no name hint (this script is shared by both tasks;
       complex_array's own project-name hint is handled by its own
       check_complex_array.py, not here)                                        -> parse_bpmn()

@@ -37,7 +37,7 @@ Assertion map (Flow → BPMN):
                                     node `type` string: BPMN's registry wrapper is the SAME
                                     Intsvc.ActivityExecution tag for both a curated native activity
                                     (e.g. Get Channel Info) and an HTTP fallback, unlike Flow's node
-                                    `type`, which differs per shape (see GUESS)
+                                    `type`, which differs per shape (see the wrapper note)
   F check_slack_http_fallback.py:EMOJI_ENDPOINT blob search (json.dumps(fallback_nodes).lower())
                                   → references_emoji_endpoint(): 'emoji.list' found anywhere across
                                     every uipath:input name/value/text at any depth under the node,
@@ -57,7 +57,7 @@ Assertion map (Flow → BPMN):
                                     e2e/jira_get_issue and multi_node/slack_channel_description)
   T                curated (Intsvc.ActivityExecution) OR the connector-authenticated form of
                     Intsvc.HttpExecution -- accept either wrapper tag (BATCH1-ADDENDUM; same
-                    tolerance and same open GUESS as check_non_catalog_http_fallback.py)
+                    tolerance; the wrapper question is answered in the note below)
                                   → ACTIVITY_TYPES tuple checked via has_type()
   T                collect uipath:input elements at any depth under the node
                                   → context_inputs() uses `.//uipath:input`
@@ -66,18 +66,11 @@ Assertion map (Flow → BPMN):
                     where the endpoint lands)
                                   → references_emoji_endpoint()
 
-GUESS (flag for reviewer): same open question as check_non_catalog_http_fallback.py --
-registry-workflow.md documents `Intsvc.HttpExecution`'s `mode` context field as
-hardcoded to "manual" (connectionless) with no documented connector-authenticated
-alternative; the skill's own contract splits connector-mode HTTP as
-`Intsvc.ActivityExecution` (a connector object/operation, here reused via a
-generic "http-request" passthrough objectName under the Slack connectorKey --
-see the real CI-passing SpotifyProfileTest.bpmn fixture, which authors exactly
-this shape for the non-catalog case) and reserves `Intsvc.HttpExecution` for
-connectionless/manual calls only. To stay faithful to both the porting brief
-and the skill's documented contract without inventing a hard requirement on one
-wrapper tag, this checker classifies purely by `connectorKey` (+ the emoji.list
-endpoint match), and accepts either wrapper tag carrying them.
+Wrapper tag, answered by CI: the agent's fallback node is `Intsvc.ActivityExecution`
+with connectorKey uipath-salesforce-slack and objectName `emoji_list_GET` (runs
+35538279757, 35783045540); the skill reserves `Intsvc.HttpExecution` for
+connectionless calls. Classification is by `connectorKey` plus the emoji-list
+endpoint; the wrapper tuple keeps the managed-HTTP tags as a tolerance only.
 
 No Flow assertions dropped: node existence, the HTTP-fallback shape (translated
 via connectorKey since BPMN's node `type` cannot distinguish curated vs raw the
@@ -102,7 +95,15 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, context_inputs, fail, find_bpmn_file, has_type, parse_bpmn, resolve_project  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    NS,
+    context_inputs,
+    fail,
+    find_bpmn_file,
+    has_type,
+    parse_bpmn,
+    resolve_project,
+)
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
