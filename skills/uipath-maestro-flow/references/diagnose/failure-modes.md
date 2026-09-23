@@ -129,6 +129,32 @@ Format:
 
 ---
 
+## HITL node rendered at agent-step size, output ports clipped
+
+### Symptom
+
+A HITL node (`uipath.human-in-the-loop.quick-form` or `uipath.human-in-the-loop.coded-action-app`) renders as a wide rectangle instead of its normal square footprint, and its outcome/output ports overlap or cut through the node's center instead of spacing along the right edge.
+
+### Cause
+
+The node instance's `display` block was hand-written with a `shape` key (typically `"rectangle"`, copied by analogy from an inline agent node), violating [Author capability, rule 15](../author/CAPABILITY.md) (no instance `model` block, no instance `shape` key — both are definition-only). Re-running `flow format` alone does not fix this: `format` only recomputes `layout.size` from nodeType, it does not touch or strip a stray `display.shape` on the instance.
+
+### Fix
+
+Remove `shape` from the node instance's `display` object entirely, leaving only `label` (and `icon`, if present):
+
+```json
+"display": { "label": "Invoice Review" }
+```
+
+Then run `flow format` to re-derive `layout.size` for the corrected node.
+
+### Reference
+
+[uipath-maestro-flow plugins/hitl/impl.md](../author/plugins/hitl/impl.md), [uipath-human-in-the-loop hitl-node-quickform.md](../../../uipath-human-in-the-loop/references/hitl-node-quickform.md), [hitl-node-apptask.md](../../../uipath-human-in-the-loop/references/hitl-node-apptask.md).
+
+---
+
 ## HITL outcome port unwired
 
 ### Symptom

@@ -336,6 +336,8 @@ Merge rules:
 }
 ```
 
+**Never add a `shape` key to this node instance's `display` block** — `shape` is fixed per nodeType in the Definition Entry below (`square`), same rule as the no-instance-`model`-block rule (`uipath-maestro-flow` [CAPABILITY.md rule 15](../../uipath-maestro-flow/references/author/CAPABILITY.md)).
+
 ### `inputs.app` field mapping
 
 | Field | Source | Example |
