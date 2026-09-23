@@ -15,9 +15,10 @@ tags:
   - feature:escalation
   - feature:trigger
 
-# Inherit agent from the experiment; override only allowed_tools — the Rule 15
-# design handoff loads the uipath-planner skill in the same conversation
-# (Skill tool); Agent/Task stay allowed for the Rule 17 inline-create path.
+# Inherit agent from the experiment; override only allowed_tools — the case
+# skill's design-handoff rule loads the uipath-planner skill in the same
+# conversation (Skill tool); Agent/Task stay allowed for the inline-create
+# path in its empty-lookup gate.
 
 agent:
   type: claude-code
