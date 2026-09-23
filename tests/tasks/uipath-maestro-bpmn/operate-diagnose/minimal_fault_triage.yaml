@@ -108,13 +108,8 @@ success_criteria:
     pass_threshold: 0.7
     include_agent_output: true
     include_tool_calls: true
-    # Question (2) asks about diagnosis.md, so the judge has to be handed it —
-    # as 323 of this repo's 382 llm_judge criteria already do. Without it the
-    # judge saw the file only when a Write tool call happened to echo the body,
-    # and otherwise answered "no concrete next action is visible" against a
-    # diagnosis whose last line was one: 0.50, half of a two-question rubric,
-    # under the 0.70 threshold. The prompt tells the agent to write the next
-    # action into the file, so the final answer is not a reliable second source.
+    # Question (2) grades diagnosis.md, so the judge has to be handed it; without
+    # this it saw the file only when a Write call echoed the body.
     files:
       - "diagnosis.md"
     prompt: >
