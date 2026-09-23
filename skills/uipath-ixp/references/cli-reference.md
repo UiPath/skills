@@ -4,7 +4,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 
 > **Destructive commands require `-y, --yes`.** Every irreversible `uip ixp` command (all `delete`s and `fields change-type`) gates on `-y/--yes`; the CLI never prompts. Always pass `-y/--yes`.
 
-> **Length limits.** Every instructions or prompt value — `projects update-prompt --prompt`, each `instructions` in `groups update-prompts` / `fields update-prompts` / `groups add --fields`, and every `--instructions` — is at most **4096 characters**. Group, field and data-type names and field types are at most **64**; a project name at most **116**; a project or deployment title at most **1024**. Check the length before you send: an over-long value fails the whole call with `Result: ValidationError`, `Instructions: "<option> is <n> characters; the maximum is <max>. ..."`, and nothing is written. Shorten the text and retry — do not split one prompt across calls.
+> **Length limits.** Every instructions or prompt value — `projects update-prompt --prompt`, each `instructions` in `groups update-prompts` / `fields update-prompts` / `groups add --fields`, and every `--instructions` — is at most **4096 characters**. Group, field and data-type names and field types are at most **64**; a project name at most **116**; a project or deployment title at most **1024**. Check the length before you send: the server rejects an over-long value and fails the whole call with `Result: ValidationError` and a message such as `'Prompt' must be at most 4096 characters.`, and nothing is written. Shorten the text and retry — do not split one prompt across calls.
 
 ## Projects
 
