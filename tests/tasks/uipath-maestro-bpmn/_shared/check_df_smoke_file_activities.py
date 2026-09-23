@@ -11,16 +11,19 @@ upload+delete), translated from a JSON node/inputs.detail walk to an XML walk
 over the registry-driven ``Intsvc.ActivityExecution`` connector shell (see
 skills/uipath-maestro-bpmn/references/registry-workflow.md §2-4).
 
-Node identity (_porting/BATCH1-ADDENDUM.md "File-field activities ... have curated
-names only"): Download/Upload/Delete are curated-only --
-DownloadFileFromRecordFieldV2|DownloadFileFromRecordField_V3,
-UploadFileToRecordFieldV2|UploadFileToRecordField_V3,
-DeleteFileFromRecordFieldV2|DeleteFileFromRecordField_V3. Create accepts both
-shapes the skill emits for entity CRUD (copied from
+Node identity: Download/Upload/Delete are matched by objectName in every
+spelling the connector catalog serves for the operation --
+DownloadFileFromRecordField|DownloadFileFromRecordFieldV2|DownloadFileFromRecordField_V3,
+UploadFileToRecordField|UploadFileToRecordFieldV2|UploadFileToRecordField_V3,
+DeleteFileFromRecordField|DeleteFileFromRecordFieldV2|DeleteFileFromRecordField_V3.
+The unsuffixed V1 objects are the only ones whose `uip is resources describe`
+exposes a `fieldName` parameter, so agents pick them when the prompt names the
+field (2026-09-23: claude nightly and codex smoke both did). Create accepts
+both shapes the skill emits for entity CRUD (copied from
 check_df_integration_create_get.py's classification, no new shared module):
-the curated CreateEntityRecordCurated|CreateEntityRecord_V3 objectName, or the
-generic entity-CRUD form (objectName == FlowCodeEvalEntity with
-operation=Create or method=POST).
+the curated CreateEntityRecord|CreateEntityRecordCurated|CreateEntityRecord_V3
+objectName, or the generic entity-CRUD form (objectName == FlowCodeEvalEntity
+with operation=Create or method=POST).
 
 Where Flow's grader read fixed JSON keys (`pathParameters.entityName`,
 `queryParameters._fieldName`/`recordId`, `bodyParameters`,
@@ -34,10 +37,11 @@ instead of assuming Flow's JSON shape:
     `path` field (same either/or tolerance as check_df_integration_create_get.py
     / check_df_smoke_create_all_types.py -- the skill does not pin where
     entityName lands).
-  * `_fieldName` (field selector, "file1") -> same: any uipath:input
-    value/text on the node. GUESS: no CI artifact for this task exists yet, so
-    the registry's actual parameter name for the field selector is unverified;
-    documented here and in the task description for the reviewer.
+  * `_fieldName` (field selector, "file1") -> any uipath:input value/text
+    on the node, or an input's `name`. V1 objects carry it as the
+    `fieldName` path parameter; the V2/_V3 objects expose no field parameter
+    at all (describe lists only entityName and recordId), so an agent using
+    them names the multipart input after the field (codex, 2026-09-23).
   * Download's `recordId` literal UUID -> a bare (non-expression) UUID-shaped
     value on any of Download's inputs (Flow required a UUID literal here too).
   * Create's single-body-dict read -> Flow's grader reads ONE
@@ -82,6 +86,8 @@ Assertion map (Flow -> BPMN):
   I                                          locate/parse .bpmn                            -> parse_bpmn()
   T                                          curated|generic Create classification (integration_create_get precedent) -> is_create_node()
   T                                          entity name anywhere in node inputs/objectName/path -> mentions(task, ENTITY)
+  T                                          V1|V2|_V3 objectName spellings for one operation (catalog lists all three; only V1 exposes fieldName) -> *_OBJS sets
+  T                                          field selector as an input name when the object has no field parameter -> mentions_field()
   T                                          vars.<VarId> substring reference in place of Flow node-id/variable-chain reference -> has_variable_reference()
   T                                          merge every target="body" input instead of requiring exactly one -> merged body-field union parse
   DROPPED  require_no_private_connector_values  (not in Flow; `validate` criterion already covers structure)
@@ -117,10 +123,27 @@ FIELD = "file1"
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 
-DOWNLOAD_OBJS = {"DownloadFileFromRecordFieldV2", "DownloadFileFromRecordField_V3"}
-UPLOAD_OBJS = {"UploadFileToRecordFieldV2", "UploadFileToRecordField_V3"}
-DELETE_OBJS = {"DeleteFileFromRecordFieldV2", "DeleteFileFromRecordField_V3"}
-CREATE_CURATED_OBJS = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
+DOWNLOAD_OBJS = {
+    "DownloadFileFromRecordField",
+    "DownloadFileFromRecordFieldV2",
+    "DownloadFileFromRecordField_V3",
+}
+UPLOAD_OBJS = {
+    "UploadFileToRecordField",
+    "UploadFileToRecordFieldV2",
+    "UploadFileToRecordField_V3",
+}
+DELETE_OBJS = {
+    "DeleteFileFromRecordField",
+    "DeleteFileFromRecordFieldV2",
+    "DeleteFileFromRecordField_V3",
+}
+CREATE_CURATED_OBJS = {
+    "CreateEntityRecord",
+    "CreateEntityRecordCurated",
+    "CreateEntityRecord_V3",
+}
+FILE_TARGETS = {"file", "multipart"}
 REQUIRED_CREATE_BODY = {"title", "description", "score"}
 
 UUID_RE = re.compile(
@@ -140,6 +163,12 @@ def node_inputs(task: ET.Element) -> list[ET.Element]:
 def mentions(task: ET.Element, needle: str) -> bool:
     values = all_node_values(task) + [context_value(task, "path")]
     return any(needle in v for v in values if v)
+
+
+def mentions_field(task: ET.Element, field: str) -> bool:
+    if mentions(task, field):
+        return True
+    return any((inp.attrib.get("name") or "").strip() == field for inp in node_inputs(task))
 
 
 def output_vars(task: ET.Element) -> list[str]:
@@ -208,9 +237,10 @@ def file_field_values(task: ET.Element) -> list[str]:
     """Values of the input(s) that carry the multipart file binding.
 
     registry-workflow.md §3: "each parameter is its own input, targeted by
-    its Type" -- a file parameter is `target="file"`. Falls back to an input
-    literally named "file" (case-insensitive) for a shape that doesn't set
-    `target`. Scoping to these inputs (rather than any input on the node)
+    its Type" -- a file parameter is `target="file"`, or `target="multipart"`
+    when the author copies describe's `Type: multipart`. Falls back to an
+    input literally named "file" (case-insensitive) for a shape that doesn't
+    set `target`. Scoping to these inputs (rather than any input on the node)
     keeps this check meaningful: Upload's recordId is separately required to
     reference Create's output var, so "any vars.* on the node" would always
     pass regardless of whether the file binding itself carries one.
@@ -219,7 +249,7 @@ def file_field_values(task: ET.Element) -> list[str]:
     for inp in node_inputs(task):
         target = inp.attrib.get("target")
         name = (inp.attrib.get("name") or "").strip().lower()
-        if target == "file" or name == "file":
+        if target in FILE_TARGETS or name == "file":
             v = inp.attrib.get("value") or (inp.text or "")
             if v:
                 values.append(v)
@@ -269,7 +299,7 @@ def main() -> None:
     print(f"OK: Download + Create + Upload + Delete nodes present on {ENTITY}")
 
     for label, task in [("Download", download), ("Upload", upload), ("Delete", delete)]:
-        if not mentions(task, FIELD):
+        if not mentions_field(task, FIELD):
             fail(f"{label} node does not reference field {FIELD!r} in any input")
     print(f"OK: Download/Upload/Delete reference field {FIELD!r}")
 
