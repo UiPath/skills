@@ -56,9 +56,9 @@ instead of assuming Flow's JSON shape:
     expression naming *any* variable in scope (its own docstring: "download
     output, typed file global, or start-input file parameter all pass").
     This grader matches that leniency: the input(s) targeting the file
-    parameter (`target="file"`, or a fallback `name="file"`) need only
-    contain a `vars.<id>` reference -- any variable, not pinned to Download's
-    own output var.
+    parameter (`target="file"` or `target="multipart"`, or a fallback
+    `name="file"`) need only contain a `vars.<id>` reference -- any variable,
+    not pinned to Download's own output var.
   * create output id flowing into Upload/Delete recordId -> Create's
     `<uipath:output var=...>` id must appear inside an Upload/Delete input's
     value/text as `vars.<CreateVarId>` (optionally followed by a `.Id`-style
@@ -74,8 +74,8 @@ Checks performed:
   4. Download's recordId is a literal (non-expression) UUID.
   5. Create's target="body" JSON (merged across every such input) covers
      title/description/score.
-  6. Upload's `target="file"`/`name="file"` input carries a `vars.<id>`
-     reference (any variable).
+  6. Upload's file input (`target="file"`/`target="multipart"`/`name="file"`)
+     carries a `vars.<id>` reference (any variable).
   7. Upload and Delete both reference Create's output variable for recordId.
 
 Assertion map (Flow -> BPMN):
@@ -332,7 +332,10 @@ def main() -> None:
 
     file_values = file_field_values(upload)
     if not file_values:
-        fail('Upload node has no target="file" (or name="file") input to carry the file binding')
+        fail(
+            'Upload node has no file input to carry the file binding '
+            '(expected target="file" or target="multipart", or an input named "file")'
+        )
     if not any(VARS_REF_RE.search(v) for v in file_values):
         fail(f"Upload node's file input has no `vars.<id>` variable reference (found: {file_values})")
     print("OK: Upload's file input references a process variable")
