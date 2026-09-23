@@ -1,6 +1,6 @@
 # Registry Discovery Reference
 
-Resolve the correct task type and entity identifier for a case task by searching the local registry cache files directly.
+Resolve the correct task type and entity identifier for a case task. Resolve every task at once with `uip maestro case sdd resolve` (§ Resolve with the CLI first); search the local registry cache files by hand only for the tasks it reports as unresolved (§ Procedure).
 
 ## When to Use
 
@@ -10,9 +10,37 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 ## Prerequisites
 
-Run `uip login status --output json`, then `uip maestro case registry pull`, before any cache inspection or lookup. This is a Phase 1 hard gate, not a conditional refresh: never inspect the cache first and use its absence to skip the pull. **One exception — same-session fast path (SKILL.md Rule 3):** when the delegated design lane's pull (`uipath-planner`, SKILL.md Rule 16) already succeeded in this session and `sdd.md` was just written from the confirmed in-memory model, reuse that cache instead of re-pulling — and run verify-only against the planner's resolution ledger (SKILL.md Rule 3); any doubt runs the gate in full. Login/pull failure stops Phase 1 before planning artifacts are written. The design lane grounds lazily: it starts the same login → pull chain in the background only when the case first shows tenant-bound work, then runs full identity resolution plus the ambiguity/empty gate at Case Review time — no schema discovery there; schemas stay a Phase 2/3 concern. A successful pull populates the local cache at `~/.uip/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
+Run `uip login status --output json`, then `uip maestro case registry pull`, before any cache inspection or lookup. This is a Phase 1 hard gate, not a conditional refresh: never inspect the cache first and use its absence to skip the pull. **One exception — same-session fast path (SKILL.md Rule 3):** when the delegated design lane's pull (`uipath-planner`, SKILL.md Rule 16) already succeeded in this session and `sdd.md` was just written from the confirmed in-memory model, reuse that cache instead of re-pulling — and run verify-only against the planner's resolution ledger (SKILL.md Rule 3); any doubt runs the gate in full. Login/pull failure stops Phase 1 before planning artifacts are written. The design lane grounds lazily: it starts the same login → pull chain in the background only when the case first shows tenant-bound work, then runs full identity resolution plus the ambiguity/empty gate at Case Review time — no schema discovery there; schemas stay a Phase 2/3 concern. A successful pull populates the local cache at `~/.uip/case-resources/`. Discovery reads those cache files — through `sdd resolve` first, and directly by hand for what it leaves — **do not** rely on `uip maestro case registry search` as the primary discovery method. See § When a search returns nothing below for the reason.
 
 > **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). A missing file **before** a pull is a precondition failure, not a 0-result lookup. **After a successful pull, a still-absent index means the tenant has zero resources of that type — which IS the genuine 0-matches case.** For **non-creatable** types (regular RPA process, agentic processes / Process Orchestration, action, case-management, connectors) → proceed to placeholder. For a **creatable** type (`agent`, `api-workflow`), a zero-resource tenant index is the genuine 0-matches case where inline **Create** applies — but **first resolve any in-solution sibling** (a prior run may have already built it; see the per-type pre-gate checks — [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution) — and § Handle Empty Results below). Only a resource absent from **both** the tenant index **and** the local siblings is genuinely empty → feed it to the [Rule 18 / § MUST-Confirm gate](#must-confirm-before-placeholder-fallback) (Create offered), NOT straight to placeholder.
+
+## Resolve with the CLI first
+
+After the pull, resolve every task in one call:
+
+```bash
+uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json
+```
+
+It does the part of discovery that has one right answer — which index each task type uses, the exact-name search on the task's portable name, the narrowing by the SDD's folder — and writes the whole Rule 10 ledger, creating `tasks/`. It reads caches only: no tenant, no network. Never hand-author the ledger it writes.
+
+Read two fields of the response:
+
+- `Data.Counts` — `tasks`, `selected`, `ambiguous`, `absent`.
+- `Data.Unresolved[]` — one row per `(name, taskType)` it could not settle, with `reason`, `usages`, and `creatable`. This is the whole of the remaining work.
+
+| `reason` | What it means | What to do |
+|---|---|---|
+| `absent` | No index entry carries the name | § Procedure step 1's cross-type fallback, then § 3's in-solution sibling check, then the [MUST Confirm gate](#must-confirm-before-placeholder-fallback) |
+| `ambiguous` | Several exact-name entries, and the SDD's folder did not narrow them | Match priority 3 in § Procedure step 2: take the first exact-name match and name the alternatives in `rationale` |
+
+Edit each outcome into that task's entry in `resolved`. Never re-search a task resolve selected.
+
+Resolve normalizes every resource to `{name, identifierField, identifier, folder}` — `identifierField` is `id` for action apps and `entityKey` for the rest. Read identity from those fields.
+
+`wait-for-timer` tasks appear with `selected: null` and a rationale that they run no tenant resource; that is not a miss. Connector tasks appear the same way because resolve does not look them up — they resolve through [connector-integration.md](connector-integration.md), and their outcome, not resolve's `null`, decides any marker.
+
+> **Version guard.** If the CLI reports `sdd resolve` as an unknown command (`ErrorCode: "invalid_argument"`, exit 3), resolve every task by hand with § Procedure and say so in one line. Exit 3 without that message is a real failure, not a fallback.
 
 ## When a search returns nothing
 
@@ -190,6 +218,8 @@ Then, in order:
 If a built sibling's task is later dropped (user aborts at a later hard stop, or removes it in a follow-up edit), leave the sibling **on disk** (it is reusable) and **name it in the completion report** ("built but not referenced"). It stays **registered in the `.uipx`** (Step 3 already added it), so it co-deploys with the solution as an unused sibling — harmless; do **not** silently deregister. If the user wants it gone, that is manual cleanup (deregister from the `.uipx` and delete the directory), flagged in the report. Never silently delete it, never silently omit it.
 
 ## Procedure
+
+The manual lookup. Run it for `Data.Unresolved[]` entries only, or for every task when the version guard above fired.
 
 ### 1. Determine Which Cache Files to Search
 

@@ -3,10 +3,11 @@
     "Build gate": 1,
     "Build-review preference": 2,
     "Convert before authoring": 5,
-    "Empty lookup gate": 3,
+    "Empty lookup gate": 4,
     "Handoff contract": 2,
-    "Phase 1 registry gate": 3,
+    "Phase 1 registry gate": 6,
     "Read references to EOF before mutation": 1,
+    "Resolution audit": 1,
     "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 2,
     "SDD is the sole post-design input, across sessions": 1,
     "The build is lossless against the SDD": 2,
@@ -75,11 +76,11 @@
   },
   "references/planning.md": {
     "Closed task types": 1,
-    "Empty lookup gate": 4,
+    "Empty lookup gate": 6,
     "Handoff contract": 2,
     "No authored edges": 1,
-    "Phase 1 registry gate": 1,
-    "Resolution audit": 3,
+    "Phase 1 registry gate": 3,
+    "Resolution audit": 4,
     "SDD is the sole post-design input, across sessions": 2
   },
   "references/plugins/case/impl-json.md": {
@@ -188,7 +189,7 @@
     "Empty lookup gate": 2,
     "Handoff contract": 2,
     "Phase 1 registry gate": 2,
-    "Resolution audit": 2,
+    "Resolution audit": 3,
     "Runnable resources and sidecars": 1
   },
   "references/sla-response-shapes.md": {

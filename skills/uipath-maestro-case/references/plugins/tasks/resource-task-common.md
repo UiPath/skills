@@ -9,7 +9,7 @@
 > **Never hand-write a `type` or `_jsonSchema` onto an input or output row.** `uip maestro case tasks describe` already returns both, and `splice` writes them in:
 >
 > ```bash
-> uip maestro case tasks describe --type <taskType> --id <selected.EntityKey> --output json   # save verbatim with Write
+> uip maestro case tasks describe --type <taskType> --id <selected.identifier> --output json   # save verbatim with Write
 > uip maestro case splice "<caseplan.json>" --node "<taskId>" --described "<that saved file>" --output json
 > ```
 >

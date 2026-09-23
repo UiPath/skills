@@ -88,7 +88,7 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 2. Resolve trigger resources (connector key, connection, activity type)
 3. Resolve connector-bound condition resources
 4. Resolve SLA escalation recipients (`recipients-resolved.json`)
-5. Write `registry-resolved.json`, auto-proceed to Phase 2 (Step 5)
+5. Complete `registry-resolved.json` (Step 4 additions), auto-proceed to Phase 2 (Step 5)
 
 For every task, trigger, and condition in the sdd.md:
 
@@ -100,8 +100,8 @@ Otherwise, continue with the normal resolution path:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md` — once per plugin type, not per component.** It lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required. Group the SDD's components by plugin type, read that plugin's `planning.md` a single time, then resolve and emit EVERY component of that type from the one read. Re-reading a plugin reference per element is a read-budget defect (observed: `planning.md` re-read 10–16×, `impl-json.md` up to 26× per build); after context compaction, re-read only the plugin for the section in progress.
-3. **Apply registry discovery** via [registry-discovery.md](registry-discovery.md) when a taskTypeId is needed. Use the type-specific portable-name field as the query: `Resolved Resource` for process/agent/rpa/api-workflow, Action App title for action, and `Child Case` for case-management. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
-4. **Persist every resolution** to `registry-resolved.json` using Rule 10's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation.
+3. **Resolve every task in one call** — `uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json` (SKILL.md Rule 3). It reads each task's type-specific portable name (`Resolved Resource` for process/agent/rpa/api-workflow, the Action App title for action, `Child Case` for case-management), searches the matching index, narrows by folder, and writes the whole Rule 10 ledger. `Data.Counts` says how many it selected; `Data.Unresolved[]` lists the rest. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
+4. **Work only what resolve left.** Apply [registry-discovery.md](registry-discovery.md) — and a plugin `planning.md`'s Registry Resolution section — by hand to the `Data.Unresolved[]` entries alone: an `absent` entry runs the cross-type fallback and in-solution sibling check before the Rule 18 gate; an `ambiguous` one takes the match priority there. Never re-search a task resolve selected, and never rewrite its entry.
 
 ### 3.1 Task Type catalog
 
@@ -156,22 +156,28 @@ Otherwise:
 
 At execution time, unresolved tasks become **placeholder tasks** in `caseplan.json` (display-name + type only, no task-type-id, no bindings). The workflow graph is still reviewable end-to-end, and the user attaches real resources + bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
 
-## Step 4 — Write `registry-resolved.json`
+## Step 4 — Complete `registry-resolved.json`
 
-Create a `tasks/` folder adjacent to the sdd.md file and write `tasks/registry-resolved.json` — one entry per resolved task, trigger, and connector-bound condition, using Rule 10's exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Keep the full exact-name match objects for debugging and stale-cache validation. `rationale` explains the selection choice (`"exact name match in caseManagement folder"`); it is never used for verify-text, SDD-vs-spec field translation, or downstream-plugin-behavior claims.
+Step 3's `sdd resolve` already wrote `tasks/registry-resolved.json` (creating `tasks/`) with one entry per task under `resolved`, using Rule 10's exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Do not rewrite it. This step only **adds**, with Edit, what resolve cannot know:
+
+- one entry per case trigger and per connector-bound condition, from the connector pipeline;
+- `gateDecision` on an entry the user answered at the Rule 18 gate;
+- the `<UNRESOLVED: <reason>>` identity-slot marker on each genuine miss (SKILL.md Rule 10), plus its `wiringNotes` (§ 3.4).
+
+`rationale` explains the selection choice (`"exact name match in caseManagement folder"`); it is never used for verify-text, SDD-vs-spec field translation, or downstream-plugin-behavior claims.
 
 This ledger holds **only what registry lookups produced**. It is not a copy of the SDD: do not restate stage/task structure, activation modes, entry rules, inputs, outputs, or design rationale in it. Phase 2 and Phase 3 read those straight from `sdd.md`, which stays the single source of the design contract. Duplicating the contract here re-creates the drift the retired `tasks.md` caused.
 
 Use the same section-batched write discipline the caseplan uses — one Read per section (tasks → triggers → conditions → SLA recipients), N Edit-appends, no re-Read between siblings. See [case-editing-operations.md](case-editing-operations.md).
 
-> **Registry handoff labels.** For a resolved `action` or `case-management` entry, record the selected audit object under the canonical labels Phase 2 reads:
+> **Registry handoff labels.** Phase 2 reads a resolved `action` or `case-management` task's identity from its entry's `selected`. Resolve already normalizes it, so there is nothing to copy — read it in place:
 >
-> | Task type | `name` from | `folder-path` from | `taskTypeId` from |
+> | Task type | `name` | `folder-path` | `taskTypeId` |
 > |---|---|---|---|
-> | `action` | `selected.deploymentTitle` | `selected.deploymentFolder.fullyQualifiedName` | `selected.id` |
-> | `case-management` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
+> | `action` | `selected.name` | `selected.folder` | `selected.identifier` (`identifierField: "id"`) |
+> | `case-management` | `selected.name` | `selected.folder` | `selected.identifier` (`identifierField: "entityKey"`) |
 >
-> Confirm these values match the `selected` object in the same entry before leaving Step 4.
+> A ledger persisted verbatim from the planner lane (SKILL.md Rule 3) carries the raw cache object instead; read it by the index's own fields — for `action`, `selected.deploymentTitle`, `selected.deploymentFolder.fullyQualifiedName`, `selected.id`; for `case-management`, `selected.name`, `selected.folders[0].fullyQualifiedName`, `selected.entityKey`.
 
 ## Step 5 — Hand off to Phase 2 (auto-proceed)
 
