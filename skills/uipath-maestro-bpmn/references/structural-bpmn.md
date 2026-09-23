@@ -410,7 +410,13 @@ authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
   to fire; its outgoing flows target intermediate catch events or receive tasks.
 - A gateway with exactly one incoming and one outgoing flow is rejected
   (`SUPERFLUOUS_GATEWAY`). Activities/events must not have more than one
-  incoming flow — join with a gateway, not a "fake join" (`FAKE_JOIN`).
+  incoming flow — join with a gateway, not a "fake join" (`FAKE_JOIN`). A
+  join gateway is two or more in, one out; it needs no `conditionExpression`
+  and no `default`, and it does not trip `SUPERFLUOUS_GATEWAY`. **`validate`
+  does not report `FAKE_JOIN`** (CLI 1.204.0), so a clean run is not evidence
+  that a multi-inbound activity is legal. Author the join gateway anyway.
+  When a CLI starts reporting the rule, delete this caveat and the one in
+  validation checklist item 5.
 
 ## Events and the event-definition matrix
 
@@ -728,8 +734,11 @@ deploy-readiness checks:
 uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
-each with its rule code (gateway/condition, fake-join, superfluous-gateway,
+Exit 0 means the document passes every rule the CLI enforces, which is not
+the same as every rule in the contract: `FAKE_JOIN` is registered but never
+reported (see [Gateways](#gateways)), so a clean exit is not proof of the
+hand-checked invariant in item 5 below. Exit 1 lists the blocking errors,
+each with its rule code (gateway/condition, superfluous-gateway,
 error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,
 input-type, event-object, and IS-connector checks). Warnings are reported but do
@@ -750,7 +759,12 @@ the same blocking rules:
 2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.
 3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.
 4. Each XOR gateway: non-default flows have conditions; exactly one default.
-5. No activity/event has more than one incoming flow.
+5. No activity/event has more than one incoming flow. The CLI never reports
+   this one (see [Gateways](#gateways)), so check it by hand whether or not
+   `validate` is available. One open exception: an end event that converges
+   the normal routes returning one shared public result, which
+   [Variables](#variables) prescribes. Leave those as prescribed rather than
+   rebuilding them behind a gateway.
 6. Each event subprocess has exactly one start event, and it carries an event
    definition (with `isInterrupting`).
 7. Every `vars.<id>` reference resolves to a declared variable.
