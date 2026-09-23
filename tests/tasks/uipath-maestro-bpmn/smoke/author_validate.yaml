@@ -10,11 +10,6 @@ run_limits:
   expected_turns: 20
   max_turns: 45
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ..
 
@@ -30,13 +25,13 @@ initial_prompt: |
     - each branch leads to its own end event.
 
   Requirements:
-  - Discover extension types via the registry first if you add any UiPath
-    extension node; declare any variables in `<uipath:variables>`, each with an
-    `elementId`. Do not hand-author uipath:* XML from prose.
+  - Resolve any UiPath extension node to its registered type the way your skill
+    prescribes; declare any variables in `<uipath:variables>`, each with an
+    `elementId`. Do not invent uipath:* XML from prose.
   - Author the structural BPMN (definitions/process scaffold, sequence flows,
     gateway conditions + default) per the skill's structural reference.
-  - The file MUST include a bpmndi:BPMNDiagram with a BPMNShape for every node
-    and a BPMNEdge for every sequence flow.
+  - The emitted `.bpmn` MUST carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate the file with an explicit Bash command before finishing: run a
     well-formed-XML parse, e.g.:
     `python3 -c "import xml.etree.ElementTree as ET, pathlib; ET.parse(next(pathlib.Path('.').rglob('InvoiceApproval.bpmn')))"`.

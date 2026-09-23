@@ -14,11 +14,6 @@ run_limits:
   # 2026-08-18 run died at 903s with 0 criteria graded (also 08-11).
   turn_timeout: 1800
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -36,16 +31,17 @@ initial_prompt: |
     - an end event.
 
   Requirements:
-  - Discover the Maestro.SendMessageEvent and Maestro.ReceiveMessageEvent types
-    via the registry and author each node from its registry xmlTemplate — do not
-    hand-author uipath:* XML from prose. The send wrapper goes on an
-    intermediateThrowEvent, the receive wrapper on an intermediateCatchEvent, and
-    each carries a bpmn:messageEventDefinition.
+  - Resolve the Maestro.SendMessageEvent and Maestro.ReceiveMessageEvent types
+    and their payloads the way your skill prescribes; do not invent uipath:* XML
+    from prose. The send wrapper goes on an intermediateThrowEvent, the receive
+    wrapper on an intermediateCatchEvent, and each carries a
+    bpmn:messageEventDefinition.
   - The two events MUST share a consistent message reference (the same message
     name / correlation key) so the receive matches the send.
   - Structural BPMN (sequence flows, the scaffold) comes from the skill's
-    structural reference. Include a bpmndi:BPMNDiagram with a BPMNShape for every
-    node (including both message events) and a BPMNEdge for every sequence flow.
+    structural reference. The emitted `.bpmn` must carry a complete
+    bpmndi:BPMNDiagram — a shape for every node (including both message events)
+    and an edge for every sequence flow.
   - Validate the file locally before finishing by running
     `uip maestro bpmn validate <file>` (or a well-formed-XML parse plus the
     structural checklist if the CLI is unavailable).

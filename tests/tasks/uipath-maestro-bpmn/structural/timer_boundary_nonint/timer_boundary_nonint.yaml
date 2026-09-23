@@ -11,11 +11,6 @@ run_limits:
   expected_turns: 18
   max_turns: 70
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -34,12 +29,13 @@ initial_prompt: |
       the userTask.
 
   Requirements:
-  - Discover any UiPath extension node's type via the registry and author it from
-    the registry template — do not hand-author uipath:* XML from prose. Structural
-    BPMN (boundary event attachedToRef/cancelActivity, timerEventDefinition,
-    sequence flows) comes from the skill's structural reference.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node (including the
-    boundary event) and a BPMNEdge for every sequence flow.
+  - Resolve any UiPath extension node's type and payload the way your skill
+    prescribes; do not invent uipath:* XML from prose. Structural BPMN (boundary
+    event attachedToRef/cancelActivity, timerEventDefinition, sequence flows)
+    comes from the skill's structural reference.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node (including the boundary event) and an edge for every sequence
+    flow.
   - Validate the file locally before finishing by running
     `uip maestro bpmn validate <file>` (or a well-formed-XML parse plus the
     structural checklist if the CLI is unavailable).
