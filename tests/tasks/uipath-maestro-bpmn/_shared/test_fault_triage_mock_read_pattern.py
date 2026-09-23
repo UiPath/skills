@@ -14,12 +14,17 @@ of the pattern failed it, because the `mocks/` inside the negation glob was
 preceded by `/` from `**/` rather than by the `!`.
 
 Matching mirrors `CommandExecutedChecker`: the pattern is tried against the
-raw command and against the shell-normalized form, and a hit on either counts.
+raw command and against a shell-normalized form, and a hit on either counts.
+`coder_eval` is not installed in the checker-unit-tests job, so the
+normalized form is computed locally and cross-checked against the real
+`_match_haystacks` whenever `coder_eval` *is* importable, which keeps the
+local stand-in honest without making CI depend on the private wheel.
 """
 
 from __future__ import annotations
 
 import re
+import shlex
 from pathlib import Path
 
 import pytest
@@ -30,6 +35,8 @@ _TASK = (
     / "operate-diagnose"
     / "minimal_fault_triage.yaml"
 )
+
+_SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
 
 
 def _pattern() -> re.Pattern[str]:
@@ -43,15 +50,40 @@ def _pattern() -> re.Pattern[str]:
     return re.compile(guards[0]["command_pattern"], re.DOTALL)
 
 
+def _normalized(command: str) -> str | None:
+    """Quote-resolved form, with a leading shell wrapper unwrapped.
+
+    A local stand-in for ``coder_eval.criteria.command_executed._normalize_shell``;
+    `test_local_normalizer_agrees_with_coder_eval` pins the two together.
+    """
+    try:
+        tokens = shlex.split(command, posix=True)
+    except ValueError:
+        return None
+    if tokens and Path(tokens[0]).name in _SHELLS:
+        for index, token in enumerate(tokens[1:], start=1):
+            if token.startswith("-") and token.endswith("c"):
+                rest = tokens[index + 1 :]
+                return " ".join(rest) if rest else None
+            if not token.startswith("-"):
+                break
+    return " ".join(tokens)
+
+
+def _haystacks(command: str) -> list[str]:
+    out = [command]
+    normalized = _normalized(command)
+    if normalized and normalized != command:
+        out.append(normalized)
+    return out
+
+
 def _hits(command: str) -> bool:
     """True when the guard would count this command, raw or normalized."""
-    from coder_eval.criteria.command_executed import _match_haystacks  # type: ignore
-
     pattern = _pattern()
-    return any(pattern.search(h) for h in _match_haystacks(command, is_shell=True))
+    return any(pattern.search(h) for h in _haystacks(command))
 
 
-# Commands that READ a mocked input. The guard must fire.
 READS = [
     "cat mocks/responses/instance-incidents.json",
     "jq . ./fixtures/mocks/responses/manifest.json",
@@ -97,3 +129,15 @@ def test_guard_fires_on_a_mock_read(command: str) -> None:
 @pytest.mark.parametrize("command", COMPLIANT)
 def test_guard_is_silent_on_compliant_commands(command: str) -> None:
     assert not _hits(command), f"guard wrongly counted: {command!r}"
+
+
+def test_local_normalizer_agrees_with_coder_eval() -> None:
+    """The stand-in above must not drift from the checker's own normalizer."""
+    module = pytest.importorskip(
+        "coder_eval.criteria.command_executed",
+        reason="coder_eval is not installed in the checker-unit-tests job",
+    )
+    pattern = _pattern()
+    for command in READS + COMPLIANT:
+        real = any(pattern.search(h) for h in module._match_haystacks(command, is_shell=True))
+        assert real == _hits(command), f"verdict differs for {command!r}"
