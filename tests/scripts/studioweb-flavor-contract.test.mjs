@@ -62,16 +62,26 @@ test("the default flavor keeps `uip solution init` (the guard is not vacuous)", 
   assert.ok(filesMentioning(output, FORBIDDEN).length > 0);
 });
 
-// Editing RPA projects is not supported in Studio Web: `uip rpa validate` cannot
-// run there (it needs a headless Studio process), the designer cannot check
-// agent-written XAML, and a workflow it cannot load leaves the project unable to
-// open. The studioweb flavor of uipath-rpa must scope the skill to reading and
-// analyzing, and must not tell the agent to create the project with
-// `uip rpa init`.
+// Editing RPA projects is not supported in Studio Web: the `uip rpa` CLI tool
+// is not in the browser bundle, so `uip rpa validate` cannot run there, the
+// designer cannot check agent-written XAML, and a workflow it cannot load
+// leaves the project unable to open. The studioweb flavor of uipath-rpa must
+// scope the skill to reading and analyzing: no instruction to create projects
+// with `uip rpa init`, no validation gate, and the host scope repeated at the
+// top of the references that carry imperative authoring steps.
 const RPA_SKILL = join("uipath-rpa", "SKILL.md");
 const RPA_READ_ONLY_HEADING = "## Studio Web Scope: Read and Analyze Only";
 const RPA_CLI_UNAVAILABLE = "The `uip rpa` CLI tool is not available in Studio Web.";
-const RPA_FORBIDDEN_INIT = "`uip rpa init <NAME>`";
+const RPA_RULE_CREATE_WITH_INIT = "**ALWAYS use `uip rpa init`**";
+const RPA_RULE_VALIDATION_GATE = "**Phase-gated validation.**";
+const RPA_REFERENCE_NOTE = "> **Studio Web:** the `uip rpa` CLI tool is not available here";
+const RPA_IMPERATIVE_REFERENCES = [
+  "environment-setup.md",
+  "execution-maps-guide.md",
+  "cli-reference.md",
+  join("xaml", "xaml-basics-and-rules.md"),
+  join("coded", "operations-guide.md"),
+].map((file) => join("uipath-rpa", "references", file));
 
 test("the built studioweb uipath-rpa skill is scoped to reading and analyzing", (t) => {
   const output = mkdtempSync(join(tmpdir(), "studioweb-rpa-contract-"));
@@ -85,11 +95,18 @@ test("the built studioweb uipath-rpa skill is scoped to reading and analyzing", 
     skill.indexOf(RPA_READ_ONLY_HEADING) < skill.indexOf("## When to Use This Skill"),
     "the read-only scope must precede the When to Use section so the agent reads it first",
   );
-  assert.ok(!skill.includes(RPA_FORBIDDEN_INIT), "studioweb uipath-rpa must not instruct `uip rpa init`");
+  assert.ok(!skill.includes(RPA_RULE_CREATE_WITH_INIT), "studioweb uipath-rpa must not keep Rule 2's instruction to create projects with `uip rpa init`");
+  assert.ok(!skill.includes(RPA_RULE_VALIDATION_GATE), "studioweb uipath-rpa must not keep Rule 3's `uip rpa validate`/`build` gate");
   assert.ok(!skill.includes("skill-flavor:"), "built output must be marker-free");
+
+  for (const reference of RPA_IMPERATIVE_REFERENCES) {
+    const text = readFileSync(join(output, reference), "utf8");
+    assert.ok(text.includes(RPA_REFERENCE_NOTE), `${reference} must open with the Studio Web read-only note`);
+    assert.ok(!text.includes("skill-flavor:"), `${reference} must be marker-free`);
+  }
 });
 
-test("the default uipath-rpa skill keeps its full authoring scope", (t) => {
+test("the default uipath-rpa skill keeps its full authoring scope (the guards are not vacuous)", (t) => {
   const output = mkdtempSync(join(tmpdir(), "default-rpa-contract-"));
   t.after(() => rmSync(output, { recursive: true, force: true }));
   materializeComposition(createDefaultPlan(REPO_ROOT), output);
@@ -97,6 +114,14 @@ test("the default uipath-rpa skill keeps its full authoring scope", (t) => {
 
   assert.ok(!skill.includes(RPA_READ_ONLY_HEADING));
   assert.ok(!skill.includes(RPA_CLI_UNAVAILABLE));
+  assert.ok(skill.includes(RPA_RULE_CREATE_WITH_INIT));
+  assert.ok(skill.includes(RPA_RULE_VALIDATION_GATE));
   assert.ok(skill.includes("## When to Use This Skill"));
   assert.ok(!skill.includes("skill-flavor:"), "built output must be marker-free");
+
+  for (const reference of RPA_IMPERATIVE_REFERENCES) {
+    const text = readFileSync(join(output, reference), "utf8");
+    assert.ok(!text.includes(RPA_REFERENCE_NOTE), `${reference} must not carry the Studio Web note in the default`);
+    assert.ok(!text.includes("skill-flavor:"), `${reference} must be marker-free`);
+  }
 });

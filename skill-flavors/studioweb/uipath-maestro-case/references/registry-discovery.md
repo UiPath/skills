@@ -7,7 +7,7 @@
 <!--skill-flavor:capability-probe:end-->
 
 <!--skill-flavor:register-step:start-->
-In Studio Web there is nothing to register: each sibling was created with `uip <family> init <Name>` inside the open solution, and the host registered it at creation. `uip solution projects add` and `uip solution resources refresh` are Node-CLI-only here — the host keeps solution-level resources in sync, so continue straight to §4.
+In Studio Web there is nothing to register: each sibling was created with `uip <family> init <Name>` inside the open solution (RPA siblings excepted — the agent does not create them in Studio Web), and the host registered it at creation. `uip solution projects add` and `uip solution resources refresh` are Node-CLI-only here — the host keeps solution-level resources in sync, so continue straight to §4.
 <!--skill-flavor:register-step:end-->
 
 <!--skill-flavor:adopt-register:start-->

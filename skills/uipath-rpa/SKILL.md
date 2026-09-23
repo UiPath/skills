@@ -11,9 +11,7 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 > **Reading the referenced files is imperative — read each required file in full.** This SKILL.md is a router: it tells you *which* reference to open, not *what* it says. When a rule, the Task Navigation table, or a section points you to a reference for the task at hand, open it and read the **whole** file before acting — do not grep it for a keyword, skim the first screen, fall back to `--help`, or substitute prior knowledge. Exception: files whose rule prescribes a **targeted lookup** (Grep `^##` for the table of contents, flags via `<command> --help`) — these are catalogs: read the matching sections, never the whole file. Most errors that slip past `validate` and surface at `build` or runtime trace back to a reference that was skipped or only partially read.
 
 <!--skill-flavor:host-scope:start-->
-
 <!--skill-flavor:host-scope:end-->
-
 ## When to Use This Skill
 
 - User wants to **create a new** UiPath automation project (coded or XAML)
@@ -33,11 +31,13 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 
 ## Precondition: Project Context
 
+<!--skill-flavor:project-context-precondition:start-->
 Before doing any work, check `.claude/rules/project-context.md` in the project directory:
 
 - **Exists and fresh** → proceed with the skill workflow.
 - **Missing or stale** → run the skip gate, then — only if it does not trip — the discovery flow, both per [environment-setup.md § Project Context Discovery](references/environment-setup.md): the staleness check (metadata-comment counts vs current counts, 60–70% threshold), the skip gate (greenfield / empty project / untouched scaffold — nothing to discover yet), the discovery-agent spawn options per host, and the handling of the agent's `context-files:` / `SKIP:` status lines (the agent writes the context files itself — do NOT re-read or rewrite them). **Dispatch discovery AT MOST ONCE per session** — if a discovery agent is already running or its context document was already produced, reuse that result; a later step that calls for "project-context discovery" means INTEGRATE the earlier dispatch, never spawn a second.
 - **Skip gate tripped (greenfield / empty / untouched scaffold)** → no discovery agent and no context files now; after the build completes, write both context files yourself per the same section.
+<!--skill-flavor:project-context-precondition:end-->
 
 ## Step 0: Resolve PROJECT_DIR
 
@@ -136,9 +136,12 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
 ### Common Rules (Both Modes)
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, then CWD for `project.json`. Only create when confirmed no project matches AND user explicitly requests creation.
+<!--skill-flavor:rules-project-creation:start-->
 2. **ALWAYS use `uip rpa init`** to create new projects — never write `project.json` or scaffolding manually.
    - **Before creating, decide if a template is needed.** If the user names a template ("REFramework", "based on the X template") or an industry/domain pattern (SAP, ERP, banking, mainframe), run `uip rpa templates search --query "<term>" --output json` first and select per the decision flow in [environment-setup.md § Template selection](references/environment-setup.md) — its two hard constraints: **NEVER silently pick a Marketplace template** (present candidates and ask), and when the user's named template matches both an Official and a Marketplace item, ask — do NOT auto-pick.
 2a. **Pass `--target-framework` AND `--expression-language` explicitly on every `uip rpa init` — never omit them.** Both are immutable after creation (Rule 23); omitting `--target-framework` silently yields a **Windows** project. Choose framework by where the automation runs: cross-platform / non-Windows runtime (Linux, container, serverless) or Studio Web editing → **`Portable`** (Cross-platform); Windows runtime using Windows-only capabilities (Excel COM, classic Office, WPF / `PresentationFramework`, Windows-only UIA) or Studio Desktop as the edit surface → **`Windows`** (not editable in Studio Web). A request needing *both* a cross-platform runtime and a Windows-only capability is contradictory — surface it, don't silently pick. **Windows - Legacy is a last resort** (explicit ask or hard .NET 4.6.1 need; never inferred from VB.NET or non-"X" classic activities) — create it in Legacy mode, not modern `init`. No signal → `AskUserQuestion` (Windows vs Cross-platform), framed around the runtime host. `--expression-language`: default `VisualBasic`, `CSharp` only on explicit request.
+<!--skill-flavor:rules-project-creation:end-->
+<!--skill-flavor:rules-validation-gate:start-->
 3. **Phase-gated validation.** Two-phase validation:
    - **Per-file** (after every create or edit): `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches structural XAML, missing references, analyzer-rule violations, schema violations. Fix one thing per iteration.
    - **Project-level build** (after per-file `validate` is clean across all files in the edit session, and before declaring done): `uip rpa build "<PROJECT_DIR>" --output json` until clean. Covers the whole project — every workflow including ones you never edited or validated, plus project-scope analyzer rules and packaging — so per-file `validate` passing on each edited file does NOT establish that the project compiles. Coverage split: [cli-reference.md § What each phase covers](references/cli-reference.md#what-each-phase-covers). If `build` errors, identify the offending file from the output and re-run `validate --file-path` on it.
@@ -150,6 +153,7 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
 
    See [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop).
 4. **ALWAYS bring every touched file to per-file `validate` clean AND verify the project builds before declaring done.** The full cadence, caps, and what each phase catches: Rule 3. `validate` clean alone is not "validated" — the project-level `build` is mandatory before declaring done, and a clean gate is not runtime proof: for observable-output workflows, end the gate with one `run` and check outputs ([execution-maps-guide.md § Gate ≠ runtime proof](references/execution-maps-guide.md#gate--runtime-proof)).
+<!--skill-flavor:rules-validation-gate:end-->
 5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
@@ -301,10 +305,16 @@ UIA references live in two locations. Always cite by location so the reader know
 Then, if the harness provides persistent memory, save the patterns that [execution-maps-guide.md § Cross-session memory](references/execution-maps-guide.md#cross-session-memory) qualifies (a first-try clean gate on card-covered activities qualifies none) — as parallel `Write`s in the same message as the report and the context files, never as their own turns. The output check is a link of the gate chain; the report is one message carrying the context-file writes, the memory writes and the text below; nothing runs after it.
 
 When you finish a task, report to the user:
+<!--skill-flavor:report-what-was-done:start-->
 1. **What was done** — files created, edited, or deleted (list file paths)
+<!--skill-flavor:report-what-was-done:end-->
+<!--skill-flavor:report-validation-status:start-->
 2. **Validation status** — per-file `validate` result (all files passed, or remaining errors) **and** project-level `uip rpa build` result. Both must be clean to claim verification — `validate` clean alone is insufficient — it covers only the files it was pointed at, while `build` compiles the whole project (Rule 3). If `build` has not run since the last edit, say so explicitly rather than claiming success.
+<!--skill-flavor:report-validation-status:end-->
 3. **Plan completion** — which task checkboxes in `docs/plans/*.md` are now `[x]`; list any still `[ ]` and, for each, the Stop-condition item that interrupted it (or "not reached" if execution was cut short another way)
+<!--skill-flavor:report-how-to-run:start-->
 4. **How to run** — the `uip rpa run` (or `uip rpa debug start`) command (if applicable)
+<!--skill-flavor:report-how-to-run:end-->
 5. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
 6. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."
 
