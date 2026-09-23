@@ -58,7 +58,6 @@
     "Never auto-debug or publish to Orchestrator": 2,
     "No authored edges": 2,
     "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 1,
-    "SDD is the sole post-design input, across sessions": 1,
     "The build is lossless against the SDD": 1
   },
   "references/phased-execution.md": {
@@ -192,6 +191,7 @@
     "Global events and SLA responses": 1
   },
   "references/validator-codes.md": {
-    "The build is lossless against the SDD": 1
+    "The build is lossless against the SDD": 1,
+    "Unique labels and task names": 1
   }
 }

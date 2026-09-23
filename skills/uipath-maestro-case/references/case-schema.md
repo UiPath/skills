@@ -276,7 +276,7 @@ Every condition `displayName` must be unique across the **whole case**, with one
 
 `validate` enforces it as a hard **error**: `Rule name '<displayName>' is not unique`, reported once per node holding the name (`nodes[<stageId>]`, or `nodes[root]` for a case-exit rule).
 
-**The exemption is the frontend's own default names, matched exactly and case-sensitively after trimming.** These may repeat freely:
+**The exemption is the frontend's own default names, matched exactly and case-sensitively after trimming.** A repeated default is not an error: the platform renumbers it itself when the plan loads (the V31→V32 migration, `deduplicateCaseManagementRuleIdentities`, which every plan passes through because `sdd convert` writes V30). The full set is every name the frontend generates — 472 templates across its locales — so this table is the handful the skill writes most, **not** the whole list; `validate` holds the whole list and is the authority. Examples that may repeat freely:
 
 | Default name | Where it comes from |
 |---|---|
