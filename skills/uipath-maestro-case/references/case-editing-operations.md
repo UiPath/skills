@@ -68,7 +68,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 11. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
-12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each element-class section batch completes (the closing validate at Phase 3 exit and in Phase 4 adds `--strict`; section boundaries use the default profile because mid-build state is legitimately incomplete) (per § Per-section batch write contract below). One validate per section, not one per element. Fixing errors at the section boundary is cheaper than chasing a cascade.
+12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each element-class section batch completes (the closing validate at Phase 3 exit and in Phase 4 is `--strict --sdd sdd.md`, or `--strict` for a brownfield edit with no SDD; section boundaries use the default profile because mid-build state is legitimately incomplete) (per § Per-section batch write contract below). One validate per section, not one per element. Fixing errors at the section boundary is cheaper than chasing a cascade.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes, so the case cannot be entered). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
     - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no entry conditions yet). The plugin's validation parity is captured in the fixture instead.
 
@@ -489,7 +489,7 @@ Transitions are not edges. To change where a stage flows, edit the relevant stag
 
 ## Validation Cadence
 
-Run `uip maestro case validate <file> --output json` after each element-class section's batch completes — not after every Edit. The closing validate at Phase 3 exit and in Phase 4 adds `--strict`. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
+Run `uip maestro case validate <file> --output json` after each element-class section's batch completes — not after every Edit. The closing validate at Phase 3 exit and in Phase 4 is `--strict --sdd sdd.md`, or `--strict` for a brownfield edit with no SDD; a default-profile `Valid` is never completion. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
 
 On failure: fix the reported issue (usually a missing field, malformed ID, or orphan reference) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
 

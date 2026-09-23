@@ -95,6 +95,6 @@ After writing, confirm:
 - For a primary Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
 - **`schema.edges` is still `[]`** (Rule 21). If non-empty, an edge was authored in error: remove it per [case-editing-operations.md § Delete an edge](../../case-editing-operations.md#delete-an-edge--defensive-only) before proceeding.
 
-Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
+Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added. A default-profile `Valid` here is a batch check, not completion: the build ends only on `validate --strict --sdd sdd.md` at [Step 12](../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

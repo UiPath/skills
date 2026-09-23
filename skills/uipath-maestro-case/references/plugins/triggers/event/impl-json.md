@@ -178,6 +178,6 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 for a resolved trigger.
 
-Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
+Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added. A default-profile `Valid` here is a batch check, not completion: the build ends only on `validate --strict --sdd sdd.md` at [Step 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->
