@@ -312,7 +312,7 @@ Returns a `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `input
 
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json
@@ -323,7 +323,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 
 | Flag | Description |
 |------|-------------|
-| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
+| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 

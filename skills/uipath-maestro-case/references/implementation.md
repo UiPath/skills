@@ -152,7 +152,7 @@ Per-class shape inside each Edit:
 
 | Task class | Phase 2 `data` content |
 |---|---|
-| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
+| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
 | Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
 | Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
@@ -200,7 +200,7 @@ Studio Web renders this on the task's General tab, so a shortened one is where t
 
 When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. See [placeholder-tasks.md](placeholder-tasks.md) for the canonical reference.
 
-For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`.
+For every task class (process / agent / rpa / action / api-workflow / function / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`.
 
 **Skip all input binding for placeholder tasks** — they have no input schema. Capture the intended wiring from the entry's `wiringNotes` in `tasks/registry-resolved.json` into the completion report so the user knows what to hook up after registering the resource.
 
