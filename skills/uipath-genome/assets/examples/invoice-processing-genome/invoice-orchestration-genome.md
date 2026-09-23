@@ -93,7 +93,12 @@ Each queue item on the intake queue starts one instance of this process. The ins
 
 ## Transactional Shape
 
-Not transactional: a coordinator — one instance per invoice retries, tracks and escalates its own item; the process genome's Transactional Shape declines the framework for this process.
+
+### Flow 1 — one supplier invoice: component 2 → component 1
+
+**Role:** takes Flow 1's items — its queue trigger starts one instance per invoice, and that instance retries, tracks and escalates its invoice; a coordinator, not an RPA consumer.
+
+Split options: per the process genome, Flow 1.
 
 ## Acceptance Criteria
 

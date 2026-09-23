@@ -12,7 +12,7 @@
 
 ## Overview
 
-One RPA project, three entry points. The dispatcher runs every 15 minutes, saves new PDF attachments from the AP mailbox to the invoice bucket, and creates one queue item each. The matching entry point, started by the orchestration process, extracts the invoice fields with Document Understanding, reads the PO from SAP, and evaluates the three-way match. The poster, also started by the orchestration process, enters the invoice in SAP and returns the document number.
+One RPA project, three entry points. The intake entry point runs every 15 minutes, saves new PDF attachments from the AP mailbox to the invoice bucket, and creates one queue item each. The matching entry point, started by the orchestration process, extracts the invoice fields with Document Understanding, reads the PO from SAP, and evaluates the three-way match. The poster, also started by the orchestration process, enters the invoice in SAP and returns the document number.
 
 ## Target Applications
 
@@ -27,7 +27,7 @@ One RPA project, three entry points. The dispatcher runs every 15 minutes, saves
 
 | Step | Skill | Rationale |
 |------|-------|-----------|
-| Entry point A (dispatcher), steps 1-3 | `uipath-rpa` | Mailbox connector activities and queue creation in XAML |
+| Entry point A (intake), steps 1-3 | `uipath-rpa` | Mailbox connector activities and queue creation in XAML |
 | Entry point B (matching), steps 4-7 | `uipath-rpa` | Document Understanding extraction plus SAP GUI UI automation; matching logic as a coded (C#) workflow in the same project |
 | Entry point C (poster), steps 8-9 | `uipath-rpa` | SAP GUI UI automation |
 
@@ -35,7 +35,7 @@ One RPA project, three entry points. The dispatcher runs every 15 minutes, saves
 
 | Resource | Type | Purpose |
 |----------|------|---------|
-| AP_InvoiceIntake | Queue | Dispatcher writes one item per invoice |
+| AP_InvoiceIntake | Queue | Entry point A writes one item per invoice |
 | AP_Invoices | Storage bucket | PDFs and extraction results |
 | SAP_AP_Robot | Credential asset | SAP GUI login |
 | AP_Mailbox | Integration Service connection (Exchange Online) | Mailbox access |
@@ -105,19 +105,21 @@ One RPA project, three entry points. The dispatcher runs every 15 minutes, saves
 
 ## Transactional Shape
 
-The project is the producer — entry point A creates the items; entry points B and C run one item's work per job started by the orchestration, so the project has no consumer role.
 
-| Producer | Reads | Writes items to | Reference rule | Trigger |
-|---|---|---|---|---|
-| Entry point A (dispatcher) | unread mails with a PDF attachment in the configured mailbox folder | `AP_InvoiceIntake` | one item per mail id; a second item for the same mail id is closed as `duplicate` by the orchestration | every 15 minutes |
+### Flow 1 — one supplier invoice: component 2 → component 1
 
-The source mail is marked read and its PDF saved to the bucket once the item is queued.
+**Role:** producer — entry point A creates the items; entry points B and C run one item's work per job component 1 starts, so the project has no consumer role.
 
-**Recommendation:** per the process genome — not applied.
+| Aspect | As-is |
+|---|---|
+| Produced by | Entry point A (intake), every 15 minutes: unread mails with a PDF attachment in the configured mailbox folder become one item per mail id on `AP_InvoiceIntake`; a second item for the same mail id is closed as `duplicate` by the orchestration |
+| Source item once queued | The mail is marked read and its PDF saved to the bucket |
+
+Split options: per the process genome, Flow 1.
 
 ## Acceptance Criteria
 
-- [ ] Given three unread mails with PDFs and one without, the dispatcher creates three queue items and emails the fourth sender.
+- [ ] Given three unread mails with PDFs and one without, the intake entry point creates three queue items and emails the fourth sender.
 - [ ] Given an invoice PDF, entry point B returns vendor, invoice number, date, PO number, line items, subtotal, tax, total, and currency.
 - [ ] Given a field below the confidence threshold, `MatchResult` is `exception` with `unreadable-field` naming the field.
 - [ ] Given an invoice whose lines match the PO within 1% and total below the remaining value, `MatchResult` is `matched` with no discrepancies.
@@ -132,4 +134,4 @@ complex
 
 ## Tags
 
-rpa, document-understanding, sap, three-way-match, queue-dispatcher, queues, invoice
+rpa, document-understanding, sap, three-way-match, queue-intake, queues, invoice

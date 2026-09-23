@@ -113,17 +113,25 @@ flowchart LR
 
 ## Transactional Shape
 
-{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Name the producers (any component type) and the consumers (RPA processes) across components; the Components table's Type cell carries `dispatcher` / `performer` for the roles the Recommendation applies. When no RPA consumer exists, one sentence naming what takes the items replaces the Consumer table. Component genomes carry their own role's detail.}
+{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at execution. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. When a flow has no RPA consumer, one sentence naming what takes its items replaces its Consumed by row. Component genomes carry their own role per flow.}
+
+**Flows:** Flow 1 — {unit}: component {p} → component {c} (Handoffs row {n}); Flow 2 — {unit}: component {c} → component {d} (Handoffs row {m}); chains: component {c} consumes Flow 1 and produces Flow 2; independent: {Flow k}.
+
+### Flow 1 — {unit of work}: component {p} → component {c}
 
 **Unit of work:** one {item}; reference {identifying field(s)}; fields as in Handoffs row {N}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
+**Alternative units of work:** one {other item} — fits when {condition}. *(every viable granularity, or "none")*
 
-| Producer | Reads | Writes items to | Reference rule | Trigger |
-|---|---|---|---|---|
-| {component #} | {mailbox / folder / sheet / report / API} | {queue name} | {uniqueness; duplicates} | {schedule or event} |
+**As-is** — how the process handles the units today:
 
-| Consumer | Takes items from | Mode | Once per run | Per item | At the end |
-|---|---|---|---|---|---|
-| {component #} | {queue name / the source} | {queue \| direct} — {reason} | {its steps} | {its steps} | {its steps} |
+| Aspect | As-is |
+|---|---|
+| Produced by | {component # and steps that create items; how often; one source or several; guarded by a lock or ledger?} |
+| Consumed by | {component # and steps that take items; one robot or several; how items are picked; order} |
+| Item store | {queue / table / in-memory list / folder}; per-item state as {status, tags, fields, output} |
+| Coordination | {parent items, ledgers, locks, tag joins — what each is for; "none"} |
+| Item kinds | {one kind, or several routed inside the consumer — what differs} |
+| Step groups | consumer once per run: {steps}; per item: {steps}; at the end: {steps} |
 
 | Outcome | When | Effect |
 |---|---|---|
@@ -131,10 +139,24 @@ flowchart LR
 | Business exception | {component #} Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — {component #} Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
+**Split options** — for the unit of work and each alternative unit; runner counts are deployment settings, never options; none asserted:
+
+| Unit of work | Option | Processes | Item store | Requires | Changes against as-is |
+|---|---|---|---|---|---|
+| {unit} | A — one process, both roles | one RPA process (REFramework direct mode or a plain per-item loop) | in-process list (one job, one runner); no queue | {nothing else touches the items; one runner; a rerun is safe} | {…} |
+| {unit} | B — a producer process and a consumer process | two RPA processes (two projects, or two entry points each published as a process), each with its own trigger and runner count | one Orchestrator queue per unit of work | {several consumer runners, retries across runs, different cadences, machines, credentials or ownership} | {…} |
+| {unit} | C — one process, both roles, with a queue | one RPA process, one entry point and one trigger: every job produces behind a once-guard, then consumes the queue (REFramework queue mode, producer steps in its initialisation); any number of identical runners | one Orchestrator queue per unit of work | {several runners, retries across runs or a later reader of the items, while both roles share cadence, machines, credentials and owner; population once per period (unique reference or kept ledger)} | {…} |
+| {alternative unit} | A — one process, both roles | … | … | … | {…} |
+| {alternative unit} | B — a producer process and a consumer process | … | … | … | {…} |
+| {alternative unit} | C — one process, both roles, with a queue | … | … | … | {…} |
+
+**Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
-**Traceability:** {per-item record and where it lands; screenshot on system exception; run summary; which component reports on them}.
-**Recommendation:** {Apply — {reason}. | Not recommended — {reason}.}
-**Alternative unit of work:** one {other item} — not chosen because {reason}; choose it when {condition}. *(only when a second granularity is viable)*
+**Traceability:** {per-item record and where it lands; the upstream reference a chained item carries; screenshot on system exception; run summary; which component reports on them}.
+
+### Flow 2 — {…}
+
+{same block}
 
 *Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's}."*
 

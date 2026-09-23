@@ -10,7 +10,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | Composite UI interaction **contract** (what a substep must carry) | `genome-format-guide.md` § Workflow |
 | Credential asset per login account; secrets never in genome, data file or report | `genome-format-guide.md` § Platform Dependencies |
 | Source Map contract rows; "genome files are the only output" (locators and rows stay in export) | `genome-format-guide.md` § Source Map |
-| Transactional Shape: the unit-of-work test and its granularity (alternative unit of work), producer and consumer roles and the Type-cell role word, queue-vs-direct choice, the three outcomes and the conditional Postponed row, step groups, two-level sources folded into one unit of work, configuration split, traceability, one Recommendation verdict, stub | `genome-format-guide.md` § Transactional Shape |
+| Transactional Shape: the unit-of-work test and its granularity (alternative unit of work), flows versus nested levels (the two tests of rule 12), producer and consumer roles and the Type-cell role word, queue-vs-direct choice, the three outcomes and the conditional Postponed row, step groups, two-level sources folded into one unit of work, configuration split, traceability, one Recommendation verdict, stub | `genome-format-guide.md` § Transactional Shape |
 | Extraction pipeline, evidence policy for blanket screen captures, completing and checking Source Map | `references/extraction-guide.md` |
 | Authoring steps, platform-capability suggestions, bounded follow-ups, authored edit table | `references/authoring-guide.md` |
 | Build With skill names, decision tree, operate-only skills | `references/skill-mapping-guide.md` |

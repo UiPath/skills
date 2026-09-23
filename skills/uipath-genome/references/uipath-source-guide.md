@@ -88,7 +88,7 @@ A project built on the Robotic Enterprise Framework template is recognised by it
 
 | Source | Feeds | How |
 |---|---|---|
-| `Data/Config.xlsx` Settings sheet: `OrchestratorQueueName`, `OrchestratorQueueFolder` | Transactional Shape mode; Platform Dependencies (queue) | A queue name that the item-fetch workflow actually reads → `queue` mode, name kept as the source value. Blank, or the template's sample `ProcessABCQueue` beside a customised item fetch → `direct` mode, data source from that fetch |
+| `Data/Config.xlsx` Settings sheet: `OrchestratorQueueName`, `OrchestratorQueueFolder` | Transactional Shape As-is item store; Platform Dependencies (queue) | A queue name that the item-fetch workflow actually reads → `queue` mode, name kept as the source value. Blank, or the template's sample `ProcessABCQueue` beside a customised item fetch → `direct` mode, data source from that fetch |
 | Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Configuration Questions with the sheet value as default; the two counts in the outcomes table | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
 | Assets sheet rows | Platform Dependencies | One row per asset name; Credential when the description or the consuming activity says so, otherwise Text |
 | `Framework/InitAllApplications.xaml` (`GetAppCredentials.xaml` in older templates) | Once-per-run steps; credential assets | Open and sign-in per application |
@@ -99,7 +99,7 @@ A project built on the Robotic Enterprise Framework template is recognised by it
 | `Framework/CloseAllApplications.xaml`, `Framework/KillAllProcesses.xaml` | At-the-end steps; Error Handling § Global (forced close between retries) | |
 | `Main.xaml` and its transitions, `InitAllSettings.xaml`, `RetryCurrentTransaction.xaml`, `TakeScreenshot.xaml`, the template's `Tests/`, `Exceptions_Screenshots/`, `Documentation/` | **Not steps.** Source Map row `Framework files` listing them; `Tests/` is test-coverage evidence | Execution recreates them from the template when the shape is applied |
 
-A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it (§ Call Graph Rules rule 3).
+A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it (§ Call Graph Rules rule 3). A REFramework project whose initialisation adds the items its own item fetch then takes from the same queue is both at once: its producer steps are the initialisation's reads and adds, its consumer is the rest of the framework, and the As-is is one process holding both roles over a queue — the shape Split option C keeps ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 3). A guard in that initialisation (a unique reference, a check that the day's items already exist) is the Coordination row's once-guard.
 
 ## Signals — Coded C#
 

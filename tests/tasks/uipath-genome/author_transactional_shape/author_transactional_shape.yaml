@@ -2,11 +2,12 @@ task_id: skill-genome-author-transactional-shape
 description: >
   Smoke: agent uses the uipath-genome skill to author a component genome from a
   described sheet-to-web-client process worked by several robots. Grades the genome's
-  structure and, above all, its Transactional Shape: the shape applied in queue mode
-  with a reason, producer and consumer tables filled (no template placeholders left),
+  structure and, above all, its Transactional Shape: one flow block for the sheet rows,
+  no verdict, the As-is filled, split options A, B and C for the unit of work and for every
+  alternative unit, each with what it requires and changes (no template placeholders left),
   business and system exceptions classified with the per-item retry and the
-  consecutive-failure stop, the role word carried in the Overview — plus configuration
-  defaults and business rules taken from the description.
+  consecutive-failure stop — plus configuration defaults and business rules taken from
+  the description.
 tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
 
 initial_prompt: |
@@ -54,26 +55,29 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Transactional Shape applies queue mode with a reason, states retry and consecutive-failure stop, leaves no placeholder, and the Overview carries the performer role word"
+    description: "Transactional Shape describes one flow of rows with split options per unit, states retry and consecutive-failure stop, and leaves no placeholder"
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py component
       customer-address-sync-genome.md
-      --shape applied --mode queue
+      --shape transactional --flows 1 --unit row
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Transactional Shape carries the unit of work, both role tables and the three outcome rows"
+    description: "Transactional Shape carries the flow, the unit of work, the As-is roles, the three outcome rows and split options"
     path: "customer-address-sync-genome.md"
     includes:
       - "## Transactional Shape"
+      - "### Flow 1"
       - "Unit of work"
-      - "| Producer |"
-      - "| Consumer |"
+      - "| Produced by |"
+      - "| Consumed by |"
       - "| Business exception |"
       - "| System exception |"
+      - "**Split options**"
+      - "| Requires | Changes against as-is |"
     weight: 2.0
     pass_threshold: 0.85
 
