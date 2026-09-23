@@ -2,16 +2,14 @@
 
 Use this guide when BPMN source changed and local package metadata must be refreshed or verified before packaging, upload, debug, publish, or deploy.
 
-<<<<<<< HEAD
 **Do NOT apply it to an Integration Service draft or boundary handoff.** When the task is to author a local BPMN draft and hand connector enrichment to the CLI (no upload/pack yet), `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` stay CLI-owned — do not hand-author or pre-generate them. Author only the `.bpmn` source shape plus a `.md` notes file **inside the project directory** naming the CLI-owned blockers. The regeneration workflow below reaches such a project only once its connectors are enriched.
-=======
+
 The BPMN `refresh` command is the authoritative local source-to-derived-state
 boundary. It requires exactly one project-root `.bpmn` file
 and atomically regenerates the complete package metadata set. The command is
 offline and provider-neutral: it does not log in, discover a tenant, invoke a
 connector, or resolve an account. It consumes only identities already authored
 into the supported BPMN contract.
->>>>>>> b77a95d33 (feat(bpmn): derive package metadata with refresh)
 
 ## Ownership
 
@@ -81,23 +79,17 @@ Do not derive metadata from stale package files first. Use existing generated fi
 ## Safe Local Workflow
 
 1. Edit `.bpmn` first.
-<<<<<<< HEAD
 2. Check the source itself: well-formed XML, diagrams, entry point IDs,
    variables, mappings, binding references. Do not run `uip maestro bpmn
    validate` yet — it cross-checks `entry-points.json` against the source, so it
    reports the pre-refresh state as an error whenever an edit renamed a start
    event. Run it after step 3.
 3. Regenerate package metadata from the BPMN source:
-=======
-2. Run local validation for XML, diagrams, entry point IDs, variables, mappings, binding references, and package metadata drift.
-3. After validation succeeds, regenerate derived metadata:
->>>>>>> b77a95d33 (feat(bpmn): derive package metadata with refresh)
 
    ```bash
    uip maestro bpmn refresh <project-path> --output json    # regenerate + materialize IS connection bindings
    ```
 
-<<<<<<< HEAD
    `refresh` materializes `Intsvc.*` connection bindings (including triggers)
    and validates before writing. It needs `project.uiproj` — without one it
    exits `BpmnRefreshFailed` / `RetryWillNotFix`; for a bare `.bpmn`, write the
@@ -105,21 +97,12 @@ Do not derive metadata from stale package files first. Use existing generated fi
    stale and `Data.UnchangedFiles` the ones already current, so a drift answer
    needs no separate command. Never fall back to the deprecated
    `update-metadata`.
-=======
-   A successful response reports `Status`, `ProjectPath`, `BpmnFile`,
-   `WrittenFiles`, and `UnchangedFiles`.
-
-   Use `refresh` — it materializes `Intsvc.*` connection bindings (including
-   triggers) and validates before writing. The deprecated
-   `uip maestro bpmn update-metadata <file.bpmn>` (with `--dry-run` for a
-   drift check) only rewrites the BPMN-derived fields and does **not** materialize
-   connection bindings.
->>>>>>> 0770c04c1 (docs(bpmn): make refresh the single documented metadata contract)
 
    If CLI unavailable for a local-only synthetic project, write the minimal
    placeholder-safe shape (see below) before continuing.
 
-4. Verify the project directory now contains the full metadata set:
+4. Run `uip maestro bpmn validate <file.bpmn> --output json`, then verify the
+   project directory contains the full metadata set:
    `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`,
    and `package-descriptor.json`. Run refresh a second time only when checking
    idempotence; unchanged source must leave all four generated files unchanged.
