@@ -48,8 +48,9 @@ looseness the batch addendum specifies for the Data Fabric ports.
 Two connector-node shapes are accepted for step 2, both observed from real
 skill output (CI run skill-bpmn-datafabric-smoke-create-all-types, 2026-09):
 
-  * Curated/preview form: objectName is literally
-    CreateEntityRecordCurated or CreateEntityRecord_V3.
+  * Curated/preview form: objectName is literally CreateEntityRecord,
+    CreateEntityRecordCurated, or CreateEntityRecord_V3 (every spelling
+    ``uip is activities list`` serves for the operation).
   * Generic entity-CRUD form: the skill's registry discoveryNotes steer some
     agents to the entity-typed generic verb instead -- objectName equals the
     entity name itself (FlowCodeEvalEntity, case-insensitive) and either
@@ -95,7 +96,7 @@ from _shared.bpmn_check import (  # noqa: E402
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 ENTITY = "FlowCodeEvalEntity"
-OBJECT_NAME_RE = re.compile(r"^(CreateEntityRecordCurated|CreateEntityRecord_V3)$")
+OBJECT_NAME_RE = re.compile(r"^(CreateEntityRecord|CreateEntityRecordCurated|CreateEntityRecord_V3)$")
 OPERATION_CREATE_RE = re.compile(r"^create$", re.IGNORECASE)
 
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
@@ -188,7 +189,7 @@ def main() -> None:
         fail(
             f"no bpmn:sendTask carrying {ACTIVITY_TYPE} for connector key "
             f"{CONNECTOR_KEY!r} matching Create Entity Record -- neither the "
-            f"curated/preview objectName (CreateEntityRecordCurated|"
+            f"curated/preview objectName (CreateEntityRecord|CreateEntityRecordCurated|"
             f"CreateEntityRecord_V3) nor the generic entity-CRUD form "
             f"(objectName={ENTITY!r} with operation=Create or method=POST)"
         )

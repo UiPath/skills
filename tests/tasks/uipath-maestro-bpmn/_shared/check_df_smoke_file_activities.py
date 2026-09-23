@@ -38,10 +38,12 @@ instead of assuming Flow's JSON shape:
     / check_df_smoke_create_all_types.py -- the skill does not pin where
     entityName lands).
   * `_fieldName` (field selector, "file1") -> any uipath:input value/text
-    on the node, or an input's `name`. V1 objects carry it as the
-    `fieldName` path parameter; the V2/_V3 objects expose no field parameter
-    at all (describe lists only entityName and recordId), so an agent using
-    them names the multipart input after the field (codex, 2026-09-23).
+    on the node, or the name of its file/multipart input. V1 objects carry
+    it as the `fieldName` path parameter; the V2/_V3 objects expose no field
+    parameter at all (describe lists only entityName and recordId), so an
+    agent using them names the file part after the field (codex,
+    2026-09-23). The name form is restricted to that file part, so an
+    unrelated input named after the field never satisfies this.
   * Download's `recordId` literal UUID -> a bare (non-expression) UUID-shaped
     value on any of Download's inputs (Flow required a UUID literal here too).
   * Create's single-body-dict read -> Flow's grader reads ONE
@@ -87,7 +89,7 @@ Assertion map (Flow -> BPMN):
   T                                          curated|generic Create classification (integration_create_get precedent) -> is_create_node()
   T                                          entity name anywhere in node inputs/objectName/path -> mentions(task, ENTITY)
   T                                          V1|V2|_V3 objectName spellings for one operation (catalog lists all three; only V1 exposes fieldName) -> *_OBJS sets
-  T                                          field selector as an input name when the object has no field parameter -> mentions_field()
+  T                                          field selector as the file part's name when the object has no field parameter -> mentions_field()
   T                                          vars.<VarId> substring reference in place of Flow node-id/variable-chain reference -> has_variable_reference()
   T                                          merge every target="body" input instead of requiring exactly one -> merged body-field union parse
   DROPPED  require_no_private_connector_values  (not in Flow; `validate` criterion already covers structure)
@@ -166,9 +168,21 @@ def mentions(task: ET.Element, needle: str) -> bool:
 
 
 def mentions_field(task: ET.Element, field: str) -> bool:
+    """The node selects ``field``, by value or as the file part's own name.
+
+    The name-based form is scoped to the file/multipart input: a V2 Upload
+    has no field parameter, so the author names the file part after the
+    field. Download and Delete carry no file part, so for them this is
+    value-only -- an unrelated input merely *named* ``file1`` never counts.
+    """
     if mentions(task, field):
         return True
-    return any((inp.attrib.get("name") or "").strip() == field for inp in node_inputs(task))
+    return any(
+        (inp.attrib.get("name") or "").strip() == field
+        and ((inp.attrib.get("target") or "").strip() in FILE_TARGETS
+             or (inp.attrib.get("type") or "").strip() == "file")
+        for inp in node_inputs(task)
+    )
 
 
 def output_vars(task: ET.Element) -> list[str]:
