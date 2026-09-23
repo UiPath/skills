@@ -1,6 +1,6 @@
 # Voice Nodes — Planning
 
-Voice nodes let a flow hold a real-time AI voice conversation on a live phone call. The centerpiece is `uipath.agent.voice` — an **inline conversational agent** whose `agent.json` carries a `settings.voice` block. Around it sit three nodes that start, place, and end the call. There is no standalone voice agent — a voice agent only runs inside a Maestro Flow.
+Voice nodes let a flow hold a real-time AI voice conversation on a live phone call. The centerpiece is `uipath.agent.voice` — an **inline conversational agent** authored on the node itself, with its realtime voice settings in `inputs.voice`. Around it sit three nodes that start, place, and end the call. There is no standalone voice agent — a voice agent only runs inside a Maestro Flow.
 
 For inline-agent fundamentals (the agent subdirectory, `inputs.source` binding, resource nodes on artifact ports), see [inline-agent/planning.md](../inline-agent/planning.md) — everything there applies to the voice agent node too. This plugin covers what voice adds on top: the node set, the two call topologies, and the `callContext` wiring rule.
 
@@ -8,7 +8,7 @@ For inline-agent fundamentals (the agent subdirectory, `inputs.source` binding, 
 
 | Node Type | Role | When to Select |
 | --- | --- | --- |
-| `uipath.agent.voice` | Agent | AI agent that converses in real time on a live call. Backed by an inline conversational agent directory (`<uuid>/agent.json` with `settings.voice`) |
+| `uipath.agent.voice` | Agent | AI agent that converses in real time on a live call. Configured on the node (`inputs.voice`, `inputs.systemPrompt`); `uip agent refresh --inline-in-flow` generates its `<uuid>/` agent folder |
 | `core.trigger.voice` | Trigger | Start the flow when a phone call arrives on a number bound to the process (inbound topology) |
 | `uipath.conversational.voice.create-outgoing-call` | Action | Dial an outbound call and wait until the media stream is open; emits the `callContext` (outbound topology) |
 | `uipath.conversational.voice.end-call` | Action | End the active call |
@@ -116,7 +116,7 @@ The voice agent's backing directory is created with the same command as any inli
 uip agent init "<FlowProjectDir>" --inline-in-flow --conversational --output json
 ```
 
-Record the returned `ProjectId` — the voice node's `inputs.source` must match it exactly. The scaffold produces a conversational agent (`settings.engine: "conversational-v1"`, `metadata.isConversational: true`) **without** a `settings.voice` block — adding it by hand is mandatory, or `flow validate` fails. Shape and defaults: [impl.md § Configure `agent.json`](impl.md#configure-agentjson).
+Record the returned `ProjectId` — the voice node's `inputs.source` must match it exactly. The scaffold produces a conversational agent folder (`settings.engine: "conversational-v1"`, `metadata.isConversational: true`) that refresh regenerates from the node — never edit it. The node's `inputs.voice` is mandatory, or `flow validate` fails after refresh. Shape and defaults: [impl.md § Configure the Voice Agent on the Node](impl.md#configure-the-voice-agent-on-the-node).
 
 ## Planning Annotation
 

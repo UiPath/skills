@@ -115,7 +115,7 @@ A few per-instance identity fields live on the node instance:
 |-------|---------|---------|
 | `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
 | `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
-| `inputs.source` | `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` node (tool, escalation, context) | For `uipath.agent.autonomous`: the inline agent's `projectId`. For resource nodes: the attached resource UUID. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. |
+| `inputs.source` | `uipath.agent.autonomous` / `uipath.agent.conversational` / `uipath.agent.voice` and every attached `uipath.agent.resource.*` node (tool, escalation, context, memory) | For inline agent nodes: the inline agent's `projectId`. For resource nodes: the attached resource UUID. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. The rest of an inline agent's configuration (prompts, model, settings, resource config) also lives in these nodes' `inputs` — see [author/plugins/inline-agent/impl.md](../author/plugins/inline-agent/impl.md). |
 | `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
 
 Example — manual start trigger:

@@ -2,6 +2,8 @@
 
 Schemas for the core agent definition files: `agent.json`, `entry-points.json`, `project.uiproj`. Plus contentTokens construction, message templates, and Common Edits.
 
+> **Inline-in-flow agents:** do not edit `agent.json` — it is generated from the `.flow` agent node by `uip agent refresh --inline-in-flow`. This file still defines what each field means; the node input that sets it is mapped in [capabilities/inline-in-flow/inline-in-flow.md § Agent Node Inputs](capabilities/inline-in-flow/inline-in-flow.md#agent-node-inputs).
+
 ## Project Directory Structure
 
 After `uip agent init <name>`:
@@ -220,7 +222,7 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 | `storageVersion` | Managed by `uip agent refresh` — do not edit |
 | `isConversational` | `false` for autonomous agents, `true` for conversational agents. Do not edit. |
 | `showProjectCreationExperience` | `false` |
-| `targetRuntime` | `"pythonAgent"` for standalone agents, autonomous and conversational alike. **Absent for `--inline-in-flow` scaffolds** of either flavor — see [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md). |
+| `targetRuntime` | `"pythonAgent"` for standalone agents, autonomous and conversational alike. **Absent for inline-in-flow agents** of either flavor, whose `agent.json` is generated from the `.flow` and never edited — see [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md). |
 
 ### Input Schema
 

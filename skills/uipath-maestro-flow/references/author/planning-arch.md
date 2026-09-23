@@ -141,10 +141,10 @@ Connector nodes are Integration Service nodes, not built-in. They appear after `
 
 | Type | Plugin | Select when |
 | --- | --- | --- |
-| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent scaffolded inside this flow via `uip agent init --inline-in-flow`, tightly coupled, not independently reused |
+| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent authored on the node inside this flow (`uip agent init --inline-in-flow` assigns its id), tightly coupled, not independently reused |
 | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Separate in-solution or published agent, reusable and independently versioned |
 | `uipath.agent.conversational` | [conversational-agent](plugins/conversational-agent/planning.md) | AI agent that runs a single response turn given a chat-history, streaming its messages and tool-calls to the conversation. In-solution and published chat agents use `uipath.core.agent.{key}` above |
-| `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (`settings.voice` in its `agent.json`) wired to a `callContext` |
+| `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (voice settings in the node's `inputs.voice`) wired to a `callContext` |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table).
 

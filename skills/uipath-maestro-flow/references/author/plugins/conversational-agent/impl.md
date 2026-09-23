@@ -14,7 +14,7 @@ Everything here is the same for all three agent flavors except the agent node it
 uip agent init "<FlowProjectName>" --inline-in-flow --conversational
 ```
 
-Writes `<FlowProject>/<uuid>/agent.json` plus `flow-layout.json`, and returns `Data.ProjectId`. **Keep that UUID** — it is what the agent node's `inputs.source` must carry.
+Writes a placeholder `<FlowProject>/<uuid>/` folder and returns `Data.ProjectId`. **Keep that UUID** — it is what the agent node's `inputs.source` must carry. The inline agent is then authored on its node (§ Configure the Inline Agent); never edit the folder.
 
 **In-solution** — the agent is a sibling project; nothing to scaffold in the flow. Find its node type:
 
@@ -39,28 +39,29 @@ Both of the latter give a `uipath.core.agent.*` node type — suffixed with the 
 
 Nothing else reports it, and the authored node would run as autonomous with no error at any step. Published agents are unaffected — their flag comes from the release, not a local file.
 
-## Configure `agent.json`
+## Configure the Inline Agent
 
-Edit the scaffolded file, then regenerate its derived fields:
+An inline chat agent is authored on its `uipath.agent.conversational` node — the same `.flow`-is-the-source contract as the autonomous inline agent ([inline-agent/impl.md § The `.flow` Is the Source of Truth](../inline-agent/impl.md#the-flow-is-the-source-of-truth)). Put the configuration in the node's `inputs`:
+
+| Node input | Value | Why |
+| --- | --- | --- |
+| `systemPrompt` | The chat agent's instructions | Drives every reply (§ Prompting). May reference `{{ $vars.<nodeId>.output.<field> }}`. There is no user prompt — the conversation supplies each turn. |
+| `model` | From `uip agent model list --output json` | The engine LLM. |
+| `temperature`, `maxTokenPerResponse`, `maxIterations` | `maxIterations: 8` unless the chat needs more tool steps | Engine tuning. |
+| `guardrails` | Custom `Tool`-scoped guardrails only | See [planning.md § Resources](planning.md#resources--tools-context-escalation). |
+| `agentOutputVariables` | Structured output fields, or `[]` | § Structured Outputs. |
+| `conversationalAgentSettings` | The five-key block | § The `conversationalAgentSettings` Wiring Rule. |
+
+After every bulk of edits, regenerate the agent folder from the node and check it:
 
 ```bash
-uip agent refresh "<FlowProject>/<uuid>" --inline-in-flow
-uip agent validate "<FlowProject>/<uuid>" --inline-in-flow
+uip agent refresh "<FlowProject>/<uuid>" --inline-in-flow --output json
+uip agent validate "<FlowProject>/<uuid>" --inline-in-flow --output json
 ```
 
-`refresh` rebuilds `contentTokens[]` from `messages[].content`. **Skip it and `agent validate` fails** with `contentTokens has 0 entries but content requires 1` — the error does not name `agent refresh`, so it is easy to get stuck on.
+Refresh writes the folder's `agent.json` (prompt tokens, `contentTokens`, schemas) from the node; it keeps the scaffold's `settings.engine: "conversational-v1"` and sets `metadata.isConversational: true` from the node type. **Never edit the folder** — refresh overwrites it. Read `Data.SyncedFromFlow` in the result: absent (or `FlowShellified` present) means the CLI predates `.flow`-native inline agents — upgrade before continuing ([inline-agent/impl.md § Rules](../inline-agent/impl.md#rules), Rule 2).
 
-Run `refresh` after any `agent.json` edit — for an in-solution agent too, without the flag: `uip agent refresh "<AgentProject>"`. A published agent has no local file, so there is nothing to refresh.
-
-Settings that matter for a conversational agent:
-
-| Key | Value | Why |
-| --- | --- | --- |
-| `settings.engine` | `conversational-v1` | What makes it a chat agent rather than autonomous |
-| `metadata.isConversational` | `true` | Read by the registry to pick the icon and keep the agent out of the agent-as-tool picker |
-| `settings.maxIterations` | `8` | keep what the scaffold wrote |
-
-`uip agent init --conversational` writes all three. Do not remove them.
+An in-solution agent is a sibling project, not an inline one: edit its `agent.json` and run `uip agent refresh "<AgentProject>"` without the flag. A published agent has no local file, so there is nothing to refresh.
 
 ## Registry Validation
 
@@ -147,12 +148,15 @@ uip maestro flow node add ChatFlow/ChatFlow.flow core.trigger.conversation --pos
 
 ### The agent — inline
 
-`inputs.source` is the scaffolded UUID; `conversationalAgentSettings` is the five-key block above.
+`inputs.source` is the scaffolded UUID; `--input` carries the agent's configuration (§ Configure the Inline Agent) plus the five-key `conversationalAgentSettings` block above:
 
 ```bash
 uip maestro flow node add ChatFlow/ChatFlow.flow uipath.agent.conversational \
-  --position 768,144 --source <ProjectId> --input '<the settings JSON>'
+  --position 768,144 --source <ProjectId> \
+  --input '{"systemPrompt":"<instructions>","model":"<MODEL_ID>","maxIterations":8,"agentOutputVariables":[],"conversationalAgentSettings":{ ... }}'
 ```
+
+Then run `uip agent refresh "<FlowProject>/<ProjectId>" --inline-in-flow --output json`.
 
 ### The agent — in-solution or published
 
@@ -208,14 +212,13 @@ Reads recent exchanges without waiting. Rarely needed, and constrained — see [
 
 In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Imported standalone conversational agents (published or in-solution) do not support structured output fields.
 
-Declare each field in two places or it yields nothing at run time:
+Declare each field once, on the node — refresh projects it into the generated `agent.json` `outputSchema`:
 
-| Where | What |
-| --- | --- |
-| the node, in the `.flow` | `inputs.agentOutputVariables: [{ "id": "shouldHandoff", "type": "boolean", "description": "..." }]` |
-| the inline `agent.json` | the same field under `outputSchema.properties` |
+```json
+"agentOutputVariables": [{ "id": "shouldHandoff", "type": "boolean", "description": "Set to true when the user asks for a human." }]
+```
 
-Bind it downstream as `$vars.<agentNodeId>.output.shouldHandoff`. Writing one side without the other passes `agent validate` and `flow validate` — nothing checks the pair.
+Bind it downstream as `$vars.<agentNodeId>.output.shouldHandoff`.
 
 ### Prompting: what goes where
 
@@ -226,7 +229,7 @@ The prompts that drive the agent's chat replies and structured output differ:
 | the chat reply | the system prompt **only** |
 | the structured outputs | the system prompt **plus** each field's `description` |
 
-So split the instructions by destination — *what to say* and *response instructions* in the system prompt, *how to fill the field* in that field's `description` (write the same description in both `agentOutputVariables[]` and `outputSchema.properties`):
+So split the instructions by destination — *what to say* and *response instructions* in the system prompt, *how to fill the field* in that field's `agentOutputVariables[]` `description`:
 
 | Where | Example |
 | --- | --- |
@@ -301,6 +304,7 @@ If the solution's `.uipx` already carries a `SolutionId`, the upload overwrites 
 ## What NOT to Do
 
 - **Do not stop at `context` and `conversationId`** — see [§ The `conversationalAgentSettings` Wiring Rule](#the-conversationalagentsettings-wiring-rule).
+- **Do not edit an inline chat agent's `<uuid>/` folder** — author the prompt, model, guardrails, and outputs on the node; refresh regenerates the folder and overwrites hand edits.
 - **Do not invent output paths.** `waitForMessage1.output.exchangeId` and `conversationalAgent1.output.response` do not exist, and validate accepts both.
 - **Do not use `=js:` strings** for bindings in a `.flow`.
 - **Do not carry one flavor's agent port across.** Inline continues on `success`, in-solution and published on `output`.

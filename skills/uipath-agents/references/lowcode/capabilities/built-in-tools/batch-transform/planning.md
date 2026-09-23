@@ -17,7 +17,7 @@ For coded agents (Python, LangGraph) → [../../../../coded/capabilities/batch-t
 
 | Input | Why | Source |
 |---|---|---|
-| Agent project shape | Standalone vs. inline-in-flow — affects where `resource.json` lives | Inspect `agent.json` and the parent solution |
+| Agent project shape | Standalone vs. inline-in-flow — standalone writes `resource.json`, inline authors a tool node in the `.flow` | Inspect `agent.json` and the parent solution / `.flow` |
 | Tool resource configuration | Top-level prompt + per-column descriptions + web-grounding default | Author / Studio Web tool config |
 | Attachment ingress | The `batch-transform` tool consumes runtime-uploaded CSV attachments — confirm the agent has an attachment input wired | Studio Web schema / `entry-points.json` |
 | Output destination | Bucket + path where the augmented CSV is written | User config; include unique suffix per run to avoid overwrites |
@@ -40,7 +40,7 @@ Two valid shapes for enabling BatchTransform on a low-code agent. This skill doc
 |---|---|
 | `batch-transform` vs `deep-rag` | Pick by input file type: `.csv` → `batch-transform`; `.pdf` / `.txt` → `deep-rag`. Hard rule, no subjective tiebreaker. |
 | `batch-transform` vs `analyze-attachments` | `analyze-attachments` does single-file, single-shot extraction. `batch-transform` iterates across all rows of a CSV at scale. |
-| Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
+| Standalone agent vs inline-in-flow | Standalone: `resources/<id>/resource.json`. Inline: a built-in tool node in the `.flow` wired from the agent's `tool` port — its inputs carry the same settings and refresh generates the `resource.json`. See [impl-json.md](impl-json.md). |
 | Output column names | Must match regex `^[\w\s\.,!?-]+$`. No `/`, `:`, `&`, `(`, `)`, or other special chars. |
 | Output column descriptions | Each is the per-column LLM instruction. Be specific about format, enums, and "when uncertain" handling. Worked examples improve quality. |
 | Web grounding default | Off unless the prompt explicitly needs fresh external data. |

@@ -1,7 +1,8 @@
 task_id: skill-flow-voice-inbound-call
 description: >
-  Inbound voice topology: core.trigger.voice -> uipath.agent.voice (backed by an
-  inline conversational agent whose agent.json carries settings.voice) ->
+  Inbound voice topology: core.trigger.voice -> uipath.agent.voice (an inline
+  conversational agent authored on the node; refresh generates its agent.json
+  with settings.voice) ->
   end-call, no dial-out node, with `uip maestro flow validate` passing — plus an
   explanation of how an inbound flow is actually tested. That last part is the
   point: `uip maestro flow debug` rejects an incoming-call trigger, so the only

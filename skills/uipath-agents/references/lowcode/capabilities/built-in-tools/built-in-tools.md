@@ -15,7 +15,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 2. **`properties.toolType` is the discriminator** — fixed per built-in, kebab-lowercase. Copy from the per-tool walkthrough; do not invent.
 3. **No solution-level files.** Built-in tools need no `uip solution resources refresh`. Validate the agent and bundle.
 4. **Input/output schemas are fixed.** Do not edit them. Each tool's walkthrough lists the canonical schema.
-5. **Inline agents need the flow node too.** When the built-in tool is on an *inline* agent (embedded in a flow), authoring the `resource.json` is **not enough** — also wire a `uipath.agent.resource.tool.builtin.<toolType>` flow node to the autonomous node's `tool` handle. Fetch the node manifest with `uip maestro flow registry get` and hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16). Without the flow node the tool is never reachable at runtime. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+5. **Inline agents author the tool as a flow node, not a `resource.json`.** When the built-in tool is on an *inline* agent (embedded in a flow), add a `uipath.agent.resource.tool.builtin.<tool>` node wired to the agent's `tool` handle, with `inputs` seeded from the node manifest's `inputDefaults` (`uip maestro flow registry get`). Do not write `resources/<id>/resource.json` — `uip agent refresh --inline-in-flow` generates it from the node and deletes one that has no node. Hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 15). See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) § Resource Node Inputs.
 
 ## Resource Shape
 

@@ -35,7 +35,7 @@ Use Edit / Write for all non-carve-out `.flow` edits. Flow CLI is not an opt-in 
 | Replace a non-connector trigger; replace a non-connector mock; insert a node; insert a decision branch; remove a node and reconnect | **Edit** | — |
 | Configure a connector node or connector trigger | **CLI** (carve-out) | Run `uip maestro flow node configure --detail`; it auto-populates `inputs.detail` + `bindings_v2.json`. Hand-authored `inputs.detail` skips `essentialConfiguration` and fails at runtime — no Edit fallback. |
 | Configure a managed HTTP node | **CLI** (carve-out) | Use the documented managed HTTP workflow for `inputs.detail` and connection resources. |
-| Add an inline agent node | **Edit / Write** | Scaffold with `uip agent init --inline-in-flow`, then add the `uipath.agent.autonomous` node and edges directly. |
+| Add an inline agent node | **Edit / Write** | Scaffold with `uip agent init --inline-in-flow`, then add the `uipath.agent.autonomous` node — with the agent's prompts, model, and settings in its `inputs` — and edges directly; run `uip agent refresh --inline-in-flow` after. |
 
 For managed HTTP `inputs.branches` / `timeout` / `retryCount`, set them at `node add --input` time; change them by `uip maestro flow node remove` and re-add with new `--input`. Variable declaration CLI commands `uip maestro flow variable add\|list\|remove` exist for eval inputs; see [variables-and-expressions.md § Variable Management via CLI](../shared/variables-and-expressions.md#variable-management-via-cli).
 

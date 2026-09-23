@@ -2,17 +2,17 @@ task_id: skill-flow-voice-outbound-call
 description: >
   Outbound voice topology whose prompt reads flow data — the full outbound
   build (create-outgoing-call -> uipath.agent.voice -> end-call, `callContext`
-  into both, an inline conversational agent whose agent.json carries
-  settings.voice) plus the input contract on top. The trigger's customer name
-  and amount must both reach the voice agent's system prompt, which needs four
-  pieces aligned: node `agentInputVariables[]` (delivery), agent.json
-  `inputSchema.properties` (contract), `{{input.<key>}}` in `messages[].content`
-  (resolution), and the trigger-associated globals the bindings resolve against.
-  Delivery is the piece only `flow pack` reads: omit it and `flow debug`
-  back-fills from `inputSchema`, so a published call is the first place the
-  inputs go missing. Also catches a bare `$vars.…` left in prompt text, which
-  nothing rewrites and the model receives literally. Fully offline — init /
-  author / validate need no login.
+  into both, an inline conversational agent authored on the node with
+  `inputs.voice`) plus the input contract on top. The trigger's customer name
+  and amount must both reach the voice agent's system prompt: `{{ $vars.… }}`
+  tokens in the node's `inputs.systemPrompt` (delivery), the flattened keys in
+  the refresh-generated agent.json `inputSchema.properties` (contract),
+  `{{input.<key>}}` in its `messages[].content` (resolution), and the
+  trigger-associated globals the tokens resolve against. The generated
+  contract proves `uip agent refresh --inline-in-flow` ran after the last
+  prompt edit. Also catches a bare `$vars.…` in the generated agent.json, which
+  means the folder was hand-edited. Fully offline — init / author / refresh /
+  validate need no login.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational]
 
 run_limits:
@@ -133,7 +133,7 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Advisory: agent rebuilt contentTokens with uip agent refresh --inline-in-flow"
+    description: "Advisory: agent regenerated the agent folder with uip agent refresh --inline-in-flow"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+agent\s+refresh\s+.*--inline-in-flow'
     min_count: 1

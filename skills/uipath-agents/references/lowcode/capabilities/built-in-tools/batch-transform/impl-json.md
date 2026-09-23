@@ -1,6 +1,6 @@
 # BatchTransform in a Low-Code Agent — Implementation
 
-`agent.json` agents enable BatchTransform via a built-in tool resource. Same `resource.json` shape for standalone and inline-in-flow.
+`agent.json` agents enable BatchTransform via a built-in tool resource. Standalone agents author this `resource.json`; inline-in-flow agents author the equivalent tool node in the `.flow` and refresh generates the file (§ Standalone vs Inline-in-Flow).
 
 ## Resource Shape
 
@@ -82,7 +82,7 @@ The `properties.settings` keys above are the Studio Web authoring shape. At runt
 
 Agent owns its tools directly. Runtime exposes `batch-transform` to the agent's tool-calling loop.
 
-**Inline-in-flow:** flow has a `uipath.agent.autonomous` node and a built-in tool node under the `uipath.agent.resource.tool.*` prefix (canonical: `uipath.agent.resource.tool.builtin`), plus an edge from agent `tool` → tool node `input`. The shared inline-builtin-tool checker (`tests/tasks/uipath-agents/inline_builtin_tool/`) validates by prefix; verify the exact node type at your CLI version with `uip maestro flow registry search "uipath.agent.resource.tool" --output json`.
+**Inline-in-flow:** the tool is a flow node, not a hand-written `resource.json`. The flow has a `uipath.agent.autonomous` node and a built-in tool node (`uipath.agent.resource.tool.builtin.batchtransform` — verify the exact node type at your CLI version with `uip maestro flow registry search "uipath.agent.resource.tool.builtin" --output json`), plus an edge from agent `tool` → tool node `input`. The node's `inputs` start from the manifest's `inputDefaults`; set `description`, `query` (value source), `outputColumns` (`[{ "name", "description" }]`), `webSearchGrounding` (`{ "value": "enabled" | "disabled" }`), and `source` — the CSV file binding `{{ $vars.<nodeId>.output.<file> }}`. `uip agent refresh --inline-in-flow` generates the `resource.json` above from the node — never write it into the agent folder. Node inputs and value-source shapes: [../../inline-in-flow/inline-in-flow.md § Resource Node Inputs](../../inline-in-flow/inline-in-flow.md#resource-node-inputs).
 
 ```text
 [uipath.agent.autonomous] --tool--> [uipath.agent.resource.tool.builtin]

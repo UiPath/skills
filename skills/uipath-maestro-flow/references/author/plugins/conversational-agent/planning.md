@@ -110,17 +110,17 @@ The inline agent node points at an agent project directory that must exist first
 uip agent init "<FlowProjectName>" --inline-in-flow --conversational
 ```
 
-The returned `ProjectId` is the UUID the node's `inputs.source` must carry. See [impl.md](impl.md) for the scaffold contents and the `agent.json` settings that matter.
+The returned `ProjectId` is the UUID the node's `inputs.source` must carry. The agent itself is authored on the node — see [impl.md § Configure the Inline Agent](impl.md#configure-the-inline-agent).
 
 ## Resources — tools, context, escalation
 
-The `tool`, `context` and `escalation` source ports behave exactly as they do on the inline autonomous node: discover the resource node type through the registry, add the node with `Edit`, wire the artifact edge from the agent's port, and author the matching `resource.json`. Do not re-derive that flow — [inline-agent/impl.md § Adding Resource Nodes](../inline-agent/impl.md#adding-resource-nodes) owns discovery, the one UUID that serves as both `inputs.source` and the sidecar directory, and the `refresh --bindings-target` step that propagates tool bindings into the parent flow.
+The `tool`, `context` and `escalation` source ports behave exactly as they do on the inline autonomous node: discover the resource node type through the registry, add the node with `Edit` — its `inputs` seeded from the definition's `inputDefaults` plus a fresh `source` UUID and the per-kind fields — wire the artifact edge from the agent's port, and refresh. Do not re-derive that flow — [inline-agent/impl.md § Adding Resource Nodes](../inline-agent/impl.md#adding-resource-nodes) owns discovery, the per-kind node inputs, and the `refresh --bindings-target` step that propagates tool bindings into the parent flow.
 
 Three things differ from the autonomous node:
 
 - **There is no `memory` port.** The autonomous node has one; `uipath.agent.conversational` does not. An edge to it fails the same way any bad port does — `edge add` will not list it, and validate reports `Edge references undeclared source handle`.
-- **Guardrails ride as a top-level `guardrails` array in the inline agent's `agent.json`**, which `uip agent init --inline-in-flow --conversational` scaffolds for you. Which guardrails apply is flavor-specific — Studio Web's properties panel filters the catalog by conversational vs autonomous — so do not assume a guardrail available on an autonomous agent is offered here.
-- **Do not add `guardrails` to `inputSchema.properties`.** That requirement is autonomous-only, where it sits alongside the process arguments. A conversational agent's `inputSchema` stays `{"type": "object", "properties": {}}`; populating it breaks the shape the `uipath-agents` scaffold test asserts.
+- **Guardrails ride in the agent node's `inputs.guardrails` array**; refresh projects them into the generated `agent.json` and copies each Tool-scoped one into the matching tool's `resource.json`. Which guardrails apply is flavor-specific — Studio Web's properties panel filters the catalog by conversational vs autonomous — so do not assume a guardrail available on an autonomous agent is offered here.
+- **Do not hand-author an `inputSchema`.** A conversational agent's inputs come only from `{{ $vars.… }}` tokens in `inputs.systemPrompt`; with none, the generated `inputSchema` stays `{"type": "object", "properties": {}}`.
 
 ## Planning Annotation
 

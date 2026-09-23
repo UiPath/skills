@@ -323,9 +323,11 @@ CONVERSATIONAL_ENGINE = "conversational-v1"
 
 
 def check_agent_voice(flow_path: str, flow: dict) -> int:
-    """The sidecar agent.json carries settings.voice (which `uip agent init
-    --inline-in-flow --conversational` does NOT scaffold), keeps the
-    conversational engine, and holds a real system prompt.
+    """The agent.json that `uip agent refresh --inline-in-flow` generates from
+    the voice node carries settings.voice (projected from the node's
+    `inputs.voice` — `uip agent init --inline-in-flow --conversational` does NOT
+    scaffold it), keeps the conversational engine, and holds a real system
+    prompt.
 
     `settings.engine` is graded here because `flow validate` does NOT check it
     (it checks only `metadata.isConversational`): a clobbered engine passes
@@ -347,9 +349,8 @@ def check_agent_voice(flow_path: str, flow: dict) -> int:
     voice = settings.get("voice")
     if not isinstance(voice, dict) or not voice:
         errors.append(
-            "settings.voice is missing or empty — `uip agent init "
-            "--inline-in-flow --conversational` does not scaffold it, it must be "
-            "added by hand"
+            "settings.voice is missing or empty — author `inputs.voice` on the "
+            "voice node and run `uip agent refresh --inline-in-flow`"
         )
     elif not str(voice.get("model") or "").strip():
         errors.append("settings.voice.model is empty (the realtime speech model)")
@@ -430,32 +431,37 @@ def _voice_agent_json(flow_path: str, flow: dict) -> tuple[dict, dict, str] | in
 
 
 BINDING_RE = re.compile(r"^=(?:js:)?\s*\$vars\.([A-Za-z0-9_-]+)\.output\.(.+)$")
+NODE_VARS_TOKEN_RE = re.compile(
+    r"\{\{\s*\$vars\.([A-Za-z0-9_-]+)\.output\.([A-Za-z0-9_.]+)\s*\}\}"
+)
 INPUT_TOKEN_RE = re.compile(r"\{\{\s*input\.([A-Za-z0-9_]+)\s*\}\}")
 
 
 def check_prompt_inputs(flow_path: str, flow: dict, min_inputs: int = 1) -> int:
     """Flow data reaching the voice prompt needs these pieces aligned:
 
-    Delivery   node `inputs.agentInputVariables[]` binding -> BPMN JobArguments
-    Contract   the same key under agent.json `inputSchema.properties`
-    Resolution `{{input.<key>}}` in `messages[].content`
-    Variable   a binding sourced from a TRIGGER also needs its
+    Delivery   a `{{ $vars.<node>.output.<field> }}` token in the node's
+               `inputs.systemPrompt` (the .flow-native form: the converter and
+               `uip agent refresh` derive the input from it), or a legacy node
+               `inputs.agentInputVariables[]` binding -> BPMN JobArguments
+    Contract   the flattened key `<node>__output__<field>` under the generated
+               agent.json `inputSchema.properties`
+    Resolution `{{input.<key>}}` in the generated agent.json `messages[].content`
+    Variable   a source that is a TRIGGER also needs its
                `$vars.<trigger>.output.<id>` declared in `variables.globals[]`
 
-    `impl.md` step 4 names a fifth piece, `messages[].contentTokens[]`. It is a
-    pure derivation of `content` (`uip agent refresh` regenerates it and the doc
-    forbids hand-authoring), so it is not graded structurally here — the task's
-    advisory `agent refresh` criterion records it instead.
+    Contract and Resolution are read from the agent folder that
+    `uip agent refresh --inline-in-flow` generates from the node, so they also
+    prove refresh ran after the last prompt edit. `contentTokens` is a pure
+    derivation of `content` and is not graded structurally here.
 
-    Delivery is the piece that only `flow pack` reads: omit it and `flow debug`
-    still back-fills from `inputSchema`, so the published call is the first place
-    the input goes missing. A bare `$vars.…` left in prompt text is graded as a
-    failure — nothing rewrites agent.json prompts, so it reaches the model raw.
+    A bare `$vars.…` left in the GENERATED agent.json prompt text is graded as a
+    failure — it means the folder was hand-edited instead of regenerated.
 
     `min_inputs` is how many DISTINCT inputs the prompt must read. A task that
-    asks for two values (name AND amount) passes its four-piece contract with
-    one wired input unless the count is asserted — the second value silently
-    goes ungraded.
+    asks for two values (name AND amount) passes its contract with one wired
+    input unless the count is asserted — the second value silently goes
+    ungraded.
     """
     resolved = _voice_agent_json(flow_path, flow)
     if isinstance(resolved, int):
@@ -464,15 +470,26 @@ def check_prompt_inputs(flow_path: str, flow: dict, min_inputs: int = 1) -> int:
 
     errors: list[str] = []
 
-    delivery = (node.get("inputs") or {}).get("agentInputVariables")
-    if not isinstance(delivery, list) or not delivery:
+    node_inputs = node.get("inputs") or {}
+    bound: dict[str, str] = {}
+    node_prompt = node_inputs.get("systemPrompt")
+    if isinstance(node_prompt, str):
+        for source, field in NODE_VARS_TOKEN_RE.findall(node_prompt):
+            bound[f"{source}__output__{field.replace('.', '__')}"] = (
+                f"=$vars.{source}.output.{field}"
+            )
+
+    delivery = node_inputs.get("agentInputVariables")
+    if not isinstance(delivery, list):
+        delivery = []
+    if not delivery and not bound:
         return _fail(
-            f"{VOICE_AGENT} node {node.get('id')!r} has no inputs."
-            f"agentInputVariables[] — that binding is what `flow pack` turns into "
-            f"the runtime JobArguments, so the prompt's inputs would ship empty"
+            f"{VOICE_AGENT} node {node.get('id')!r} never delivers flow data: its "
+            f"inputs.systemPrompt has no {{{{ $vars.<node>.output.<field> }}}} token "
+            f"(and it carries no legacy agentInputVariables[] binding), so the "
+            f"prompt's inputs would ship empty"
         )
 
-    bound: dict[str, str] = {}
     for entry in delivery:
         if not isinstance(entry, dict):
             errors.append(f"agentInputVariables entry is not an object: {entry!r}")
@@ -544,8 +561,8 @@ def check_prompt_inputs(flow_path: str, flow: dict, min_inputs: int = 1) -> int:
         if "$vars." in content:
             errors.append(
                 f"messages[{index}].content contains a raw `$vars.` reference — "
-                f"nothing rewrites agent.json prompt text, so it reaches the model "
-                f"literally; use {{{{input.<key>}}}} instead"
+                f"the generated agent.json was hand-edited or refresh never ran; "
+                f"author the prompt on the node and run `uip agent refresh --inline-in-flow`"
             )
         referenced.update(INPUT_TOKEN_RE.findall(content))
 
@@ -568,15 +585,15 @@ def check_prompt_inputs(flow_path: str, flow: dict, min_inputs: int = 1) -> int:
         )
     for key in sorted(referenced - set(bound)):
         errors.append(
-            f"prompt references {{{{input.{key}}}}} but the node binds no such "
-            f"input — `flow debug` back-fills it, `flow pack` does not"
+            f"prompt references {{{{input.{key}}}}} but the node delivers no such "
+            f"input — neither a $vars token in inputs.systemPrompt nor a binding"
         )
 
     if errors:
         return _fail("; ".join(errors))
 
     for key in sorted(referenced):
-        print(f"OK      {key} : node binding -> inputSchema -> {{{{input.{key}}}}}")
+        print(f"OK      {key} : node delivery -> inputSchema -> {{{{input.{key}}}}}")
     return 0
 
 

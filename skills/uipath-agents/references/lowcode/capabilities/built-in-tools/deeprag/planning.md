@@ -17,7 +17,7 @@ For coded agents (Python, LangGraph) → [../../../../coded/capabilities/deeprag
 
 | Input | Why | Source |
 |---|---|---|
-| Agent project shape | Standalone vs. inline-in-flow — affects where `resource.json` lives | Inspect `agent.json` and the parent solution |
+| Agent project shape | Standalone vs. inline-in-flow — standalone writes `resource.json`, inline authors a tool node in the `.flow` | Inspect `agent.json` and the parent solution / `.flow` |
 | Attachment ingress | The `deep-rag` tool consumes runtime-uploaded attachments — confirm the agent has an attachment input wired | Studio Web schema / `entry-points.json` |
 | Prompt wiring | The agent's system prompt or per-call prompt must mention when to invoke the tool | Author / Studio Web |
 | Other built-in tools | Do not enable `deep-rag` AND `analyze-attachments` if a single research pass suffices — pick one | User intent |
@@ -38,7 +38,7 @@ Two valid shapes for enabling DeepRAG on a low-code agent. This skill documents 
 |---|---|
 | `deep-rag` vs `analyze-attachments` | Prefer `deep-rag`. It handles larger files, returns citations (with optional bounding-box anchors), and produces denser output. `analyze-attachments` is one-shot synthesis with lower page limits — reach for it only when the document is small and the task is a single-shot extraction. |
 | `deep-rag` vs `load-attachments` | `load-attachments` only makes attachment text available to the agent; `deep-rag` runs an iterative synthesis pass. Use `load-attachments` when the agent will reason directly over short contents; use `deep-rag` for long / multiple docs. |
-| Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
+| Standalone agent vs inline-in-flow | Standalone: `resources/<id>/resource.json`. Inline: a built-in tool node in the `.flow` wired from the agent's `tool` port — its inputs carry the same settings and refresh generates the `resource.json`. See [impl-json.md](impl-json.md). |
 
 ## Bindings / Permissions
 

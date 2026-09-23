@@ -53,10 +53,8 @@ The user message carries the task and the data — not the role.
 
 Token form depends on context:
 
-- **Inline-in-flow agents** reference upstream flow nodes: `{{ $vars.<flowNodeId>.output[.<field>] }}`. See the [uipath-maestro-flow inline-agent prompt-wiring guide](../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
-- **Standalone agents** reference declared inputs: `{{input.<field>}}`.
-
-Mirror every `{{ ... }}` in `contentTokens[]` per [agent-definition.md § contentTokens Construction](../agent-definition.md#contenttokens-construction).
+- **Inline-in-flow agents** reference upstream flow nodes: `{{ $vars.<flowNodeId>.output[.<field>] }}`, written in the agent node's `inputs.systemPrompt` / `inputs.userPrompt`. `uip agent refresh --inline-in-flow` derives the inputs and `contentTokens`. See the [uipath-maestro-flow inline-agent prompt-wiring guide](../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#wiring-flow-data-into-the-agent).
+- **Standalone agents** reference declared inputs: `{{input.<field>}}`. Mirror every `{{ ... }}` in `contentTokens[]` per [agent-definition.md § contentTokens Construction](../agent-definition.md#contenttokens-construction).
 
 ## 3. Grounding in wired data
 
@@ -64,7 +62,7 @@ Reference inputs through tokens — never restate their literal contents in pros
 
 ## 4. Worked example — email triage
 
-Realistic inline-in-flow agent. Note the **structured `outputSchema`**, not a bare `content` blob.
+Realistic inline-in-flow agent, shown in `agent.json` terms. Note the **structured `outputSchema`**, not a bare `content` blob. On an inline agent the same values are written on the agent node — `settings.*` → `inputs.model` / `temperature` / `maxTokenPerResponse` / `maxIterations`, `outputSchema` → one `inputs.agentOutputVariables[]` entry per property, system / user prompt → `inputs.systemPrompt` / `inputs.userPrompt` ([inline-in-flow.md § Agent Node Inputs](../capabilities/inline-in-flow/inline-in-flow.md#agent-node-inputs)).
 
 **Before (toy):**
 

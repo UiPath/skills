@@ -67,7 +67,7 @@ Match `dependentFaultCode`, or the failure marker on a run that never started, t
 
 | Fault marker | Cause and fix |
 |---|---|
-| `dependentFaultCode: AGENT_STARTUP.INPUT_VALIDATION_ERROR` | Declared `type` does not match the bound node's real output shape — the runtime strict-validates agent inputs. `detail` names the failing key and the real type (for example `input_type=list`). See [author/plugins/inline-agent/impl.md — Anti-patterns](../author/plugins/inline-agent/impl.md#anti-patterns). |
+| `dependentFaultCode: AGENT_STARTUP.INPUT_VALIDATION_ERROR` | Declared `type` does not match the bound node's real output shape — the runtime strict-validates agent inputs. `detail` names the failing key and the real type (for example `input_type=list`). For an inline agent, fix the source variable's declared type — the agent input is derived from it. See [author/plugins/inline-agent/impl.md § Wiring Flow Data into the Agent](../author/plugins/inline-agent/impl.md#wiring-flow-data-into-the-agent). |
 | `Stage: prepare-custom-debug` with `HttpStatus: 500`, and no `Data.incidents` | Debug was pointed at a shared folder with `--folder-path` or `--folder-key`. The server fails to prepare the run and no instance starts, so there is no incident to read. Re-run `flow debug` without the flag. See [operate/run.md — Debug](../operate/run.md#debug--controlled-end-to-end-run). |
 
 No match, or `detail` is not enough → `uip maestro flow debug-instance incidents <INSTANCE_ID> --output json` returns the full backend payload (incidentId, errorDetails, AI summary). For a deployed process run, continue with Step 1.

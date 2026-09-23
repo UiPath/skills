@@ -4,7 +4,7 @@ Use this when a low-code agent needs an attached UiPath memory space for dynamic
 
 ## Critical Rules
 
-1. **Use `uip agent memory` for memory features.** Do not hand-author `features/{Name}/feature.json` unless recovering from a broken project. The CLI updates the feature file; run `uip agent refresh` afterwards to regenerate derived files.
+1. **Use `uip agent memory` for memory features on standalone agents.** Do not hand-author `features/{Name}/feature.json` unless recovering from a broken project. The CLI updates the feature file; run `uip agent refresh` afterwards to regenerate derived files. **Inline-in-flow agents are the exception:** attach the memory space as a `uipath.agent.resource.memory.*` node in the `.flow` (§ Inline agents), never with `uip agent memory add` — `uip agent refresh --inline-in-flow` regenerates `features/` from the `.flow` and deletes a feature that has no node.
 2. **`uip agent memory add` attaches an existing memory space; it does not create the platform memory space.** Always attempt `uip solution resources list --kind MemorySpace` discovery before attaching, even when the user supplied an exact memory space name and folder. Treat provided values as search inputs and fallback values only if discovery is blocked by auth or connectivity.
 3. **Use folder paths, not folder keys.** `--folder-path` must be the literal folder path where the memory space exists, such as `Shared` or `Shared/Sales`.
 4. **Refresh, validate, and solution-refresh after memory changes.** Memory bindings are generated during `uip agent refresh`; do not edit `bindings_v2.json` directly. In a solution, always attempt `uip solution resources refresh --output json` from the solution root after refresh so the generated `memorySpace` binding is imported into solution resources.
@@ -51,22 +51,7 @@ uip agent memory add SupportRecall \
 
 `SupportRecall` is the feature name inside the agent. Choose a short PascalCase or kebab-free name that describes how the agent will use the memory.
 
-**`--field` names an `inputSchema` key, not a flow variable.** Each `--field` must match a property in the agent's `inputSchema.properties` exactly — retrieval reads the value from the agent's `input` under that key. For inline agents (`--inline-in-flow`), inputs use the flattened key `<triggerNodeId>__output__<var>` (see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) § Wiring Flow Inputs Into an Inline Agent), so pass the flattened name:
-
-```bash
-# inline agent: flow global userQuestion on trigger node "start"
-uip agent memory add SupportRecall \
-  --memory-space "<MEMORY_SPACE_NAME>" \
-  --folder-path "<FOLDER_PATH>" \
-  --threshold 0.25 \
-  --result-count 5 \
-  --search-mode hybrid \
-  --field start__output__userQuestion=1 \
-  --path "<FLOW_PROJECT_DIR>/<PROJECT_ID>" \
-  --output json
-```
-
-Passing the un-flattened global name (`--field userQuestion=1`) on an inline agent names a field the agent never receives; `validate` does not catch this.
+**`--field` names an `inputSchema` key, not a flow variable.** Each `--field` must match a property in the agent's `inputSchema.properties` exactly — retrieval reads the value from the agent's `input` under that key.
 
 Options:
 
@@ -79,9 +64,20 @@ Options:
 | `--threshold` | Retrieval score threshold; default `0` |
 | `--result-count` | Number of memory results; default `3` |
 | `--search-mode` | `hybrid` or `semantic`; default `hybrid` |
-| `--field name=weight` | Input field weighting; `name` = agent `inputSchema` key (inline: `<trigger>__output__<var>`); repeat for multiple fields |
+| `--field name=weight` | Input field weighting; `name` = agent `inputSchema` key; repeat for multiple fields |
 | `--disable-dynamic-few-shot` | Attach the memory space without runtime retrieval |
 | `--path` | Agent project directory; default `.` |
+
+### Inline agents — attach the memory space as a flow node
+
+For an inline-in-flow agent, do not run `uip agent memory add`. Run the discovery in step 1, then add a memory node wired to the agent's `memory` handle (the `uipath-maestro-flow` skill authors the node and edge):
+
+1. `uip maestro flow registry search "uipath.agent.resource.memory" --output json`, then `registry get` the row for the discovered space. Its `inputDefaults` carry `memoryId`, `referenceKey`, and `memorySpaceName`.
+2. Seed the node's `inputs` from `inputDefaults`, set `source` to a fresh UUID, and set `folderPath` (literal `Folder` from discovery), `name`, `description`, `dynamicFewShotLearning`, `semanticSimilarity` (threshold), `kValue` (result count), `searchMode`.
+3. `fieldSettings` weights agent inputs: `[{ "id": "start__output__userQuestion", "name": "start__output__userQuestion", "weight": 1 }]`. Name each input by its **flattened** key `<nodeId>__output__<field>` — the key refresh derives from a `{{ $vars.<nodeId>.output.<field> }}` token. Leave `fieldSettings` empty to weight every agent input at 1. An un-flattened name (`userQuestion`) names a field the agent never receives, and `validate` does not catch it.
+4. Run `uip agent refresh "<FLOW_PROJECT_DIR>/<PROJECT_ID>" --inline-in-flow --bindings-target "<FLOW_PROJECT_DIR>/bindings_v2.json" --output json` — `Data.SyncedFromFlow` lists `create features/<source>/feature.json`.
+
+Seed items (§ 3 below) are the one memory setting with no node input: add them with `uip agent memory item add --path "<FLOW_PROJECT_DIR>/<PROJECT_ID>"` **after** refresh has created the feature. Refresh keeps a feature's `items` when it re-projects that feature from the node.
 
 ### 3. Seed optional memory items
 
@@ -202,4 +198,5 @@ Expected shape, for review only (standalone agent; an inline agent's `fieldSetti
 | `Memory space "<name>" matches by memory space name` | More than one feature references the same memory space name | Pass `--folder-path`, use the feature name, or use the feature ID |
 | No `memorySpace` binding after refresh | Refresh was not run after the memory edit | Run `uip agent refresh "<AGENT_PROJECT_DIR>" --output json` |
 | Inline agent memory exists but `uip solution resource refresh` misses it | Binding was not propagated to the parent flow project | Re-run inline refresh with `--bindings-target "<FLOW_PROJECT_DIR>/bindings_v2.json"` — see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) |
+| Inline agent memory feature disappears after refresh | Added with `uip agent memory add` — no memory node in the `.flow` | Add the memory node (§ Inline agents) and refresh |
 | User expects this command to create a new memory space | `uip agent memory add` only attaches an existing space | Stop and ask for an existing memory space name and folder |
