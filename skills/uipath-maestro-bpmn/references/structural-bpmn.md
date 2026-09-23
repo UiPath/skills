@@ -410,7 +410,14 @@ authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
   to fire; its outgoing flows target intermediate catch events or receive tasks.
 - A gateway with exactly one incoming and one outgoing flow is rejected
   (`SUPERFLUOUS_GATEWAY`). Activities/events must not have more than one
-  incoming flow — join with a gateway, not a "fake join" (`FAKE_JOIN`).
+  incoming flow — join with a gateway, not a "fake join" (`FAKE_JOIN`). A
+  join gateway is two or more in, one out; it needs no `conditionExpression`
+  and no `default`, and it does not trip `SUPERFLUOUS_GATEWAY`. **`validate`
+  does not report `FAKE_JOIN`** (checked on CLI 1.204.0: the rule is
+  registered and severity ERROR, but its node test compares against the
+  abstract types `bpmn:Activity`/`bpmn:Event`, which no parsed node carries).
+  A clean `validate` is therefore not evidence that a multi-inbound activity
+  is legal — author the join gateway.
 
 ## Events and the event-definition matrix
 
@@ -729,7 +736,7 @@ uip maestro bpmn validate <file.bpmn> --output json
 ```
 
 Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
-each with its rule code (gateway/condition, fake-join, superfluous-gateway,
+each with its rule code (gateway/condition, superfluous-gateway,
 error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,
 input-type, event-object, and IS-connector checks). Warnings are reported but do
@@ -750,7 +757,9 @@ the same blocking rules:
 2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.
 3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.
 4. Each XOR gateway: non-default flows have conditions; exactly one default.
-5. No activity/event has more than one incoming flow.
+5. No activity/event has more than one incoming flow — this one the CLI
+   never reports (see [Gateways](#gateways)), so check it by hand whether or
+   not `validate` is available.
 6. Each event subprocess has exactly one start event, and it carries an event
    definition (with `isInterrupting`).
 7. Every `vars.<id>` reference resolves to a declared variable.
