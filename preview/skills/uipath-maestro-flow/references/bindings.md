@@ -17,7 +17,7 @@ connectors-local/
       ...generated descriptor data...
 ```
 
-`npx flow-sdk registry prepare` prints the import for
+`uip maestro registry prepare` prints the import for
 `connectors-local/<connector-key>.ts`.
 The generated descriptor data lives below `connectors-local/descriptors/`; do
 not import it directly. `bindings.json` stays at the root and is independent of
@@ -45,7 +45,7 @@ the resource kind and emitted binding purpose explicit.
 ## Where both values come from
 
 **Usually you do not fill these in at all.**
-`npx flow-sdk registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
+`uip maestro registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
 Reach for the manual route below only when you are authoring bindings without
 running `prepare`.
 
