@@ -330,7 +330,11 @@ A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its p
 ]
 ```
 
-**Where `_resourceKey` comes from.** It is the key the entity's reference is registered under in the solution, written by the canvas entity picker when it registers the entity (`_entityKey`, the Data Fabric entity id from `uip df entities list`, is the older fallback and is only used when `_resourceKey` is absent). A registered entity reference surfaces under `uip solution resources list --kind Entity --output json`, but there is no CLI that mints one for a flow you are hand-authoring. **If you cannot resolve a `_resourceKey`, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
+**Where `_resourceKey` comes from.** It is the key the entity's reference is registered under in the solution, written by the canvas entity picker when it registers the entity (`_entityKey`, the Data Fabric entity id from `uip df entities list`, is the older fallback and is only used when `_resourceKey` is absent). A registered entity reference surfaces under `uip solution resources list --kind Entity --output json`.
+
+**For a locally authored entity — one this solution authors rather than references — `uip maestro flow format` mints it.** Set `entityConfig.entityName` and nothing else; format fills `_resourceKey`, `_folderKey` and both binding rows, and reports `EntitiesBound`. That is the same thing the canvas picker does, so do not hand-author them. See [Local entities](#local-entities--let-format-do-the-binding) below.
+
+For an entity the solution only **references** (a live platform entity imported with `uip solution resources add --source remote`), format leaves the node alone — it is not the solution's to rebind. **If you cannot resolve a `_resourceKey` for one of those, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
 
 Two values are easy to get wrong, and both are things you type by hand:
 
@@ -342,6 +346,52 @@ Entity bindings differ from the Orchestrator-resource form in several other ways
 When `_folderKey` is set but a binding is missing, serialization still succeeds — it falls back to a source-org literal and logs a warning. That partial state (name token + literal folder GUID) looks portable and breaks on cross-org deploy, so treat the warning as a defect rather than noise.
 
 The entity picker writes these bindings automatically. When hand-authoring a folder-scoped entity, add them yourself or leave the entity tenant-scoped.
+
+## Local entities — let `format` do the binding
+
+A **locally authored** entity is one this solution authors rather than
+references: it is created with `uip df entities create <Name> --local` and
+lives under `resources/solution_folder/entity/native/`. It carries the
+unassigned-folder sentinel `99999999-9999-9999-9999-999999999999` until a
+deploy decides where it lands, which is exactly what makes it different to
+bind.
+
+Author the node with the entity name only:
+
+```json
+{
+  "id": "readProducts",
+  "type": "core.datafabric.read",
+  "typeVersion": "<from registry get>",
+  "inputs": { "entityConfig": { "entityName": "Product", "resultMode": "multiple" } }
+}
+```
+
+then run `uip maestro flow format <ProjectName>.flow`. Format writes
+`_resourceKey`, `_folderKey` and the two `bindings[]` rows, reports how many
+nodes it wired as `EntitiesBound`, and drops rows that no longer apply —
+repoint, rename or delete a node and the count comes back as
+`EntityBindingRowsRemoved`. It is idempotent and it only touches entities the
+solution owns.
+
+**Do not stop at `entityName`.** A node with no binding serializes to a bare
+tenant-scoped `=datafabric.<Name>` literal. A locally authored entity is
+provisioned into the debug or deployment folder, never at tenant level, so the
+literal resolves to nothing and the run faults with:
+
+```
+[300205] Error executing query expansion in Data Fabric
+         Data Fabric returned: Entity <Name> does not exist
+```
+
+That message names the entity, so it reads as "the entity was never created"
+when the entity exists and the binding is missing. `flow validate` passes either
+way — running `format` is what closes the gap, which is one more reason rule 12
+in [author/CAPABILITY.md](../../CAPABILITY.md#critical-rules) makes it mandatory
+after every structural edit.
+
+Creating and modelling the entity itself belongs to
+[/uipath:uipath-platform — local-entities.md](../../../../../uipath-platform/references/data-fabric/local-entities.md).
 
 ## Output wiring
 
