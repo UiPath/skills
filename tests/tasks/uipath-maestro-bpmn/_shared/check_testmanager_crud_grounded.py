@@ -54,7 +54,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, elements, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import NS, context_value, elements, has_type, parse_bpmn  # noqa: E402
 
 CONNECTOR_KEY = "uipath-uipath-testmanager"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
@@ -82,17 +82,6 @@ def load_json(path: str, what: str) -> dict:
     except json.JSONDecodeError as exc:
         fail(f"{path} is not valid JSON: {exc}")
     return {}  # unreachable: fail() exits, but satisfies static analysis
-
-
-def has_type(el: ET.Element, token: str) -> bool:
-    return token in ET.tostring(el, encoding="unicode")
-
-
-def context_value(task: ET.Element, name: str) -> str:
-    for inp in task.findall(".//uipath:input", NS):
-        if inp.attrib.get("name") == name:
-            return (inp.attrib.get("value") or inp.text or "").strip()
-    return ""
 
 
 def connector_tasks(root: ET.Element) -> list[ET.Element]:

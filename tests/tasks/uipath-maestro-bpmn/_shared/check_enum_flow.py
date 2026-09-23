@@ -57,7 +57,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import context_inputs, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import body_object, context_inputs, elements, fail, parse_bpmn  # noqa: E402
 
 # Kept identical to Flow's own _EXPECTED_BODY (check_enum_flow.py:49-52): only
 # `to` and `importance` are asserted, matching the code, not its docstring.
@@ -93,38 +93,15 @@ def check_structure(name_hint: str) -> None:
 
 
 def body_fields(node: ET.Element) -> dict[str, str] | None:
-    """The node's request body as a field->value map, in either accepted form.
-
-    Form 1: exactly one `target="body"` input whose text/value parses as a
-    JSON object -- the canonical single-blob shape.
-    Form 2: one or more `target="body"` inputs, each named after the field it
-    carries -- the CLI manifest's stale separateInputs shape.
-    """
-    body_inputs = [inp for inp in context_inputs(node) if inp.attrib.get("target") == "body"]
-    if not body_inputs:
+    """The node's request body as a field->value map, in either registry form
+    (one JSON blob, or one typed input per field), via bpmn_check.body_object;
+    None when the node has no target="body" input at all."""
+    if not any(inp.attrib.get("target") == "body" for inp in context_inputs(node)):
         return None
-
-    if len(body_inputs) == 1:
-        inp = body_inputs[0]
-        raw = (inp.text or inp.attrib.get("value") or "").strip()
-        if raw:
-            try:
-                parsed = json.loads(raw)
-            except json.JSONDecodeError:
-                parsed = None
-            if isinstance(parsed, dict):
-                return {str(k): v for k, v in parsed.items()}
-        name = inp.attrib.get("name")
-        if name and name != "body":
-            return {name: raw}
-        return None
-
-    fields: dict[str, str] = {}
-    for inp in body_inputs:
-        name = inp.attrib.get("name")
-        if not name:
-            continue
-        fields[name] = (inp.attrib.get("value") or inp.text or "").strip()
+    fields = {
+        str(k): (v if isinstance(v, str) else json.dumps(v))
+        for k, v in body_object(node).items()
+    }
     return fields or None
 
 

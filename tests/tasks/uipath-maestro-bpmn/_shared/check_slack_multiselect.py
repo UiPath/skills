@@ -30,10 +30,7 @@ Assertion map (Flow -> BPMN):
       BPMN puts the whole request in `uipath:input` elements)                  -> body_object()
   T   the registry's two observed body forms both count: one whole-body
       `target="body"` JSON blob (name="body"), or one typed `target="body"`
-      input per field (name=<field>) -- registry-workflow.md documents the
-      first as canonical; the second is what `bpmn_check.body_object()` on
-      main (not yet on this branch) tolerates, so it is reimplemented locally
-      here per the porting brief                                               -> body_object()
+      input per field (name=<field>)                                          -> bpmn_check.body_object()
   DROPPED  require_no_private_connector_values, require_sequence_integrity,
            require_di_for_visible_elements (not in Flow; `bpmn validate`
            criterion covers structure)
@@ -55,6 +52,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    body_object,
     context_value,
     elements,
     fail,
@@ -68,10 +66,6 @@ ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 _USERS_KEY_RE = re.compile(r"users(\[.*\])?")
 
 
-def node_inputs(task: ET.Element) -> list[ET.Element]:
-    return task.findall(".//uipath:input", NS)
-
-
 def slack_tasks(root: ET.Element) -> list[ET.Element]:
     return [
         task
@@ -79,39 +73,6 @@ def slack_tasks(root: ET.Element) -> list[ET.Element]:
         if has_typed_uipath_extension(task, "activity", ACTIVITY_TYPE)
         and context_value(task, "connectorKey") == SLACK_KEY
     ]
-
-
-def body_object(task: ET.Element) -> dict:
-    """Merge every `target="body"` input on `task` into one dict, accepting
-    either registry-observed form: a single `name="body"` input holding the
-    whole request as a JSON object, or one typed input per field (its own
-    `name`, value/text is that field's value)."""
-    obj: dict = {}
-    for inp in node_inputs(task):
-        if inp.attrib.get("target") != "body":
-            continue
-        name = inp.attrib.get("name")
-        raw = inp.attrib.get("value")
-        if raw is None:
-            raw = inp.text
-        raw = (raw or "").strip()
-        if not raw:
-            continue
-        if name == "body":
-            try:
-                parsed = json.loads(raw)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(parsed, dict):
-                obj.update(parsed)
-            continue
-        if not name:
-            continue
-        try:
-            obj[name] = json.loads(raw)
-        except json.JSONDecodeError:
-            obj[name] = raw
-    return obj
 
 
 def is_users_key(key) -> bool:
