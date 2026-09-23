@@ -26,12 +26,12 @@ The app and its function backend are **two sibling projects**, each with its own
 └── <BACKEND>/    # uipath.json = the functions map
 ```
 
-1. Scaffold the backend next to the app, never inside it: `uip function new <BACKEND> -l ts` from `<WORKSPACE>/`. Do not add a `functions/` directory, the functions SDK, or function keys in `uipath.json` to the app project. A `package.json` `name` is one package id, and a package id is either a WebApp or a Function: once the app is published, `uip function publish` under that id is rejected (`400`, `Project type has changed since the latest published version`).
-2. `<BACKEND>` is the package id and becomes the process name that prefixes every function name the app invokes — name it for the backend as a whole (`claims-backend`), not after one function; one project holds every function, each with its own `defineFunction` `name` and `path`.
+1. Scaffold the backend as its own project next to the app: run `uip function new <BACKEND> -l ts` from `<WORKSPACE>/`. The backend project holds every function file, the functions SDK and the functions map; the app project keeps its PKCE config. Each `package.json` `name` is one package id with one project type, WebApp or Function — publishing a function under the app's id returns `400`, `Project type has changed since the latest published version`.
+2. `<BACKEND>` is the package id and becomes the process name that prefixes every function name the app invokes — name it for the backend as a whole (`pricing-backend`); one project holds every function, each with its own `defineFunction` `name` and `path`.
 
 ## Token Flow
 
-`Functions.invoke` sends the app's PKCE access token on every call — the app builds neither an `Authorization` header nor a trigger URL. Deployed, the token arrives as `ctx.user.accessToken` — delegated identity, the caller's folder permissions apply. The app's PKCE scope string MUST include `OR.Default` explicitly; it is auto-granted to any registered External App but is not implicit in the scope string, and omitting it makes the deployed trigger return 403:
+`Functions.invoke` sends the app's PKCE access token on every call and resolves the route itself. Deployed, the token arrives as `ctx.user.accessToken` — delegated identity, the caller's folder permissions apply. The app's PKCE scope string MUST include `OR.Default` explicitly; it is auto-granted to any registered External App but is not implicit in the scope string, and omitting it makes the deployed trigger return 403:
 
 ```text
 openid profile email offline_access OR.Default
@@ -46,7 +46,7 @@ uip function serve    # terminal 1 — functions on :7070, hot reload
 npm run dev           # terminal 2 — app dev server (Vite, :5173)
 ```
 
-1. `Functions.invoke` has no local target, so under `import.meta.env.DEV` the app fetches `http://localhost:7070/<PATH>` directly — `serve` answers with CORS `Access-Control-Allow-Origin: *`, so the cross-port call works as-is. This is the only fetch the app writes itself; put it at the top of the same wrapper that invokes the deployed function (below) so UI code is identical in both modes:
+1. Under `import.meta.env.DEV`, fetch `http://localhost:7070/<PATH>` directly — `serve` answers with CORS `Access-Control-Allow-Origin: *`, so the cross-port call works as-is. Put this branch at the top of the wrapper that invokes the deployed function (below), so UI code is identical in both modes:
 
    ```ts
    if (import.meta.env.DEV) {
@@ -66,7 +66,7 @@ npm run dev           # terminal 2 — app dev server (Vite, :5173)
 
 ## Deployed Calls from the App
 
-Deployed, the app calls the function through the SDK's `Functions` service — never a hand-built `…/orchestrator_/t/…` trigger URL, even though the function has HTTP semantics; the trigger URL is not an app-facing API. `invoke` takes the function's name as Orchestrator registers it: the process name, `_`, then the `defineFunction` `name` (`get-quote` in process `pricing-backend` → `pricing-backend_get-quote`). `Functions.getAll({ folderKey })` lists these names. A bare `defineFunction` name throws `404`, and the message lists the names the folder exposes. `invoke` also takes typed input, and handles route, transport and token itself. Use `@uipath/uipath-typescript` 1.7.2 or later. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey`.
+Deployed, call the function through the SDK's `Functions` service, HTTP-semantics functions included. `invoke` takes the function's name as Orchestrator registers it: the process name, `_`, then the `defineFunction` `name` (`get-quote` in process `pricing-backend` → `pricing-backend_get-quote`). `Functions.getAll({ folderKey })` lists these names. A bare `defineFunction` name throws `404`, and the message lists the names the folder exposes. `invoke` also takes typed input. Use `@uipath/uipath-typescript` 1.7.2 or later. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey`.
 
 ```ts
 import type { UiPath } from "@uipath/uipath-typescript/core";
@@ -102,7 +102,7 @@ Put `signal: AbortSignal.timeout(8_000)` on every external `fetch` inside the ha
 
 ## Error Contract for the Frontend
 
-A resolved `invoke` is the function's declared output. Any non-2xx answer is thrown as a `UiPathError` subclass carrying `statusCode` and `message`. Branch on `statusCode`; do not parse `message`:
+A resolved `invoke` is the function's declared output. Any non-2xx answer is thrown as a `UiPathError` subclass carrying `statusCode` and `message`. Branch on `statusCode`:
 
 | Source | `statusCode` | Frontend treatment |
 |---|---|---|
