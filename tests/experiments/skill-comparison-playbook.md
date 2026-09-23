@@ -68,38 +68,22 @@ After the first pass, if you have a decision to make, re-run **only the divergen
 
 ## 6. Get more than N=1 per task
 
-`coder-eval` has no `--reps` flag. One task under one variant runs once. That's fine for finding *where* variants diverge, but it's not enough to make a decision — timeouts and `MAX_TURNS` outcomes have high run-to-run variance.
+One run of one task under one variant tells you *where* variants diverge.
+It is not enough to decide anything: timeouts, `MAX_TURNS` outcomes and wall clock all have high run-to-run variance.
 
-Two workable options:
-
-**Option A — duplicate the variant with distinct IDs** (recommended for automation):
-
-```yaml
-variants:
-  - variant_id: variantb-r1
-    agent: { plugins: [...] }
-  - variant_id: variantb-r2
-    agent: { plugins: [...] }
-  - variant_id: variantb-r3
-    agent: { plugins: [...] }
-```
-
-Each variant runs the full task set once. Aggregate across the `r1`/`r2`/`r3` variants in analysis.
-
-**Option B — re-run the experiment in a shell loop**:
+Pass `--repeats N` (verified against coder-eval 0.8.4).
+It runs each (task, variant) N times and overrides the experiment's and each variant's `repeats:`, so you never have to duplicate variants or loop the shell to get N>1:
 
 ```bash
-for i in 1 2 3; do
-  SKILLS_REPO_PATH=$(cd .. && pwd) \
-    .venv/bin/coder-eval run tasks/uipath-maestro-flow/**/*.yaml \
-    -e experiments/my-comparison.yaml \
-    --run-dir runs/compare-$(date +%F)-rep-$i
-done
+SKILLS_REPO_PATH=$(cd .. && pwd) \
+  .venv/bin/coder-eval run tasks/uipath-maestro-flow/**/*.yaml \
+  -e experiments/my-comparison.yaml \
+  -j 1 -v --repeats 5
 ```
 
-Lower effort to set up, harder to analyze (three separate run dirs to combine).
-
-**Rule of thumb:** N ≥ 3 before calling anything decisive. For any task that diverged at N=1, push to N ≥ 5 on just that task.
+**Rule of thumb:** N ≥ 3 before calling anything decisive.
+For any task that diverged at N=1, push to N ≥ 5 on just that task.
+Report the **median**, never the mean — one stalled provider response is enough to move a mean by minutes (see step 8).
 
 ## 7. Run and capture output
 
@@ -132,6 +116,32 @@ Common false positives to watch for:
 - **Timeouts on both sides.** High-variance outcomes. Don't weight these heavily.
 - **One variant times out at `MAX_TURNS=0`.** The agent never got a turn — you're measuring infrastructure, not the skill.
 - **Small N head-to-head wins.** At N=1, 2 wins out of 24 tasks is noise if the divergent tasks are both timeouts.
+- **A wall-clock gap that is one stalled API response.** Never read `duration_seconds` as a variant effect without checking the per-response generation rate first.
+  Each entry in `task.json` → `iterations[].messages[]` carries `output_tokens` and `generation_duration_ms`; divide them.
+  A run that generates at 40–135 tok/s throughout except for one response at ~3 tok/s is showing you provider latency, not the skill.
+
+  The 2026-09-22 BPMN v1-vs-v2 comparison read as a 5.8× SDK regression (677.0 s vs 116.9 s) on exactly this.
+  Both v2 runs held one response that generated ~1000–2000 tokens at ~3.5 tok/s; subtract that single response and both finished in 99.7 s, faster than either v1 run.
+  The concurrent v1 run was generating at 55–120 tok/s inside the same wall-clock window, so it was not shared throttling either.
+  Check this before writing up any timing claim:
+
+  A response's `messages[]` parts each carry a share of that response's duration, so group by
+  `(started_at, completed_at)` to get one row per API call:
+
+  ```bash
+  python3 - path/to/task.json <<'PY'
+  import json, sys
+  from datetime import datetime
+  calls = {}
+  for m in json.load(open(sys.argv[1]))['iterations'][0]['messages']:
+      k = (m['started_at'], m['completed_at'])
+      s, t = calls.get(k, (0.0, 0))
+      calls[k] = (s + (m.get('generation_duration_ms') or 0) / 1000, t + (m.get('output_tokens') or 0))
+  for (start, end), (secs, tok) in sorted(calls.items()):
+      wall = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).total_seconds()
+      print(f"{start[11:19]}  gen={secs:7.1f}s  wall={wall:7.1f}s  {tok:5d} tok  {tok / secs if secs > 0.05 else 0:6.1f} tok/s")
+  PY
+  ```
 
 ## 9. Decide and record
 
