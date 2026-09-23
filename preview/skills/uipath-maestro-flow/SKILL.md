@@ -579,7 +579,7 @@ Define an autonomous agent inside this Flow project, with optional resources.
 Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, context?, tools?, escalation?, guardrails?, mode?, ... })`.
 
 ```ts
-.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return JSON with category.',
+.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
   userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
   returns: { category: 'string' },
   guardrails: [{ id: 'no-pii', $guardrailType: 'custom', name: 'Block PII', selector: { scopes: ['Agent'] },
