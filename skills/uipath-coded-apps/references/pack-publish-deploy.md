@@ -2,6 +2,9 @@
 
 Complete guide for packaging, publishing, and deploying UiPath Coded Web Applications to production.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
+
 ## Pipeline Overview
 
 ```

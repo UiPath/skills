@@ -8,6 +8,8 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 Atomic, deterministic units of business logic — no LLM reasoning, no agent loop — written in **Python** or **TypeScript/JavaScript** and shipped as first-class UiPath artifacts. One `uip function` CLI drives both languages. A Coded Function takes typed input, executes deterministic code, and returns typed output; use one when generic activities don't cover the required logic (custom-auth API calls, domain rules, ERP queries via Integration Service, data transforms).
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## When to Use This Skill
 
 - Scaffold, author, or modify a coded function in either language (`uip function new <NAME> -l py|ts|js`)

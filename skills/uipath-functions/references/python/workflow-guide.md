@@ -2,6 +2,9 @@
 
 The end-to-end Python Coded Function workflow: scaffold → schema → logic → registration → dependencies → entry points → SDK usage → pack/publish. Language split and shared rules → [SKILL.md](../../SKILL.md).
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
+
 
 
 ## Step 1: Scaffold

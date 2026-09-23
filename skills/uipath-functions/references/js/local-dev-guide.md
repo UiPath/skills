@@ -2,6 +2,9 @@
 
 The local loop for JS/TS coded functions: `uip function serve` for the HTTP surface, `uip function run` for one-shot job execution, plus the env/ctx differences between local and deployed. Handler authoring → [authoring-guide.md](authoring-guide.md); deployed behavior → [deployment-guide.md](deployment-guide.md).
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
+
 ## `uip function serve` — local HTTP server
 
 ```bash
