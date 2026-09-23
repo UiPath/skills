@@ -10,6 +10,10 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 
 > **Reading the referenced files is imperative — read each required file in full.** This SKILL.md is a router: it tells you *which* reference to open, not *what* it says. When a rule, the Task Navigation table, or a section points you to a reference for the task at hand, open it and read the **whole** file before acting — do not grep it for a keyword, skim the first screen, fall back to `--help`, or substitute prior knowledge. Exception: files whose rule prescribes a **targeted lookup** (Grep `^##` for the table of contents, flags via `<command> --help`) — these are catalogs: read the matching sections, never the whole file. Most errors that slip past `validate` and surface at `build` or runtime trace back to a reference that was skipped or only partially read.
 
+<!--skill-flavor:host-scope:start-->
+
+<!--skill-flavor:host-scope:end-->
+
 ## When to Use This Skill
 
 - User wants to **create a new** UiPath automation project (coded or XAML)

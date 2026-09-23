@@ -61,3 +61,39 @@ test("the default flavor keeps `uip solution init` (the guard is not vacuous)", 
 
   assert.ok(filesMentioning(output, FORBIDDEN).length > 0);
 });
+
+// Editing RPA projects is not supported in Studio Web: `uip rpa validate` cannot
+// run there (it needs a headless Studio process), the designer cannot check
+// agent-written XAML, and a workflow it cannot load leaves the project unable to
+// open. The studioweb flavor of uipath-rpa must scope the skill to reading and
+// analyzing, and must not tell the agent to create the project with
+// `uip rpa init`.
+const RPA_SKILL = join("uipath-rpa", "SKILL.md");
+const RPA_READ_ONLY_HEADING = "## Studio Web Scope: Read and Analyze Only";
+const RPA_FORBIDDEN_INIT = "`uip rpa init <NAME>`";
+
+test("the built studioweb uipath-rpa skill is scoped to reading and analyzing", (t) => {
+  const output = mkdtempSync(join(tmpdir(), "studioweb-rpa-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  materializeComposition(createCompositionPlan(REPO_ROOT, STUDIOWEB_ROOT), output);
+  const skill = readFileSync(join(output, RPA_SKILL), "utf8");
+
+  assert.ok(skill.includes(RPA_READ_ONLY_HEADING), "studioweb uipath-rpa must open with the read-only scope");
+  assert.ok(
+    skill.indexOf(RPA_READ_ONLY_HEADING) < skill.indexOf("## When to Use This Skill"),
+    "the read-only scope must precede the When to Use section so the agent reads it first",
+  );
+  assert.ok(!skill.includes(RPA_FORBIDDEN_INIT), "studioweb uipath-rpa must not instruct `uip rpa init`");
+  assert.ok(!skill.includes("skill-flavor:"), "built output must be marker-free");
+});
+
+test("the default uipath-rpa skill keeps its full authoring scope", (t) => {
+  const output = mkdtempSync(join(tmpdir(), "default-rpa-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  materializeComposition(createDefaultPlan(REPO_ROOT), output);
+  const skill = readFileSync(join(output, RPA_SKILL), "utf8");
+
+  assert.ok(!skill.includes(RPA_READ_ONLY_HEADING));
+  assert.ok(skill.includes("## When to Use This Skill"));
+  assert.ok(!skill.includes("skill-flavor:"), "built output must be marker-free");
+});
