@@ -83,8 +83,11 @@ success_criteria:
     path: "diagnosis.md"
     includes:
       - "Task_InvokeLegacyRpa"
-      - "folderPath"
     patterns:
+      # The deployed asset carries <uipath:binding name="folderPath"
+      # expression="=bindings.LegacyRpaFolder"/>, so either name identifies
+      # the binding that failed to resolve.
+      - pattern: 'folderPath|LegacyRpaFolder'
       - pattern: 'Cloud\s+configuration'
       - pattern: 'Integration\s+Service\s+enrichment'
     weight: 3.0

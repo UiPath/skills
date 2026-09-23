@@ -141,3 +141,62 @@ def test_local_normalizer_agrees_with_coder_eval() -> None:
     for command in READS + COMPLIANT:
         real = any(pattern.search(h) for h in module._match_haystacks(command, is_shell=True))
         assert real == _hits(command), f"verdict differs for {command!r}"
+
+
+# --- the diagnosis check -----------------------------------------------------
+#
+# `file_check` grades free prose by literal substring, which has now failed
+# three compliant diagnoses in three different ways: a label wrapped across a
+# line break (#3493), and the binding named by its expression id rather than
+# its context-field name (#3496). The samples below are the real shapes agents
+# produced; each must satisfy every `includes` and every `pattern`.
+
+DIAGNOSES = {
+    "binding named by its context field": (
+        "Faulting element `Task_InvokeLegacyRpa`. Resource binding 'folderPath' "
+        "resolved to a folder the process cannot access.\n"
+        "BPMN source: fine. Generated package metadata: fine.\n"
+        "Integration Service enrichment: not implicated.\n"
+        "Cloud configuration: primary owner.\n"
+    ),
+    "binding named by its expression id": (
+        "- Faulting BPMN element id: `Task_InvokeLegacyRpa`\n"
+        "- Likely root cause: the deployed binding `=bindings.LegacyRpaFolder` "
+        "resolved to a folder the process cannot access.\n"
+        "  - Integration Service enrichment: Not implicated.\n"
+        "  - Cloud configuration: Primary owner.\n"
+    ),
+    "ownership label wrapped across a line break": (
+        "Element: Task_InvokeLegacyRpa, binding folderPath.\n"
+        "Ruled out: Generated package metadata, and Integration Service\n"
+        "enrichment, since this is an Orchestrator job start.\n"
+        "Owner: Cloud configuration.\n"
+    ),
+}
+
+
+def _diagnosis_criterion() -> dict:
+    task = yaml.safe_load(_TASK.read_text(encoding="utf-8"))
+    checks = [c for c in task["success_criteria"] if c["type"] == "file_check"]
+    assert len(checks) == 1, "expected exactly one file_check"
+    return checks[0]
+
+
+@pytest.mark.parametrize("label", sorted(DIAGNOSES))
+def test_diagnosis_check_accepts_the_real_shapes(label: str) -> None:
+    text = DIAGNOSES[label]
+    criterion = _diagnosis_criterion()
+    for needle in criterion.get("includes", []):
+        assert needle in text, f"{label}: missing include {needle!r}"
+    for entry in criterion.get("patterns", []):
+        assert re.search(entry["pattern"], text), f"{label}: no match for {entry['pattern']!r}"
+
+
+def test_diagnosis_check_still_fails_an_incomplete_diagnosis() -> None:
+    """Dropping the fault element or an ownership label must still fail."""
+    criterion = _diagnosis_criterion()
+    text = "Something went wrong with a binding. Cloud configuration is to blame.\n"
+    satisfied = all(n in text for n in criterion.get("includes", [])) and all(
+        re.search(e["pattern"], text) for e in criterion.get("patterns", [])
+    )
+    assert not satisfied
