@@ -97,7 +97,7 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
 
-### Picking the object: take it from the table, do not infer it
+### Picking the object: the table first, then the parameters
 
 A connector exposes several objects that perform the same operation, and
 `uip is resources describe` cannot rank them. Four Jira objects create an
@@ -122,9 +122,10 @@ the ones whose `Operation.Curated` names the activity asked for. Expect more
 than one to survive: the catalog serves a plain, a `V2` and a `_V3` spelling
 of the same activity, and Jira has four.
 
-**Break the tie on parameters, not on the name.** Of the survivors, keep only
-those whose `Parameters` and `RequestFields` carry every value the task
-names. This decides more cases than it looks. UiPath Data Service serves
+**Break the tie on parameters, not on the name.** Describe cannot tell you
+which candidate is the live one, but it does tell you which ones cannot do
+the job. Of the survivors, keep only those whose `Parameters` and
+`RequestFields` carry every value the task names. UiPath Data Service serves
 `UploadFileToRecordField` beside `UploadFileToRecordFieldV2`, and only the
 unsuffixed one takes a `fieldName` parameter: V2 takes `entityName`,
 `recordId`, `file` and `expansionLevel`, with no way to name the field. A task
@@ -142,7 +143,7 @@ object name, so nothing local tells the user you guessed.
 ...`) to learn a field name, a filter syntax or a default: that executes
 against the live tenant, and its create and delete verbs leave records behind.
 The answer is already in `Parameters`/`RequestFields`. A failed `describe` is
-not a contract either — if it errors with `Operation '<x>' not found`, take the
+not a contract either. If it errors with `Operation '<x>' not found`, take the
 operation it lists and re-run, rather than authoring the node from a guess.
 
 The response adds an enrichment block with the live field metadata. Match the
