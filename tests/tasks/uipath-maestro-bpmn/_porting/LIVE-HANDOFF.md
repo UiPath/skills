@@ -1,6 +1,6 @@
 # Flow → BPMN eval porting: live-tier handoff
 
-Branch: `test/bpmn-port-live`, stacked on `test/bpmn-port-connectors` (PR #3426, the structural bucket). This document is the state of the live-tier port work as of 2026-09-20 and how to continue it. Methodology files sit beside it in this directory.
+Branch `test/bpmn-port-live` (PR #3502) holds the live-tier and field-shape ports that pass; branch `test/bpmn-port-parked` (stacked on it) holds the eight that do not, each `skip: true` with its evidence. The structural bucket is PR #3426. Methodology files sit beside this document; per-task history is `parity-ledger.md`.
 
 ## Context
 
@@ -10,7 +10,7 @@ Reading the Flow graders during the loop reclassified four "structural" tasks as
 
 ## Status (as of 2026-09-22, after batch 15)
 
-Live bucket (21) and field-shape probes (9) on this branch. Every row is a CI result on the alpha tenant, codex driver.
+Live bucket (21) and field-shape probes (9). Every row is a CI result on the alpha tenant, codex driver; green rows are in PR #3502, parked rows on `test/bpmn-port-parked`.
 
 | Task | State | Evidence |
 |---|---|---|
@@ -37,14 +37,14 @@ Live bucket (21) and field-shape probes (9) on this branch. Every row is a CI re
 | connector_features/complex_array | green 0.875 (advisory miss only) | run 35789221753 |
 | connector_features/path_params | green it.2 | run 35790934047 |
 | connector_features/paginated_reference_lookup | green it.3 | run 35791969905 |
-| multi_node/bellevue_weather | parked, skill gap | HttpExecution response shape (`temperature_2m` of undefined), runs 35523787101 + 35525387843 |
-| interactive/bellevue_weather_simulated | parked, same gap | run 35785806030 |
-| e2e/jira_search_triage | parked, platform/skill gap | multi-instance over a connector response, 400008 (run 35525387843) |
-| e2e/jira_lifecycle | parked, needs live investigation | three different runtime failures; Flow flaky |
-| multi_node/billing_discrepancy_detector | parked, skill gap | Data Service where clause from a process variable, two different 400s (runs 35538279757, 35783045540) |
-| interactive/slack_channel_description_simulated | parked, skill gap | Slack channel pagination: page 1 only (run 35789221753); Flow 4/12 |
-| connector_features/ceql_where | parked, surface gap | agent writes the CEQL `where` string, never Flow's filter tree (runs 35783045540, 35785806030) |
-| connector_features/enhanced_enum | parked, skill gap | no WooCommerce connector node in either run (runs 35789221753, 35790934047) |
+| multi_node/bellevue_weather | parked on `test/bpmn-port-parked`, skill gap | HttpExecution response shape (`temperature_2m` of undefined), runs 35523787101 + 35525387843 |
+| interactive/bellevue_weather_simulated | parked on `test/bpmn-port-parked`, same gap | run 35785806030 |
+| e2e/jira_search_triage | parked on `test/bpmn-port-parked`, platform/skill gap | multi-instance over a connector response, 400008 (run 35525387843) |
+| e2e/jira_lifecycle | parked on `test/bpmn-port-parked`, needs live investigation | three different runtime failures; Flow flaky |
+| multi_node/billing_discrepancy_detector | parked on `test/bpmn-port-parked`, skill gap | Data Service where clause from a process variable, two different 400s (runs 35538279757, 35783045540) |
+| interactive/slack_channel_description_simulated | parked on `test/bpmn-port-parked`, skill gap | Slack channel pagination: page 1 only (run 35789221753); Flow 4/12 |
+| connector_features/ceql_where | parked on `test/bpmn-port-parked`, surface gap | agent writes the CEQL `where` string, never Flow's filter tree (runs 35783045540, 35785806030) |
+| connector_features/enhanced_enum | parked on `test/bpmn-port-parked`, skill gap | no WooCommerce connector node in either run (runs 35789221753, 35790934047) |
 
 Total: 23 green, 8 parked. Not started: the 4 probes that need tenant fixtures (billing_dispute_analyst / _resolution / _writer need a published agent substitute for Flow inline agents; single_node/file_attachment needs a file-typed process variable).
 
