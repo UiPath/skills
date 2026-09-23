@@ -84,7 +84,10 @@ Do not derive metadata from stale package files first. Use existing generated fi
    validate` yet — it cross-checks `entry-points.json` against the source, so it
    reports the pre-refresh state as an error whenever an edit renamed a start
    event. Run it in step 5, after refresh.
-3. Regenerate package metadata from the BPMN source:
+3. Lay out the diagram after the last source edit: `uip maestro bpmn format
+   <file.bpmn>`. `refresh` validates before it writes, so a node added since
+   the previous run fails step 4 with `MISSING_DI_SHAPE`.
+4. Regenerate package metadata from the BPMN source:
 
    ```bash
    uip maestro bpmn refresh <project-path> --output json    # regenerate + materialize IS connection bindings
@@ -101,8 +104,6 @@ Do not derive metadata from stale package files first. Use existing generated fi
    If CLI unavailable for a local-only synthetic project, write the minimal
    placeholder-safe shape (see below) before continuing.
 
-4. Run `uip maestro bpmn format <file.bpmn>` after the last source edit — nodes
-   added since the previous run have no `BPMNShape` and the canvas drops them.
 5. Run `uip maestro bpmn validate <file.bpmn> --output json`, then verify the
    project directory contains the full metadata set:
    `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`,

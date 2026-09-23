@@ -282,7 +282,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
    start event id or adds or removes an entry point — **not only when packaging
    or operating**. `operate.json` and `entry-points.json` are generated once and
-   do not follow source edits, so step 4's validator fails on the mismatch:
+   do not follow source edits, so step 5's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
    <bpmn:startEvent id="Event_start"> exists`. Authoring from the skeleton above
    renames the initializer's `Event_start`, so a source-only draft needs this
@@ -303,7 +303,26 @@ For registry-evidence-only tasks, follow the command-first recipe in
    returning one result on a single completion EndEvent — for the two-layer
    contract see
    [references/structural-bpmn.md](references/structural-bpmn.md#variables-bpmnvariables).
-4. **Validate.** Check well-formedness first. `validate` tokenizes with a
+4. **Lay out the diagram.** After the last source edit, before anything that
+   reads the file:
+
+   ```bash
+   uip maestro bpmn format <file.bpmn>
+   ```
+
+   It overwrites the file's `bpmndi:BPMNDiagram` in place, so the canvas
+   renders the process arranged instead of stacked at the origin. Every
+   deliverable gets this, source-only drafts included. It is also a hard
+   precondition for the next two steps, not a cosmetic pass: a node with no
+   `BPMNShape` or a flow with no `BPMNEdge` fails `validate` with
+   `MISSING_DI_SHAPE` / `MISSING_DI_EDGE`, no diagram at all fails it with
+   `BPMN_PARSE_ERROR`, and `refresh` validates before it writes, so it fails
+   the same way. Edit the source again and the layout is stale — re-run this
+   step before re-validating. If `format` reports `unknown command`, update the
+   CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if
+   upgrading is unavailable, hand-author the fallback DI structure in
+   [references/structural-bpmn.md](references/structural-bpmn.md).
+5. **Validate.** Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
    else. Then run the CLI validator, which runs the full PO.Frontend canvas
@@ -316,7 +335,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    ```
 
    Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
-   with its rule code). Warnings do not fail the run: validate once, fix only
+   with its rule code). Every error-severity fix is a source edit, so go back
+   through step 4 before validating again. Warnings do not fail the run: validate once, fix only
    error-severity findings, and do not re-validate in a loop chasing warnings.
    Two warnings are defects rather than noise, because no error covers them.
    `read but never assigned` says nothing writes a value the process reads, so
@@ -335,23 +355,6 @@ For registry-evidence-only tasks, follow the command-first recipe in
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-5. **Lay out the diagram.** Once `validate` passes, after the last edit to the
-   `.bpmn`:
-
-   ```bash
-   uip maestro bpmn format <file.bpmn>
-   ```
-
-   This overwrites the file's `bpmndi:BPMNDiagram` in place, so the canvas
-   renders the process arranged instead of stacked at the origin. A node added
-   or renamed after a run has no shape — edit the source again and re-run it.
-   Every deliverable gets this, source-only drafts included. If `format`
-   reports `unknown command`, update the CLI (see
-   [references/cli-conventions.md](references/cli-conventions.md)); if
-   upgrading is unavailable, hand-author the fallback DI structure in
-   [references/structural-bpmn.md](references/structural-bpmn.md) and then
-   re-run step 4 — hand-authored DI can break well-formedness, `format`'s
-   output cannot.
 6. **Refresh derived metadata when package-ready output is required.** After
    source validation passes, regenerate the four CLI-owned package files:
 
@@ -360,7 +363,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    ```
 
    Treat a nonzero result as a source/precondition failure: fix the BPMN or
-   `project.uiproj`, revalidate, and refresh again — never repair the generated
+   `project.uiproj`, re-run steps 4 and 5, and refresh again — never repair the generated
    JSON by hand. Refresh is needed only for a package-ready, upload, debug,
    publish, or deploy deliverable, not for a source-only draft. For the full
    contract (scope, idempotency, binding rules) see
@@ -432,7 +435,8 @@ and honestly surfaced to the user as gaps when asked.
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
-   the last write to the `.bpmn`, never mid-edit.
+   the last write to the `.bpmn` and before `validate` or `refresh`, both of
+   which error on a node with no shape.
 6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
    `uipath:event` / `uipath:mapping` templates declare their type as a nested
    `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored
