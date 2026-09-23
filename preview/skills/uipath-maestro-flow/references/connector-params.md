@@ -87,11 +87,10 @@ To read the Markdown directly, ask where it is:
 FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md)"
 ```
 
-The four library verbs are `pull`, `search`, `path` and `prepare`. Like the
-authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of
-their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace. In
-a workspace with no `uip`, `npx flow-sdk registry <verb>` is the same command
-with the same arguments.
+The four library verbs are `pull`, `search`, `path` and `prepare`.
+Like the authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace.
+`uip` is the entry point and is what delivers these skills, so it is present wherever this guidance is being read.
+(The package also exposes a `flow-sdk` bin for invoking the same commands directly, which is what the printed remedies fall back to when nothing sets `FLOW_SDK_INVOKED_AS`.)
 
 **`uip maestro registry` is not `uip maestro flow registry`.** The names are one
 word apart and the jobs are unrelated: this one is the connector library the
@@ -117,9 +116,9 @@ and a logged-in `uip`; without one, fall back to the curated operation in the
 markdown library.
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action>
+uip maestro registry prepare <connector-key> <action>
 # Generic operation: materialize the one connected object the task uses.
-npx flow-sdk registry prepare <connector-key> <action> --object <api-object-name>
+uip maestro registry prepare <connector-key> <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
@@ -186,7 +185,7 @@ case-insensitive on API name and display name, narrowed to objects that
 support the action's verb):
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> --object Company__C
+uip maestro registry prepare <connector-key> <action> --object Company__C
 #   object: matched "Company__C" -> Company__c
 ```
 
@@ -272,7 +271,7 @@ very value `-f` wants.** Do not run one prepare to resolve them and retype the
 ids into a second command: pass both flags together —
 
 ```bash
-npx flow-sdk registry prepare uipath-atlassian-jira create-issue \
+uip maestro registry prepare uipath-atlassian-jira create-issue \
   --resolve fields.project.key:key=UIP --resolve fields.issuetype.id:name=Bug \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
@@ -326,7 +325,7 @@ inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
 parent when you omit it; the fix is always the entity name:
 
 ```bash
-npx flow-sdk registry prepare uipath-uipath-dataservice create-entity-record \
+uip maestro registry prepare uipath-uipath-dataservice create-entity-record \
   -f entityName=FlowCodeEvalEntity
 # → 8 input field(s): entityName, expansionLevel + the entity's own fields
 ```
@@ -359,7 +358,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> \
+uip maestro registry prepare <connector-key> <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -441,7 +440,7 @@ When the flow is written, `check` reports each token still unresolved
 and it is the only tenant call the whole loop needs:
 
 ```bash
-npx flow-sdk registry prepare uipath-salesforce-slack send-message-to-user \
+uip maestro registry prepare uipath-salesforce-slack send-message-to-user \
   --resolve channel:profile.email=dustin@example.com
 ```
 

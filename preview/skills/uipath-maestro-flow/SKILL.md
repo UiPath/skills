@@ -68,7 +68,7 @@ for a generic operation — then run `uip maestro flow check <Name>.flow.ts
 for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a
 lookup token with no recorded value, `CONNECTOR_INPUT` for a field the
 operation does not declare. Run that one
-`npx flow-sdk registry prepare <connector-key> <action>` — `--object`,
+`uip maestro registry prepare <connector-key> <action>` — `--object`,
 `--resolve` and `-f` compose in a single invocation, it finds the connection
 itself, writes `bindings.json`, and repoints your import at the generated
 `connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
@@ -718,7 +718,7 @@ name, so an unknown node keeps its type and version through a round trip.
 node type here: a raw node keeps its inputs verbatim, so the emitted node has no
 `inputs.detail` and no connection binding — `validate` only warns and the run
 never reaches Integration Service. When `compile` refuses a connector input as
-unknown, the answer is `npx flow-sdk registry prepare <key> <action>` (see
+unknown, the answer is `uip maestro registry prepare <key> <action>` (see
 [connector-params.md](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop)),
 not `rawNode`.
 
