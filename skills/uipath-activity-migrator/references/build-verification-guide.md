@@ -58,6 +58,6 @@ At most 3 iterations. Each iteration:
 3. Apply the fix with targeted edits only. Never rewrite a whole XAML file, never re-serialize it with a script, never reintroduce a classic activity.
 4. Rebuild.
 
-When the RPA authoring skill is available in this plugin, spawn a subagent that runs it on the XAML edit of iteration 2 and returns the changed file, then continue with its result. When it is unavailable, apply the minimal fix directly under the same rules.
+When the RPA authoring skill is available in this plugin, spawn a subagent that runs it on the XAML edit of iteration 2 and returns the changed file, then continue with its result. Brief it and read its hand-back as the Limits sub-step of [runtime-verification-guide.md § Fix and rerun loop](runtime-verification-guide.md#fix-and-rerun-loop) says: intent and constraints, never XAML mechanics; the edited file and its concerns come back. Save the hand-back as `<PROJECT_DIR>/.upgrade/build-fixes/<iteration>/hand-back.md` (fix-only mode: under `<MIGRATED_DIR>`) and route its concerns as that guide's Report section says. When it is unavailable, apply the minimal fix directly under the same rules.
 
 After 3 iterations, or when a fix would change what the migrator produced beyond the failing construct, stop and list the remaining errors per file as manual work.
