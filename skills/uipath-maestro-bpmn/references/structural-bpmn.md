@@ -417,7 +417,7 @@ authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
   registered and severity ERROR, but its node test compares against the
   abstract types `bpmn:Activity`/`bpmn:Event`, which no parsed node carries).
   A clean `validate` is therefore not evidence that a multi-inbound activity
-  is legal — author the join gateway.
+  is legal. Author the join gateway.
 
 ## Events and the event-definition matrix
 
@@ -757,9 +757,9 @@ the same blocking rules:
 2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.
 3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.
 4. Each XOR gateway: non-default flows have conditions; exactly one default.
-5. No activity/event has more than one incoming flow — this one the CLI
-   never reports (see [Gateways](#gateways)), so check it by hand whether or
-   not `validate` is available.
+5. No activity/event has more than one incoming flow. The CLI never reports
+   this one (see [Gateways](#gateways)), so check it by hand whether or not
+   `validate` is available.
 6. Each event subprocess has exactly one start event, and it carries an event
    definition (with `isInterrupting`).
 7. Every `vars.<id>` reference resolves to a declared variable.

@@ -33,7 +33,7 @@ These four carry the shape. Change one and you are building something else.
 | `analyze` | `bpmn:serviceTask` | Placeholder · insertion point |
 | `validate` | `bpmn:businessRuleTask` | Mechanism |
 | `confidence_gate` | `bpmn:exclusiveGateway` | Mechanism |
-| `merge_gate` | `bpmn:exclusiveGateway` | Mechanism — joins the auto and approved routes |
+| `merge_gate` | `bpmn:exclusiveGateway` | Mechanism, joins the auto and approved routes |
 | `perform_action` | `bpmn:serviceTask` | Placeholder · Mechanism — bind the target, but keep it a single node, reached only through `merge_gate` |
 | `human_review` | `bpmn:userTask` | Mechanism |
 | `post_review_gate` | `bpmn:exclusiveGateway` | Mechanism |
@@ -82,15 +82,18 @@ bind to the existing one.
 
 **Tiered reviewer.** Insert `stakes_gate` (`bpmn:exclusiveGateway`) between
 `validate` and `confidence_gate`, and split `human_review` into `junior_review`
-and `senior_review`.
+and `senior_review`. `senior_review` is reached two ways as well, so it gets
+its own join gateway, `senior_gate`, for the same reason `perform_action`
+has one.
 
 | Sequence flow | Label | Condition |
 | --- | --- | --- |
-| `stakes_gate` → `senior_review` | High stakes | `=vars.stakesValue >= 5000` |
+| `stakes_gate` → `senior_gate` | High stakes | `=vars.stakesValue >= 5000` |
 | `stakes_gate` → `confidence_gate` | Low stakes | default |
 | `confidence_gate` → `junior_review` | Low confidence | as above |
+| `senior_gate` → `senior_review` | | |
 | `senior_review` → `merge_gate` | | no post-review gate |
-| `post_review_gate` → `senior_review` | Escalate | `=vars.reviewOutcome == "Escalate"` |
+| `post_review_gate` → `senior_gate` | Escalate | `=vars.reviewOutcome == "Escalate"` |
 
 Adds `stakesValue` (double) — a domain signal such as loan amount or claim
 value. `5000` is illustrative. Senior review has no post-review gate on
@@ -129,8 +132,8 @@ Fetch every payload through
 The commonest reduction: the process already scores the item. Insert only
 `validate` onward, bind the gate to the existing score variable, and add no
 second analyzer. The action step already exists too, so insert `merge_gate`
-immediately before it and retarget the existing inbound flow at the gate —
-that keeps the one node the process already has, still reached through a
+immediately before it and retarget the existing inbound flow at the gate.
+That keeps the one node the process already has, still reached through a
 single incoming flow.
 
 `validate` is the one load-bearing step you can remove, and only when its
