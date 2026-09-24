@@ -205,7 +205,7 @@ sufficient. There is no version of this node where omitting `outputs` is correct
 1. **`inputs.model` MUST be present and MUST be copied from `Data.Node.inputDefaults.model`.** Copy the blob verbatim — do not abbreviate, do not omit fields, do not invent fields that aren't there. The current deployment-node blob is `{ id, modelName, modelDisplayName, folderKey, folderName, folderPath, description }`; source every field from the actual `registry get` response, not from memory (older docs showed `fullyQualifiedName` / `kind` / `type` / `detailsUrl` / `async*` fields — these are NOT present on deployment nodes; do not add them). The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` custom component, which destructures `modelName` and `folderKey` out of it. If `inputs.model` is undefined, clicking the node in Studio Web crashes the property panel with `Cannot destructure property 'modelName' of 't' as it is undefined` — and `flow validate` fails on it too (`ixp-node`: `inputs.model must be an object with non-empty string modelName and folderKey`).
    - **`inputs.model.modelName` MUST be a non-empty string.** For many published/OOB deployments `inputDefaults.model.modelName` comes back `null`, with the name carried in `inputDefaults.model.modelDisplayName` instead. When `modelName` is `null`/empty, set `inputs.model.modelName` to `modelDisplayName`. This is NOT synthesis — `modelDisplayName` is the model's own name from the same blob (and matches the flat `inputDefaults.modelName`). The `ixp-node` validator rejects a `null`/empty `inputs.model.modelName` (`flow validate` fails), and Studio Web crashes on it.
 2. **Flat mirrors stay alongside `inputs.model`.** `modelName`, `projectName`, `folderKey`, `folderName` are surfaced as disabled text fields in the `ixp-model` form section and are read directly from `inputs.*`, not from `inputs.model.*`.
-3. **`fileRef` is the only schema-required input** (`inputDefinition.required: ["fileRef"]`). Use `=js:$vars.<upstream>.output.<field>` per Critical Rule #13. The upstream `<field>` variable MUST be declared `type: "file"` — `type: "object"` breaks attachment binding and faults extraction even when the `fileRef` expression itself is correct. See [Wiring `fileRef`](#wiring-fileref--file-variable-bound-to-the-trigger).
+3. **`fileRef` is the only schema-required input** (`inputDefinition.required: ["fileRef"]`). Use `=js:$vars.<upstream>.output.<field>` per Critical Rule #13. The upstream `<field>` variable MUST be declared `type: "file"` — `type: "object"` breaks attachment binding and faults extraction even when the `fileRef` expression itself is correct. See [Wiring `fileRef`](#wiring-fileref--file-variable-bound-to-the-trigger). When the file comes from a connector, the expression is the download node's bare `output` instead — see [Wiring `fileRef` — connector download node](#wiring-fileref--connector-download-node).
 4. **`outputs.output` AND `outputs.error` MUST both be present** — copy the fixed four-field literals from [Final shape](#final-shape); they are identical for every IxP node and need no `registry get` lookup. **`flow validate` hard-fails on the omission** — `ixp-node` emits `[nodes[<nodeId>].outputs.output] outputs.output must be present on the instance`, and the matching error for `outputs.error`.
 5. **No top-level `model` on the instance.** Studio Web–authored .flow files never carry one; the BPMN-format `model` envelope (with `context`, `version`, `inputs`, `outputs`) is emitted at serialize time only.
 6. **`inputs` MUST NOT contain the five removed legacy fields** (`digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, `mimeType`) — see [Forbidden in `inputs`](#build-procedure--copy-from-registry-get-do-not-construct-from-memory) above for why each is wrong. Including them is the most common training-data-recall mistake.
@@ -246,6 +246,33 @@ Then on the IxP node:
 ```
 
 Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment disputedInvoice=./path/to/invoice.pdf`). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
+
+### Wiring `fileRef` — connector download node
+
+When the file arrives from a connector instead of a debug attachment, the chain is **file trigger → download node → IxP node**. A connector file trigger emits metadata only — OneDrive `file-created` returns `ID`, `FullName`, `MIMEType`, `ReferenceID`, `URL`, and no bytes — so the download node is mandatory.
+
+1. **Read the download node's required parameters from the registry.** Confirm you picked the right node by its `API.File.Download` tag; its response is a single `octet-stream` field named `Response`:
+
+   ```bash
+   uip maestro flow registry get uipath.connector.<key>.download-file --output json \
+     --output-filter "Node.{tags:tags,params:connectorMethodInfo.parameters[?required].{name:name,bucket:type,bindFrom:reference.lookupValue}}"
+   ```
+
+2. **Bind the download node's required file parameter from the trigger.** Its name and bucket differ per connector — read them from the command above, never assume: OneDrive `referenceID` (query), Google Drive `fileId` (query), Box `file_id` (path). The parameter's `reference.lookupValue` names the trigger output field to bind — `ReferenceID` for OneDrive, `ID` for Google Drive. Configure it per [connector/impl.md — Step 6](../connector/impl.md#step-6--configure-the-node):
+
+   ```json
+   { "queryParameters": { "referenceID": "=js:$vars.<triggerNodeId>.output.ReferenceID" } }
+   ```
+
+   That is one bucket of the detail, not the whole of it — `node configure` does not merge, so pass connection plumbing and every other bucket in the same call. **A download node left with empty `inputs` is what breaks this path:** `flow validate` passes on it and extraction faults only at debug.
+
+3. **Point `fileRef` at the download node's whole `output`** — no field suffix, because the file is the output:
+
+   ```json
+   "inputs": { "fileRef": "=js:$vars.downloadInvoiceFile.output", ... }
+   ```
+
+`node configure` is what turns that value into an attachment. The shipped connector manifest declares `outputDefinition.output.type: "object"` for every activity; on configure the CLI sees the `octet-stream` response field and rewrites the node's `definitions[].outputDefinition.output.type` to `"file"`, whose shape is `{ ID, FullName, MimeType, Metadata }` — what `downloadedFileOutput` requires. A node that was never configured keeps `"object"` and yields plain JSON. Do not patch the definition by hand; run `node configure`.
 
 ### Optional `attachment` input (Orchestrator job attachments)
 
@@ -389,6 +416,8 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 | `fileRef` not resolving | Expression references an upstream variable that isn't wired, or the upstream node didn't produce a file output | Verify the upstream node exports a file reference and that the `=js:$vars.{upstreamId}.output.<field>` expression matches |
 | `[430002] Invalid input on document extraction operation` at debug | `fileRef` bound to the attachment's `.ID` (or another scalar) instead of the attachment object — `flow validate` does not catch this | Bind the whole object: `=js:$vars.<upstream>.output.<attachment>` — drop the `.ID` |
 | `[430002] Invalid input on document extraction operation` at debug, backend detail `'downloadedFileOutput' is missing the required 'ID' field` | The `fileRef` expression is correct, but the source flow input is declared `"type": "object"` instead of `"type": "file"` — the attachment has nowhere to bind, so the variable holds a plain JSON object | Declare the input `type: "file"`. See [Wiring `fileRef`](#wiring-fileref--file-variable-bound-to-the-trigger). |
+| `[430002] Invalid input on document extraction operation` at debug, backend detail `'downloadedFileOutput' is missing the required 'ID' field`, `fileRef` bound to a connector download node | The download node was never `node configure`d, so its `outputDefinition.output.type` is still the shipped `"object"` and `output` is plain JSON, not an attachment | Run `uip maestro flow node configure` on the download node with its complete detail, then re-run `uip maestro flow debug`. See [Wiring `fileRef` — connector download node](#wiring-fileref--connector-download-node). |
+| Download node faults, or `fileRef` resolves to an empty object | Its required file parameter (OneDrive `referenceID`, Google Drive `fileId`, Box `file_id`) is unset — `flow validate` does not catch an empty connector `inputs` | Bind it from the trigger field named by the parameter's `reference.lookupValue`; see [Wiring `fileRef` — connector download node](#wiring-fileref--connector-download-node). |
 | Extraction failed | Underlying IxP model errored (unsupported MIME type, corrupted file, service-side failure) | Check `$vars.{nodeId}.error.detail` for the IxP service response |
 | `uip maestro flow node configure` rejects with "not a connector type node" | Expected — IxP is not a connector. | Edit `inputs.*` in the `.flow` JSON directly. |
 | Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob missing/undefined | Copy `inputDefaults.model` verbatim into `inputs.model` (Authoring rule #1, [JSON Structure](#json-structure)). |
