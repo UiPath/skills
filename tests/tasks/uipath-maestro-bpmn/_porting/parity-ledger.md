@@ -13,14 +13,14 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `…/datafabric_connector/integration_create_get.yaml` | `…/integration_create_get/` | PASS it.2 (run 35489744689) | same |
 | `…/datafabric_connector/contractregistry_crud_filters.yaml` | `…/contractregistry_crud_filters/` | PASS it.2 (run 35489744689) | same, plus transitive output mapping |
 | `…/datafabric_connector/smoke_query.yaml` | `…/smoke_query/` | SKIPPED, surface gap | passed it.3 (run 35490499651) only via an invented `sortField` input; the curated Query Entity Records template has no sort-field parameter (only `isAscending`), so the "sorted by score" criterion has no carrier. Two smoke-gate runs (35674400362) confirmed. |
-| `…/datafabric_connector/smoke_update.yaml` | `…/smoke_update/` | PASS (run 35499789502) | |
-| `…/datafabric_connector/smoke_file_activities.yaml` | `…/smoke_file_activities/` | PASS (run 35499789502) | |
-| `…/datafabric_connector/e2e_contract_intake_pipeline.yaml` | `…/e2e_contract_intake_pipeline/` | PASS (run 35499789502) | |
+| `…/datafabric_connector/smoke_update.yaml` | `…/smoke_update/` | PASS (run 36056004092) | earlier PASS (run 35499789502) |
+| `…/datafabric_connector/smoke_file_activities.yaml` | `…/smoke_file_activities/` | PASS (run 36056004092) | earlier PASS (run 35499789502) |
+| `…/datafabric_connector/e2e_contract_intake_pipeline.yaml` | `…/e2e_contract_intake_pipeline/` | PASS (run 36056004092) | earlier PASS (run 35499789502) |
 | `…/datafabric_connector/trigger_lifecycle.yaml` | `…/trigger_lifecycle/` | PASS it.3 (run 35501830119) | it.1 agent omitted the entity parameter; it.2 grader required messageEventDefinition as a direct child |
 | `…/datafabric_connector/smoke_update_existing_flow.yaml` | `…/smoke_update_existing_flow/` | PASS (run 35500726138) | brownfield scaffold via `bpmn init` |
 | `connector_features/testmanager_{testcase,testset,requirement}_lifecycle`, `testmanager_{attachments,execution_results,generic_records}` | same names | PASS (runs 35488848026, 35499789502) | Flow's `skip: true` not carried over |
 | `connector_features/non-catalog-http-fallback/…` | `connector_features/non_catalog_http_fallback/` | PASS (run 35500726138) | grader now ActivityExecution-only (#3476) |
-| `single_node/outlook_waitfor_email/…` | same | PASS (run 35500726138) | |
+| `single_node/outlook_waitfor_email/…` | same | PASS (run 36056004092) | earlier PASS (run 35500726138) |
 | `single_node/outlook_trigger_inbox/…` | same | PASS it.2 (run 35501830119) | it.1 agent omitted `parentFolderId`; `uip is triggers` advisory stays 0 |
 | `e2e/devcon_expense_approval.yaml` | `e2e/devcon_expense_approval/` | SKIPPED, platform gap (0.885 it.3, run 35503094182) | every HITL assertion passes; `validate` needs a deployed Action App for Actions.HITL |
 | `interactive/customer_escalation_simulated/…` | same | PASS 0.94 (run 35501830119) | advisory name check missed, as in Flow |
@@ -31,30 +31,32 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 
 ### Live and field-shape (PR #3502)
 
+Final is the latest run after the review fixes; each row's earlier result is kept in its notes.
+
 | Flow task | BPMN port | Final | Notes |
 |---|---|---|---|
-| `e2e/jira_get_issue/…` | same | PASS (run 35501830119) | live pilot: ephemeral solution + `bpmn debug` + `variables-all` |
-| `e2e/jira_create_issue/…` | same | PASS (run 35503094182) | |
-| `e2e/escalation_jira_ticket/…` | same | PASS (run 35503094182) | |
-| `e2e/escalation_orchestrator_paths/…` | same | PASS (run 35503094182) | 7 debug runs |
-| `e2e/escalation_slack_alert/…` | same | PASS it.2 (run 35524004307) | it.1 agent omitted the Slack `folderKey` binding (102010) |
-| `multi_node/slack_channel_description/…` | same | PASS it.2 (run 35525387843) | it.1 agent omitted the channel parameter |
-| `connector_features/datafabric_connector/smoke_error.yaml` | `…/smoke_error/` | PASS (run 35538279757) | structural |
-| `connector_features/generic_dynamic_node/…` | same | PASS (run 35538279757) | |
-| `connector_features/jdbc_databricks_query/…` | same | PASS (run 35538279757) | structural |
-| `connector_features/slack-http-fallback/…` | `connector_features/slack_http_fallback/` | PASS (run 35783045540) | it.1 grader wanted `emoji.list`; the connector's generic resource is `emoji_list_GET` |
-| `connector_trigger/webhook_waitfor_parallel.yaml` | same | PASS (run 35783045540) | it.1 grader classified the wait by BPMN tag; agent emits `intermediateCatchEvent` + `Intsvc.WaitForEvent` and `Intsvc.UnifiedHttpRequest` |
+| `e2e/jira_get_issue/…` | same | PASS (run 36056004092) | earlier PASS (run 35501830119); live pilot: ephemeral solution + `bpmn debug` + `variables-all` |
+| `e2e/jira_create_issue/…` | same | PASS (run 36056004092) | earlier PASS (run 35503094182) |
+| `e2e/escalation_jira_ticket/…` | same | PASS (run 36056004092) | earlier PASS (run 35503094182) |
+| `e2e/escalation_orchestrator_paths/…` | same | PASS (run 36058708886) | earlier PASS (run 35503094182); 7 debug runs |
+| `e2e/escalation_slack_alert/…` | same | FAIL (runs 36053143338, 36056004092) | after the review fixes the Slack step faulted at runtime in both runs (102010 `folderKey` in the first); earlier PASS it.2 (run 35524004307); it.1 agent omitted the Slack `folderKey` binding (102010) |
+| `multi_node/slack_channel_description/…` | same | PASS (run 36056004092) | earlier PASS it.2 (run 35525387843); it.1 agent omitted the channel parameter |
+| `connector_features/datafabric_connector/smoke_error.yaml` | `…/smoke_error/` | PASS (run 36056004092) | earlier PASS (run 35538279757); structural |
+| `connector_features/generic_dynamic_node/…` | same | PASS (run 36056004092) | earlier PASS (run 35538279757) |
+| `connector_features/jdbc_databricks_query/…` | same | PASS (run 36056004092) | earlier PASS (run 35538279757); structural |
+| `connector_features/slack-http-fallback/…` | `connector_features/slack_http_fallback/` | PASS (run 36056004092) | earlier PASS (run 35783045540); it.1 grader wanted `emoji.list`; the connector's generic resource is `emoji_list_GET` |
+| `connector_trigger/webhook_waitfor_parallel.yaml` | same | PASS (run 36053143338) | run 36056004092 failed on an agent-written `<bpmn:ReceiveTask>` (invalid tag); earlier PASS (run 35783045540); it.1 grader classified the wait by BPMN tag; agent emits `intermediateCatchEvent` + `Intsvc.WaitForEvent` and `Intsvc.UnifiedHttpRequest` |
 | `connector_features/testmanager_crud_grounded/…` | same | SKIPPED, as in Flow | grades an agent-written `result.json`; unskip once it grades the live run |
-| `interactive/cli_dice_roller_simulated/…` | same | PASS (run 35783045540) | |
-| `multi_node/billing_invoice_lookup/…` | same | PASS (run 35785806030) | it.1 grader read its own ephemeral live solution as a second project; run 35783045540 was a platform 504 |
-| `multi_node/slack_weather_pipeline/…` | same | PASS it.3 (run 35785806030) | it.1 channel not found, it.2 wrong Slack connection bound (401); Flow passes 6/12 nightlies |
-| `connector_features/enum.yaml` | `connector_features/enum/` | PASS (run 35789221753) | |
-| `connector_features/query_params.yaml` | `connector_features/query_params/` | PASS (run 35789221753) | |
-| `connector_features/multiselect.yaml` | `connector_features/multiselect/` | PASS (run 35789221753) | |
-| `connector_features/searchable_joins.yaml` | `connector_features/searchable_joins/` | PASS (run 35789221753) | |
-| `connector_features/complex_array.yaml` | `connector_features/complex_array/` | PASS 0.875 (run 35789221753) | only the advisory resolved-user-id check missed; Flow fully passes 3/12 |
-| `connector_features/path_params.yaml` | `connector_features/path_params/` | PASS it.2 (run 35790934047) | it.1 agent left the issue key as an unbound variable |
-| `connector_features/paginated_reference_lookup.yaml` | `connector_features/paginated_reference_lookup/` | PASS it.3 (run 35791969905) | it.1 channel by name, no pagination; it.2 channel id with its last character dropped |
+| `interactive/cli_dice_roller_simulated/…` | same | PASS (run 36056004092) | earlier PASS (run 35783045540) |
+| `multi_node/billing_invoice_lookup/…` | same | PASS (run 36056004092) | earlier PASS (run 35785806030); it.1 grader read its own ephemeral live solution as a second project; run 35783045540 was a platform 504 |
+| `multi_node/slack_weather_pipeline/…` | same | PASS (run 36056004092) | earlier PASS it.3 (run 35785806030); it.1 channel not found, it.2 wrong Slack connection bound (401); Flow passes 6/12 nightlies |
+| `connector_features/enum.yaml` | `connector_features/enum/` | PASS (run 36056004092) | earlier PASS (run 35789221753) |
+| `connector_features/query_params.yaml` | `connector_features/query_params/` | PASS (run 36056004092) | earlier PASS (run 35789221753) |
+| `connector_features/multiselect.yaml` | `connector_features/multiselect/` | PASS (run 36056004092) | earlier PASS (run 35789221753) |
+| `connector_features/searchable_joins.yaml` | `connector_features/searchable_joins/` | PASS (run 36056004092) | earlier PASS (run 35789221753) |
+| `connector_features/complex_array.yaml` | `connector_features/complex_array/` | PASS 0.875 (run 36056004092) | earlier PASS 0.875 (run 35789221753); only the advisory resolved-user-id check missed; Flow fully passes 3/12 |
+| `connector_features/path_params.yaml` | `connector_features/path_params/` | PASS (run 36056004092) | earlier PASS it.2 (run 35790934047); it.1 agent left the issue key as an unbound variable |
+| `connector_features/paginated_reference_lookup.yaml` | `connector_features/paginated_reference_lookup/` | FAIL (runs 36053143338, 36056004092) | after the review fixes the agent never resolved the channel id in either run; earlier PASS it.3 (run 35791969905); it.1 channel by name, no pagination; it.2 channel id with its last character dropped |
 
 ### Parked (branch `test/bpmn-port-parked`, all `skip: true`)
 
