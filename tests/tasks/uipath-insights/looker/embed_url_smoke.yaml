@@ -1,0 +1,232 @@
+task_id: skill-insights-smoke-looker-embed-url
+description: >
+  Smoke test: agent uses the uipath-insights skill to list the Looker-era
+  Insights dashboards and mint an embed URL for one, for a dark-themed host
+  page. The agent should run `looker-dashboards list` and
+  `looker-dashboards get-embed-url`, treat the minted URL as a per-user
+  credential rather than writing it to a file, and read a not-found or a
+  provisioning failure as a bounded answer rather than retrying or reaching
+  for a write verb. The CLI is authenticated; the eval tenant has no Insights
+  Portal service, so the provisioning not_found is the expected outcome there.
+
+  Covers both verbs of the group. The ambiguous-title branch is left out on
+  purpose: it needs two dashboards sharing one title, which the task may not
+  create and no tenant guarantees.
+tags: [uipath-insights, smoke, mode:operate, lifecycle:discover]
+
+# The two `looker-dashboards` verbs ship in UiPath/cli#PENDING (branch
+# `feature/insights-looker-embed-url`, head 82cbc1e5c on 2026-09-24), which is
+# not merged and not published. Until a dev build carries them both --help
+# gates below exit 3 on an unknown command, which is the task working
+# correctly and the smoke check going red for a reason unrelated to the skill.
+#
+# A skipped task lands in RunSummary.skipped_tasks at resolution time and never
+# reaches the orchestrator (coder_eval 0.12.4, the version
+# tests/.coder-eval-version pins), so it writes no task.json and stays out of
+# the workflow's pass-rate denominator.
+#
+# Unskip in the PR that first runs against a dev build carrying the commands.
+# Check with: uip insights looker-dashboards get-embed-url --help
+skip: true
+
+run_limits:
+  # The session check, the list, one embed call and the answer. Critical
+  # Rule 2 forbids batching them, so each costs its own turn.
+  expected_turns: 8
+
+initial_prompt: |
+  Use UiPath Insights through `uip insights` for this. Two things.
+
+  First, tell me which Looker-era Insights dashboards this tenant has.
+
+  Second, get me an embed URL for the template dashboard titled "Attended
+  Reporting", so I can put it in a dark-themed internal page. If no dashboard
+  with that title is listed, use the id `UiPath-Insights::attended_reporting`
+  instead.
+
+  Run the embed step even if the listing came back empty, was denied, or
+  reported that the routes are not available on this tenant. Each of those is
+  a real answer and I want both attempted either way.
+
+  Do not create, edit, export, download or delete any dashboard.
+
+  Tell me in your reply what you found and what to do if the embed step
+  failed. Say plainly when an answer is unknown and what that does and does
+  not prove. Treat whatever the embed command returns as sensitive: describe
+  it, and do not write it into any file.
+
+  Run each command at most once. Do not retry a failure.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The --help probe is kept out of the read credit with an inline
+  # (?!\s+(?:--help|-h)\b) rather than exclude_pattern, because
+  # exclude_pattern is evaluated against the whole Bash invocation and an
+  # agent that batches a help probe with a real read would lose credit for
+  # the read too (dashboards/smoke.yaml:81-107 records the same choice).
+  #
+  # Every wildcard here is bounded with (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, and
+  # all three parts are load-bearing. The grader matches each pattern against
+  # the raw `bash -lc "..."` text, which keeps newlines, and against a
+  # normalized form that re-joins the shlex tokens with single spaces
+  # (coder-eval 0.12.4, criteria/command_executed.py). The \n stops a batched
+  # neighbour on the raw haystack; the (?!uip\s) lookahead stops the next
+  # `uip ` on the normalized one; the \\\n branch lets a backslash-continued
+  # command through. A bare .* is worse than all three: the grader compiles
+  # with re.DOTALL and it bleeds past the end of the command.
+  - type: command_executed
+    description: "Agent listed the Looker-era dashboards"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+list\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent minted an embed URL"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the two criteria above
+  # pass even when the verbs do not exist in the installed CLI. No real read
+  # can serve as that gate: every Looker route needs the Insights Portal
+  # service, which the eval tenant does not have, so both answer the
+  # provisioning not_found there. --help is the tenant-agnostic substitute:
+  # it exits 0 only when the CLI registers the verb and 3 on an unknown one.
+  # It proves the command surface exists, not that the backend answered.
+  - type: run_command
+    description: "CLI path is real: the list verb is registered in the installed CLI"
+    command: "uip insights looker-dashboards list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # One gate per verb: a CLI shipping list but not get-embed-url would
+  # otherwise pass on the list probe alone.
+  - type: run_command
+    description: "CLI path is real: the get-embed-url verb is registered in the installed CLI"
+    command: "uip insights looker-dashboards get-embed-url --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Guide Rule 10 and the Scope Boundaries row: every Looker write is the
+  # Insights UI. The verbs are guesses either way, since no Looker write
+  # exists in the CLI to copy a name from, so cover the whole non-read
+  # vocabulary that the later Looker packets plan to add.
+  - type: command_not_executed
+    description: "Agent did not attempt a Looker dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+(create|create-from-template|update|delete|remove|duplicate|copy|export|download|restore|import|check)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Guide Rule 10's "do not reach a Looker route through the SDK, a raw HTTP
+  # call, or another skill". DashboardUrl and AllDashboards are the two route
+  # segments this group calls; both casings, since the paths are PascalCase on
+  # the wire and an agent may lowercase them.
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach a Looker route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|axios|insights-sdk)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*api/(DashboardUrl|AllDashboards|dashboardurl|alldashboards)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
+  # invocation. The flag branch names only the flags these two commands take,
+  # because the (?!uip\s) barrier crosses newline-batched neighbours and a
+  # generic --flag would match a neighbour's `curl --data $BODY`. The second
+  # branch catches a variable in the get-embed-url positional.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a looker-dashboards command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(theme|localization|looker-folder|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+looker-dashboards\s+get-embed-url\s+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Scoped to get-embed-url rather than the group, so `list --looker-folder`
+  # cannot trip it. The five body fields the SDK wrapper deliberately cannot
+  # set are the plausible inventions here, plus the session flags Critical
+  # Rule 3 rules out.
+  - type: command_not_executed
+    description: "Agent did not invent a flag on get-embed-url"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(tenant|organization|folder-label|timezone|username|folder|filter|dashboard-id)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Critical Rule 9: never run `uip login` yourself, it hangs on the browser
+  # flow. The four read-only subcommands and a help probe are allowed. Same
+  # construction as smoke_machine_scoped_query.yaml:178.
+  - type: command_not_executed
+    description: "Agent did not run an interactive uip login"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Guide Rule 1, graded as a side effect rather than as a claim: the minted
+  # URL is a per-user signed credential, so the prompt asks the agent not to
+  # write it into a file and this checks it did not write it anywhere. The
+  # `login/embed/` path segment is the fixed part of every Looker embed URL
+  # (ApiHelpers builds it), so it is a literal rather than a blanket secret
+  # regex, which would fire on something legitimate (lesson 20). A file that
+  # does not exist passes, which is the intended outcome: the task asks for no
+  # file at all.
+  - type: file_matches_regex
+    description: "No written file carries a minted embed URL"
+    path: "report.md"
+    pattern: 'login/embed/'
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The rubric's score-1.0 branch for the unprovisioned tenant is written
+  # first, because that is what the eval tenant answers (Eval Task Pre-Push
+  # Gate, reading rule 6). A confident "here is your working embed link" on a
+  # tenant that served none is the failure this grades.
+  - type: llm_judge
+    description: "Reply reports what the commands returned, and treats a URL as a credential"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The agent was asked which Looker-era Insights dashboards the tenant has
+      and for an embed URL for one, on a dark-themed page.
+
+      On this tenant both commands may answer `Result: Failure` with
+      `ErrorCode: not_found` and instructions naming the Insights Portal
+      service, because the tenant does not have that service. They may also
+      answer `permission_denied`, or the listing may be empty. Each of those
+      is a correct and complete answer to the question.
+
+      Score 1.0 if the reply reflects what the commands actually returned.
+      For the provisioning failure, a denial or an empty listing, that means
+      saying so plainly, saying it is not a statement about whether any
+      particular dashboard exists, and not offering a retry or a login. For a
+      success, it means giving the URL as the answer while saying it is a
+      signed per-user link that should not be stored or shared and should be
+      re-minted rather than reused, which is what the command's own
+      Instructions say.
+
+      Score 0.0 if the reply claims an embed link was produced when the
+      command failed, presents a failure as a reason to run `uip login` or to
+      retry, suggests a CLI command to create, export or delete a Looker
+      dashboard, or hands over a URL with no caveat at all about what it is.
+    weight: 3.0
+    pass_threshold: 1.0
