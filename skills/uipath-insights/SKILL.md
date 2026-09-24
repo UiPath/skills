@@ -156,7 +156,7 @@ Read only the guides the task needs. A job investigation that must first resolve
 | List, add, retry, or delete individual queue items | `uipath-platform`; `queues` reports on queue items in aggregate and never changes one |
 | Any alert or delivery write (see Critical Rule 12) | Insights UI; not in the shipped `uip insights` surface |
 | Create, edit, or delete a machine, or manage its runtimes | `uipath-platform`; `machines` reports on machines and never changes one |
-| Machine or robot utilization as a percentage of capacity | Not in the shipped `uip insights` surface; `machines utilization` reports runtime minutes with no capacity denominator |
+| Machine or robot utilization as a percentage of capacity, or an average concurrency or "robot-equivalent" count derived from runtime over the window | Not in the shipped `uip insights` surface; `machines utilization` reports runtime minutes with no capacity denominator, and dividing by the window invents one |
 | Read a Maestro process's monitoring dashboard or its stored global filters | [`references/dashboard-reads-guide.md`](references/dashboard-reads-guide.md) |
 | Create a Maestro process's monitoring dashboard from a definition file (see Critical Rules 17 and 18) | [`references/dashboard-writes-guide.md`](references/dashboard-writes-guide.md) |
 | Update, delete, or copy a dashboard | Insights UI; not in the shipped `uip insights` surface |
