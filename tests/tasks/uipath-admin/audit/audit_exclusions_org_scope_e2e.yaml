@@ -1,0 +1,66 @@
+task_id: skill-admin-audit-exclusions-org-scope-e2e
+description: >
+  Test: the request is phrased per-tenant ("what isn't being recorded for
+  our production tenant"), which invites the symmetric verb that does not exist.
+  Exclusion rules are organization-scoped — `uip admin audit tenant exclusions`
+  is `unknown command` — so the agent must read the org rules and interpret the
+  tenant question through each rule's Tenant selector.
+
+  Every other `audit` verb is symmetric across `org` and `tenant`, so an agent
+  generalizing from `sources` / `events` / `export` reaches for the tenant twin.
+  The gating negative check catches exactly that, and catches the follow-on
+  failure of treating `unknown command` as a reason to improvise another verb.
+
+  Graded on outcome plus a negative guard: the saved listing is corroborated
+  against the live org rule set, and reaching for the non-existent tenant
+  subgroup fails the task.
+
+  Blocker: needs `uip admin audit org exclusions` in the published `@uipath/cli`
+  (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
+  organization.
+
+  Tier note: this is a smoke-shaped check — one scenario, cheap, no build —
+  carried in the e2e tier because the surface it exercises is not deployed
+  yet. Every blocked task in this repo waits in e2e: the PR gate runs the
+  smoke tier against the live organization and enforces a pass rate, so a
+  task that cannot pass until `/api/EventConfig/rules` ships would redden
+  that gate on every PR touching uipath-admin. Re-tag it `smoke` (tag,
+  task_id and filename) in the same change that removes the Blocker note.
+
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org, path-to-ga]
+reference:
+  directory: ..
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  For our UiPath tenant, I need to know which audit events are currently being
+  suppressed rather than recorded — and whether any of that suppression is
+  specific to that tenant or applies across the whole organization. Save the
+  complete JSON result you based the answer on to ./suppressed.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent must not reach for the non-existent `audit tenant exclusions` subgroup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+exclusions\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The saved listing matches the organization's live exclusion-rule set"
+    command: 'EXCL_MODE=readback EXCL_SAVED_FILE=suppressed.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_exclusions.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not fall back to `uip or audit-logs` when the tenant subgroup is rejected"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+audit-logs\b'
+    weight: 1.5
+    pass_threshold: 1.0

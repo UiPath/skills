@@ -1,0 +1,62 @@
+task_id: skill-admin-audit-exclusions-list-e2e
+description: >
+  Test (outcome-graded): the agent answers "which audit events are we not
+  recording" by reading the organization's exclusion rules and saving the
+  complete listing. Graded by corroborating the saved file against the rule set
+  the harness reads back itself, so a fabricated or partial save cannot pass.
+
+  This is also the reachability probe for the exclusions surface: the verifier
+  fails loudly when `uip admin audit org exclusions list` cannot be read at all,
+  so an `unknown command` on an older CLI or an HTTP 404 in an organization
+  without the rules API surfaces as an explicit message instead of a silent pass.
+
+  The phrasing deliberately never says "exclusion" or names a command — the
+  skill has to route "what aren't we recording" to the exclusions surface rather
+  than to `events`, `export`, or `uip or audit-logs`.
+
+  Empty-organization note: an organization with no rules configured is a
+  legitimate outcome and passes on an empty saved listing. The assertion is that
+  the save matches live truth, not that rules exist.
+
+  Blocker: needs `uip admin audit org exclusions` in the published `@uipath/cli`
+  (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
+  organization. Until both ship the verifier reports that the rules could not be
+  read.
+
+  Tier note: this is a smoke-shaped check — one scenario, cheap, no build —
+  carried in the e2e tier because the surface it exercises is not deployed
+  yet. Every blocked task in this repo waits in e2e: the PR gate runs the
+  smoke tier against the live organization and enforces a pass rate, so a
+  task that cannot pass until `/api/EventConfig/rules` ships would redden
+  that gate on every PR touching uipath-admin. Re-tag it `smoke` (tag,
+  task_id and filename) in the same change that removes the Blocker note.
+
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org, path-to-ga]
+reference:
+  directory: ..
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Compliance is asking which activity in our UiPath organization is
+  deliberately not being written to the audit trail. Find out, and save the
+  complete JSON result to ./exclusions.json so I can attach it to the ticket.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The saved listing matches the organization's live exclusion-rule set"
+    command: 'EXCL_MODE=readback EXCL_SAVED_FILE=exclusions.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_exclusions.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not answer an org/tenant audit question with `uip or audit-logs`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+audit-logs\b'
+    weight: 2.0
+    pass_threshold: 1.0
