@@ -182,29 +182,44 @@ opaque tool prompt makes the intermediate evidence impossible to inspect.
 oversized evidence blocks a recommendation or routes to a document processor. Stable high-volume field
 capture is EX1 or EX2; complex adaptive review may be AH3.
 
-### AF3 Read three fields from a clean letter
+### AF3 Inspect a document for signs of alteration
 
-**Problem description.** Clean single-page letters arrive at low daily volume, and three named values are
-needed from them inside a wider agent task. Nobody has asked for a field-level production SLA, and no
-correction workflow exists or is planned. The risk in this case is over-building in one direction and
-under-building in the other. Working behaviour: a letter containing only two of the three fields returns
-two values and one explicit missing value, and does not invent the third.
+**Problem description.** Benefit claims arrive with supporting documents, around a thousand a week, and
+investigators want help spotting ones that have been altered or fabricated. The tells are visual —
+inconsistent fonts, misaligned fields, letterhead that does not match the issuer, signatures that look
+pasted in, formatting that breaks from the rest of the page. There is no field set to pull: the output is
+a severity rating and a short note on what looked wrong, and anything above the threshold goes to an
+investigations team. Review today is reviewer-discretion, takes between half an hour and a couple of
+hours per case, and flags recorded as free-text notes were sometimes missed. The error costs are sharply
+asymmetric and stated as such by the business — missed fraud is unacceptable, some over-flagging is
+tolerable. Working behaviour: a document whose letterhead does not match its issuer is surfaced with the
+page and region that triggered it, and a page that could not be rendered is reported as a coverage gap,
+never as a clean result.
 
-**Best-fit solution.** Autonomous agent, standard harness, Analyze files tool. No Context and no Memory.
+**Best-fit solution.** Autonomous agent, standard harness, Analyze files tool, with page images supplied
+to the model rather than extracted text. Severity weighting and threshold routing are deterministic steps
+outside the model.
 
-**Decision reasoning.** The decisive signal is the absence of any review, accuracy or correction
-requirement — that absence is what makes the lightweight route correct rather than lazy. One bounded read
-with a small output contract. Return the requested values, explicitly mark missing ones, and validate the
-schema. Stop after the answer — no index, no rereading.
+**Decision reasoning.** The decisive signal is that the evidence is visual, and every mode that reads
+through digitization destroys it before the model ever sees it — font inconsistency does not survive into
+extracted text. There is no schema, so Extract does not apply; the deliverable is a rating and a note, so
+Summarize does not either. Verify that the active input path really delivers page images; if it digitizes
+first, this route is dead regardless of the prompt. Put the deterministic forensics ahead of the model —
+embedded font tables, producer metadata, revision layers are facts a native file will state outright —
+and let the model handle what the file's internals cannot answer. Apply the agreed category weights to
+produce the severity outside the model, and band the result for routing rather than for judgement.
 
-**Negative example — illustrative counterexample.** Building an extraction project, a review workflow,
-and evaluation infrastructure for an incidental read adds setup that satisfies no stated requirement. The
-reverse error is just as real: keeping this design once production review requirements appear
-under-engineers the task.
+**Negative example — observed.** Across a review of several hundred findings, a meaningful minority were
+severity miscalibrations, and a small number of hallucinated findings appeared across a handful of
+claims. The separation the scores achieved between fraud-tested claims and controls was large enough to
+be useful, but the severity number is still the model rating itself: the bands had to be set against
+reviewed outcomes, not taken from the model. Treating the rating as calibrated would have shipped the
+miscalibrations straight into the routing decision.
 
-**Boundary.** Graduate to Extract when volume, measured field accuracy, difficult layout, or per-field
-review justifies it. Use SU1 if a seemingly simple yes/no actually requires checking the whole document
-for absence.
+**Boundary.** If the documents are scans or photographs rather than native files, the metadata forensics
+disappear and the whole load falls on the visual path — establish which you have before designing. Named
+fields are a separate Extract step, not this one. A severity band is a routing decision and never an
+investigator's conclusion. Where the question is which of several document types this is, that is CS.
 
 ---
 
@@ -293,32 +308,42 @@ use SU1's complete-review pattern. A critical-error target overrides pressure fo
 
 ## SU Summarize
 
-### SU1 Review a contract against standard terms
+### SU1 Identify open gaps against a guideline set
 
-**Problem description.** A native contract of anywhere from a few dozen to a couple of hundred pages
-arrives for a cited assessment: where does it conflict with standard terms, and which required
-provisions are missing? The second half of that question is the hard one. "No issue found" is a claim
-about the whole document, so it requires complete review of the defined input rather than a search for
-clause language somebody already expected. Working behaviour: an unusually worded conflicting clause and
-an absent required clause are both identified, and an unreadable page produces a coverage limitation —
-never a clean "no conflicts".
+**Problem description.** An agentic system reviews patient records, identifies open clinical care gaps
+against a set of clinical guidelines, and raises tasks in the workflow tools the organisation already
+uses, replacing manual chart review at a volume in the hundreds of thousands of cases a year. The
+deliverable is an absence claim by construction: an open gap asserts that nothing anywhere in the record
+shows the required action happened. Both directions of error are real and are measured separately for
+each gap type against clinician ground truth — a missed gap leaves a patient without needed care, a
+fabricated one wastes clinical time and erodes trust in the whole system. Working behaviour: a genuinely
+open gap is raised with the guideline it is measured against and the evidence searched; a gap already
+satisfied elsewhere in the record is not re-raised; and a record section that could not be processed
+produces an explicit coverage limitation rather than an open gap.
 
-**Best-fit solution.** Summarize as a fixed review step. If an existing agent must decide when to run it,
-attach it as an agent tool instead.
+**Best-fit solution.** Summarize over the defined record set, with the guideline set supplied as the
+standard to measure against. Task creation and routing are deterministic steps afterwards.
 
-**Decision reasoning.** The decisive signal is that the deliverable makes an absence claim, and absence
-cannot be established by retrieval. Supply the standard terms, the conflict precedence rules, and the
-distinction between missing, ambiguous, and contradictory provisions. Track review coverage and cite
-findings. A clean result requires complete processing plus a validation process — not merely choosing
-this mode.
+**Decision reasoning.** The decisive signal is that the output is an absence claim over a defined input,
+and retrieval can only ever support a positive finding. Supply the guidelines and the distinction between
+absent, ambiguous and already-satisfied. Track review coverage and cite the evidence behind every gap
+raised and every gap closed. Evaluate false positives and false negatives separately per gap type — an
+aggregate accuracy figure hides the gap types that matter, and the ones that matter are not evenly
+distributed.
 
-**Negative example — illustrative misroute.** Searching only for the expected clause language misses
-unusually phrased clauses and absent ones entirely. A plausible retrieved passage cannot prove that no
-exception appears elsewhere.
+**Negative example — observed constraint.** Proving clinical accuracy was the engagement's hard part, and
+it could only be done through live clinician review of real records. No model-reported confidence
+substituted for it, and no aggregate score answered it: the acceptance measure had to be false-positive
+and false-negative rates per gap type. The complete-review path also carried a latency cost significant
+enough to be tracked as a risk in its own right, and the resolution was infrastructure and model choice —
+not narrowing what gets reviewed, which would have quietly converted the absence claim into a retrieval
+result.
 
-**Boundary.** One named effective date belongs in Extract or a bounded read. Positive lookups against a
-persistent corpus can use PS2, but an absence claim needs full coverage. Missing pages or uncertain OCR
-must qualify the conclusion or block clearance.
+**Boundary.** One named value from the record belongs in Extract or a bounded read. Positive lookups
+against a persistent corpus can use PS2, but an absence claim needs full coverage. Unprocessed sections,
+missing pages or uncertain digitization must qualify the conclusion rather than default it to "no gap".
+Where the deliverable is a written synthesis across a document set rather than a per-item absence
+judgement, that is SU2.
 
 ### SU2 Produce a cross-document assessment
 
@@ -579,7 +604,8 @@ workflow. Skip duplicate classification when inputs are already reliably separat
 the field-level evaluation and correction process the requirement actually names. Raising a confidence
 threshold without validating it creates review load and still misses errors.
 
-**Boundary.** A low-volume incidental three-field read is AF3. Packets need CS1 first. Zero observed
+**Boundary.** A low-volume incidental read with no review requirement is a bounded read — AF2, not
+Extract. Packets need CS1 first. Zero observed
 errors in a small sample is not a guarantee of zero production errors — release decisions need ongoing
 validation.
 
