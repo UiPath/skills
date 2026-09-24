@@ -697,8 +697,10 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
   diagram: `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: re-waypoint
   manually (gateway shape + all edges).
 - **Move logic into a subprocess**: move only elements that share a valid scope,
-  re-scope their variables, recreate legal subprocess flow boundaries, and add a
-  second diagram plane for the subprocess so nested content renders.
+  re-scope their variables, and recreate legal subprocess flow boundaries. Then
+  regenerate the diagram: `uip maestro bpmn format <file.bpmn>` — it emits one
+  shape per nested node in the single root plane. Do not hand-author a second
+  plane; the next `format` run replaces it.
 - **Add an entry point**: use a root-level start event and generate a stable,
   unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
   example UUID; this scaffold field is not a registry-owned node payload. Also
