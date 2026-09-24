@@ -16,6 +16,8 @@ That is the finished deliverable, not a stall: a non-interactive run ([SKILL.md 
 
 **Three steps:** "Build a flow that watches a SharePoint folder, extracts invoices with IxP and POSTs to SAP" → build all of it.
 
+**Borderline — two steps:** "Check the weather for the Bellevue office and tell me if it's a nice day" → outcome-shaped, but it names a lookup and a threshold decision. Build it. An outcome sitting next to a step does not cancel the step.
+
 ## Should you plan first?
 
 For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
