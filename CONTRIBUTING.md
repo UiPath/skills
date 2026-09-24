@@ -449,6 +449,7 @@ Before submitting your PR, verify:
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
+- [ ] In a `preview/skills/*/SKILL.md`, the router table (`## Supported node types` or `## Capability router`) and `## API index` end by line 220, because agents first read the file with `sed -n '1,240p'` (enforced by `tests/tasks/uipath-maestro-flow/_shared/test_preview_skill_read_window.py`)
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 - [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`) — and on a rename or removal, the old name is gone from it too
 
