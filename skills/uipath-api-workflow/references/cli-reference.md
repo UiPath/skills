@@ -508,7 +508,7 @@ Requires `uip login`. Failure modes:
 
 ## `uip solution deploy`
 
-Activate / configure / inspect a published solution. Subcommands: `deploy run`, `deploy status`, `deploy activate`, `deploy config`, `deploy list`, `deploy uninstall`. See `uip solution deploy --help` for the current subcommand list.
+Activate / configure / inspect a published solution. Subcommands: `deploy run`, `deploy status`, `deploy activate`, `deploy upgrade`, `deploy config`, `deploy list`, `deploy uninstall`, `deploy delete`. See `uip solution deploy --help` for the current subcommand list.
 
 ## `uip login` / `uip logout`
 
