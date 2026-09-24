@@ -167,6 +167,14 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+# Frees tenant quota before this run creates its project: deletes `codereval-*`
+# projects older than three hours, which earlier runs leaked. Always exits 0, and
+# fail_on_error is off so even a timed-out sweep never costs the run.
+pre_run:
+  - command: "python3 _setup/sweep_stale_projects.py"
+    timeout: 300
+    fail_on_error: false
+
 # Safety net: delete THIS run's project even if the agent's in-band cleanup never
 # ran (crash / MAX_TURNS before the final delete). Reads report.json; only removes
 # the project this run created; always exits 0 so it never fails the test.
