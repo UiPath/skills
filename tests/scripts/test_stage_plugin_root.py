@@ -121,6 +121,44 @@ def test_staging_refuses_to_overwrite_the_repo() -> None:
     assert done.returncode != 0
 
 
+def _grader_common(monkeypatch: pytest.MonkeyPatch):
+    import importlib.util
+
+    path = REPO_ROOT / "tests" / "tasks" / "uipath-review" / "rpa" / "_shared" / "grader_common.py"
+    spec = importlib.util.spec_from_file_location("grader_common_under_test", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_graders_resolve_the_skill_docs_the_agent_sees(staged: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The sandbox condition exactly: SKILLS_REPO_PATH set, only .plugin-root readable."""
+    grader_common = _grader_common(monkeypatch)
+    sandbox_repo = staged.parent / "not-mounted"
+    sandbox_repo.mkdir(exist_ok=True)
+    (sandbox_repo / ".plugin-root").symlink_to(staged, target_is_directory=True)
+
+    monkeypatch.setenv("SKILLS_REPO_PATH", str(sandbox_repo))
+    refs = grader_common.skill_references_dir("uipath-review")
+    assert refs is not None and refs.is_dir()
+    assert list(refs.glob("*.md"))
+
+    # Host-side run: nothing staged, the repo itself answers.
+    host_repo = staged.parent / "host-repo"
+    (host_repo / "skills" / "uipath-review" / "references").mkdir(parents=True)
+    monkeypatch.setenv("SKILLS_REPO_PATH", str(host_repo))
+    assert grader_common.skill_references_dir("uipath-review") == (
+        host_repo / "skills" / "uipath-review" / "references"
+    )
+
+    # Neither: the caller must be told, not silently handed an empty corpus.
+    monkeypatch.setenv("SKILLS_REPO_PATH", str(staged.parent / "nowhere"))
+    assert grader_common.skill_references_dir("uipath-review") is None
+
+    monkeypatch.delenv("SKILLS_REPO_PATH")
+    assert grader_common.skill_references_dir("uipath-review") is None
+
+
 def _repo_var(value: str) -> str:
     """Both spellings of the variable must be caught, not just the bare one."""
     return value.replace("${SKILLS_REPO_PATH}", "$SKILLS_REPO_PATH")
