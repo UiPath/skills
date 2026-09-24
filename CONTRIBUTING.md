@@ -133,7 +133,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ---
 ```
 
-> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces it. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters.
+> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces that cap AND the 1,536-char combined cap, because anything past the cap — including `→` redirects — is silently dropped from the listing. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters.
 
 **Required frontmatter fields:**
 
@@ -370,7 +370,7 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
 
 ### Git Hooks
 
-This repository uses pre-commit hooks to validate skill descriptions (1024-character limit). To enable them:
+This repository uses pre-commit hooks to validate skill descriptions (1024-character `description` limit; 1,536-character `description` + `when_to_use` limit). To enable them:
 
 ```bash
 bash scripts/setup-hooks.sh
@@ -443,6 +443,7 @@ Before submitting your PR, verify:
 ### SKILL.md
 - [ ] Frontmatter has `name` matching the folder name
 - [ ] Frontmatter `description` is under 1024 characters (enforced by pre-commit hook)
+- [ ] Frontmatter `description` + `when_to_use` fit in 1,536 characters combined (enforced by pre-commit hook; Claude Code truncates the listing there)
 - [ ] Frontmatter `description` front-loads identity and unique signals, uses `→` redirects (not verbose TRIGGER/DO NOT TRIGGER)
 - [ ] Critical Rules section exists with numbered, actionable rules
 - [ ] CLI commands include exact flags and `--output json` where appropriate
