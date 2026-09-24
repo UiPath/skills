@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude",
+            "command": "echo `# <#` >/dev/null\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -65,7 +65,7 @@
           },
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude",
+            "command": "echo `# <#` >/dev/null\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -77,6 +77,22 @@
           {
             "type": "command",
             "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "echo `# <#` >/dev/null\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo `# <#` >/dev/null\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
           }
         ]

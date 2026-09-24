@@ -6,15 +6,16 @@
  * Usage: node flow-diff-hook.mjs --agent <claude|gemini|cursor|codex>
  *
  * Agent-agnostic protocol (v2): each adapter below maps the agent's native hook
- * payload onto two events — `write` (a `.flow` file changed, with a sha256 of its
- * new content as the attestation) and `turn.end`. The extension only credits the
+ * payload onto `write` (a reviewed file changed, with hashes of its new content as
+ * the attestation), `turn.end`, and `prompt` (a new prompt: end a turn that never
+ * got its stop event, e.g. after an interrupt). The extension only credits the
  * agent with writes whose content matches an attestation.
  *
  * Contract — never gets in the agent's way:
  *   - Report-only: prints nothing, returns no decision, always exits 0.
- *   - Cheap for non-flow work: exits before touching the filesystem unless the
- *     edited path ends in `.flow`; `turn.end` is sent only for sessions that
- *     actually wrote a flow (a marker file records that).
+ *   - Cheap for other work: exits before touching the filesystem unless the edited
+ *     path has a reviewed extension; turn events only act on sessions that wrote
+ *     one (a marker file records that).
  *   - Only talks to an extension it can find through a user-private lockfile
  *     (`~/.uipath/ide/*.lock`, or the one named by UIPATH_FLOW_HOOK_LOCK), and
  *     only over a socket path the extension itself would create.
@@ -28,13 +29,18 @@ import path from 'node:path';
 
 const PROTOCOL_VERSION = 2;
 const REQUEST_TIMEOUT_MS = 2_000;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MARKER_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** File types worth reporting at all; each window's lockfile narrows this to the ones it reviews. */
+const REVIEWABLE_EXTENSIONS = ['.flow'];
 const LOCK_DIR = path.join(os.homedir(), '.uipath', 'ide');
 const SESSION_DIR = path.join(LOCK_DIR, 'sessions');
 const TOKEN = /^[0-9a-f]{64}$/;
 const UNIX_SOCKET = /^uipath-flow-hook-[0-9a-f]{16}\.sock$/;
 const WINDOWS_PIPE = /^\\\\\.\\pipe\\uipath-flow-hook-[0-9a-f]{16}$/;
+const EXTENSION = /^\.[a-z0-9]{1,16}$/;
 
-// ── Adapters: native payload → { event, sessionId, files } ───────────────────
+// ── Adapters: native payload → { event, sessionId, files?, content? } ────────
 
 /** Paths a Codex `apply_patch` touches (`*** Add File: …` / `*** Update File: …`). */
 function codexPatchFiles(input) {
@@ -48,40 +54,59 @@ function codexPatchFiles(input) {
 
 const ADAPTERS = {
   claude(p) {
-    if (p.hook_event_name === 'Stop') {
-      return { event: 'turn.end', sessionId: p.session_id };
+    switch (p.hook_event_name) {
+      case 'Stop':
+      case 'StopFailure':
+        return { event: 'turn.end', sessionId: p.session_id };
+      case 'UserPromptSubmit':
+        return { event: 'prompt', sessionId: p.session_id };
+      case 'PostToolUse':
+        // A Write carries the exact content it wrote; Edit/MultiEdit only a patch.
+        return {
+          event: 'write',
+          sessionId: p.session_id,
+          files: [p.tool_input?.file_path],
+          content: p.tool_name === 'Write' ? p.tool_input?.content : undefined,
+        };
+      default:
+        return undefined;
     }
-    if (p.hook_event_name === 'PostToolUse') {
-      return { event: 'write', sessionId: p.session_id, files: [p.tool_input?.file_path] };
-    }
-    return undefined;
   },
   gemini(p) {
-    if (p.hook_event_name === 'AfterAgent') {
-      return { event: 'turn.end', sessionId: p.session_id };
+    switch (p.hook_event_name) {
+      case 'AfterAgent':
+        return { event: 'turn.end', sessionId: p.session_id };
+      case 'BeforeAgent':
+        return { event: 'prompt', sessionId: p.session_id };
+      case 'AfterTool':
+        return { event: 'write', sessionId: p.session_id, files: [p.tool_input?.file_path ?? p.tool_input?.absolute_path] };
+      default:
+        return undefined;
     }
-    if (p.hook_event_name === 'AfterTool') {
-      return { event: 'write', sessionId: p.session_id, files: [p.tool_input?.file_path ?? p.tool_input?.absolute_path] };
-    }
-    return undefined;
   },
   cursor(p) {
-    if (p.hook_event_name === 'stop') {
-      return { event: 'turn.end', sessionId: p.conversation_id };
+    switch (p.hook_event_name) {
+      case 'stop':
+        return { event: 'turn.end', sessionId: p.conversation_id };
+      case 'beforeSubmitPrompt':
+        return { event: 'prompt', sessionId: p.conversation_id };
+      case 'afterFileEdit':
+        return { event: 'write', sessionId: p.conversation_id, files: [p.file_path] };
+      default:
+        return undefined;
     }
-    if (p.hook_event_name === 'afterFileEdit') {
-      return { event: 'write', sessionId: p.conversation_id, files: [p.file_path] };
-    }
-    return undefined;
   },
   codex(p) {
-    if (p.hook_event_name === 'Stop') {
-      return { event: 'turn.end', sessionId: p.session_id };
+    switch (p.hook_event_name) {
+      case 'Stop':
+        return { event: 'turn.end', sessionId: p.session_id };
+      case 'UserPromptSubmit':
+        return { event: 'prompt', sessionId: p.session_id };
+      case 'PostToolUse':
+        return p.tool_name === 'apply_patch' ? { event: 'write', sessionId: p.session_id, files: codexPatchFiles(p.tool_input) } : undefined;
+      default:
+        return undefined;
     }
-    if (p.hook_event_name === 'PostToolUse' && p.tool_name === 'apply_patch') {
-      return { event: 'write', sessionId: p.session_id, files: codexPatchFiles(p.tool_input) };
-    }
-    return undefined;
   },
 };
 
@@ -104,12 +129,13 @@ function argValue(name) {
   return index === -1 ? undefined : process.argv[index + 1];
 }
 
+/** Only a live process of this user counts; a foreign pid (EPERM) may be a reused number. */
 function isAlive(pid) {
   try {
     process.kill(pid, 0);
     return true;
-  } catch (err) {
-    return err.code === 'EPERM';
+  } catch {
+    return false;
   }
 }
 
@@ -118,9 +144,30 @@ function isWithin(root, target) {
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
-/** A lockfile is trusted only if it has the shape the extension writes. */
+/** Same hash as the extension: ignores a leading BOM and CRLF vs LF. */
+function attestationHash(content) {
+  const normalized = content.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
+}
+
+/** A private regular file owned by this user — never a symlink or something another user planted. */
+function isPrivateFile(file) {
+  const stat = fs.lstatSync(file);
+  if (!stat.isFile()) {
+    return false;
+  }
+  if (process.platform === 'win32') {
+    return true;
+  }
+  return stat.uid === process.getuid() && (stat.mode & 0o077) === 0;
+}
+
+/** A lockfile is trusted only if it has the shape and permissions the extension writes. */
 function readLock(file) {
   try {
+    if (path.dirname(file) !== LOCK_DIR || !isPrivateFile(file)) {
+      return undefined;
+    }
     const lock = JSON.parse(fs.readFileSync(file, 'utf8'));
     const socketOk =
       typeof lock?.socket === 'string' &&
@@ -138,39 +185,97 @@ function readLock(file) {
     ) {
       return undefined;
     }
-    return { file, ...lock };
+    const extensions = Array.isArray(lock.extensions)
+      ? lock.extensions.filter((extension) => typeof extension === 'string' && EXTENSION.test(extension))
+      : REVIEWABLE_EXTENSIONS;
+    return { file, socket: lock.socket, token: lock.token, workspaceFolders: lock.workspaceFolders, extensions };
   } catch {
     return undefined;
   }
 }
 
-/** The extension window that owns `filePath`: the terminal's own window first, else a matching lockfile. */
-function findLock(filePath) {
+/** Every live window: the terminal's own first, then every other lockfile. */
+function liveLocks() {
+  const files = [];
   const fromEnv = process.env.UIPATH_FLOW_HOOK_LOCK;
-  if (fromEnv && path.dirname(fromEnv) === LOCK_DIR) {
-    const lock = readLock(fromEnv);
-    if (lock) {
-      return lock;
-    }
+  if (fromEnv) {
+    files.push(fromEnv);
   }
-  let entries = [];
   try {
-    entries = fs.readdirSync(LOCK_DIR).filter((name) => name.endsWith('.lock'));
+    for (const name of fs.readdirSync(LOCK_DIR)) {
+      if (name.endsWith('.lock')) {
+        files.push(path.join(LOCK_DIR, name));
+      }
+    }
   } catch {
-    return undefined;
+    // No lock directory: no extension is running.
   }
-  for (const name of entries) {
-    const lock = readLock(path.join(LOCK_DIR, name));
-    if (lock && lock.workspaceFolders.some((folder) => typeof folder === 'string' && isWithin(folder, filePath))) {
-      return lock;
+  const locks = [];
+  for (const file of new Set(files)) {
+    const lock = readLock(file);
+    if (lock) {
+      locks.push(lock);
     }
   }
-  return undefined;
+  return locks;
+}
+
+/** Windows with this file in a workspace folder, for a file type they review. */
+function locksFor(locks, file) {
+  return locks.filter(
+    (lock) =>
+      lock.extensions.some((extension) => file.endsWith(extension)) &&
+      lock.workspaceFolders.some((folder) => typeof folder === 'string' && isWithin(folder, file))
+  );
+}
+
+/** Reads a reviewed file only if it is a regular file of sane size (never a FIFO or device). */
+function readReviewedFile(file) {
+  const handle = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NONBLOCK ?? 0));
+  try {
+    const stat = fs.fstatSync(handle);
+    if (!stat.isFile() || stat.size > MAX_FILE_BYTES) {
+      return undefined;
+    }
+    return fs.readFileSync(handle, 'utf8');
+  } finally {
+    fs.closeSync(handle);
+  }
 }
 
 function markerPath(agent, sessionId) {
   const id = crypto.createHash('sha256').update(`${agent}:${sessionId}`).digest('hex').slice(0, 32);
   return path.join(SESSION_DIR, id);
+}
+
+/** Windows the session reported writes to (the marker lists their lockfiles). */
+function readMarker(marker) {
+  try {
+    const locks = JSON.parse(fs.readFileSync(marker, 'utf8'));
+    return Array.isArray(locks) ? locks.filter((file) => typeof file === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeMarker(marker, lockFiles) {
+  fs.mkdirSync(SESSION_DIR, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(marker, JSON.stringify(lockFiles), { encoding: 'utf8', mode: 0o600 });
+}
+
+/** Markers from turns that never ended (crash, interrupt) would otherwise pile up. */
+function sweepOldMarkers() {
+  try {
+    const now = Date.now();
+    for (const name of fs.readdirSync(SESSION_DIR)) {
+      const file = path.join(SESSION_DIR, name);
+      if (now - fs.statSync(file).mtimeMs > MARKER_MAX_AGE_MS) {
+        fs.rmSync(file, { force: true });
+      }
+    }
+  } catch {
+    // Best effort.
+  }
 }
 
 function send(lock, message) {
@@ -191,6 +296,59 @@ function send(lock, message) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
+/** Ends the session's turn in every window it wrote to; a no-op for sessions that wrote nothing. */
+async function endTurn(base, marker) {
+  const lockFiles = readMarker(marker);
+  fs.rmSync(marker, { force: true });
+  const locks = lockFiles.map(readLock).filter(Boolean);
+  await Promise.all(locks.map((lock) => send(lock, { ...base, event: 'turn.end' })));
+}
+
+async function reportWrites(base, marker, payload, report) {
+  const cwd = typeof payload.cwd === 'string' ? payload.cwd : process.cwd();
+  const files = (report.files ?? []).filter((file) => typeof file === 'string').map((file) => path.resolve(cwd, file));
+  if (!files.some((file) => REVIEWABLE_EXTENSIONS.some((extension) => file.endsWith(extension)))) {
+    return;
+  }
+  const locks = liveLocks();
+  const notified = new Set(readMarker(marker));
+  for (const file of files) {
+    const targets = locksFor(locks, file);
+    if (targets.length === 0) {
+      continue;
+    }
+    const hashes = [];
+    if (typeof report.content === 'string') {
+      hashes.push(attestationHash(report.content));
+    }
+    let content;
+    try {
+      content = readReviewedFile(file);
+    } catch {
+      content = undefined;
+    }
+    if (content !== undefined) {
+      const onDisk = attestationHash(content);
+      if (!hashes.includes(onDisk)) {
+        hashes.push(onDisk);
+      }
+    }
+    if (hashes.length === 0) {
+      continue;
+    }
+    for (const lock of targets) {
+      notified.add(lock.file);
+    }
+    try {
+      sweepOldMarkers();
+      writeMarker(marker, [...notified]);
+    } catch {
+      // No marker, no turn.end: the extension's idle check still closes the turn.
+    }
+    await Promise.all(targets.map((lock) => send(lock, { ...base, event: 'write', file, hashes })));
+  }
+}
+
 async function main() {
   const agent = argValue('--agent');
   const adapter = Object.hasOwn(ADAPTERS, agent) ? ADAPTERS[agent] : undefined;
@@ -207,49 +365,19 @@ async function main() {
   if (!report || typeof report.sessionId !== 'string' || !report.sessionId) {
     return;
   }
-  const base = { v: PROTOCOL_VERSION, agent, sessionId: report.sessionId, pid: process.ppid };
+  // On Windows the hook's parent is a short-lived shell, not the agent, so it proves nothing about liveness.
+  const pid = process.platform === 'win32' ? undefined : process.ppid;
+  const base = { v: PROTOCOL_VERSION, agent, sessionId: report.sessionId, pid };
   const marker = markerPath(agent, report.sessionId);
 
-  if (report.event === 'turn.end') {
-    // Only sessions that wrote a flow have anything to end.
-    let lockFile;
-    try {
-      lockFile = fs.readFileSync(marker, 'utf8').trim();
-      fs.rmSync(marker, { force: true });
-    } catch {
-      return;
-    }
-    const lock = path.dirname(lockFile) === LOCK_DIR ? readLock(lockFile) : undefined;
-    if (lock) {
-      await send(lock, { ...base, event: 'turn.end' });
+  if (report.event === 'turn.end' || report.event === 'prompt') {
+    // A new prompt ends the previous turn only if it never got its stop event.
+    if (fs.existsSync(marker)) {
+      await endTurn(base, marker);
     }
     return;
   }
-
-  const cwd = typeof payload.cwd === 'string' ? payload.cwd : process.cwd();
-  const flows = (report.files ?? [])
-    .filter((file) => typeof file === 'string' && file.endsWith('.flow'))
-    .map((file) => path.resolve(cwd, file));
-  for (const file of flows) {
-    const lock = findLock(file);
-    if (!lock) {
-      continue;
-    }
-    let content;
-    try {
-      content = fs.readFileSync(file, 'utf8');
-    } catch {
-      continue;
-    }
-    const sha256 = crypto.createHash('sha256').update(content, 'utf8').digest('hex');
-    try {
-      fs.mkdirSync(SESSION_DIR, { recursive: true, mode: 0o700 });
-      fs.writeFileSync(marker, lock.file, { encoding: 'utf8', mode: 0o600 });
-    } catch {
-      /* no marker → no turn.end; the extension's idle/liveness check still closes the turn */
-    }
-    await send(lock, { ...base, event: 'write', file, sha256 });
-  }
+  await reportWrites(base, marker, payload, report);
 }
 
 main()
