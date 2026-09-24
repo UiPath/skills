@@ -21,12 +21,10 @@ description: >
 tags:
   - uipath-maestro-bpmn
   - integration
-  - e2e
   - "mode:build"
   - "lifecycle:generate"
   - "shape:multi-node"
   - connector
-  - uipath-salesforce-slack
   - "feature:records"
 
 run_limits:

@@ -29,7 +29,7 @@ description: >
   assertions themselves (a scriptTask node exists; the run's outputs contain
   an integer in [1, 6]; the project was named as elicited) are unchanged from
   Flow's own grader.
-tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", simulation]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", outcome-graded]
 
 sandbox:
   template_sources:

@@ -23,7 +23,7 @@ description: >
   variables-all`/`incidents` read, and the created-key search scans the root
   scope's variables plus every element's Outputs (and the raw variables-all
   response text) instead of one inline debug payload.
-tags: [uipath-maestro-bpmn, integration, "lifecycle:generate", "shape:single-node", connector, e2e, uipath-atlassian-jira, "mode:build"]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, outcome-graded]
 
 run_limits:
   expected_turns: 40

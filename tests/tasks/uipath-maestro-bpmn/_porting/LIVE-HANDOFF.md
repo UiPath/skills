@@ -11,11 +11,11 @@ Methodology is in `PORTING-BRIEF.md`, `BATCH1-ADDENDUM.md`, `NORMALIZATION.md` a
 
 ## Live-grader recipe
 
-Canonical: `_shared/check_jira_get_issue.py`. From `_shared/bpmn_live.py`: `import_exact` (ephemeral `uip solution init` + `projects import`, sha256-pinned) → `run_debug(project, inputs, log, timeout)` in the grader itself, so `test_criterion_budgets.py` can price it → `debug_evidence` (`variables-all`, `incidents`) → `require_clean_run`. Grade with `output_leaves(variables, skip=input_echo_ids(process))`: root public outputs have read back null, and an unskipped input reads as an output. A grader with side effects journals their ids before `require_clean_run`, so a faulted run still cleans up.
+Canonical: `_shared/check_jira_get_issue.py`. From `_shared/bpmn_live.py`: `import_exact` (ephemeral `uip solution init` + `projects import`, sha256-pinned) → `run_debug(project, inputs, log, timeout)` in the grader itself, so `test_criterion_budgets.py` can price it → `debug_evidence` (`variables-all`, `incidents`) → `require_clean_run`. Read a declared output first; when it reads back null (root public outputs have), fall back to `output_leaves(variables, skip=input_echo_ids(process), elements=…)` over the nodes that produce it. An unskipped input reads as an output. A grader with side effects journals their ids before `require_clean_run`, so a faulted run still cleans up.
 
 post_run `_setup/cleanup_solutions.py` sweeps the ephemeral solution; a later criterion in the same task passes `resolve_project(exclude_under=[LIVE_RUN_DIR])` so that import is not read as a second project.
 
-Budget: the guard enforces criterion `timeout` ≥ `debug_budget(...)` + 60. Size it to `debug_budget(...)` + `LIVE_OVERHEAD_SECONDS` (510) + 60, e.g. 480 + 510 + 60 = 1050 for one default debug.
+Budget: the guard enforces criterion `timeout` ≥ `debug_budget(...)` + 60. Size it to cover the whole sequence: 90 (init) + 180 (import) + `debug_budget(...)` + 120 (variables-all) + 120 (incidents) + 60, e.g. 1050 for one default debug.
 
 ## Runtime and grader facts
 
@@ -23,7 +23,7 @@ Budget: the guard enforces criterion `timeout` ≥ `debug_budget(...)` + 60. Siz
 - Incident 102010 "Parameter 'Folder' null" on a Slack node = missing `folderKey` binding; 102009 = missing activity parameter; 400008 on a multi-instance marker = input collection over a connector response.
 - Connector nodes come in two forms: curated `objectName` with path/query inputs, or generic entity-CRUD with the verb in `operation`/`method`. A request body is one JSON `target="body"` input; several do not merge at runtime, and `bpmn_check.body_object` raises `BodyShapeError` on them.
 - Managed HTTP is `Intsvc.HttpExecution` or `Intsvc.UnifiedHttpRequest`; connector-mode HTTP is `Intsvc.ActivityExecution`. Wait-for-event may be a `receiveTask` or an `intermediateCatchEvent`; classify by the `uipath:type` wrapper, never the BPMN tag.
-- `find_bpmn_file` treats byte-identical copies as one artifact and drops drafts with no registry-typed node; `validate_bpmn.py` validates every `.bpmn` in the sandbox.
+- `find_bpmn_file` treats byte-identical copies as one artifact and fails on any other ambiguity; `validate_bpmn.py` validates every `.bpmn` in the sandbox.
 - Actions.HITL needs a deployed Action App to pass `bpmn validate`; the curated Data Fabric query template has no sort-field parameter.
 
 ## Skill findings to report upstream

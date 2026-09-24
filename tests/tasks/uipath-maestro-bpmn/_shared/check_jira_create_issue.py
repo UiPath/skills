@@ -13,8 +13,9 @@ canonical pattern: ephemeral solution import, `bpmn debug`, `debug-instance
 variables-all`/`incidents`).
 
 Exits non-zero on the first failure (``FAIL: ...``); prints ``OK: ...`` per
-check. The confirmed key(s) are journaled to ``.created_keys`` so post_run
-teardown (`teardown_jira.py`) deletes them even if a later step fails.
+check. Every key the Create-Issue node reported is journaled to
+``.created_keys`` so post_run teardown (`teardown_jira.py`) deletes them even
+if a later step fails.
 
 Assertion map (Flow -> BPMN):
   F check_jira_create_issue.py:49  JIRA_KEY not in raw or '"nodes"' not in raw
@@ -60,8 +61,8 @@ Assertion map (Flow -> BPMN):
   F check_jira_create_issue.py:66-77  tenant re-read via jira_is.get_issue(conn, key);
                                     first candidate whose `summary` equals the seed
                                     summary wins; confirmed key journaled for teardown
-                                    -> same logic; `.created_keys` is rewritten to the
-                                       confirmed key only; jira_is.py (task's own
+                                    -> same logic; `.created_keys` keeps every key the
+                                       Create node reported; jira_is.py (task's own
                                        `_setup/jira_is.py` copy, imported via the
                                        sandbox-mounted path since this checker lives in
                                        `_shared/`, not the task dir)
@@ -98,7 +99,7 @@ from pathlib import Path
 # …/uipath-maestro-bpmn (for _shared), same convention as check_jira_get_issue.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa: E402
 
-from _shared.bpmn_check import find_bpmn_file, resolve_project  # noqa: E402
+from _shared.bpmn_check import fail, find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
@@ -134,10 +135,6 @@ JOURNAL = Path(".created_keys")
 #   + bpmn_live.CRITERION_MARGIN_SECONDS (60) = 1050
 # Flow's own criterion timeout (1080) already covers this, so it is kept
 # verbatim rather than raised.
-
-
-def _fail(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
 
 
 def _import_jira_is():
@@ -203,29 +200,29 @@ def _journal(keys: list[str]) -> None:
 def main() -> None:
     seed_path = Path("seed.json")
     if not seed_path.is_file():
-        _fail("seed.json is missing from the sandbox (pre_run seed did not run)")
+        fail("seed.json is missing from the sandbox (pre_run seed did not run)")
     seed = json.loads(seed_path.read_text(encoding="utf-8"))
     project = seed["project_key"]
 
     bpmn_path = find_bpmn_file(NAME_HINT)
     raw = Path(bpmn_path).read_text(encoding="utf-8")
     if JIRA_KEY not in raw:
-        _fail(f"{bpmn_path} does not reference the {JIRA_KEY} connector")
+        fail(f"{bpmn_path} does not reference the {JIRA_KEY} connector")
     print(f"OK: bpmn references {JIRA_KEY}")
 
     try:
         root = ET.parse(bpmn_path).getroot()
     except ET.ParseError as exc:
-        _fail(f"{bpmn_path} is not well-formed XML: {exc}")
+        fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
     create_nodes = find_create_issue_nodes(root)
     if not create_nodes:
-        _fail("bpmn does not reference a Jira Create-Issue connector node (Intsvc.ActivityExecution)")
+        fail("bpmn does not reference a Jira Create-Issue connector node (Intsvc.ActivityExecution)")
     print("OK: bpmn references a Create-Issue op")
 
     missing = [field for field in SEED_LITERAL_FIELDS if str(seed[field]) not in raw]
     if missing:
-        _fail(
+        fail(
             "bpmn does not reference the seeded "
             f"{', '.join(f'{field}={seed[field]!r}' for field in missing)} "
             "(agent must use seed.json values verbatim, not invented ones)"
@@ -253,7 +250,7 @@ def main() -> None:
     )
 
     if not cands:
-        _fail(f"no {project}-<n> issue key in the Create-Issue node outputs {list(create_ids)}")
+        fail(f"no {project}-<n> issue key in the Create-Issue node outputs {list(create_ids)}")
     print(f"OK: candidate keys from debug: {cands}")
 
     jira_is = _import_jira_is()
@@ -261,11 +258,10 @@ def main() -> None:
     for key in cands:
         fields = jira_is.get_issue(conn, key)
         if fields and fields.get("summary") == seed["summary"]:
-            JOURNAL.write_text(key + "\n")
             print(f"OK: Jira issue {key} exists with the seed summary")
             print("PASS: all JiraCreateIssue checks passed")
             return
-    _fail(
+    fail(
         f"none of {cands} carries the seed summary {seed['summary']!r} — the "
         "bpmn process did not create the expected issue in Jira"
     )

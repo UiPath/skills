@@ -84,7 +84,7 @@ from pathlib import Path
 # …/uipath-maestro-bpmn (for _shared), same convention as _shared/check_channel_description.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa: E402
 
-from _shared.bpmn_check import find_bpmn_file, resolve_project  # noqa: E402
+from _shared.bpmn_check import fail, find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
@@ -132,10 +132,6 @@ LIVE_RUN_DIR = Path("slack-weather-pipeline-live")
 # reads), so it is raised to 1050 -- the one sanctioned deviation from
 # "criteria identical" (LIVE-ADDENDUM: a property of the CLI surface, not of
 # what is graded).
-
-
-def _fail(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
 
 
 def find_connector_nodes(root: ET.Element, connector_key: str) -> list[ET.Element]:
@@ -224,11 +220,11 @@ def main() -> None:
     try:
         root = ET.parse(bpmn_path).getroot()
     except ET.ParseError as exc:
-        _fail(f"{bpmn_path} is not well-formed XML: {exc}")
+        fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
     connector_nodes = find_connector_nodes(root, SLACK_CONNECTOR_KEY)
     if not connector_nodes:
-        _fail(
+        fail(
             f"bpmn does not reference a {SLACK_CONNECTOR_KEY} connector node "
             f"({ACTIVITY_TYPE})"
         )
@@ -236,7 +232,7 @@ def main() -> None:
 
     weather_nodes = find_weather_node(root)
     if not weather_nodes:
-        _fail(
+        fail(
             f"bpmn does not reference an API-capable node ({' / '.join(HTTP_TYPES)} or "
             f"{ACTIVITY_TYPE}) targeting one of {WEATHER_HINTS}"
         )
@@ -264,7 +260,7 @@ def main() -> None:
     hits = [v for v in ALLOWED_VERDICTS if v in haystack]
     if len(hits) != 1:
         found = "both verdicts" if len(hits) > 1 else "neither verdict"
-        _fail(
+        fail(
             f"{source} must contain exactly one of {list(ALLOWED_VERDICTS)}; "
             f"found {found}\n{source}: {haystack[:1000]}"
         )

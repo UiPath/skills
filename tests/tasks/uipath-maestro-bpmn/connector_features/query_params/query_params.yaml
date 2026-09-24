@@ -17,7 +17,6 @@ tags:
   - "lifecycle:generate"
   - "shape:multi-node"
   - connector
-  - uipath-google-tasks
   - "mode:build"
 
 run_limits:

@@ -501,12 +501,6 @@ SOLUTION_IMPORT_TIMEOUT = 180
 VARIABLES_ALL_TIMEOUT = 120
 INCIDENTS_TIMEOUT = 120
 
-# Sum of the unpriced CLI steps around one run_debug: init + import +
-# variables-all + incidents. A criterion timeout adds this to debug_budget().
-LIVE_OVERHEAD_SECONDS = (
-    SOLUTION_INIT_TIMEOUT + SOLUTION_IMPORT_TIMEOUT + VARIABLES_ALL_TIMEOUT + INCIDENTS_TIMEOUT
-)
-
 COMPLETED_STATUSES = frozenset({"Completed", "Successful"})
 
 
@@ -631,11 +625,18 @@ def value_leaves(value: Any) -> Iterator[Any]:
         yield value
 
 
-def output_leaves(variables_data: Any, skip: Collection[str] = ()) -> list[Any]:
-    """Leaves of the root Globals and every element's Outputs, minus the
-    globals and elements named in `skip` (see :func:`input_echo_ids`)."""
+def output_leaves(
+    variables_data: Any,
+    skip: Collection[str] = (),
+    *,
+    elements: Collection[str] | None = None,
+) -> list[Any]:
+    """Leaves of the root Globals and the elements' Outputs, minus the globals
+    and elements named in `skip` (see :func:`input_echo_ids`). `elements`
+    limits the Outputs to those element ids; None reads every element."""
 
     skipped = {normalized_identifier(name) for name in skip}
+    wanted = None if elements is None else {normalized_identifier(e) for e in elements}
     globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
     leaves: list[Any] = []
     if isinstance(globals_, dict):
@@ -646,7 +647,8 @@ def output_leaves(variables_data: Any, skip: Collection[str] = ()) -> list[Any]:
 
     for scope in get_ci(variables_data, "Variables", []) or []:
         for element in get_ci(scope, "Elements", []) or []:
-            if normalized_identifier(get_ci(element, "ElementId")) in skipped:
+            element_id = normalized_identifier(get_ci(element, "ElementId"))
+            if element_id in skipped or (wanted is not None and element_id not in wanted):
                 continue
             leaves.extend(value_leaves(get_ci(element, "Outputs", {})))
     return leaves

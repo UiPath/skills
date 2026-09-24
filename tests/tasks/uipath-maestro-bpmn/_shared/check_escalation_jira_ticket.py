@@ -108,8 +108,9 @@ MAX_CANDIDATE_ISSUE_READS jira_is.get_issue() calls (2 * 120 = 240) = 1350,
 plus bpmn_live.CRITERION_MARGIN_SECONDS (60) = 1410 -- under Flow's original
 1600s criterion timeout, so it is kept verbatim (see escalation_jira_ticket.yaml).
 
-The confirmed key is written to `.created_keys` so post_run's `teardown_jira.py`
-(copied verbatim from Flow) deletes it even if a later assertion fails.
+Every key the Create-Issue node reported is written to `.created_keys` so
+post_run's `teardown_jira.py` (copied verbatim from Flow) deletes it even if a
+later assertion fails.
 """
 
 from __future__ import annotations
@@ -232,7 +233,7 @@ def resolve_contract(root: ET.Element) -> Contract:
     jira_create_ids = tuple(
         element_id
         for (key, path, _object_name), element_ids in connectors.items()
-        if key == JIRA_CONNECTOR and JIRA_CREATE_OP in path
+        if key == JIRA_CONNECTOR and (JIRA_CREATE_OP in path or JIRA_CREATE_OP in _object_name)
         for element_id in element_ids
     )
     if not jira_create_ids:
@@ -370,7 +371,6 @@ def main() -> None:
         for fields in [jira_is.get_issue(conn, k)]
         if fields is not None and correlation in str(fields.get("summary", ""))
     ]
-    _journal(owned)
     if not owned:
         _fail(
             f"none of {jira_keys} is a Jira issue whose summary contains "

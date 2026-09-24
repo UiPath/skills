@@ -16,7 +16,6 @@ tags:
   - "lifecycle:generate"
   - "shape:single-node"
   - connector
-  - uipath-google-gmail
   - "mode:build"
 
 run_limits:

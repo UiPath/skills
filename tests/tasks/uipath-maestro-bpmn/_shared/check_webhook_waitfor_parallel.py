@@ -201,26 +201,36 @@ def main() -> None:
         )
     print("OK: manual GET HttpExecution sendTask to webhook URL, no headers/query")
 
-    wait_id, get_id = attr(event_nodes[0], "id"), attr(http_nodes[0], "id")
     from_start = reachable(root, start_id)
-    if wait_id not in from_start or get_id not in from_start:
+    pairs = [
+        (attr(wait, "id"), attr(get, "id"))
+        for wait in event_nodes
+        for get in http_nodes
+        if attr(wait, "id") in from_start and attr(get, "id") in from_start
+    ]
+    if not pairs:
         fail("the wait-for-event and HTTP-request nodes must both be reachable from the manual start")
-    if reaches(root, wait_id, get_id) or reaches(root, get_id, wait_id):
+
+    parallel = [
+        (wait_id, get_id)
+        for wait_id, get_id in pairs
+        if not reaches(root, wait_id, get_id) and not reaches(root, get_id, wait_id)
+    ]
+    if not parallel:
         fail(
-            f"{wait_id!r} and {get_id!r} sit in series on one branch; the wait and the GET "
+            f"every wait/GET pair {pairs} sits in series on one branch; the wait and the GET "
             "must run on parallel branches or the wait never sees the request"
         )
-    print("OK: wait-for-event and HTTP-request run on parallel branches")
+    wait_id, get_id = parallel[0]
+    print(f"OK: wait-for-event {wait_id!r} and HTTP-request {get_id!r} run on parallel branches")
 
     end_ids = {attr(e, "id") for e in elements(root, "endEvent")}
     if not end_ids:
         fail("no end event")
 
-    for label, node in (("wait-for-event", event_nodes[0]), ("http-request", http_nodes[0])):
-        node_id = attr(node, "id")
-        reach = reachable(root, node_id)
-        if not (reach & end_ids):
-            fail(f"{label} branch does not reach an end event")
+    for label, node_id in (("wait-for-event", wait_id), ("http-request", get_id)):
+        if not (reachable(root, node_id) & end_ids):
+            fail(f"{label} branch {node_id!r} does not reach an end event")
     print("OK: both branches terminate at an end event")
 
     print(

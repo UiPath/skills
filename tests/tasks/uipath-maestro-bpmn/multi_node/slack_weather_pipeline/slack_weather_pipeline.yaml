@@ -19,7 +19,7 @@ description: >
   init`/`solution projects import`, separate `variables-all`/`incidents`
   reads) that BPMN's live surface needs beyond Flow's single `flow debug`
   call.
-tags: [uipath-maestro-bpmn, e2e, "lifecycle:generate", "shape:multi-node", "node:decision", connector, "feature:http"]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", connector, "feature:http", outcome-graded]
 
 run_limits:
   expected_turns: 51

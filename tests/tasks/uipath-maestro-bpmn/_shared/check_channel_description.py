@@ -32,7 +32,9 @@ Assertion map (Flow → BPMN):
   F check_channel_description.py:29  assert_outputs_contain(payload, ADDRESS_FRAGMENTS, require_all=True)
                                        → every fragment found among the root scope's variable leaves
                                          AND every element's Outputs (incl. nested connector `response`)
-                                         in `debug-instance variables-all` (LIVE-ADDENDUM: a root PUBLIC
+                                         in `debug-instance variables-all`, minus input echoes
+                                         (input_echo_ids; Flow subtracts declared inputs the same way)
+                                         (LIVE-ADDENDUM: a root PUBLIC
                                          OUTPUT has read back null even when mapped correctly, so the
                                          search is not scoped to one declared output variable)
   I               locate/parse .bpmn (file exists, well-formed XML, project directory resolved)
@@ -63,13 +65,14 @@ from pathlib import Path
 # …/uipath-maestro-bpmn (for _shared), same convention as _shared/check_jira_get_issue.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa: E402
 
-from _shared.bpmn_check import find_bpmn_file, resolve_project  # noqa: E402
+from _shared.bpmn_check import fail, find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
     connector_context,
     debug_evidence,
     import_exact,
+    input_echo_ids,
     output_haystack,
     require_clean_run,
 )
@@ -105,10 +108,6 @@ LIVE_RUN_DIR = Path("slack-channel-description-live")
 # what is graded).
 
 
-def _fail(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
-
-
 def find_connector_nodes(root: ET.Element, connector_key: str) -> list[ET.Element]:
     """Every element carrying an Intsvc.ActivityExecution targeting connector_key.
 
@@ -133,17 +132,17 @@ def main() -> None:
     bpmn_path = find_bpmn_file(NAME_HINT)
     raw = Path(bpmn_path).read_text(encoding="utf-8")
     if CONNECTOR_KEY not in raw:
-        _fail(f"{bpmn_path} does not reference the {CONNECTOR_KEY} connector")
+        fail(f"{bpmn_path} does not reference the {CONNECTOR_KEY} connector")
     print(f"OK: bpmn references {CONNECTOR_KEY}")
 
     try:
         root = ET.parse(bpmn_path).getroot()
     except ET.ParseError as exc:
-        _fail(f"{bpmn_path} is not well-formed XML: {exc}")
+        fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
     connector_nodes = find_connector_nodes(root, CONNECTOR_KEY)
     if not connector_nodes:
-        _fail(
+        fail(
             f"bpmn does not reference a {CONNECTOR_KEY} connector node "
             f"({ACTIVITY_TYPE})"
         )
@@ -163,10 +162,10 @@ def main() -> None:
     evidence = debug_evidence(instance_id)
     require_clean_run(debug_data, evidence)
 
-    haystack = output_haystack(evidence.variables)
+    haystack = output_haystack(evidence.variables, input_echo_ids(root))
     missing = [f for f in ADDRESS_FRAGMENTS if f.lower() not in haystack]
     if missing:
-        _fail(
+        fail(
             f"outputs missing address fragments {missing}; "
             f"expected all of {ADDRESS_FRAGMENTS}\noutputs: {haystack[:1000]}"
         )

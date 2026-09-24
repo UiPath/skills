@@ -18,7 +18,6 @@ tags:
   - "lifecycle:generate"
   - "shape:multi-node"
   - connector
-  - uipath-salesforce-slack
   - "mode:build"
 
 run_limits:

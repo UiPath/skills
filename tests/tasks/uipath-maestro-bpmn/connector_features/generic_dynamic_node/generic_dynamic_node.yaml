@@ -34,7 +34,7 @@ description: >
   did not need (see check_generic_dynamic_node.py's budget comment) — the one
   sanctioned deviation from "criteria identical" per LIVE-ADDENDUM, since the
   budget is a property of the CLI surface, not of what is graded.
-tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:generate", "shape:single-node", connector, uipath-servicenow-servicenow]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, outcome-graded]
 
 sandbox:
   template_sources:
