@@ -85,9 +85,11 @@ generated packages to invent the missing live schema.
 
 ## 3. Connector (`Intsvc.*`) enrichment
 
-For connector types (`requiresDiscovery: Yes`, e.g.
-`Intsvc.ActivityExecution`, `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`),
-resolve a live connection and object, then enrich:
+For connector **activity** types (`requiresDiscovery: Yes`, e.g.
+`Intsvc.ActivityExecution`), resolve a live connection and object, then enrich.
+`Intsvc.EventTrigger` and `Intsvc.WaitForEvent` also require discovery but
+resolve their object elsewhere — see
+[Integration Service triggers](#integration-service-triggers).
 
 ```bash
 uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
@@ -115,6 +117,38 @@ So take the object from this table rather than inferring it. Confirm it with
 | `uipath-atlassian-jira` | `curated_get_issue` | Get Issue | `Retrieve` |
 | `uipath-atlassian-jira` | `curated_edit_issue` | Update Issue | `Replace` |
 | `uipath-salesforce-slack` | `send_message_to_channel_v2` | Send Message to Channel | `Create` |
+| `uipath-microsoft-outlook365` | `send-mail-v2` | Send Email | `Create` |
+| `uipath-uipath-dataservice` | `CreateEntityRecordCurated` | Create Entity Record | `Create` |
+| `uipath-uipath-dataservice` | `GetEntityRecordByIdCurated` | Get Entity Record by ID | `List` |
+| `uipath-uipath-dataservice` | `UpdateEntityRecordV2` | Update Entity Record | `Replace` |
+| `uipath-uipath-dataservice` | `DeleteEntityRecordCurated` | Delete Entity Record | `Create` |
+| `uipath-uipath-dataservice` | `QueryEntityRecordsCurated` | Query Entity Records | `Create` |
+| `uipath-uipath-testmanager` | `TestSet` | Create / Get / Update / Delete Test Set | `Create` / `Retrieve` / `Update` / `Delete` |
+| `uipath-uipath-testmanager` | `AssignTestCasesToTestSet` | Assign Test Cases to Test Set | `Create` |
+| `uipath-uipath-testmanager` | `GetAssignedTestCasesForTestSet` | Get Assigned Test Cases for Test Set | `List` |
+| `uipath-uipath-testmanager` | `ExecuteTestSet` | Execute Test Set | `Create` |
+| `uipath-uipath-testmanager` | `TestCase` | Create / Get / Update / Delete Test Case | `Create` / `Retrieve` / `Update` / `Delete` |
+| `uipath-uipath-testmanager` | `ExecuteTestCases` | Execute Test Cases | `Create` |
+| `uipath-uipath-testmanager` | `TestExecution` | Get / Delete Test Execution | `Retrieve` / `Delete` |
+| `uipath-uipath-testmanager` | `GetTestCaseLogsOfTestExecution` | Get Test Case Logs of Test Execution | `List` |
+| `uipath-uipath-testmanager` | `TestCaseLog` | Get Test Case Log | `Retrieve` |
+| `uipath-uipath-testmanager` | `GetRobotLogs` | Get Robot Logs | `List` |
+| `uipath-uipath-testmanager` | `GetAssertions` | Get Assertions | `List` |
+| `uipath-uipath-testmanager` | `DownloadAssertion` | Download Assertion | `Retrieve` |
+| `uipath-uipath-testmanager` | `GetTestSteps` | Get Test Steps | `List` |
+| `uipath-uipath-testmanager` | `GetTestStepLogs` | Get Test Step Logs | `List` |
+
+Data Fabric has no hidden objects, so `curated.isHidden` does not separate its
+duplicates: `CreateEntityRecord`, `CreateEntityRecord_V3` and
+`CreateEntityRecordCurated` all report `isHidden: false` under one
+`Curated: "Create Entity Record"`. Rank on `curated.lifecycleStage` — the
+`uipath-uipath-dataservice` rows above are `GA`, every other candidate is
+`PREVIEW`. Those rows take the entity as a required `entityName` **path**
+parameter and report an empty `RequestFields`, so they describe no body fields
+at all. When the body needs typed fields, describe the entity's own object
+instead — `uip is resources list` exposes one per tenant entity, named after
+it, with no `entityName` parameter and the record's columns in
+`RequestFields`.
 
 For a connector or operation not listed, describe every candidate and keep
 the ones whose `Operation.Curated` names the activity asked for. Expect more
@@ -342,11 +376,34 @@ requested service-task output contract from the model.
 the exact `registry get Intsvc.TimerTrigger` template. It does not require a
 live connection or schema enrichment.
 
-`Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` do need
-their **trigger properties** enriched/bound through the CLI — the same
-enrichment path as `Intsvc.*` activities (§3). A hand-authored connector
-trigger shell stays **draft** until the CLI supplies the concrete trigger
-properties, connection binding, and schemas.
+`Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` enrich
+through `registry get` like a §3 activity, but their object and operation come
+from the **trigger** catalogue, not from `uip is resources`. Omit `--operation`
+and the call fails with `Event enrichment requires --operation`.
+
+```bash
+uip is activities list <connectorKey> --triggers --output json   # trigger Name + ObjectName
+uip maestro bpmn registry get <Intsvc.EventTrigger|Intsvc.WaitForEvent> \
+    --connection-id <id> --object-name <ObjectName> --operation <Name> --output json
+```
+
+Take the pair from a row whose `IsCurated` is `Yes`; ignore any generic
+`CREATED` / `UPDATED` row, which carries `IsCurated: No` and `ObjectName: N/A`.
+The enrichment returns the trigger's `EventParameters`, `FilterFields` and
+`OutputFields` — build the filter tree's leaves from `FilterFields`, never from
+an activity's `RequestFields`.
+
+Pairs already confirmed:
+
+| Connector key | Trigger operation | Object |
+| --- | --- | --- |
+| `uipath-microsoft-outlook365` | `EMAIL_RECEIVED` | `Message` |
+| `uipath-atlassian-jira` | `ISSUE_CREATED` | `curated_get_issue` |
+| `uipath-salesforce-slack` | `SLACK_EVENT_MESSAGE` | `slack_events_message` |
+| `uipath-uipath-dataservice` | `CREATED_V3` | `EntityTriggers_V3` |
+
+A hand-authored connector trigger shell stays **draft** until the CLI supplies
+the concrete trigger properties, connection binding, and schemas.
 
 For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
 from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
