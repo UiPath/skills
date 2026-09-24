@@ -27,8 +27,6 @@ tags:
     connector,
     "feature:trigger",
     "feature:http",
-    wait-for-event,
-    uipath-http-webhook,
   ]
 
 sandbox:

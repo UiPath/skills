@@ -68,20 +68,17 @@ from pathlib import Path
 # …/uipath-maestro-bpmn (for _shared), same convention as _shared/check_drive_to_slack.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa: E402
 
-from _shared.bpmn_check import find_bpmn_file, resolve_project  # noqa: E402
+from _shared.bpmn_check import fail, find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
     connector_context,
     debug_evidence,
-    element_output_records,
     get_ci,
     import_exact,
     input_echo_ids,
-    normalized_identifier,
+    output_leaves,
     require_clean_run,
-    root_scope,
-    value_leaves,
 )
 
 JIRA_KEY = "uipath-atlassian-jira"
@@ -105,10 +102,6 @@ LIVE_RUN_DIR = Path("jira-get-issue-live")
 #   + bpmn_live.CRITERION_MARGIN_SECONDS (60) = 1050
 # Flow's own criterion timeout (1080) already covers this, so it is kept
 # verbatim rather than raised.
-
-
-def _fail(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
 
 
 def is_get_issue_node(node_name: str, object_name: str, method: str) -> bool:
@@ -160,40 +153,33 @@ def collect_output_haystack(
 ) -> str:
     """The Get-Issue node's own Outputs plus root Globals that are not input
     echoes, so a summary typed into an input cannot pass without the Get."""
-    leaves = list(value_leaves(element_output_records(variables_data, get_ids)))
-    skipped = {normalized_identifier(name) for name in skip}
-    globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
-    if isinstance(globals_, dict):
-        for name, value in globals_.items():
-            if normalized_identifier(name) in skipped:
-                continue
-            leaves.extend(value_leaves(value))
+    leaves = output_leaves(variables_data, skip, elements=get_ids)
     return "\n".join(str(v) for v in leaves).lower()
 
 
 def main() -> None:
     seed_path = Path("seed.json")
     if not seed_path.is_file():
-        _fail("seed.json is missing from the sandbox (pre_run seed did not run)")
+        fail("seed.json is missing from the sandbox (pre_run seed did not run)")
     seed = json.loads(seed_path.read_text(encoding="utf-8"))
     issue_key = seed["issue_key"]
 
     bpmn_path = find_bpmn_file(NAME_HINT)
     raw = Path(bpmn_path).read_text(encoding="utf-8")
     if JIRA_KEY not in raw:
-        _fail(f"{bpmn_path} does not reference the {JIRA_KEY} connector")
+        fail(f"{bpmn_path} does not reference the {JIRA_KEY} connector")
     print(f"OK: bpmn references {JIRA_KEY}")
 
     try:
         root = ET.parse(bpmn_path).getroot()
     except ET.ParseError as exc:
-        _fail(f"{bpmn_path} is not well-formed XML: {exc}")
+        fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
     get_issue_nodes = find_get_issue_nodes(root)
     if not get_issue_nodes:
-        _fail("bpmn does not reference a Jira Get-Issue connector node (Intsvc.ActivityExecution)")
+        fail("bpmn does not reference a Jira Get-Issue connector node (Intsvc.ActivityExecution)")
     if issue_key not in raw:
-        _fail(f"bpmn does not reference the seeded key {issue_key!r} (agent must read it from seed.json)")
+        fail(f"bpmn does not reference the seeded key {issue_key!r} (agent must read it from seed.json)")
     print(f"OK: bpmn references a Get-Issue op and the seeded key {issue_key}")
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
@@ -212,7 +198,7 @@ def main() -> None:
     get_ids = tuple(node.attrib["id"] for node in get_issue_nodes if node.attrib.get("id"))
     ran = completed_ids(debug_data, get_ids)
     if not ran:
-        _fail(
+        fail(
             f"no Get-Issue node among {list(get_ids)} completed in the debug trace; "
             "the issue was not actually read"
         )
@@ -220,7 +206,7 @@ def main() -> None:
 
     haystack = collect_output_haystack(evidence.variables, ran, input_echo_ids(root))
     if seed["summary"].lower() not in haystack:
-        _fail(
+        fail(
             f"Get-Issue outputs and non-input globals do not contain the seeded "
             f"issue summary {seed['summary']!r}\n"
             f"outputs: {haystack[:1000]}"

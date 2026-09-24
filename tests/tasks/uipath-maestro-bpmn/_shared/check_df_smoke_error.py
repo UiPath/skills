@@ -11,14 +11,11 @@ node/`inputs.detail` walk to an XML walk over the registry-driven
 ``Intsvc.ActivityExecution`` connector shell (see
 skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
-BPMN has no fixed home for `entityName`: the registry does not pin it to a
-path param, query param, or JSON body key, and a node may also carry it only
-as the generic-form `objectName` when the skill emits the generic
-entity-CRUD shape instead of the curated per-operation one -- see
-BATCH1-ADDENDUM.md "Where connector node values live in BPMN" and its "CI
-run 35488848026" section on the two valid activity shapes. Both forms are
-accepted here, exactly as `check_df_integration_create_get.py` and
-`check_df_smoke_query_filter.py` already do for this connector.
+BPMN has no fixed home for `entityName` (BATCH1-ADDENDUM.md "Where connector
+node values live in BPMN" and its "CI run 35488848026" section on the two
+valid activity shapes). A node names its entity when any one of these
+equals it: the generic-form `objectName`, a `target="path"` input value, or a
+`/`-separated segment of the context `path` field.
 
 Assertion map (Flow -> BPMN):
   F check_smoke_error.py:29-31  entity_of(node) == NonExistentEntity on a
@@ -29,8 +26,9 @@ Assertion map (Flow -> BPMN):
   F check_smoke_error.py:40-42  `len(good_queries) < 2` -> fail            -> `good_queries < 2` check
   I                             locate/parse .bpmn                        -> parse_bpmn()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
-  T                             entity as the generic objectName, or an    -> mentions_entity()
-                                 exact target="path" input value
+  T                             entity as the generic objectName, an exact -> mentions_entity()
+                                 target="path" input value, or an exact
+                                 context `path` segment
   DROPPED  topology/parallel-branch parsing    (Flow's own grader does not parse it either -- see its docstring)
   DROPPED  require_no_private_connector_values (not in Flow)
   DROPPED  require_sequence_integrity          (not in Flow; `bpmn validate` criterion covers structure)
@@ -40,11 +38,11 @@ Checks performed:
   1. BPMN file exists and is well-formed XML.
   2. >=1 bpmn:sendTask carries Intsvc.ActivityExecution with connectorKey
      uipath-uipath-dataservice, classified as a Create (curated objectName,
-     or generic objectName + Create/POST verb), and mentions
-     NonExistentEntity somewhere in its inputs.
+     or generic objectName + Create/POST verb), and names
+     NonExistentEntity (see mentions_entity above).
   3. >=2 such nodes classified as a Query (curated Query Entity Records
-     objectName, or generic objectName + List/GET verb), and mention
-     FlowCodeEvalEntity somewhere in their inputs.
+     objectName, or generic objectName + List/GET verb), and name
+     FlowCodeEvalEntity.
 """
 
 from __future__ import annotations
@@ -70,8 +68,8 @@ CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 CREATE_ENTITY = "NonExistentEntity"
 QUERY_ENTITY = "FlowCodeEvalEntity"
-CREATE_CURATED_NAMES = {"createentityrecordcurated", "createentityrecord_v3"}
-QUERY_CURATED_NAMES = {"queryentityrecordscurated", "queryentityrecords_v3"}
+CREATE_CURATED_NAMES = {"createentityrecord", "createentityrecordcurated", "createentityrecord_v3"}
+QUERY_CURATED_NAMES = {"queryentityrecords", "queryentityrecordscurated", "queryentityrecords_v3"}
 
 _CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)
 _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
@@ -79,6 +77,8 @@ _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
 
 def mentions_entity(task: ET.Element, entity: str) -> bool:
     if is_generic_entity_object(context_value(task, "objectName"), entity):
+        return True
+    if entity in context_value(task, "path").strip().split("/"):
         return True
     return any(
         inp.attrib.get("target") == "path"

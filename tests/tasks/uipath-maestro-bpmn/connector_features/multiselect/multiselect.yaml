@@ -18,7 +18,6 @@ tags:
   - "shape:single-node"
   - connector
   - "mode:build"
-  - uipath-salesforce-slack
 
 run_limits:
   expected_turns: 37

@@ -7,9 +7,8 @@ description: >
   Ported from Flow `connector_features/path_params.yaml`; the Jira Get Issue
   connector node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper instead of a Flow connector node, and the
-  path-parameter value is graded across path/query/body inputs since BPMN has
-  no fixed home for it (registry-workflow.md does not pin where a path
-  parameter lands). Validate-only, matching Flow's own scope — the Flow
+  path-parameter value must appear as an exact `target="path"` input value or
+  inside a url/path/endpoint context field. Validate-only, matching Flow's own scope — the Flow
   source never called `flow debug` either, only `flow validate`.
 tags:
   - uipath-maestro-bpmn
@@ -17,7 +16,6 @@ tags:
   - "lifecycle:generate"
   - "shape:multi-node"
   - connector
-  - uipath-atlassian-jira
   - "mode:build"
 
 run_limits:

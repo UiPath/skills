@@ -20,7 +20,7 @@ description: >
   Flow's single `flow debug` call; `run_limits` gains `task_timeout` and
   `max_turns` (absent from the Flow task) so that grading window fits inside
   the task watchdog.
-tags: [uipath-maestro-bpmn, e2e, "lifecycle:generate", "shape:multi-node", connector]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", connector, outcome-graded]
 
 run_limits:
   expected_turns: 45

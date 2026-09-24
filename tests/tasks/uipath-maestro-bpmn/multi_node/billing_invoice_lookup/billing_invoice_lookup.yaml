@@ -26,10 +26,11 @@ tags:
   - uipath-maestro-bpmn
   - e2e
   - "mode:build"
-  - "lifecycle:execute"
+  - "lifecycle:generate"
   - "shape:multi-node"
   - connector
   - path-to-ga
+  - outcome-graded
 sandbox:
   template_sources:
     - type: template_dir

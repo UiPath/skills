@@ -13,7 +13,7 @@ Read `PORTING-BRIEF.md` (Grading contract is mandatory) and `BATCH1-ADDENDUM.md`
 6. `fetch_incidents(id)` then `require_clean_run(debug_data, evidence)`; a completed run with incidents is a failure. `debug_evidence(id)` does 4 and 6 together for a grader with no side effects.
 
 Known runtime facts (grade around them, do not fight them):
-- Element-level `Outputs` (a script task's mapped output, a connector's `response`) are reliably readable in `variables-all`. Root **public output values** have been read back as `null` even when correctly mapped (see `debug/live_debug_e2e/check_live_debug.py` docstring). So when Flow asserted "some output equals X" (`assert_output_value` / `assert_outputs_contain` over `variables.globals` + element outputs), translate to: search the value leaves of the root scope's variables AND every element's `Outputs` in `variables-all`; do not require the value on a root public output specifically.
+- Element-level `Outputs` (a script task's mapped output, a connector's `response`) are reliably readable in `variables-all`. Root **public output values** have been read back as `null` even when correctly mapped (see `debug/live_debug_e2e/check_live_debug.py` docstring). So when Flow asserted "some output equals X" (`assert_output_value` / `assert_outputs_contain` over `variables.globals` + element outputs), translate to: read the declared output first, and only when it reads back null search `output_leaves(variables, skip=input_echo_ids(process))`, narrowed with `elements=` to the nodes that produce the value when the task names them.
 - Variables are addressed by **id**, and the runtime may re-case ids — use `resolve_runtime_key`.
 - Debug instances are ephemeral; read variables-all immediately after the run.
 

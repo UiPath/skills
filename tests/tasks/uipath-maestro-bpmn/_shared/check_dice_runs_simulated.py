@@ -41,13 +41,12 @@ Assertion map (Flow -> BPMN):
                                   -> FinalStatus in COMPLETED_STATUSES and
                                      debug-instance incidents is empty
   F check_dice_runs_simulated.py:24  assert_output_int_in_range(payload, 1, 6)
-                                  -> value-leaf search (never the whole JSON
-                                     payload -- see the docstring on
-                                     assert_output_int_in_range: "Extracts
-                                     integers from output values only, not from
-                                     the full debug payload") over the root
-                                     scope's Globals AND every element's Outputs
-                                     in `debug-instance variables-all`
+                                  -> first whole-integer leaf in [1, 6] (an int,
+                                     or a string that is only an integer; Flow's
+                                     digit-run regex would read `7.5` as 5) over
+                                     the root scope's Globals AND every
+                                     element's Outputs in
+                                     `debug-instance variables-all`
                                      (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read
                                      back null even when mapped correctly, so the
                                      search is not scoped to one declared output
@@ -82,7 +81,7 @@ from pathlib import Path
 # .../uipath-maestro-bpmn (for _shared), same convention as check_jira_get_issue.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa: E402
 
-from _shared.bpmn_check import elements, find_bpmn_file, resolve_project  # noqa: E402
+from _shared.bpmn_check import elements, fail, find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
@@ -100,8 +99,9 @@ INT_RE = re.compile(r"-?\d+")
 # _shared/test_criterion_budgets.py prices a run_debug(...) call: the debug
 # call below passes timeout=600 (Flow's own run_debug timeout), so it
 # prices at bpmn_live.debug_budget(600) == 600. The surrounding CLI
-# steps are not priced by that guard, so bpmn_live.LIVE_OVERHEAD_SECONDS is
-# added by hand here and the criterion `timeout:` in
+# steps are not priced by that guard, so their 510 s (90 init + 180 import
+# + 120 variables-all + 120 incidents) is added by hand here and the
+# criterion `timeout:` in
 # cli_dice_roller_simulated.yaml documents the arithmetic:
 #   90 (solution init) + 180 (solution import) + 600 (debug)
 #   + 120 (variables-all) + 120 (incidents) = 1110
@@ -110,21 +110,19 @@ INT_RE = re.compile(r"-?\d+")
 # verbatim rather than raised.
 
 
-def _fail(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
-
-
 def find_int_in_range(leaves: list, lo: int, hi: int) -> int | None:
-    """First integer in [lo, hi] found in the stringified leaf values.
-
-    Mirrors flow_check.assert_output_int_in_range's exact rule: regex over
-    the individual OUTPUT VALUE leaves only (never the raw variables-all JSON
-    blob, whose element ids, timestamps and status strings would spuriously
-    match a small target range like [1, 6]).
+    """First whole-integer leaf in [lo, hi]: an int, or a string that is only
+    an integer. `roll: 7.5` or a timestamp never yields a digit run.
     """
-    haystack = "\n".join(str(v) for v in leaves)
-    for match in INT_RE.findall(haystack):
-        value = int(match)
+    for leaf in leaves:
+        if isinstance(leaf, bool):
+            continue
+        if isinstance(leaf, int):
+            value = leaf
+        elif isinstance(leaf, str) and INT_RE.fullmatch(leaf.strip()):
+            value = int(leaf.strip())
+        else:
+            continue
         if lo <= value <= hi:
             return value
     return None
@@ -140,11 +138,11 @@ def main() -> None:
     try:
         root = ET.parse(bpmn_path).getroot()
     except ET.ParseError as exc:
-        _fail(f"{bpmn_path} is not well-formed XML: {exc}")
+        fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
     script_tasks = elements(root, "scriptTask")
     if not script_tasks:
-        _fail(f"{bpmn_path} has no bpmn:scriptTask element (no Script node found)")
+        fail(f"{bpmn_path} has no bpmn:scriptTask element (no Script node found)")
     print(f"OK: bpmn has a scriptTask ({len(script_tasks)} found)")
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
@@ -165,7 +163,7 @@ def main() -> None:
     roll = find_int_in_range(leaves, ROLL_LO, ROLL_HI)
     if roll is None:
         haystack = "\n".join(str(v) for v in leaves)
-        _fail(
+        fail(
             f"No integer in [{ROLL_LO}, {ROLL_HI}] found in outputs\n"
             f"Outputs: {haystack[:1000]}"
         )

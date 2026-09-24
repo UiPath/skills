@@ -87,7 +87,7 @@ from pathlib import Path
 # …/uipath-maestro-bpmn (for _shared), same convention as _shared/check_jira_get_issue.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa: E402
 
-from _shared.bpmn_check import find_bpmn_file, resolve_project  # noqa: E402
+from _shared.bpmn_check import fail, find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
@@ -134,10 +134,6 @@ LIVE_RUN_DIR = Path("acr-user-list-live")
 # in generic_dynamic_node.yaml is raised to 1050 and documented there as the
 # one sanctioned deviation from "criteria identical" (LIVE-ADDENDUM: the
 # budget is a property of the CLI surface, not of what is graded).
-
-
-def _fail(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
 
 
 def is_generic_list_node(context: dict) -> bool:
@@ -246,15 +242,15 @@ def main() -> None:
     bpmn_path = find_bpmn_file(NAME_HINT)
     raw = Path(bpmn_path).read_text(encoding="utf-8")
     if CONNECTOR_KEY not in raw:
-        _fail(f"{bpmn_path} does not reference the {CONNECTOR_KEY} connector")
+        fail(f"{bpmn_path} does not reference the {CONNECTOR_KEY} connector")
     if OBJECT_NAME not in raw:
-        _fail(f"{bpmn_path} does not reference the object {OBJECT_NAME!r}")
+        fail(f"{bpmn_path} does not reference the object {OBJECT_NAME!r}")
     print(f"OK: bpmn references {CONNECTOR_KEY} and object {OBJECT_NAME!r}")
 
     try:
         root = ET.parse(bpmn_path).getroot()
     except ET.ParseError as exc:
-        _fail(f"{bpmn_path} is not well-formed XML: {exc}")
+        fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
     list_nodes = find_generic_list_nodes(root)
     if not list_nodes:
@@ -265,7 +261,7 @@ def main() -> None:
                 if connector_context(node).get("connectorKey") == CONNECTOR_KEY
             }
         )
-        _fail(
+        fail(
             f"No generic ServiceNow list activity found on the {CONNECTOR_KEY} "
             f"connector with objectName={OBJECT_NAME!r} (expected operation "
             f"'list' or method 'GET'). Connector node contexts seen: {seen}"
@@ -274,10 +270,10 @@ def main() -> None:
 
     process = root.find(q(BPMN_NS, "process"))
     if process is None:
-        _fail(f"{bpmn_path} has no bpmn:process")
+        fail(f"{bpmn_path} has no bpmn:process")
     outputs = declared_outputs(process)
     if not outputs:
-        _fail("process declares no uipath:output variable to surface the records")
+        fail("process declares no uipath:output variable to surface the records")
     list_node_ids = tuple(node.attrib["id"] for node in list_nodes if node.attrib.get("id"))
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
@@ -295,7 +291,7 @@ def main() -> None:
 
     candidates = collect_array_candidates(evidence.variables, outputs, list_node_ids)
     if not candidates:
-        _fail(
+        fail(
             "No output variable holds an array — the connector result was not "
             "surfaced as a process output. Checked declared output globals "
             f"{outputs} and, on null readback, the list node Outputs "

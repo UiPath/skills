@@ -59,23 +59,7 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
     # wrapper; CI run 35538279757, testmanager_crud_grounded) are one artifact.
     if len({_sha256(p) for p in paths}) == 1:
         return paths[0]
-    # An abandoned draft beside the real process: `bpmn init` leaves a
-    # solution wrapper whose process carries no registry-typed node, while the
-    # deliverable does (CI run 35785806030, slack_channel_description_simulated).
-    # Only a candidate with at least one `<uipath:type value=…>` is a process
-    # the task could be graded on.
-    typed = [p for p in projects if _has_typed_node(p)]
-    if len(typed) == 1:
-        return typed[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")
-
-
-def _has_typed_node(path: str | Path) -> bool:
-    try:
-        root = ET.parse(path).getroot()
-    except (OSError, ET.ParseError):
-        return False
-    return any(node.attrib.get("value") for node in root.iter(f"{{{NS['uipath']}}}type"))
 
 
 def _sha256(path: str | Path) -> str:

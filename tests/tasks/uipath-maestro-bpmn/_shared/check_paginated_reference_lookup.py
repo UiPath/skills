@@ -28,7 +28,7 @@ Assertion map (Flow → BPMN):
   F criterion 5  flow_contains --flow-name SlackPaginationTest
                   'uipath.connector.uipath-salesforce-slack.send-message-to-channel'
                   '"C083AN4E61E"'
-                  → check_wired(): an Intsvc.ActivityExecution bpmn:sendTask
+                  → check_wired(): any Intsvc.ActivityExecution bpmn:sendTask
                     with connectorKey uipath-salesforce-slack whose objectName
                     names the Send Message to Channel operation, and whose
                     serialised XML contains the channel id C083AN4E61E
@@ -79,13 +79,14 @@ CHANNEL_ID = "C083AN4E61E"
 SEND_MESSAGE_RE = re.compile(r"send[\s_-]*messages?[\s_-]*to[\s_-]*channel", re.IGNORECASE)
 
 
-def find_slack_node(root: ET.Element) -> ET.Element | None:
-    for task in elements(root, "sendTask"):
-        if has_type(task, ACTIVITY_TYPE) and context_value(task, "connectorKey") == CONNECTOR_KEY:
-            object_name = context_value(task, "objectName")
-            if SEND_MESSAGE_RE.search(object_name):
-                return task
-    return None
+def find_slack_nodes(root: ET.Element) -> list[ET.Element]:
+    return [
+        task
+        for task in elements(root, "sendTask")
+        if has_type(task, ACTIVITY_TYPE)
+        and context_value(task, "connectorKey") == CONNECTOR_KEY
+        and SEND_MESSAGE_RE.search(context_value(task, "objectName"))
+    ]
 
 
 def check_exists() -> None:
@@ -96,18 +97,24 @@ def check_exists() -> None:
 def check_wired() -> None:
     _path, root = parse_bpmn(NAME_HINT)
 
-    node = find_slack_node(root)
-    if node is None:
+    nodes = find_slack_nodes(root)
+    if not nodes:
         fail(
             f"no bpmn:sendTask carries {ACTIVITY_TYPE} with connectorKey "
             f"{CONNECTOR_KEY!r} and an objectName naming Send Message to Channel"
         )
-    print(f"OK: {CONNECTOR_KEY} Send Message to Channel node present "
-          f"(objectName={context_value(node, 'objectName')!r})")
+    print(f"OK: {len(nodes)} {CONNECTOR_KEY} Send Message to Channel node(s) present")
 
-    if not has_type(node, CHANNEL_ID):
-        fail(f"Slack send-message node does not carry the resolved channel id {CHANNEL_ID!r}")
-    print(f"OK: Slack send-message node carries channel id {CHANNEL_ID!r}")
+    wired = [node for node in nodes if has_type(node, CHANNEL_ID)]
+    if not wired:
+        ids = [node.attrib.get("id", "?") for node in nodes]
+        fail(
+            f"none of the Slack send-message nodes {ids} carries the resolved "
+            f"channel id {CHANNEL_ID!r}"
+        )
+    print(f"OK: Slack send-message node {wired[0].attrib.get('id', '?')!r} "
+          f"(objectName={context_value(wired[0], 'objectName')!r}) carries "
+          f"channel id {CHANNEL_ID!r}")
 
 
 DISPATCH = {

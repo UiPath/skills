@@ -24,7 +24,7 @@ Assertion map (Flow -> BPMN):
       -> assert_send_identity(): every Slack sendTask carries target=query name=send_as value=user
   F check_escalation_orchestrator_paths.py:55   assert_named_equals(payload, name, expected, ...)
       -> public_value_present(): normalized value present among root Globals leaves + non-classifier element Outputs
-         leaves (see NOTE below)
+         leaves, input echoes (input_echo_ids) excluded from both (see NOTE below)
   F check_escalation_orchestrator_paths.py:65   assert_slack_message_posted(payload, "slackMessageId", ...)
       -> assert_slack_posted(): fired Slack sendTask's own Outputs.response carries a ts-shaped id, the seeded
          channel, and correlationId + escalationPath in its text
@@ -96,12 +96,12 @@ from _shared.bpmn_live import (  # noqa: E402
     get_ci,
     import_exact,
     index_runtime_connectors,
+    input_echo_ids,
+    output_leaves,
     payload_data,
     q,
-    root_scope,
     run_cli,
     run_debug,
-    value_leaves,
 )
 
 SLACK_KEY = "uipath-salesforce-slack"
@@ -130,6 +130,7 @@ class Contract:
     gateway_ids: tuple[str, ...]
     slack_ids: tuple[str, ...]
     end_ids: tuple[str, ...]
+    echo_ids: tuple[str, ...]
 
 
 def resolve_contract(path: Path) -> Contract:
@@ -177,6 +178,7 @@ def resolve_contract(path: Path) -> Contract:
         gateway_ids=gateway_ids,
         slack_ids=slack_ids,
         end_ids=end_ids,
+        echo_ids=tuple(sorted(input_echo_ids(process))),
     )
 
 
@@ -333,17 +335,12 @@ def _loose_contains(haystack: str, needle: str) -> bool:
 def public_value_present(
     variables_data, expected, *, exclude_ids: tuple[str, ...], case_sensitive: bool
 ) -> bool:
-    """Whether `expected` shows up among root Globals or a non-excluded
-    element's Outputs -- see the module docstring NOTE on why this is a broad
-    leaf search rather than one pinned root-output id."""
+    """Whether `expected` shows up among root Globals or element Outputs, minus
+    the Globals and elements named in `exclude_ids` -- see the module docstring
+    NOTE on why this is a broad leaf search rather than one pinned root-output id."""
 
     target = normalized(expected, case_fold=not case_sensitive)
-    candidates = list(value_leaves(get_ci(root_scope(variables_data), "Globals", {})))
-    for scope in get_ci(variables_data, "Variables", []) or []:
-        for element in get_ci(scope, "Elements", []) or []:
-            if get_ci(element, "ElementId") in exclude_ids:
-                continue
-            candidates.extend(value_leaves(get_ci(element, "Outputs", {})))
+    candidates = output_leaves(variables_data, exclude_ids)
     return any(normalized(v, case_fold=not case_sensitive) == target for v in candidates)
 
 
@@ -454,7 +451,7 @@ def verify_case(contract: Contract, imported_project: Path, case: dict) -> dict:
         if not public_value_present(
             variables_data,
             expected_value,
-            exclude_ids=contract.classifier_ids,
+            exclude_ids=contract.classifier_ids + contract.echo_ids,
             case_sensitive=field in CASE_SENSITIVE,
         ):
             raise CheckFailure(f"{case['name']}: no public output carries {field}={expected_value!r}")

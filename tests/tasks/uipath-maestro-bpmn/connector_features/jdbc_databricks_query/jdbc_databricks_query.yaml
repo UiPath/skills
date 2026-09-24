@@ -21,7 +21,7 @@ description: >
   JSON node/edge walk becomes an XML walk over the registry-driven
   Intsvc.ActivityExecution wrapper, and Flow's node-type-suffix disambiguation
   guard becomes a connectorKey + objectName/method context-field match.
-tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, uipath-uipath-jdbc]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector]
 sandbox:
   template_sources:
     - type: template_dir

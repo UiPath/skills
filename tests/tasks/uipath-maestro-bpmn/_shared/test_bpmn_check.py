@@ -407,24 +407,6 @@ def test_resolve_project_excludes_the_live_run_copy(tmp_path, monkeypatch) -> No
     assert resolved == tmp_path / "ProjSolution" / "Proj"
 
 
-def test_find_bpmn_file_without_hint_skips_an_untyped_draft(tmp_path, monkeypatch) -> None:
-    """Two different .bpmn files, both beside a project.uiproj: the one with a
-    registry-typed node is the deliverable; the other is an abandoned draft
-    (CI run 35785806030). Two typed candidates stay ambiguous."""
-    typed = f'<x xmlns:uipath="{NS["uipath"]}"><uipath:type version="v1" value="Intsvc.ActivityExecution"/></x>'
-    for d, body in (("Real/Proj", typed), ("ProjSolution/Proj", "<x/>")):
-        (tmp_path / d).mkdir(parents=True)
-        (tmp_path / d / "Proj.bpmn").write_text(body, encoding="utf-8")
-        (tmp_path / d / "project.uiproj").write_text("{}", encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
-
-    assert bpmn_check.find_bpmn_file().endswith("Real/Proj/Proj.bpmn")
-
-    (tmp_path / "ProjSolution" / "Proj" / "Proj.bpmn").write_text(typed.replace("Intsvc", "BPMN"), encoding="utf-8")
-    with pytest.raises(SystemExit):
-        bpmn_check.find_bpmn_file()
-
-
 def _send_task(payload: str) -> ET.Element:
     return ET.fromstring(
         f'<bpmn:sendTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '

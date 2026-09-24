@@ -11,7 +11,7 @@ description: >
   Intsvc.ActivityExecution wrapper instead of Flow connector nodes, and the
   grader accepts either the curated per-operation objectName or the generic
   entity-CRUD form the connector skill may emit for the same operation.
-tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector, negative, uipath-uipath-dataservice]
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector]
 
 sandbox:
   template_sources:

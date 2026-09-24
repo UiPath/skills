@@ -10,7 +10,7 @@ description: >
   query node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper instead of a Flow connector node, and
   validation runs via `bpmn validate` instead of `flow validate`.
-tags: [uipath-maestro-bpmn, integration, "lifecycle:generate", "shape:multi-node", connector, uipath-salesforce, "mode:build"]
+tags: [uipath-maestro-bpmn, integration, "lifecycle:generate", "shape:multi-node", connector, "mode:build"]
 
 run_limits:
   expected_turns: 56

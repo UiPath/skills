@@ -19,7 +19,7 @@ description: >
   CLI steps (`solution init`/`solution projects import`, a separate
   `incidents` read) that BPMN's live surface needs beyond Flow's single
   `flow debug` call (arithmetic in the grader's docstring).
-tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, uipath-salesforce-slack, "feature:http"]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, "feature:http", outcome-graded]
 
 run_limits:
   expected_turns: 32
