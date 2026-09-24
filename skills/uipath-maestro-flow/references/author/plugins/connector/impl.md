@@ -242,7 +242,7 @@ Supply endpoint placeholders through `pathParameters` and resolve their IDs with
 
 For array fields, strip trailing `[*]` from the authored key and use a `=js:` expression returning the array; literal JSON arrays do not bind. Names containing `[*].` are not authorable. This applies to body, query, and path buckets; `customFieldsRequestDetails.parameterValues` uses `_array` encoding. The expression may return the whole array or wrap one element — wrap a literal array in parentheses, `"fields.labels": "=js:(['shield', 'p0'])"`; pass a whole array from a variable as `"=js:$vars.allTags"`; wrap a single element as `"=js:([$vars.priorityTag])"`.
 
-Derive connector output shape from `connectorMethodInfo.operation`, not vendor intuition or `outputDefinition.output.type`: `list` returns a bare array; other operations return one object. Use `=js:$vars.<node>.output` for list collections and `=js:$vars.<node>.output.<field>` otherwise.
+Derive connector output shape from `connectorMethodInfo.operation`, not vendor intuition or `outputDefinition.output.type`: `list` returns a bare array; other operations return one object. Use `=js:$vars.<node>.output` for list collections and `=js:$vars.<node>.output.<field>` otherwise. Activities tagged `API.File.Download` are the exception: configure rewrites their output type to `file`, and `=js:$vars.<node>.output` is the whole attachment — feed that to an IxP node's `fileRef`, see [ixp/impl.md — Wiring `fileRef` — connector download node](../ixp/impl.md#wiring-fileref--connector-download-node).
 
 `node configure` populates `inputs.detail` and top-level `bindings[]`. The serialized folder field is `connectionFolderKey`; never hand-edit it. Do not use `filterExpression`, which belongs to trigger/JMESPath filtering; see [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees).
 
@@ -437,6 +437,7 @@ Never hardcode connection IDs; fetch them from IS at authoring time. Connector-t
 - **Resource not found after clean validate/debug:** resolve the reference again with the current connection; IDs are connection-scoped. Reconfigure and re-debug.
 - **Required field missing:** inspect every `required: true` entry in cached `requestFields` and `parameters`.
 - **`No api-type ObjectAction matched for fields [...]`:** pass the node definition's `model.context[].method` verbatim as `--operation`; do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method`.
+- **IxP extraction fails `[430002] … missing the required 'ID' field` downstream of a download activity:** read the download node's `definitions[]` entry before assigning a cause. `outputDefinition.output.type` still `"object"` means configure never ran and the output is plain JSON, not an attachment — configure it, required file parameter included, and re-debug. Already `"file"` means configure ran, so inspect the download's own inputs and result instead. See [ixp/impl.md — Wiring `fileRef` — connector download node](../ixp/impl.md#wiring-fileref--connector-download-node).
 - **Unresolvable `$vars`:** verify graph edges and upstream output paths.
 - **Missing method/path:** rerun `registry get` with `--connection-id` or use describe for generic activities.
 - **Malformed or stale `bindings_v2.json`:** never edit it; rerun `node configure` and debug/pack.
