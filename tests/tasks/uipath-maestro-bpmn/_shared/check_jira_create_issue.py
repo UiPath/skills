@@ -105,6 +105,7 @@ from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
     DebugEvidence,
     connector_context,
+    connector_response_values,
     element_output_records,
     fetch_incidents,
     fetch_variables,
@@ -188,7 +189,12 @@ def collect_candidate_keys(
     variables_data: object, create_ids: tuple[str, ...], project: str
 ) -> list[str]:
     outputs = element_output_records(variables_data, create_ids)
-    cands = re.findall(rf"\b{re.escape(project)}-\d+\b", json.dumps(outputs, default=str))
+    key_re = re.compile(rf"{re.escape(project)}-\d+")
+    cands = [
+        key.strip()
+        for key in connector_response_values(outputs, "key")
+        if isinstance(key, str) and key_re.fullmatch(key.strip())
+    ]
     return list(dict.fromkeys(cands))
 
 

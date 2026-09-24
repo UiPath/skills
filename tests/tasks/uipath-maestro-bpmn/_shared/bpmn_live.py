@@ -631,9 +631,10 @@ def output_leaves(
     *,
     elements: Collection[str] | None = None,
 ) -> list[Any]:
-    """Leaves of the root Globals and the elements' Outputs, minus the globals
-    and elements named in `skip` (see :func:`input_echo_ids`). `elements`
-    limits the Outputs to those element ids; None reads every element."""
+    """Leaves of the root Globals and the elements' Outputs, minus the
+    globals, elements and top-level output names in `skip` (see
+    :func:`input_echo_ids`). `elements` limits the Outputs to those element
+    ids; None reads every element."""
 
     skipped = {normalized_identifier(name) for name in skip}
     wanted = None if elements is None else {normalized_identifier(e) for e in elements}
@@ -645,12 +646,21 @@ def output_leaves(
                 continue
             leaves.extend(value_leaves(value))
 
-    for scope in get_ci(variables_data, "Variables", []) or []:
-        for element in get_ci(scope, "Elements", []) or []:
+    scopes = get_ci(variables_data, "Variables", [])
+    for scope in scopes if isinstance(scopes, list) else []:
+        elements_ = get_ci(scope, "Elements", [])
+        for element in elements_ if isinstance(elements_, list) else []:
             element_id = normalized_identifier(get_ci(element, "ElementId"))
             if element_id in skipped or (wanted is not None and element_id not in wanted):
                 continue
-            leaves.extend(value_leaves(get_ci(element, "Outputs", {})))
+            outputs = get_ci(element, "Outputs", {})
+            if isinstance(outputs, dict):
+                outputs = {
+                    key: value
+                    for key, value in outputs.items()
+                    if normalized_identifier(key) not in skipped
+                }
+            leaves.extend(value_leaves(outputs))
     return leaves
 
 
@@ -660,12 +670,12 @@ def output_haystack(variables_data: Any, skip: Collection[str] = ()) -> str:
 
 def input_echo_ids(process: ET.Element) -> set[str]:
     """Where a process input shows up unchanged in variables-all: the
-    `uipath:input` ids and names, the variables a start event copies them
-    into verbatim, and the start events themselves.
+    `uipath:input` ids and names, every variable and output name a mapping
+    copies one into verbatim (transitively), and the start events.
 
         <uipath:input id="input_Var_Amount" name="Amount" elementId="Start_1"/>
-        <uipath:output var="Var_Amount" source="=vars.input_Var_Amount"/>  # on Start_1
-        -> {"input_Var_Amount", "Amount", "Var_Amount", "Start_1"}
+        <uipath:output name="Amt" var="Var_Amount" source="=vars.input_Var_Amount"/>
+        -> {"input_Var_Amount", "Amount", "Var_Amount", "Amt", "Start_1"}
     """
 
     ids: set[str] = set()
@@ -673,11 +683,29 @@ def input_echo_ids(process: ET.Element) -> set[str]:
         for node in variables.iter(q(UIPATH_NS, "input")):
             ids.update(v for v in (node.attrib.get("id"), node.attrib.get("name")) if v)
 
-    copies = {f"=vars.{identifier}" for identifier in ids}
     for start in process.iter(q(BPMN_NS, "startEvent")):
         if start.attrib.get("id"):
             ids.add(start.attrib["id"])
-        for mapping in start.iter(q(UIPATH_NS, "output")):
-            if (mapping.attrib.get("source") or "").strip() in copies and mapping.attrib.get("var"):
-                ids.add(mapping.attrib["var"])
+
+    copies: list[tuple[str, str, str | None]] = []
+    for element in process.iter():
+        extensions = element.find(q(BPMN_NS, "extensionElements"))
+        if extensions is None:
+            continue
+        for mapping in extensions.iter(q(UIPATH_NS, "output")):
+            source = (mapping.attrib.get("source") or "").strip()
+            var = mapping.attrib.get("var")
+            if source.startswith("=vars.") and var:
+                copies.append((source.removeprefix("=vars."), var, mapping.attrib.get("name")))
+
+    grew = True
+    while grew:
+        grew = False
+        for source, var, name in copies:
+            if source not in ids or var in ids:
+                continue
+            ids.add(var)
+            if name:
+                ids.add(name)
+            grew = True
     return ids
