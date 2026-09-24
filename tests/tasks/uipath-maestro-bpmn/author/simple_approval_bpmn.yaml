@@ -41,7 +41,7 @@ initial_prompt: |
   - Use the skill's documented mutable-state bridges at the manual entry and
     single completion end event.
   - Include an integer `uipath:migrationVersion` element on the process.
-  - Use a registry-derived JavaScript ScriptTask, map its result to the mutable
+  - Use the skill's JavaScript ScriptTask node, map its result to the mutable
     decision variable, and keep its code compatible with the Jint runtime (no
     Node.js, browser, filesystem, or network APIs).
   - Include BPMN DI shapes for every visible node and BPMN DI edges with

@@ -1,0 +1,192 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="16">
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="16">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="portalUrl" />
+      <Variable x:TypeArguments="x:String" Name="searchTerm" />
+      <Variable x:TypeArguments="x:String" Name="directoryTableSelector" />
+      <Variable x:TypeArguments="sd:DataTable" Name="staffRecords" />
+      <Variable x:TypeArguments="x:Int32" Name="matchedRows" />
+      <Variable x:TypeArguments="x:String" Name="leadName" />
+      <Variable x:TypeArguments="x:String" Name="headcountTotal" />
+      <Variable x:TypeArguments="x:String" Name="summary" />
+      <Variable x:TypeArguments="x:Int32" Name="northHeadcount" />
+      <Variable x:TypeArguments="x:Int32" Name="southHeadcount" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <Assign DisplayName="Set portal URL" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[portalUrl]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["https://datatables.net/examples/basic_init/zero_configuration.html"]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Set role filter" sap2010:WorkflowViewState.IdRef="Assign_2">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[searchTerm]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["Engineer"]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Set directory table selector" sap2010:WorkflowViewState.IdRef="Assign_3">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[directoryTableSelector]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;"]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Set north office headcount" sap2010:WorkflowViewState.IdRef="Assign_4">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Int32">[northHeadcount]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Int32">7</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Set south office headcount" sap2010:WorkflowViewState.IdRef="Assign_5">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Int32">[southHeadcount]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Int32">5</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log run start" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[String.Format(&quot;Staff directory audit started. Portal: {0}. Role filter: {1}.&quot;, portalUrl, searchTerm)]" />
+    <TryCatch DisplayName="Collect directory data" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <Sequence DisplayName="Directory collection" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" ContinueOnError="{x:Null}" DisplayName="Invoke GetStaffRecords workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="GetStaffRecords.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_PortalUrl">
+                <mva:VisualBasicValue x:TypeArguments="x:String" ExpressionText="portalUrl" />
+              </InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_SearchTerm">
+                <mva:VisualBasicValue x:TypeArguments="x:String" ExpressionText="searchTerm" />
+              </InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_DirectoryTableSelector">
+                <mva:VisualBasicValue x:TypeArguments="x:String" ExpressionText="directoryTableSelector" />
+              </InArgument>
+              <OutArgument x:TypeArguments="sd:DataTable" x:Key="out_StaffRecords">
+                <mva:VisualBasicReference x:TypeArguments="sd:DataTable" ExpressionText="staffRecords" />
+              </OutArgument>
+              <OutArgument x:TypeArguments="x:Int32" x:Key="out_MatchedRows">
+                <mva:VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="matchedRows" />
+              </OutArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_LeadName">
+                <mva:VisualBasicReference x:TypeArguments="x:String" ExpressionText="leadName" />
+              </OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="ui:ActivityTimeoutException">
+          <ActivityAction x:TypeArguments="ui:ActivityTimeoutException">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="ui:ActivityTimeoutException" Name="timeoutException" />
+            </ActivityAction.Argument>
+            <ui:LogMessage DisplayName="Log portal timeout" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Warn" Message="[String.Format(&quot;A portal element did not appear in time: {0}&quot;, timeoutException.Message)]" />
+          </ActivityAction>
+        </Catch>
+        <Catch x:TypeArguments="s:Exception">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="collectionError" />
+            </ActivityAction.Argument>
+            <ui:LogMessage DisplayName="Log collection failure" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Error" Message="[String.Format(&quot;Directory collection failed: {0}&quot;, collectionError.Message)]" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+      <TryCatch.Finally>
+        <ui:LogMessage DisplayName="Log collection finished" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="Directory collection pass finished." />
+      </TryCatch.Finally>
+    </TryCatch>
+    <TryCatch DisplayName="Verify headcount totals" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+      <TryCatch.Try>
+        <Sequence DisplayName="Headcount verification" sap2010:WorkflowViewState.IdRef="Sequence_3">
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" ContinueOnError="{x:Null}" DisplayName="Invoke VerifyHeadcount workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="VerifyHeadcount.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:Int32" x:Key="in_FirstCount">
+                <mva:VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="northHeadcount" />
+              </InArgument>
+              <InArgument x:TypeArguments="x:Int32" x:Key="in_SecondCount">
+                <mva:VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="southHeadcount" />
+              </InArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_TotalText">
+                <mva:VisualBasicReference x:TypeArguments="x:String" ExpressionText="headcountTotal" />
+              </OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="headcountError" />
+            </ActivityAction.Argument>
+            <ui:LogMessage DisplayName="Log headcount failure" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Error" Message="[String.Format(&quot;Headcount verification failed: {0}&quot;, headcountError.Message)]" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" ContinueOnError="{x:Null}" DisplayName="Invoke BuildReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="BuildReport.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="sd:DataTable" x:Key="in_StaffRecords">
+          <mva:VisualBasicValue x:TypeArguments="sd:DataTable" ExpressionText="staffRecords" />
+        </InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_LeadName">
+          <mva:VisualBasicValue x:TypeArguments="x:String" ExpressionText="leadName" />
+        </InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_TotalText">
+          <mva:VisualBasicValue x:TypeArguments="x:String" ExpressionText="headcountTotal" />
+        </InArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_Summary">
+          <mva:VisualBasicReference x:TypeArguments="x:String" ExpressionText="summary" />
+        </OutArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <ui:LogMessage DisplayName="Log run summary" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[String.Format(&quot;Audit complete. Rows matched: {0}. {1}&quot;, matchedRows, summary)]" />
+  </Sequence>
+</Activity>

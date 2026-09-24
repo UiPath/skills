@@ -47,6 +47,9 @@
   "references/connector-trigger-planning.md": {
     "Empty lookup gate": 2
   },
+  "references/edit-recipes-guide.md": {
+    "Read references to EOF before mutation": 1
+  },
   "references/entry-points-sync.md": {
     "The build is lossless against the SDD": 1
   },

@@ -293,7 +293,7 @@ jobs:
       # Guards both gates in scripts/check-task-driver.py; the headline case
       # replays the 2026-09-04 multi-line pre_run that ERRORed the Windows split.
       - name: Run task gate tests
-        run: pytest tests/scripts/test_check_task_driver.py tests/scripts/test_stage_plugin_root.py -v
+        run: pytest tests/scripts/test_check_task_driver.py -v
 
   required-checks-contract:
     runs-on: uipath-ubuntu-latest

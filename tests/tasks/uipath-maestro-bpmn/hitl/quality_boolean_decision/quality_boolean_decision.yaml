@@ -31,7 +31,7 @@ initial_prompt: |
     skill: `.bpmn` XML, main file `VendorApprovalBpmn/VendorApprovalBpmn.bpmn`.
     Do NOT build a `.flow`.
   - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
-    `uipath:activity` shell from the registry template.
+    activity type.
   - The approval decision MUST be a boolean output field bound to a
     boolean-typed variable — do NOT model it as a string.
   - The gateway condition MUST reference the boolean variable via `vars.<id>`

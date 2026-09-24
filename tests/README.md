@@ -61,20 +61,12 @@ make tags TAGS="integration connector-feature" EXPERIMENT=experiments/smoke.yaml
 make test-uipath-maestro-flow
 
 # Run a single task file
-make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
   -e experiments/default.yaml
 ```
 
 The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.
-
-Every `make` run target stages `.plugin-root` first — the pruned plugin tree the
-experiments hand the agent, built by `tests/scripts/stage_plugin_root.py`. The
-experiments never point the agent at the repo root, because coder_eval mounts
-that path into the task container and the repo root carries `tests/tasks`: the
-graders and the reference answers. Call `coder-eval` directly and you must run
-`make plugin-root` yourself, or the agent loads no skills.
 
 ### Parallelism
 
@@ -231,7 +223,7 @@ docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
   --entrypoint bash skills-codex:latest -c 'uip login status'
 ```
 
-`activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
+`activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`); arming is per-criterion — each `skill_triggered` criterion carries a `stop_early: {on_pass: stop}` block that ends a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.5: 0.9.5 removed `stop_when` and the run-level `run_limits.stop_early: true` master arm — both are hard errors now. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
@@ -304,7 +296,6 @@ route — i.e. those with an `llm_judge` or `agent_judge` criterion. A task with
 
 ```bash
 cd tests && make install          # once
-make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run <task.yaml> \
   -e experiments/default.yaml -v
 ```
@@ -656,7 +647,6 @@ runs/
 
 4. **Re-run a single task with verbose output:**
    ```bash
-   make plugin-root
    SKILLS_REPO_PATH=$(cd .. && pwd) \
      .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
      -e experiments/default.yaml -v

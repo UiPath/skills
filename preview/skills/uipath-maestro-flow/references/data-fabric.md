@@ -212,7 +212,7 @@ shape these operations use: [`connector-params.md`](connector-params.md).
 
 **Read the operation's own doc before guessing anything.** The connector library
 ships a Markdown page per operation, and an environment that stages a library
-points `$FLOW_SDK_LIBRARY_MD` at it (`uip maestro registry path --library-md`
+points `$FLOW_SDK_LIBRARY_MD` at it (`uip maestro registry path --library-md --output plain`
 otherwise):
 
 ```bash

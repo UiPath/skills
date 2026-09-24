@@ -294,6 +294,8 @@ uip or processes rollback <process-key> --output json
 uip or processes update <process-key> --output json
 ```
 
+To record what a process saves (manual time per item, volume, employee cost) for Orchestrator's Business ROI page, use `uip or process-roi` — see [business-roi.md](business-roi.md).
+
 ---
 
 ## Complete Example

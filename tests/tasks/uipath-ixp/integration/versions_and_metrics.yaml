@@ -70,7 +70,7 @@ success_criteria:
     description: "Improved a field's extraction instruction (the change that produces v2)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Total Amount))[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Total Amount)(?=.*"group"\s*:\s*"Invoice Header"))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 

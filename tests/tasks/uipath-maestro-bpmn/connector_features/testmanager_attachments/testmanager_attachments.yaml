@@ -31,11 +31,6 @@ run_limits:
   max_turns: 60
   turn_timeout: 1200
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 

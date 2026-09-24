@@ -15,9 +15,6 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "_shared"))
-from grader_common import skill_references_dir  # noqa: E402
-
 REPORT = Path(os.getcwd()) / "_review_report.md"
 MIN_REPORT_BYTES = 500
 
@@ -92,15 +89,13 @@ def classify_rule_ids(text: str):
     cited = set(re.findall(r"\b((?:ST|UI|TA|RT)-[A-Z]{3}-\d{3})\b", text))
     if not cited:
         return [], []
-    refs = skill_references_dir("uipath-review")
-    if refs is None:
-        # Judging against an empty corpus would call every code outside
-        # _REAL_RULE_IDS fabricated; skipping silently would pass every code.
-        # Neither is a verdict, so say the check is off.
-        print("WARN: skill references unreadable — not judging rule-id fabrication", file=sys.stderr)
-        return [], []
-    known = "".join(f.read_text(encoding="utf-8", errors="replace")
-                    for f in refs.rglob("*.md"))
+    known = ""
+    skills_repo = os.environ.get("SKILLS_REPO_PATH")
+    if skills_repo:
+        refs = Path(skills_repo) / "skills" / "uipath-review" / "references"
+        if refs.is_dir():
+            known = "".join(f.read_text(encoding="utf-8", errors="replace")
+                            for f in refs.rglob("*.md"))
     fabricated = sorted(c for c in cited if c not in _REAL_RULE_IDS and c not in known)
     return fabricated, []
 

@@ -32,10 +32,20 @@ which makes the model pack its whole answer into one string field.
 Context signature:
 `{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension? }`.
 
-Resolve the index name and id together from the tenant registry. Local execution
-has no semantic retrieval service, so an inline-agent answer is ungrounded even
-when the resource wiring is present. Platform evidence must establish that the
-intended index was used and that its retrieved knowledge influenced the answer.
+Resolve the index from the tenant.
+Know the name: use `solution resources list` below.
+Discovering what exists: use the `uip context-grounding` bridge, which reports every index with its folder.
+Not `uip maestro flow registry` (node manifests), not `uip maestro registry` (the connector library), not `uip or folders list`.
+
+```bash
+uip solution resources list --kind Index --source remote --search "<index-name>" --output json
+```
+
+Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
+Give `folderPath`: the emitted resource carries no index id, so the folder is half of how the runtime finds the index.
+
+Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
+Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
 
 The `uip context-grounding` bridge runs in the project's Python environment.
 Activate the existing environment and run setup once before list/search; setup

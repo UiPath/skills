@@ -37,11 +37,6 @@ run_limits:
 reference:
   directory: ../..
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 simulation:
   enabled: true
 

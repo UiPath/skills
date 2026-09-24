@@ -51,6 +51,8 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 ## Common edits
 
+**Check [edit-recipes-guide.md](edit-recipes-guide.md) first.** It holds complete recipes for adding, changing, and removing tasks and stages; when one covers the edit, follow it instead of the rows below.
+
 | Edit | Operation + recipe |
 |---|---|
 | Add / insert a stage | [case-editing-operations.md § Add a node](case-editing-operations.md#add-a-node-trigger--stage) + [plugins/stages/impl-json.md](plugins/stages/impl-json.md). Every regular stage needs ≥1 entry condition (Step 10). |
