@@ -512,7 +512,8 @@ and honestly surfaced to the user as gaps when asked.
    workflow, agent) is a five-step sequence, in this order. Stopping after
    the owning skill hands the resource back is not done.**
 <!--skill-flavor:delegated-resource-solution-first:start-->
-   (1) Create or open the solution **first** (`uip solution init`), and
+   (1) Create or open the solution **first** (`uip solution init`; on
+   `unknown command`, the older `uip solution new`), and
    author the resource's project **inside** it, so it registers in the
    `.uipx`. A project created outside any solution has no path to deployment.
 <!--skill-flavor:delegated-resource-solution-first:end-->
@@ -524,9 +525,13 @@ and honestly surfaced to the user as gaps when asked.
    the BPMN node; its release key and folder key exist only once deployed.
    To redeploy, follow `uipath-solution`'s upgrade path.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
-   (4) Read the deployed resource's `Key` and `FolderKey` from
-   `uip or processes list --folder-path <path> --output json` and bind the
-   node per rule 18, never a fabricated or placeholder key. Re-read both after
+   (4) Pick the wrapper by `processType`
+   ([registry-workflow.md](references/registry-workflow.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
+   a low-code agent uses `Orchestrator.StartAgentJob`, whose template (rule
+   6) binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
+   the deployed resource's `Key` and `FolderKey` from
+   `uip or processes list --folder-path <path> --output json` and bind per
+   rule 18, never a fabricated or placeholder key. Re-read both after
    every deploy: `deploy run` creates a new folder, so a literal `folderKey`
    from an earlier deploy points at the old one. (5) Unless the task forbids
    live runs or asks for a draft or handoff, run the process
@@ -537,12 +542,14 @@ and honestly surfaced to the user as gaps when asked.
    as unverified.
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
    `ExecuteApiWorkflowAsync`, `BusinessRules`, `StartAgenticProcess[Async]`,
-   `StartCaseMgmtProcess[Async]`) serve a context that validates but faults at
-   runtime. This is the one exception to rule 6's paste-literally.** In
-   `<uipath:context>`, keep only `releaseKey` bound via `=bindings.<id>` to
-   the resource's `Key`, and add a literal `folderKey` with the folder's
-   `FolderKey`. Drop `folderId`, `folderPath`, and `name`. Verified only for
-   `ExecuteApiWorkflowAsync`; re-verify the others with a live run. Details:
+   `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
+   validates but faults at runtime. This is the one exception to rule 6's
+   paste-literally.** For all of them, bind `releaseKey` via
+   `=bindings.<id>` to the resource's `Key`. For `ExecuteApiWorkflowAsync`
+   only, also add a literal `folderKey` with the folder's `FolderKey` and
+   drop `folderId`, `folderPath`, and `name`. For the others, keep the
+   template's remaining fields and make that swap only after a live run
+   faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
 
 ## References
