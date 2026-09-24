@@ -100,7 +100,7 @@ For a failed run, take the failing activity and its file and look them up:
 
 ## Fix and rerun loop
 
-The loop runs only for a failure attributed to the migration; anything else is reported and the loop does not start. `<N>` counts the fixes applied so far.
+The loop runs only for a failure attributed to the migration; anything else is reported and the loop does not start. `<N>` numbers the edits applied to the output, starting at 1. An edit the user asked for before the first run, such as a treatment chosen in the plan, is edit 1 and takes its backup in step 3 like any fix.
 
 1. Before proposing any fix:
    1. **Evidence.** Read the failing activity and its enclosing constructs in both projects: the classic form in `<PROJECT_DIR>` says what the workflow intended, its configuration and what the flow does next; the migrated form in `<OUTPUT_DIR>` and the tool's annotation say what the migration changed. The difference between the two is part of the evidence for every fix, alongside the exception and the annotation, and the fix restores the classic intent with modern constructs, never by reintroducing the classic activity.
