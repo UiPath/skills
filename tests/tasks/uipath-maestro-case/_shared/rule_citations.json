@@ -8,8 +8,8 @@
     "Phase 1 registry gate": 6,
     "Read references to EOF before mutation": 1,
     "Resolution audit": 1,
-    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 2,
     "SDD is the sole post-design input, across sessions": 1,
+    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 2,
     "The build is lossless against the SDD": 2,
     "Unresolved resources": 2
   },
