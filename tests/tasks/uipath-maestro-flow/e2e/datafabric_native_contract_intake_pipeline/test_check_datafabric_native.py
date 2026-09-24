@@ -206,6 +206,30 @@ def test_string_filters_fail_cleanly(tmp_path: Path) -> None:
     assert "no Id filter" in out
 
 
+def test_id_filter_only_in_a_nested_group_is_found(tmp_path: Path) -> None:
+    """The grouped form nests: `groups[].rows` rows count like root rows."""
+    flow = typed()
+    for n in flow["nodes"]:
+        cfg = n["inputs"].get("entityConfig", {})
+        if "_filters" in cfg:
+            cfg["_filters"] = {"logicalOperator": "AND", "rows": [],
+                               "groups": [{"logicalOperator": "AND", "rows": cfg["_filters"], "groups": []}]}
+    result = run(CRUD, flow, tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_single_read_without_result_mode_counts_as_single(tmp_path: Path) -> None:
+    """Read 1.0 writes no resultMode; the platform reads that as single."""
+    flow = typed()
+    read_one = next(n for n in flow["nodes"] if n["id"] == "readById")
+    read_one["typeVersion"] = "1.0"
+    del read_one["inputs"]["entityConfig"]["resultMode"]
+    flow["definitions"].append(definition("core.datafabric.read", "1.0"))
+    for checker in (CRUD, SHAPE):
+        result = run(checker, flow, tmp_path)
+        assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_non_dict_sort_fails_cleanly(tmp_path: Path) -> None:
     flow = typed()
     for n in flow["nodes"]:
@@ -223,6 +247,36 @@ def test_instance_model_still_fails(tmp_path: Path) -> None:
     flow["nodes"][1]["model"] = {"type": "bpmn:Task"}
     out = assert_clean_fail(run(SHAPE, flow, tmp_path))
     assert "carries an instance `model` block" in out
+
+
+def test_sdk_670_shape_fails_only_on_the_instance_model(tmp_path: Path) -> None:
+    """SDK 6.7.0 as shipped: the typed shape plus a model copied onto every node.
+
+    Only the model lines fail. The definitions (registry copies) and the
+    outputs (the manifest's) pass, so the row turns green as soon as the SDK
+    stops copying `model`, with no second checker change.
+    """
+    flow = chain(crud_nodes(versions=TYPED_V, filters=flat, sort_cfg=SORT, outputs=True, model=True),
+                 defs_for(TYPED_V))
+    out = assert_clean_fail(run(SHAPE, flow, tmp_path))
+    fails = [line for line in out.splitlines() if "FAIL" in line or "carries" in line]
+    assert fails, out
+    assert all("instance `model` block" in line for line in fails if "node " in line), out
+    assert out.count("instance `model` block") == 5, out
+    assert "definitions[]" not in out and "outputs" not in out, out
+    assert run(CRUD, flow, tmp_path).returncode == 0
+
+
+def test_service_task_definition_fails(tmp_path: Path) -> None:
+    flow = typed()
+    flow["definitions"][0]["model"]["type"] = "bpmn:ServiceTask"
+    assert "expected 'bpmn:Task'" in assert_clean_fail(run(SHAPE, flow, tmp_path))
+
+
+def test_definition_without_api_function_exclude_fails(tmp_path: Path) -> None:
+    flow = typed()
+    flow["definitions"][0]["runtimeConstraints"] = {"exclude": []}
+    assert "lacks 'api-function'" in assert_clean_fail(run(SHAPE, flow, tmp_path))
 
 
 def test_extra_instance_output_key_fails(tmp_path: Path) -> None:

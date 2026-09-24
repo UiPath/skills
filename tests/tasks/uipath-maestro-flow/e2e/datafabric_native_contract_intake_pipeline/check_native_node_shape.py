@@ -14,10 +14,14 @@ Studio Web writes, which `flow validate` does NOT enforce:
   `nodeToInstance` keeps every output whose `source` is set, and the manifests
   declare `source: '=response'`), so they are allowed, not invented. Delete
   declares no output, so it carries none.
-- no instance `model` block. Studio Web never writes one (flow-core node.ts:
-  "`node.model` is never written"; `nodeToInstance` omits it), and export
-  spreads an instance copy over the definition's (services bpmn-to-xml.ts), so
-  a copy that differs changes the BPMN.
+- no instance `model` block, not even one identical to the definition's.
+  Studio Web never writes one (flow-core node.ts: "`node.model` is never
+  written"; `nodeToInstance` omits it). This rule grades the canvas shape, not
+  harm: an identical copy changes nothing today, but export spreads an
+  instance copy over the definition's (services bpmn-to-xml.ts), so once the
+  definition moves on a stale copy wins. The builder SDK emits none from the
+  release after 6.7.0; 6.7.0 output fails this rule and nothing else. The
+  rule is unchanged from the version before it, so no run is graded harder.
 - no outgoing edge with `sourcePort: "error"` (these four nodes have no
   error port)
 

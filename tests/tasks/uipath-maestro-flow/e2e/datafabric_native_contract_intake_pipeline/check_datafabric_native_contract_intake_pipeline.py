@@ -3,7 +3,7 @@
 `core.datafabric.*` entity nodes — native node shape only:
 
 - >=1 core.datafabric.create on ContractRegistry, fieldValues has contractTitle
-- >=1 core.datafabric.read (resultMode: single) on ContractRegistry, filtered
+- >=1 core.datafabric.read (resultMode single, or absent) on ContractRegistry, filtered
       on Id, wired to the create node's output Id
 - >=1 core.datafabric.read (resultMode: multiple) on ContractRegistry,
       filtered on contractTitle, sorted by priority DESC
@@ -161,7 +161,10 @@ def main() -> int:
 
         create_ids = [c.get("id") for c in creates]
 
-        single_reads = [r for r in reads if entity_config(r).get("resultMode") == "single"]
+        # The platform reads anything but "multiple" as single, an absent
+        # resultMode included (flow-schema utils.ts `resolveReadResultMode`);
+        # read 1.0, the builder SDK's read-one default, writes none.
+        single_reads = [r for r in reads if entity_config(r).get("resultMode") != "multiple"]
         multi_reads = [r for r in reads if entity_config(r).get("resultMode") == "multiple"]
 
         if not single_reads:
