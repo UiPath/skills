@@ -18,11 +18,15 @@ reads every ``inlineAgent(...)`` call in the preview skill's ``.ts`` files and
 refuse. Prose, ``--output json`` CLI text and checker code are never read.
 
 ``json_text_directive`` is a port of the SDK's ``jsonTextDirective``
-(``typescript/sdk/src/check.ts``). Keep the two phrase tables in step.
+(``typescript/sdk/src/check.ts``). Both repos run it against the same vectors:
+``inline_agent_prompt_vectors.json`` here is a byte-identical copy of the SDK's
+``typescript/tests/fixtures/inline-agent-prompt-vectors.json``. When the SDK
+matcher changes, copy the fixture and port the table change in the same PR.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -32,11 +36,11 @@ REPO = Path(__file__).resolve().parents[4]
 PREVIEW = REPO / "preview" / "skills" / "uipath-maestro-flow"
 
 # ── the SDK matcher, ported ───────────────────────────────────────────────────
-# Three shapes, each skipping a negation before the verb or inside the gap:
+# Three shapes, each skipping a negation earlier in the same clause or inside the gap:
 #  DIRECT  verb + closed qualifier words + json   ("Return ONLY a JSON object")
-#  VIA     verb + <=4 words + as/in/with + qualifiers + json   ("Format your answer as JSON")
+#  VIA     verb + <=2 words + as/in/with + qualifiers + json   ("Format your answer as JSON")
 #  BRACE   a quoted-key brace spelling a returns key   ('Return ONLY {"category"}')
-_VERBS = "return|respond|reply|output|answer|produce|emit|format|give|provide|write"
+_VERBS = "return|respond|reply|output|answer|produce|emit|format|give|provide"
 _QUALIFIERS = [
     "only", "just", "exactly", "strictly", "solely", "simply", "a", "an", "one", "single", "the",
     "your", "its", "this", "that", "valid", "raw", "pure", "plain", "strict", "compact", "minified",
@@ -47,11 +51,17 @@ _NEGATIONS = {"not", "never", "no", "dont", "without", "rather", "instead", "avo
 _WORD = r"[A-Za-z][\w'’-]*"
 _SEP = r"[ \t]*,?[ \t]+"
 _QUAL = "(?:" + "|".join(re.escape(w) for w in sorted(_QUALIFIERS, key=len, reverse=True)) + r")\b"
-_TAIL = r"json\b(?!\.\w)(?![ \t]+(?:below|above|provided|given|you)\b)"
+_TAIL = (
+    r"json\b(?!\.\w)(?!-(?:ld|rpc)\b)(?![ \t]+(?:below|above|provided|given|you"
+    r"|keys?|data|records?|examples?|inputs?"
+    r"|schemas?|patch|path|pointer|lines|rpc|web[ \t]+tokens?)\b)"
+)
 _VERB = rf"(?<![-\w])(?:{_VERBS})\b"
-_DIRECT = re.compile(rf"{_VERB}((?:{_SEP}{_QUAL}){{0,5}}){_SEP}{_TAIL}", re.I)
+# re.ASCII: the JS patterns carry no `u` flag, so their `\w` and `\b` are ASCII-only.
+_DIRECT = re.compile(rf"{_VERB}((?:{_SEP}{_QUAL}){{0,5}}){_SEP}{_TAIL}", re.I | re.A)
 _VIA = re.compile(
-    rf"{_VERB}((?:{_SEP}{_WORD}){{0,4}}?){_SEP}(?:as|in|with)((?:{_SEP}{_QUAL}){{0,4}}){_SEP}{_TAIL}", re.I
+    rf"{_VERB}((?:{_SEP}{_WORD}){{0,2}}?){_SEP}(?:as|in|with)((?:{_SEP}{_QUAL}){{0,4}}){_SEP}{_TAIL}",
+    re.I | re.A,
 )
 
 
@@ -60,7 +70,7 @@ def _is_negation(word: str) -> bool:
 
 
 def _words(text: str) -> list[str]:
-    return [w.lower() for w in re.findall(_WORD, text)]
+    return [w.lower() for w in re.findall(_WORD, text, re.A)]
 
 
 def json_text_directive(text: str, return_keys: list[str] | None = None) -> str | None:
@@ -73,13 +83,13 @@ def json_text_directive(text: str, return_keys: list[str] | None = None) -> str 
     t = re.sub(r"\{\{\s*input\.[^}]*\}\}", " · ", text)
     t = re.sub(r"[`\"'“”](json)[`\"'“”]", r" \1 ", t, flags=re.I)
     keys = "|".join(re.escape(k) for k in return_keys) if return_keys else r"[A-Za-z_]\w*"
-    brace = re.compile(rf"\{{[ \t]*[\"'](?:{keys})[\"'][ \t]*[,:}}]")
+    brace = re.compile(rf"\{{[ \t]*[\"'](?:{keys})[\"'][ \t]*[,:}}]", re.A)
     for rule in (_DIRECT, _VIA, brace):
         for m in rule.finditer(t):
             if any(_is_negation(w) for g in m.groups() for w in _words(g or "")):
                 continue
             clause = re.split(r"[.;:!?\n,]", t[: m.start()])[-1]
-            if any(_is_negation(w) for w in _words(clause)[-2:]):
+            if any(_is_negation(w) for w in _words(clause)):
                 continue
             return m.group(0).strip()
     return None
@@ -200,61 +210,10 @@ def test_every_preview_prompt_is_a_literal_the_gate_can_read():
     assert not unread, "write these prompts as string literals so the gate reads them: " + ", ".join(unread)
 
 
-# The same vectors as the SDK's agent.test.ts (INLINE_AGENT_PROMPT_JSON_TEXT). Keep
-# the two tables identical.
-FIRES = [
-    "Return ONLY a JSON object with exactly two string keys: subject and body.",
-    "Return JSON with category.",
-    'Given a place and a mood, return ONLY a JSON object with keys "caption" and "tone".',
-    "Return only valid JSON with determination, recommendedAction and rationale.",
-    "Return only JSON with subject and body.",
-    "Return ONLY a JSON object that exactly matches the outputSchema. No markdown.",
-    "OUTPUT\n\nReturn JSON with two fields:",
-    "Analyze the billing dispute and return your determination as JSON.",
-    "Analyze the email and output JSON matching the required schema.",
-    "Respond with JSON.",
-    "Reply in JSON.",
-    "Format your answer as JSON.",
-    "Return ONLY a valid, minified JSON object.",
-    "Return a `JSON` object.",
-    'Answer plainly. Return ONLY {"answer"}.',
-    "Return only the typed JSON contract with subject and body.",
-    "Return only the declared JSON fields.",
-    "Respond with valid JSON only.",
-    "Return the items as a JSON array.",
-    "Write only JSON.",
-    "Provide JSON output.",
-]
-SKIPS = [
-    "Return a result conforming to the output schema. subject: one line naming the invoice. body: the full email text.",
-    "Produce two plain-text string values: subject and body. Do not return JSON, markdown, labels, or commentary around those values.",
-    "The body text itself must be plain prose, never JSON or a code block.",
-    "Do not label either piece of text, and do not wrap anything in quotes, JSON, or code blocks.",
-    'Return exactly two string fields named "subject" and "body". The body field must contain only the email text (not JSON, labels, or a serialized object).',
-    "Do not return JSON.",
-    "Don't return JSON.",
-    "Never output JSON; write prose.",
-    "Return plain text, not JSON.",
-    "The input is a JSON object.",
-    "Respond in English; the input is JSON.",
-    "The ticket arrives as JSON: {{input.ticket}}",
-    "Use the record in {{input.json}} to answer.",
-    "Return {{input.json}} unchanged.",
-    "Answer the question using the JSON below.",
-    "Return a summary of the JSON.",
-    "Return the invoice number from the JSON.",
-    "Run `uip maestro flow debug --output json` to see it.",
-    "Return the value of JSON.parse(text).",
-    "You are the Dispute Analyst agent. See agent.json for the full prompt.",
-    "Answer the question using the JSON data below.",
-    "Give a summary of the JSON ticket.",
-    "Answer with the JSON provided.",
-    "Respond with the JSON below.",
-    "Write prose rather than JSON.",
-    "Return the items, not as JSON.",
-    "Rather than return JSON, describe each field.",
-    "Return a result conforming to the output schema. caption: one cheerful sentence. tone: one word.",
-]
+# The SDK's vectors, byte for byte (see the module docstring).
+VECTORS = json.loads((Path(__file__).parent / "inline_agent_prompt_vectors.json").read_text(encoding="utf-8"))
+FIRES = VECTORS["fire"]
+SKIPS = VECTORS["skip"]
 
 
 @pytest.mark.parametrize("prompt", FIRES)
@@ -265,6 +224,12 @@ def test_matcher_fires_like_the_sdk(prompt):
 @pytest.mark.parametrize("prompt", SKIPS)
 def test_matcher_skips_like_the_sdk(prompt):
     assert json_text_directive(prompt) is None
+
+
+def test_vector_file_is_the_sdk_shape():
+    """A vacuous-pass guard: the copied fixture still carries both lists and its notes."""
+    assert len(FIRES) >= 20 and len(SKIPS) >= 40
+    assert set(VECTORS["notes"]) <= set(FIRES) | set(SKIPS)
 
 
 def test_brace_form_counts_only_the_steps_own_returns_keys():
