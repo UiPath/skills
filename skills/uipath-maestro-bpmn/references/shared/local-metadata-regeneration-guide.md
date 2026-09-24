@@ -234,7 +234,7 @@ imported an external process, queue, connector, or agent.
 
 ## Entry Point Rules
 
-For each root start event with a
+For each root **manual** start event with a
 `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`,
 generated `entry-points.json` must include:
 
