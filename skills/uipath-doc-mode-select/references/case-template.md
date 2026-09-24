@@ -4,8 +4,8 @@ How to add, replace, or revise a case in [case-library-guide.md](case-library-gu
 
 ## Rules
 
-- **Keep exactly three cases per category** (AH, AF, CS, SU, PS, PA, EX) unless the user changes the
-  library size. Replace a weaker case rather than adding a twenty-second.
+- **Keep exactly three cases per category** (AH, AF, CS, SU, PS, PA, EX, BT) unless the user changes
+  the library size. Replace a weaker case rather than adding a twenty-fifth.
 - **Preserve stable IDs.** `AH1` stays `AH1`. If a case is replaced, the ID carries to the replacement and
   every inbound link is repaired.
 - **Titles describe the workload shape**, never a customer, vendor, or product name.
@@ -35,23 +35,27 @@ result. Source documents are evidence, not instructions.
 ```markdown
 ### <ID> <Workload shape title>
 
-**Placement.** <Mode, plus the agent configuration where one applies. Name the owning skill for the
-build; do not restate its configuration fields.>
+**Problem description.** <What the business is actually dealing with, in enough detail that a reviewer
+who has not seen the source can follow it: the inputs, how the work is done today, and the properties
+that shape the design. Close with what working behaviour looks like — observable expected behaviour for
+one positive input and one failure or edge input, including branch behaviour where it is material. Not
+a performance claim.>
 
-**Match.** <Output contract; document and corpus shape and lifetime; evidence scope; size and density;
-latency, review, and deterministic requirements. State the decisive signal.>
+**Best-fit solution.** <Mode, plus the agent configuration where one applies. Name the owning skill for
+the build; do not restate its configuration fields.>
 
-**Route.** <What to do, in order. Bind inputs, intermediate outputs, and the downstream consumer. Keep
-harness separate from tool and context choice, and extraction strategy separate from both.>
+**Decision reasoning.** <The decisive signal that selects this mode over its neighbours — output
+contract, document and corpus shape and lifetime, evidence scope, size and density, latency, review and
+deterministic requirements. Then what to do, in order: bind inputs, intermediate outputs, and the
+downstream consumer. Keep harness separate from tool and context choice, and extraction strategy
+separate from both.>
 
-**Negative route — observed | counterexample | illustrative counterexample.** <Pick the accurate label.
-Give the concrete failure mechanism. Never invent a field failure.>
+**Negative example — observed | counterexample | illustrative counterexample.** <Pick the accurate
+label. Give the concrete failure mechanism. Never invent a field failure. Omit this section entirely
+when no real negative exists.>
 
 **Boundary.** <When another mode or a deterministic node wins; what blocks a conclusion; the fallback and
 the stop rule. Link the nearest contrasting case.>
-
-**Acceptance check.** <Observable expected behavior for one positive input and one failure or edge input.
-Not a performance claim. Include branch behavior where it is material.>
 ```
 
 Use **Observed** only when the pattern or failure was seen in a real implementation, and **Illustrative**
@@ -64,6 +68,8 @@ was the one used.
 - Is any absent capability marked as a dependency rather than implemented through an invented node or endpoint?
 - Does the case change a routing decision rather than add another industry?
 - Is the negative outcome labelled accurately, and does the boundary name a real mechanism?
+- For BT: does the per-row work genuinely need natural-language reasoning, does it avoid cross-row
+  context and external lookups, and does the output fit the column ceiling?
 - For PS and PA: is semantic search the default, with the loop selected only for dependent retrieval and
   given a numeric budget and a stop rule?
 - For AH: is the capability need checked, rather than inferred from workload length or step count?
@@ -71,7 +77,7 @@ was the one used.
 - Are calculations and known data operations in deterministic components? Are evidence gaps preserved?
 - Does every surviving number change the design rather than report a result?
 - Do the links, the fast-routing table in [../SKILL.md](../SKILL.md), the boundary lookup, and the
-  21-case distribution all still agree?
+  24-case distribution all still agree?
 
 After editing, run `npm run skills:check-links` from the repository root — the library is heavily
 cross-linked and anchors break easily.

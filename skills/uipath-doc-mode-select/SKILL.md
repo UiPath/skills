@@ -1,6 +1,6 @@
 ---
 name: uipath-doc-mode-select
-description: "UiPath document-processing mode selection — choose Extract vs Classify & Split vs Summarize vs Analyze files vs persistent-index search (semantic default, or an agentic multi-step search loop), and standard vs advanced autonomous-agent harness, before any node is authored. Matches a workload's output contract, corpus lifetime, evidence scope and review needs to the cheapest mode that meets them, then hands off. For authoring or wiring the chosen node in a `.flow`→uipath-maestro-flow. For IXP project/taxonomy/model work→uipath-ixp. For building the agent, its context resource, or an agentic-search loop→uipath-agents. For which UiPath product to use at all, or PDD/SDD work→uipath-planner. For the context-grounding index CLI (`uip context-grounding`)→uipath-platform."
+description: "UiPath document-processing mode selection — choose Extract vs Classify & Split vs Summarize vs Analyze files vs batch transform vs persistent-index search (semantic default, or an agentic multi-step search loop), and standard vs advanced autonomous-agent harness, before any node is authored. Matches a workload's output contract, corpus lifetime, evidence scope and review needs to the cheapest mode that meets them, then hands off. For authoring or wiring the chosen node in a `.flow`→uipath-maestro-flow. For IXP project/taxonomy/model work→uipath-ixp. For building the agent, its context resource, or an agentic-search loop→uipath-agents. For which UiPath product to use at all, or PDD/SDD work→uipath-planner. For the context-grounding index CLI (`uip context-grounding`)→uipath-platform."
 ---
 
 # UiPath Document Mode Selection
@@ -60,6 +60,7 @@ Read this table first, then the one nearest case and its linked boundary. Do not
 | **PS** | Persistent index — semantic search (default) | Reusable corpus; a bounded question answerable from a few passages | Evidence must be joined across dependent searches, or the user requires exhaustive coverage |
 | **PA** | Persistent index — agentic search | Reusable corpus; dependent questions, scattered evidence, or evidence-driven reformulation | One semantic search suffices; required metadata is absent; completeness cannot be verified |
 | **EX** | Extract | Repeated structured fields with a schema, field evaluation, and review requirements | Logical documents are still mixed together, or the deliverable is really a narrative or a decision |
+| **BT** | Batch transform | Per-row LLM work over every row of a tabular file, appending columns against a fixed output contract | The row needs cross-row reasoning, an external lookup, or a per-row side effect; or the derivation is deterministic |
 
 ## Quick Start / Workflow
 
@@ -67,7 +68,9 @@ Read this table first, then the one nearest case and its linked boundary. Do not
    reusable), document size and density, deterministic work, human review, latency. Ask only for unknowns
    that change the design; infer the routine choices and state the assumptions you made.
 2. **Move deterministic work out first.** Exact arithmetic, keyed lookups, row iteration, and known
-   branches are Data / script / Decision — outside the seven categories entirely.
+   branches are Data / script / Decision — outside the eight categories entirely. Per-row work enters BT
+   only when the row genuinely needs natural-language reasoning; a formula, regex, or date reformat is a
+   Transform or Script.
 3. **Check document boundaries before extraction.** Mixed logical documents need CS before EX. Route each
    step separately, and name one primary mode for the requested deliverable.
 4. **Match the nearest case** in [case-library-guide.md](references/case-library-guide.md) using the table
