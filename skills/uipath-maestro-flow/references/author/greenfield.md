@@ -4,6 +4,18 @@ End-to-end journey for creating a Flow project from scratch. Author terminates a
 
 > **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
 
+## Scope gate — count what the request names
+
+Count the steps the request names: services, systems, documents, decisions, approvals, schedules, computations. A domain or an outcome ("shipment tracking", "our onboarding") is not a step, and neither is the project name.
+
+**Zero steps → scaffold only.** Run Steps 0–2, then 5–6. Skip the Step 3 discovery ladder entirely — no `registry search` for candidate services, no `uip is connections list`, no `uip df entities list` — and leave the flow exactly as `flow init` scaffolded it; a bare manual trigger passes `validate` and `format`. Report what the flow should do as **Open Questions** in the [Completion Output](#completion-output).
+
+That is the finished deliverable, not a stall: a non-interactive run ([SKILL.md rule #5](../../SKILL.md)) ends the same way rather than inventing a pipeline from the domain word.
+
+**Zero steps:** "Automate our shipment tracking with a new UiPath Flow project called ShipmentTracker" → scaffold, validate, stop.
+
+**Three steps:** "Build a flow that watches a SharePoint folder, extracts invoices with IxP and POSTs to SAP" → build all of it.
+
 ## Should you plan first?
 
 For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
@@ -409,7 +421,8 @@ When you finish building the flow, report to the user:
 4. **Format status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
-7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../SKILL.md))
+7. **Open Questions** — every step the request left undecided, each prefixed `**[REQUIRED]**` or `**[OPTIONAL]**`
+8. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../SKILL.md))
 
 ### What's next dropdown
 
