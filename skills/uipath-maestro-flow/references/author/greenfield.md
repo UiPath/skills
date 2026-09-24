@@ -8,7 +8,7 @@ End-to-end journey for creating a Flow project from scratch. Author terminates a
 
 Count the steps the request names: services, systems, documents, decisions, approvals, schedules, computations. A domain or an outcome ("shipment tracking", "our onboarding") is not a step, and neither is the project name.
 
-**Zero steps → scaffold only.** Run Steps 0–2, then 5–6. Skip the Step 3 discovery ladder entirely — no `registry search` for candidate services, no `uip is connections list`, no `uip df entities list` — and leave the flow exactly as `flow init` scaffolded it; a bare manual trigger passes `validate` and `format`. Report what the flow should do as **Open Questions** in the [Completion Output](#completion-output).
+**Zero steps → scaffold only.** Run Steps 0–2 in full, then 5–6. Drop the whole Step 3 tail from the T1 chain — no `node add`, no `registry pull`, no `registry get`, no `registry search`, no `uip is connections list`, no `uip df entities list`. The chain's placeholder `core.action.http.v2` is a node the request never asked for; do not copy the chain verbatim. Leave the flow exactly as Step 2 produced it; a bare manual trigger passes `validate` and `format`. Report what the flow should do as **Open Questions** in the [Completion Output](#completion-output).
 
 That is the finished deliverable, not a stall: a non-interactive run ([SKILL.md rule #5](../../SKILL.md)) ends the same way rather than inventing a pipeline from the domain word.
 
@@ -421,7 +421,7 @@ When you finish building the flow, report to the user:
 4. **Format status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
-7. **Open Questions** — every step the request left undecided, each prefixed `**[REQUIRED]**` or `**[OPTIONAL]**`
+7. **Open Questions** — every step the request left undecided, each prefixed `**[REQUIRED]**` or `**[OPTIONAL]**`. On the scaffold-only path ([Scope gate](#scope-gate--count-what-the-request-names)) there are no decided steps, so state the outcome the user asked for and ask which steps it needs — the scaffold records no intent on its own
 8. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../SKILL.md))
 
 ### What's next dropdown
