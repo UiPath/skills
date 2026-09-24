@@ -46,7 +46,7 @@ initial_prompt: |
   `{"status":"ok","messageId":"abc123"}`.
 
   Add an `Llm` simulation on the same data point targeting agent component
-  `agent-lookup`, with instructions `Return a plausible lookup result.`. Its
+  `agent-lookup`, with instructions `Return a plausible lookup result.` Its
   output schema is auto-resolved from the agent node's declared outputs — do
   not pass an output-schema flag.
 

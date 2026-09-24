@@ -27,6 +27,7 @@ from pathlib import Path
 KEPT = "agent-lookup"
 REMOVED = "connector-send-email"
 KEPT_OUTPUT = "result"
+KEPT_OUTPUT_TYPE = "string"
 
 
 def _load_jsons(root: Path) -> list[tuple[Path, dict]]:
@@ -42,16 +43,20 @@ def _load_jsons(root: Path) -> list[tuple[Path, dict]]:
 
 
 def _resolved_output(schema: object) -> bool:
-    """True when the schema carries the targeted node's declared output.
+    """True when the schema carries the targeted node's declared string output.
 
     The CLI writes `outputSchema` only by resolving it from the node named in
-    `simulation add`, so the property is what distinguishes a real resolution
-    from a hand-written stub.
+    `simulation add`, and that resolution always emits an object schema whose
+    property carries the declared type. Matching that exact shape is what
+    distinguishes a real resolution from a hand-written stub.
     """
-    if not isinstance(schema, dict):
+    if not isinstance(schema, dict) or schema.get("type") != "object":
         return False
     properties = schema.get("properties")
-    return isinstance(properties, dict) and KEPT_OUTPUT in properties
+    if not isinstance(properties, dict):
+        return False
+    declared = properties.get(KEPT_OUTPUT)
+    return isinstance(declared, dict) and declared.get("type") == KEPT_OUTPUT_TYPE
 
 
 def _component_ids(sim: dict) -> list[str]:
@@ -152,7 +157,8 @@ def main() -> None:
         if llm is None:
             sys.exit(
                 f'FAIL: no Llm simulation for "{KEPT}" has an outputSchema '
-                f'with a "{KEPT_OUTPUT}" property auto-resolved from the node'
+                f'declaring a "{KEPT_OUTPUT}" {KEPT_OUTPUT_TYPE} property '
+                f'auto-resolved from the node'
             )
         print(f"OK: Llm simulation {KEPT!r} persists with its resolved output schema")
         return

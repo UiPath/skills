@@ -155,14 +155,14 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 | `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions` (output schema auto-resolved) |
 | `Static` | Output is fixed and deterministic | `--mock-value` |
 
-**`Llm` reads the `.flow`; `Static` does not.** Add the targeted node to `nodes[]` before any `Llm` call — an eval set and a data point are not enough. `Static` succeeds against a component that does not exist, so a sequence mixing both strategies fails on the `Llm` call alone and the earlier `Static` success proves nothing about the node. A top-level `Llm` target needs readable outputs: a connector node with a configured `inputs.detail`, an agent node with a non-empty `inputs.agentOutputVariables`, or any node carrying `outputs`. `uip maestro flow node add` never writes `outputs`, so a bare `core.logic.mock` node fails with `Could not auto-resolve output schema … The node has no declared outputs` as a top-level target — it resolves only as a `--parent` child, from its definition's `outputDefinition`.
+**Add the targeted node to `nodes[]` before any `Llm` call** — an eval set and a data point are not enough. Only `Llm` treats a missing node as an error: a top-level `Static` call never reads the `.flow` at all and succeeds against a component that does not exist, and a `--parent` `Static` call reads it but downgrades a miss to a `Mock value key validation was skipped` warning. So a sequence mixing both strategies fails on the `Llm` call alone, and the earlier `Static` success proves nothing about the node. A top-level `Llm` target needs readable outputs: a connector node with a configured `inputs.detail`, an agent node with a non-empty `inputs.agentOutputVariables`, or any node carrying `outputs`. `uip maestro flow node add` never writes `outputs`, so a bare `core.logic.mock` node fails with `Could not auto-resolve output schema … The node has no declared outputs` as a top-level target — it resolves only as a `--parent` child, from its definition's `outputDefinition`.
 
 | Missing | Error |
 |---------|-------|
 | top-level node | `Component "<component-id>" not found in the flow. Verify the component ID.` |
 | `--parent` agent node | `Parent agent "<component-id>" not found in the flow.` |
 
-**Output schema auto-resolution:** The CLI always auto-resolves the output schema for both top-level and child (`--parent`) simulations:
+**Output schema auto-resolution:** The CLI auto-resolves the output schema whenever the simulation does not already carry one — for top-level simulations under `Llm` only, for child (`--parent`) simulations under both strategies:
 
 - **Top-level simulations:** reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`).
 - **Child simulations (inline canvas agents):** finds the child tool node via edges in the `.flow` file and extracts its output schema.
