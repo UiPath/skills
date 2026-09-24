@@ -1,21 +1,27 @@
 #!/usr/bin/env node
 /**
- * Run the Azure DevOps release gate and bring its signed hooks back.
+ * Run the Azure DevOps release gate and wait for its verdict.
  *
- * Publishing stays in GitHub Actions because npm mints provenance
- * attestations only for GitHub Actions and GitLab CI identities. Signing has to
- * happen in Azure DevOps because UiPath's code-signing certificate is reachable
- * only through an ARM service connection's service principal and is never
- * exported. This script is the seam: it starts `.pipelines/release-gate.yml`,
- * waits for it, and overlays the signed `hooks/*.ps1` onto the working tree so
- * the publish job can pack and sign the tarball with `--provenance`.
+ * The gate (.pipelines/release-gate.yml) runs the blocking per-release FOSSA
+ * scan — the one thing that cannot be done from GitHub Actions, because the
+ * FOSSA secrets are reachable only through an Azure DevOps service
+ * connection. Publishing stays in GitHub Actions because npm mints provenance
+ * attestations only for GitHub Actions and GitLab CI identities. This script
+ * is the seam: it starts the gate pipeline against the exact commit being
+ * published and fails the publish when the gate fails.
+ *
+ * (Until the hooks migrated from PowerShell to Node — see hooks/*.mjs — the
+ * gate also Authenticode-signed `hooks/*.ps1` and this script, then named
+ * fetch-signed-hooks.mjs, overlaid the signed files before packing. Node hook
+ * scripts have no interpreter-enforced signature format; package integrity is
+ * carried by the npm provenance attestation instead.)
  *
  * Authentication is OIDC end to end -- no stored credential. GitHub issues an
  * id-token for this workflow run, Entra exchanges it for an Azure DevOps access
  * token through a federated credential scoped to this repository.
  *
  * Usage:
- *   node scripts/fetch-signed-hooks.mjs
+ *   node scripts/run-release-gate.mjs
  *
  * Environment:
  *   AZURE_TENANT_ID     Entra tenant of the federated application (required)
@@ -25,27 +31,19 @@
  *   ADO_PIPELINE_ID     Numeric definition ID of the gate pipeline (required)
  *   GATE_CHANNEL        `preview` or `latest`                       (required)
  *   GATE_REF            Ref to run the gate against, e.g. refs/heads/main
- *   GATE_COMMIT         Commit SHA being published; asserted end to end
+ *   GATE_COMMIT         Commit SHA being published; recorded on the run
  *   GATE_TIMEOUT_MS     Give up after this long           (default: 2700000)
  *   GATE_POLL_MS        Poll interval                        (default: 15000)
  *
- * Exits non-zero on any failure. The caller decides whether that is fatal:
- * while the repository variable REQUIRE_HOOK_SIGNING is unset, publish.yml warns
- * and ships unsigned hooks; once it is `true`, the same failure stops the
- * publish.
+ * Exits non-zero on any failure; publish.yml treats that as fatal.
  */
 
-import { createHash } from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 
 /** Azure DevOps' fixed Entra application ID. Not a tenant-specific value. */
 const AZURE_DEVOPS_RESOURCE = "499b84ac-1321-427f-aa17-267ca6975798";
-const ARTIFACT_NAME = "signed-hooks";
-const BEGIN_MARKER = "# SIG # Begin signature block";
-const END_MARKER = "# SIG # End signature block";
 
 function required(name) {
   const value = process.env[name];
@@ -157,50 +155,10 @@ class AzureDevOps {
   getRun(pipelineId, runId) {
     return this.json(`${this.base}/pipelines/${pipelineId}/runs/${runId}?api-version=7.1`);
   }
-
-  async getArtifact(runId, name) {
-    const artifacts = await this.json(
-      `${this.base}/build/builds/${runId}/artifacts?api-version=7.1`,
-    );
-    const artifact = (artifacts.value ?? []).find((entry) => entry.name === name);
-    if (!artifact) {
-      const found = (artifacts.value ?? []).map((entry) => entry.name).join(", ") || "none";
-      throw new Error(`run ${runId} published no ${quote(name)} artifact (found: ${found})`);
-    }
-    return artifact;
-  }
-
-  /**
-   * Download one file out of an artifact. Per-file `subPath` downloads avoid
-   * pulling and unpacking a zip, for which Node has no built-in reader.
-   */
-  async downloadArtifactFile(artifact, fileName) {
-    const url = artifactFileUrl(artifact.resource.downloadUrl, fileName);
-    const response = await this.request(url, { headers: { Accept: "*/*" } });
-    return Buffer.from(await response.arrayBuffer());
-  }
-}
-
-/**
- * URL that downloads a single file out of a pipeline artifact.
- *
- * `downloadUrl` already carries `format=zip`. Appending another `format`
- * leaves two, and the service honours the first -- returning a zip and
- * ignoring `subPath` -- so these must be set, never concatenated.
- */
-export function artifactFileUrl(downloadUrl, fileName) {
-  const url = new URL(downloadUrl);
-  url.searchParams.set("format", "file");
-  url.searchParams.set("subPath", `/${fileName}`);
-  return url.toString();
 }
 
 function quote(value) {
   return `"${value}"`;
-}
-
-function sha256(buffer) {
-  return createHash("sha256").update(buffer).digest("hex");
 }
 
 /** Wait for a queued run to finish. Throws on failure, cancellation, timeout. */
@@ -225,55 +183,6 @@ async function waitForRun(client, pipelineId, runId, { timeoutMs, pollMs }) {
       );
     }
     await sleep(pollMs);
-  }
-}
-
-function localHookScripts(hooksDir) {
-  if (!fs.existsSync(hooksDir)) throw new Error(`hooks directory not found: ${hooksDir}`);
-  return fs
-    .readdirSync(hooksDir)
-    .filter((name) => name.endsWith(".ps1"))
-    .sort();
-}
-
-/**
- * Overlay the signed scripts, asserting the gate signed exactly the set this
- * commit ships. A mismatch means the gate ran against a different tree -- the
- * failure mode that is otherwise invisible, because the signatures would all be
- * valid, just over bytes nobody released.
- */
-export function overlaySignedScripts({ manifest, artifactFiles, hooksDir, expectedCommit }) {
-  if (manifest.commit !== expectedCommit) {
-    throw new Error(
-      `gate signed commit ${manifest.commit}, but this run is publishing ${expectedCommit}`,
-    );
-  }
-
-  const expected = localHookScripts(hooksDir);
-  const signed = manifest.scripts.map((entry) => entry.name).sort();
-  const missing = expected.filter((name) => !signed.includes(name));
-  const extra = signed.filter((name) => !expected.includes(name));
-  if (missing.length || extra.length) {
-    const parts = [];
-    if (missing.length) parts.push(`not signed: ${missing.join(", ")}`);
-    if (extra.length) parts.push(`signed but not in this tree: ${extra.join(", ")}`);
-    throw new Error(`hook script set does not match the gate (${parts.join("; ")})`);
-  }
-
-  for (const entry of manifest.scripts) {
-    const content = artifactFiles.get(entry.name);
-    const digest = sha256(content);
-    if (digest !== entry.sha256) {
-      throw new Error(`${entry.name} was altered in transit (expected ${entry.sha256}, got ${digest})`);
-    }
-    const text = content.toString("utf8");
-    if (!text.includes(BEGIN_MARKER) || !text.includes(END_MARKER)) {
-      throw new Error(`${entry.name} carries no signature block`);
-    }
-    // Byte-for-byte, no newline translation: an Authenticode signature covers
-    // the exact bytes, so rewriting a single line ending invalidates it.
-    fs.writeFileSync(path.join(hooksDir, entry.name), content);
-    console.log(`  ${entry.name}: signed by ${entry.subject}`);
   }
 }
 
@@ -311,33 +220,14 @@ async function main() {
 
   await waitForRun(client, pipelineId, run.id, { timeoutMs, pollMs });
 
-  const artifact = await client.getArtifact(run.id, ARTIFACT_NAME);
-  const manifest = JSON.parse(
-    (await client.downloadArtifactFile(artifact, "manifest.json")).toString("utf8"),
-  );
-  if (!Array.isArray(manifest.scripts) || manifest.scripts.length === 0) {
-    throw new Error("gate manifest lists no signed scripts");
-  }
-
-  const artifactFiles = new Map();
-  for (const entry of manifest.scripts) {
-    artifactFiles.set(entry.name, await client.downloadArtifactFile(artifact, entry.name));
-  }
-
-  const hooksDir = path.join(process.cwd(), "hooks");
-  overlaySignedScripts({ manifest, artifactFiles, hooksDir, expectedCommit: commit });
-
-  console.log(`Overlaid ${manifest.scripts.length} signed hook script(s) from run ${run.id}`);
-  emitOutput("signed", "true");
+  console.log(`Release gate passed for ${commit} (run ${run.id})`);
   emitOutput("run-id", String(run.id));
 }
 
-// Guarded so the pure helpers above can be imported by tests without the
-// module trying to reach Azure DevOps on import.
+// Guarded so importing this module never reaches Azure DevOps.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
-    console.error(`fetch-signed-hooks: ${error.message}`);
-    emitOutput("signed", "false");
+    console.error(`run-release-gate: ${error.message}`);
     process.exitCode = 1;
   });
 }

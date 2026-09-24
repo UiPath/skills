@@ -24,55 +24,44 @@ function gate(name) {
   return match[1].replace(/\s+/g, " ").trim();
 }
 
-test("publishing to npmjs cannot start without the signing job", () => {
-  assert.match(job("publish-npmjs"), /needs: \[guard, sign-hooks\]/);
+test("publishing to npmjs cannot start without the release gate", () => {
+  assert.match(job("publish-npmjs"), /needs: \[guard, release-gate\]/);
 });
 
 // Drift here is the failure that matters: a channel that reaches npmjs
-// without a gate run would publish unsigned hooks, and a gate run for a
-// channel that never reaches npmjs burns a Windows agent for nothing.
-test("the signing gate and the npmjs gate are the same condition", () => {
-  assert.equal(gate("sign-hooks"), gate("publish-npmjs"));
+// without a gate run would publish without the blocking FOSSA scan, and a
+// gate run for a channel that never reaches npmjs burns an agent for nothing.
+test("the release gate and the npmjs gate are the same condition", () => {
+  assert.equal(gate("release-gate"), gate("publish-npmjs"));
 });
 
-// dev publishes on every push to main. Signing each one buys nothing for a
+// dev publishes on every push to main. Gating each one buys nothing for a
 // channel no end user installs, and would queue an ADO run per merge.
-test("the dev channel does not depend on signing", () => {
+test("the dev channel does not depend on the release gate", () => {
   assert.match(job("publish-dev"), /needs: \[guard\]/);
 });
 
-test("hooks are overlaid before the package is packed", () => {
-  const npmjs = job("publish-npmjs");
-  const overlay = npmjs.indexOf("name: Overlay signed hooks");
-  const pack = npmjs.indexOf("npm pack --pack-destination");
-  assert.ok(overlay > -1 && pack > -1);
-  // A signature covers exact bytes, so the signed file must be the packed one.
-  assert.ok(overlay < pack, "overlay must precede pack");
-});
-
-test("the packed tarball is verified, then that same tarball is published", () => {
+test("the packed tarball is the tarball that gets published", () => {
   assert.match(PUBLISH, /TARBALL=\$\(ls uipath-skills-\*\.tgz\)/);
-  assert.match(
-    PUBLISH,
-    /run: node scripts\/check-hook-signatures\.mjs "\$\{\{ steps\.pack\.outputs\.tarball \}\}"/,
-  );
   assert.match(PUBLISH, /npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}"/);
-
-  const verify = PUBLISH.indexOf("check-hook-signatures.mjs");
-  const publish = PUBLISH.indexOf("npm publish \"");
-  assert.ok(verify < publish, "verification must precede publish");
 });
 
-test("signing failure has no unsigned fallback", () => {
-  assert.match(PUBLISH, /^\s*run: node scripts\/fetch-signed-hooks\.mjs\s*$/m);
-  assert.doesNotMatch(PUBLISH, /REQUIRE_HOOK_SIGNING|REQUIRE_SIGNING/);
-  assert.doesNotMatch(PUBLISH, /publishing unsigned/i);
+test("gate failure has no ungated fallback", () => {
+  assert.match(PUBLISH, /^\s*run: node scripts\/run-release-gate\.mjs\s*$/m);
+  assert.doesNotMatch(PUBLISH, /REQUIRE_HOOK_SIGNING|REQUIRE_SIGNING|REQUIRE_GATE/);
+  assert.doesNotMatch(PUBLISH, /publishing ungated|publishing unsigned/i);
 });
 
 test("the gate job pins its OIDC subject through an environment", () => {
-  const sign = job("sign-hooks");
-  assert.match(sign, /^\s*environment: release-gate\s*$/m);
-  assert.match(sign, /^\s*id-token: write\s*$/m);
+  const gateJob = job("release-gate");
+  assert.match(gateJob, /^\s*environment: release-gate\s*$/m);
+  assert.match(gateJob, /^\s*id-token: write\s*$/m);
+});
+
+// The hooks are Node scripts; nothing in the publish path may resurrect the
+// retired PowerShell signing seam (overlay/verify steps, .ps1 artifacts).
+test("no signing remnants survive in the publish path", () => {
+  assert.doesNotMatch(PUBLISH, /signed-hooks|check-hook-signatures|fetch-signed-hooks|\.ps1/);
 });
 
 // The npmjs trusted publisher names one workflow file. A second workflow

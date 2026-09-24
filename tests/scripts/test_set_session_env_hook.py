@@ -1,7 +1,5 @@
-"""Contract guard for the session-env SessionStart step — BOTH twins
-(``hooks/set-session-env.sh`` under bash, ``hooks/set-session-env.ps1`` under
-pwsh). Every test is parametrized over the two implementations, enforcing the
-twin keep-in-sync rule in CLAUDE.md.
+"""Contract guard for the session-env SessionStart step
+(``hooks/set-session-env.mjs`` under node).
 
 Runs the hook as a subprocess with a SessionStart payload on stdin and asserts
 what lands in ``CLAUDE_ENV_FILE``. Covers:
@@ -13,8 +11,8 @@ what lands in ``CLAUDE_ENV_FILE``. Covers:
   before being written into the sourced env file;
 * the skip paths — no ``CLAUDE_ENV_FILE``, or a payload without ``session_id``.
 
-POSIX-only, like the send-telemetry guard — the hooks run under ``bash`` and
-``pwsh`` (both preinstalled on GitHub ubuntu runners); CI runs it on ubuntu.
+POSIX-only, like the telemetry wrapper guard; CI runs it on ubuntu (``node``
+is preinstalled on the runners).
 
 Run from repo root:
     pytest tests/scripts/test_set_session_env_hook.py
@@ -33,30 +31,19 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOKS_DIR = REPO_ROOT / "hooks"
 
-TWINS = [
-    pytest.param(["bash", str(HOOKS_DIR / "set-session-env.sh")], id="bash"),
-    pytest.param(
-        ["pwsh", "-NoProfile", "-File", str(HOOKS_DIR / "set-session-env.ps1")],
-        id="pwsh",
-    ),
-]
+HOOK_ARGV = ["node", str(HOOKS_DIR / "set-session-env.mjs")]
 
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32",
     reason="POSIX-only guard (CI runs this on ubuntu)",
 )
 
-HOOK_ARGV = None
 
-
-@pytest.fixture(autouse=True, params=TWINS)
-def hook_argv(request):
-    """Select the twin under test; skip if its interpreter is absent."""
-    global HOOK_ARGV
-    argv = request.param
-    if shutil.which(argv[0]) is None:
-        pytest.skip(f"{argv[0]} not available")
-    HOOK_ARGV = argv
+@pytest.fixture(autouse=True)
+def require_node():
+    """Skip the suite if node is absent."""
+    if shutil.which("node") is None:
+        pytest.skip("node not available")
 
 PAYLOAD = {
     "hook_event_name": "SessionStart",
