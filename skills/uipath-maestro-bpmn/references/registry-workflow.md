@@ -369,8 +369,9 @@ the template's second bug.** Verified end-to-end for
    fields are not needed for `Orchestrator.ExecuteApiWorkflowAsync` and can be
    dropped.
 
-For the other types in the list, apply the same substitution and re-verify
-with a live run.
+For the other types in the list, apply step 1 only. Apply step 2 after a
+live run faults with `key:FolderKey`; without a run, report the node
+unverified.
 
 When the caller asks for API workflow invocation/status/result fields, map those
 fields as `uipath:output` rows on the API workflow `bpmn:serviceTask` itself
