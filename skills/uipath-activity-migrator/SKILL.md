@@ -47,22 +47,18 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 
 ### Step 0 — Preflight and acquire the tool
 
-Run the acquisition script. Prefer the bash twin whenever a bash shell is available, which every Windows machine with Git for Windows has; use the PowerShell twin only when bash is absent. Some hosts gate a PowerShell script invocation behind an approval that an unattended run cannot give, and the bash invocation has no such gate. The script locates a cached tool, downloads and extracts it when missing, checks the .NET Desktop Runtime 8, and prints one JSON object on its last stdout line.
+Run the acquisition script with `node`, which Steps 2 to 4 already use for their scripts; the same command works in bash and in PowerShell. It executes no PowerShell or shell script file, so script execution policies and hosts that gate a script invocation do not apply. The script locates a cached tool, downloads and extracts it when missing, checks the .NET Desktop Runtime 8, and prints one JSON object on its last stdout line. Any run can download the archive, a first install or an update, a few hundred MB: give the command at least 10 minutes, not the host's default timeout.
 
 ```bash
-bash "<SKILL_DIR>/scripts/ensure-migrator.sh"
-```
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "<SKILL_DIR>/scripts/ensure-migrator.ps1"
+node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
 ```
 
 | `status` | Action |
 |---|---|
 | `ok` | Record `exe` as `<MIGRATOR_EXE>` and `version`. Continue. |
 | `error`, `code: not-windows` | Rule 1. Stop. |
-| `error`, `code: runtime-missing` | Tell the user to install the .NET Desktop Runtime 8 (link in the script message). Stop. |
-| `error`, `code: download-failed` | Proxy or offline machine. Give the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement). Stop. |
+| `error`, `code: runtime-missing` | Relay the script's message; it names the fix. Stop. |
+| `error`, `code: download-failed` | Relay the script's message, which names each downloader's error, and give the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement). Stop. |
 | any other `error` | Show `message`. Stop. |
 
 Then read the flag list of this build once. It is the only authority on which flags exist.
@@ -200,7 +196,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 | [packages/mail-guide.md](references/packages/mail-guide.md) | Project depends on `UiPath.Mail.Activities` |
 | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) | Project depends on classic `UiPath.GSuite.Activities` |
 | [packages/microsoft-activities-guide.md](references/packages/microsoft-activities-guide.md) | Project depends on `Microsoft.Activities.Extensions` or `Microsoft.Activities` |
-| `scripts/ensure-migrator.{sh,ps1}` | Step 0. Behavioral twins; change both together |
+| `scripts/ensure-migrator.mjs` | Step 0 |
 | `scripts/summarize-sarif.mjs` | Steps 3 and 4. Node script, no dependencies |
 | `scripts/resolve-package-lines.mjs` | Step 2 and package guides. Lists release lines of a package from the official feed; no project or login needed |
 

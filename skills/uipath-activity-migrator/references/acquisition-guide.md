@@ -1,6 +1,6 @@
 # Acquisition Guide
 
-How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The scripts `scripts/ensure-migrator.sh` and `scripts/ensure-migrator.ps1` implement this; read here when a script fails or the user asks where the tool lives.
+How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The script `scripts/ensure-migrator.mjs` implements this, run with `node`; read here when it fails or the user asks where the tool lives.
 
 ## What ships
 
@@ -11,7 +11,7 @@ How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The s
 | Archive | Zip with `UiPath.Upgrade.exe` at the archive root and extensions under `Extensions/<Name>/` |
 | Runtime | Windows, .NET 8: `Microsoft.NETCore.App 8.x` and `Microsoft.WindowsDesktop.App 8.x` (the .NET Desktop Runtime 8 installer provides both) |
 | Version | `UiPath.Upgrade.exe version` prints it (GA line `25.10.x`) |
-| Freshness signal | The URL is unversioned. The server's `Last-Modified` header is the only change signal; the scripts store it and re-download when it changes |
+| Freshness signal | The URL is unversioned. The server's `Last-Modified` header is the only change signal; the script stores it and re-downloads when it changes |
 
 Studio does not need to be installed. Opening the migrated project afterwards needs Studio 2024.10 or later.
 
@@ -26,7 +26,7 @@ ActivityMigrator/
   UiPath.Upgrade.Cli.download.zip   transient during download; removed on success, kept on an extraction failure so it can be extracted by hand
 ```
 
-Resolution order used by the scripts:
+Resolution order used by the script:
 
 1. `UIPATH_ACTIVITY_MIGRATOR_DIR` when set: use `<dir>/UiPath.Upgrade.exe` if present, else `<dir>/current/UiPath.Upgrade.exe`. Nothing is downloaded into an override dir unless the exe is missing there.
 2. Default root, `current/UiPath.Upgrade.exe`.
@@ -39,14 +39,16 @@ Resolution order used by the scripts:
 | `UIPATH_ACTIVITY_MIGRATOR_DIR` | Install or cache root. Use for shared tool drives or manual placement |
 | `UIPATH_ACTIVITY_MIGRATOR_URL` | Alternate archive URL, for internal mirrors |
 | `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | Never touch the network. A cached tool is used as is; a missing tool is an error |
-| `--check-only` (bash) / `-CheckOnly` (PowerShell) | Report what is cached without downloading. Exit 3 with `status: missing` when nothing is cached |
-| `--force` (bash) / `-Force` (PowerShell) | Re-download and re-extract even when cached |
+| `--check-only` | Report what is cached without downloading. Exit 3 with `status: missing` when nothing is cached |
+| `--force` | Re-download and re-extract even when cached |
 
-Proxies: `curl` honors `HTTPS_PROXY` / `HTTP_PROXY`; PowerShell uses the system proxy. Corporate TLS inspection that breaks either download surfaces as `download-failed`.
+Download: the script tries `curl` first, which honors `HTTPS_PROXY` / `HTTP_PROXY`, then PowerShell's WebClient, which uses the system proxy and the signed-in user's credentials. Both run as commands, never as script files. The update check's `HEAD` request falls back the same way, so a machine that reaches the internet only through the system proxy still sees updates. A curl connection that stalls below 1 KB/s for a minute fails instead of hanging. Corporate TLS inspection that breaks both surfaces as `download-failed`, with each downloader's error in the message.
+
+Extraction: `Expand-Archive`, then Windows `tar.exe`, then `unzip`. An install root whose extracted paths would pass the 260-character Windows limit makes `Expand-Archive` fail; `tar.exe` still extracts it.
 
 ## Script output contract
 
-The last stdout line is one JSON object. Both twins emit the same shape.
+The last stdout line is one JSON object.
 
 ```json
 {"status":"ok","exe":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator\\current\\UiPath.Upgrade.exe","version":"25.10.0","source":"cached","runtime":"8.0.11"}
@@ -68,13 +70,13 @@ For air-gapped machines or when both downloaders are blocked:
 1. Download `UiPath.Upgrade.Cli.zip` on a machine with access (URL above, or the Automation Cloud download page).
 2. Extract it so that `UiPath.Upgrade.exe` and the `Extensions/` folder sit directly inside one folder.
 3. Either place that folder at `%LOCALAPPDATA%\UiPath\ActivityMigrator\current`, or set `UIPATH_ACTIVITY_MIGRATOR_DIR` to it.
-4. Set `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` so the scripts never try the network.
+4. Set `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` so the script never tries the network.
 5. Rerun the acquisition script. Expected: `status: ok`, `source: env` or `cached`.
 
-Runtime missing: install the .NET Desktop Runtime 8 (x64) from `https://dotnet.microsoft.com/download/dotnet/8.0`, then rerun. Verify with:
+Runtime missing: install the .NET Desktop Runtime 8 (x64) from `https://dotnet.microsoft.com/download/dotnet/8.0`, then rerun. The script checks the one place the migrator loads its runtime from: `DOTNET_ROOT_X64` or `DOTNET_ROOT` while one is set; otherwise the install location the .NET installer registers, else `%ProgramFiles%\dotnet`. It never uses the `dotnet` on `PATH`, which the migrator ignores. Verify by rerunning the script, which checks those same places:
 
 ```bash
-dotnet --list-runtimes | grep "Microsoft.WindowsDesktop.App 8."
+node "<SKILL_DIR>/scripts/ensure-migrator.mjs" --check-only
 ```
 
 ## Updating
