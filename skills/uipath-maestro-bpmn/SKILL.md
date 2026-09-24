@@ -217,7 +217,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
    a stable manual entry point, one structural task, and complete DI. **Do not
    reverse-engineer authoring patterns from task fixtures, generated package
-   files, or the CLI's compiled bundle (`@uipath/cli/dist/*.js`)** — such
+   files, or any installed package bundle under `node_modules`** — such
    spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
@@ -325,6 +325,13 @@ For registry-evidence-only tasks, follow the command-first recipe in
    boundary handoff the user asked for, an unresolved node warns
    `MISSING_RESOURCE` by design: keep its public placeholder, never invent an
    identifier (Rule 2), and report the warning rather than clearing it.
+
+   `[warning] [(xml)] unknown attribute <type>` is expected noise from the
+   script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
+   `type` is required on `uipath:input`, `uipath:output`, and
+   `uipath:inputOutput`; removing it there fails the load with
+   `BPMN_PARSE_ERROR ... to be a string`. Do not bisect the file and do not
+   read package bundles under `node_modules` to find the rule.
 
    Validation is structural preflight, not runtime proof — see
    [references/cli-conventions.md](references/cli-conventions.md). When
