@@ -82,7 +82,7 @@ Read the `Instructions` sentence the CLI returns with each of these. It carries 
 1. If the user named a title, you may pass it straight to `get-embed-url`; the CLI resolves it. Run `list` first only when the user asked which dashboards exist, or when a title came back ambiguous or not found.
 2. Run `get-embed-url` once with the theme and locale the user asked for. Do not run it again to "refresh" the URL unless the user asks for a new one.
 3. Give the URL to the user with the credential caveat from Rule 1 in your own words. Do not write it anywhere else.
-4. If it fails, branch on `ErrorCode` per the list above, reading the `Instructions` to tell two branches with the same code apart. For a reachability `not_found`, say which of the three causes in Rule 3 are still open rather than picking one: the CLI cannot tell them apart and neither can you.
+4. If it fails, branch on `ErrorCode` per the list above, reading the `Instructions` to tell two branches with the same code apart. For a reachability `not_found`, name all three causes from Rule 3 in plain words rather than picking one: the dashboard may sit in another user's personal folder, it may have been deleted while the listing still shows it, or a numeric id may need the tenant's Insights licence in full mode. The CLI cannot tell them apart and neither can you. Then give the next step: the dashboard's owner can move it into the tenant or organization folder, or confirm in the Insights app that it still exists. "Limited visibility" alone does not tell the user what to ask for.
 
 ## Investigation Workflow: Why an Embedded Dashboard Fails to Load
 
