@@ -89,3 +89,15 @@ test("a fragment on a missing file reports the file, not the anchor", () => {
   assert.match(out, /1 broken link\(s\)/);
   assert.doesNotMatch(out, /dead anchor\(s\):/);
 });
+
+test("a malformed % escape is reported as a broken link", () => {
+  for (const link of ["references/r%zz.md", "references/r.md#bad%zz"]) {
+    const { status, out } = run({
+      [`${ENFORCED}/SKILL.md`]: `# Skill\n\n[go](${link})\n`,
+      [`${ENFORCED}/references/r.md`]: "## Here\n",
+    });
+    assert.equal(status, 1, out);
+    assert.match(out, /1 broken link\(s\)/);
+    assert.match(out, /malformed % escape/);
+  }
+});

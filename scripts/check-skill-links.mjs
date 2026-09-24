@@ -38,6 +38,7 @@ const ROOTS = ["skills", "skill-flavors"];
 const LINK_RE = /(?<!!)\[(?:[^[\]]|\[[^[\]]*\])*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 /** Fenced code blocks — links inside them are illustrative, not navigation. */
 const FENCE_RE = /^```/;
+const MALFORMED_ESCAPE = "malformed % escape";
 
 /** A target that names a path in this repo rather than somewhere else. */
 const addressesTree = (t) =>
@@ -129,6 +130,14 @@ function resolveBaseDir(fromFile) {
     return path.dirname(fromFile);
 }
 
+function decodeOrNull(uri) {
+    try {
+        return decodeURI(uri);
+    } catch {
+        return null;
+    }
+}
+
 async function statOrNull(p) {
     try {
         return await stat(p);
@@ -179,7 +188,16 @@ for (const root of ROOTS) {
             for (const match of line.matchAll(LINK_RE)) {
                 const raw = match[1];
                 if (isExternal(raw)) continue;
-                const target = decodeURI(raw.split("#")[0]);
+                const target = decodeOrNull(raw.split("#")[0]);
+                if (target === null) {
+                    broken.push({
+                        file: path.relative(REPO_ROOT, file),
+                        line: lineNo,
+                        target: raw,
+                        why: MALFORMED_ESCAPE,
+                    });
+                    continue;
+                }
                 if (target === "") continue;
                 checked++;
                 // Canonicalize before use, then confirm the link stays inside
@@ -205,15 +223,21 @@ for (const root of ROOTS) {
                 if (!addressesTree(raw)) continue;
                 const hash = raw.indexOf("#");
                 if (hash < 0) continue;
-                const fragment = decodeURI(raw.slice(hash + 1)).toLowerCase();
+                const targetPart = decodeOrNull(raw.slice(0, hash));
+                // A malformed target is already reported above as a broken link.
+                if (targetPart === null) continue;
+                const fragment = decodeOrNull(raw.slice(hash + 1));
+                if (fragment === null) {
+                    broken.push({ file: rel, line: lineNo, target: raw, why: MALFORMED_ESCAPE });
+                    continue;
+                }
                 if (!fragment) continue;
-                const targetPart = decodeURI(raw.slice(0, hash));
                 const targetFile =
                     targetPart === "" ? file : path.resolve(baseDir, targetPart);
                 // A missing target is already reported above as a broken link.
                 if (!(await isFile(targetFile))) continue;
                 fragmentsChecked++;
-                if ((await anchorsOf(targetFile)).has(fragment)) continue;
+                if ((await anchorsOf(targetFile)).has(fragment.toLowerCase())) continue;
                 deadAnchors.push({
                     file: rel,
                     line: lineNo,

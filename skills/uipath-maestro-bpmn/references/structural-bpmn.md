@@ -219,9 +219,10 @@ keep current. Preserve an existing value byte-for-byte when editing rather than
 normalising or bumping it.
 
 Give every root-level `bpmn:startEvent` exactly one stable GUID in
-`<uipath:entryPointId value="..." />`, declared as a **direct child** of that
-start event's own `<bpmn:extensionElements>`. Direct-child placement is not a
-style preference: `validate` finds the element at any depth
+`<uipath:entryPointId value="..." />` (generate a fresh one; never the example
+UUID), declared as a **direct child** of that start event's own
+`<bpmn:extensionElements>`. Direct-child placement is not a style preference:
+`validate` finds the element at any depth
 (`project-validator.ts` searches descendants), while entry-point derivation
 reads only direct children of `extensionElements`. An id nested inside
 `uipath:activity` therefore passes `validate` and is invisible to `refresh`.
@@ -249,7 +250,8 @@ Public entry-point variables have a two-layer runtime contract:
   `uipath:output` bound with `elementId` to the root EndEvent that returns it.
   Map the internal value to the public output id on that EndEvent. If one
   public result must be returned on several normal routes, converge those
-  routes on that completion event.
+  routes on that completion event. Converge routes only when they return the
+  same result.
 
 Do not route directly on a public input declaration or assume an internal
 variable automatically becomes an entry-point output.
