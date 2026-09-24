@@ -80,8 +80,8 @@ Do not derive metadata from stale package files first. Use existing generated fi
 
 1. Edit `.bpmn` first.
 2. Check the source itself: well-formed XML, entry point IDs, variables,
-   mappings, binding references. Not the diagram — step 3 generates it. Do not run `uip maestro bpmn
-   validate` yet — it cross-checks `entry-points.json` against the source, so it
+   mappings, binding references. Not the diagram — step 3 generates it.
+   Do not run `uip maestro bpmn validate` yet — it cross-checks `entry-points.json` against the source, so it
    reports the pre-refresh state as an error whenever an edit renamed a start
    event. Run it in step 5, after refresh.
 3. Lay out the diagram after the last source edit: `uip maestro bpmn format
