@@ -147,5 +147,7 @@
 | Workflow step | Source artifact | Notes |
 |---------------|-----------------|-------|
 | {Step N} | {Source framework}: `{file or object name}` ({id} where names repeat); {data sets that drive it} | {ambiguity, dead code, or unresolved reference} |
+| Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
+| Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export and Inventory rows from the process genome; a standalone component genome carries them itself.*
+*A component of a process genome inherits the Source framework, Source export, Inventory and Related resources rows from the process genome; a standalone component genome carries them itself.*

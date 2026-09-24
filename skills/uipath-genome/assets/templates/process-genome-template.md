@@ -192,3 +192,5 @@ flowchart LR
 | {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
 | Excluded / unreachable | {objects the genome does not cover, by name} | {why} |
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
+| Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
+| Resource discrepancies | {resource}: {what it says} | {what the source does} |

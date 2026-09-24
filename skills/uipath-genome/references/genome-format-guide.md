@@ -219,7 +219,7 @@ Packaging (one solution vs independent packages), entry points and triggers, tar
 Comma-separated: business domain, target applications, platform features (document-understanding, queues, human-in-the-loop, …).
 
 ### Source Map (extraction only)
-One row per workflow step (component) or per component (process): the source framework and the file, object, or workflow it came from. Names files and workflow objects, never activity names or variables. Also records dead code found, unresolved invocations, and steps whose intent was inferred. Authored genomes have no Source Map. Remove the section on request when the genome is redistributed as a reusable blueprint.
+One row per workflow step (component) or per component (process): the source framework and the file, object, or workflow it came from. Names files and workflow objects, never activity names or variables. Also records dead code found, unresolved invocations, and steps whose intent was inferred, plus `Related resources` and `Resource discrepancies` rows when the user gave resources ([extraction-guide.md](extraction-guide.md) Step 3). Authored genomes have no Source Map. Remove the section on request when the genome is redistributed as a reusable blueprint.
 
 **For a genome extracted from another framework the Source Map is also the migration contract.** Execution regenerates every catalog it needs — UI target locators, data rows, process inventory, step map — from the export, and the Source Map is the only place that says where the export is and which source objects each step came from. It must therefore carry, in the process genome (or the single component genome):
 

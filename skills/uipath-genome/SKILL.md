@@ -45,7 +45,7 @@ No row matches → say which framework the files appear to come from and that th
 Each rule names its subject and the one guide that states it in full; the guide's wording is the rule.
 
 1. **Choose the genome level before writing** — one project is a component genome, two or more (or a coordinator plus what it invokes) a process genome with one component genome per project, and test components are folders of one test project: [genome-format-guide.md § Two Levels](references/genome-format-guide.md).
-2. **Read the source, do not ask about it.** Extraction reads every non-generated file and never asks what the automation does: [extraction-guide.md](references/extraction-guide.md).
+2. **Read the source, do not ask about it.** Extraction reads every non-generated file and never asks what the automation does, only for resources beside it, which it reads and links: [extraction-guide.md](references/extraction-guide.md) Steps 1 and 3.
 3. **Infer complexity, never ask for it**, defaulting lower when ambiguous: [genome-format-guide.md § Complexity](references/genome-format-guide.md).
 4. **Replication-grade detail in behavioural wording**, with activity names, variable names, file paths and code syntax banned from the body: [genome-format-guide.md § Workflow](references/genome-format-guide.md) and § Provenance.
 5. **Generalize hardcoded values into Configuration Questions** with the source value as default: [genome-format-guide.md § Configuration Questions](references/genome-format-guide.md).
@@ -71,7 +71,7 @@ Each rule names its subject and the one guide that states it in full; the guide'
 
 ### Extract (project or solution → genome)
 
-Detect framework and deployment unit → inventory → extract signals with the source guide's tables → build call and handoff graphs → verify every suspected source defect in the full rendering and in the framework's source → infer complexity → map signals to sections (process genome first, then components; the Transactional Shape from the source's per-item constructs) → complete the Source Map as the migration contract and check it resolves with `scripts/genome-step-map.py` → write, then offer edits. Full procedure: [extraction-guide.md](references/extraction-guide.md); framework guides and scripts: § Source Frameworks.
+Detect framework and deployment unit → ask for related resources → inventory → extract signals with the source guide's tables → build call and handoff graphs → verify every suspected source defect in the full rendering and in the framework's source → infer complexity → map signals to sections (process genome first, then components; the Transactional Shape from the source's per-item constructs) → complete the Source Map as the migration contract and check it resolves with `scripts/genome-step-map.py` → write, then offer edits. Full procedure: [extraction-guide.md](references/extraction-guide.md); framework guides and scripts: § Source Frameworks.
 
 ### Author (description → genome)
 

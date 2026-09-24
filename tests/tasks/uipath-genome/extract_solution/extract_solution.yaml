@@ -22,7 +22,8 @@ initial_prompt: |
   The UiPath solution in `InvoiceOps/` runs our nightly accounts-payable intake.
   We need a ground-truth understanding of it at both the process level and the
   individual project level before we redesign it. Extract a genome for the whole
-  solution and write it into the current directory.
+  solution and write it into the current directory. There are no other
+  resources for this process beyond the solution itself.
 
   Before starting, load the uipath-genome skill and follow its extraction workflow.
   Read every project in the solution — do not ask me what any of them does, and do
