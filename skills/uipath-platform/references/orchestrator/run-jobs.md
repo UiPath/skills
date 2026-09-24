@@ -96,8 +96,10 @@ Key options:
 | `--tags <list>` | Comma-separated tags for filtering |
 | `--hidden-for-attended` / `--visible-for-attended` | Toggle visibility to attended robot users |
 | `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy |
-| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <id>`) | Job retention policy. `--retention-period` must be 1-180 (validated client-side). |
-| `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` | Stale-job retention policy |
+| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <bucket-key>`) | Job retention policy. `--retention-period` must be 1-180 (validated client-side). `Archive` requires `--retention-bucket`. |
+| `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` (+ `--stale-retention-bucket <bucket-key>`) | Stale-job retention policy. `Archive` requires both `--stale-retention-bucket` and an explicit `--stale-retention-period` (Delete/None default to 180 days); a period without an action is rejected. |
+
+> **Archiving jobs.** Buckets are passed by **key (GUID)** — `uip or buckets list --folder-path <folder> --output json` → `Key` (`--retention-bucket` still accepts a legacy numeric id; `--stale-retention-bucket` does not). The bucket must be in, or shared to, the process's folder, or Orchestrator answers `404 Bucket does not exist`. On `processes update`, omitted retention flags keep their stored values: an archiving path keeps its bucket and period, and switching it to Delete/None clears the bucket automatically.
 
 > The runtime kind (Unattended / Headless / NonProduction / AgentService / Serverless) is **not** a process-level setting; it's chosen per-job on `jobs start --runtime-type`. The process binds the package to a folder; runtime selection happens at execution time.
 
