@@ -15,8 +15,6 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: fixture
 
 reference:
@@ -24,7 +22,7 @@ reference:
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill, and apply its public-safety
-  rules (references/public-safety.md).
+  rules.
 
   A Maestro BPMN file `CustomerExport.bpmn` is in the working directory. It was
   exported from a customer environment and still contains PRIVATE data that must

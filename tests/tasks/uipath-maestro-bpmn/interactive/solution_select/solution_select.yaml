@@ -60,8 +60,6 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: fixtures/existing_solutions
 
 # No initial_prompt — in simulation mode the simulator generates the opening

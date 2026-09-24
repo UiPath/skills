@@ -11,11 +11,6 @@ run_limits:
   expected_turns: 26
   max_turns: 70
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -32,10 +27,10 @@ initial_prompt: |
   classifier had been confident. Each category ends the process with its own
   recorded outcome.
 
-  Author the structural BPMN yourself and get any UiPath extension payloads from
-  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
-  before finishing. Do not upload, publish, deploy, debug, run, or pack
-  anything, and do not pause for approval.
+  Author the process through your skill's authoring path, resolving any UiPath
+  extension node to its registered type and payload. The emitted `.bpmn` must
+  carry a bpmndi:BPMNDiagram. Validate locally before finishing. Do not upload,
+  publish, deploy, debug, run, or pack anything, and do not pause for approval.
 
 success_criteria:
   - type: file_exists

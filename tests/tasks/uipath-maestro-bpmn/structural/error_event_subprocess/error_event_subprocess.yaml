@@ -11,11 +11,6 @@ run_limits:
   expected_turns: 22
   max_turns: 80
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -37,13 +32,13 @@ initial_prompt: |
       handler task to a nested end event.
 
   Requirements:
-  - Discover any UiPath extension node's type via the registry and author it from
-    the registry template — do not hand-author uipath:* XML from prose. Plain
-    structural BPMN (start/end events, tasks, gateway, subprocess, sequence
-    flows) comes from the skill's structural reference.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node (including the
-    event subprocess container and its nested nodes) and a BPMNEdge for every
-    sequence flow.
+  - Resolve any UiPath extension node's type and payload the way your skill
+    prescribes; do not invent uipath:* XML from prose. Plain structural BPMN
+    (start/end events, tasks, gateway, subprocess, sequence flows) is yours to
+    author the way your skill prescribes.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node (including the event subprocess container and its nested nodes)
+    and an edge for every sequence flow.
   - Validate the file locally before finishing by running
     `uip maestro bpmn validate <file>` (or a well-formed-XML parse plus the
     structural checklist if the CLI is unavailable).

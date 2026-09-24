@@ -43,7 +43,7 @@ If the port needs a construct BPMN lacks, STOP and report it as "parked: <reason
 | Inline agent | none — park unless a published agent substitute is acceptable AND stated in the description |
 | Data binding `$vars.<node>.output.<f>` | `=vars.<VarId>` read from a declared `<uipath:variables>` entry that the producing task's `<uipath:output>` writes |
 
-Authoritative BPMN contracts: `skills/uipath-maestro-bpmn/SKILL.md`, `references/registry-workflow.md` (§3 connector enrichment, §4 bindings), `references/structural-bpmn.md`. Read them before authoring the prompt or grader; the grader must use the element names and `type=` tokens the skill actually teaches when translating a Flow assertion.
+Authoritative BPMN contracts: `skills/uipath-maestro-bpmn/SKILL.md`, `references/registry-workflow.md` (§3 connector enrichment, §4 bindings), `references/structural-bpmn.md`. Read them before authoring the prompt or grader; the grader must use the element names and `type=` tokens the skill actually teaches when translating a Flow assertion. Read them as the AUTHOR, though — never name one in a prompt. Both arms run these tasks and `preview/skills/uipath-maestro-bpmn/references/` holds only `bpmn-runtime.md`, so a prompt citing a v1 reference file dangles under the SDK arm. Say what the output must contain instead.
 
 
 ## Grading contract (mandatory — ports are born normalized)
@@ -86,7 +86,11 @@ Grader files go in `tests/tasks/uipath-maestro-bpmn/_shared/check_<task>.py` and
 - `task_id: skill-bpmn-<slug>` (Flow's `skill-flow-<slug>` with the prefix swapped; drop `ipe-`).
 - `description`: Flow's description + one sentence "Ported from Flow `<relative path>`; <what changed and why>."
 - `tags`: `uipath-maestro-bpmn` first, then Flow's tags minus `uipath-maestro-flow`/`ipe`, plus `"mode:build"` if Flow lacked it. Quote tags containing `:` the way BPMN neighbours do.
-- `sandbox.template_sources`: `- type: template_dir` / `path: ../../../../../skills/uipath-maestro-bpmn` (adjust `..` count to depth).
+- `sandbox.template_sources`: ONLY `_setup`, fixture and mock entries the task
+  actually reads. Never stage a skill directory — the skill arrives through the
+  plugin catalog, and a copy in the working directory feeds the SDK arm the v1
+  generation. See "Arm neutrality" in ../README.md. A task needing none of
+  those omits `sandbox:` entirely.
 - `reference: { directory: ../.. }` (adjust to depth).
 - `initial_prompt`: Flow's prompt, translated per the contract, ending with the headless preamble verbatim. Add the BPMN suite's standard closing line only if Flow's prompt had an equivalent ("Do NOT upload, publish, deploy, debug..." maps from Flow's validate-only intent).
 - `success_criteria`: one-for-one with Flow's, same order, same weights.
