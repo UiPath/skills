@@ -12,7 +12,7 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:setup", "shape:multi-node", resource, outcome-graded]
 
 run_limits:
-  max_turns: 90
+  max_turns: 150
   task_timeout: 3900
   turn_timeout: 2400
 

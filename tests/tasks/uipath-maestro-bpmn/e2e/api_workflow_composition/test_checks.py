@@ -175,6 +175,21 @@ class ShapeCheckMutationTests(unittest.TestCase):
     def test_stray_output_write(self):
         self.assert_rejected("stray_output_write", "'message' is also published from")
 
+    def test_node_output_falls_back_to_input(self):
+        self.assert_rejected("node_output_falls_back_to_input", "no end event publishes 'message'")
+
+    def test_end_mapping_mixes_input(self):
+        self.assert_rejected("end_mapping_mixes_input", "'message' is also published from")
+
+    def test_unregistered_bpmn_project(self):
+        self.assert_rejected("unregistered_bpmn_project", "BPMN project at .* is not registered")
+
+    def test_inexact_contract(self):
+        problems = shape_problems(MUTATIONS / "inexact_contract")
+        joined = " | ".join(problems)
+        self.assertIn("output must publish exactly ['message']", joined)
+        self.assertIn("properties ['name'] must be type 'string'", joined)
+
     def test_undeclared_var_read(self):
         self.assert_rejected("undeclared_var_read", "undeclared variable id")
 

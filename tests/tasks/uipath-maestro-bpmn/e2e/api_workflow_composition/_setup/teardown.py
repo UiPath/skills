@@ -25,6 +25,7 @@ import json
 import logging
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="teardown: %(message)s")
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 LOGIN_STATUS_TIMEOUT = 30
 DEPLOY_LIST_TIMEOUT = 60
-DEPLOY_UNINSTALL_TIMEOUT = 300
+DEPLOY_UNINSTALL_TIMEOUT = 120
 FOLDER_DELETE_TIMEOUT = 60
 PACKAGES_LIST_TIMEOUT = 60
 PACKAGES_DELETE_TIMEOUT = 60
@@ -42,11 +43,20 @@ FOLDERS_LIST_TIMEOUT = 60
 PAGE_SIZE = 100
 MAX_PAGES = 20
 
+# post_run is killed at 300s (api_workflow_composition.yaml); stop short so
+# later phases are skipped cleanly instead of killed mid-call.
+POST_RUN_BUDGET_SECONDS = 280
+DEADLINE = time.monotonic() + POST_RUN_BUDGET_SECONDS
+
 
 def _run(args: list[str], timeout: int) -> dict:
+    remaining = int(DEADLINE - time.monotonic())
+    if remaining <= 0:
+        logger.warning("deadline reached, skipped: %s", " ".join(args))
+        return {}
     try:
         result = subprocess.run(
-            [*args, "--output", "json"], capture_output=True, text=True, timeout=timeout
+            [*args, "--output", "json"], capture_output=True, text=True, timeout=min(timeout, remaining)
         )
     except subprocess.TimeoutExpired:
         logger.warning("timed out: %s", " ".join(args))

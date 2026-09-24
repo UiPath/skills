@@ -213,11 +213,13 @@ def main() -> None:
     )
     print(f"OK: debug completed (instance {instance_id})")
 
-    incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=INCIDENTS_TIMEOUT,
-    )
-    _payload, incidents_data = payload_data(incidents, "incidents", require_success=False)
+    incidents_data = None
+    if get_ci(debug_data, "FinalStatus") not in COMPLETED_STATUSES:
+        incidents = run_cli(
+            ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
+            timeout=INCIDENTS_TIMEOUT,
+        )
+        _payload, incidents_data = payload_data(incidents, "incidents", require_success=False)
 
     try:
         assert_completed(debug_data, incidents_data)
