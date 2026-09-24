@@ -13,7 +13,7 @@ skill-flow-datafabric-native-contract-intake-pipeline):
   `_sort`, instance `outputs` with the SDK's `{type: 'literal', ...}` source.
 - V1: the 2026-09-23 v1 artifact: grouped `_filters`, no instance outputs.
 - V2_0923: the 2026-09-23 v2 artifact (rawNode with hand-typed manifests):
-  `_sortOptions` instead of `_sort`, instance `model`, `form.sections: []`.
+  `_sortOptions` instead of `_sort`, instance `model`.
 - V2_0918: the 2026-09-18 v2 artifact, which deleted `model` and
   `outputDefinition` from its definitions to satisfy the old rule.
 """
@@ -299,15 +299,21 @@ def test_delete_with_outputs_fails(tmp_path: Path) -> None:
     assert "declares no output" in assert_clean_fail(run(SHAPE, flow, tmp_path))
 
 
-def test_empty_form_sections_fails(tmp_path: Path) -> None:
+def test_definitions_without_form_pass(tmp_path: Path) -> None:
+    """Two scored v1 runs (nightly 2026-09-21, adhoc 2026-09-22 v1) wrote
+    definitions with `model`, `outputDefinition` and `runtimeConstraints` but no
+    `form`. The canvas falls back to the registry's form (conversion.ts:196), so
+    a missing or empty form is not a defect."""
     flow = typed()
-    flow["definitions"][0]["form"]["sections"] = []
-    assert "form.sections is empty" in assert_clean_fail(run(SHAPE, flow, tmp_path))
+    for d in flow["definitions"]:
+        d.pop("form", None)
+    flow["definitions"][1]["form"] = {"id": "entity-properties", "sections": []}
+    result = run(SHAPE, flow, tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_v2_0923_rawnode_manifests_fail(tmp_path: Path) -> None:
     out = assert_clean_fail(run(SHAPE, v2_0923(), tmp_path))
-    assert "form.sections is empty" in out
     assert "carries an instance `model` block" in out
 
 

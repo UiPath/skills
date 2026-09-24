@@ -38,23 +38,20 @@ UPDATE_T = "core.datafabric.update"
 DELETE_T = "core.datafabric.delete"
 
 
-# Every key the read node's serializer declares (flow-workbench
-# packages/services/src/serialization/entity-vdo.ts, `interface EntityConfig`).
-# A key outside this set is carried into the file and never read.
-READ_ENTITY_CONFIG_KEYS = {
-    "entityName",
-    "resultMode",
-    "_recordLimit",
-    "_skip",
-    "_sort",
-    "_selectedFieldNames",
-    "_filters",
-    "_entityFields",
-    "_relatedFields",
-    "_folderKey",
-    "_entityKey",
-    "_resourceKey",
-    "_outputSchema",
+# Every entityConfig key the product reads or persists on a Data Fabric node
+# (flow-workbench eed682f19): services serialization/entity-vdo.ts
+# `interface EntityConfig` and its Create/Update extensions, plus the keys the
+# canvas entity panels persist (properties-panel/EntityConfigField.tsx
+# `EntityConfigInputs`, entity/useEntityPanelState.ts `EntitySelectionPatch`).
+# The builder SDK refuses the same set (typed-raw-node.ts
+# DATAFABRIC_ENTITY_CONFIG_KEYS). A key outside it is carried into the file
+# and never read.
+KNOWN_ENTITY_CONFIG_KEYS = {
+    "entityName", "resultMode",
+    "_recordLimit", "_skip", "_sort", "_selectedFieldNames", "_filters",
+    "_entityFields", "_relatedFields", "_choiceSets", "_outputSchema",
+    "_folderKey", "_folderPath", "_entityKey", "_resourceKey", "_entityDisplayName", "_entitySubType",
+    "fieldValues", "fieldUpdates", "recordSource", "readEntityNodeId", "recordId",
 }
 
 
@@ -121,8 +118,8 @@ def has_priority_desc_sort(node):
 
 
 def unread_keys(node):
-    """entityConfig keys the read node's serializer never reads."""
-    return sorted(set(entity_config(node)) - READ_ENTITY_CONFIG_KEYS)
+    """entityConfig keys the product never reads."""
+    return sorted(set(entity_config(node)) - KNOWN_ENTITY_CONFIG_KEYS)
 
 
 def main() -> int:

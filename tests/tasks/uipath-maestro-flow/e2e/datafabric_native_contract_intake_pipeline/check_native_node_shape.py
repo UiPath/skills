@@ -3,11 +3,19 @@
 Studio Web writes, which `flow validate` does NOT enforce:
 
 - a `definitions[]` entry exists for the node's exact `type`:`typeVersion`,
-  and it is the registry's copy rather than a hand-written or trimmed one:
-  `model.type == "bpmn:Task"`, `"api-function"` in
-  `runtimeConstraints.exclude`, a non-empty `form.sections`, and an
-  `outputDefinition` for every verb except delete (every registry version of
-  these nodes has all of them; flow-workbench core-datafabric-*/v1.*.ts)
+  and it is not a trimmed copy: `model.type == "bpmn:Task"`,
+  `"api-function"` in `runtimeConstraints.exclude`, and an `outputDefinition`
+  for every verb except delete. Every registry version of these nodes has all
+  three (flow-workbench core-datafabric-*/v1.*.ts). The CLI export reads the
+  file's own `definitions[]` (canvas conversion.ts `flowJsonToBpmnXml` builds
+  its manifest map from `workflow.definitions`): `model` seeds the exported
+  task (services bpmn-to-xml.ts:1015-1028) and `outputDefinition` types the
+  node's process variables (bpmn-to-xml.ts:483-494). The `outputDefinition`
+  rule is a checker-intent rule: without it export falls back to
+  `variables.nodes[].type`, and no archived run is known to break on that.
+  `form` is not checked: the canvas falls back to the registry's form
+  (conversion.ts:196 `fileDef.form ?? manifestDef.form`), and two scored v1
+  runs wrote definitions without one.
 - instance `outputs`, when present, match the definition's
   `outputDefinition`: no key the definition lacks, and the same `type`, `var`
   and `source` for each key. The canvas persists these (instance-converters.ts
@@ -21,7 +29,7 @@ Studio Web writes, which `flow validate` does NOT enforce:
   instance copy over the definition's (services bpmn-to-xml.ts), so once the
   definition moves on a stale copy wins. The builder SDK emits none from the
   release after 6.7.0; 6.7.0 output fails this rule and nothing else. The
-  rule is unchanged from the version before it, so no run is graded harder.
+  rule itself is unchanged from the version before it.
 - no outgoing edge with `sourcePort: "error"` (these four nodes have no
   error port)
 
@@ -68,10 +76,6 @@ def _definition_problems(d: dict, node_type: str) -> list[str]:
     exclude = (constraints or {}).get("exclude") if isinstance(constraints, dict) else None
     if not isinstance(exclude, list) or "api-function" not in exclude:
         problems.append("runtimeConstraints.exclude lacks 'api-function'")
-    form = d.get("form")
-    sections = form.get("sections") if isinstance(form, dict) else None
-    if not isinstance(sections, list) or not sections:
-        problems.append("form.sections is empty or missing")
     if node_type not in NO_OUTPUT_TYPES and not isinstance(d.get("outputDefinition"), dict):
         problems.append("outputDefinition is missing")
     return problems
