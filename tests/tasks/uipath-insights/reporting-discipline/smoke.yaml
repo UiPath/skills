@@ -196,17 +196,19 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Two retry shapes. The loop branch requires real loop syntax (`...; do`)
-  # rather than a bare keyword plus a barrier: a `[^&;|]` gap cannot cross
-  # the `; do` every shell loop carries, and a bare `\bfor\b` + wildcard
-  # false-fires on prose like `echo "one for the road"; uip insights ...`.
+  # Two retry shapes. The loop branch requires real loop syntax (`...; do`
+  # or `do` on the next line) with the keyword at the start of a command,
+  # so prose like `echo "one for the road"` or a `# wait for it; do not
+  # retry` comment does not fire it. Its header gap is the approved
+  # `(?:[^&;|\n]|\\\n)*`, which stops at the end of the line but lets a
+  # backslash-continued header through.
   # The second branch is the condition position (`until uip insights ...; do`),
   # where the retried call sits before the `do`. The third is the `||` retry
   # of the same command.
   - type: command_not_executed
     description: "Agent did not retry by looping or chaining uip insights calls"
     tool_name: "Bash"
-    command_pattern: '\b(for|while|until)\b[^;&|]*;\s*do\b(?:(?!\bdone\b)[\s\S])*?\buip\s+insights\b|\b(while|until)\s+!?\s*uip\s+insights\b|uip\s+insights\s+\S+(?:(?!uip\s)[^&;|])*\|\|\s*uip\s+insights'
+    command_pattern: '(?:^|[\n;&|(\x27\"]\s*)(for|while|until)\b(?:[^&;|\n]|\\\n)*[;\n]\s*do\b(?:(?!\bdone\b)[\s\S])*?\buip\s+insights\b|\b(while|until)\s+!?\s*uip\s+insights\b|uip\s+insights\s+\S+(?:(?!uip\s)[^&;|])*\|\|\s*uip\s+insights'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0

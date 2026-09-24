@@ -144,14 +144,16 @@ success_criteria:
   # quotes; that group needs the Python 3.11+ `re` the pinned coder-eval
   # runs on. 2>&1, 2>/dev/null, 2>err.txt, and > /dev/null are not
   # captures and do not match; `| jq .Data.Saved` and a `>` comparison
-  # inside a jq filter do not match either. Forty shapes were replayed
-  # through the pinned coder-eval 0.12.1 _match_haystacks before this
-  # landed. Single quotes inside the pattern are written as \x27 because
-  # the YAML scalar is single-quoted.
+  # inside a jq filter do not match either. The jq walk takes flags and at
+  # most one filter, so a command on the next line cannot extend it once
+  # the normalizer turns the newline into a space.
+  # test_dashboards_criteria.py pins the capture and non-capture shapes.
+  # Single quotes inside the pattern are written as \x27 because the YAML
+  # scalar is single-quoted.
   - type: command_not_executed
     description: "Agent did not capture read stdout into the definition file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:"[^"]*"|\x27[^\x27]*\x27|(?!-)[A-Za-z0-9_.:-]+))?(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*[ 	]*(?:(?:(?<![0-9&])>>?|&>|>\||(?<![0-9])1>>?)[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"]*[./][^\s\x27"]*)|\|[ \t]*tee\b|\|[ \t]*jq[^&;|\n]*?(?<![0-9&])>[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"]*[./][^\s\x27"]*))'
+    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:"[^"]*"|\x27[^\x27]*\x27|(?!-)[A-Za-z0-9_.:-]+))?(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*[ 	]*(?:(?:(?<![0-9&])>>?|&>|>\||(?<![0-9])1>>?)[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"&;|]*[./][^\s\x27"&;|]*)|\|[ \t]*tee\b|\|[ \t]*jq(?:[ \t]+(?:--(?:arg|argjson|slurpfile|rawfile)[ \t]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;\x27"]+)[ \t]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;\x27"]+)|--indent[ \t]+\d+|-{1,2}[A-Za-z][\w-]*))*(?:[ \t]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;\x27"]+))?(?:[ \t]+(?:--(?:arg|argjson|slurpfile|rawfile)[ \t]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;\x27"]+)[ \t]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;\x27"]+)|--indent[ \t]+\d+|-{1,2}[A-Za-z][\w-]*))*[ \t]*(?<![0-9&])>[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"&;|]*[./][^\s\x27"&;|]*))'
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0

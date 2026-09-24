@@ -55,19 +55,20 @@ TASK_FILES = tuple(sorted(p.relative_to(TASKS).as_posix() for p in TASKS.rglob("
 # YAML here means both spellings still have to be collected.
 COMMAND_CRITERION_TYPES = ("command_executed", "command_not_executed")
 
-# The grader's own flag: coder_eval/criteria/command_executed.py lines 236 and
-# 295 compile every pattern with re.DOTALL.
+# The grader's own flag: coder_eval/criteria/command_executed.py lines 215 and
+# 270 compile every pattern with re.DOTALL.
 FLAGS = re.DOTALL
 
 
 # --- the grader's matching, mirrored ----------------------------------------
 #
-# Ported from coder_eval 0.12.1 (the version in tests/.coder-eval-version),
+# Ported from coder_eval 0.12.4 (the version in tests/.coder-eval-version),
 # file coder_eval/criteria/command_executed.py: _MAX_PATTERN_SEARCH_LEN at line
-# 24, _is_shell_program at 27, _is_command_flag at 39, _normalize_shell at 53
-# and _match_haystacks at 116. The CI job for these guards installs pytest and
-# pyyaml only, so the grader cannot be imported; keeping the port in one block
-# with its source named keeps the drift visible.
+# 23, _is_shell_program at 26, _is_command_flag at 38, _normalize_shell at 52
+# and _match_haystacks at 100, on its Bash branch (is_shell=True). The repo's
+# pytest CI jobs install pytest and pyyaml only, so the grader cannot be
+# imported; keeping the port in one block with its source named keeps the
+# drift visible.
 
 MAX_PATTERN_SEARCH_LEN = 2000
 
@@ -161,6 +162,10 @@ PROCESS = '"Invoice_Processing"'
 FOLDER_KEY = '"a1b2c3d4-e5f6-7890-abcd-ef1234567890"'
 FOLDER_NAME = '"Finance"'
 FILTERS_30D = f"{WINDOW_30D} --process-name {PROCESS} --folder-key {FOLDER_KEY}"
+MISSING_PROCESS = '"Nonexistent_Process_ZZZ"'
+DISCOVERED_FOLDER_KEY = '"9c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f"'
+LAST_WEEK = "--started-after 1757894400000 --started-before 1758499200000"
+TWO_MACHINES = '--machine-name "ROBOT-01" --machine-name "ROBOT-02" --timezone-offset -480'
 
 # The seven plain reads.
 PLAIN_SUBCOMMANDS = (
@@ -232,6 +237,10 @@ ROUTE_TASKS = {
             [_jobs("investigate process", FILTERS_30D)],
         ],
     },
+    "reporting-discipline/smoke.yaml": {
+        "chain": [[_jobs("failures-by-reason", WINDOW_24H, f"--process-name {MISSING_PROCESS}")]],
+        "verb": [[_jobs("investigate process", f"--process-name {MISSING_PROCESS}", WINDOW_24H)]],
+    },
 }
 
 # Tasks whose prompt names subcommands. `window` is the time selection that
@@ -260,15 +269,61 @@ NARROW_TASKS = {
         "window": WINDOW_24H,
         "calls": [[_saved(subcommand, WINDOW_24H)] for subcommand in PLAIN_SUBCOMMANDS],
     },
+    "errors/envelope_contract_smoke.yaml": {
+        "window": "--time-range 60",
+        "calls": [
+            [f"{_jobs('summary')} > no-window.json"],
+            [f"{_jobs('summary', '--time-range 60 --limit 5')} > jobs-limit.json"],
+            ["uip insights filter-folders list --time-range 60 --output json > filter-time.json"],
+            ["uip insights alert-history list --output json > alert-window.json"],
+            ["uip insights roles get not-a-guid --output json > bad-guid.json"],
+        ],
+    },
+    "filters/folder_scoped_smoke.yaml": {
+        "window": WINDOW_7D,
+        "calls": [
+            ["uip insights filter-folders list --limit 5 --output json > folders-page.json"],
+            ["uip insights filter-folders list --limit 10000 --output json"],
+            [_jobs("summary", WINDOW_7D, f"--folder-key {DISCOVERED_FOLDER_KEY}")],
+            [_jobs("top-failures", WINDOW_7D, f"--folder-key {DISCOVERED_FOLDER_KEY}")],
+        ],
+    },
+    "job-health/period_comparison_smoke.yaml": {
+        "window": WINDOW_7D,
+        "calls": [
+            ["date -u +%s"],
+            [f"{_jobs('summary', WINDOW_7D)} > this-week.json"],
+            [f"{_jobs('summary', LAST_WEEK)} > last-week.json"],
+        ],
+    },
+    "smoke_machine_scoped_query.yaml": {
+        "window": WINDOW_7D,
+        "calls": [
+            ["uip insights filter-machines list --output json"],
+            [_jobs("summary", WINDOW_7D, TWO_MACHINES)],
+            [_jobs("completed-timeline", WINDOW_7D, TWO_MACHINES)],
+        ],
+    },
 }
 
-# Tasks in this tree that grade the alerts, RBAC and filter-discovery command
-# families. The jobs playbook does not run those reads, so the routing question
-# does not arise for them. The pattern, count and advisory guards below still
-# cover them.
+# Tasks in this tree that grade the alerts, dashboards, machines, queues, RBAC
+# and filter-discovery command families. The jobs playbook does not run those
+# reads, so the routing question does not arise for them. The pattern, count
+# and advisory guards below still cover them.
 OTHER_TASKS = (
+    "alerts/absolute_window_triage_smoke.yaml",
+    "alerts/filtered_history_smoke.yaml",
+    "alerts/interpretation_smoke.yaml",
     "alerts/smoke.yaml",
+    "dashboards/copy_smoke.yaml",
+    "dashboards/create_smoke.yaml",
+    "dashboards/delete_smoke.yaml",
+    "dashboards/smoke.yaml",
+    "dashboards/update_smoke.yaml",
     "filters/smoke.yaml",
+    "machines/smoke.yaml",
+    "queues/smoke.yaml",
+    "rbac/drilldown_smoke.yaml",
     "rbac/smoke.yaml",
 )
 
@@ -276,16 +331,32 @@ OTHER_TASKS = (
 # criterion is a visible edit here and not a silently smaller suite: every
 # other test in this file iterates whatever the YAML holds.
 EXPECTED_COMMAND_CRITERIA = {
+    "alerts/absolute_window_triage_smoke.yaml": 8,
+    "alerts/filtered_history_smoke.yaml": 10,
+    "alerts/interpretation_smoke.yaml": 5,
     "alerts/smoke.yaml": 10,
+    "dashboards/copy_smoke.yaml": 6,
+    "dashboards/create_smoke.yaml": 6,
+    "dashboards/delete_smoke.yaml": 7,
+    "dashboards/smoke.yaml": 7,
+    "dashboards/update_smoke.yaml": 9,
     "envelope-contract/all_commands_envelope_e2e.yaml": 8,
+    "errors/envelope_contract_smoke.yaml": 7,
+    "filters/folder_scoped_smoke.yaml": 8,
     "filters/smoke.yaml": 6,
     "job-health/job_health_investigation_e2e.yaml": 5,
+    "job-health/period_comparison_smoke.yaml": 6,
+    "machines/smoke.yaml": 12,
+    "queues/smoke.yaml": 17,
+    "rbac/drilldown_smoke.yaml": 11,
     "rbac/smoke.yaml": 8,
+    "reporting-discipline/smoke.yaml": 4,
     "smoke_absolute_time_range.yaml": 3,
     "smoke_all_commands.yaml": 7,
     "smoke_critical_rules.yaml": 3,
     "smoke_filtered_query.yaml": 3,
     "smoke_job_health_investigation.yaml": 4,
+    "smoke_machine_scoped_query.yaml": 8,
 }
 
 # The out-of-scope requests in smoke_critical_rules' prompt that carry a
@@ -300,9 +371,11 @@ OUT_OF_SCOPE = {
         _jobs("start", PROCESS),
         _jobs("investigate start", PROCESS),
     ],
-    "Agent did NOT run uip insights jobs for queue metrics (not supported)": [
+    "Agent did NOT answer the queue request from the jobs family": [
         _jobs("summary", WINDOW_24H, "--queue MyQueue"),
         _jobs("investigate failing", "--queue MyQueue"),
+        _jobs("queue-metrics", WINDOW_24H),
+        _jobs("--queue MyQueue"),
     ],
 }
 
@@ -326,6 +399,8 @@ APPROVED_GAPS = (
     r"(?:(?!uip\s)[^&;|])*",
 )
 
+QUOTED_STRING_ATOM = re.compile(r"(?P<q>\"|\\x27|')\[\^(?P=q)\]\*|\[\^(?P<r>\"|\\x27|')\]\*(?P=r)")
+
 # What ends one command inside a batched Bash call.
 SEPARATORS = ("&", ";", "|", "\n")
 
@@ -338,19 +413,25 @@ _OPEN_QUANTIFIER = r"(?:\*|\+|\{\d*,\}|\{\d*,(?:[2-9]|\d\d+)\})"
 _WIDE_ATOM = re.compile(r"(?<!\\)(?P<atom>\.|\[(?:\\.|[^\]\\])*\])" + _OPEN_QUANTIFIER)
 
 
+def _stays_inside_one_token(probe):
+    return not any(probe.fullmatch(char) for char in (" ", "\t", *SEPARATORS))
+
+
 def _is_a_hand_rolled_gap(atom):
     """True when this atom, left open-ended, is a gap between two anchors.
 
-    A negated class is one by construction: it stands for "anything except a
-    few characters". This repo has two approved spellings for a gap, so a third
-    one is reported even when it happens to exclude the separators, because the
-    exclusion is what strands it at a backslash continuation. Any other atom is
-    reported when it can match both a letter and a separator, which is what
-    carries a match out of one command and into the next under re.DOTALL.
+    A negated class is one unless it also excludes whitespace: then it is a
+    single-token atom like `[^\\s&;|]+`, which cannot cross the space between
+    two tokens, let alone a separator. Any other negated class stands for
+    "anything except a few characters", and a third spelling of a gap is
+    reported even when it excludes the separators, because the exclusion is
+    what strands it at a backslash continuation. Any other atom is reported
+    when it can match both a letter and a separator, which is what carries a
+    match out of one command and into the next under re.DOTALL.
     """
-    if atom.startswith("[^"):
-        return True
     probe = re.compile(atom, FLAGS)
+    if atom.startswith("[^"):
+        return not _stays_inside_one_token(probe)
     return probe.fullmatch("a") is not None and any(probe.fullmatch(sep) for sep in SEPARATORS)
 
 
@@ -360,7 +441,7 @@ def _unapproved_gaps(pattern):
     An allowlist rather than a ban on `.*`: `[\\s\\S]*`, `.+` and `.{0,200}`
     reproduce the same bleed in a spelling a ban on one literal never sees.
     """
-    text = pattern
+    text = QUOTED_STRING_ATOM.sub(" ", pattern)
     for gap in APPROVED_GAPS:
         text = text.replace(gap, " ")
     return [match.group(0) for match in _WIDE_ATOM.finditer(text) if _is_a_hand_rolled_gap(match.group("atom"))]
@@ -462,7 +543,9 @@ def test_gaps_between_anchors_use_an_approved_form(task_file):
         )
 
 
-@pytest.mark.parametrize("gap", (".*", ".+", ".{0,200}", r"[\s\S]*", r"[^&;|\n]*", r"[\s\S]{2,}"))
+@pytest.mark.parametrize(
+    "gap", (".*", ".+", ".{0,200}", r"[\s\S]*", r"[^&;|\n]*", r"[\s\S]{2,}", r"[^\n&;|]+", r"[^\s&]+")
+)
 def test_the_gap_guard_rejects_every_spelling_of_a_wildcard(gap):
     """The guard is an allowlist, so it is not dodged by respelling `.*`."""
     assert _unapproved_gaps(rf"uip\s+insights\s+jobs\s+summary\s{gap}--time-range")
@@ -473,7 +556,7 @@ def test_the_gap_guard_accepts_the_approved_forms(gap):
     assert not _unapproved_gaps(rf"uip\s+insights\s+jobs\s+summary\s{gap}--time-range")
 
 
-@pytest.mark.parametrize("atom", (r"\S+", r"\d{13}", r"[\s=]+", ".?", '"?'))
+@pytest.mark.parametrize("atom", (r"\S+", r"\d{13}", r"[\s=]+", ".?", '"?', r"[^\s&;|]+"))
 def test_the_gap_guard_leaves_narrow_atoms_alone(atom):
     """None of these can carry a match from one command into the next."""
     assert not _unapproved_gaps(rf"uip\s+insights\s+jobs\s+{atom}summary")
@@ -595,8 +678,13 @@ def test_negatives_do_not_fire_on_an_in_scope_call():
     """
     routes = ROUTE_TASKS["smoke_critical_rules.yaml"]
     in_scope = [command for call in (*routes["chain"], *routes["verb"]) for command in call]
-    neighbour = "uip orchestrator queues list --output json"
-    calls = [[command] for command in in_scope] + [[command, neighbour] for command in in_scope]
+    neighbours = (
+        "uip orchestrator queues list --output json",
+        "uip insights queues summary --time-range 1440 --output json",
+    )
+    calls = [[command] for command in in_scope] + [
+        [command, neighbour] for command in in_scope for neighbour in neighbours
+    ]
     negatives = _patterned("smoke_critical_rules.yaml", ("command_not_executed",))
     assert negatives, "No negative pattern to check."
     for crit in negatives:
@@ -622,7 +710,7 @@ def test_output_json_criteria_stay_advisory(task_file):
     records the convention without gating on it.
     """
     for crit in _patterned(task_file, ("command_executed",)):
-        if "--output" not in crit["command_pattern"]:
+        if not re.search(r"--output(?![-\w])", crit["command_pattern"]):
             continue
         assert crit.get("pass_threshold") == 0, (
             f"{task_file}: {crit['description']!r} requires --output json with "
