@@ -1,0 +1,78 @@
+task_id: skill-flow-eval-simulation-crud
+description: >
+  Flow eval simulation coverage for local simulation JSON, strategy
+  selection, static mock values, LLM simulation instructions, and overwrite
+  behavior for duplicate component IDs. The installed CLI may not expose a
+  dedicated `eval simulation` subcommand yet, so the task validates the
+  on-disk eval-set side effects rather than a specific command family.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, feature:eval]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 70
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a local-only UiPath Flow project named `EvalSim` and configure eval
+  simulations.
+
+  Build only local eval artifacts:
+  - Create solution `EvalSim` and Flow project `EvalSim`.
+  - Check whether the installed `uip maestro flow eval` CLI exposes a
+    `simulation` subcommand. If it does, use it. If it does not, author the
+    same simulation state directly in the eval set JSON instead of pretending
+    the command exists.
+  - Add a simple evaluator and eval set named `Simulation Set`.
+  - Add a data point named `customer-lookup`.
+  - Add a Static simulation for component id `lookupCustomer` with a JSON
+    mock value.
+  - Add a second Static simulation for the same `lookupCustomer` component id
+    with a different JSON mock value so the previous simulation is replaced,
+    not duplicated.
+  - Add an Llm simulation for component id `draftEmail` with simulation
+    instructions and an explicit output schema.
+  - List simulations for `customer-lookup`.
+  - Remove the `draftEmail` simulation, then list simulations again.
+
+  Do NOT call `uip login`, `uip solution upload`, `uip maestro flow debug`, or
+  `uip maestro flow eval run *`. Use `--output json` on every `uip` command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked Flow eval CLI availability"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval(?:\s+simulation)?\s+--help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a Flow eval set"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added the simulation data point"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run Studio Web evals"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Simulation JSON has one overwritten static simulation and no removed Llm simulation"
+    command: "python3 $TASK_DIR/check_simulation_crud.py"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

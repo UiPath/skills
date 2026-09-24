@@ -1,0 +1,151 @@
+task_id: skill-flow-eval-advanced-local-crud
+description: >
+  Flow eval local-CRUD coverage for evaluator types and data-point features
+  not covered by the basic smoke: strict JSON, trajectory, trajectory
+  simulation, contains search text, explicit generated evaluator refs,
+  selected entry point, criteria JSON, and input-file staging. No Studio Web
+  run is performed.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, feature:eval]
+
+run_limits:
+  expected_turns: 35
+  max_turns: 80
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a local-only UiPath Flow evaluation project named `EvalAdvanced`.
+
+  Build only local eval artifacts:
+  - Create solution `EvalAdvanced` and Flow project `EvalAdvanced` at
+    `EvalAdvanced/EvalAdvanced/EvalAdvanced.flow`.
+  - Before using eval commands, check that `uip maestro flow eval` is available.
+  - Declare the Flow input variables needed by the eval cases.
+  - Add evaluators for these goals:
+      1. strict JSON field-by-field judging
+      2. trajectory judging
+      3. trajectory judging with simulation context
+      4. substring containment
+    Any LLM-based evaluator must use model `gpt-4.1-2025-04-14`.
+  - Create an eval set named `Advanced Set` that pins an entry point and uses
+    explicit generated evaluator refs from `evaluator add/list`, not display
+    names.
+  - Add data points that exercise:
+      - `--search-text` for the contains evaluator
+      - `--criteria` with expected agent behavior for trajectory evaluators
+      - `--input-file` using a small local fixture file
+  - List evaluators, eval sets, and data points after creating them.
+
+  Do NOT call `uip login`, `uip solution upload`, `uip maestro flow debug`, or
+  `uip maestro flow eval run *`. This is local CRUD only. Use `--output json`
+  on every `uip` command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked Flow eval CLI availability"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+--help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a strict JSON LLM judge evaluator"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-strict-json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a trajectory evaluator"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-trajectory(?!-simulation)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a trajectory-simulation evaluator"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-trajectory-simulation'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a contains evaluator"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+contains'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created an eval set with an entry point"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add\s+.*--entry-point'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed explicit evaluator refs to eval set add"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add\s+.*--evaluators'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not pass evaluator display names to --evaluators"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add\s+.*--evaluators.*(strict-json-evaluator|trajectory-evaluator|trajectory-simulation-evaluator|contains-evaluator)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a data point using --search-text"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*--search-text'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a data point using --criteria"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*--criteria'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a data point with --input-file"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*--input-file'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed eval data points"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+list\s+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run Studio Web evals"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advanced local eval artifacts have the expected evaluator refs, criteria, search text, entry point, and input file"
+    command: "python3 $TASK_DIR/check_advanced_local_crud.py"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

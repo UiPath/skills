@@ -1,0 +1,95 @@
+task_id: skill-agent-lowcode-eval-local-crud
+description: >
+  Low-code agent eval local-CRUD coverage for `uip agent eval`: default
+  evaluator scaffolding, evaluator add/list, hand-written deterministic
+  evaluator JSON, eval set and test-case CRUD, simulation flags, and validate.
+tags: [uipath-agents, integration, mode:build, low-code, lifecycle:generate, feature:eval]
+
+run_limits:
+  expected_turns: 35
+  max_turns: 80
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a local low-code UiPath agent evaluation project named
+  `EvalLowCodeAgent` inside solution `EvalLowCodeSol`.
+
+  Build only local eval artifacts: CLI-added semantic-similarity and
+  trajectory evaluators, hand-written legacy exact-match and JSON-similarity
+  evaluators, an eval set named `Regression Eval` that references evaluator
+  ids, and at least two test cases covering expected output plus simulation
+  behavior. Validate the project.
+
+  Do NOT run `uip agent push`, `uip agent eval run *`, `uip login`, publish,
+  upload, or deploy. This is local CRUD only.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent initialized a low-code agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a semantic-similarity evaluator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+evaluator\s+add\s+.*--type\s+semantic-similarity'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a trajectory evaluator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+evaluator\s+add\s+.*--type\s+trajectory'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a low-code eval set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+set\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added low-code eval test cases"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+add\s+'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the low-code agent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run low-code cloud evals"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not push the low-code agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+push\s+'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Low-code eval files include CLI evaluators, hand-written deterministic evaluators, UUID refs, simulation fields, and valid test cases"
+    command: "python3 $TASK_DIR/check_eval_local_crud.py"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
