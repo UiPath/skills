@@ -90,7 +90,7 @@ Checks performed:
   1. BPMN file exists and is well-formed XML.
   2. Exactly 3 bpmn:sendTask nodes carry Intsvc.ActivityExecution with
      connectorKey uipath-uipath-dataservice and either objectName matching
-     Query Entity Records (QueryEntityRecordsCurated|QueryEntityRecords_V3)
+     Query Entity Records (QueryEntityRecords|QueryEntityRecordsCurated|QueryEntityRecords_V3)
      or objectName == FlowCodeEvalEntity with operation List / method GET
      (a dynamic per-entity query shape).
   3. Any `target="body"` input present is valid JSON (optional -- absence
@@ -127,7 +127,7 @@ from _shared.bpmn_check import (  # noqa: E402
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
-OBJECT_NAMES = {"queryentityrecordscurated", "queryentityrecords_v3"}
+OBJECT_NAMES = {"queryentityrecords", "queryentityrecordscurated", "queryentityrecords_v3"}
 ENTITY = "flowcodeevalentity"
 
 UUID_RE = re.compile(

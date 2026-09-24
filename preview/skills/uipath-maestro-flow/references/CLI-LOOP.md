@@ -11,8 +11,12 @@ choosing the loop, before authoring the source. Once the source first
 compiles, emit it into that nested project artifact—not `/tmp`—and keep the
 artifact current after every source edit.
 
-Tenant discovery is not a phase of either loop. Author the source first, from
-the task's own words; the source `check` names every tenant call you owe —
+Tenant discovery is not a phase of either loop. The one step before authoring
+is choosing the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)):
+`check` cannot flag a node you never wrote, so a script or `mock()` written in
+its place goes unflagged.
+After that, author the source from the task's own words; the source `check`
+names every tenant call you owe —
 each unresolved lookup, unmaterialized object, and out-of-snapshot field, with
 the exact `registry prepare` command — so the one expensive call is spent
 once, after the cheap pass has found everything else that is wrong.
@@ -48,7 +52,7 @@ names it, never before the source exists:
 ```bash
 uip maestro flow check <Name>.flow.ts --source
 # run each prepare the check names, with the exact command it prints:
-npx flow-sdk registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
+uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
 uip maestro flow check <Name>.flow.ts --source    # re-check until clean
 uip maestro flow compile <Name> -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json
@@ -79,6 +83,7 @@ uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o <Name>.flow.ts --no-
 
 That third command seeds the authored source from the stub `flow init` just wrote, so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
 Skip it when the source already exists, and skip the whole block for an existing project.
+For a **Maestro Automate** project (the request names that product, not just the verb "automate"), add `--automate` to the `flow init` line; nothing else in either loop changes.
 
 `<Solution>` and `<Name>` are the request's own names, used verbatim: a request
 that gives one name for both ("inside a solution of the same name") uses it for

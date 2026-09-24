@@ -1,0 +1,108 @@
+# --- Tenant fixtures (LIVE registry) --------------------------------------------------
+# This task resolves against the real tenant registry, so it is only valid when the
+# tenant carries AT LEAST TWO api-workflows named exactly "API Workflow", one of them in
+#   Shared/uipath-maestro-case/NameToAgeFixed
+# and that one is neither first nor last in the registry cache's order. (Other case
+# tasks already depend on that folder's resources.) If any of that stops holding, the checker
+# aborts with "test precondition failed: ..." — an ENVIRONMENT gap, NOT a skill
+# regression. The last condition matters: at either end, a positional pick (first,
+# or last/newest) would pass and the task would measure nothing.
+# --------------------------------------------------------------------------------------
+task_id: skill-case-registry-handoff-ambiguous
+description: >
+  PHASE 1 AMBIGUOUS RESOURCE — an approved sdd.md names its one API workflow
+  "API Workflow" with no folder, and several tenant resources carry that exact
+  name, so `sdd resolve` reports it ambiguous. The skill must not settle it by
+  position in the registry cache (the order resources were registered, not a
+  property of them); it must ask which candidate is meant and bind exactly that
+  one. The simulated user deliberately picks a middle candidate, so a positional
+  pick from either end, a placeholder, and a correct pick all grade differently.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - resource
+  - feature:registry
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 100
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  # `..`, not `.`: the grader imports the shared ledger adapter from `_shared/`.
+  directory: ..
+
+initial_prompt: |
+  This approved `sdd.md` was copied from another machine. Only the SDD was
+  transferred; there is deliberately no Phase 0 `tasks/registry-resolved.json`.
+
+  Run Phase 1 resolution only. Resolve the runnable resource using the concrete
+  `Resolved Resource` name in the SDD and write a fresh
+  `tasks/registry-resolved.json`. Stop at the end of Phase 1; do not create a
+  solution or caseplan.
+
+  The `uip` CLI is already available and authenticated. Use the approved SDD as
+  written: do not redo Phase 0, re-interview me, or replace the resource name
+  with the task display name. Before starting, load the uipath-maestro-case
+  skill and follow its workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "Phase 1 regenerated the absent registry cache"
+    path: "tasks/registry-resolved.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The ambiguous name was settled by the user's pick — not by cache position, not left as a placeholder"
+    command: "python3 $REFERENCE_DIR/registry_handoff_ambiguous/check_registry_ambiguous.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The run stopped after Phase 1 and did not create a caseplan"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory: records whether the agent used the CLI resolver, without gating on it.
+  # The outcome above is what is graded; a correct manual resolution still passes.
+  - type: command_executed
+    description: "Advisory: the agent resolved with `uip maestro case sdd resolve`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+sdd\s+resolve'
+    weight: 1.0
+    pass_threshold: 0
+
+simulation:
+  enabled: true
+  persona: |
+    You are the solution designer handing an approved Case Management SDD from
+    one build machine to another. The SDD's API workflow is the one deployed with
+    the NameToAgeFixed solution.
+  goal: |
+    Produce a fresh tasks/registry-resolved.json from the staged sdd.md that binds
+    the right API workflow, then stop before any caseplan or solution build.
+  constraints:
+    - "If asked which 'API Workflow' is meant, choose the one in folder Shared/uipath-maestro-case/NameToAgeFixed."
+    - "If offered a placeholder instead of a choice, decline it and name that folder."
+    - "Do not change the SDD or provide an alternate resource name."
+    - "When shown the resolution summary, say it is sufficient and ask the agent to stop before Phase 2."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 12

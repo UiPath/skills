@@ -449,6 +449,7 @@ Before submitting your PR, verify:
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
+- [ ] The skill router table fits within the first 220 lines of the skill so agents can see the whole table in the first read. Enforced only for `preview/skills/*/SKILL.md`.
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 - [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`) — and on a rename or removal, the old name is gone from it too
 

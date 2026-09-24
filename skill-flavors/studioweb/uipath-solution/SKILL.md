@@ -31,7 +31,7 @@
 <!--skill-flavor:when-to-use-detected-uipx:end-->
 
 <!--skill-flavor:when-to-use-create:start-->
-- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — projects are created inside it with `uip <family> init <Name>`, never with `solution init` or `projects add`
+- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — projects are created inside it with `uip <family> init <Name>` (families: flow, case, agent, api-workflow, bpmn, rpa — Studio Web cannot create function or coded-app projects), never with `solution init` or `projects add`
 <!--skill-flavor:when-to-use-create:end-->
 
 <!--skill-flavor:cli-surface-probe:start-->
@@ -49,5 +49,5 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 <!--skill-flavor:probe-rule:end-->
 
 <!--skill-flavor:develop-solution-row:start-->
-| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init`; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
+| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa only; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->

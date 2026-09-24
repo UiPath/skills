@@ -63,3 +63,8 @@
 {"id": "negative-064", "prompt": "Build a Boomi connector for our billing system", "expected_skill": ""}
 {"id": "negative-065", "prompt": "Write an Azure Function in TypeScript with an HTTP trigger", "expected_skill": ""}
 {"id": "negative-066", "prompt": "Deploy a TypeScript AWS Lambda with the Serverless Framework", "expected_skill": ""}
+{"id": "negative-067", "prompt": "Upgrade UiPath Studio on my laptop from 2023.10 to 2024.10", "expected_skill": ""}
+{"id": "negative-068", "prompt": "Convert this Python 2 script to Python 3", "expected_skill": ""}
+{"id": "negative-069", "prompt": "Migrate our SVN repository to Git and keep the history", "expected_skill": ""}
+{"id": "negative-070", "prompt": "Upgrade this ASP.NET Framework 4.6 web app to .NET 8", "expected_skill": ""}
+{"id": "negative-071", "prompt": "Move our Jenkins pipelines to GitHub Actions", "expected_skill": ""}

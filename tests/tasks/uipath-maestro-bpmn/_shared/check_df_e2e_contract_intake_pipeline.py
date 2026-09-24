@@ -22,9 +22,9 @@ modules" rule):
 CRUD-chain re-homing decisions vs the Flow grader:
   - ``node.type`` suffix matching (``.create-entity-record`` etc.) becomes an
     ``Intsvc.ActivityExecution`` sendTask matched on ``objectName`` against
-    the Data Service catalog: both the curated and ``_V3``/``V2`` spellings
-    are accepted for every operation, since Flow's node types did not
-    distinguish them. The connector also exposes a GENERIC entity-CRUD form
+    the Data Service catalog: every spelling the catalog serves for an
+    operation is accepted -- plain, curated/``V2``, and ``_V3`` -- since
+    Flow's node types did not distinguish them. The connector also exposes a GENERIC entity-CRUD form
     (``objectName`` is the entity name itself, operation read off context
     ``operation``/``method``) -- accepted alongside the curated form,
     matching this batch's other Data Fabric checkers.
@@ -107,6 +107,7 @@ Assertion map (Flow -> BPMN):
   F _shared/check_connector_node_shape.py:48-51    manifest(ntype) resolves (node type is real)        -> has_typed_uipath_extension(task, "activity", ACTIVITY_TYPE) in --shape mode
   I                                                 locate/parse .bpmn                                  -> parse_bpmn()
   T                                                 curated|generic objectName classification           -> is_kind()
+  T                                                 body sortOptions[] entry {fieldName: priority, isDescending: true} as a sort carrier -> has_priority_sort_option()
   T                                                 entity name anywhere in node inputs/objectName/path  -> entity_ok()
   T                                                 vars.<VarId> substring reference in place of Flow node-id reference -> wired_to_create()
   T                                                 merge every target="body" input instead of requiring exactly one (chain criterion only) -> body_json()
@@ -142,11 +143,11 @@ CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 ENTITY = "ContractRegistry"
 
-CREATE_OBJECTS = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
-GET_OBJECTS = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
-QUERY_OBJECTS = {"QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
-UPDATE_OBJECTS = {"UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
-DELETE_OBJECTS = {"DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
+CREATE_OBJECTS = {"CreateEntityRecord", "CreateEntityRecordCurated", "CreateEntityRecord_V3"}
+GET_OBJECTS = {"GetEntityRecord", "GetEntityRecordById", "GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
+QUERY_OBJECTS = {"QueryEntityRecords", "QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
+UPDATE_OBJECTS = {"UpdateEntityRecord", "UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
+DELETE_OBJECTS = {"DeleteEntityRecord", "DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
 
 # The Data Service connector also has a GENERIC entity-CRUD form: objectName
 # is the entity name itself ("ContractRegistry") on every node, and the
@@ -284,7 +285,32 @@ def has_priority_desc_sort(task: ET.Element) -> bool:
     # Fallback: a single expression/metadata string carrying both tokens
     # together (e.g. a `=js:` sort expression, or a metadata JSON blob).
     blob = node_blob(task)
-    return "priority" in blob and bool(DESC_TOKEN_RE.search(blob))
+    if "priority" in blob and DESC_TOKEN_RE.search(blob):
+        return True
+    return has_priority_sort_option(task)
+
+
+def sort_options(task: ET.Element) -> list:
+    options = []
+    for inp in node_inputs(task):
+        if inp.attrib.get("target") != "body":
+            continue
+        try:
+            body = json.loads(inp.text or "")
+        except json.JSONDecodeError:
+            continue
+        if isinstance(body, dict) and isinstance(body.get("sortOptions"), list):
+            options.extend(body["sortOptions"])
+    return options
+
+
+def has_priority_sort_option(task: ET.Element) -> bool:
+    return any(
+        isinstance(opt, dict)
+        and str(opt.get("fieldName", "")).lower() == "priority"
+        and str(opt.get("isDescending")).lower() == "true"
+        for opt in sort_options(task)
+    )
 
 
 # --------------------------------------------------------------------------

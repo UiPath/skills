@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "TRIGGER for authoring structural-core UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, and semantic `.bpmn` output. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case. DO NOT TRIGGER for registry-backed typed BPMN nodes beyond the structural core."
+description: "TRIGGER for authoring UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, semantic `.bpmn` output, and any registry-backed extension type through `.activity()` — including one the SDK ships no typed method for. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -59,7 +59,7 @@ spells the paths its rows are relative to.
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Human work | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/NotifyChannel.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/NotifyChannel.bpmn.ts` |
-| Generic registry activity | `activity` | [ActivityNodeOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 

@@ -10,11 +10,6 @@ run_limits:
   expected_turns: 20
   max_turns: 55
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -35,10 +30,10 @@ initial_prompt: |
   - The exclusive gateway has at least 3 conditioned outgoing branches plus
     exactly one default branch; each branch reaches its own end event.
   - Author the structural BPMN (definitions/process scaffold, sequence-flow
-    conditions, gateway default) per the skill's structural reference; do not
-    hand-author uipath:* XML from prose.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+    conditions, gateway default) the way your skill prescribes; do not invent
+    uipath:* XML from prose.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate the file locally before finishing by running
     `uip maestro bpmn validate <file>` (or a well-formed-XML parse if the CLI
     is unavailable).
@@ -83,7 +78,9 @@ success_criteria:
       approval for BPMN debug, process run, upload, publish, pack, or deploy
       commands. Exactly these commands are always acceptable and must NOT
       fail this check: `uip maestro bpmn validate` (offline validation of
-      local files), `uip maestro bpmn registry list/get/pull/search`
+      local files), `uip maestro bpmn format` (local diagram layout),
+      `uip maestro bpmn init` and `uip maestro bpmn refresh` (local scaffold
+      and metadata files), `uip maestro bpmn registry list/get/pull/search`
       (read-only catalog fetches), and `--help` invocations. Every command
       in the forbidden list above stays forbidden — including `pack`, even
       though it runs locally. Fail only if tool calls or the final answer

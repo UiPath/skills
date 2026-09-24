@@ -35,9 +35,30 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Keep connection and folder values symbolic in TypeScript and resolve them from
   `bindings.json`. Only a live run proves those environment bindings.
 
+## Registry extension types
+
 <!-- RULE:bpmn.activity.escape-hatch -->
-- Use `.activity(...)` for a registry type with no typed method only after reading
-  its exact registry shape. Prefer a typed method when one exists.
+- Use `.activity(id, 'Type.Name', opts)` for any registry extension type with no
+  typed method. Prefer a typed method when one exists.
+
+<!-- RULE:bpmn.activity.discover-type -->
+- Find the type name with `uip maestro bpmn registry search <term> --output json`,
+  then `registry get <Type.Name> --output json` to read its context and input
+  fields. The SDK's typed methods cover only the types in its committed snapshot,
+  so a type absent from them is not evidence the platform lacks it — ask the
+  registry before concluding a node cannot be authored.
+
+<!-- RULE:bpmn.activity.registry-freshness -->
+- `registry search` and `registry get` answer from a local cache that does not
+  refresh itself. Run `uip maestro bpmn registry pull --force` first whenever a
+  type may be newer than that cache, or a real type reads as missing.
+
+<!-- RULE:bpmn.activity.offsnapshot-resolve -->
+- You do not have to transcribe the shape by hand: a type outside the SDK's
+  snapshot is resolved from the registry at compile time. The build warns that it
+  needed a tenant and names the snapshot refresh — report that warning rather
+  than suppressing it, because until the snapshot is refreshed that project no
+  longer compiles offline.
 
 ## Brownfield editing
 

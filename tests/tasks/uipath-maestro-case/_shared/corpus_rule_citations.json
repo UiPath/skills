@@ -1,0 +1,62 @@
+{
+  "_shared/case_check.py": {
+    "Resolution audit": 1
+  },
+  "_shared/check_connector_activity.py": {
+    "Unresolved resources": 1
+  },
+  "_shared/check_connector_wait.py": {
+    "Unresolved resources": 1
+  },
+  "_shared/check_event_placeholder.py": {
+    "Unresolved resources": 3
+  },
+  "_shared/check_fix_broken_caseplan.py": {
+    "Closed task types": 3
+  },
+  "_shared/check_registry_handoff.py": {
+    "Resolution audit": 2
+  },
+  "_shared/test_check_issue_journal.py": {
+    "Resolution audit": 1
+  },
+  "athena_cm_event/athena_cm_event.yaml": {
+    "Resolution audit": 2
+  },
+  "build_from_planner_sdd/build_from_planner_sdd.yaml": {
+    "The build is lossless against the SDD": 2
+  },
+  "connector_features/connector_activity/connector_activity.yaml": {
+    "Never auto-debug or publish to Orchestrator": 1
+  },
+  "diagnose/fix_broken_caseplan/fix_broken_caseplan.yaml": {
+    "Closed task types": 1
+  },
+  "diagnose/formal_arg_slot_ids/check_formal_arg_slot_ids.py": {
+    "Formal argument IDs": 1
+  },
+  "diagnose/formal_arg_slot_ids/formal_arg_slot_ids.yaml": {
+    "Formal argument IDs": 1
+  },
+  "diagnose/missing_task_entry_rule/missing_task_entry_rule.yaml": {
+    "The build is lossless against the SDD": 1
+  },
+  "golden_rebuild/cm_golden_expense/cm_golden_expense.yaml": {
+    "Artifact I/O": 1
+  },
+  "hitl/quality_04_skeleton_completion_report.yaml": {
+    "The build is lossless against the SDD": 1
+  },
+  "publish/publish_upload/publish_upload.yaml": {
+    "Runnable resources and sidecars": 1
+  },
+  "registry_handoff_action_case_sdd_only/check_registry_handoff.py": {
+    "Unresolved resources": 1
+  },
+  "safety_guard/artifact_safety_guard.yaml": {
+    "Artifact I/O": 4
+  },
+  "triggers/event_placeholder/event_placeholder.yaml": {
+    "Unresolved resources": 1
+  }
+}

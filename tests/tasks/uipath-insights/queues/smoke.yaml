@@ -32,22 +32,6 @@ description: >
   grants rather than anything the skill did.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
-# Dormant until `@uipath/cli@dev` carries `uip insights queues`. The ten
-# commands ship in the four stacked cli PRs UiPath/cli#3826, #4108, #4109 and
-# #4110; all four are open as of 2026-09-18, and the catalog snapshot
-# (uip 1.203.0-dev.8703) lists `insights filter-queues` but no `insights
-# queues` verb. Running this task before then fails all ten --help gates,
-# which is the task working correctly and the smoke check going red for a
-# reason that has nothing to do with the skill.
-#
-# A skipped task lands in RunSummary.skipped_tasks at resolution time and
-# never reaches the orchestrator (coder_eval 0.12.1, models/tasks.py:466, the
-# version tests/.coder-eval-version pins), so it writes no task.json and stays
-# out of the workflow's pass-rate denominator.
-#
-# Unskip in the PR that first runs against a dev build carrying the commands.
-# Check with: uip insights queues retry-outcomes --help
-skip: true
 
 run_limits:
   # Eight reads, plus folder and queue discovery and a summary. Critical

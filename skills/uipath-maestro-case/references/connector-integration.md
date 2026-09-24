@@ -26,7 +26,7 @@ For every connector task or event trigger, run these CLI metadata fetches in ord
 
 ### Step 1 — Find the activity-type-id
 
-Read the relevant TypeCache index file directly (CLI `registry search` has known gaps — see [registry-discovery.md](registry-discovery.md)).
+Read the relevant TypeCache index file directly, or search it with `uip maestro case registry search` (see [registry-discovery.md](registry-discovery.md)).
 
 | Target | Cache file | Identifier field |
 |--------|-----------|------------------|
@@ -116,7 +116,7 @@ Spec output carries the full operation contract:
 
 Full input-details contract (the `--input-details` JSON shape): [`case-spec-input-details.md`](case-spec-input-details.md).
 
-> **Generic-typed activities** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord`). The CLI fails fast on `case spec --type activity` without `--object-name`. Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Phase 3 call.
+> **Generic-typed activities** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord`). The CLI fails fast on `case spec --type activity` without `--object-name`. Discover the available objects via `uip is resources list <connector-key>` and `uip is resources describe <connector-key> <object-name>`, then pass the picked name as `--object-name` on the Phase 3 call.
 
 ### Step 4 — Resolve reference fields
 
@@ -153,7 +153,7 @@ In Phase 3, the populated `caseShape` from `case spec --input-details` is droppe
 | Filter (activity, CEQL) | `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` → `essentialConfiguration.savedFilterTrees.<filterParamName>` (tree); `data.inputs[name="queryParameters"].body.<filterParamName>` (compiled CEQL string) |
 | Filter (trigger, JMESPath) | `data.context[name="metadata"].body.activityPropertyConfiguration.{configuration → essentialConfiguration.filter, filterExpression}` AND `data.inputs[name="body"].body.filters.expression` |
 
-The skill substitutes `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids before writing.
+For connector tasks `uip maestro case splice` resolves the `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders; for the event-trigger node and connector-bound rules the skill substitutes them in `caseShape.context[*].value` with minted binding ids before writing.
 
 ---
 
@@ -169,7 +169,7 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 ## Output Contract to `registry-resolved.json`
 
-Record the resolved values on the task's ledger entry, alongside Rule 9's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
+Record the resolved values on the task's ledger entry, alongside Rule 10's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
 
 ```json
 {

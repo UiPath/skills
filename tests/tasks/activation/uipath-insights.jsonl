@@ -45,3 +45,11 @@
 {"id": "uipath-insights-045", "prompt": "Which of our machines are currently in use and which are idle?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-046", "prompt": "Was the FinanceVM machine available overnight or did it drop?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-047", "prompt": "Show me runtime minutes per machine for the last 30 days.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-048", "prompt": "Does this Maestro process have its own Insights dashboard or is it still showing the default one?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-049", "prompt": "Can you show me our Insights dashboard definition so I can change a chart?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-050", "prompt": "Create an Insights dashboard from this definition file.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-051", "prompt": "Build me an Insights dashboard for this Maestro process that shows which of its runs are failing.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-052", "prompt": "Change the charts on Insights dashboard 644 to use the file I edited.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-053", "prompt": "Rename my Insights dashboard and put the failures chart first.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-054", "prompt": "Delete the test Insights dashboard I made yesterday, but keep a copy of it.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-055", "prompt": "Give the new order process the same Insights dashboard the old one has.", "expected_skill": "uipath-insights"}

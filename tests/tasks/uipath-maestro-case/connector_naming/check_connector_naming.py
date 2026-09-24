@@ -439,13 +439,19 @@ BINDING_FIELDS = {"id", "name", "type", "resource", "resourceKey", "default", "p
 def check_bindings(label: str, block: dict, root_bindings: list) -> None:
     """A connector node points at two root bindings — the connection and the
     folder — and copies neither onto itself. A dangling or malformed binding
-    renders as a broken node in Studio Web while `validate` stays green."""
+    renders as a broken node in Studio Web while `validate` stays green.
+
+    Empty and omitted are the SAME state here: the FE reads per-activity
+    property bindings at `data.context[name="metadata"].bindings` (via
+    getContextMap in PackagingUtil) and never reads `data.bindings`, and
+    `bindings?: UiPathBinding[]` is optional in the CLI's own type model. Only a
+    non-empty copy is the defect this guards."""
     by_id = {b.get("id"): b for b in root_bindings if isinstance(b, dict)}
     ctx = {c.get("name"): c.get("value") for c in (block.get("context") or [])}
 
-    if block.get("bindings") != []:
-        fail(f"{label}: data.bindings must be [] — root bindings are never copied onto the task "
-             f"(got {block.get('bindings')!r})")
+    if block.get("bindings"):
+        fail(f"{label}: data.bindings must be empty or omitted — root bindings are never copied "
+             f"onto the task (got {block.get('bindings')!r})")
 
     conn_id = ctx.get("resourceKey")
     for ctx_name, attr in (("connection", "ConnectionId"), ("folderKey", "folderKey")):

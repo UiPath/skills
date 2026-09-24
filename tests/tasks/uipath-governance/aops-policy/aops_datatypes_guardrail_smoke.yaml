@@ -58,7 +58,7 @@ success_criteria:
       offenders = []
       for root, dirs, files in os.walk('.'):
           parts = set(root.split(os.sep))
-          if parts & {'products', '.git', 'node_modules'}:
+          if parts & {'products', '_setup', '.git', 'node_modules'}:
               dirs[:] = []
               continue
           for fn in files:

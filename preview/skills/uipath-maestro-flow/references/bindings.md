@@ -17,7 +17,7 @@ connectors-local/
       ...generated descriptor data...
 ```
 
-`npx flow-sdk registry prepare` prints the import for
+`uip maestro registry prepare` prints the import for
 `connectors-local/<connector-key>.ts`.
 The generated descriptor data lives below `connectors-local/descriptors/`; do
 not import it directly. `bindings.json` stays at the root and is independent of
@@ -45,7 +45,7 @@ the resource kind and emitted binding purpose explicit.
 ## Where both values come from
 
 **Usually you do not fill these in at all.**
-`npx flow-sdk registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
+`uip maestro registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
 Reach for the manual route below only when you are authoring bindings without
 running `prepare`.
 
@@ -73,12 +73,16 @@ uip is connections list --all-folders --output json
 
 `Id` is the connection binding's `resourceKey`; **`FolderKey` is the folder
 binding's**. Never fill either with a made-up GUID or with the binding's own
-name: `compile` refuses a binding whose `resourceKey` is its own name, warns
-`CONNECTION_STUB` on an all-zero GUID, an `<angle-bracket>` placeholder, any
-non-GUID value or a symbol no entry declares (the run would fault at dispatch —
-`'Connection' has an invalid GUID value` or a `401 Invalid Organization or User
-secret`), and a plausible-looking but wrong GUID still compiles and faults at run
-time. Only an id read from the tenant is right.
+name. `compile` refuses two shapes, and `check` reports both first: a binding
+whose `resourceKey` is its own name (`BINDING_SELF_NAME`), and a `connection:` /
+`folder:` label that a `bindings.json` with entries does not declare
+(`BINDING_UNDECLARED` — for example the source says `is-sandboxes` while the file
+declares `slack` and `shared`). It warns `CONNECTION_STUB` on an all-zero GUID,
+an `<angle-bracket>` placeholder or any other non-GUID value, and on a label when
+no `bindings.json` is loaded or it declares no entries (the run would fault at
+dispatch — `'Connection' has an invalid GUID value` or a `401 Invalid
+Organization or User secret`). A plausible-looking but wrong GUID still compiles
+and faults at run time. Only an id read from the tenant is right.
 
 Several connections often share one name (a team tenant can hold three Slack
 connections all named `is-sandboxes`, in different folders). A name then cannot

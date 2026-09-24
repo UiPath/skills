@@ -28,6 +28,7 @@ Manage Orchestrator resources -- assets, queues, queue items, buckets, files, tr
 uip or
   ├── assets              (9 verbs)
   ├── queues              (8 verbs)
+  ├── queue-roi           (4 verbs)
   ├── queue-items         (15 verbs)
   ├── buckets             (8 verbs)
   ├── bucket-files        (8 verbs)
@@ -46,6 +47,7 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 |----------|------|--------|
 | Manage Assets | [manage-assets.md](manage-assets.md) | Create, share, rotate, and delete assets |
 | Process Queues | [process-queues.md](process-queues.md) | Queues, queue items, transactions, reviews |
+| Business ROI | [business-roi.md](business-roi.md) | ROI inputs per queue (`queue-roi`) and per process (`process-roi`) |
 | Work with Storage | [work-with-storage.md](work-with-storage.md) | Buckets, file upload/download, pre-signed URLs |
 | Triggers & Webhooks | [triggers-and-webhooks.md](triggers-and-webhooks.md) | Time/queue/API triggers, webhook management |
 

@@ -1,5 +1,10 @@
 import json
+import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.case_check import registry_audit_entries  # noqa: E402
 
 
 # Correct resolution expected AFTER the stale cache is discarded and re-resolved from the
@@ -37,8 +42,8 @@ def load_json(path: Path):
         return json.load(handle)
 
 
-entries = load_json(Path("tasks/registry-resolved.json"))
-assert isinstance(entries, list), "registry-resolved.json must be a list"
+# Every legal ledger shape — hand-written list or `sdd resolve` output — read as one.
+entries = registry_audit_entries(load_json(Path("tasks/registry-resolved.json")))
 assert len(entries) == len(EXPECTED), (
     f"expected one fresh audit entry per SDD task, got {len(entries)}"
 )

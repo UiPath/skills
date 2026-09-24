@@ -14,7 +14,39 @@ Signature:
   folderName: 'Shared', fileRef: out('start', 'invoiceFile') }))
 ```
 
+## Listing published models
+
+"What document extractors can I add to this flow?", "what IxP models can I use here?", "list published extractors", "what extraction nodes are in the registry?" — these ask what the tenant publishes.
+They are not build requests.
+One search answers them:
+
+```bash
+uip login status --output json      # without login, tenant IxP nodes are hidden
+uip maestro flow registry pull --force
+uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
+```
+
+Each `Data[]` entry is one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
+Present `DisplayName`, `NodeType` and `Version` as a table, and stop.
+
+Rules for the listing path:
+
+- **Do NOT call `registry get` on the search hits.** The search result already carries every field the answer needs. `registry get` resolves ONE node's authoring identity, so running it per hit turns a one-second answer into a call per published model — measured at 80 calls and 127 seconds on a tenant with 40 of them. Fan it out only when authoring a specific node, and then for that node alone.
+- **Do NOT scaffold a solution, run `uip maestro flow init`, or write a `.flow.ts` or `.flow` file.** Listing is read-only Q&A.
+- **Do NOT mock.** If `Data: []`, answer directly that no IxP models are published on this tenant. The `mock()` fallback is for build-time planning, not for listing-time Q&A.
+- **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
+- **Do NOT search by `runtime`, `document extractor`, `extractor`, or `IXP` (uppercase).** These return empty results or agent-tool variants, not extraction nodes. Use `uipath.ixp` (lowercase) only.
+- **Do NOT switch to the `uipath-ixp` skill.** `uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro.
+- **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates deployed flow process instances, not published models.
+- **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist; the CLI returns `unknown command` and there is no fallback path to pursue.
+
+A `uipath.agent.resource.tool.ixp.*` hit on a broader `ixp` search is the agent-tool variant, not a flow extraction node.
+Treat it as "no extraction model published", and stop searching after that one broader check — do not iterate on registry searches.
+
 ## Resource identity
+
+This is the AUTHORING path, for the one model a step will run.
+To answer "which models exist", see [Listing published models](#listing-published-models) instead — the search alone answers that, and `registry get` must not be fanned out across its hits.
 
 Refresh the registry first, then copy the complete node type and its companion
 defaults. The node type is tenant/version identity, not a string to reconstruct:
@@ -29,7 +61,7 @@ uip maestro flow registry get '<node-type>' \
   --output json
 ```
 
-`registry get` is the authoring source of truth. Copy `project`, `modelName`,
+`registry get` is the authoring source of truth for ONE node. Copy `project`, `modelName`,
 `folderName`, `folderPath`, and `versionTag` from that response; do not switch to
 `uip ixp projects ...` or reconstruct the deployment through other IxP APIs.
 `--output-filter` runs against the response's `Data` field, so registry-get paths

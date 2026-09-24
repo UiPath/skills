@@ -343,6 +343,7 @@ jobs:
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             --build-arg FLOW_SDK_VERSION="${{ vars.FLOW_SDK_VERSION || 'latest' }}" \
+            --build-arg CONNECTORS_LIBRARY_VERSION="${{ vars.CONNECTORS_LIBRARY_VERSION || 'latest' }}" \
             ${pkg_name_arg[@]+"${pkg_name_arg[@]}"} \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \

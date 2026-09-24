@@ -10,7 +10,7 @@ Signature:
 
 ```ts
 .step('triage', inlineAgent({ model: 'gpt-5.4',
-  systemPrompt: 'Return JSON with category.',
+  systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
   userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
   returns: { category: 'string' } }))
 ```
@@ -22,15 +22,30 @@ write prompts that make the requested decision and answer contract explicit.
 Static checks can establish wiring and output shape, never the semantic quality
 of the model's answer.
 
+`returns` is the answer contract: the agent runtime returns those fields as a
+typed object, so describe what each field holds ("Return a result conforming to
+the output schema. `<field>`: `<how to fill it>`.") and never ask for JSON text,
+which makes the model pack its whole answer into one string field.
+
 ## Context grounding
 
 Context signature:
 `{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension? }`.
 
-Resolve the index name and id together from the tenant registry. Local execution
-has no semantic retrieval service, so an inline-agent answer is ungrounded even
-when the resource wiring is present. Platform evidence must establish that the
-intended index was used and that its retrieved knowledge influenced the answer.
+Resolve the index from the tenant.
+Know the name: use `solution resources list` below.
+Discovering what exists: use the `uip context-grounding` bridge, which reports every index with its folder.
+Not `uip maestro flow registry` (node manifests), not `uip maestro registry` (the connector library), not `uip or folders list`.
+
+```bash
+uip solution resources list --kind Index --source remote --search "<index-name>" --output json
+```
+
+Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
+Give `folderPath`: the emitted resource carries no index id, so the folder is half of how the runtime finds the index.
+
+Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
+Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
 
 The `uip context-grounding` bridge runs in the project's Python environment.
 Activate the existing environment and run setup once before list/search; setup

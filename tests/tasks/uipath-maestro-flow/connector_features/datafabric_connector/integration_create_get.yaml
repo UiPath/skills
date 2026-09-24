@@ -76,7 +76,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
     min_count: 1
-    weight: 1.5
+    weight: 0
     pass_threshold: 0.0
 
   - type: command_executed
@@ -84,7 +84,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.get-entity-record-by-id'
     min_count: 1
-    weight: 2.0
+    weight: 0
     pass_threshold: 0.0
 
   - type: command_executed
@@ -92,7 +92,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.delete-entity-record'
     min_count: 1
-    weight: 1.5
+    weight: 0
     pass_threshold: 0.0
 
   - type: command_executed
