@@ -59,6 +59,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains inline HITL node"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py quick-form"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -67,6 +68,7 @@ success_criteria:
   - type: run_command
     description: "Flow references the HITL output variable"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ExpenseApproval '$vars.' '.output'"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -75,6 +77,7 @@ success_criteria:
   - type: run_command
     description: "Flow has a boolean output field for approved"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ExpenseApproval '\"boolean\"'"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

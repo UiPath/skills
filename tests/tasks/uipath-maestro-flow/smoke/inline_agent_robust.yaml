@@ -45,6 +45,7 @@ success_criteria:
   - type: run_command
     description: "Inline agent sidecar was created"
     command: 'python3 "$REFERENCE_DIR/_shared/check_inline_agent.py" --check exists "**/agent.json"'
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -53,6 +54,7 @@ success_criteria:
   - type: run_command
     description: "Inline agent uses an explicitly selected current model"
     command: 'python3 "$REFERENCE_DIR/_shared/check_inline_agent.py" --check model "**/agent.json"'
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
@@ -61,6 +63,7 @@ success_criteria:
   - type: run_command
     description: "Flow file was created in a supported authoring layout"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name EmailTriage"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -69,6 +72,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains the inline agent node type"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name EmailTriage 'uipath.agent.autonomous'"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -83,6 +87,7 @@ success_criteria:
   - type: run_command
     description: "Inline agent.json: model overridden, real system prompt, typed outputSchema"
     command: 'python3 "$REFERENCE_DIR/_shared/check_inline_agent.py" "**/agent.json"'
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 3.0

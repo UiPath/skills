@@ -93,6 +93,7 @@ success_criteria:
   - type: run_command
     description: "Generated flow contains a real uipath.ixp.* node"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"uipath\\.ixp\\.'"
+    read_only: true
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -100,6 +101,7 @@ success_criteria:
   - type: run_command
     description: "Generated flow does NOT contain a core.logic.mock fallback"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"core\\.logic\\.mock\"'"
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -113,6 +115,7 @@ success_criteria:
   - type: run_command
     description: "IxP node references the exact published model for this row's domain (strict)"
     command: "python3 $REFERENCE_DIR/ixp/check_project_selection.py"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
