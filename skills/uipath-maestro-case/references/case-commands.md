@@ -276,7 +276,7 @@ Write a connector task's `data` and the connection's root bindings from a saved 
 
 ```bash
 uip maestro case splice <caseplan.json> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \
-  --connection-id <connection-uuid> [--folder-key <folder-key>] [--out <file>] --output json
+  --connection-id <connection-uuid> [--out <file>] --output json
 ```
 
 | Flag | Description |
@@ -284,7 +284,7 @@ uip maestro case splice <caseplan.json> --task-id <taskId> --spec tasks/spec-cac
 | `--task-id <id>` | **(required)** the task's `id` from `nodes[].data.tasks[][].id` |
 | `--spec <file>` | **(required)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
 | `--connection-id <id>` | **(required)** the connection the spec was fetched for; root bindings are keyed on it and reused when the pair already exists |
-| `--folder-key <key>` | `Data.Connection.FolderKey` from the spec. Omit only when it is `null`; a folder-key binding without a value is what `--strict` reports as `STRICT_CONNECTION_FOLDER_KEY_NO_DEFAULT` |
+| `--folder-key <key>` | Omit it. Splice reads `Data.Connection.FolderKey` from the `--spec` file itself; a value that disagrees with the spec is refused (exit 1, nothing written). Never copy a folder key from another task's spec |
 | `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks; mutually independent of `--spec` |
 | `--out <file>` | write elsewhere instead of in place |
 

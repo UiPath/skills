@@ -172,13 +172,12 @@ uip maestro case splice "<caseplan.json>" \
   --task-id "<taskId>" \
   --spec "tasks/spec-cache.<elementId>.json" \
   --connection-id "<connection-id from registry-resolved.json>" \
-  --folder-key "<.Data.Connection.FolderKey from the spec — omit the flag only when it is null>" \
   --output json
 ```
 
 It writes `data.serviceType`, `data.context` with the two sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId` minted, and the ConnectionId + FolderKey root bindings (each with its `default`; reused, not duplicated, when the connection already has a pair). Keys inside `body` are copied untouched. Re-running with the same arguments is byte-identical, so a Phase 4 repair may splice again after a fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`.
 
-Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings for a connector task — every field `splice` writes is CLI-authoritative. **Do not open `connector-trigger-impl.md`, `connector-trigger/impl-json.md`, `case-spec-input-details.md`, or `bindings/impl-json.md` for this task after splicing: nothing in them applies to a spliced task.** They describe the manual transport for the event-trigger node and connector-bound rules, and the binding shape splice already wrote. Never edit the spec envelope to make `splice` accept it; a rejected spec means it was saved without `caseShape` (run `case spec` again without `--skip-case-shape`). `--connection-id` must be the connection the spec was fetched for; splice refuses a mismatch and names both ids.
+Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings for a connector task — every field `splice` writes is CLI-authoritative. **Do not open `connector-trigger-impl.md`, `connector-trigger/impl-json.md`, `case-spec-input-details.md`, or `bindings/impl-json.md` for this task after splicing: nothing in them applies to a spliced task.** They describe the manual transport for the event-trigger node and connector-bound rules, and the binding shape splice already wrote. Never edit the spec envelope to make `splice` accept it; a rejected spec means it was saved without `caseShape` (run `case spec` again without `--skip-case-shape`). `--connection-id` must be the connection the spec was fetched for; splice refuses a mismatch and names both ids. Splice takes the folder key from the same spec, so pass no `--folder-key`; with two connector tasks, each splice reads its own spec's folder, never the other task's.
 
 **5.c — What stays with the agent after splice**, each as a narrow Edit on the spliced task:
 

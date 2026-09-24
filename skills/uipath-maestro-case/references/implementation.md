@@ -280,7 +280,7 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 1. Run `get-connection` (each task runs its own — never reuse).
 2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per the plugin's `impl-json.md`.
-   > **Connector tasks skip 3–5:** `uip maestro case splice <caseplan> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json --connection-id <id> [--folder-key <key>]` does the substitution, the id minting, and the root bindings in one call ([connector-activity/impl-json.md § Step 5](plugins/tasks/connector-activity/impl-json.md)). The steps below apply to the event-trigger node and connector-bound rules.
+   > **Connector tasks skip 3–5:** `uip maestro case splice <caseplan> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json --connection-id <id>` (no `--folder-key`: splice takes it from the spec) does the substitution, the id minting, and the root bindings in one call ([connector-activity/impl-json.md § Step 5](plugins/tasks/connector-activity/impl-json.md)). The steps below apply to the event-trigger node and connector-bound rules.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
 
 Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
