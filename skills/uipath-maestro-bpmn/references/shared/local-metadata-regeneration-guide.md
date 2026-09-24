@@ -79,8 +79,8 @@ Do not derive metadata from stale package files first. Use existing generated fi
 ## Safe Local Workflow
 
 1. Edit `.bpmn` first.
-2. Check the source itself: well-formed XML, diagrams, entry point IDs,
-   variables, mappings, binding references. Do not run `uip maestro bpmn
+2. Check the source itself: well-formed XML, entry point IDs, variables,
+   mappings, binding references. Not the diagram — step 3 generates it. Do not run `uip maestro bpmn
    validate` yet — it cross-checks `entry-points.json` against the source, so it
    reports the pre-refresh state as an error whenever an edit renamed a start
    event. Run it in step 5, after refresh.
