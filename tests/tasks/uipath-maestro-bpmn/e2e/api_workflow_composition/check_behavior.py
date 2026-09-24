@@ -5,17 +5,15 @@ Mints a fresh `tok<uuid8>` NOW (the agent never sees it, so it cannot be
 hard-coded), runs the submitted process live via `uip maestro bpmn debug`,
 and requires `FinalStatus == Completed`. For every row in
 composition.RESOURCES, the token must round-trip through THAT row's own
-invoking node: it must appear in the process's declared output global, that
-global must not be the bare token (proving something was computed, not just
-copied through), AND the token must appear in the invoking node's OWN
-`Outputs` in `debug-instance variables-all` -- per-node provenance, so a
-ScriptTask or an unrelated node cannot cover for the resource never having
-been reached at runtime. This is the anti-cheat core of the suite.
+invoking node: it must appear in the process's declared output global AND
+in the invoking node's OWN `Outputs` in `debug-instance variables-all` --
+per-node provenance, so a ScriptTask or an unrelated node cannot cover for
+the resource never having been reached at runtime. This is the anti-cheat core of the suite.
 
-Deliberately does NOT require the RESOURCE itself to have transformed the
-token -- an echo-only API workflow composed with a BPMN-side output mapping
-that embeds the token in a fixed string (a "hello world" shape) is valid,
-not a cheat; see assert_row_provenance's own docstring. The Outputs check
+Deliberately does NOT require any transformation of the token -- an
+echo-only API workflow mapped straight through is valid, not a cheat.
+check_shape.py guarantees the published value comes from the node's own
+response. The Outputs check
 is a leaf walk (every string leaf reachable from the node's Outputs), not a
 `json.dumps(...)` substring test over the whole blob, so a token that only
 appears in a key name or an unrelated field cannot pass. The complementary
@@ -97,10 +95,8 @@ def assert_row_provenance(
     """Raise CheckFailure unless the token round-tripped through the row's
     OWN invoking node -- never through some other node's output.
 
-    Deliberately does NOT require the resource to have transformed the token
-    into something other than itself -- a hello-world API workflow that
-    echoes its input, composed with a BPMN-side output mapping that embeds
-    the token in a fixed string (`=js:'Hello, ' + result.message`), is a
+    Deliberately does NOT require any transformation -- an echo API workflow
+    mapped straight through, or one wrapped in `=js:'Hello, ' + ...`, is a
     valid, intended shape, not a cheat. What this DOES still guard: (a) the
     token must appear somewhere in the invoking node's own runtime Outputs
     (a leaf walk, not a substring-of-the-whole-blob test), and (b) no other
@@ -148,11 +144,6 @@ def assert_row_provenance(
         raise CheckFailure(
             f"{row['kind']}: output {row['output']!r} ({published_value!r}) "
             f"does not contain the minted token {token!r}"
-        )
-    if str(published_value) == token:
-        raise CheckFailure(
-            f"{row['kind']}: output {row['output']!r} is the bare token "
-            f"{token!r} -- nothing was computed from it"
         )
 
     node_outputs = element_output_records(variables_data, (node_id,))

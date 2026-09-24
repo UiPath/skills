@@ -37,6 +37,7 @@ GUID_RE = re.compile(
     r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
 VARS_REF_RE = re.compile(r"vars\.([A-Za-z0-9_]+)")
+RESULT_REF_RE = re.compile(r"(?<![\w.])result\b")
 
 
 class CompositionError(RuntimeError):
@@ -72,10 +73,10 @@ RESOURCES: list[dict[str, Any]] = [
             },
             "folderKey": {"mode": "literal_guid"},
         },
-        # Field names the broken registry template ships that must NOT
-        # survive into the authored node -- their presence signals the
-        # template was pasted as served rather than fixed per rule 18.
-        "forbidden_context_fields": ("folderId", "folderPath", "name"),
+        # The broken registry template's misnamed field -- its presence
+        # signals the template was pasted as served rather than fixed per
+        # rule 18. Leftover `name`/`folderPath` are harmless and allowed.
+        "forbidden_context_fields": ("folderId",),
     },
 ]
 
@@ -275,6 +276,18 @@ def output_mappings_of(task_element: ET.Element) -> list[dict[str, str]]:
         for child in activity
         if child.tag.rsplit("}", 1)[-1] == "output"
     ]
+
+
+def response_output_vars(task_element: ET.Element) -> set[str]:
+    """Vars the node fills from its own response: `source` absent (the whole
+    response) or reading `result`, e.g. `=result.message`."""
+
+    return {
+        mapping["var"]
+        for mapping in output_mappings_of(task_element)
+        if mapping.get("var")
+        and (not mapping.get("source") or RESULT_REF_RE.search(mapping["source"]))
+    }
 
 
 def all_output_writes(process: ET.Element) -> list[dict[str, str]]:

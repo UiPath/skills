@@ -9,10 +9,11 @@ be called. Exercises:
   * composition.py's discovery + BPMN/.uipx parsing helpers.
   * check_shape.py's structural + cross-tenant shape rules, against the real
     gold fixture (must be clean) and the full fixtures/mutations/ corpus
-    (each mutation must be rejected with a diagnosable reason; the one
-    valid-but-unlike-gold fixture must be ACCEPTED, proving the checker is
+    (each mutation must be rejected with a diagnosable reason; the
+    valid_* fixtures must be ACCEPTED, proving the checker is
     not overfit to gold's exact ids/ordering).
-  * check_shape.assert_validate_clean, with a synthetic `validate` payload.
+  * check_shape.assert_validate_clean, with synthetic payloads in the real
+    CLI envelope (`Data.Warnings` is one string).
   * check_behavior.py's per-node provenance assertion, with synthetic
     `variables-all` payloads -- including the "one node cannot cover for
     another" case that is this suite's anti-cheat core.
@@ -164,7 +165,12 @@ class ShapeCheckMutationTests(unittest.TestCase):
         self.assert_rejected("literal_input", "must reference a process variable")
 
     def test_wrong_target_output(self):
-        self.assert_rejected("wrong_target_output", "does not publish 'message'")
+        self.assert_rejected("wrong_target_output", "no end event publishes 'message'")
+
+    def test_node_publishes_input(self):
+        # The node's own output reads the process input, not `result`, so the
+        # published value never touches the API workflow's response.
+        self.assert_rejected("node_publishes_input", "no end event publishes 'message'")
 
     def test_undeclared_var_read(self):
         self.assert_rejected("undeclared_var_read", "undeclared variable id")
@@ -203,6 +209,12 @@ class ShapeCheckAcceptsUnlikeGoldTests(unittest.TestCase):
     def test_valid_unlike_gold_is_accepted(self):
         problems = shape_problems(MUTATIONS / "valid_unlike_gold")
         self.assertEqual(problems, [], f"a structurally-different-but-valid shape must pass, got: {problems}")
+
+    def test_js_end_mapping_is_accepted(self):
+        # Node var named `greeting`, end event `=js:'Hello, ' + vars.<id>`,
+        # and a leftover `folderPath` context field.
+        problems = shape_problems(MUTATIONS / "valid_js_end_mapping")
+        self.assertEqual(problems, [], problems)
 
 
 # ---------------------------------------------------------------------------
@@ -284,23 +296,28 @@ class LiveResolverFailClosedTests(unittest.TestCase):
 
 class ValidateCleanTests(unittest.TestCase):
     def test_valid_status_no_warnings_passes(self):
-        payload = {"Data": {"Status": "Valid", "Warnings": []}}
+        payload = {"Result": "Success", "Data": {"File": "p.bpmn", "Status": "Valid"}}
         self.assertEqual(check_shape.assert_validate_clean(payload), [])
 
     def test_variable_not_set_alone_passes(self):
         # By construction: the node reading the start-event-scoped input.
-        payload = {"Data": {"Status": "Valid", "Warnings": [{"Code": "VARIABLE_NOT_SET"}]}}
+        payload = {"Result": "Success", "Data": {"Status": "Valid", "Warnings": (
+            "1 warning(s):\n  - [Task_InvokeGreeting] VARIABLE_NOT_SET: ..."
+        )}}
         self.assertEqual(check_shape.assert_validate_clean(payload), [])
 
     def test_variable_does_not_exist_fails(self):
-        payload = {"Data": {"Status": "Valid", "Warnings": [{"Code": "VARIABLE_DOES_NOT_EXIST"}]}}
+        payload = {"Result": "Success", "Data": {"Status": "Valid", "Warnings": (
+            "2 warning(s):\n  - [Task_InvokeGreeting] VARIABLE_NOT_SET: ...\n"
+            "  - [End_1] VARIABLE_DOES_NOT_EXIST: ..."
+        )}}
         problems = check_shape.assert_validate_clean(payload)
         self.assertTrue(any("VARIABLE_DOES_NOT_EXIST" in p for p in problems))
 
-    def test_non_valid_status_fails(self):
-        payload = {"Data": {"Status": "Invalid", "Warnings": []}}
+    def test_failure_envelope_fails_with_instructions(self):
+        payload = {"Result": "Failure", "Message": "Validation failed", "Instructions": "[End_1] boom"}
         problems = check_shape.assert_validate_clean(payload)
-        self.assertTrue(any("Status" in p for p in problems))
+        self.assertTrue(any("Status" in p and "boom" in p for p in problems), problems)
 
 
 # ---------------------------------------------------------------------------
@@ -375,14 +392,14 @@ class RowProvenanceTests(unittest.TestCase):
         with self.assertRaisesRegex(CheckFailure, "does not contain the minted token"):
             check_behavior.assert_row_provenance(self.row, self.process, variables_data, TOKEN)
 
-    def test_bare_token_global_fails(self):
-        # Nothing computed: the global IS the token, verbatim.
+    def test_bare_token_global_passes(self):
+        # The prompt asks for no transformation: an echo mapped straight
+        # through is valid.
         variables_data = _variables_data(
             elements=[{"ElementId": "Task_InvokeGreeting", "Outputs": {"response": {"message": TOKEN}}}],
             globals_map={"out_message": TOKEN},
         )
-        with self.assertRaisesRegex(CheckFailure, "nothing was computed"):
-            check_behavior.assert_row_provenance(self.row, self.process, variables_data, TOKEN)
+        check_behavior.assert_row_provenance(self.row, self.process, variables_data, TOKEN)
 
     def test_one_node_cannot_cover_for_another(self):
         """The suite's anti-cheat core: the global carries the token (so a

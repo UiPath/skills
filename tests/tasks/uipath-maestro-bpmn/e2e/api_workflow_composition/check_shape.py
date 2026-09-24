@@ -11,7 +11,7 @@ Per row in composition.RESOURCES:
      just because the BPMN wiring around it happens to be correct.
   1. The resource's project is present inside the submitted solution AND
      registered in its `.uipx`.
-  2. The wrapper serviceTask carries exactly the row's required context
+  2. The wrapper serviceTask carries the row's required context
      fields, correctly shaped -- for the API-workflow row (SKILL.md rule 18 /
      references/registry-workflow.md): `releaseKey` bound via
      `=bindings.<id>` to a `resource="process" propertyAttribute="Key"`
@@ -19,18 +19,18 @@ Per row in composition.RESOURCES:
      (cross-tenant match: fails CLOSED -- a resolver that cannot reach the
      tenant raises rather than abstaining, and "no deployed process found"
      is itself a problem, not a skip), and a LITERAL `folderKey` matching
-     the seeded folder's REAL FolderKey GUID. None of the broken template's
-     `folderId`/`folderPath`/`name` fields survive.
+     the seeded folder's REAL FolderKey GUID. The broken template's misnamed
+     `folderId` does not survive.
   3. `JobArguments` passes the caller's value BY REFERENCE: at least one
      value is `=vars.<id>` or `=js:...vars.<id>...` naming an id actually
      declared in the process -- never a literal, and never a `=js:` escape
      with no `vars.` reference in it at all.
   4. Every `vars.<id>` read anywhere in the process is declared.
-  5. The invoking node's own output variable is the one an end event maps
-     out, that end-event mapping publishes the row's declared output, and no
-     OTHER element (a decoy scriptTask, say) also writes to that same
-     node-scoped variable -- so the exposed value cannot come from an
-     unrelated node.
+  5. The invoking node fills at least one variable from its own response
+     (`source` absent or reading `result`), an end event maps one of those
+     into the row's declared output (`=vars.<id>` or any `=js:` using it),
+     and no OTHER element (a decoy scriptTask, say) also writes to it -- so
+     the exposed value cannot come from the input or an unrelated node.
   6. `entry-points.json` publishes the process's declared input(s) and every
      row's declared output.
   7. LIVE: `uip maestro bpmn validate` reports `Status: "Valid"` with no
@@ -76,6 +76,8 @@ from _shared.bpmn_live import (  # noqa: E402
 VALIDATE_TIMEOUT = 120
 FOLDERS_GET_TIMEOUT = 60
 PROCESSES_LIST_TIMEOUT = 60
+VALID_STATUS = "Valid"
+VARIABLE_DOES_NOT_EXIST = "VARIABLE_DOES_NOT_EXIST"
 
 
 # ---------------------------------------------------------------------------
@@ -266,8 +268,8 @@ def check_resource_row(
     if forbidden:
         problems.append(
             f"{row['kind']}: context still carries the broken template's "
-            f"field(s) {forbidden} on {node_id!r} (rule 18 -- releaseKey + "
-            "folderKey only, never name/folderPath/folderId)"
+            f"field(s) {forbidden} on {node_id!r} (rule 18 -- folderKey, "
+            "never the misnamed folderId)"
         )
 
     job_args = composition.job_arguments_text(task)
@@ -300,58 +302,42 @@ def check_resource_row(
                 f"got {job_args!r}"
             )
 
-    node_output_var_ids = {
-        vid
-        for vid, meta in declared.items()
-        if meta.get("name") == row["output"] and meta.get("elementId") == node_id
-    }
-    if not node_output_var_ids:
+    response_var_ids = composition.response_output_vars(task)
+    if not response_var_ids:
         problems.append(
-            f"{row['kind']}: no variable named {row['output']!r} is declared "
-            f"scoped to {node_id!r} (elementId must match the invoking node)"
+            f"{row['kind']}: {node_id!r} writes no output variable from its "
+            "own response (source absent or reading `result`)"
         )
-    else:
-        # A decoy element (a scriptTask, another connector, ...) could write
-        # to this SAME node-scoped variable itself, faking per-node
-        # provenance without the resource ever having produced the value.
-        # Only the invoking node may write its own output var.
-        foreign_writes = [
-            write
-            for write in composition.all_output_writes(process)
-            if write.get("var") in node_output_var_ids and write.get("owner") != node_id
-        ]
-        if foreign_writes:
-            problems.append(
-                f"{row['kind']}: variable(s) {sorted(node_output_var_ids)} are "
-                f"also written by {sorted({w['owner'] for w in foreign_writes})} "
-                f"-- only {node_id!r} may write its own output"
-            )
+        return problems
 
-        end_mappings = composition.end_event_mappings(process)
-        end_sources = {m.get("source", "") for m in end_mappings}
-        matched_targets = {
-            m.get("var")
-            for m in end_mappings
-            if m.get("source", "").removeprefix("=vars.") in node_output_var_ids
-        }
-        if not any(f"=vars.{vid}" in end_sources for vid in node_output_var_ids):
-            problems.append(
-                f"{row['kind']}: node {node_id!r}'s own output variable(s) "
-                f"{sorted(node_output_var_ids)} are never mapped out by an "
-                "end event"
-            )
-        else:
-            published_names = {
-                declared[vid]["name"]
-                for vid in matched_targets
-                if vid in declared and declared[vid].get("kind") == "output"
-            }
-            if row["output"] not in published_names:
-                problems.append(
-                    f"{row['kind']}: the end-event mapping fed by {node_id!r} "
-                    f"does not publish {row['output']!r} as a declared "
-                    "process output"
-                )
+    foreign_writes = [
+        write
+        for write in composition.all_output_writes(process)
+        if write.get("var") in response_var_ids and write.get("owner") != node_id
+    ]
+    if foreign_writes:
+        problems.append(
+            f"{row['kind']}: variable(s) {sorted(response_var_ids)} are "
+            f"also written by {sorted({w['owner'] for w in foreign_writes})} "
+            f"-- only {node_id!r} may write its own output"
+        )
+
+    published_targets = {
+        mapping.get("var")
+        for mapping in composition.end_event_mappings(process)
+        if composition.var_refs_in(mapping.get("source")) & response_var_ids
+    }
+    published_names = {
+        declared[vid]["name"]
+        for vid in published_targets
+        if vid in declared and declared[vid].get("kind") == "output"
+    }
+    if row["output"] not in published_names:
+        problems.append(
+            f"{row['kind']}: no end event publishes {row['output']!r} as a "
+            f"declared process output from {node_id!r}'s response variable(s) "
+            f"{sorted(response_var_ids)}"
+        )
 
     return problems
 
@@ -445,19 +431,15 @@ def collect_shape_problems(
 
 def assert_validate_clean(validate_payload: dict) -> list[str]:
     data = get_ci(validate_payload, "Data", {}) or {}
-    problems: list[str] = []
     status = get_ci(data, "Status")
-    if status != "Valid":
-        problems.append(f"validate Status is {status!r}, expected 'Valid'")
-    warnings = get_ci(data, "Warnings", []) or []
-    bad = [
-        w
-        for w in warnings
-        if isinstance(w, dict) and (w.get("Code") or w.get("code")) == "VARIABLE_DOES_NOT_EXIST"
-    ]
-    if bad:
-        problems.append(f"validate reported VARIABLE_DOES_NOT_EXIST: {bad}")
-    return problems
+    if status != VALID_STATUS:
+        instructions = get_ci(validate_payload, "Instructions", "") or ""
+        return [f"validate Status is {status!r}, expected {VALID_STATUS!r}: {instructions}"]
+
+    warnings = str(get_ci(data, "Warnings", "") or "")
+    if VARIABLE_DOES_NOT_EXIST in warnings:
+        return [f"validate reported {VARIABLE_DOES_NOT_EXIST}: {warnings}"]
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -548,8 +530,6 @@ def main() -> None:
     bpmn_path = composition.find_bpmn(root)
     if bpmn_path is None:
         raise SystemExit("FAIL: no .bpmn file found in the submitted solution")
-    project_dir = bpmn_path.parent
-
     problems: list[str] = collect_shape_problems(
         root,
         resolve_release_key_for_row=lambda row, project: live_release_key_resolver(
@@ -558,7 +538,7 @@ def main() -> None:
         resolve_folder_key=live_folder_key_resolver(folder_path),
     )
 
-    validate = run_cli(["uip", "maestro", "bpmn", "validate", str(project_dir)], timeout=VALIDATE_TIMEOUT)
+    validate = run_cli(["uip", "maestro", "bpmn", "validate", str(bpmn_path)], timeout=VALIDATE_TIMEOUT)
     validate_payload = parse_json_output(validate.stdout or validate.stderr, "validate")
     problems += assert_validate_clean(validate_payload)
 
