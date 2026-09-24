@@ -32,7 +32,8 @@ run_limits:
 # because `executions delete` exists; before it, a task like this had to either
 # repair one execution in place or leak.
 pre_run:
-  - command: |
+  - timeout: 280
+    command: |
       python3 - <<'EOF'
       import json, subprocess, sys
       P, SET = "CLAIM", "EVFX-MANUAL-SET"
@@ -67,6 +68,19 @@ pre_run:
               if x.get("Name") == name:
                   return x
           return None
+
+      # The six executions verbs ship in a later CLI than this task's fixture can
+      # assume. Probe first and FAIL rather than seeding: without them the agent
+      # cannot do the task, and a silent seed reports that as an agent regression.
+      r = subprocess.run(["uip", "tm", "executions", "create", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions create' - needs the release "
+               "carrying the executions lifecycle verbs")
+      r = subprocess.run(["uip", "tm", "executions", "delete", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions delete'")
 
       # 1. test set — create if absent, never delete
       ts = by_name("set.find", "testsets", SET)
@@ -178,8 +192,33 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not force-close the run with `executions finish`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+finish\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)uip\s+tm\s+executions?\s+finish\b'
     max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Guards the third case. With min_count 1 the Passed and Failed criteria above
+  # are each satisfied by one log, so nothing else would notice TC3 missing.
+  # Asserted on the server's own totals rather than on what the agent typed.
+  - type: run_command
+    description: "The run Test Manager stored really holds 3 results: 2 passed, 1 failed"
+    command: |
+      uip tm executions list --project-key CLAIM --output json | python3 -c "
+      import json, subprocess, sys
+      d = json.load(sys.stdin)
+      runs = [r for r in (d.get('Data') or []) if r.get('Name')]
+      assert runs, 'no executions found in CLAIM'
+      latest = max(runs, key=lambda r: r.get('Created') or '')
+      out = subprocess.run(['uip','tm','executions','get-stats','--execution-id',
+                            latest['Id'],'--project-key','CLAIM','--output','json'],
+                           capture_output=True, text=True).stdout
+      st = json.loads(out[out.index('{'):]).get('Data') or {}
+      got = (st.get('Passed'), st.get('Failed'), st.get('TestCasesCount') or st.get('Total'))
+      assert st.get('Passed') == 2, f'expected Passed=2, got {got}'
+      assert st.get('Failed') == 1, f'expected Failed=1, got {got}'
+      "
+    timeout: 60
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

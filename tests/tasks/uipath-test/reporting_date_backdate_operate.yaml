@@ -31,7 +31,8 @@ run_limits:
 # with no log started. Growth stays flat at one, and the starting state is the
 # same every time rather than depending on how the previous agent finished.
 pre_run:
-  - command: |
+  - timeout: 280
+    command: |
       python3 - <<'EOF'
       import json, subprocess, sys
       P, SET = "CLAIM", "EVFX-REPORT-SET"
@@ -64,6 +65,19 @@ pre_run:
               if x.get("Name") == name:
                   return x
           return None
+
+      # The six executions verbs ship in a later CLI than this task's fixture can
+      # assume. Probe first and FAIL rather than seeding: without them the agent
+      # cannot do the task, and a silent seed reports that as an agent regression.
+      r = subprocess.run(["uip", "tm", "executions", "create", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions create' - needs the release "
+               "carrying the executions lifecycle verbs")
+      r = subprocess.run(["uip", "tm", "executions", "delete", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions delete'")
 
       # 1. test set — create if absent, never delete
       ts = by_name("set.find", "testsets", SET)
@@ -147,7 +161,7 @@ success_criteria:
   - type: command_executed
     description: "Agent closed the run first, by finishing its logs or forcing the close"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+(testcaselog\s+finish|executions?\s+finish)\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)uip\s+tm\s+(testcaselog\s+finish|executions?\s+finish)\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -165,7 +179,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not reach past the CLI to confirm the stored date"
     tool_name: "Bash"
-    command_pattern: '(curl|wget)(?:(?!uip\s)[^&;|])*testexecutions?\b'
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|])*testexecutions?\b'
     max_count: 0
     weight: 1.0
     pass_threshold: 1.0
