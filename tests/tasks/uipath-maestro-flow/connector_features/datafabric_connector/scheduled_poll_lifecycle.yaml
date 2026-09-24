@@ -1,9 +1,11 @@
-task_id: skill-flow-datafabric-trigger-lifecycle
+task_id: skill-flow-datafabric-scheduled-poll-lifecycle
 description: >
-  Integration coverage for Data Fabric Record Created and Record Updated
-  triggers, including trigger-side date filters, downstream Query/Get/Delete
-  wiring, and preservation of entity resources on every activity.
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, feature:trigger, feature:records, feature:entities, feature:activities, uipath-uipath-dataservice]
+  Integration coverage for the Data Fabric scheduled-poll substitute. Data
+  Fabric ships no connector trigger node in the Maestro Flow registry, so a
+  scheduled trigger is the only event-shaped start; this grades that start plus
+  Data Service connector Query/Get/Delete wiring, date filters, record limits,
+  chained record-id bindings, and entity resources on every activity.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, node:scheduled-trigger, feature:trigger, feature:records, feature:entities, feature:activities, uipath-uipath-dataservice]
 sandbox:
   template_sources:
     - type: template_dir
@@ -32,29 +34,24 @@ initial_prompt: |
   (`uipath.connector.uipath-uipath-dataservice.*`) for every entity operation —
   not the native `core.datafabric.*` nodes.
 
-  Create a new solution named DataFabricTriggerRegression containing two Flow
-  projects using the configured UiPath Data Fabric connection.
+  Create a new solution named DataFabricPollingRegression containing two Flow
+  projects using the configured UiPath Data Fabric connection. Both flows run on
+  a schedule; neither is started by hand.
 
-  Flow 1: ContractRegistryRecordCreated
-  - Use a Data Fabric Record Created trigger on the ContractRegistry entity.
-  - Add a trigger filter where dueDate is less than 2026-08-04.
-  - Add Query Entity Records immediately after the trigger, also on
-    ContractRegistry, with the same dueDate < 2026-08-04 filter and a maximum
-    of 100 records.
+  Flow 1: ContractRegistryDuePolling
+  - Start it on a scheduled trigger.
+  - Add Query Entity Records on ContractRegistry with a dueDate < 2026-08-04
+    filter and a maximum of 100 records.
 
-  Flow 2: FileUploadVerifyRecordUpdatedDelete
-  - Use a Data Fabric Record Updated trigger on the
-    FileUploadVerify_20260618 entity.
-  - Get the entity record by ID using the Id from the Record Updated trigger
-    output.
-  - Delete the same record using that Id.
+  Flow 2: FileUploadVerifyPollGetDelete
+  - Start it on a scheduled trigger.
+  - Add Query Entity Records on the FileUploadVerify_20260618 entity, capped at
+    one record.
+  - Get the entity record by ID using the Id from that query's output.
+  - Delete the same record using the Id from the Get output.
 
   For both flows, keep the configured connection and correct entity on every
-  trigger and Data Fabric activity.
-
-  Use the Data Fabric Integration Service connector activities
-  (`uipath.connector.uipath-uipath-dataservice.*`) for these operations, not
-  the native `core.datafabric.*` nodes.
+  Data Fabric activity.
 
   Validate every final flow file.
 
@@ -79,8 +76,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Created and updated trigger flows contain filters, downstream activities, and non-null entity bindings"
-    command: "python3 $REFERENCE_DIR/check_trigger_lifecycle.py"
+    description: "Both flows start on a scheduled trigger and carry filtered, chained, entity-bound Data Fabric activities"
+    command: "python3 $REFERENCE_DIR/check_scheduled_poll_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0
