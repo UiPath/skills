@@ -464,5 +464,5 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory | `SuccessfulActivate`, `FailedActivate` |
 | Uninstall | `uip solution deploy uninstall "<NAME>" --output json` | Any directory | `SuccessfulUninstall`, `FailedUninstall` |
 | Delete deployment record | `uip solution deploy delete "<NAME>" --yes --output json` | Any directory | `Deleted` |
-| Deploy status | `uip solution deploy status <pipeline-deployment-id> --output json` | Any directory | — |
+| Deploy status | `uip solution deploy status "<NAME>" --output json` (a deployment key or the pipeline deployment id also work) | Any directory | name or key: `OperationStatus` + `ActivationStatus`, `Superseded`, `NextSteps`; pipeline id: `DeploymentSucceeded`, … |
 | List deployments | `uip solution deploy list --output json` | Any directory | — |

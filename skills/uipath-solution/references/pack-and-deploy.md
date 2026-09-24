@@ -227,6 +227,8 @@ The `deploy run` command returns a pipeline deployment ID. Use it to check progr
 uip solution deploy status <pipeline-deployment-id> --output json
 ```
 
+`deploy status` also accepts a **deployment key** (the `DeploymentKey` in the `deploy run` output, or a key from `deploy list`): it then reports the record's `OperationStatus`, `ActivationStatus`, `Actions`, whether the key is `Superseded`, and `NextSteps` when the deployment is not live — see [Check Deployment Status](activate-and-manage.md#step-2-check-deployment-status).
+
 The CLI also falls back to the persistent `searchSearchDeployments22` record if the pipeline service has already recycled the in-flight tracking ID — so a deployment that finishes while the CLI is between polls is still surfaced as `DeploymentSucceeded` rather than a polling failure.
 
 ## Step 6: List Deployments

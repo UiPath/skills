@@ -57,12 +57,20 @@ uip solution deploy activate "MyDeployment" --timeout 600 --poll-interval 10000 
 After activation (or any deployment operation), verify the state:
 
 ```bash
-# By pipeline deployment ID (returned by deploy run)
+# By deployment name (preferred): the record's state, found across feeds
+uip solution deploy status "MyDeployment" --output json
+
+# By deployment key (from deploy list, or VersionChangeKey from deploy upgrade): same, and it says when the key is superseded
+uip solution deploy status <deployment-key> --output json
+
+# By pipeline deployment ID (returned by deploy run): progress and errors of that run
 uip solution deploy status <pipeline-deployment-id> --output json
 
 # Or list all deployments and inspect
 uip solution deploy list --output json
 ```
+
+With a deployment name or key the answer is `Data: { DeploymentKey, Superseded, CurrentDeploymentKey, InstallDeploymentKey, Name, PackageName, PackageVersion, NewPackageVersionAvailable, Operation, OperationStatus, ActivationStatus, Actions, PendingResources?, NextSteps? }`. The state fields describe the **current** record of that deployment: `Superseded: true` means the key you passed belongs to an earlier record (every operation creates a new one) and `CurrentDeploymentKey` is the one to use from now on. `NextSteps` is present exactly when the deployment is not live; `PendingResources` lists the resources that still need configuration (`Kind`, `Name`, `Type`). A key outside the tenant feed needs `--personal-workspace` or `--feed <name-or-key>`, as with `deploy list`.
 
 ## Upgrade a Deployment In Place
 
@@ -79,7 +87,7 @@ uip solution deploy upgrade <deployment-key> --personal-workspace --output json
 uip solution deploy upgrade <deployment-key> --no-wait --output json
 ```
 
-Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, DeploymentName, FromVersion, ToVersion, VersionChangeKey }`. `Status` is the deployment operation status — `Successful` once the upgrade landed, or `Draft` with `--no-wait`.
+Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, DeploymentName, FromVersion, ToVersion, VersionChangeKey, ActivationStatus, Actions }`, plus `PendingResources` and `NextSteps` when the deployment is not live. `Status` is the deployment operation status — `Successful` once the upgrade landed, or `Draft` with `--no-wait`. `ActivationStatus` is the second axis: whether the new version **runs** (see below).
 
 **Behavior and limits:**
 - The deployment's **existing configuration is preserved** — values already set on the deployment carry over instead of being reset to the package defaults, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
@@ -87,9 +95,11 @@ Find `<deployment-key>` with `uip solution deploy list`. On success the output i
 - By default the command **waits** for the install to reach a terminal state (`--timeout <seconds>`, default 300; `--poll-interval <ms>`, default 5000). Pass `--no-wait` to return as soon as the install is accepted.
 - A failed install reports the server's reason (for example `Solution folder not found` when the deployment's solution folder was deleted), not a bare `Failed`.
 - **`Status: Draft` after the command returned is only normal with `--no-wait`.** Everywhere else it means the install of the version-change record never completed — validation rejected something. The draft does not advance on its own and cannot be activated; the live version stays on the old one. The command's message carries the server's reason — act on that, then retry `deploy upgrade`. Note the retry can itself be refused with `Another upgrade has already started for this deployment` while the draft record is still queued. There is no `--config-file` on this path (the upgrade keeps the deployment's existing configuration), and `deploy run` is refused too, because the original deployment is still there. See [A deploy that stops in `Draft`](pack-and-deploy.md#a-deploy-that-stops-in-draft) for the equivalent on a fresh deploy.
-- After a successful upgrade the deployment can land in `ReadyToActivate` rather than `Active`. Check with `uip solution deploy list` and run `uip solution deploy activate <deployment-name>` if activation is pending.
+- **`Status: Successful` does not mean the new version runs.** Read `ActivationStatus` in the same output. `NeedsSetupToActivate` means the new version is installed but does not run until "Setup activation" is completed in Orchestrator (Tenant > Solutions > Deployments; the UI shows the deployment as **Inactive (Needs setup)**) — typically an Integration Service connection whose configuration the upgrade could not carry over; `PendingResources` names it and `NextSteps` says what to do. The old version keeps running meanwhile. Do **not** run the upgrade again: the content is already there. The CLI has no command for this step on an existing deployment (`deploy config link` only serves a new `deploy run`, and `deploy upgrade` takes no config file), and `deploy activate` is refused with `4007 … cannot be activated` until it is done. `ReadyToActivate` / `Inactive` is different: run `uip solution deploy activate <deployment-name>`.
 - Only the **latest** published version is a valid target today. Omit `--version` to take the newest; passing an older `--version` is rejected.
-- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server. Re-running an upgrade that is already queued fails with `Another upgrade has already started for this deployment`.
+- **A key is one record, not the deployment.** `deploy run`, `deploy upgrade` and the Orchestrator wizard each create a new deployment record with its own key; `deploy list` shows the newest one. A key from before an upgrade is *superseded* and still answers as it was — old version, `Active`, `Upgrade` offered — so upgrading it is refused: the service answers `4005 Another upgrade has already started for this deployment`, or, when that old record is already at the newest version, the CLI refuses before the request. Neither means an upgrade is running: the CLI answers `deployment_superseded` and names the current record, its version and whether a newer version exists. Take the current key from `deploy list` (or from `deploy status <old-key>` → `CurrentDeploymentKey`). A `4005` on a key that *is* current means an operation really is in progress — wait for `deploy list` to show `Successful`, then retry.
+- **An abandoned "Setup activation" has an exit.** Starting the wizard in Orchestrator and leaving it creates an `ActivationSetup` / `Draft` record on top (`Actions: [Install, Delete]`). `uip solution deploy delete <deployment-name> --yes` removes that record alone; the installed record is the head again, still `NeedsSetupToActivate`, folder and resources untouched. Finishing the wizard instead lands `ActivationSetup` / `Successful` / `Active`.
+- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server.
 
 ## Step 3: Uninstall a Deployment
 
