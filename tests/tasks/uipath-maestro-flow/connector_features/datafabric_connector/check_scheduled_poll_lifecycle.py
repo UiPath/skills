@@ -95,8 +95,9 @@ def main():
         print(f"FAIL: {FILE_ENTITY} flow must contain Get and Delete activities", file=sys.stderr)
         return 1
 
-    if not file_paths - contract_paths:
-        print(f"FAIL: {CONTRACT_ENTITY} and {FILE_ENTITY} must be polled by separate flows", file=sys.stderr)
+    shared = file_paths & contract_paths
+    if shared:
+        print(f"FAIL: {CONTRACT_ENTITY} and {FILE_ENTITY} must be polled by separate flows; both in {sorted(shared)}", file=sys.stderr)
         return 1
 
     query_ids = {n.get("id", "") for n in file_queries} - {""}
@@ -106,9 +107,8 @@ def main():
     if not any(any(qid in value for qid in query_ids) for value in get_values):
         print(f"FAIL: Get recordId is not bound to the {FILE_ENTITY} query output: {get_values}", file=sys.stderr)
         return 1
-    bound_sources = query_ids | get_ids
-    if not any(any(src in value for src in bound_sources) for value in delete_values):
-        print(f"FAIL: Delete recordId is not bound to the query or Get output: {delete_values}", file=sys.stderr)
+    if not any(any(gid in value for gid in get_ids) for value in delete_values):
+        print(f"FAIL: Delete recordId is not bound to the Get output: {delete_values}", file=sys.stderr)
         return 1
 
     print(f"OK: both flows poll on {SCHEDULED}; {CONTRACT_ENTITY} query filtered and capped, {FILE_ENTITY} query/get/delete chained")

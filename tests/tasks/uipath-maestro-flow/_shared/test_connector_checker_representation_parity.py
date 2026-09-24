@@ -214,6 +214,35 @@ def test_scheduled_poll_lifecycle_rejects_both_entities_in_one_flow(tmp_path: Pa
     assert "separate flows" in result.stderr
 
 
+def test_scheduled_poll_lifecycle_rejects_merged_flow_beside_duplicate_file_query(tmp_path: Path) -> None:
+    merged = _contract_poll_flow("sdk")
+    merged["nodes"].extend(_file_poll_flow("sdk")["nodes"][1:])
+    _write_json(tmp_path / "merged.flow", merged)
+    duplicate = _file_poll_flow("sdk")
+    duplicate["nodes"] = duplicate["nodes"][:2]
+    duplicate["nodes"][1]["id"] = "filequery2"
+    _write_json(tmp_path / "duplicate.flow", duplicate)
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "separate flows" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_delete_bound_to_query(tmp_path: Path) -> None:
+    file_flow = _file_poll_flow("sdk")
+    file_flow["nodes"][3]["inputs"]["detail"]["queryParameters"]["recordId"] = (
+        "=js:$vars.filequery.output.value[0].Id"
+    )
+    _write_json(tmp_path / "contract.flow", _contract_poll_flow("sdk"))
+    _write_json(tmp_path / "file.flow", file_flow)
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "Delete recordId is not bound to the Get output" in result.stderr
+
+
 def test_scheduled_poll_lifecycle_rejects_manual_trigger(tmp_path: Path) -> None:
     flow = _contract_poll_flow("sdk")
     flow["nodes"][0] = {"id": "manual", "type": "core.trigger.manual"}
