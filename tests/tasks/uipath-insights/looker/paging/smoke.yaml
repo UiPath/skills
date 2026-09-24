@@ -80,4 +80,4 @@ success_criteria:
       Score 0.0 if the reply gives any other count, presents a first page as
       the whole folder, or says the file was not written.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.8

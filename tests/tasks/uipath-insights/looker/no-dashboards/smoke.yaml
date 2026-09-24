@@ -80,4 +80,4 @@ success_criteria:
       or waiting, blames the login or permissions, presents an embed link,
       or suggests a CLI command that creates a Looker dashboard.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.8

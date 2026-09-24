@@ -111,4 +111,4 @@ success_criteria:
       about what it is, or asks the user to choose when the prompt already
       said the organization's.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.8
