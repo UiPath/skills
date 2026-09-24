@@ -66,13 +66,13 @@ Exit codes: `0` Success, `1` Failure/ConfigError, `2` AuthenticationError,
 
 | Command | `Data` |
 | --- | --- |
-| `registry pull` | `ExtensionTypeCount`, `ConnectorCount`, `ProcessCount`, `ProcessCountsByType`, `FromCache`, `CacheWritten` |
+| `registry pull` | `ExtensionTypeCount`, `ConnectorCount`, `ProcessCount`, `ProcessCountsByType`, `FromCache`, `CacheWritten`, `Message` |
 | `registry list`, `registry search` | `ExtensionTypes[]`, `Connectors[]`, `Processes[]`, `ProcessesByType` |
 | `registry get` | `ExtensionType` (fields in [registry-workflow.md](registry-workflow.md#2-get-the-template-for-each-chosen-type)); with `--connection-id`/`--object-name`, also a sibling `IsEnrichment` |
-| `is connections list` | array of `Id`, `Name`, `ConnectorKey`, `ConnectorName`, `State`, `Folder`, `FolderKey` |
-| `is resources list` | array of `Name`, `DisplayName`, `Type`, `SubType`, `Operations`, `ElementKey` |
-| `is resources describe` | `Operation`, `Parameters[]`, `RequestFields[]`, `ResponseFields[]`, `Method`. `Method` is a JSON **string**; parse it a second time |
-| `validate` | pass: `Status`, `ProcessCount`, `StartEventCount`, `UiPathExtensionCount`, `Warnings` (one string). Fail: no `Data`; every issue is in `Instructions` |
+| `is connections list` | array of `Id`, `Name`, `ConnectorKey`, `ConnectorName`, `State`, `Owner`, `IsDefault`, `ByoaConnection`, `ElementInstanceId`, `Folder`, `FolderKey`, `Created`, `Updated` |
+| `is resources list` | array of `Name`, `DisplayName`, `Path`, `Type`, `SubType`, `Custom`, `Operations`, `ElementKey` |
+| `is resources describe` | `Name`, `DisplayName`, `ElementKey`, `Operation`, `Parameters[]`, `RequestFields[]`, `ResponseFields[]`, `Method`. `Method` is a JSON **string**; parse it a second time |
+| `validate` | pass: `File`, `Status`, `ProcessCount`, `StartEventCount`, `UiPathExtensionCount`, `Warnings` (one string). Fail: no `Data`; every issue is in `Instructions` |
 
 ## Login boundary
 
