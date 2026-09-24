@@ -13,8 +13,9 @@ uip maestro bpmn registry search <keyword> --output json  # find a type by inten
 uip is connections list --all-folders --output json   # live IS connections (all folders)
 ```
 
-Map the user's intent to an extension type from the list. Confirm the choice
-with the user (and the specific connection / process / queue) before authoring.
+Map the user's intent to an extension type from the list. Pick the
+best-evidenced type, connection, process and queue and say in your summary
+which you used and which others tied; ask only under SKILL.md Rule 4.
 **Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
 
 **Connection discovery must be exhaustive.** Always pass `--all-folders` to
@@ -400,7 +401,8 @@ properties, connection binding, and schemas.
 For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
 from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
 use `connection`); the timer trigger binds no connection. After authoring the
-connection binding, run `uip maestro bpmn refresh <project>` so the binding is
+connection binding, lay the diagram out (`uip maestro bpmn format <file.bpmn>`)
+and then run `uip maestro bpmn refresh <project>` so the binding is
 materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose
 connection is not materialized passes `validate` but faults at runtime with a
 null connection (error 102010). Use `refresh`, not the deprecated
@@ -439,8 +441,11 @@ auth, schema, or enrichment decision is missing).
 4. Author the structural BPMN the registry does not emit: sequence flows,
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.
-5. Generate the `bpmndi:BPMNDiagram`: `uip maestro bpmn format <file.bpmn>`
+5. Generate the `bpmndi:BPMNDiagram`, after the final source edit:
+   `uip maestro bpmn format <file.bpmn>`
 6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).
+   Re-run step 5 after any later source edit — `validate` errors on a node with
+   no shape, so a stale diagram fails it.
 
 ## OOTB extension types (29, login-free)
 

@@ -52,7 +52,7 @@ configured") and the run can never reach Integration Service. Measured on the
 eval archive, every Data Fabric flow authored this way failed its checker. The
 situation that tempts it — `compile` refusing a body field as `unknown input`
 because the static library does not carry it — is what
-`npx flow-sdk registry prepare <key> <action>` exists for (add
+`uip maestro registry prepare <key> <action>` exists for (add
 `-f entityName=<Entity>` for a Data Service operation); see the
 [parent-field loop](connector-params.md#schema-dynamic-operations-the-parent-field-loop).
 

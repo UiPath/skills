@@ -31,10 +31,13 @@ sandbox:
       mount_point: _setup
 
 run_limits:
+  # 2026-09-23 claude nightly: checker-passing artifact at t+1184s, killed at
+  # the 1200s turn cap before the summary turn. 1800/2400 is the claude-arm
+  # budget of #3369 and #3416.
   expected_turns: 40
-  task_timeout: 1500
+  task_timeout: 2400
   max_turns: 120
-  turn_timeout: 1200
+  turn_timeout: 1800
 
 reference:
   directory: ../../..

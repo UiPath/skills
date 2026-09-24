@@ -26,6 +26,7 @@ make tags TAGS="uipath-coded-apps integration"  # Daily
 make tags TAGS="uipath-coded-apps e2e"          # Nightly (full build + tsc gate)
 
 # Single task (local harness with ANTHROPIC_API_KEY configured)
+make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
   tasks/uipath-coded-apps/dashboard/smoke/dashboard_plan_gate.yaml \
   -e experiments/default.yaml

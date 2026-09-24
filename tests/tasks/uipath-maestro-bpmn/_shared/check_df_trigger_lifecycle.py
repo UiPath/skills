@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """DataFabricTriggerRegression (BPMN): connector-trigger lifecycle coverage.
 
-Ported from Flow
+Ported from the retired Flow task
 `connector_features/datafabric_connector/trigger_lifecycle.yaml`'s
-``check_trigger_lifecycle.py``: same two-branch scenario (a Record Created
-trigger on ContractRegistry with a dueDate filter feeding a filtered/limited
-Query, and a Record Updated trigger on FileUploadVerify_20260618 feeding a
-Get-by-Id and a Delete both wired to the trigger's own output), translated
+``check_trigger_lifecycle.py`` (retired because the Maestro Flow registry has
+no `uipath.connector.trigger.uipath-uipath-dataservice.*` node; BPMN resolves
+the same IS webhook through ``Intsvc.EventTrigger`` and is unaffected, so the
+line references in the assertion map below point at that deleted file): same
+two-branch scenario (a Record Created trigger on ContractRegistry with a
+dueDate filter feeding a filtered/limited Query, and a Record Updated trigger
+on FileUploadVerify_20260618 feeding a Get-by-Id and a Delete both wired to
+the trigger's own output), translated
 from a JSON node/``inputs.detail`` walk to an XML walk over the
 registry-driven ``Intsvc.EventTrigger`` startEvent shell and the
 ``Intsvc.ActivityExecution`` connector sendTask shell (see
@@ -39,10 +43,8 @@ Re-homing decisions vs the Flow grader:
     _porting/BATCH1-ADDENDUM.md -- so operation is matched by substring, tolerant of
     any casing/spelling the enrichment produces); for the downstream
     activities, the same curated-or-generic ``objectName`` classification as
-    the batch's CRUD checkers (``QueryEntityRecordsCurated|
-    QueryEntityRecords_V3``, ``GetEntityRecordByIdCurated|
-    GetEntityRecord_V3``, ``DeleteEntityRecordCurated|
-    DeleteEntityRecord_V3``, or the generic entity-object form with a
+    the batch's CRUD checkers (every catalog spelling of the operation --
+    plain, curated, ``_V3`` -- or the generic entity-object form with a
     matching ``operation``/``method``).
   - Flow's ``entityName``/``objectName`` equality becomes "the entity string
     appears as the value of ANY ``uipath:input`` of that node/trigger (any
@@ -123,9 +125,9 @@ TRIGGER_TYPE = "Intsvc.EventTrigger"
 CONTRACT_ENTITY = "ContractRegistry"
 FILE_ENTITY = "FileUploadVerify_20260618"
 
-QUERY_OBJECTS = {"QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
-GET_OBJECTS = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
-DELETE_OBJECTS = {"DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
+QUERY_OBJECTS = {"QueryEntityRecords", "QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
+GET_OBJECTS = {"GetEntityRecord", "GetEntityRecordById", "GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
+DELETE_OBJECTS = {"DeleteEntityRecord", "DeleteEntityRecordCurated", "DeleteEntityRecord_V3"}
 
 # The Data Service connector also has a GENERIC entity-CRUD form: objectName
 # is the entity name itself, and the operation is distinguished by the

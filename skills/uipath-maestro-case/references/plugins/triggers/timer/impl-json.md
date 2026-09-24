@@ -2,7 +2,7 @@
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement` (when applicable per Case A vs B below), `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`, `data.inputs`.
+> **Layout-strip (Rule 19).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement` (when applicable per Case A vs B below), `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`, `data.inputs`.
 
 ## Purpose
 
@@ -106,11 +106,11 @@ After writing, confirm:
 - `node.data.inputs.serviceType == "timer"`
 - `node.data.inputs.timerType == "timeCycle"`
 - `node.data.inputs.timeCycle` is byte-identical to the input string
-- Node has NO `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 18 layout-strip)
+- Node has NO `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 19 layout-strip)
 - Case A: no `data.parentElement`. Case B: `data.parentElement == {id: "root", type: "case-management:root"}`
-- **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
+- **`schema.edges` is still `[]`** (Rule 21) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` has a new entry with `filePath` containing the new `triggerId` and `displayName` matching `node.data.display.label`
 
-Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
+Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added. A default-profile `Valid` here is a batch check, not completion: the build ends only on `validate --strict --sdd sdd.md` at [Step 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

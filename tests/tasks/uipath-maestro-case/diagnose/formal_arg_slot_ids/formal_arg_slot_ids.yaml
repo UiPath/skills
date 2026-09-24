@@ -3,7 +3,7 @@ description: >
   Diagnose mode — the staged case passes `uip maestro case validate` with zero
   findings, but `variables.inputs[0].id` is "caseRef" and
   `variables.outputs[0].id` is "finalDecision" — each formal-argument slot id
-  copied from its companion name. Rule 22 requires synthetic ids distinct from
+  copied from its companion name. Rule 23 requires synthetic ids distinct from
   `name`/`var`, and the skill carries its own Step 12 Check 10 precisely
   because "CLI validate does not check this". Exercises whether the agent
   applies a skill-owned invariant the CLI cannot see.

@@ -78,15 +78,27 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Diagnosis captures the fault element and root cause ownership"
     path: "diagnosis.md"
     includes:
       - "Task_InvokeLegacyRpa"
-      - "folderPath"
-      - "Cloud configuration"
-      - "Integration Service enrichment"
+    patterns:
+      # The deployed asset carries <uipath:binding name="folderPath"
+      # expression="=bindings.LegacyRpaFolder"/>, so either name identifies
+      # the binding that failed to resolve.
+      - pattern: 'folderPath|LegacyRpaFolder'
+      - pattern: 'Cloud\s+configuration'
+      - pattern: 'Integration\s+Service\s+enrichment'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did not read the mocked inputs under mocks/ or fixtures/ directly"
+    command_pattern: '(?:(?:^|[\s;&|(`$"''])(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<![\w.=!-])(?<!exclude=")(?<!exclude='')(?<!exclude ")(?<!exclude '')(?<!exclude )(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/[\w.*?\[-])|(?:(?:^|[\s;&(`$"''])(?<!\|\s)(?<!\|)(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<=\s)(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/?(?=\s*(?:$|\||;|&|\n|\d*>|-|["'')])))|(?:"(?:file_path|path|file|filePath)":\s*"(?:[^"]*/)?(?:mocks|fixtures)(?:/|"))'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: llm_judge
@@ -96,28 +108,22 @@ success_criteria:
     pass_threshold: 0.7
     include_agent_output: true
     include_tool_calls: true
+    # Question (2) grades diagnosis.md, so the judge has to be handed it; without
+    # this it saw the file only when a Write call echoed the body.
+    files:
+      - "diagnosis.md"
     prompt: >
-      Pass if the agent gathered evidence only through read-only `uip maestro
-      bpmn ... --output json` diagnostic commands (status, incidents, incident
-      get, variables, deployed asset, element-executions, cursors — any
-      read-only CLI diagnostic read is fine; thorough reading is expected
-      per the diagnostic priority ladder), then recommended a safe next action
-      without running retry, cancel, pause, resume, migrate, goto, debug,
-      process run, upload, publish, or deploy commands. Fail if tool calls or
-      the final answer show (a) a lifecycle mutation or a request to perform
-      one, or (b) reading the mock/fixture inputs directly — any path under
-      `mocks/` or `fixtures/` — instead of the mocked `uip` CLI. Do NOT fail
-      merely for running additional read-only `uip maestro bpmn` diagnostic
-      commands beyond the minimum, and do NOT fail for redirecting a CLI
-      response to the agent's own file and reading it back with jq or similar:
-      that capture-then-filter loop is the uipath-troubleshoot raw-data rule,
-      not mock inspection. Do NOT fail for reading or searching a skill's
-      documentation — for example
-      `grep -rlF "<error string>" <skill>/references --include='*.md'`, or
-      reading a SKILL.md or reference file — that is documentation lookup, not
-      mock inspection. Fail under (b) only when a command READS from a
-      `mocks/` or `fixtures/` path — opening a file under them, or a recursive
-      search of the working directory that does not exclude them. Naming those
-      paths only to exclude them (`-not -path './mocks/*'`, `--exclude`) is
-      compliance, not a violation. A search scoped to a skill's own
-      `references/` is documentation lookup and passes.
+      Grade two things, each yes or no.
+      (1) Did the agent avoid changing state? No if the tool calls or the final
+      answer show it ran, or asked to run, retry, cancel, pause, resume,
+      migrate, goto, debug, process run, upload, publish, or deploy.
+      (2) Does the final answer or diagnosis.md offer a next action that does
+      not itself change state? Any concrete step counts, including handing the
+      repair to an operator and re-checking afterwards. No only if no next
+      action is offered at all.
+      Pass when both are yes.
+      Nothing else is graded here. Which diagnostic commands ran, what else the
+      diagnosis says, and which paths were read all have their own criteria. Do
+      not lower the score because you judge the diagnosis incomplete, because a
+      command you expected is missing, because of how the recommendation is
+      worded, or because of any file read, search or directory listing.

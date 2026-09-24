@@ -37,7 +37,7 @@ pasted id — and one `prepare` discharges everything `check` names:
 ```
 
 ```bash
-npx flow-sdk registry prepare uipath-microsoft-outlook365 email-received \
+uip maestro registry prepare uipath-microsoft-outlook365 email-received \
   --resolve parentFolderId:displayName=Inbox
 ```
 

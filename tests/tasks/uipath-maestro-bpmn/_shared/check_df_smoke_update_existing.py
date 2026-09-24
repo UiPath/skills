@@ -59,7 +59,7 @@ agent that reverted via a different (but equally empty) representation.
 Checks performed:
   1. Both `pre_state.bpmn` and the final `.bpmn` exist and are well-formed XML.
   2. Each contains a classified Query Entity Records node (curated
-     `QueryEntityRecordsCurated`/`QueryEntityRecords_V3`, or the generic
+     `QueryEntityRecords`/`QueryEntityRecordsCurated`/`QueryEntityRecords_V3`, or the generic
      entity-CRUD List/GET form) on FlowCodeEvalEntity.
   3. `pre_state.bpmn`'s query node carries no filter (sanity: catches a
      scaffold regression before blaming the agent).
@@ -98,7 +98,7 @@ SNAP = Path("MovieReportSolution/MovieReportBpmn/pre_state.bpmn")
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 ENTITY = "flowcodeevalentity"
-OBJECT_NAMES = {"queryentityrecordscurated", "queryentityrecords_v3"}
+OBJECT_NAMES = {"queryentityrecords", "queryentityrecordscurated", "queryentityrecords_v3"}
 
 FILTER_NAMES = {"queryexpression", "filterexpression", "filter", "where"}
 SORT_FIELD_NAMES = {"sortby", "sortfield", "orderby", "_sortfieldname", "sort"}

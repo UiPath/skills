@@ -43,7 +43,9 @@ sandbox:
       path: fixtures
 
 reference:
-  directory: .
+  # `..`, not `.`: the grader imports the shared ledger adapter from `_shared/`,
+  # which a task-only staging leaves out (ModuleNotFoundError at grade time).
+  directory: ..
 
 initial_prompt: |
   This approved `sdd.md` is authoritative. Its staged `tasks/registry-resolved.json` came
@@ -74,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "Stale runnable entries were discarded and re-resolved to the live api/agent registry entries"
-    command: "python3 $REFERENCE_DIR/check_registry_handoff.py"
+    command: "python3 $REFERENCE_DIR/registry_handoff_stale_runnable/check_registry_handoff.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
