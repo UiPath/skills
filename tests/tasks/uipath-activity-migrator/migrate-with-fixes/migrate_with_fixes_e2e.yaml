@@ -68,21 +68,21 @@ success_criteria:
 
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
-    command_pattern: 'UiPath\.Upgrade\.exe"?\s+analyze(?=(?:(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran upgrade into a separate output path"
-    command_pattern: 'UiPath\.Upgrade\.exe"?\s+upgrade(?=(?:(?!\n|&&|\|\||;|\|).)*--output-path)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:(?!\n|&&|\|\||;|\|).)*--output-path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "No analyze or upgrade run without SARIF output"
-    command_pattern: 'UiPath\.Upgrade\.exe"?\s+(analyze|upgrade)(?!(?:(?!\n|&&|\|\||;|\|).)*(--output-format\s+sarif|--help))'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+(analyze|upgrade)(?!(?:(?!\n|&&|\|\||;|\|).)*(--output-format\s+sarif|--help))'
     weight: 1.5
     pass_threshold: 1.0
 
