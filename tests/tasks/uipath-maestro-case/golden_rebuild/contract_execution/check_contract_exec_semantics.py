@@ -40,7 +40,7 @@ import sys
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from _shared.case_check import find_stages, read_caseplan  # noqa: E402
+from _shared.case_check import find_stages, read_caseplan, selected_stage_ids  # noqa: E402
 
 EXPECTED_CASEPLAN = os.path.join("ContractExecution", "ContractExecution", "caseplan.json")
 FIXTURE_SDD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "sdd.md")
@@ -408,9 +408,14 @@ def _assert_reference(value, form: str, producer_id: str, where: str):
         pattern = rf"^\s*=vars\.{escaped}\s*$"
     else:
         prop = re.escape(form.split(":", 1)[1])
-        # Guard the OBJECT, not the property: `(vars.X || {}).prop`.
+        # Guard the OBJECT, not the property. Two accepted spellings: the
+        # optional chain `vars.X?.prop` the skill teaches, and the older
+        # `(vars.X || {}).prop` existing plans carry.
         pattern = (
-            rf"^\s*=js:\s*\(\s*vars\.{escaped}\s*\|\|\s*\{{\s*\}}\s*\)\s*\.\s*{prop}\s*$"
+            rf"^\s*=js:\s*(?:"
+            rf"vars\.{escaped}\s*\?\.\s*{prop}"
+            rf"|\(\s*vars\.{escaped}\s*\|\|\s*\{{\s*\}}\s*\)\s*\.\s*{prop}"
+            rf")\s*$"
         )
     if re.fullmatch(pattern, value) is None:
         _fail(
@@ -535,9 +540,8 @@ def _selected_tasks(rule: dict, task_ids: dict) -> tuple:
 
 
 def _selected_stages(rule: dict, stage_ids: dict) -> tuple:
-    ids = list(rule.get("selectedStagesIds") or [])
-    if rule.get("selectedStageId"):
-        ids.append(rule["selectedStageId"])
+    # V30 `selectedStageIds` array, with the legacy singular key as fallback.
+    ids = selected_stage_ids(rule)
     logical = []
     for stage_id in ids:
         if stage_id not in stage_ids:
@@ -549,15 +553,21 @@ def _selected_stages(rule: dict, stage_ids: dict) -> tuple:
 def _signature_gate_forms(output_id: str, prop: str) -> dict[str, bool]:
     """Whitespace-free renderings of the signature gate -> negated?"""
     forms: dict[str, bool] = {}
+    # Both guard spellings: `vars.X?.prop` (the skill's form) and the older
+    # `(vars.X||{}).prop`. Whitespace is stripped before lookup.
+    guards = (
+        f"String(vars.{output_id}?.{prop})",
+        f"String((vars.{output_id}||{{}}).{prop})",
+    )
     for first, second in (SIGNATURE_TOKENS, SIGNATURE_TOKENS[::-1]):
         for quote in ("'", '"'):
-            guarded = f"String((vars.{output_id}||{{}}).{prop})"
-            core = (
-                f"({guarded}.indexOf({quote}{first}{quote})<0)"
-                f"&&({guarded}.indexOf({quote}{second}{quote})<0)"
-            )
-            forms[core] = False
-            forms[f"!({core})"] = True
+            for guarded in guards:
+                core = (
+                    f"({guarded}.indexOf({quote}{first}{quote})<0)"
+                    f"&&({guarded}.indexOf({quote}{second}{quote})<0)"
+                )
+                forms[core] = False
+                forms[f"!({core})"] = True
     return forms
 
 

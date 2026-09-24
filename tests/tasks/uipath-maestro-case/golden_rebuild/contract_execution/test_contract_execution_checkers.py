@@ -505,6 +505,93 @@ class TopologyCheckerTests(unittest.TestCase):
         self.assertIn("does not configure the case identifier", result.stdout + result.stderr)
 
 
+class TopologyCheckerV30Tests(unittest.TestCase):
+    def test_accepts_selected_stage_ids_array(self) -> None:
+        """Schema v29+ moved `selectedStageId` to the array `selectedStageIds`;
+        the grader must read both (it failed a v30 plan on case exits)."""
+        plan = expected_caseplan()
+
+        def to_v30(node):
+            if isinstance(node, dict):
+                if "selectedStageId" in node:
+                    node["selectedStageIds"] = [node.pop("selectedStageId")]
+                for value in node.values():
+                    to_v30(value)
+            elif isinstance(node, list):
+                for value in node:
+                    to_v30(value)
+
+        to_v30(plan)
+        self.assertNotIn('"selectedStageId"', json.dumps(plan))
+
+        result = run_checker(TOPOLOGY_CHECKER, plan)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+class SemanticsHelperTests(unittest.TestCase):
+    """The semantics grader has no synthetic full plan; test its guard and
+    selector readers directly."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "semantics", ROOT / "check_contract_exec_semantics.py"
+        )
+        cls.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.mod)
+
+    def test_reference_accepts_both_guard_forms(self) -> None:
+        for value in (
+            "=js:vars.analysisResult?.unusualClauses",
+            "=js:(vars.analysisResult || {}).unusualClauses",
+        ):
+            self.mod._assert_reference(
+                value, "guarded:unusualClauses", "analysisResult", "input"
+            )
+
+    def test_reference_rejects_unguarded_access(self) -> None:
+        with self.assertRaises(SystemExit):
+            self.mod._assert_reference(
+                "=js:vars.analysisResult.unusualClauses",
+                "guarded:unusualClauses",
+                "analysisResult",
+                "input",
+            )
+
+    def test_signature_gate_forms_include_optional_chain(self) -> None:
+        forms = self.mod._signature_gate_forms("response2", "request_body")
+        self.assertIn(
+            "(String(vars.response2?.request_body).indexOf('Declined')<0)"
+            "&&(String(vars.response2?.request_body).indexOf('Expired')<0)",
+            forms,
+        )
+        self.assertIn(
+            "(String((vars.response2||{}).request_body).indexOf('Declined')<0)"
+            "&&(String((vars.response2||{}).request_body).indexOf('Expired')<0)",
+            forms,
+        )
+
+    def test_selected_stages_reads_v30_array(self) -> None:
+        stage_ids = {"stage-rejected": "Contract rejected"}
+        self.assertEqual(
+            self.mod._selected_stages(
+                {"rule": "selected-stage-completed", "selectedStageIds": ["stage-rejected"]},
+                stage_ids,
+            ),
+            ("Contract rejected",),
+        )
+        self.assertEqual(
+            self.mod._selected_stages(
+                {"rule": "selected-stage-completed", "selectedStageId": "stage-rejected"},
+                stage_ids,
+            ),
+            ("Contract rejected",),
+        )
+
+
 class FieldNameCheckerTests(unittest.TestCase):
     def _run(self, plan: dict) -> subprocess.CompletedProcess:
         return run_checker(FIELDNAME_CHECKER, plan)

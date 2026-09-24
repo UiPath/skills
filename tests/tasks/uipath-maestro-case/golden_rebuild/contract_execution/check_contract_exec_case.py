@@ -42,6 +42,7 @@ from _shared.case_check import (  # noqa: E402
     get_sla_rules,
     iter_tasks,
     read_caseplan,
+    selected_stage_ids,
 )
 
 EXPECTED_CASEPLAN = os.path.join("ContractExecution", "ContractExecution", "caseplan.json")
@@ -290,7 +291,7 @@ def _check_case_exits(plan: dict, stage_by_label: dict[str, dict]):
         if name not in ("selected-stage-completed", "selected-stage-exited"):
             _fail(f"unexpected case-exit rule {name!r}")
         for label in (REJECTED, WITHDRAWN):
-            if rule.get("selectedStageId") == stage_by_label[label]["id"]:
+            if stage_by_label[label]["id"] in selected_stage_ids(rule):
                 if marks is True:
                     _fail(
                         f"the {label!r} case exit is terminal-but-incomplete; "
