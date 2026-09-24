@@ -220,7 +220,7 @@ def body_object(element: ET.Element) -> dict:
 
         <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
 
-    Returns ``{}`` when there is no ``target="body"`` input. Raises
+    Returns ``{}`` when there is no ``target="body"`` input or it is empty. Raises
     :class:`BodyShapeError` for several inputs, or one whose payload is an
     expression or anything but a JSON object. A ``=vars.X`` value inside the
     object stays the string it is.
@@ -236,6 +236,8 @@ def body_object(element: ET.Element) -> dict:
         )
 
     raw = _input_payload(fields[0])
+    if not raw:
+        return {}
     if raw.startswith("="):
         raise BodyShapeError(f'target="body" input is an expression, not a literal object: {raw!r}')
     try:
