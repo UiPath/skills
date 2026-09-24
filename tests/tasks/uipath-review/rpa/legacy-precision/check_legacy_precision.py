@@ -89,13 +89,14 @@ def classify_rule_ids(text: str):
     cited = set(re.findall(r"\b((?:ST|UI|TA|RT)-[A-Z]{3}-\d{3})\b", text))
     if not cited:
         return [], []
-    known = ""
     skills_repo = os.environ.get("SKILLS_REPO_PATH")
-    if skills_repo:
-        refs = Path(skills_repo) / "skills" / "uipath-review" / "references"
-        if refs.is_dir():
-            known = "".join(f.read_text(encoding="utf-8", errors="replace")
-                            for f in refs.rglob("*.md"))
+    refs = Path(skills_repo) / "skills" / "uipath-review" / "references" if skills_repo else None
+    if refs is None or not refs.is_dir():
+        # Without the skill docs every code outside _REAL_RULE_IDS reads as
+        # fabricated, so a real one documented only in the skill would FAIL here.
+        return [], []
+    known = "".join(f.read_text(encoding="utf-8", errors="replace")
+                    for f in refs.rglob("*.md"))
     fabricated = sorted(c for c in cited if c not in _REAL_RULE_IDS and c not in known)
     return fabricated, []
 

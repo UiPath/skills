@@ -26,16 +26,16 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
-# Everything the plugin needs to load, plus the pre_run hook scripts the docker
-# experiments invoke from inside the mount. Nothing else: no tests/tasks, no
-# tests/fixtures, no tests/experiments.
+# Everything the plugin needs to load, plus the one hook script the docker
+# experiments invoke from inside the mount. Named file by file under tests/, so
+# a checker added to tests/scripts later cannot ride along into the agent's view.
 STAGED_PATHS = (
     ".claude-plugin",
     "skills",
     "commands",
     "hooks",
     "preview",
-    "tests/scripts",
+    "tests/scripts/stage-preview-sdk-workspace.sh",
     # Both send-telemetry twins read skillsVersion from $CLAUDE_PLUGIN_ROOT.
     "version-manifest.json",
 )

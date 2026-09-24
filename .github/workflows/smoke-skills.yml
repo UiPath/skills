@@ -471,6 +471,20 @@ jobs:
               uip agent guardrails list --output json
             '
 
+      # Troubleshoot fixture-drift gate. Was a coder-eval task until the agent's
+      # plugin mount stopped exposing the repo: the validator walks `uip <cmd>
+      # --help` for every mocked command across all ~298 troubleshoot manifests,
+      # so it needs the image's baked CLI AND the whole task tree — which no
+      # sandbox may see. No agent is involved, so run it in the image directly.
+      - name: Verify troubleshoot manifest commands
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo:ro" \
+            -v "$HOME/.uipath:/.uipath:rw" \
+            --entrypoint python \
+            skills-image:latest \
+            /repo/tests/tasks/uipath-troubleshoot/_shared/scripts/verify_manifest_commands.py
+
       # Model guard, deliberately its OWN step: "Run smoke tests" below carries
       # continue-on-error, and the threshold steps treat zero tasks as a pass, so a
       # guard inside the smoke step is swallowed and the gate goes green having

@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -44,8 +45,10 @@ def staged(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 
 def test_staged_tree_carries_no_grading_material(staged: Path) -> None:
-    # tests/scripts (the pre_run hooks) is the only slice of tests/ the agent gets.
-    assert [p.name for p in (staged / "tests").iterdir()] == ["scripts"]
+    # One hook script is the whole of tests/ the agent gets.
+    assert [str(p.relative_to(staged)) for p in sorted((staged / "tests").rglob("*")) if p.is_file()] == [
+        "tests/scripts/stage-preview-sdk-workspace.sh"
+    ]
 
     assert [p for p in staged.rglob("*.reference.*")] == []
 
@@ -88,6 +91,7 @@ def test_staging_refuses_a_source_symlink(tmp_path: Path) -> None:
     fake_repo = tmp_path / "repo"
     for rel in ("skills", "commands", "hooks", ".claude-plugin", "preview", "tests/scripts"):
         (fake_repo / rel).mkdir(parents=True)
+    (fake_repo / "tests" / "scripts" / "stage-preview-sdk-workspace.sh").write_text("")
     (fake_repo / "version-manifest.json").write_text("{}")
     (fake_repo / "tests" / "tasks").mkdir()
     (fake_repo / "tests" / "tasks" / "answer.reference.flow").write_text("golden")
@@ -155,12 +159,59 @@ def test_experiment_never_exposes_the_repo_root(path: Path) -> None:
             )
 
 
+def _task_hooks_and_commands(config: object) -> Iterator[str]:
+    """Every task string that runs inside the sandbox, at any nesting depth."""
+    if isinstance(config, dict):
+        for key, value in config.items():
+            if key == "command" and isinstance(value, str):
+                yield value
+            else:
+                yield from _task_hooks_and_commands(value)
+    elif isinstance(config, list):
+        for item in config:
+            yield from _task_hooks_and_commands(item)
+
+
+def test_no_task_reaches_through_the_repo_root() -> None:
+    """A task hook or criterion addressing $SKILLS_REPO_PATH now ERRORs every run.
+
+    Only .plugin-root is mounted. $TASK_DIR and $REFERENCE_DIR are the addressing
+    that survives, and neither reaches pre_run — a hook that needs the repo tree
+    is a repo unit test, not an eval.
+    """
+    tasks_root = REPO_ROOT / "tests" / "tasks"
+    violations = [
+        f"{path.relative_to(tasks_root)}: {command.strip()[:120]}"
+        for path in sorted(tasks_root.rglob("*.yaml"))
+        for command in _task_hooks_and_commands(yaml.safe_load(path.read_text()))
+        if "SKILLS_REPO_PATH" in _repo_var(command)
+    ]
+    assert violations == []
+
+
+def _jobs_that_run_coder_eval() -> list[tuple[Path, str, list[dict]]]:
+    """Every workflow job with a step whose env sets SKILLS_REPO_PATH."""
+    found = []
+    for path in sorted(WORKFLOWS.glob("*.yml")):
+        if not re.search(r"^\s+SKILLS_REPO_PATH:\s", path.read_text(), re.M):
+            continue
+        for name, job in (yaml.safe_load(path.read_text()).get("jobs") or {}).items():
+            steps = job.get("steps") or []
+            if any("SKILLS_REPO_PATH" in (step.get("env") or {}) for step in steps):
+                found.append((path, name, steps))
+    return found
+
+
 @pytest.mark.parametrize(
-    "path",
-    sorted(p for p in WORKFLOWS.glob("*.yml") if re.search(r"^\s+SKILLS_REPO_PATH:\s", p.read_text(), re.M)),
-    ids=lambda p: p.name,
+    "path,job,steps",
+    _jobs_that_run_coder_eval(),
+    ids=lambda v: v.name if isinstance(v, Path) else (v if isinstance(v, str) else ""),
 )
-def test_runner_stages_the_plugin_root(path: Path) -> None:
-    assert "stage_plugin_root.py" in path.read_text(), (
-        f"{path.name} runs coder-eval but never stages {PLUGIN_ROOT}"
+def test_runner_stages_the_plugin_root_first(path: Path, job: str, steps: list[dict]) -> None:
+    """Staging has to precede the run, not merely appear somewhere in the file."""
+    stages_at = [i for i, step in enumerate(steps) if "stage_plugin_root.py" in (step.get("run") or "")]
+    runs_at = [i for i, step in enumerate(steps) if "SKILLS_REPO_PATH" in (step.get("env") or {})]
+    assert stages_at, f"{path.name}:{job} runs coder-eval but never stages {PLUGIN_ROOT}"
+    assert min(stages_at) < min(runs_at), (
+        f"{path.name}:{job} stages {PLUGIN_ROOT} after the step that runs coder-eval"
     )
