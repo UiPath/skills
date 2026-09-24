@@ -1,0 +1,80 @@
+task_id: skill-doc-mode-select-mode-selection
+description: >
+  Mode-selection accuracy across the whole decision surface: one row per case in
+  the skill's case library, three rows per mode, twenty-four rows total. Each row
+  states a workload the way a practitioner would describe it — no mode vocabulary,
+  no case IDs — and the agent must name the single mode the library routes it to.
+
+  This is the scaled version of the ad-hoc seven-case run (one prompt per mode)
+  used while the skill was drafted. Ground truth is the case library itself, so a
+  row failing here means either the routing signal in SKILL.md's Fast Routing
+  table is not discriminative enough, or the case it is drawn from does not
+  actually teach its decisive signal. Fix the routing copy, do not relax the row.
+
+  Three rows carry the ground truth NONE: the workload is deterministic and
+  belongs in a Data, Transform or Script node, outside the taxonomy. Without
+  them a skill that answers BT to anything tabular would score well.
+
+  Two things to know before reading a red result:
+
+  - CS rows are expected to be the weakest. There is no published Classify &
+    Split node configuration in Flow (references/classify-split-guide.md says so
+    outright), so an agent reasoning about what it can actually build may
+    legitimately fall back to another mode. Treat CS misses as a product-gap
+    signal, not a copy defect, until that configuration is documented.
+  - The grading command interpolates ${row.expected_mode} into a run_command
+    string. If the harness does not substitute row fields there, check_mode.py
+    fails loudly with an explicit message rather than grading against a literal
+    template — see its --expected guard.
+
+tags: [uipath-doc-mode-select, integration, mode:build, lifecycle:discover]
+
+dataset:
+  paths: ["mode_selection.jsonl"]
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Route this document workload to exactly one processing mode.
+
+  ${row.workload}
+
+  Load the applicable UiPath skill and use its mode taxonomy. Write your answer
+  to a file named `mode.txt` in the current working directory. The FIRST line
+  must be the mode ID alone — one of AH, AF, CS, SU, PS, PA, EX, BT — with
+  nothing else on that line. You may add your reasoning on the lines below it.
+
+  If no document-processing mode applies because the work is deterministic and
+  belongs outside the taxonomy, write NONE on that first line instead. NONE is a
+  real answer, not a refusal — do not force a mode onto a workload that does not
+  need one.
+
+  Do not create a project, a flow, an agent, or any other artifact. Write only
+  `mode.txt`.
+
+  This run is headless. No user is present and nobody will answer a question, so
+  do not ask and do not pause. Pick the single best mode and commit to it; if two
+  modes are close, choose the one the skill's routing table prefers and say why
+  underneath.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-doc-mode-select skill"
+    expected_skill: "uipath-doc-mode-select"
+    skill_name: "uipath-doc-mode-select"
+    weight: 1.0
+    suite_thresholds: {recall.yes: 0.90}
+
+  - type: run_command
+    description: "Selected mode matches the case library's ground truth for row ${row.id}"
+    command: "python3 $REFERENCE_DIR/check_mode.py --expected '${row.expected_mode}'"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    suite_thresholds: {mean: 0.70}
+
+run_limits:
+  max_turns: 6
+  turn_timeout: 300
+  task_timeout: 600

@@ -1,0 +1,55 @@
+task_id: skill-doc-mode-select-route-and-build-e2e
+description: >
+  End-to-end: a full-document cited-review workload must route to Summarize and
+  then actually be built and validated as a Flow. Grades the artifact — the
+  .flow must carry the Summarize node type and must NOT carry an extraction
+  node — so a correct mode label with the wrong node still fails.
+tags: [uipath-doc-mode-select, e2e, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 1200
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Build a UiPath Maestro Flow project called "ContractReview".
+
+  It receives one native contract document and must produce a cited assessment
+  of where that contract conflicts with our standard terms, including clauses
+  that are missing entirely. A reviewer has to be able to trace every finding
+  back to the source, and "no issue found" has to mean the whole document was
+  reviewed — not that a search found nothing.
+
+  Route the workload first, then build it. The task is not complete until the
+  project validates.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Take the best available option and supply the most defensible value where one
+  is missing. Record every decision and assumption in your final response.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-doc-mode-select skill"
+    expected_skill: "uipath-doc-mode-select"
+    skill_name: "uipath-doc-mode-select"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Built flow carries the Summarize node type and no extraction node"
+    command: "python3 $REFERENCE_DIR/check_summarize_route.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

@@ -102,3 +102,8 @@ tests/tasks/**/seed.json
 .created-ids.jsonl
 # Ephemeral solution .uipx (post_run globs it) plus debug logs:
 customer-escalation-live/
+
+# Source meeting memos used to derive case-library entries. Local working input only —
+# this repository is public, and references/case-template.md § Publishing constraints
+# requires every derived case to pass the provenance scrub before it lands.
+assets/memos/
