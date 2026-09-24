@@ -79,12 +79,15 @@ Do not derive metadata from stale package files first. Use existing generated fi
 ## Safe Local Workflow
 
 1. Edit `.bpmn` first.
-2. Check the source itself: well-formed XML, diagrams, entry point IDs,
-   variables, mappings, binding references. Do not run `uip maestro bpmn
-   validate` yet — it cross-checks `entry-points.json` against the source, so it
+2. Check the source itself: well-formed XML, entry point IDs, variables,
+   mappings, binding references. Not the diagram — step 3 generates it.
+   Do not run `uip maestro bpmn validate` yet — it cross-checks `entry-points.json` against the source, so it
    reports the pre-refresh state as an error whenever an edit renamed a start
-   event. Run it after step 3.
-3. Regenerate package metadata from the BPMN source:
+   event. Run it in step 5, after refresh.
+3. Lay out the diagram after the last source edit: `uip maestro bpmn format
+   <file.bpmn>`. `refresh` validates before it writes, so a node added since
+   the previous run fails step 4 with `MISSING_DI_SHAPE`.
+4. Regenerate package metadata from the BPMN source:
 
    ```bash
    uip maestro bpmn refresh <project-path> --output json    # regenerate + materialize IS connection bindings
@@ -101,17 +104,17 @@ Do not derive metadata from stale package files first. Use existing generated fi
    If CLI unavailable for a local-only synthetic project, write the minimal
    placeholder-safe shape (see below) before continuing.
 
-4. Run `uip maestro bpmn validate <file.bpmn> --output json`, then verify the
+5. Run `uip maestro bpmn validate <file.bpmn> --output json`, then verify the
    project directory contains the full metadata set:
    `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`,
    and `package-descriptor.json`. Run refresh a second time only when checking
    idempotence; unchanged source must leave all four generated files unchanged.
-5. Inspect the generated content for:
+6. Inspect the generated content for:
    - `entry-points.json` entries matching root manual start events and schemas.
    - `bindings_v2.json` resources matching root bindings and enriched connector metadata.
    - `operate.json` pointing at the intended BPMN file with `ProcessOrchestration` content type.
    - `package-descriptor.json` root `files` mappings for the BPMN file and generated JSON.
-6. For package-shape verification, run `pack` only after refresh. Pack consumes
+7. For package-shape verification, run `pack` only after refresh. Pack consumes
    the generated files; it does not synthesize a missing package descriptor:
 
    ```bash
