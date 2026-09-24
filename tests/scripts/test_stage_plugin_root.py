@@ -56,6 +56,8 @@ def test_staged_tree_is_a_loadable_plugin_root(staged: Path) -> None:
         "skills/uipath-maestro-flow/SKILL.md",
         "commands",
         "hooks/hooks.json",
+        # Both send-telemetry twins read skillsVersion out of the plugin root.
+        "version-manifest.json",
         "preview/.claude-plugin/plugin.json",
         "preview/skills",
         # The docker experiments run this out of the mount as a pre_run hook.
@@ -81,6 +83,26 @@ def test_staged_tree_has_no_symlink_back_into_the_repo(staged: Path) -> None:
     assert [p for p in staged.rglob("*") if p.is_symlink()] == []
 
 
+def test_staging_refuses_a_source_symlink(tmp_path: Path) -> None:
+    """A link under a staged source would otherwise copy tests/tasks in as real files."""
+    fake_repo = tmp_path / "repo"
+    for rel in ("skills", "commands", "hooks", ".claude-plugin", "preview", "tests/scripts"):
+        (fake_repo / rel).mkdir(parents=True)
+    (fake_repo / "version-manifest.json").write_text("{}")
+    (fake_repo / "tests" / "tasks").mkdir()
+    (fake_repo / "tests" / "tasks" / "answer.reference.flow").write_text("golden")
+    (fake_repo / "skills" / "leak").symlink_to(fake_repo / "tests" / "tasks")
+
+    dest = tmp_path / ".plugin-root"
+    done = subprocess.run(
+        [sys.executable, str(SCRIPT), "--repo-root", str(fake_repo), "--dest", str(dest)],
+        capture_output=True,
+        text=True,
+    )
+    assert done.returncode != 0
+    assert not dest.exists()
+
+
 def test_staging_is_idempotent(staged: Path) -> None:
     subprocess.run([sys.executable, str(SCRIPT), "--dest", str(staged)], check=True, capture_output=True)
     assert (staged / ".claude-plugin" / "plugin.json").exists()
@@ -95,6 +117,11 @@ def test_staging_refuses_to_overwrite_the_repo() -> None:
     assert done.returncode != 0
 
 
+def _repo_var(value: str) -> str:
+    """Both spellings of the variable must be caught, not just the bare one."""
+    return value.replace("${SKILLS_REPO_PATH}", "$SKILLS_REPO_PATH")
+
+
 def _experiments() -> list[Path]:
     return sorted(p for p in EXPERIMENTS.glob("*.yaml") if p.name not in EXEMPT_EXPERIMENTS)
 
@@ -106,7 +133,7 @@ def test_experiment_never_exposes_the_repo_root(path: Path) -> None:
 
     for block in blocks:
         for plugin in ((block.get("agent") or {}).get("plugins") or []):
-            plugin_path = plugin.get("path", "")
+            plugin_path = _repo_var(plugin.get("path", ""))
             assert plugin_path == PLUGIN_ROOT or plugin_path.startswith(f"{PLUGIN_ROOT}/"), (
                 f"{path.name}: plugin path {plugin_path!r} must be under {PLUGIN_ROOT} — "
                 "the repo root mounts tests/tasks into the agent's container"
@@ -114,11 +141,15 @@ def test_experiment_never_exposes_the_repo_root(path: Path) -> None:
 
         docker = ((block.get("sandbox") or {}).get("docker")) or {}
         for mount in docker.get("extra_mounts") or []:
-            source = str(mount).split(":", 1)[0]
-            assert source != "$SKILLS_REPO_PATH", f"{path.name}: extra_mount exposes the repo root"
+            source = _repo_var(str(mount).split(":", 1)[0])
+            if not source.startswith("$SKILLS_REPO_PATH"):
+                continue
+            assert source == PLUGIN_ROOT or source.startswith(f"{PLUGIN_ROOT}/"), (
+                f"{path.name}: extra_mount {source!r} exposes part of the repo outside {PLUGIN_ROOT}"
+            )
 
         for hook in (block.get("pre_run") or []) + (block.get("post_run") or []):
-            command = hook.get("command", "")
+            command = _repo_var(hook.get("command", ""))
             assert "$SKILLS_REPO_PATH/tests/" not in command, (
                 f"{path.name}: hook reads $SKILLS_REPO_PATH/tests/ — use {PLUGIN_ROOT}/tests/scripts/"
             )

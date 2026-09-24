@@ -78,6 +78,7 @@ After write:
 1. Run the smoke test pattern to confirm the mock dispatcher resolves:
    ```bash
    cd tests
+   make plugin-root
    .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.

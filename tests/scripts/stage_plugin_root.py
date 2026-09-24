@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -35,6 +36,8 @@ STAGED_PATHS = (
     "hooks",
     "preview",
     "tests/scripts",
+    # Both send-telemetry twins read skillsVersion from $CLAUDE_PLUGIN_ROOT.
+    "version-manifest.json",
 )
 
 DEFAULT_DEST = ".plugin-root"
@@ -53,13 +56,24 @@ def stage(repo_root: Path, dest: Path) -> Path:
 
     for rel in STAGED_PATHS:
         src = repo_root / rel
-        if not src.is_dir():
+        if not src.exists():
             sys.exit(f"stage_plugin_root: missing source {src}")
         target = dest / rel
         target.parent.mkdir(parents=True, exist_ok=True)
-        # symlinks=False: a staged symlink would resolve back into the repo and
-        # re-expose everything this script prunes.
-        shutil.copytree(src, target, symlinks=False)
+        if src.is_dir():
+            # symlinks=True never dereferences, so a link into tests/tasks cannot
+            # be staged as real files; the sweep below then refuses the link itself.
+            shutil.copytree(src, target, symlinks=True)
+            continue
+        shutil.copy2(src, target, follow_symlinks=False)
+
+    for parent, dirs, files in os.walk(dest):
+        for name in dirs + files:
+            link = Path(parent) / name
+            if not link.is_symlink():
+                continue
+            shutil.rmtree(dest)
+            sys.exit(f"stage_plugin_root: symlink in a staged source: {link}")
 
     return dest
 
