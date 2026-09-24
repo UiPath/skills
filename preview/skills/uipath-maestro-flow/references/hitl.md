@@ -95,6 +95,16 @@ of the return having to work out which arm ran.
   step. The flow runtime never reads `action`, so only the graph can end the run
   on that outcome.
 
+  Inside a `.parallel()` arm, such a task must not be the arm's last step, and
+  none of its outcomes may be `action: 'End'`. The join waits for a token on
+  every incoming edge, and only one outcome fires, so the run would never get
+  past it.
+  `check` refuses both (HITL_FAN_OUT_INTO_JOIN, HITL_END_OUTCOME_IN_PARALLEL).
+  Add a step after the task inside the arm, for example
+  `a.step('review', hitl(…)).step('record', …)`: every outcome continues to
+  `record`, and only `record` reaches the join. `.stepSwitch` does not help
+  here, because its arms rejoin at the same join.
+
   The action-app and document-validation variants are different: their outcomes
   live in the app, `completed` is the only handle the designer draws for them,
   and `.step()` leaves on it. Route on `out('<step>', 'Action')` downstream.
