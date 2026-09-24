@@ -76,6 +76,7 @@ success_criteria:
   - type: run_command
     description: "Exactly one core.logic.merge with >=2 distinct branches converging, a fork upstream, and a downstream continuation"
     command: "python3 $REFERENCE_DIR/smoke/check_merge_parallel_sync_flow.py"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

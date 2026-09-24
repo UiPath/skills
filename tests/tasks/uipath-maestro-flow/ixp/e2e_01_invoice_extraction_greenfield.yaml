@@ -53,6 +53,7 @@ success_criteria:
   - type: run_command
     description: Generated flow contains an IxP extraction node or core.logic.mock fallback
     command: grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -61,18 +62,21 @@ success_criteria:
   - type: run_command
     description: Generated flow contains a SharePoint trigger or connector node
     command: grep -rqiE "sharepoint" --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
     description: Generated flow contains an HTTP action node (core.action.http)
     command: grep -rqE "core\.action\.http|\"type\"[[:space:]]*:[[:space:]]*\"[^\"]*http[^\"]*\"" --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
     description: Generated flow references the IxP extraction output via $vars (downstream consumption)
     command: grep -rqF '$vars.' --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

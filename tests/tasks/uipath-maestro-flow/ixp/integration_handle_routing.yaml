@@ -83,6 +83,7 @@ success_criteria:
   - type: run_command
     description: "Generated flow contains an IxP extraction node or core.logic.mock fallback"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -92,6 +93,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains a Decision node (core.logic.decision)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py 'core.logic.decision'"
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -99,6 +101,7 @@ success_criteria:
   - type: run_command
     description: "Decision condition references the canonical IxP output path ($vars.<ixp>.output.ExtractionResult.ResultsDocument.Fields)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '$vars.' 'ExtractionResult' 'ResultsDocument' 'Fields'"
+    read_only: true
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -106,6 +109,7 @@ success_criteria:
   - type: run_command
     description: "Both branch script nodes are present by name"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py 'HighValueReview' 'AutoApprove'"
+    read_only: true
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -113,6 +117,7 @@ success_criteria:
   - type: run_command
     description: "Both Decision branches wired (true and false handles)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '\"true\"' '\"false\"'"
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

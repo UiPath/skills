@@ -40,6 +40,7 @@ success_criteria:
   - type: run_command
     description: "Initialized flow has the default manual trigger"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name WeatherAlert 'core.trigger.manual'"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -71,6 +72,7 @@ success_criteria:
   - type: run_command
     description: "Flow file was created in a supported authoring layout"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name WeatherAlert"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
