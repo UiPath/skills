@@ -498,6 +498,11 @@ def test_body_object_is_empty_without_body_inputs() -> None:
     assert bpmn_check.body_fields(task) == []
 
 
+def test_body_object_is_empty_for_an_empty_body_input() -> None:
+    task = _send_task('<uipath:input name="body" type="json" target="body" />')
+    assert bpmn_check.body_object(task) == {}
+
+
 def test_body_object_fails_a_malformed_body_blob() -> None:
     bad_json = _send_task(
         '<uipath:input name="body" type="json" target="body"><![CDATA[{"a": ]]></uipath:input>'
