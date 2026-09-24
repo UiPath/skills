@@ -13,7 +13,11 @@ try:
     if keys:
         conn = jira_is.connection_id()
         for key in keys:
-            jira_is.delete_issue(conn, key)
+            try:
+                jira_is.delete_issue(conn, key)
+            except Exception as e:  # noqa: BLE001 — one failed key must not skip the rest
+                print(f"WARN: could not delete {key}: {e}")
+                continue
             print(f"OK: deleted {key}")
     else:
         print("OK: nothing to delete")

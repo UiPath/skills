@@ -11,6 +11,7 @@ body / get by id / delete by id — never a JQL search.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 
 CONNECTOR = "uipath-atlassian-jira"
@@ -18,6 +19,22 @@ FOLDER_PATH = "Shared/uipath-maestro-flow"
 CONNECTION_NAME = "is-sandboxes-test@uipath.com-uipath-sandbox-380"
 PROJECT_KEY = "CE"        # "Coder Eval" project on uipath-sandbox-380
 ISSUETYPE_ID = "11457"    # "Task" issue type, scoped to the CE project
+
+
+def _issue_not_found(env: dict) -> bool:
+    """True only for a structured HTTP 404 whose provider message says the issue
+    is absent, so a missing connection or activity never reads as deleted."""
+    blob = json.dumps(env)
+    structured_404 = bool(
+        re.search(r"status code ['\"]?404\b", blob, re.I)
+        or re.search(r'"providerErrorCode"\s*:\s*404\b', blob)
+        or re.search(r'"statusCode"\s*:\s*"?404\b', blob)
+    )
+    issue_specific = bool(
+        re.search(r"issue\s+(does\s+not\s+exist|not\s+found|no\s+longer\s+exists|is\s+not\s+found)", blob, re.I)
+        or re.search(r"(does\s+not\s+exist|not\s+found|no\s+longer\s+exists).{0,40}\bissue\b", blob, re.I)
+    )
+    return structured_404 and issue_specific
 
 
 def _run(*args: str) -> dict:
@@ -55,8 +72,9 @@ def get_issue(conn_id: str, key: str) -> dict | None:
 
 
 def delete_issue(conn_id: str, key: str) -> None:
-    """Delete an issue by key. A 404 (already gone) is a no-op."""
-    _run(
+    """Delete an issue by key. A 404 (already gone) is a no-op; any other
+    failure raises."""
+    env = _run(
         "is", "resources", "run", "delete", CONNECTOR, "issue",
         "--connection-id", conn_id, "--query", f"issueId={key}",
         # The CLI never prompts and REFUSES an irreversible delete without this
@@ -64,3 +82,6 @@ def delete_issue(conn_id: str, key: str) -> None:
         # teardown since 08-19 printed WARN and left its ticket in the CE project.
         "--yes",
     )
+    if str(env.get("Result", "")).lower() != "failure" or _issue_not_found(env):
+        return
+    raise RuntimeError(f"delete {key} failed: {json.dumps(env)[:500]}")

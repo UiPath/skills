@@ -151,8 +151,10 @@ def main() -> None:
         "(objectName=query, method=POST)"
     )
 
-    native_tasks = connector_tasks(root, NATIVE_DATABRICKS_KEY)
-    if native_tasks:
+    native_nodes = [
+        node for node in root.iter() if context_value(node, "connectorKey") == NATIVE_DATABRICKS_KEY
+    ]
+    if native_nodes:
         fail(
             "process references the native Databricks connector "
             f"({NATIVE_DATABRICKS_KEY}) -- Databricks SQL must route through "

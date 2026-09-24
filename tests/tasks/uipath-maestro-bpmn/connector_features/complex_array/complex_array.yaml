@@ -10,8 +10,8 @@ description: >
   Ported from Flow `connector_features/complex_array.yaml`; the connector
   activity is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper instead of a Flow connector node, and the
-  users array is read from its target="body" JSON (whole blob or one typed
-  input per field) instead of Flow's inputs.detail.bodyParameters.
+  users array is read from its one target="body" JSON object instead of
+  Flow's inputs.detail.bodyParameters.
 tags:
   - uipath-maestro-bpmn
   - integration

@@ -51,10 +51,11 @@ Assertion map (Flow → BPMN):
                                             → FinalStatus in COMPLETED_STATUSES and debug-instance incidents is empty
   F check_generic_dynamic_node.py:167-200  _assert_array_output(): an array-typed global output (empty allowed),
                                             reporting a flattened sys_id-bearing record if present
-                                            → array-typed value among the root scope's Globals AND every element's
-                                              Outputs (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read back null even
-                                              when correctly mapped, so the search is not scoped to one declared
-                                              output variable — mirrors check_jira_get_issue.collect_output_haystack)
+                                            → array held by a root Global that is a declared process output
+                                              (input echoes excluded); only when every declared output reads back
+                                              null (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read back null even
+                                              when correctly mapped), an array in the Outputs of the generic list
+                                              node(s) instead
   I                 locate/parse .bpmn, resolve project directory
                                             → bpmn_check.find_bpmn_file()/resolve_project()
   I                 ephemeral solution init + `solution projects import` + sha256 pin of the imported bytes
@@ -89,14 +90,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 from _shared.bpmn_check import find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
+    BPMN_NS,
+    UIPATH_NS,
     CheckFailure,
     connector_context,
+    debug_evidence,
+    element_output_records,
     get_ci,
-    incident_records,
-    payload_data,
+    import_exact,
+    input_echo_ids,
+    normalized_identifier,
+    q,
+    require_clean_run,
+    resolve_runtime_key,
     root_scope,
-    run_cli,
-    sha256,
 )
 
 CONNECTOR_KEY = "uipath-servicenow-servicenow"
@@ -110,11 +117,6 @@ GENERIC_LIST_METHODS = {"GET"}
 NAME_HINT = "AcrUserList"
 
 LIVE_RUN_DIR = Path("acr-user-list-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
-COMPLETED_STATUSES = {"Completed", "Successful"}
 
 # Worst-case wall clock this checker can spend, priced the way
 # _shared/test_criterion_budgets.py prices a run_debug(...) call: the debug
@@ -180,29 +182,63 @@ def _array_leaves(value):
             yield from _array_leaves(v)
 
 
-def collect_array_candidates(variables_data: object) -> list[tuple[str, list]]:
-    """Array-typed values among the root scope's Globals AND every element's
-    Outputs.
+def declared_outputs(process: ET.Element) -> list[tuple[str, ...]]:
+    """(id, name) of each process-level `uipath:output`, minus input echoes."""
+    variables = process.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'variables')}"
+    )
+    if variables is None:
+        return []
 
-    A root public output has been observed to read back null even when
-    correctly mapped (LIVE-ADDENDUM), so the search is not scoped to one
-    declared output variable — mirrors check_jira_get_issue.py's
-    collect_output_haystack, adapted to look for an array shape rather than a
-    substring.
-    """
-    candidates: list[tuple[str, list]] = []
+    echoes = {normalized_identifier(name) for name in input_echo_ids(process)}
+    outputs = []
+    for node in variables.findall(q(UIPATH_NS, "output")):
+        keys = tuple(
+            key
+            for key in (node.attrib.get("id"), node.attrib.get("name"))
+            if key and normalized_identifier(key) not in echoes
+        )
+        if keys:
+            outputs.append(keys)
+    return outputs
+
+
+def global_value(globals_: dict, identifier: str) -> object:
+    wanted = normalized_identifier(identifier)
+    if not any(normalized_identifier(key) == wanted for key in globals_):
+        return None
+    return resolve_runtime_key(globals_, identifier, "declared output")
+
+
+def collect_array_candidates(
+    variables_data: object,
+    outputs: list[tuple[str, ...]],
+    list_node_ids: tuple[str, ...],
+) -> list[tuple[str, list]]:
+    """Arrays held by declared output globals; the list nodes' Outputs only
+    when every declared output reads back null (LIVE-ADDENDUM)."""
     globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
-    if isinstance(globals_, dict):
-        for name, value in globals_.items():
-            for array in _array_leaves(value):
-                candidates.append((f"global {name!r}", array))
-    for scope in get_ci(variables_data, "Variables", []) or []:
-        for element in get_ci(scope, "Elements", []) or []:
-            outputs = get_ci(element, "Outputs", {})
-            for array in _array_leaves(outputs):
-                candidates.append(
-                    (f"element {get_ci(element, 'ElementId')!r} Outputs", array)
-                )
+    if not isinstance(globals_, dict):
+        globals_ = {}
+
+    candidates: list[tuple[str, list]] = []
+    read_back = False
+    for keys in outputs:
+        value = next(
+            (v for v in (global_value(globals_, key) for key in keys) if v is not None),
+            None,
+        )
+        if value is None:
+            continue
+        read_back = True
+        if isinstance(value, list):
+            candidates.append((f"output global {keys[0]!r}", value))
+    if read_back:
+        return candidates
+
+    for outputs_record in element_output_records(variables_data, list_node_ids):
+        for array in _array_leaves(outputs_record):
+            candidates.append((f"list node Outputs {sorted(list_node_ids)}", array))
     return candidates
 
 
@@ -236,87 +272,34 @@ def main() -> None:
         )
     print(f"OK: found {len(list_nodes)} generic list node(s) on objectName={OBJECT_NAME!r}")
 
+    process = root.find(q(BPMN_NS, "process"))
+    if process is None:
+        _fail(f"{bpmn_path} has no bpmn:process")
+    outputs = declared_outputs(process)
+    if not outputs:
+        _fail("process declares no uipath:output variable to surface the records")
+    list_node_ids = tuple(node.attrib["id"] for node in list_nodes if node.attrib.get("id"))
+
     project_dir = resolve_project(os.path.basename(bpmn_path))
-    original_hash = sha256(Path(bpmn_path))
-
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "AcrUserListLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    imported_project = import_exact(
+        Path(bpmn_path), project_dir, LIVE_RUN_DIR / "AcrUserListLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / os.path.basename(bpmn_path)) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
-
     debug_data, instance_id = bpmn_live.run_debug(
         imported_project, {}, LIVE_RUN_DIR / "debug.log"
     )
     print(f"OK: debug completed (instance {instance_id})")
 
-    final_status = get_ci(debug_data, "FinalStatus")
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
-    )
-    _payload, variables_data = payload_data(variables, "variables-all")
+    evidence = debug_evidence(instance_id)
+    require_clean_run(debug_data, evidence)
 
-    incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=INCIDENTS_TIMEOUT,
-    )
-    _payload, incidents_data = payload_data(incidents, "incidents")
-    incidents_list = incident_records(incidents_data)
-
-    if final_status not in COMPLETED_STATUSES:
-        detail = []
-        faulted = [
-            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
-            for item in get_ci(debug_data, "ElementExecutions", []) or []
-            if isinstance(item, dict)
-            and str(get_ci(item, "Status") or "").casefold() != "completed"
-        ]
-        if faulted:
-            detail.append(f"non-completed elements: {faulted}")
-        if incidents_list:
-            detail.append(f"incidents: {json.dumps(incidents_list)[:1500]}")
-        raise CheckFailure(
-            f"final status was {final_status!r}"
-            + ("; " + "; ".join(detail) if detail else "")
-        )
-    if incidents_list is None:
-        raise CheckFailure(f"incidents response has an unknown shape: {incidents_data!r}")
-    if incidents_list:
-        raise CheckFailure(f"unexpected incidents: {incidents_list}")
-    print("OK: bpmn debug completed (FinalStatus=%s, no incidents)" % final_status)
-
-    candidates = collect_array_candidates(variables_data)
+    candidates = collect_array_candidates(evidence.variables, outputs, list_node_ids)
     if not candidates:
         _fail(
             "No output variable holds an array — the connector result was not "
-            "surfaced as a process output. Checked root Globals and every "
-            "element's Outputs."
+            "surfaced as a process output. Checked declared output globals "
+            f"{outputs} and, on null readback, the list node Outputs "
+            f"{list(list_node_ids)}."
         )
     label, value = candidates[0]
     if value and all(isinstance(r, dict) for r in value) and any("sys_id" in r for r in value):

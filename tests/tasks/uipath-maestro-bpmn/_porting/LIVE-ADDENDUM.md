@@ -4,14 +4,13 @@ Read `PORTING-BRIEF.md` (Grading contract is mandatory) and `BATCH1-ADDENDUM.md`
 
 ## The canonical live pattern (copy it)
 
-`tests/tasks/uipath-maestro-bpmn/e2e/customer_escalation_triage/check_customer_escalation_behavior.py` + `escalation_is.py` on this branch is the one CI-proven live BPMN grader. Its sequence, all via `_shared/bpmn_live.py`:
+`_shared/check_jira_get_issue.py` is the canonical live BPMN grader. Its sequence, all via `_shared/bpmn_live.py`:
 
-1. `uip solution init <LIVE_RUN_DIR>/<Name>` under the sandbox CWD (ephemeral solution; kept under CWD so the standard post_run sweep finds the `.uipx`).
-2. `uip solution projects import <ProjectDir> --solutionFile <that .uipx>`; assert the imported `.bpmn` bytes equal the submitted ones (`sha256`).
+1-2. `import_exact(bpmn_path, project_dir, LIVE_RUN_DIR / <Name>)`: ephemeral `uip solution init` under the sandbox CWD (so the standard post_run sweep finds the `.uipx`) + `uip solution projects import`, asserting the imported `.bpmn` bytes equal the submitted ones.
 3. `debug_data, instance_id = run_debug(imported_project_dir, inputs, log_file, timeout=…)` — `bpmn debug` returns an instance id, not inline variables. `--inputs` JSON is honoured (the escalation run seeded correlationId this way and found it in Jira).
-4. `uip maestro bpmn debug-instance variables-all <id>` → `root_scope(variables_data)` for root variables; `element_output_records(variables_data, element_id)` for a node's `Outputs`; `connector_response_values(outputs, name)` for connector response fields.
-5. `uip maestro bpmn debug-instance incidents <id>` → `incident_records(...)`; a completed run with incidents is a failure.
-6. Side-effect ids go to a flat journal the moment they are visible; post_run replays it (teardown) — mirror the Flow task's `_setup/teardown_*.py`.
+4. `fetch_variables(id)` (`debug-instance variables-all`) → `root_scope(variables_data)` for root variables; `element_output_records(variables_data, element_id)` for a node's `Outputs`; `connector_response_values(outputs, name)` for connector response fields.
+5. Side-effect ids go to a flat journal the moment they are visible, before any status check; post_run replays it (teardown) — mirror the Flow task's `_setup/teardown_*.py`.
+6. `fetch_incidents(id)` then `require_clean_run(debug_data, evidence)`; a completed run with incidents is a failure. `debug_evidence(id)` does 4 and 6 together for a grader with no side effects.
 
 Known runtime facts (grade around them, do not fight them):
 - Element-level `Outputs` (a script task's mapped output, a connector's `response`) are reliably readable in `variables-all`. Root **public output values** have been read back as `null` even when correctly mapped (see `debug/live_debug_e2e/check_live_debug.py` docstring). So when Flow asserted "some output equals X" (`assert_output_value` / `assert_outputs_contain` over `variables.globals` + element outputs), translate to: search the value leaves of the root scope's variables AND every element's `Outputs` in `variables-all`; do not require the value on a root public output specifically.
@@ -38,9 +37,3 @@ Add these T rows as needed and cite the Flow helper you translate:
 - `T assert_connector_error_handlers` → boundary error event / error path presence — only if Flow asserted it
 
 If a Flow assertion has no readable runtime evidence on the BPMN side (e.g. a root-output-only value that the runtime returns as null and no element output carries it), STOP and report "parked: <evidence>" rather than loosening the assertion.
-
-## Learned on CI run 35503094182
-
-- `uip maestro bpmn debug` polls at most 300 times; the wait is `300 × --poll-interval`. `bpmn_live.run_debug` now derives the interval from its `timeout` so the CLI keeps polling for the whole priced budget, and raises a clear `CheckFailure` on the CLI's poll-timeout envelope (`ErrorCode: timeout`, `Data.lastStatus`). Never pass a fixed small poll interval.
-- Runtime incident 102010 with `ErrorDetails: "Value cannot be null. (Parameter 'Folder')"` on a Slack `Intsvc.ActivityExecution` means the activity lacks its `folderKey` binding — an authoring defect of the eval agent, not a grader defect. Do not widen a grader for it.
-- Actions.HITL cannot pass `bpmn validate` without a deployed Action App binding (MISSING_BINDING with placeholder appId). HITL ports reach parity on every other criterion; record the validate gap in the description, do not work around it.

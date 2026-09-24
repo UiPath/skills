@@ -146,12 +146,11 @@ from _shared.bpmn_check import (  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
-    get_ci,
-    incident_records,
-    payload_data,
-    root_scope,
-    run_cli,
-    sha256,
+    debug_evidence,
+    import_exact,
+    input_echo_ids,
+    output_leaves,
+    require_clean_run,
 )
 
 NAME_HINT = "BillingInvoiceLookup"
@@ -177,11 +176,6 @@ RAW_INPUTS = ["2026-04872", "mcs-2026-04872"]
 FILTER_INPUT_NAMES = {"queryexpression", "where", "filter", "filtergroup", "filtervariables"}
 
 LIVE_RUN_DIR = Path("billing-invoice-lookup-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
-COMPLETED_STATUSES = {"Completed", "Successful"}
 
 # Worst-case wall clock, priced the way _shared/test_criterion_budgets.py
 # prices a run_debug(...) call inside a static loop: bpmn_live.debug_budget(180)
@@ -312,34 +306,6 @@ def input_id_for_name(root: ET.Element, name: str) -> str | None:
     return None
 
 
-def _leaves(value):
-    if isinstance(value, dict):
-        for v in value.values():
-            yield from _leaves(v)
-    elif isinstance(value, list):
-        for v in value:
-            yield from _leaves(v)
-    elif value is not None:
-        yield value
-
-
-def output_leaves(variables_data: object) -> list:
-    """Value leaves of the root scope's Globals AND every element's Outputs.
-
-    A root public output has read back null even when correctly mapped
-    (LIVE-ADDENDUM), so the search is not scoped to one declared output
-    variable -- mirrors check_jira_get_issue.py's collect_output_haystack, but
-    keeps each leaf's native type so a numeric expectation is not spuriously
-    matched by a digit embedded in an unrelated string (flow_check.assert_output_value's
-    own reason for exact numeric equality, not substring, on numerics).
-    """
-    leaves = list(_leaves(get_ci(root_scope(variables_data), "Globals", {})))
-    for scope in get_ci(variables_data, "Variables", []) or []:
-        for element in get_ci(scope, "Elements", []) or []:
-            leaves.extend(_leaves(get_ci(element, "Outputs", {})))
-    return leaves
-
-
 def assert_output_value(leaves: list, expected) -> bool:
     """F: flow_check.assert_output_value -- exact-equal numerics, case-insensitive substring strings."""
     for v in leaves:
@@ -366,38 +332,17 @@ def lookup() -> None:
         fail("process declares no public uipath:input variable for the invoice number")
     var_name = input_names[0]
 
-    project_dir = resolve_project(os.path.basename(bpmn_path), exclude_under=[LIVE_RUN_DIR])
-    original_hash = sha256(Path(bpmn_path))
+    process = root.find("bpmn:process", NS)
+    if process is None:
+        fail(f"{bpmn_path} has no bpmn:process")
+    echoes = input_echo_ids(process)
 
+    project_dir = resolve_project(os.path.basename(bpmn_path), exclude_under=[LIVE_RUN_DIR])
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "BillingInvoiceLookupLiveEval"
     try:
-        initialized = run_cli(["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT)
-        payload_data(initialized, "initialize ephemeral solution")
-        solution_files = sorted(solution_dir.glob("*.uipx"))
-        if len(solution_files) != 1:
-            raise CheckFailure(
-                f"solution init produced {len(solution_files)} .uipx files in "
-                f"{solution_dir}, expected exactly one"
-            )
-        solution_file = solution_files[0]
-        imported = run_cli(
-            [
-                "uip",
-                "solution",
-                "projects",
-                "import",
-                str(project_dir.resolve()),
-                "--solutionFile",
-                str(solution_file),
-            ],
-            timeout=SOLUTION_IMPORT_TIMEOUT,
+        imported_project = import_exact(
+            Path(bpmn_path), project_dir, LIVE_RUN_DIR / "BillingInvoiceLookupLiveEval"
         )
-        payload_data(imported, "import exact BPMN project")
-        imported_project = solution_dir / project_dir.name
-        if sha256(imported_project / os.path.basename(bpmn_path)) != original_hash:
-            raise CheckFailure("solution import changed the submitted BPMN bytes")
-        print(f"OK: imported exact artifact (sha256={original_hash})")
 
         for raw_value, label in CASES:
             inputs = {var_name: raw_value}
@@ -408,39 +353,13 @@ def lookup() -> None:
                 LIVE_RUN_DIR / f"debug-{label.replace(' ', '-')}.log",
                 timeout=180,
             )
-            final_status = get_ci(debug_data, "FinalStatus")
-            variables = run_cli(
-                ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-                timeout=VARIABLES_ALL_TIMEOUT,
-            )
-            _payload, variables_data = payload_data(variables, "variables-all")
-            incidents = run_cli(
-                ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-                timeout=INCIDENTS_TIMEOUT,
-            )
-            _payload, incidents_data = payload_data(incidents, "incidents")
-            incidents_list = incident_records(incidents_data)
+            evidence = debug_evidence(instance_id)
+            try:
+                require_clean_run(debug_data, evidence)
+            except CheckFailure as error:
+                raise CheckFailure(f"[{label}] {error}") from error
 
-            if final_status not in COMPLETED_STATUSES:
-                detail = []
-                faulted = [
-                    f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
-                    for item in get_ci(debug_data, "ElementExecutions", []) or []
-                    if isinstance(item, dict) and str(get_ci(item, "Status") or "").casefold() != "completed"
-                ]
-                if faulted:
-                    detail.append(f"non-completed elements: {faulted}")
-                if incidents_list:
-                    detail.append(f"incidents: {json.dumps(incidents_list)[:1500]}")
-                raise CheckFailure(
-                    f"[{label}] final status was {final_status!r}" + ("; " + "; ".join(detail) if detail else "")
-                )
-            if incidents_list is None:
-                raise CheckFailure(f"[{label}] incidents response has an unknown shape: {incidents_data!r}")
-            if incidents_list:
-                raise CheckFailure(f"[{label}] unexpected incidents: {incidents_list}")
-
-            leaves = output_leaves(variables_data)
+            leaves = output_leaves(evidence.variables, skip=echoes)
             if not assert_output_value(leaves, EXPECTED_INVOICE):
                 raise CheckFailure(f"[{label}] no output equals expected {EXPECTED_INVOICE!r}")
             if not assert_output_value(leaves, EXPECTED_LINE_COUNT):

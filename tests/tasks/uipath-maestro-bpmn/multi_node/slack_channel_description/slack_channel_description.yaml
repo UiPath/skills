@@ -25,7 +25,7 @@ tags: [uipath-maestro-bpmn, e2e, "lifecycle:generate", "shape:multi-node", conne
 run_limits:
   expected_turns: 45
   max_turns: 120
-  task_timeout: 1800
+  task_timeout: 2490
   turn_timeout: 1200
 
 sandbox:

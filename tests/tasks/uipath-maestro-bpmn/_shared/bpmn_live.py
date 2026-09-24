@@ -25,6 +25,8 @@ import math
 import re
 import subprocess
 import xml.etree.ElementTree as ET
+from collections.abc import Collection, Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -492,3 +494,188 @@ def run_debug(
             + f"; stderr tail: {(completed.stderr or '')[-1500:]}"
         )
     return debug_data, instance_id
+
+
+SOLUTION_INIT_TIMEOUT = 90
+SOLUTION_IMPORT_TIMEOUT = 180
+VARIABLES_ALL_TIMEOUT = 120
+INCIDENTS_TIMEOUT = 120
+
+# Sum of the unpriced CLI steps around one run_debug: init + import +
+# variables-all + incidents. A criterion timeout adds this to debug_budget().
+LIVE_OVERHEAD_SECONDS = (
+    SOLUTION_INIT_TIMEOUT + SOLUTION_IMPORT_TIMEOUT + VARIABLES_ALL_TIMEOUT + INCIDENTS_TIMEOUT
+)
+
+COMPLETED_STATUSES = frozenset({"Completed", "Successful"})
+
+
+def import_exact(bpmn_path: Path, project_dir: Path, solution_dir: Path) -> Path:
+    """Import the submitted project into a fresh solution and return the
+    imported project directory, failing if the imported .bpmn bytes differ."""
+
+    original_hash = sha256(bpmn_path)
+    solution_dir.parent.mkdir(parents=True, exist_ok=True)
+    initialized = run_cli(
+        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    )
+    payload_data(initialized, "initialize ephemeral solution")
+
+    solution_files = sorted(solution_dir.glob("*.uipx"))
+    if len(solution_files) != 1:
+        raise CheckFailure(
+            f"solution init produced {len(solution_files)} .uipx files in "
+            f"{solution_dir}, expected exactly one"
+        )
+
+    imported = run_cli(
+        [
+            "uip",
+            "solution",
+            "projects",
+            "import",
+            str(project_dir.resolve()),
+            "--solutionFile",
+            str(solution_files[0]),
+        ],
+        timeout=SOLUTION_IMPORT_TIMEOUT,
+    )
+    payload_data(imported, "import exact BPMN project")
+
+    imported_project = solution_dir / project_dir.name
+    if sha256(imported_project / bpmn_path.name) != original_hash:
+        raise CheckFailure("solution import changed the submitted BPMN bytes")
+    print(f"OK: imported exact artifact (sha256={original_hash})")
+    return imported_project
+
+
+@dataclass(frozen=True)
+class DebugEvidence:
+    variables: Any
+    variables_text: str
+    incidents: list[Any] | None
+    incidents_raw: Any
+
+
+def fetch_variables(instance_id: str) -> tuple[Any, str]:
+    """`debug-instance variables-all`: (data, raw stdout)."""
+
+    variables = run_cli(
+        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+        timeout=VARIABLES_ALL_TIMEOUT,
+    )
+    _payload, variables_data = payload_data(variables, "variables-all")
+    return variables_data, variables.stdout or ""
+
+
+def fetch_incidents(instance_id: str) -> tuple[list[Any] | None, Any]:
+    """`debug-instance incidents`: (records, raw data)."""
+
+    incidents = run_cli(
+        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
+        timeout=INCIDENTS_TIMEOUT,
+    )
+    _payload, incidents_data = payload_data(incidents, "incidents")
+    return incident_records(incidents_data), incidents_data
+
+
+def debug_evidence(instance_id: str) -> DebugEvidence:
+    """Variables then incidents. A grader with side effects calls the two
+    fetches itself, journaling between them."""
+
+    variables_data, variables_text = fetch_variables(instance_id)
+    incidents, incidents_data = fetch_incidents(instance_id)
+    return DebugEvidence(variables_data, variables_text, incidents, incidents_data)
+
+
+def require_clean_run(debug_data: Any, evidence: DebugEvidence) -> str:
+    """Raise unless the run completed with no incidents; return FinalStatus."""
+
+    final_status = get_ci(debug_data, "FinalStatus")
+    if final_status not in COMPLETED_STATUSES:
+        detail = []
+        faulted = [
+            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
+            for item in get_ci(debug_data, "ElementExecutions", []) or []
+            if isinstance(item, dict)
+            and str(get_ci(item, "Status") or "").casefold() != "completed"
+        ]
+        if faulted:
+            detail.append(f"non-completed elements: {faulted}")
+        if evidence.incidents:
+            detail.append(f"incidents: {json.dumps(evidence.incidents)[:1500]}")
+        raise CheckFailure(
+            f"final status was {final_status!r}"
+            + ("; " + "; ".join(detail) if detail else "")
+        )
+
+    if evidence.incidents is None:
+        raise CheckFailure(
+            f"incidents response has an unknown shape: {evidence.incidents_raw!r}"
+        )
+    if evidence.incidents:
+        raise CheckFailure(f"unexpected incidents: {evidence.incidents}")
+
+    print(f"OK: bpmn debug completed (FinalStatus={final_status}, no incidents)")
+    return final_status
+
+
+def value_leaves(value: Any) -> Iterator[Any]:
+    if isinstance(value, dict):
+        for item in value.values():
+            yield from value_leaves(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from value_leaves(item)
+    elif value is not None:
+        yield value
+
+
+def output_leaves(variables_data: Any, skip: Collection[str] = ()) -> list[Any]:
+    """Leaves of the root Globals and every element's Outputs, minus the
+    globals and elements named in `skip` (see :func:`input_echo_ids`)."""
+
+    skipped = {normalized_identifier(name) for name in skip}
+    globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
+    leaves: list[Any] = []
+    if isinstance(globals_, dict):
+        for name, value in globals_.items():
+            if normalized_identifier(name) in skipped:
+                continue
+            leaves.extend(value_leaves(value))
+
+    for scope in get_ci(variables_data, "Variables", []) or []:
+        for element in get_ci(scope, "Elements", []) or []:
+            if normalized_identifier(get_ci(element, "ElementId")) in skipped:
+                continue
+            leaves.extend(value_leaves(get_ci(element, "Outputs", {})))
+    return leaves
+
+
+def output_haystack(variables_data: Any, skip: Collection[str] = ()) -> str:
+    return "\n".join(str(v) for v in output_leaves(variables_data, skip)).lower()
+
+
+def input_echo_ids(process: ET.Element) -> set[str]:
+    """Where a process input shows up unchanged in variables-all: the
+    `uipath:input` ids and names, the variables a start event copies them
+    into verbatim, and the start events themselves.
+
+        <uipath:input id="input_Var_Amount" name="Amount" elementId="Start_1"/>
+        <uipath:output var="Var_Amount" source="=vars.input_Var_Amount"/>  # on Start_1
+        -> {"input_Var_Amount", "Amount", "Var_Amount", "Start_1"}
+    """
+
+    ids: set[str] = set()
+    for variables in process.iter(q(UIPATH_NS, "variables")):
+        for node in variables.iter(q(UIPATH_NS, "input")):
+            ids.update(v for v in (node.attrib.get("id"), node.attrib.get("name")) if v)
+
+    copies = {f"=vars.{identifier}" for identifier in ids}
+    for start in process.iter(q(BPMN_NS, "startEvent")):
+        if start.attrib.get("id"):
+            ids.add(start.attrib["id"])
+        for mapping in start.iter(q(UIPATH_NS, "output")):
+            if (mapping.attrib.get("source") or "").strip() in copies and mapping.attrib.get("var"):
+                ids.add(mapping.attrib["var"])
+    return ids

@@ -51,19 +51,17 @@ Assertion map (Flow -> BPMN):
                                     (`collect_outputs(payload)`) + a project-scoped
                                     regex scan of the raw debug payload
                                     (`get_last_debug_raw()`)
-                                    -> collect_candidate_keys(): value leaves of the
-                                       root scope's Globals AND every element's Outputs
-                                       in `debug-instance variables-all`, plus the same
-                                       project-scoped regex scan run over the raw
-                                       variables-all response text (the nearest BPMN
-                                       analog of Flow's "everything the debug call
-                                       returned" raw text)
+                                    -> collect_candidate_keys(): the same project-scoped
+                                       regex, narrowed to the Create-Issue element(s)'
+                                       own Outputs in `debug-instance variables-all`, so
+                                       no other CE issue key reaches the journal
   F check_jira_create_issue.py:62-63  no candidate keys -> fail
                                     -> same
   F check_jira_create_issue.py:66-77  tenant re-read via jira_is.get_issue(conn, key);
                                     first candidate whose `summary` equals the seed
                                     summary wins; confirmed key journaled for teardown
-                                    -> same logic, unchanged jira_is.py (task's own
+                                    -> same logic; `.created_keys` is rewritten to the
+                                       confirmed key only; jira_is.py (task's own
                                        `_setup/jira_is.py` copy, imported via the
                                        sandbox-mounted path since this checker lives in
                                        `_shared/`, not the task dir)
@@ -76,14 +74,13 @@ Assertion map (Flow -> BPMN):
                                        e2e/customer_escalation_triage/
                                        check_customer_escalation_behavior.py and
                                        check_jira_get_issue.py)
-  T                journal every candidate key BEFORE the tenant-confirmation loop,
-                    not only the one that matches (LIVE-ADDENDUM: "side-effect ids go
+  T                journal every candidate key BEFORE the status/incident checks and
+                    the tenant-confirmation loop (LIVE-ADDENDUM: "side-effect ids go
                     to a flat journal the moment they are visible") -- Flow's own
-                    script only journals the confirmed match, but a decoy issue
-                    created from a wrong body is still a real tenant record that must
-                    not leak just because its summary didn't match
-                                    -> `.created_keys` written right after candidate
-                                       collection, one key per line
+                    script only journals the confirmed match, but an issue created by
+                    a run that later faults is still a real tenant record
+                                    -> `.created_keys` written right after variables-all,
+                                       one key per line
   DROPPED          require_no_private_connector_values / require_sequence_integrity /
                     require_di_for_visible_elements / connection-binding checks --
                     not in Flow; the `bpmn validate` criterion covers structure
@@ -105,13 +102,13 @@ from _shared.bpmn_check import find_bpmn_file, resolve_project  # noqa: E402
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
+    DebugEvidence,
     connector_context,
-    get_ci,
-    incident_records,
-    payload_data,
-    root_scope,
-    run_cli,
-    sha256,
+    element_output_records,
+    fetch_incidents,
+    fetch_variables,
+    import_exact,
+    require_clean_run,
 )
 
 JIRA_KEY = "uipath-atlassian-jira"
@@ -120,15 +117,10 @@ GENERIC_OBJECT = "issue"
 GENERIC_CREATE_METHODS = {"POST"}
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 NAME_HINT = "JiraCreateIssue"
-ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
 SEED_LITERAL_FIELDS = ("project_key", "issuetype_id", "summary", "reporter_id")
 
 LIVE_RUN_DIR = Path("jira-create-issue-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
-COMPLETED_STATUSES = {"Completed", "Successful"}
+JOURNAL = Path(".created_keys")
 
 # Worst-case wall clock this checker can spend, priced the way
 # _shared/test_criterion_budgets.py prices a run_debug(...) call: the debug
@@ -165,17 +157,6 @@ def _import_jira_is():
     return jira_is
 
 
-def _leaves(value):
-    if isinstance(value, dict):
-        for v in value.values():
-            yield from _leaves(v)
-    elif isinstance(value, list):
-        for v in value:
-            yield from _leaves(v)
-    elif value is not None:
-        yield value
-
-
 def is_create_issue_node(node_name: str, object_name: str, method: str) -> bool:
     """Curated (`curated_create_issue`) OR generic (`issue` + POST) form."""
     if CREATE_OP_RE.search(object_name or "") or CREATE_OP_RE.search(node_name or ""):
@@ -207,20 +188,16 @@ def find_create_issue_nodes(root: ET.Element) -> list[ET.Element]:
 
 
 def collect_candidate_keys(
-    variables_data: object, raw_variables_text: str, project: str
+    variables_data: object, create_ids: tuple[str, ...], project: str
 ) -> list[str]:
-    """Clean output leaves (any depth) + a project-scoped regex scan of the raw
-    variables-all response text (covers a key buried in a nested response
-    blob) -- mirrors Flow's `collect_outputs(payload)` + `get_last_debug_raw()`
-    dual candidate collection.
-    """
-    leaves = list(_leaves(get_ci(root_scope(variables_data), "Globals", {})))
-    for scope in get_ci(variables_data, "Variables", []) or []:
-        for element in get_ci(scope, "Elements", []) or []:
-            leaves.extend(_leaves(get_ci(element, "Outputs", {})))
-    cands = [s for leaf in leaves for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
-    cands += re.findall(rf"\b{re.escape(project)}-\d+\b", raw_variables_text)
-    return list(dict.fromkeys(cands))  # de-dup, keep order
+    outputs = element_output_records(variables_data, create_ids)
+    cands = re.findall(rf"\b{re.escape(project)}-\d+\b", json.dumps(outputs, default=str))
+    return list(dict.fromkeys(cands))
+
+
+def _journal(keys: list[str]) -> None:
+    if keys:
+        JOURNAL.write_text("\n".join(keys) + "\n")
 
 
 def main() -> None:
@@ -256,97 +233,35 @@ def main() -> None:
     print("OK: bpmn references the seeded project_key/issuetype_id/summary/reporter_id")
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
-    original_hash = sha256(Path(bpmn_path))
-
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "JiraCreateIssueLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    imported_project = import_exact(
+        Path(bpmn_path), project_dir, LIVE_RUN_DIR / "JiraCreateIssueLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / os.path.basename(bpmn_path)) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
     debug_data, instance_id = bpmn_live.run_debug(
         imported_project, {}, LIVE_RUN_DIR / "debug.log"
     )
     print(f"OK: debug completed (instance {instance_id})")
 
-    final_status = get_ci(debug_data, "FinalStatus")
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
+    variables_data, variables_text = fetch_variables(instance_id)
+    create_ids = tuple(node.attrib["id"] for node in create_nodes if node.attrib.get("id"))
+    cands = collect_candidate_keys(variables_data, create_ids, project)
+    _journal(cands)
+
+    incidents, incidents_data = fetch_incidents(instance_id)
+    require_clean_run(
+        debug_data, DebugEvidence(variables_data, variables_text, incidents, incidents_data)
     )
-    _payload, variables_data = payload_data(variables, "variables-all")
 
-    incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=INCIDENTS_TIMEOUT,
-    )
-    _payload, incidents_data = payload_data(incidents, "incidents")
-    incidents_list = incident_records(incidents_data)
-
-    if final_status not in COMPLETED_STATUSES:
-        detail = []
-        faulted = [
-            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
-            for item in get_ci(debug_data, "ElementExecutions", []) or []
-            if isinstance(item, dict)
-            and str(get_ci(item, "Status") or "").casefold() != "completed"
-        ]
-        if faulted:
-            detail.append(f"non-completed elements: {faulted}")
-        if incidents_list:
-            detail.append(f"incidents: {json.dumps(incidents_list)[:1500]}")
-        raise CheckFailure(
-            f"final status was {final_status!r}"
-            + ("; " + "; ".join(detail) if detail else "")
-        )
-    if incidents_list is None:
-        raise CheckFailure(f"incidents response has an unknown shape: {incidents_data!r}")
-    if incidents_list:
-        raise CheckFailure(f"unexpected incidents: {incidents_list}")
-    print("OK: bpmn debug completed (FinalStatus=%s, no incidents)" % final_status)
-
-    cands = collect_candidate_keys(variables_data, variables.stdout or "", project)
     if not cands:
-        _fail(f"no issue key (e.g. {project}-123) in bpmn debug outputs")
+        _fail(f"no {project}-<n> issue key in the Create-Issue node outputs {list(create_ids)}")
     print(f"OK: candidate keys from debug: {cands}")
-
-    # Journal every candidate BEFORE the tenant read: a real issue may exist
-    # even if its summary doesn't end up matching below, and this journal is
-    # the only sweep that survives coder_eval SIGKILLing this process on the
-    # criterion timeout (LIVE-ADDENDUM: journal side-effect ids the moment
-    # they are visible).
-    Path(".created_keys").write_text("\n".join(cands) + "\n")
 
     jira_is = _import_jira_is()
     conn = jira_is.connection_id()
     for key in cands:
         fields = jira_is.get_issue(conn, key)
         if fields and fields.get("summary") == seed["summary"]:
+            JOURNAL.write_text(key + "\n")
             print(f"OK: Jira issue {key} exists with the seed summary")
             print("PASS: all JiraCreateIssue checks passed")
             return

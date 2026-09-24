@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """SlackWeatherPipeline (BPMN): structural + live checks.
 
-Ported from Flow `multi_node/slack_weather_pipeline/_shared/check_slack_weather_pipeline.py`
-(via `tests/tasks/uipath-maestro-flow/_shared/check_slack_weather_pipeline.py`):
+Ported from Flow `tests/tasks/uipath-maestro-flow/_shared/check_slack_weather_pipeline.py`:
 same scenario (a manual-start process reads the #office-bellevue Slack
 channel description, extracts the city, fetches weather for that city from
 open-meteo, and decides warm/cold), translated from a JSON node walk + inline
@@ -51,19 +50,12 @@ Assertion map (Flow → BPMN):
                                             incidents is empty
   F check_slack_weather_pipeline.py:31  assert_output_nonempty(payload, 'weatherVerdict')
                                           + lines 32-37 exactly one of ALLOWED_VERDICTS found
-                                          → collect_output_haystack(): value leaves of the root scope's
-                                            variables AND every element's Outputs in `debug-instance
-                                            variables-all` (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read
-                                            back null even when mapped correctly, so the search is not
-                                            scoped to one declared output variable -- LIVE-ADDENDUM's
-                                            translation rule for any Flow output-value assertion).
-                                            Widening from Flow's own name-scoped lookup carries no
-                                            practical false-positive risk here: the searched strings are
-                                            the full literal multi-word verdict phrases ('warm office
-                                            today' / 'cold office today'), not a loose substring, so
-                                            neither the Slack street-address text nor the raw Open-Meteo
-                                            JSON body (numeric fields only) can coincidentally match. The
-                                            exact-one-hit check is otherwise verbatim Flow logic.
+                                          → verdict_text(): the `weatherVerdict` root Global, resolved
+                                            by its declared output id then by name. Only when it reads
+                                            back null (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read back
+                                            null even when mapped correctly) does the search widen to
+                                            bpmn_live.output_haystack(). The exact-one-hit check is
+                                            verbatim Flow logic.
   I               locate/parse .bpmn (file exists, well-formed XML, project directory resolved)
                                           → bpmn_check.find_bpmn_file()/resolve_project()
   I               ephemeral solution init + `solution projects import` + sha256 pin of the imported
@@ -84,7 +76,6 @@ Assertion map (Flow → BPMN):
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -100,13 +91,15 @@ from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
     UIPATH_NS,
     connector_context,
+    debug_evidence,
     get_ci,
-    incident_records,
-    payload_data,
+    import_exact,
+    normalized_identifier,
+    output_haystack,
     q,
+    require_clean_run,
+    resolve_runtime_key,
     root_scope,
-    run_cli,
-    sha256,
 )
 
 SLACK_CONNECTOR_KEY = "uipath-salesforce-slack"
@@ -119,13 +112,9 @@ WEATHER_HINTS = ("open-meteo", "openmeteoapis")
 NAME_HINT = "SlackWeatherPipeline"
 
 ALLOWED_VERDICTS = ("warm office today", "cold office today")
+VERDICT_OUTPUT = "weatherVerdict"
 
 LIVE_RUN_DIR = Path("slack-weather-pipeline-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
-COMPLETED_STATUSES = {"Completed", "Successful"}
 
 # Worst-case wall clock this checker can spend, priced the way
 # _shared/test_criterion_budgets.py prices a run_debug(...) call: the debug
@@ -147,17 +136,6 @@ COMPLETED_STATUSES = {"Completed", "Successful"}
 
 def _fail(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
-
-
-def _leaves(value):
-    if isinstance(value, dict):
-        for v in value.values():
-            yield from _leaves(v)
-    elif isinstance(value, list):
-        for v in value:
-            yield from _leaves(v)
-    elif value is not None:
-        yield value
 
 
 def find_connector_nodes(root: ET.Element, connector_key: str) -> list[ET.Element]:
@@ -214,21 +192,30 @@ def find_weather_node(root: ET.Element) -> list[ET.Element]:
     return found
 
 
-def collect_output_haystack(variables_data: object) -> str:
-    """Value leaves of the root scope's Globals AND every element's Outputs.
+def verdict_identifiers(root: ET.Element) -> list[str]:
+    """Declared output id(s) named weatherVerdict, then the name itself."""
+    wanted = normalized_identifier(VERDICT_OUTPUT)
+    ids = [
+        node.attrib["id"]
+        for variables in root.iter(q(UIPATH_NS, "variables"))
+        for node in variables.findall(q(UIPATH_NS, "output"))
+        if node.attrib.get("id") and normalized_identifier(node.attrib.get("name", "")) == wanted
+    ]
+    return [*ids, VERDICT_OUTPUT]
 
-    A root public output has been observed to read back null even when
-    correctly mapped (LIVE-ADDENDUM), so the search is not scoped to one
-    declared output variable -- it mirrors Flow's own assert_output_nonempty()
-    widened per LIVE-ADDENDUM's translation rule for output-value assertions.
-    Element Outputs include a connector's nested `response` object, which
-    _leaves() flattens along with everything else.
-    """
-    leaves = list(_leaves(get_ci(root_scope(variables_data), "Globals", {})))
-    for scope in get_ci(variables_data, "Variables", []) or []:
-        for element in get_ci(scope, "Elements", []) or []:
-            leaves.extend(_leaves(get_ci(element, "Outputs", {})))
-    return "\n".join(str(v) for v in leaves).lower()
+
+def verdict_text(variables_data: object, identifiers: list[str]) -> str | None:
+    globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
+    if not isinstance(globals_, dict):
+        return None
+    for identifier in identifiers:
+        wanted = normalized_identifier(identifier)
+        if not any(normalized_identifier(key) == wanted for key in globals_):
+            continue
+        value = resolve_runtime_key(globals_, identifier, VERDICT_OUTPUT)
+        if value is not None:
+            return str(value).lower()
+    return None
 
 
 def main() -> None:
@@ -256,87 +243,30 @@ def main() -> None:
     print(f"OK: bpmn references an API node targeting open-meteo")
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
-    original_hash = sha256(Path(bpmn_path))
-
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "SlackWeatherPipelineLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    imported_project = import_exact(
+        Path(bpmn_path), project_dir, LIVE_RUN_DIR / "SlackWeatherPipelineLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / os.path.basename(bpmn_path)) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
     debug_data, instance_id = bpmn_live.run_debug(
         imported_project, {}, LIVE_RUN_DIR / "debug.log"
     )
     print(f"OK: debug completed (instance {instance_id})")
 
-    final_status = get_ci(debug_data, "FinalStatus")
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
-    )
-    _payload, variables_data = payload_data(variables, "variables-all")
+    evidence = debug_evidence(instance_id)
+    require_clean_run(debug_data, evidence)
 
-    incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=INCIDENTS_TIMEOUT,
-    )
-    _payload, incidents_data = payload_data(incidents, "incidents")
-    incidents_list = incident_records(incidents_data)
-
-    if final_status not in COMPLETED_STATUSES:
-        detail = []
-        faulted = [
-            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
-            for item in get_ci(debug_data, "ElementExecutions", []) or []
-            if isinstance(item, dict)
-            and str(get_ci(item, "Status") or "").casefold() != "completed"
-        ]
-        if faulted:
-            detail.append(f"non-completed elements: {faulted}")
-        if incidents_list:
-            detail.append(f"incidents: {json.dumps(incidents_list)[:1500]}")
-        raise CheckFailure(
-            f"final status was {final_status!r}"
-            + ("; " + "; ".join(detail) if detail else "")
-        )
-    if incidents_list is None:
-        raise CheckFailure(f"incidents response has an unknown shape: {incidents_data!r}")
-    if incidents_list:
-        raise CheckFailure(f"unexpected incidents: {incidents_list}")
-    print("OK: bpmn debug completed (FinalStatus=%s, no incidents)" % final_status)
-
-    haystack = collect_output_haystack(variables_data)
+    haystack = verdict_text(evidence.variables, verdict_identifiers(root))
+    source = VERDICT_OUTPUT
+    if haystack is None:
+        haystack = output_haystack(evidence.variables)
+        source = f"outputs ({VERDICT_OUTPUT} read back null)"
     hits = [v for v in ALLOWED_VERDICTS if v in haystack]
     if len(hits) != 1:
         found = "both verdicts" if len(hits) > 1 else "neither verdict"
         _fail(
-            f"outputs must contain exactly one of {list(ALLOWED_VERDICTS)}; "
-            f"found {found}\noutputs: {haystack[:1000]}"
+            f"{source} must contain exactly one of {list(ALLOWED_VERDICTS)}; "
+            f"found {found}\n{source}: {haystack[:1000]}"
         )
     print(f"OK: bpmn outputs carry {hits[0]!r}")
     print("PASS: all SlackWeatherPipeline checks passed")

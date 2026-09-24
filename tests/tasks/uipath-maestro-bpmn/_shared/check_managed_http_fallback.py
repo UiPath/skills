@@ -31,9 +31,9 @@ Assertion map (Flow -> BPMN):
                                                                                    translation table's "Managed HTTP"
                                                                                    row)
   I               locate/parse .bpmn                                        -> parse_bpmn(NAME_HINT)
-  T               curated OR generic connectorKey match for the native       -> is_native_connector_node(): matches on
-                  branch (BATCH1-ADDENDUM: classify by connectorKey, not       connectorKey alone, regardless of
-                  by objectName)                                               curated/generic objectName spelling
+  T               curated OR generic connectorKey match for the native       -> main(): connectorKey anywhere in the
+                  branch (BATCH1-ADDENDUM: classify by connectorKey, not       document, regardless of curated/generic
+                  by objectName)                                               objectName spelling
   T               generic HTTP connector (uipath-uipath-http) accepted as    -> is_managed_http_node() also accepts
                   an additional managed-HTTP wrapper form: query_params.yaml   Intsvc.ActivityExecution whose
                   prompt explicitly asks for "a managed HTTP fallback through   connectorKey == uipath-uipath-http,
@@ -122,12 +122,6 @@ FALLBACK_CHECKS: dict[str, dict[str, object]] = {
 }
 
 
-def is_native_connector_node(node: ET.Element, connector_key: str) -> bool:
-    if not has_type(node, ACTIVITY_TYPE):
-        return False
-    return context_value(node, "connectorKey").strip().lower() == connector_key.lower()
-
-
 def is_managed_http_node(node: ET.Element) -> bool:
     if any(has_type(node, token) for token in HTTP_TYPES):
         return True
@@ -143,7 +137,7 @@ def node_blob(node: ET.Element) -> str:
     return ET.tostring(node, encoding="unicode").lower()
 
 
-def require_all(haystack: str, needles: list[str], label: str) -> list[str]:
+def require_all(haystack: str, needles: list[str]) -> list[str]:
     return [needle for needle in needles if needle.lower() not in haystack]
 
 
@@ -181,7 +175,7 @@ def main() -> None:
     required = list(check["required"])  # type: ignore[arg-type]
     best_missing: list[str] | None = None
     for node in fallback_nodes:
-        missing = require_all(node_blob(node), required, label)
+        missing = require_all(node_blob(node), required)
         if not missing:
             print(f"OK: managed HTTP fallback has {check_name} evidence in {path}")
             return
