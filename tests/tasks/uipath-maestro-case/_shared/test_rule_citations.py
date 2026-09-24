@@ -27,10 +27,7 @@ TREES = rc.built_trees()
 # override files have their own code owner, so their fix ships in its own PR
 # (branch fix/studioweb-case-rule-numbers). strict=True: once that PR lands,
 # the tree passes, the xfail turns into a failure, and this entry must go.
-STALE_FLAVORS = {
-    "studioweb": "studioweb case overrides still cite Rules 23/12/6 -- fixed in "
-    "fix/studioweb-case-rule-numbers",
-}
+STALE_FLAVORS: dict[str, str] = {}
 VARIANTS = [
     pytest.param(v, marks=pytest.mark.xfail(strict=True, reason=STALE_FLAVORS[v]))
     if v in STALE_FLAVORS else v
