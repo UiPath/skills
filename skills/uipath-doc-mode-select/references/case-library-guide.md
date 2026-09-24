@@ -112,9 +112,14 @@ is judgment — so the split, not the harness, is the design. Define the procedu
 requirements first. Run spreadsheet manipulation and reconciliation in deterministic tools. Feed computed
 results plus evidence to the judgment step. Retain an audit trail. Fixed controls need no agent at all.
 
-**Negative example — observed failure.** A file-reading tool was used for everything, including
-calculations and oversized evidence, with no deterministic tools built. A rerun changed the same
-control's pass/fail result, and some evidence had never been evaluated at all.
+**Negative example — observed failure.** A single file-reading tool was used for everything, with no
+deterministic tools built, although the work involved heavy spreadsheet manipulation. That tool could
+not accept evidence above its size ceiling, putting roughly a tenth of the controls out of reach with no
+mitigation designed or recorded as a risk. Calculation logic sat with the model rather than in code, so
+numeric accuracy could not be verified. Controls had been bucketed easy, medium and complex, but only
+the easy bucket was ever designed and built. In a live demonstration the customer found unevaluated
+evidence in the output, asked for a re-run, and the same control returned a different result — which is
+what broke confidence in the solution, not any individual wrong answer.
 
 **Boundary.** Arithmetic is code, not reasoning. A small qualitative file inspection is AF2. An
 underspecified control or unread evidence produces "not evaluated", never "pass". Do not manufacture
@@ -391,9 +396,11 @@ answers most of them. Use the existing access-scoped corpus. Retrieve once for a
 inspect relevance, and answer with source references. Use a deterministic system-of-record tool for live
 transaction status.
 
-**Negative example — observed ingestion failure.** Legacy document formats were silently skipped during
-ingestion, producing "missing source" complaints. Repeated queries cannot recover content that never
-entered the index, and rebuilding the corpus per request wastes the ingestion work.
+**Negative example — observed ingestion failure.** Legacy office formats — `.doc`, `.xls`, `.ppt` —
+were silently dropped at ingestion. The symptom reached users as "missing source" complaints rather than
+as an ingestion error, so it was investigated as a retrieval problem first. The fix was a pre-processing
+conversion step before re-ingestion, not a change to search. Repeated queries cannot recover content that
+never entered the index, and rebuilding the corpus per request wastes the ingestion work.
 
 **Boundary.** Verify ingestion and freshness before interpreting an empty result. If a question requires
 dependent searches, that is PA. Live system data is not necessarily current in indexed documents.
