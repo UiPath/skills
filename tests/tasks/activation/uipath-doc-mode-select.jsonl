@@ -1,0 +1,30 @@
+{"id": "uipath-doc-mode-select-001", "prompt": "We need a fixed set of fields off incoming supplier forms. Which document-processing mode should this be before I start building?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-002", "prompt": "Should this workload use Extract or Summarize? The output is a written assessment with citations back to the source.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-003", "prompt": "Which mode do I want for a reusable knowledge corpus where staff ask bounded policy questions?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-004", "prompt": "I have a thousand-page bundle with several different document types inside one file. What should the first processing step be?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-005", "prompt": "Do I need the advanced agent harness for this, or is standard enough? The run is long and spans several stages.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-006", "prompt": "Is this a batch transform or an extract? I need an LLM-generated category column on every row of a spreadsheet.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-007", "prompt": "We picked semantic search and the answers keep missing related identifiers. Was that the wrong mode?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-008", "prompt": "Help me choose between Classify & Split and just running extraction over the whole packet.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-009", "prompt": "Which document processing approach fits: the corpus is per-run and thrown away after, and I need three values out of it.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-010", "prompt": "An agent was used to do arithmetic across evidence files and the results are not reproducible. What should this have been routed to?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-011", "prompt": "Before I author any node, which mode matches a workload whose deliverable is a complete review of a defined document set?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-012", "prompt": "We need to decide between a persistent index and a bounded file read for these attachments. Which one?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-013", "prompt": "Pick the cheapest document-processing mode that still satisfies a per-field review requirement.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-014", "prompt": "Which node should this be? Free-text notes on tens of thousands of records need to become structured charge lines.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-015", "prompt": "Our retrieval result was presented as complete coverage and it was not. What mode does an exhaustive claim actually require?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-016", "prompt": "I want to route a document workload to the right mode based on its output contract and evidence scope.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-017", "prompt": "Should the reference table be grounded in a search index or condensed into the prompt for per-row classification?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-018", "prompt": "Is Analyze files the right choice when production field extraction with review is required?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-019", "prompt": "Which document mode handles a mailbox where some messages carry the request in the body and some in one of several attachments?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-020", "prompt": "Recommend a mode: the tells we need are visual, like inconsistent fonts and misaligned fields, not text content.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-021", "prompt": "A long document was sent to the wrong processor and timed out. Which mode should it have gone to?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-022", "prompt": "What is the right mode when the corpus is reused across runs but each question needs several dependent lookups?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-023", "prompt": "Decide the processing mode for medical records where an adjudicator needs a written summary with a way back to the source.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-024", "prompt": "Which mode, and does the agent need memory or context for it?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-025", "prompt": "We are choosing between per-row LLM enrichment and a deterministic transform for a derived column. Which applies?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-026", "prompt": "Route this: repeated entity groups spread across a document, and results keep coming back truncated.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-027", "prompt": "Which document-processing mode should I select when the label carries an asymmetric error cost?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-028", "prompt": "Before anything is authored, what mode fits a workload that must prove no contrary clause exists?", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-029", "prompt": "Compare the modes for me and tell me which is cheapest for a bounded question over a standing document collection.", "expected_skill": "uipath-doc-mode-select"}
+{"id": "uipath-doc-mode-select-030", "prompt": "What mode handles unknown spreadsheet layouts where I need the sheet, header row and columns identified once?", "expected_skill": "uipath-doc-mode-select"}
