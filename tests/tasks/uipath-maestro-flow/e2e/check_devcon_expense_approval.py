@@ -16,11 +16,14 @@ from pathlib import Path
 SHARED_DIR = Path(__file__).resolve().parents[1] / "_shared"
 sys.path.insert(0, str(SHARED_DIR))
 try:
-    from flow_check import find_flow_file  # noqa: E402
+    from flow_check import find_flow_file, hitl_output_read_downstream  # noqa: E402
 except ModuleNotFoundError as exc:
     if exc.name != "flow_check":
         raise
-    from _shared.flow_check import find_flow_file  # noqa: E402
+    from _shared.flow_check import (  # noqa: E402
+        find_flow_file,
+        hitl_output_read_downstream,
+    )
 
 FLOW_GLOB = "ExpenseApproval*.flow"
 
@@ -137,14 +140,15 @@ def main() -> None:
             + ", ".join(f"outcome-{oid}" for oid in missing)
         )
 
-    scripts = [
-        str(n.get("inputs", {}).get("script", ""))
-        for n in nodes
-        if n.get("type") == "core.action.script"
-    ]
-    expected_output_path = f"$vars.{hitl_id}.output"
-    if not any(expected_output_path in script for script in scripts):
-        fail(f"Downstream script must read HITL output via {expected_output_path}")
+    # Direct script read of $vars.<hitl>.output, or a variableUpdates capture
+    # of it whose variable a script / end output then reads.
+    if not hitl_output_read_downstream(flow, nodes, hitl_id):
+        expected_output_path = f"$vars.{hitl_id}.output"
+        fail(
+            f"Downstream logic must read HITL output: a script reading {expected_output_path}, "
+            f"or a variableUpdates entry reading {expected_output_path} whose variable "
+            "a script or end output then reads"
+        )
 
     print(f"OK: HITL node {hitl_id} uses v1.0 schema, captures approval + reason, wires completed, and uses .output paths")
 

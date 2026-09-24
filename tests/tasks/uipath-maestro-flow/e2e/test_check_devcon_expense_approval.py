@@ -355,3 +355,66 @@ def test_rejects_single_submit_outcome_without_decision_capture(tmp_path: Path) 
 
     assert result.returncode != 0
     assert "manager decision" in result.stderr
+
+
+# Fixture: verbatim .flow from v2 run 2026-09-24_06-07-58,
+# skill-flow-e2e-devcon-expense-approval/00. Outcomes route to captureApproval /
+# captureRejection, whose variableUpdates capture
+# $vars.managerReview.output.{approved,rejectionReason} into decisionApproved /
+# decisionReason; logOutcome and the end node then read those variables. No
+# script reads $vars.managerReview.output directly.
+_VARIABLE_UPDATES_FIXTURE = (
+    Path(__file__).parent / "testdata" / "devcon_expense_hitl_variable_updates.flow"
+)
+
+
+def _variable_updates_fixture() -> dict[str, Any]:
+    return json.loads(_VARIABLE_UPDATES_FIXTURE.read_text(encoding="utf-8"))
+
+
+def _node(doc: dict[str, Any], node_id: str) -> dict[str, Any]:
+    return next(n for n in doc["nodes"] if n["id"] == node_id)
+
+
+def test_accepts_hitl_output_captured_via_variable_updates(tmp_path: Path) -> None:
+    _write_flow(tmp_path, _variable_updates_fixture())
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+    assert "OK: HITL node managerReview" in result.stdout
+
+
+def test_rejects_flow_that_never_reads_hitl_output(tmp_path: Path) -> None:
+    """Control: drop every variableUpdates capture of the HITL output. No
+    script reads it directly either, so the checker must still fail."""
+    doc = _variable_updates_fixture()
+    for entries in doc["variables"]["variableUpdates"].values():
+        entries[:] = [
+            e
+            for e in entries
+            if "$vars.managerReview.output" not in e["expression"]["expression"]
+        ]
+    _write_flow(tmp_path, doc)
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode != 0
+    assert "must read HITL output" in result.stderr
+
+
+def test_rejects_captured_variable_never_read_downstream(tmp_path: Path) -> None:
+    """The capture exists, but no script or end output reads the variable."""
+    doc = _variable_updates_fixture()
+    _node(doc, "logOutcome")["inputs"]["script"] = (
+        "return { loggedExpenseId: $vars.fetchExpense.output.sourceExpenseId };"
+    )
+    end_outputs = _node(doc, "end")["outputs"]
+    del end_outputs["decisionApproved"]
+    del end_outputs["decisionReason"]
+    _write_flow(tmp_path, doc)
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode != 0
+    assert "must read HITL output" in result.stderr

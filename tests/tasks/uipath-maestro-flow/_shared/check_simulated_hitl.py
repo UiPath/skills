@@ -5,11 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 from typing import Any
 
-from flow_check import find_flow_file
+from flow_check import find_flow_file, hitl_output_read_downstream
 
 
 def fail(message: str) -> None:
@@ -189,57 +188,16 @@ def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
     print("OK: expense HITL schema, routing, and downstream output access are correct")
 
 
-def reads_variable(text: str, name: str) -> bool:
-    """True when `text` reads `$vars.<name>` as a whole identifier."""
-    return re.search(rf"\$vars\.{re.escape(name)}(?![A-Za-z0-9_$])", text) is not None
-
-
-def downstream_reads(nodes: list[dict[str, Any]]) -> list[str]:
-    """Expressions that consume flow data: script bodies and end-node output mappings."""
-    reads: list[str] = []
-    for node in nodes:
-        if node.get("type") == "core.action.script":
-            reads.append(str((node.get("inputs") or {}).get("script", "")))
-        elif node.get("type") == "core.control.end":
-            for output in (node.get("outputs") or {}).values():
-                source = output.get("source") if isinstance(output, dict) else None
-                if isinstance(source, dict):
-                    reads.append(str(source.get("expression", "")))
-    return reads
-
-
 def assert_hitl_output_read_downstream(
     flow: dict[str, Any], nodes: list[dict[str, Any]], hitl_id: Any
 ) -> None:
-    """The HITL answer must reach downstream logic, in one of two shapes.
+    """Direct script read, or variableUpdates capture read downstream.
 
-    1. Direct: a script body reads `$vars.<hitl>.output`.
-    2. Captured: a `variables.variableUpdates` entry (on the HITL node or a
-       downstream arm step, as the SDK emits for `{ updates }`) assigns a flow
-       variable from `$vars.<hitl>.output`, and that variable is then read by a
-       script body or an end-node output mapping.
+    See ``flow_check.hitl_output_read_downstream`` for the rule.
     """
+    if hitl_output_read_downstream(flow, nodes, hitl_id):
+        return
     expected = f"$vars.{hitl_id}.output"
-    scripts = [
-        str((node.get("inputs") or {}).get("script", ""))
-        for node in nodes
-        if node.get("type") == "core.action.script"
-    ]
-    if any(expected in script for script in scripts):
-        return
-    updates = (flow.get("variables") or {}).get("variableUpdates") or {}
-    captured = {
-        str(entry.get("variableId"))
-        for entries in (updates.values() if isinstance(updates, dict) else [])
-        if isinstance(entries, list)
-        for entry in entries
-        if isinstance(entry, dict)
-        and entry.get("variableId")
-        and expected in str((entry.get("expression") or {}).get("expression", ""))
-    }
-    reads = downstream_reads(nodes)
-    if any(reads_variable(text, var) for var in captured for text in reads):
-        return
     fail(
         f"downstream logic must read HITL output: a script reading {expected}, "
         f"or a variableUpdates entry reading {expected} whose variable a script "
