@@ -482,6 +482,9 @@ written on that route too. The entries are named after the `connection:` and
 `folder:` labels your source already uses for this connector (for example
 `is-sandboxes`); a source that uses none gets `<connector's last segment>`
 (`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both.
+A label `prepare` cannot read without running the source (a computed value, or
+a step whose connector it cannot trace) also gets the default, and `prepare`
+prints a `bindings: could not read …` line naming the step.
 `prepare` refuses, before it writes anything, a source that gives one connector
 several labels, or gives two connectors the same connection label (one label
 binds one connection). The `next:` line prints the names it bound. `compile`
