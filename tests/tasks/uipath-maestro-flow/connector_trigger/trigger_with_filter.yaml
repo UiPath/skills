@@ -3,27 +3,33 @@
 # arm-agnostic artifact discovery.
 task_id: skill-flow-trigger-with-filter
 description: >
-  Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree.
-  Without this, UI drops the filter silently on first open.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, connector-trigger, uipath-microsoft-outlook365, filter, ipe]
+  Verifies an Outlook email-received trigger's filter lands in the emitted
+  `.flow` in BOTH encodings the platform reads: the structured tree Studio Web
+  renders (`essentialConfiguration.filter` — without it the UI drops the filter
+  on first open) and the runtime `filterExpression` the subscription matches
+  with. Graded on the `.flow`, which both authoring loops emit; the earlier
+  version graded a hand-written `node configure --detail` input, which only the
+  CLI loop ever produces.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector-trigger, uipath-microsoft-outlook365, filter, ipe]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 run_limits:
-  expected_turns: 7
+  expected_turns: 40
+  turn_timeout: 1200
 
 reference:
-  directory: .
+  directory: ..
 
 initial_prompt: |
-  You are authoring a UiPath Flow triggered by an Outlook email whose subject contains "good day" and sent from
-  abc@xyz.com.
-  Do NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure
-  the trigger against a live connection.
-  Instead, write the exact connector-trigger detail object to `trigger_detail.json`.
-  It must contain the structured filter tree that configures this trigger.
-  The file itself is the `--detail` value: put `filter` at the top level, next
-  to fields such as `connectionId` and `folderKey`. Do not wrap that value in
-  an outer `detail`, `inputs`, or node-descriptor object.
-  Use placeholders for any connection/folder/event ids you cannot resolve offline.
+  Create a new Flow project called "GoodDayMailTrigger" that starts when an
+  email arrives in the Outlook Inbox whose subject contains "good day" and that
+  was sent from abc@xyz.com. Use the Outlook connection in the
+  Shared/uipath-maestro-flow folder. Validate the final flow file.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -36,17 +42,42 @@ initial_prompt: |
   up; only then stop on that field rather than inventing a value. Record every
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-microsoft-outlook365=uipath-maestro-flow'
+    timeout: 120
+
 success_criteria:
-  # `check_trigger_filter.py` locates trigger_detail.json (root or nested in the
-  # flow project dir) and asserts it is the --detail object: valid JSON, no
-  # top-level filterExpression (MST-8802 guard), and a `filter` tree as a
-  # TOP-LEVEL key (numeric groupOperator + non-empty filters) with at least one
-  # leaf referencing `subject` via the PascalCase `Contains` operator. A filter
-  # wrapped under detail/inputs fails — that is not the --detail object.
+  # All criteria read the emitted GoodDayMailTrigger.flow, so either authoring
+  # loop can pass. Tree and expression are graded separately: each has its own
+  # reader (designer vs runtime), and dropping either one is a silent failure.
   - type: run_command
-    description: "trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression"
-    command: "python3 $REFERENCE_DIR/check_trigger_filter.py"
-    timeout: 10
+    description: "Flow has an Outlook email-received trigger node"
+    command: "python3 $REFERENCE_DIR/connector_trigger/check_trigger_filter.py node"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Trigger's structured filter tree ANDs subject Contains 'good day' with sender Equals abc@xyz.com"
+    command: "python3 $REFERENCE_DIR/connector_trigger/check_trigger_filter.py tree"
+    timeout: 30
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Trigger's runtime filterExpression carries both clauses, ANDed"
+    command: "python3 $REFERENCE_DIR/connector_trigger/check_trigger_filter.py expression"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed flow validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
