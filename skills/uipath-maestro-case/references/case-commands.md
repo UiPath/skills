@@ -48,7 +48,9 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 ## uip maestro case init
 
-Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
+> **Run this from inside the solution directory (SKILL.md Rule 24).** `cd <SolutionDir>` first. Run outside any solution and it auto-scaffolds `<ProjectName>Solution/` around the project.
+
+**The standard way to create the project (SKILL.md Rule 24).** Scaffolds a Case project with the 6 boilerplate files, including `project.uiproj`, and registers it in the parent `.uipx`. The T01 direct-JSON path in [plugins/case/impl-json.md](plugins/case/impl-json.md) writes whichever files it did not seed, and the whole scaffold by hand when `case init` is unavailable.
 
 <!--skill-flavor:case-init-command:start-->
 ```bash
@@ -65,7 +67,7 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 <!--skill-flavor:cd-mandatory-note:end-->
 
 <!--skill-flavor:case-init-semantics:start-->
-`case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution projects add` step — see `implementation.md` § Step 6.
+`case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). After `case init` seeds the project, the case plugin (`plugins/case/impl-json.md`) writes only the scaffold files it did not seed — see `implementation.md` § Step 6.
 <!--skill-flavor:case-init-semantics:end-->
 
 ---
@@ -75,7 +77,7 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 
 Register a project with an existing solution. Used in two scenarios in this skill:
 
-1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
+1. **`case init` unavailable** — when the case plugin (T01 in `impl-json.md`) wrote `project.uiproj` by hand, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
 2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
 
 ```bash
@@ -170,7 +172,7 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 
 > **Read the produced filename from the response `Data.Packages`** (or list `<output-path>/`) — do not construct it by hand.
 
-> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 14).
+> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 15).
 
 > **Does NOT compile the case BPMN.** It bundles `caseplan.json.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
 
@@ -228,11 +230,21 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 
 Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` fallback checks structure only, so conditions/SLA remain covered by authoritative full validation in Phase 4.
 
+### Which profile in which phase
+
+Section-end validates in Phases 2–3 use the plain profile — a half-built plan fails strict by design. The Phase 3 exit and every Phase 4 validate carry `--strict --sdd sdd.md --output json`, and no plain-profile result after Phase 3 entry is ever quoted as a close: a `Valid` without `"Profile": "strict"` does not close the build (SKILL.md Rule 7).
+
+**Run the strict validate alone — never chained with another validate in one command.** Two response envelopes on one stdout get read as the first one, so the second result is silently discarded.
+
+### Version guard — `--strict` / `--sdd` require CLI 1.202
+
+Fall back to plain `validate` only when the response is `invalid_argument` naming `--strict` or `--sdd` as an unknown option. Exit 3 alone is insufficient, and a strict *failure* is never a reason to drop the flags. On fallback, record `strict profile unavailable on CLI <version>` in `build-issues.md` and in the completion report, and run [implementation.md § Step 12](implementation.md#step-12--end-of-phase-3-validator-pass) Checks 1–15 by hand.
+
 ---
 
 ## uip maestro case format
 
-Rewrite `caseplan.json` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 13).
+Rewrite `caseplan.json` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 14).
 
 ```bash
 uip maestro case format <file> --output json
@@ -255,6 +267,28 @@ uip maestro case bindings sync <caseplan.json> --output json
 ```
 
 Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`, `Data.ConnectionCount`. `ResourceCount: 0` is still `Result: Success` — an empty sidecar is a faithful derivation of a plan that binds nothing, so the gate is `validate --strict` (`STRICT_BINDINGS_ABSENT`), not the sync result. See [bindings-v2-sync.md](bindings-v2-sync.md).
+
+---
+
+## uip maestro case splice
+
+Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity` and `wait-for-connector` tasks; never hand-author them.
+
+```bash
+uip maestro case splice <caseplan.json> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \
+  --connection-id <connection-uuid> [--out <file>] --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--task-id <id>` | **(required)** the task's `id` from `nodes[].data.tasks[][].id` |
+| `--spec <file>` | **(required)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
+| `--connection-id <id>` | **(required)** the connection the spec was fetched for; root bindings are keyed on it and reused when the pair already exists |
+| `--folder-key <key>` | Omit it. Splice reads `Data.Connection.FolderKey` from the `--spec` file itself; a value that disagrees with the spec is refused (exit 1, nothing written). Never copy a folder key from another task's spec |
+| `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks; mutually independent of `--spec` |
+| `--out <file>` | write elsewhere instead of in place |
+
+Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` is refused — the message names both ids and no file is written.
 
 ---
 

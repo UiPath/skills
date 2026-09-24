@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Event-trigger placeholder fallback grader (Critical Rule 8).
+"""Event-trigger placeholder fallback grader (Critical Rule 9).
 
 The sdd.md declares a case whose START is an EVENT trigger on a connector that
-cannot be resolved against the registry. Per Rule 8 the skill must write a
+cannot be resolved against the registry. Per Rule 9 the skill must write a
 PLACEHOLDER event trigger rather than fabricate connector IDs. This grader
 asserts the placeholder shape and its sibling-file coupling:
 
@@ -64,7 +64,7 @@ def main():
     if extra:
         _fail(
             f"placeholder event trigger data.inputs must carry ONLY 'serviceType'; "
-            f"found extra keys {extra} (Rule 8 — no fabricated connector config)"
+            f"found extra keys {extra} (Rule 9 — no fabricated connector config)"
         )
 
     # 3. No trigger edge.
