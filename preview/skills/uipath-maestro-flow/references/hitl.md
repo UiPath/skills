@@ -108,6 +108,10 @@ of the return having to work out which arm ran.
   `Reject` arm that runs `rej`, the arm would end on two paths (the `Approve`
   outcome edge and `rej`), and `check` refuses that too
   (HITL_FAN_OUT_INTO_JOIN). Write `a.stepSwitch('review', …).step('record', …)`.
+  That `.stepSwitch` also needs an arm for every outcome, and no arm may end in
+  `.return()`: either one sends that outcome's path to an End inside the arm,
+  so the join waits forever for the arm's other path, and `check` refuses it
+  (HITL_END_OUTCOME_IN_PARALLEL). Put the `.return()` after the `.parallel()`.
 
   The action-app and document-validation variants are different: their outcomes
   live in the app, `completed` is the only handle the designer draws for them,
@@ -125,7 +129,9 @@ of the return having to work out which arm ran.
   stalls the run when the reviewer picks it (`check` warns
   HITL_OUTCOME_UNROUTED). With `.stepSwitch` it compiles to an End instead, so
   the run finishes rather than hanging — but finishes without the flow's declared
-  outputs, which STEP_SWITCH_EXIT_UNROUTED says out loud. `action: 'End'` changes
+  outputs, which STEP_SWITCH_EXIT_UNROUTED says out loud. Inside a `.parallel()`
+  arm that End would hang the join instead, so there it is refused
+  (HITL_END_OUTCOME_IN_PARALLEL). `action: 'End'` changes
   what happens on that outcome (the run ends instead of stalling), not whether
   its handle needs an edge.
 
