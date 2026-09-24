@@ -275,20 +275,20 @@ Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`,
 Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity` and `wait-for-connector` tasks; never hand-author them.
 
 ```bash
-uip maestro case splice <caseplan.json> --node <taskId> --spec tasks/spec-cache.<elementId>.json \
+uip maestro case splice <caseplan.json> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \
   --connection-id <connection-uuid> [--folder-key <folder-key>] [--out <file>] --output json
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--node <id>` | **(required)** the task's `id` from `nodes[].data.tasks[][].id` |
+| `--task-id <id>` | **(required)** the task's `id` from `nodes[].data.tasks[][].id` |
 | `--spec <file>` | **(required)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
 | `--connection-id <id>` | **(required)** the connection the spec was fetched for; root bindings are keyed on it and reused when the pair already exists |
 | `--folder-key <key>` | `Data.Connection.FolderKey` from the spec. Omit only when it is `null`; a folder-key binding without a value is what `--strict` reports as `STRICT_CONNECTION_FOLDER_KEY_NO_DEFAULT` |
 | `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks; mutually independent of `--spec` |
 | `--out <file>` | write elsewhere instead of in place |
 
-Output: `Code: CaseSplice` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` is refused — the message names both ids and no file is written.
+Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` is refused — the message names both ids and no file is written.
 
 ---
 

@@ -169,7 +169,7 @@ Append the task to the target stage's `data.tasks` structure using `activation-m
 
 ```bash
 uip maestro case splice "<caseplan.json>" \
-  --node "<taskId>" \
+  --task-id "<taskId>" \
   --spec "tasks/spec-cache.<elementId>.json" \
   --connection-id "<connection-id from registry-resolved.json>" \
   --folder-key "<.Data.Connection.FolderKey from the spec — omit the flag only when it is null>" \
