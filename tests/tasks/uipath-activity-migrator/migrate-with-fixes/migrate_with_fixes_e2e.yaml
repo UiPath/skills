@@ -211,8 +211,8 @@ success_criteria:
           "<k> annotations rewritten to Verified healthy" belongs to the block
           and is not a stray list.
         - A "Next steps" block with at most three short lines belongs to the
-          contract. So does a "Runtime check" block, though this run declines
-          the check.
+          contract. A "Runtime check" block appears only when the user agreed
+          to a run; this run declines it, so its absence is correct.
         - The report is those blocks and nothing else. Tolerated: one short
           lead-in line before the heading and one short closing line after
           the last block, when each only restates what the report already
