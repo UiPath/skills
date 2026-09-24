@@ -78,6 +78,11 @@ pre_run:
                          capture_output=True, text=True)
       if r.returncode != 0:
           fail("this CLI has no 'uip tm executions delete'")
+      r = subprocess.run(["uip", "tm", "executions", "set-reporting-date", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions set-reporting-date' - it ships "
+               "in a different commit from create/finish and delete/cancel")
 
       # 1. test set — create if absent, never delete
       ts = by_name("set.find", "testsets", SET)
@@ -167,6 +172,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent started a log, which is what makes the open run closable at all"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\\s+\\S)uip\\s+tm\\s+testcaselog\\s+start\\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent booked the run to the requested day (`executions set-reporting-date --reporting-date 2026-09-21`)"
     tool_name: "Bash"
     command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--reporting-date\s+2026-09-21)uip\s+tm\s+executions?\s+set-reporting-date\b'
@@ -176,6 +189,40 @@ success_criteria:
 
   # The command returns the re-read record, so the stored date is already in
   # hand. Re-reading is fine; inventing the confirmation is not.
+  # The booking criterion above matches the command, not the outcome: on this
+  # fixture 'executions finish' is refused (no log started, so ExecutionStart is
+  # null) and set-reporting-date then 404s, yet both patterns still match. This
+  # is the only criterion that fails when nothing was actually booked.
+  - type: run_command
+    description: "Test Manager really stored 2026-09-21 as the run's reporting date"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-REPORT-SET')
+      sid = next((x['Id'] for x in (sets.get('Data') or [])
+                  if x.get('Name') == 'EVFX-REPORT-SET'), None)
+      assert sid, 'EVFX-REPORT-SET not found'
+      runs = (uip('tm','executions','list','--project-key','CLAIM',
+                  '--test-set-id',sid,'--limit','100').get('Data') or [])
+      assert runs, 'no execution on EVFX-REPORT-SET'
+      latest = max(runs, key=lambda r: r.get('Created') or '')
+      st = uip('tm','executions','get-stats','--execution-id',latest['Id'],
+               '--project-key','CLAIM').get('Data') or {}
+      rd = (st.get('ReportingDate') or '')
+      assert rd.startswith('2026-09-21'), f'expected 2026-09-21, stored {rd!r}'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: command_not_executed
     description: "Agent did not reach past the CLI to confirm the stored date"
     tool_name: "Bash"

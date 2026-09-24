@@ -203,21 +203,34 @@ success_criteria:
   - type: run_command
     description: "The run Test Manager stored really holds 3 results: 2 passed, 1 failed"
     command: |
-      uip tm executions list --project-key CLAIM --output json | python3 -c "
+      python3 -c "
       import json, subprocess, sys
-      d = json.load(sys.stdin)
-      runs = [r for r in (d.get('Data') or []) if r.get('Name')]
-      assert runs, 'no executions found in CLAIM'
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      # Scoped to this task's own set. CLAIM is shared by eleven tasks and
+      # 'executions list' sends no orderBy, so 'the newest run in the project'
+      # would read a sibling task's execution.
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-MANUAL-SET')
+      sid = next((x['Id'] for x in (sets.get('Data') or [])
+                  if x.get('Name') == 'EVFX-MANUAL-SET'), None)
+      assert sid, 'EVFX-MANUAL-SET not found'
+      runs = (uip('tm','executions','list','--project-key','CLAIM',
+                  '--test-set-id',sid,'--limit','100').get('Data') or [])
+      assert runs, 'no execution on EVFX-MANUAL-SET'
+      # pre_run deletes prior runs, so the set holds exactly the one under test
       latest = max(runs, key=lambda r: r.get('Created') or '')
-      out = subprocess.run(['uip','tm','executions','get-stats','--execution-id',
-                            latest['Id'],'--project-key','CLAIM','--output','json'],
-                           capture_output=True, text=True).stdout
-      st = json.loads(out[out.index('{'):]).get('Data') or {}
-      got = (st.get('Passed'), st.get('Failed'), st.get('TestCasesCount') or st.get('Total'))
+      st = uip('tm','executions','get-stats','--execution-id',latest['Id'],
+               '--project-key','CLAIM').get('Data') or {}
+      got = {k: st.get(k) for k in ('Passed','Failed','None')}
       assert st.get('Passed') == 2, f'expected Passed=2, got {got}'
       assert st.get('Failed') == 1, f'expected Failed=1, got {got}'
       "
-    timeout: 60
+    timeout: 120
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
