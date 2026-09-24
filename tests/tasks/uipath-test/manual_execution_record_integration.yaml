@@ -222,15 +222,14 @@ success_criteria:
       runs = (uip('tm','executions','list','--project-key','CLAIM',
                   '--test-set-id',sid,'--limit','100').get('Data') or [])
       assert runs, 'no execution on EVFX-MANUAL-SET'
-      # pre_run deletes prior runs, so the set holds exactly the one under test
-      latest = max(runs, key=lambda r: r.get('Created') or '')
-      st = uip('tm','executions','get-stats','--execution-id',latest['Id'],
-               '--project-key','CLAIM').get('Data') or {}
+      # Created is a millisecond ISO-8601 stamp, so this is a real recency pick
+      # even if the agent opened more than one run.
+      st = max(runs, key=lambda r: r.get('Created') or '')
       got = {k: st.get(k) for k in ('Passed','Failed','None')}
       assert st.get('Passed') == 2, f'expected Passed=2, got {got}'
       assert st.get('Failed') == 1, f'expected Failed=1, got {got}'
       "
-    timeout: 120
+    timeout: 90
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

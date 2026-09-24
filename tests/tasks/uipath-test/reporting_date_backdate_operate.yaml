@@ -15,7 +15,7 @@ description: >
 
   The prompt names the day and the test set and nothing else; the precondition,
   the closing route and `--output json` are all left to the skill.
-tags: [uipath-test, operate, mode:operate, lifecycle:setup, feature:execution]
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:execution]
 
 run_limits:
   expected_turns: 18
@@ -134,8 +134,7 @@ pre_run:
 
 initial_prompt: |
   The run on our "EVFX-REPORT-SET" test set in the CLAIM project (Test Manager)
-  landed after yesterday's reporting cut-off, so it is being counted against
-  today. Finance needs it booked to 2026-09-21 instead.
+  landed after the reporting cut-off, so it is being counted against today. Finance needs it booked to 2026-09-21 instead.
 
   Please get that run booked to 2026-09-21 and confirm the date Test Manager
   ended up storing. No need to check back with me.
@@ -174,7 +173,7 @@ success_criteria:
   - type: command_executed
     description: "Agent started a log, which is what makes the open run closable at all"
     tool_name: "Bash"
-    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\\s+\\S)uip\\s+tm\\s+testcaselog\\s+start\\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)uip\s+tm\s+testcaselog\s+start\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -213,12 +212,10 @@ success_criteria:
                   '--test-set-id',sid,'--limit','100').get('Data') or [])
       assert runs, 'no execution on EVFX-REPORT-SET'
       latest = max(runs, key=lambda r: r.get('Created') or '')
-      st = uip('tm','executions','get-stats','--execution-id',latest['Id'],
-               '--project-key','CLAIM').get('Data') or {}
-      rd = (st.get('ReportingDate') or '')
+      rd = (latest.get('ReportingDate') or '')
       assert rd.startswith('2026-09-21'), f'expected 2026-09-21, stored {rd!r}'
       "
-    timeout: 120
+    timeout: 90
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
