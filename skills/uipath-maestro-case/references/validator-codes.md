@@ -30,7 +30,7 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 
 ### Check 11 — container placement
 
-. **Container placement is the skill's check, not the CLI's:** the plan does not record which container each field belongs to, so populate exactly the envelope entries whose `CaseShape.Inputs[].Body` is non-empty in the cached `case spec` response (`tasks/spec-cache*.json`), copy that `Body` object field-for-field, and leave the other containers `{}` — for Outlook `Get Email List` the spec puts `parentFolderId`, `limit` and `filter` in `body` and leaves `queryParameters` empty; splitting or moving them passes every CLI rule and fails at runtime. `CASE_MGMT_BINDING_KEY_SHARED` (an `agent`/`process`/`rpa` task pair sharing one `resourceKey` — three resources cannot be one binding; two `action` tasks on one app is legitimate reuse) is Check 11
+**Container placement is the skill's check, not the CLI's:** the plan does not record which container each field belongs to, so populate exactly the envelope entries whose `CaseShape.Inputs[].Body` is non-empty in the cached `case spec` response (`tasks/spec-cache*.json`), copy that `Body` object field-for-field, and leave the other containers `{}` — for Outlook `Get Email List` the spec puts `parentFolderId`, `limit` and `filter` in `body` and leaves `queryParameters` empty; splitting or moving them passes every CLI rule and fails at runtime. `CASE_MGMT_BINDING_KEY_SHARED` (an `agent`/`process`/`rpa` task pair sharing one `resourceKey` — three resources cannot be one binding; two `action` tasks on one app is legitimate reuse) is Check 11
 
 ### Check 11 — binding keys
 
