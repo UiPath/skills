@@ -76,6 +76,8 @@ site
 # coder_eval test run artifacts
 tests/reports/
 tests/runs/
+# Agent-visible plugin root, restaged before every run by tests/scripts/stage_plugin_root.py
+.plugin-root/
 tmp/
 c/
 
