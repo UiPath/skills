@@ -97,6 +97,18 @@
           }
         ]
       }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo `# <#` >/dev/null\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true
+          }
+        ]
+      }
     ]
   }
 }

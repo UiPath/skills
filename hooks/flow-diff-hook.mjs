@@ -7,9 +7,10 @@
  *
  * Agent-agnostic protocol (v2): each adapter below maps the agent's native hook
  * payload onto `write` (a reviewed file changed, with hashes of its new content as
- * the attestation), `turn.end`, and `prompt` (a new prompt: end a turn that never
- * got its stop event, e.g. after an interrupt). The extension only credits the
- * agent with writes whose content matches an attestation.
+ * the attestation), `turn.end`, `prompt` (a new prompt: end a turn that never got
+ * its stop event, e.g. after an interrupt), and `proposal` (an edit awaits approval:
+ * the turn must report its end even if the edit is rejected and nothing is written).
+ * The extension only credits the agent with writes whose content matches an attestation.
  *
  * Contract — never gets in the agent's way:
  *   - Report-only: prints nothing, returns no decision, always exits 0.
@@ -60,6 +61,8 @@ const ADAPTERS = {
         return { event: 'turn.end', sessionId: p.session_id };
       case 'UserPromptSubmit':
         return { event: 'prompt', sessionId: p.session_id };
+      case 'PermissionRequest':
+        return { event: 'proposal', sessionId: p.session_id, files: [p.tool_input?.file_path] };
       case 'PostToolUse':
         // A Write carries the exact content it wrote; Edit/MultiEdit only a patch.
         return {
@@ -304,10 +307,35 @@ async function endTurn(base, marker) {
   await Promise.all(locks.map((lock) => send(lock, { ...base, event: 'turn.end' })));
 }
 
-async function reportWrites(base, marker, payload, report) {
+/** Remembers which windows a pending proposal concerns, so `Stop` reaches them even if nothing is written. */
+function recordProposal(marker, payload, report) {
+  const files = reviewedFiles(payload, report);
+  if (files.length === 0) {
+    return;
+  }
+  const locks = liveLocks();
+  const windows = new Set(readMarker(marker));
+  for (const file of files) {
+    for (const lock of locksFor(locks, file)) {
+      windows.add(lock.file);
+    }
+  }
+  if (windows.size > 0) {
+    writeMarker(marker, [...windows]);
+  }
+}
+
+function reviewedFiles(payload, report) {
   const cwd = typeof payload.cwd === 'string' ? payload.cwd : process.cwd();
-  const files = (report.files ?? []).filter((file) => typeof file === 'string').map((file) => path.resolve(cwd, file));
-  if (!files.some((file) => REVIEWABLE_EXTENSIONS.some((extension) => file.endsWith(extension)))) {
+  return (report.files ?? [])
+    .filter((file) => typeof file === 'string')
+    .map((file) => path.resolve(cwd, file))
+    .filter((file) => REVIEWABLE_EXTENSIONS.some((extension) => file.endsWith(extension)));
+}
+
+async function reportWrites(base, marker, payload, report) {
+  const files = reviewedFiles(payload, report);
+  if (files.length === 0) {
     return;
   }
   const locks = liveLocks();
@@ -374,6 +402,14 @@ async function main() {
     // A new prompt ends the previous turn only if it never got its stop event.
     if (fs.existsSync(marker)) {
       await endTurn(base, marker);
+    }
+    return;
+  }
+  if (report.event === 'proposal') {
+    try {
+      recordProposal(marker, payload, report);
+    } catch {
+      // No marker: a rejected proposal's canvas diff closes at the next write or turn instead.
     }
     return;
   }
