@@ -195,19 +195,35 @@ success_criteria:
     include_dialog: false
     include_agent_output: true
     prompt: |
-      Grade the agent's final message against this report contract:
+      Grade only the agent's last [ASSISTANT] message. A [RESULT - ...] block
+      after it repeats that message verbatim and is harness output: ignore it,
+      it is not a duplicated report.
+
+      Report contract:
         - It opens with a heading "Migration result: <status>" followed by ONE
           line with counts of activities migrated, left classic and needing
           attention, the build result, the output folder, and the UIAutomation
-          version change.
+          version change. A "Full list: ... · Tool report: ..." line may follow.
         - Needs-attention items are grouped by reason and by file; activities
           left classic appear only as a count, never as a list.
-        - A "Fixes applied" block lists what the post-migration fix changed.
+        - A "Fixes applied (<F>)" block lists what the post-migration fix
+          changed, one line per fix. <F> counts the fixes only; one extra line
+          "<k> annotations rewritten to Verified healthy" belongs to the block
+          and is not a stray list.
+        - A "Next steps" block with at most three short lines belongs to the
+          contract. So does a "Runtime check" block, though this run declines
+          the check.
+        - The report is those blocks and nothing else. Tolerated: one short
+          lead-in line before the heading and one short closing line after
+          the last block, when each only restates what the report already
+          says. Padding is anything more: a second line before or after, any
+          sentence between blocks, or a line that adds detail the rules below
+          forbid.
         - There is no table of what changed, no description of migration
           mechanics, no speculation about runtime behaviour, and no lines
           about checks that found nothing.
-      Score 1.0 when every point holds, 0.7 when the shape holds but one
-      paragraph of padding or one stray list is present, 0.3 when the counts
-      line is missing or activities are listed one by one, 0.0 when the
-      message is free prose with no status line.
+      Score 1.0 when every point holds, 0.7 when the shape holds but padding
+      sentences or one stray list are present, 0.3 when the counts line is
+      missing or activities are listed one by one, 0.0 when the message is
+      free prose with no status line.
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
