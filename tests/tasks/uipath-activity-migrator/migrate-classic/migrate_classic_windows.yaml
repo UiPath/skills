@@ -23,6 +23,10 @@ sandbox:
     - type: template_dir
       path: fixture
 
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
 initial_prompt: |
   Migrate the UiPath project in ./ConsentBannerProbe with the Activity
   Migrator. Target the 26.10 UIAutomation line. Do not run the migrated
@@ -123,11 +127,11 @@ success_criteria:
     pass_threshold: 1.0
 
   # Rule 5: the source project is never written to (only its .upgrade folder).
-  # TASK_DIR is read inside Python so the check works under cmd.exe and /bin/sh.
+  # REFERENCE_DIR is read inside Python so the check works under cmd.exe and /bin/sh.
   - type: run_command
     description: "Source project.json and Main.xaml are byte-identical to the fixture"
     command: |-
-      python -c "import filecmp, os, sys; t = os.path.join(os.environ['TASK_DIR'], 'fixture', 'ConsentBannerProbe'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('ConsentBannerProbe', f), shallow=False) for f in ('Main.xaml', 'project.json')) else 1)"
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'ConsentBannerProbe'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('ConsentBannerProbe', f), shallow=False) for f in ('Main.xaml', 'project.json')) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

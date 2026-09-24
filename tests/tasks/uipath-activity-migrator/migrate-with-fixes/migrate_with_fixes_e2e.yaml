@@ -28,6 +28,10 @@ sandbox:
     - type: template_dir
       path: fixture
 
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
 initial_prompt: |
   Migrate the UiPath project in ./StaffDirectoryAudit with the Activity
   Migrator, targeting UIAutomation 26.10.4, and leave it ready to open in
@@ -161,7 +165,7 @@ success_criteria:
   - type: run_command
     description: "Source workflows and project.json are byte-identical to the fixture"
     command: |-
-      python -c "import filecmp, os, sys; t = os.path.join(os.environ['TASK_DIR'], 'fixture', 'StaffDirectoryAudit'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('StaffDirectoryAudit', f), shallow=False) for f in ('Main.xaml', 'GetStaffRecords.xaml', 'VerifyHeadcount.xaml', 'BuildReport.xaml', 'project.json')) else 1)"
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'StaffDirectoryAudit'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('StaffDirectoryAudit', f), shallow=False) for f in ('Main.xaml', 'GetStaffRecords.xaml', 'VerifyHeadcount.xaml', 'BuildReport.xaml', 'project.json')) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

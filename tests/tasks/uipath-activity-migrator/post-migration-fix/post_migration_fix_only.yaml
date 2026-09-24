@@ -25,6 +25,10 @@ sandbox:
     - type: template_dir
       path: fixture
 
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
 initial_prompt: |
   The project in ./StaffDirectoryAudit_Upgraded was migrated with the Activity
   Migrator and its element checks no longer behave. Run the post migration fix
@@ -125,7 +129,7 @@ success_criteria:
   - type: run_command
     description: "Main.xaml, BuildReport.xaml and project.json are byte-identical to the fixture"
     command: |-
-      python -c "import filecmp, os, sys; t = os.path.join(os.environ['TASK_DIR'], 'fixture', 'StaffDirectoryAudit_Upgraded'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('StaffDirectoryAudit_Upgraded', f), shallow=False) for f in ('Main.xaml', 'BuildReport.xaml', 'project.json')) else 1)"
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'StaffDirectoryAudit_Upgraded'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('StaffDirectoryAudit_Upgraded', f), shallow=False) for f in ('Main.xaml', 'BuildReport.xaml', 'project.json')) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
