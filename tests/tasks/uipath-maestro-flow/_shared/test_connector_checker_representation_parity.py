@@ -229,6 +229,32 @@ def test_scheduled_poll_lifecycle_rejects_merged_flow_beside_duplicate_file_quer
     assert "separate flows" in result.stderr
 
 
+def test_scheduled_poll_lifecycle_rejects_file_chain_split_across_flows(tmp_path: Path) -> None:
+    second = _file_poll_flow("sdk")
+    second["nodes"] = second["nodes"][:2]
+    second["nodes"][1]["id"] = "filequery2"
+    _write_poll_solution(tmp_path, "sdk")
+    _write_json(tmp_path / "file2.flow", second)
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "must live in exactly one flow" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_get_delete_in_the_contract_flow(tmp_path: Path) -> None:
+    file_nodes = _file_poll_flow("sdk")["nodes"]
+    contract = _contract_poll_flow("sdk")
+    contract["nodes"].extend(file_nodes[2:])
+    _write_json(tmp_path / "contract.flow", contract)
+    _write_json(tmp_path / "file.flow", {"nodes": file_nodes[:2]})
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "same flow as the query they bind to" in result.stderr
+
+
 def test_scheduled_poll_lifecycle_rejects_delete_bound_to_query(tmp_path: Path) -> None:
     file_flow = _file_poll_flow("sdk")
     file_flow["nodes"][3]["inputs"]["detail"]["queryParameters"]["recordId"] = (

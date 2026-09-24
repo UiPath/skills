@@ -73,7 +73,7 @@ uip login status --output json
 uip maestro flow registry pull --force
 ```
 
-Still absent after that one re-pull means the connector has **no Flow trigger node**, whatever events `uip is triggers objects` / `triggers describe` report for it — Integration Service webhooks the Flow registry does not expose cannot start a flow. Data Fabric (`uipath-uipath-dataservice`) is the standing example: it has a `CREATED` / `UPDATED` IS webhook and zero trigger nodes. Drop to Tier 2 or Tier 3; do not try other spellings of the node type.
+Still absent after that one re-pull, with `uip login status` reporting `Logged in`, means the connector has **no Flow trigger node**, whatever events `uip is triggers objects` / `triggers describe` report for it — Integration Service webhooks the Flow registry does not expose cannot start a flow. Data Fabric (`uipath-uipath-dataservice`) is the standing example: it has a `CREATED` / `UPDATED` IS webhook and zero trigger nodes. Drop to Tier 2 or Tier 3; do not try other spellings of the node type.
 
 ## Ports
 

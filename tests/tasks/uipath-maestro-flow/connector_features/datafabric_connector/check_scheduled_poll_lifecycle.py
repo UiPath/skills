@@ -37,6 +37,11 @@ def query_params(node):
     return detail(node).get("queryParameters") or {}
 
 
+def owned_by(collected, entity):
+    picked = [(path, node) for path, node in collected if entity_name(detail(node)) == entity]
+    return [node for _, node in picked], {path for path, _ in picked}
+
+
 def has_due_filter(node):
     joined = text(query_params(node).get("queryExpression"))
     return "duedate" in joined and "2026-08-04" in joined and "<" in joined
@@ -68,7 +73,11 @@ def main():
             elif t.endswith(".delete-entity-record"):
                 deletes.append((path, node))
 
-    contract_queries = [n for p, n in queries if entity_name(detail(n)) == CONTRACT_ENTITY]
+    contract_queries, contract_paths = owned_by(queries, CONTRACT_ENTITY)
+    file_queries, file_paths = owned_by(queries, FILE_ENTITY)
+    file_gets, get_paths = owned_by(gets, FILE_ENTITY)
+    file_deletes, delete_paths = owned_by(deletes, FILE_ENTITY)
+
     if not contract_queries:
         print(f"FAIL: Query Entity Records on {CONTRACT_ENTITY} missing", file=sys.stderr)
         return 1
@@ -80,11 +89,6 @@ def main():
         print(f"FAIL: {CONTRACT_ENTITY} query does not set limit=100", file=sys.stderr)
         return 1
 
-    contract_paths = {p for p, n in queries if entity_name(detail(n)) == CONTRACT_ENTITY}
-    file_queries = [n for p, n in queries if entity_name(detail(n)) == FILE_ENTITY]
-    file_paths = {p for p, n in queries if entity_name(detail(n)) == FILE_ENTITY}
-    file_gets = [n for p, n in gets if entity_name(detail(n)) == FILE_ENTITY]
-    file_deletes = [n for p, n in deletes if entity_name(detail(n)) == FILE_ENTITY]
     if not file_queries:
         print(f"FAIL: Query Entity Records on {FILE_ENTITY} missing", file=sys.stderr)
         return 1
@@ -98,6 +102,13 @@ def main():
     shared = file_paths & contract_paths
     if shared:
         print(f"FAIL: {CONTRACT_ENTITY} and {FILE_ENTITY} must be polled by separate flows; both in {sorted(shared)}", file=sys.stderr)
+        return 1
+    if len(file_paths) != 1:
+        print(f"FAIL: the {FILE_ENTITY} query/get/delete chain must live in exactly one flow; queried from {sorted(file_paths)}", file=sys.stderr)
+        return 1
+    stray = (get_paths | delete_paths) - file_paths
+    if stray:
+        print(f"FAIL: {FILE_ENTITY} Get/Delete must sit in the same flow as the query they bind to; found in {sorted(stray)}", file=sys.stderr)
         return 1
 
     query_ids = {n.get("id", "") for n in file_queries} - {""}

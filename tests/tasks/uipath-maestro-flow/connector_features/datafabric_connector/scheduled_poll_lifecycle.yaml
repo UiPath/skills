@@ -4,7 +4,7 @@ description: >
   Fabric ships no connector trigger node in the Maestro Flow registry, so a
   scheduled trigger is the only event-shaped start; this grades that start plus
   Data Service connector Query/Get/Delete wiring, date filters, record limits,
-  chained record-id bindings, and entity resources on every activity.
+  chained record-id bindings, and the correct entity on every graded activity.
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, node:scheduled-trigger, feature:trigger, feature:records, feature:entities, feature:activities, uipath-uipath-dataservice]
 sandbox:
   template_sources:
