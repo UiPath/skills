@@ -139,6 +139,22 @@ uip or bucket-files list <bucket-key> --folder-path "Finance" \
 
 Additional options: `--take-hint <n>` (items per page, default 500, max 1000), `--expiry-in-minutes` (presigned URL lifetime in the response).
 
+**Response shape: `Data.Items[]`, not a bare `Data[]`.** Unlike most `uip or` list commands, `bucket-files list` wraps its rows in a named `Items` field:
+
+```json
+{
+  "Result": "Success",
+  "Code": "BucketFileList",
+  "Data": {
+    "Items": [
+      { "FullPath": "/reports/summary.csv", "ContentType": "text/csv", "Size": 1234, "LastModified": "..." }
+    ]
+  }
+}
+```
+
+Reading `.Data` directly (as you would for `or triggers list`, `or machines list`, etc.) yields an object, not an array — indexing it as a list silently produces nothing rather than an error. Read `.Data.Items` instead.
+
 ### List Directories
 
 ```bash
