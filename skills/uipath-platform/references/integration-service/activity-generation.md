@@ -30,12 +30,16 @@ then execute the script or keep the activity depends on how you were asked — s
 uip is connectors metadata <connector-key> --output json
 ```
 
-Read `Data[0].Flags.v4Compatible`. Generate only when it is `true`.
+Read `Data[0].Flags.V4Compatible`. Generate only when it is `true`.
+
+**The key is PascalCase in CLI output.** `--output-filter "[0].Flags.v4Compatible"`
+(lowercase `v`) returns `Data: []` and reads as "flag absent" — filter on `Flags`
+or `Flags.V4Compatible`.
 
 **Test the value, not the presence of `Flags`.** `Flags` is `{}` on most
 connectors rather than absent, so `Flags && …` passes while
-`Flags.v4Compatible` is `undefined`. Measured: `uipath-salesforce-slack`
-returns `{"v4Compatible": true}`; `uipath-atlassian-jira`,
+`Flags.V4Compatible` is `undefined`. Measured: `uipath-salesforce-slack`
+returns `{"V4Compatible": true}`; `uipath-atlassian-jira`,
 `uipath-microsoft-teams` and `uipath-google-drive` all return `{}`.
 
 This is a **capability check, not an authorization decision** — it says the
@@ -160,7 +164,7 @@ execute anything before you have placed the operation on one side of that line.
 ```bash
 uip is resources run script \
   --connection-id <connectionId> \
-  --inline-script @$WORK/<scriptRef>.js \
+  --inline-script $WORK/<scriptRef>.js \
   --body '{ "channel": "C0A66HP9KKM" }' \
   --output json
 ```
@@ -213,7 +217,7 @@ for a read, with the agreed values:
 ```bash
 uip is resources run script \
   --connection-id <connectionId> \
-  --inline-script @$WORK/<scriptRef>.js \
+  --inline-script $WORK/<scriptRef>.js \
   --body '{ "name": "test-1756900000" }' \
   --output json
 ```
@@ -294,6 +298,17 @@ $WORK/<lookupScriptRef>.js  one per lookup field, each verified
 $WORK/<Name>.min.json       the reviewable contract
 $WORK/<Name>.json           the compiled activity metadata
 ```
+
+## Putting it in a flow
+
+The activity can be placed in a Maestro flow as a node of type
+`uipath.connector.custom.<connector-key>.<slug>`. Nothing is published: `uip maestro
+flow node add <file>.flow <type> --metadata $WORK/<Name>.json --scripts $WORK`
+builds the node definition from the metadata and embeds every script in the node,
+and `node configure` reads the metadata from the node. Keep `$WORK` until that
+has run. The flow-side steps are the `uipath-maestro-flow` skill's
+[connector/impl-inline.md](../../../uipath-maestro-flow/references/author/plugins/connector/impl-inline.md);
+hand off to it rather than authoring the node from here.
 
 ## Keep the scripts readable
 

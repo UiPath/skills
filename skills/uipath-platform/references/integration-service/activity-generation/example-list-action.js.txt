@@ -28,8 +28,12 @@ async function execute(context) {
   // (`{ ok, usergroups: [] }`) is unwrapped here; the consumer gets the array and
   // nothing else, which is why the list activity's metadata declares ONE
   // element's fields (id, name, …) flat as its outputs — no `usergroups[*]` wrapper.
-  // Mutate the intsvc.http result rather than building a new one: its status and
-  // headers (content-type: application/json among them) travel with the array.
+  //
+  // Swap the body on the vendor response and return THAT — not a fabricated
+  // `{ status: 200, headers: [], body }`. The vendor's headers travel with it, so
+  // `/execute` sees `content-type: application/json` and hands the caller `body`
+  // as parsed JSON; a fabricated object carries no content-type and the caller
+  // gets the array as a JSON string instead.
   listed.body = listed.body.usergroups ?? [];
   return listed;
 }

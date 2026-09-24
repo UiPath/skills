@@ -13,8 +13,8 @@ Prefer higher tiers when connecting to external services:
 | Tier | Approach | When to Use |
 | --- | --- | --- |
 | 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
-| 2 | **Non-catalog activity generation** | A connector exists but lacks the curated activity, **and the connector reports `v4Compatible`** — uses the connector's IS connection for auth |
-| 3 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the curated activity, and does **not** report `v4Compatible` — uses the connector's IS connection for auth |
+| 2 | **Non-catalog activity generation** | A connector exists but lacks the curated activity, **and the connector reports `V4Compatible`** — uses the connector's IS connection for auth. Invoke the `uipath-platform` skill's activity generation (sanctioned exception to [SKILL.md rule #4](../../../../SKILL.md#critical-rules-universal) — no user prompt once the gap and flag are confirmed), then author the node per [impl-inline.md](impl-inline.md). Never skip to Tier 3 on a `V4Compatible` connector |
+| 3 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the curated activity, and does **not** report `V4Compatible` — uses the connector's IS connection for auth |
 | 4 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
 | 5 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
 
@@ -31,17 +31,17 @@ the gap real.
 uip is connectors metadata <connector-key> --output json
 ```
 
-Read `Data[0].Flags.v4Compatible`:
+Read `Data[0].Flags.V4Compatible`:
 
 | value | route |
 |---|---|
 | `true` | **Tier 2** — generate a non-catalog activity |
 | `false`, or the key is **absent** | **Tier 3** — Managed HTTP Request |
 
-Test for the value, not for the presence of `Flags`. `Flags` is `{}` on most
+The key is PascalCase in CLI output: `--output-filter "[0].Flags.v4Compatible"` (lowercase `v`) returns `Data: []`, which reads as "flag absent" and misroutes a Tier 2 connector to Managed HTTP — filter on `Flags` or `Flags.V4Compatible`. Test for the value, not for the presence of `Flags`. `Flags` is `{}` on most
 connectors rather than missing, so `Flags && …` passes while
-`Flags.v4Compatible` is `undefined`. Measured: `uipath-salesforce-slack`
-returns `{"v4Compatible": true}`; `uipath-atlassian-jira`,
+`Flags.V4Compatible` is `undefined`. Measured: `uipath-salesforce-slack`
+returns `{"V4Compatible": true}`; `uipath-atlassian-jira`,
 `uipath-microsoft-teams` and `uipath-google-drive` all return `{}`.
 
 The flag is a **capability hint for choosing a node type, not an authorization
@@ -105,7 +105,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search <service> --output json
 ```
 
-If the second search still returns no activities for that connector, falling through is legitimate — to Tier 2 or Tier 3 depending on `v4Compatible`, as above. If the second search now lists activities, the cache was stale — proceed with the connector activity node as Tier 1.
+If the second search still returns no activities for that connector, falling through is legitimate — to Tier 2 or Tier 3 depending on `V4Compatible`, as above. If the second search now lists activities, the cache was stale — proceed with the connector activity node as Tier 1.
 
 > **Why this matters**: a partial registry pull is an indirect failure — `registry pull` reports `Success` even when one node-source branch silently dropped its contribution. The shape (`triggers > 0 && activities == 0`) is the only local signal you have. Treat it like a stale-cache symptom, not a topology fact.
 
@@ -152,15 +152,24 @@ The `error` port is the implicit error port shared with all action nodes — see
 ## HTTP Fallback (Managed HTTP Request)
 
 When a connector exists but lacks the specific curated activity **and does not
-report `v4Compatible`** (Tier 3 — check the connector metadata first, see
+report `V4Compatible`** (Tier 3 — check the connector metadata first, see
 [Decision Order](#decision-order)), use `core.action.http.v2` (Managed HTTP
 Request). This node proxies through the `uipath-uipath-http` connector and uses
 the **target connector's** IS connection for authentication — you supply the API
 URL and payload.
 
-If the connector *does* report `v4Compatible`, prefer Tier 2 instead: a
+If the connector *does* report `V4Compatible`, prefer Tier 2 instead: a
 generated non-catalog activity keeps the operation as a first-class activity
-node rather than a hand-supplied URL.
+node rather than a hand-supplied URL. The activity comes from the
+`uipath-platform` skill's [activity-generation.md](../../../../../uipath-platform/references/integration-service/activity-generation.md).
+Invoking that skill for this purpose is an explicit exception to
+[SKILL.md rule #4](../../../../SKILL.md#critical-rules-universal): once the
+gap is established and `V4Compatible` is `true`, invoke it directly rather
+than stopping to ask — but follow its guide, do not reimplement its
+`uip is activities` steps here. The node is then authored per
+[impl-inline.md](impl-inline.md). Fall back to this Tier 3 Managed HTTP path
+on a `V4Compatible` connector only when the `uipath-platform` skill is
+unavailable in the session, and say so in the final report.
 
 > **Do NOT use individual connector HTTP request nodes** (e.g., `uipath.connector.<key>.http-request`). Always use the unified `core.action.http.v2` Managed HTTP Request node for non-curated API calls.
 
