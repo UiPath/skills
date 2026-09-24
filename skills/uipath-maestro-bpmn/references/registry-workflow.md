@@ -13,8 +13,9 @@ uip maestro bpmn registry search <keyword> --output json  # find a type by inten
 uip is connections list --all-folders --output json   # live IS connections (all folders)
 ```
 
-Map the user's intent to an extension type from the list. Confirm the choice
-with the user (and the specific connection / process / queue) before authoring.
+Map the user's intent to an extension type from the list. Pick the
+best-evidenced type, connection, process and queue and say in your summary
+which you used and which others tied; ask only under SKILL.md Rule 4.
 **Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
 
 **Connection discovery must be exhaustive.** Always pass `--all-folders` to
