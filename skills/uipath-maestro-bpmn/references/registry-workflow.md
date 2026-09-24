@@ -119,9 +119,9 @@ So take the object from this table rather than inferring it. Confirm it with
 | `uipath-atlassian-jira` | `curated_edit_issue` | Update Issue | `Replace` |
 | `uipath-salesforce-slack` | `send_message_to_channel_v2` | Send Message to Channel | `Create` |
 | `uipath-microsoft-outlook365` | `send-mail-v2` | Send Email | `Create` |
-| `uipath-uipath-dataservice` | `CreateEntityRecordCurated` | Create Entity Record | `Create` |
+| `uipath-uipath-dataservice` | `<EntityName>` | Create Entity Record | `Create` |
+| `uipath-uipath-dataservice` | `<EntityName>` | Update Entity Record | `Replace` |
 | `uipath-uipath-dataservice` | `GetEntityRecordByIdCurated` | Get Entity Record by ID | `List` |
-| `uipath-uipath-dataservice` | `UpdateEntityRecordV2` | Update Entity Record | `Replace` |
 | `uipath-uipath-dataservice` | `DeleteEntityRecordCurated` | Delete Entity Record | `Create` |
 | `uipath-uipath-dataservice` | `QueryEntityRecordsCurated` | Query Entity Records | `Create` |
 | `uipath-uipath-testmanager` | `TestSet` | Create / Get / Update / Delete Test Set | `Create` / `Retrieve` / `Update` / `Delete` |
@@ -139,17 +139,24 @@ So take the object from this table rather than inferring it. Confirm it with
 | `uipath-uipath-testmanager` | `GetTestSteps` | Get Test Steps | `List` |
 | `uipath-uipath-testmanager` | `GetTestStepLogs` | Get Test Step Logs | `List` |
 
-Data Fabric has no hidden objects, so `curated.isHidden` does not separate its
-duplicates: `CreateEntityRecord`, `CreateEntityRecord_V3` and
-`CreateEntityRecordCurated` all report `isHidden: false` under one
-`Curated: "Create Entity Record"`. Rank on `curated.lifecycleStage` — the
-`uipath-uipath-dataservice` rows above are `GA`, every other candidate is
-`PREVIEW`. Those rows take the entity as a required `entityName` **path**
-parameter and report an empty `RequestFields`, so they describe no body fields
-at all. When the body needs typed fields, describe the entity's own object
-instead — `uip is resources list` exposes one per tenant entity, named after
-it, with no `entityName` parameter and the record's columns in
-`RequestFields`.
+Operation names are the connector's, not the verb: Get is `List`, Delete and
+Query are `Create`. `describe` rejects the intuitive name, so do not change
+them.
+
+`<EntityName>` is the tenant entity's own object: `uip is resources list`
+shows one per entity, named after it, with `Custom: yes`. Its `RequestFields`
+are the entity's columns, so Create and Update take their body from it.
+`CreateEntityRecordCurated` and `UpdateEntityRecordV2` report an empty
+`RequestFields`; do not use them.
+
+For a Data Fabric operation not listed, drop objects whose display name ends
+in `(Preview)` or `(Deprecated)`, then prefer a `/v2/{entityName}/` path over
+`/{objectName}/`.
+
+`send-mail-v2` defaults its `saveAsDraft` query parameter to `true`, which
+saves a draft instead of sending. Add a `target="query"` `saveAsDraft` input
+set to `false`. Its `body` and `file` parameters are `multipart`, not a JSON
+body.
 
 For a connector or operation not listed, describe every candidate and keep
 the ones whose `Operation.Curated` names the activity asked for. Expect more
