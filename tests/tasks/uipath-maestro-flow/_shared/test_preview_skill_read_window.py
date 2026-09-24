@@ -18,13 +18,15 @@ Budgets:
 - ROUTER_WINDOW = 220 for the router table and `## API index`: 20 lines of
   margin under the 240-line read, and a window agents also use for references
   (`sed -n '1,220p'`).
-- POINTER_WINDOW = 240 for `## Lifecycle` (points at references/CLI-LOOP.md)
-  and `## Editing an existing flow` (points at references/brownfield.md): the
-  measured first read itself.
+- POINTER_WINDOW = 240 for the sections above the router that hold its
+  pointers: `## Project layout`, `## Lifecycle` (points at
+  references/CLI-LOOP.md), `## Editing an existing flow` (points at
+  references/brownfield.md) and `## Builder frame`: the measured first read
+  itself.
 - WINDOW_BYTES = 32 KiB from line 1 to the end of the last checked section, so
   the line budget cannot be met by packing prose onto a few very long lines.
 
-In the flow skill all four sections are required: a missing or renamed one
+In the flow skill all six sections are required: a missing or renamed one
 fails here, it is never skipped. Case and BPMN are checked for the sections
 they have (`## API index`, `## Capability router`). Headings inside code
 fences do not count.
@@ -54,8 +56,10 @@ WINDOWS = {
     "Supported node types": ROUTER_WINDOW,
     "Capability router": ROUTER_WINDOW,
     "API index": ROUTER_WINDOW,
+    "Project layout": POINTER_WINDOW,
     "Lifecycle": POINTER_WINDOW,
     "Editing an existing flow": POINTER_WINDOW,
+    "Builder frame": POINTER_WINDOW,
 }
 
 # Skill folder -> sections that must exist. Every other skill (Case and BPMN
@@ -66,6 +70,8 @@ REQUIRED = {
         "API index",
         "Lifecycle",
         "Editing an existing flow",
+        "Project layout",
+        "Builder frame",
     ),
 }
 
@@ -241,7 +247,11 @@ def test_real_preview_skills_fit_read_window(path):
 
 # --- synthetic documents ---------------------------------------------------
 
-FLOW_REQUIRED = REQUIRED["uipath-maestro-flow"]
+# The synthetic documents below carry four of the flow skill's required
+# sections; the two pointer-only ones (Project layout, Builder frame) have
+# their own controls that use the full REQUIRED tuple.
+FLOW_REQUIRED = ("Supported node types", "API index", "Lifecycle", "Editing an existing flow")
+assert set(FLOW_REQUIRED) <= set(REQUIRED["uipath-maestro-flow"])
 
 
 def _doc(*blocks: tuple[int, list[str]]) -> str:
@@ -399,3 +409,22 @@ def test_everything_at_the_edge_passes_and_reports_slack():
     assert slack["Lifecycle"] == 0
     assert slack["API index"] == 220 - 24  # heading 20, blank 21, text 22-24
     assert slack["bytes"] > 0
+
+
+def test_pointer_sections_are_required_and_windowed():
+    # The full flow requirement: Builder frame missing, Project layout ending
+    # at line 241. Both must be reported, never skipped.
+    text = _doc(
+        (1, ["# Flow"]),
+        (3, _section("Lifecycle", 3)),
+        (10, _section("Editing an existing flow", 3)),
+        (20, _section("API index", 3)),
+        (40, _router(3)),
+        (230, _section("Project layout", 10)),
+    )
+    assert window_problems(text, REQUIRED["uipath-maestro-flow"]) == [
+        'missing "## Builder frame": this skill requires it, so a renamed or deleted '
+        "section fails here instead of skipping the check",
+        '"## Project layout" (heading at line 230) ends at line 241, '
+        "1 line(s) past the 240-line window",
+    ]
