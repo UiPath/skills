@@ -295,10 +295,14 @@ For registry-evidence-only tasks, follow the command-first recipe in
    rest. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
-   synthetic local project. Every root start event needs a
+   synthetic local project. Every root **manual** start event needs a
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
-   without one `refresh` fails the whole project `RetryWillNotFix` instead of
-   writing an empty entry-point list.
+   with none `refresh` fails the whole project `RetryWillNotFix` instead of
+   writing an empty entry-point list. A connector or timer start is not
+   manual, so add it alongside the initializer's manual start, never in place
+   of it. Never hand-edit `entry-points.json` to match a removed manual start:
+   `validate` and `pack` then pass while `refresh` never ran, leaving
+   `bindings_v2.json` empty and the trigger connection unmaterialized.
    Give public inputs and outputs explicit runtime bridges, and converge routes
    returning one result on a single completion EndEvent — for the two-layer
    contract see
