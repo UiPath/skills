@@ -59,32 +59,16 @@ Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor
 
 ### The connector loop: author → check → prepare → check → compile
 
-Authoring never waits on `prepare`, and no discovery command precedes the
-source. Write the connector step from the task's own words — the fields you
-intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }`
-for a generic operation — then run `uip maestro flow check <Name>.flow.ts
---source`. Check names every prepare you owe, with the exact command:
-`OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED`
-for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a
-lookup token with no recorded value, `CONNECTOR_INPUT` for a field the
-operation does not declare. Run that one
-`uip maestro registry prepare <connector-key> <action>` — `--object`,
-`--resolve` and `-f` compose in a single invocation, it finds the connection
-itself, writes `bindings.json`, and repoints your import at the generated
-`connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
-Where two flows import the same connector it names them instead of guessing,
-and asks for `--source`.
+Authoring never waits on `prepare`, and no discovery command precedes the source.
+Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check <Name>.flow.ts --source`.
+Check names every prepare you owe, with the exact command:
+`OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `bindings.json`, and repoints your import at the generated `connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
+Where two flows import the same connector it names them instead of guessing, and asks for `--source`.
 
-The gate this replaces still holds for schema-dynamic operations
-(`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the
-static library descriptor is not sufficient there, and the prepare that check
-names — with every required `-f NAME=VALUE` — is what creates the design-time
-schema-replay cache. Do not substitute manual `resources run list` lookups
-plus a static `connectors/<key>.ts` import: the lookups choose values but do
-not create that cache. After compiling, inspect the emitted connector
-configuration. `flow validate` can accept a missing cache, so completion
-requires non-null `customFieldsRequestDetails` whose parent values match the
-runtime inputs.
+The gate this replaces still holds for schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the static library descriptor is not sufficient there, and the prepare that check names — with every required `-f NAME=VALUE` — is what creates the design-time schema-replay cache.
+Do not substitute manual `resources run list` lookups plus a static `connectors/<key>.ts` import: the lookups choose values but do not create that cache.
+After compiling, inspect the emitted connector configuration.
+`flow validate` can accept a missing cache, so completion requires non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
 
 ### Hello world Flow
 
@@ -102,28 +86,17 @@ A Flow can have outputs, which are returned to the caller when the flow complete
 
 ## Lifecycle
 
-The `uip maestro flow` commands keep source checks, emission, and
-compiled-artifact checks explicit while the installed `@uipath/maestro-builder-sdk` owns
-their semantics. A workspace with `{ "flowSdk": { "emitOnly": true } }` in
-`package.json`, or `FLOW_SDK_EMIT_ONLY=1`, makes `uip maestro flow compile`
-emit-only and makes both `flow check` modes refuse. Product validate owns final
-structural verification in that mode; use product debug only when the node
-family and the requested evidence support it.
+The `uip maestro flow` commands keep source checks, emission, and compiled-artifact checks explicit while the installed `@uipath/maestro-builder-sdk` owns their semantics. A workspace with `{ "flowSdk": { "emitOnly": true } }` in `package.json`, or `FLOW_SDK_EMIT_ONLY=1`, makes `uip maestro flow compile` emit-only and makes both `flow check` modes refuse. Product validate owns final structural verification in that mode; use product debug only when the node family and the requested evidence support it.
 
 **Run the correct loop for your packaging mode:**
 **[`references/CLI-LOOP.md`](references/CLI-LOOP.md)**.
 
 ## Editing an existing flow
 
-In brownfield work, preserve the supplied source, step names, and unaffected
-wiring. Insert a step by moving the old edge through it, not by creating a
-second path. If only emitted `.flow` JSON exists, decompile it, compile the
-pristine baseline, edit narrowly, and merge the delta back into the original.
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. If only emitted `.flow` JSON exists, decompile it, compile the pristine baseline, edit narrowly, and merge the delta back into the original.
 These are before/after judgments; no final-artifact checker can prove them.
 
-For a narrow edit in an external staging directory, `decompile` writes
-`<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the
-baseline ordering right:
+For a narrow edit in an external staging directory, `decompile` writes `<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the baseline ordering right:
 
 ```bash
 uip maestro flow decompile <Name>.flow -o <Name>.flow.ts
@@ -134,29 +107,18 @@ uip maestro flow validate <Name>.merged.flow --output json
 ```
 
 Validate the merged artifact, never the intermediate edited compile.
-If the source must stay inside the Flow project (for example, to preserve
-relative sidecars), keep baseline, edited, and candidate `.flow` files in an
-external `.flow-work/` directory. Validate the candidate, replace the canonical
-artifact, and leave exactly one `.flow` under the project. The reference below
-contains the copyable safe-project sequence.
+If the source must stay inside the Flow project (for example, to preserve relative sidecars), keep baseline, edited, and candidate `.flow` files in an external `.flow-work/` directory. Validate the candidate, replace the canonical artifact, and leave exactly one `.flow` under the project. The reference below contains the copyable safe-project sequence.
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)**.
 
 ## Builder frame
 
-The quick start above shows the shape — `flow(id)`, declarations, nodes,
-`.return(...)`, `.build()`. Three things it does not show:
+The quick start above shows the shape — `flow(id)`, declarations, nodes, `.return(...)`, `.build()`. Three things it does not show:
 
-- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than
-  one step writes or reads. `.input` and `.output` are the flow's contract with
-  its caller; a var is the state in between. A step writes one with
-  `{ updates: { name: <expr> } }`.
-- **`.return(...)` ends a PATH. `.terminate(...)` ends the RUN.** They look
-  interchangeable on a straight chain and are not: inside a `.parallel` arm a
-  terminate aborts the sibling arms mid-flight, where a return leaves them going.
-- **Expressions are how a step names something that is not a literal.** There is
-  one per kind of thing you can refer to:
+- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than one step writes or reads. `.input` and `.output` are the flow's contract with its caller; a var is the state in between. A step writes one with `{ updates: { name: <expr> } }`.
+- **`.return(...)` ends a PATH. `.terminate(...)` ends the RUN.** They look interchangeable on a straight chain and are not: inside a `.parallel` arm a terminate aborts the sibling arms mid-flight, where a return leaves them going.
+- **Expressions are how a step names something that is not a literal.** There is one per kind of thing you can refer to:
 
   | | refers to |
   | --- | --- |
@@ -168,57 +130,36 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes,
   | `lit(value)` | a constant, where a raw value would be ambiguous |
   | ``js`…` `` / ``tmpl`…` `` | an expression, or a string, you write yourself |
 
-  `ran(step)` earns an early mention: when arms converge, one shared
-  continuation usually reads better than the same work duplicated per arm, and
-  `ran` is how that continuation asks whether the value it wants was produced.
+  `ran(step)` earns an early mention: when arms converge, one shared continuation usually reads better than the same work duplicated per arm, and `ran` is how that continuation asks whether the value it wants was produced.
 
 ## API index
 
-**Every signature, option shape and field is indexed in the installed package**,
-not in this guide. Two files, keyed by the kind of name you have:
+**Every signature, option shape and field is indexed in the installed package**, not in this guide. Two files, keyed by the kind of name you have:
 
 | you have | look in | a row gives you |
 | --- | --- | --- |
 | a field or method — `outcomePorts`, `stepToList` | `dist/api-members.md` | the shape that declares it, and the lines that do |
 | an exported symbol — `HitlInputs`, `hitl`, `FlowBuilder` | `dist/api-index.md` | its kind, area, and the lines that declare it |
 
-Both ship in the installed `@uipath/maestro-builder-sdk` package, and a row's
-path is relative to that package's root:
+Both ship in the installed `@uipath/maestro-builder-sdk` package, and a row's path is relative to that package's root:
 
 ```
 | `outcomePorts` | property | `HitlInputs` | `dist/core/actions.d.ts:583-597` |
 ```
 
-Each file's own header names the repo and generator it came from, and says not to
-edit it there — the rows are regenerated from the declarations on every build.
+Each file's own header names the repo and generator it came from, and says not to edit it there — the rows are regenerated from the declarations on every build.
 
-**Match one name; do not read either file end to end.** Then read the span — it
-is the whole declaration including its doc comment, so one read answers the
-question, with the types and the `@remarks` and `@example` bodies in full. No
-searching and no shell, so it works the same on Windows.
+**Match one name; do not read either file end to end.** Then read the span — it is the whole declaration including its doc comment, so one read answers the question, with the types and the `@remarks` and `@example` bodies in full. No searching and no shell, so it works the same on Windows.
 
-A field or method name is the usual case, because these references are one line
-per field — so `api-members.md` is usually the one you want. Both cover all three
-entry points, `/case` and `/bpmn` included.
+A field or method name is the usual case, because these references are one line per field — so `api-members.md` is usually the one you want. Both cover all three entry points, `/case` and `/bpmn` included.
 
-They live in the package rather than here **because the spans are only true of
-one build**: a line moves whenever a declaration above it changes, and this guide
-ships on its own cadence. An index beside the `.d.ts` files it points into cannot
-disagree with them.
+They live in the package rather than here **because the spans are only true of one build**: a line moves whenever a declaration above it changes, and this guide ships on its own cadence. An index beside the `.d.ts` files it points into cannot disagree with them.
 
-Read the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and
-no comments, so searching it is how a lookup turns into twenty tool calls. A name
-in neither index is probably a RUNTIME output key — a human task's `Action`, an
-error envelope's fields — which no declaration carries; those are in the node
-references. The sibling surfaces' runtime-only decisions live in their own
-skills: `uipath-maestro-case` and `uipath-maestro-bpmn`; neither is needed to
-build a Flow.
+Read the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and no comments, so searching it is how a lookup turns into twenty tool calls. A name in neither index is probably a RUNTIME output key — a human task's `Action`, an error envelope's fields — which no declaration carries; those are in the node references. The sibling surfaces' runtime-only decisions live in their own skills: `uipath-maestro-case` and `uipath-maestro-bpmn`; neither is needed to build a Flow.
 
 ## Supported node types
 
-The table is the authoritative router. `Section` identifies the governed H2;
-`Reference` carries the details; `Example` names the one file to read. Paths
-under `examples/` resolve inside this skill folder.
+The table is the authoritative router. `Section` identifies the governed H2; `Reference` carries the details; `Example` names the one file to read. Paths under `examples/` resolve inside this skill folder.
 
 | Node or surface | Emitted node type | Builder | Section | Reference | Example |
 |---|---|---|---|---|---|
