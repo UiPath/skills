@@ -106,6 +106,8 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 > **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists that identity onto each instance's `inputs.source`. Do not write a `"model": { "source": ... }` block on the instance.
 >
 > **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
+>
+> **No `shape` key in `display` on node instances.** `shape` (`square`, `rectangle`, `circle`, …) is fixed per nodeType in the `definitions[]` entry and drives the renderer's own canvas footprint for that nodeType — it is derived, not instance data, same as `model` above. Writing it on an instance overrides that derivation outright: a HITL node instance with a hand-added `"shape": "rectangle"` renders at agent-step dimensions instead of its actual `square` footprint, clipping its outcome/output ports through the node's center. `flow format` does not strip a stray instance `shape` — it only recomputes `layout.size` from nodeType.
 
 ### Instance-specific identity fields
 
