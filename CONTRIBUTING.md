@@ -34,7 +34,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.) — polyglot dispatch
-│   └── send-telemetry.mjs     # Telemetry hook (Node.js — one implementation per hook)
+│   └── set-session-env.mjs    # Session-env hook (Node.js; telemetry has no script — hooks.json pipes to `uip track --hook`)
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
 ├── skills/                    # Individual skill implementations
@@ -348,9 +348,10 @@ Static files like code templates go in `assets/`:
 
 Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (e.g., `SessionStart`).
 
-- **Every session hook is one Node.js script**: `hooks/<name>.mjs`, run by `node` (>= 20) on every platform. `node` is present wherever the skills were installed through the Node-based `uip` CLI, and it is a native executable — PowerShell execution policy (including Group-Policy-enforced `AllSigned`/`Restricted`) does not apply to it, unlike the retired `.ps1` twins. The contract guards in `tests/scripts/` run the `.mjs` scripts directly
+- **Telemetry ships no script.** Its `hooks.json` entries pipe the RAW hook payload to `uip track --hook` (UiPath/cli#4444); the field derivation, sanitization, and contract tests live in the CLI repo (`packages/cli/src/commands/track-hook.ts` / `.spec.ts`). The plugin-side guard (`tests/scripts/test_send_telemetry_hook.py`) pins only the wrapper: stdin passthrough, fail-soft exit 0, registration shape
+- **Every other session hook is one Node.js script**: `hooks/<name>.mjs`, run by `node` (>= 20) on every platform. `node` is present wherever the skills were installed through the Node-based `uip` CLI, and it is a native executable — PowerShell execution policy (including Group-Policy-enforced `AllSigned`/`Restricted`) does not apply to it, unlike the retired `.ps1` twins. The contract guards in `tests/scripts/` run the `.mjs` scripts directly
 - **Do NOT reintroduce `.sh`/`.ps1` hook implementations.** The retired twins had to be kept behaviorally identical by hand, required an Authenticode signing gate at publish (`.ps1` only), and still failed on machines whose Group Policy blocks PowerShell script files
-- `hooks.json` registers one **bash/PowerShell polyglot command** per event: sh-family shells execute the sh branch and see the PowerShell branch only as heredoc data; PowerShell block-comments the sh branch via `<# … #>` and executes its own branch. Both branches guard for a missing `node` (silent `exit 0` — a machine without node has no `uip` either, so the hook has nothing to do) and then spawn the same `.mjs`. Canonical shape (replace `<name>`):
+- `hooks.json` registers one **bash/PowerShell polyglot command** per event: sh-family shells execute the sh branch and see the PowerShell branch only as heredoc data; PowerShell block-comments the sh branch via `<# … #>` and executes its own branch. Both branches guard for the missing binary (silent `exit 0` — a machine without it has nothing to hand off to). Canonical shape for a `.mjs` hook (replace `<name>`):
 
   ```
   echo `# <#` >/dev/null
@@ -363,6 +364,23 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
   if ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }
   POLYEOF
   ```
+
+  Canonical shape for the telemetry ingestion (always `exit 0` — best-effort by contract, including against a CLI that predates `--hook`):
+
+  ```
+  echo `# <#` >/dev/null
+  command -v uip >/dev/null 2>&1 || exit 0
+  uip track --hook >/dev/null 2>&1
+  exit 0
+  : <<'POLYEOF' #> > $null
+  $c = Get-Command uip.cmd -ErrorAction SilentlyContinue
+  if ($null -eq $c) { exit 0 }
+  & $c.Source track --hook *> $null
+  exit 0
+  POLYEOF
+  ```
+
+  The PowerShell branch resolves `uip.cmd` explicitly, never the bare `uip`: PowerShell prefers npm's `uip.ps1` shim, a script file that execution policy can block, while a `.cmd` batch file is not governed by it.
 
   Constraints: do not add a `shell` field; never put the sequence `#>` in the sh branch; keep the PowerShell branch inside the `: <<'POLYEOF' … POLYEOF` heredoc — shells that parse the whole command up front (zsh, used by Codex on macOS via `$SHELL -lc`) otherwise fail on PowerShell syntax. The sh branch is verified under bash, dash (`sh -c`), and zsh
 - Keep hooks idempotent — safe to run multiple times

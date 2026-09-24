@@ -1,10 +1,12 @@
 # UiPath Skills Plugin Telemetry
 
-Opt-out usage telemetry for the UiPath skills plugin. On by default. One
-emitting hook (`hooks/send-telemetry.mjs`, Node.js), registered on several
-Claude Code hook events, hands a single flat JSON object to the hidden
-`uip track` CLI command, which forwards it through the CLI's own telemetry
-tracker as one `uip.skills.<event>` Application Insights event. A second,
+Opt-out usage telemetry for the UiPath skills plugin. On by default. The
+plugin ships **no telemetry script**: `hooks.json` registers `uip track --hook`
+on several Claude Code hook events, piping the raw hook payload straight to
+the CLI, which derives the fields in-process (UiPath/cli `track-hook.ts`,
+UiPath/cli#4444) and forwards them through its own telemetry tracker as one
+`uip.skills.<event>` Application Insights event. Throughout this document
+"the hook" means that `uip track --hook` ingestion. A separate,
 synchronous SessionStart step
 (`hooks/set-session-env.mjs`) exports the agent session id as
 `UIPATH_SESSION_ID` so every `uip` process — command or `uip track` — reports
@@ -96,10 +98,12 @@ plugin; everything else exits silently. A call qualifies when:
    content embedded in a string (a prompt, a command line, `stdout`) can
    never false-match an envelope field (see
    [Region scoping](#region-scoping)).
-3. It pipes one flat `key:value` JSON object to `uip track` on stdin, then
-   exits 0.
-4. `uip track` reads that
-   object, maps the `eventName` token to the CLI-owned `uip.skills.<event>`
+3. Derivation and send happen in ONE process: `hooks.json` pipes the raw
+   payload to `uip track --hook` on stdin, and the wrapper always exits 0 —
+   including when `uip` is absent or predates `--hook` (then the event is
+   silently dropped).
+4. The same `uip track` pipeline then
+   maps the `eventName` token to the CLI-owned `uip.skills.<event>`
    name (an unrecognized token drops the event; an absent one means
    `tool-use`), stamps a `source: "skills-plugin"` dimension, attaches the
    authenticated UiPath cloud identity and the CLI app version, and forwards it
@@ -300,7 +304,7 @@ its own on App Insights' `ai.session.id` tag; see
 The synchronous SessionStart step (`hooks/set-session-env.mjs`) writes
 `export UIPATH_SESSION_ID='<session_id>'` to Claude Code's `CLAUDE_ENV_FILE`,
 so every `uip` process the agent starts inherits it — both native commands and
-the `uip track` calls this hook pipes into — and each reports the same
+the `uip track --hook` ingestions — and each reports the same
 `session_Id`. Since schema v3 this export is the **only** thing that ties the
 two streams together (the hook itself sends no session id), and the join is on
 `session_Id` — e.g. "commands per turn" or
@@ -334,21 +338,21 @@ session.
   error).
 - **`SessionEnd` is synchronous (30s timeout):** async hooks still running at
   session teardown are killed after a short grace window — shorter than the
-  hook's PowerShell + `uip track` startup — which silently drops the
-  session-end event. Registering it synchronously makes session exit wait for
-  the handoff (typically ~1–2s, capped at 30s), so session-duration and
-  session-outcome metrics keep their `session-end` anchor.
+  CLI's startup — which silently drops the session-end event. Registering it
+  synchronously makes session exit wait for the ingestion (typically ~1–2s,
+  capped at 30s), so session-duration and session-outcome metrics keep their
+  `session-end` anchor.
 - **Best-effort delivery:** an event is dropped on failure (no local retry
   queue). Telemetry is for aggregate trends, not exact accounting.
 - **Session id export:** `set-session-env.mjs` is the one synchronous
   SessionStart step (it must run before the session's first shell call); it
   costs a few milliseconds — pure text processing, no network and no `uip`
   invocation.
-- **Cross-platform:** the hook is a single Node.js script
-  (`send-telemetry.mjs`), spawned by a bash/PowerShell polyglot command in
-  `hooks.json` on every platform. `node` is a native executable, so no
-  PowerShell execution policy applies; it is present wherever the skills were
-  installed through the Node-based `uip` CLI
-  (`npm install -g @uipath/cli`), which the hook hands off to anyway. When
-  `node` or the CLI is absent, events are silently dropped — the hook never
-  fails the session.
+- **Cross-platform, zero scripts:** a bash/PowerShell polyglot command in
+  `hooks.json` pipes the raw payload to `uip track --hook` on every platform —
+  the PowerShell branch resolves `uip.cmd` explicitly (the bare name would hit
+  npm's `uip.ps1` shim, which PowerShell prefers and execution policy can
+  block; a `.cmd` batch file and the `node.exe` it launches are not governed
+  by execution policy). When `uip` is absent — or predates `--hook`
+  (UiPath/cli#4444) — events are silently dropped and the wrapper still exits
+  0; the hook never fails the session.

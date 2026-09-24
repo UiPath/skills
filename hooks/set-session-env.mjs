@@ -6,8 +6,9 @@
 // subsequent shell tool subprocess — and therefore every `uip` command the
 // agent runs — inherits it. The CLI puts that value on App Insights' native
 // `ai.session.id` tag (query it as `session_Id`) for every command it runs,
-// including the `uip track` calls made by send-telemetry.mjs (UiPath/cli#3431)
-// — so the command stream and the skills events share one session id. This
+// including the `uip track --hook` ingestions hooks.json registers
+// (UiPath/cli#3431) — so the command stream and the skills events share one
+// session id. This
 // export is the ONLY way they correlate: since schema v3 the telemetry hook
 // sends no session id of its own.
 //

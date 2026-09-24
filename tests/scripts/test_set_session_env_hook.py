@@ -11,8 +11,8 @@ what lands in ``CLAUDE_ENV_FILE``. Covers:
   before being written into the sourced env file;
 * the skip paths — no ``CLAUDE_ENV_FILE``, or a payload without ``session_id``.
 
-POSIX-only, like the send-telemetry guard; CI runs it on ubuntu (``node`` is
-preinstalled on the runners).
+POSIX-only, like the telemetry wrapper guard; CI runs it on ubuntu (``node``
+is preinstalled on the runners).
 
 Run from repo root:
     pytest tests/scripts/test_set_session_env_hook.py

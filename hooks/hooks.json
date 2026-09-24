@@ -16,7 +16,7 @@
           },
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "command": "echo `# <#` >/dev/null\ncommand -v uip >/dev/null 2>&1 || exit 0\nuip track --hook >/dev/null 2>&1\nexit 0\n: <<'POLYEOF' #> > $null\n$c = Get-Command uip.cmd -ErrorAction SilentlyContinue\nif ($null -eq $c) { exit 0 }\n& $c.Source track --hook *> $null\nexit 0\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "command": "echo `# <#` >/dev/null\ncommand -v uip >/dev/null 2>&1 || exit 0\nuip track --hook >/dev/null 2>&1\nexit 0\n: <<'POLYEOF' #> > $null\n$c = Get-Command uip.cmd -ErrorAction SilentlyContinue\nif ($null -eq $c) { exit 0 }\n& $c.Source track --hook *> $null\nexit 0\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "command": "echo `# <#` >/dev/null\ncommand -v uip >/dev/null 2>&1 || exit 0\nuip track --hook >/dev/null 2>&1\nexit 0\n: <<'POLYEOF' #> > $null\n$c = Get-Command uip.cmd -ErrorAction SilentlyContinue\nif ($null -eq $c) { exit 0 }\n& $c.Source track --hook *> $null\nexit 0\nPOLYEOF\n",
             "timeout": 30
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "command": "echo `# <#` >/dev/null\ncommand -v uip >/dev/null 2>&1 || exit 0\nuip track --hook >/dev/null 2>&1\nexit 0\n: <<'POLYEOF' #> > $null\n$c = Get-Command uip.cmd -ErrorAction SilentlyContinue\nif ($null -eq $c) { exit 0 }\n& $c.Source track --hook *> $null\nexit 0\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "command": "echo `# <#` >/dev/null\ncommand -v uip >/dev/null 2>&1 || exit 0\nuip track --hook >/dev/null 2>&1\nexit 0\n: <<'POLYEOF' #> > $null\n$c = Get-Command uip.cmd -ErrorAction SilentlyContinue\nif ($null -eq $c) { exit 0 }\n& $c.Source track --hook *> $null\nexit 0\nPOLYEOF\n",
             "async": true
           }
         ]
