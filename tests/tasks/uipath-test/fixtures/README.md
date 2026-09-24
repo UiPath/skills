@@ -102,9 +102,11 @@ behaviour.
 
 ## Steady state
 
-Eight `EVFX-` test sets and their cases — `EVFX-RERUN-SET`, `EVFX-FLAKY-SET`,
-`EVFX-SIGNOFF-SET`, `EVFX-JUNIT-SET`, `EVFX-TRIAGE-SET`, `EVFX-MANUAL-SET`,
-`EVFX-REPORT-SET`, and `EVFX-ORG-SET`, which `organize` creates and sweeps.
+Seven persistent `EVFX-` test sets and their cases — `EVFX-RERUN-SET`,
+`EVFX-FLAKY-SET`, `EVFX-SIGNOFF-SET`, `EVFX-JUNIT-SET`, `EVFX-TRIAGE-SET`,
+`EVFX-MANUAL-SET` and `EVFX-REPORT-SET`. `organize` also uses
+`EVFX-ORG-SRC-TC*` cases, but the `EVFX-ORG-SET-<timestamp>-*` sets it creates
+are scratch, swept in its own `post_run`, and are not steady state.
 
 The sets and cases never accrete. Executions are the exception, and there are
 two shapes. Most tasks hold the count at zero growth by construction:

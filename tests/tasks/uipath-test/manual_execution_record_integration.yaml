@@ -7,6 +7,12 @@ description: >
   RE-RUNS executions the fixture seeded; this one is the only task that opens a
   run and records results into it.
 
+  The prompt deliberately no longer names an executor. `testcaselog finish`
+  requires `--executed-by`, but Test Manager validates it non-empty and then
+  drops it — the command object carries no such field and the log records the
+  authenticated caller — so grading an attribution the server overrides would
+  fail every run.
+
   The interesting judgement is what the agent does NOT do. A manual run closes
   itself when its last test case log finishes, so `executions finish` is not the
   normal last step — it is the force-close for a run you want to end with logs
@@ -109,6 +115,16 @@ pre_run:
       call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
            "--test-case-keys", ",".join(keys))
 
+      # Assert the assignment landed. It is the condition the task reads, and
+      # call() swallows a failure - without this the run opens an execution
+      # over an empty set and the agent is scored for having no log to start.
+      d = call("cases.verify", "tm", "testsets", "list-testcases",
+               "--project-key", P, "--test-set-key", set_key)
+      assigned = {x.get("Name") for x in (d.get("Data") or [])}
+      missing = [c for c in CASES if c not in assigned]
+      if missing:
+          fail(f"cases not assigned to {SET}: {missing}")
+
       # 3. remove what earlier runs opened, so growth stays flat at one
       if set_id:
           d = call("execs.list", "tm", "executions", "list", "--project-key", P,
@@ -128,9 +144,9 @@ initial_prompt: |
   EVFX-MANUAL-TC3 passed; EVFX-MANUAL-TC2 failed. Nothing is recorded yet —
   I ran them by hand, outside any robot.
 
-  Please get that session into Test Manager as a run with those three results
-  against my name, qa@example.com, and then tell me the totals the run itself
-  reports. No need to check back with me.
+  Please get that session into Test Manager as a run with those three results,
+  and then tell me the totals the run itself reports. No need to check back
+  with me.
 
 success_criteria:
   - type: command_executed
