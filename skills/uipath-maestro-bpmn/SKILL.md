@@ -315,16 +315,18 @@ For registry-evidence-only tasks, follow the command-first recipe in
    uip maestro bpmn validate <file.bpmn> --output json
    ```
 
-   Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
-   with its rule code). Warnings do not fail the run: validate once, fix only
-   error-severity findings, and do not re-validate in a loop chasing warnings.
-   Two warnings are defects rather than noise, because no error covers them.
-   `read but never assigned` says nothing writes a value the process reads, so
-   a step that should produce it does not. `MISSING_RESOURCE` says a node has
-   no target selected; in a runnable deliverable, bind it. For a draft or
-   boundary handoff the user asked for, an unresolved node warns
-   `MISSING_RESOURCE` by design: keep its public placeholder, never invent an
-   identifier (Rule 2), and report the warning rather than clearing it.
+   Exit 0 = valid; exit 1 = validation failed. Read severity from each issue's
+   `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which
+   counts errors while the list under it prints warnings too. Validate once, fix
+   only error-severity findings, and do not re-validate in a loop chasing
+   warnings. `read but never assigned` is a defect no error covers: nothing
+   writes a value the process reads, so a step that should produce it does not.
+   `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
+   about one unresolved node, and the binding half is a live tenant lookup. In a
+   runnable deliverable, bind the node to a deployed resource. When the user
+   asked for a placeholder, draft, or boundary handoff, no invented identifier
+   can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
+   expected result, so report the pair once and stop.
 
    Validation is structural preflight, not runtime proof — see
    [references/cli-conventions.md](references/cli-conventions.md). When
