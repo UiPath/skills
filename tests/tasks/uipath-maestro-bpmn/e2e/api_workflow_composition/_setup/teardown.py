@@ -6,12 +6,13 @@ results are informational only), so this script always exits 0.
 Order (folder delete is what actually reclaims the tenant --
 `deploy uninstall` alone has been unreliable):
   1. Log `uip login status` for the run log.
-  2. For the seeded folder and every folder under `parentFolderPath` whose
-     name contains `runId` (deepest first), uninstall each deployment found
-     under it, then delete the folder itself -- this is what actually
-     reclaims the tenant folder + everything provisioned in it.
-  3. Delete every package version whose name is the run's unique
-     `solutionName` (from `uip solution packages list --name`).
+  2. Uninstall every deployment of the run's `solutionName` package, in any
+     folder (agents may deploy straight into `parentFolderPath`), or sitting
+     in a run folder: the seeded folder and every folder under
+     `parentFolderPath` whose name contains `runId` (deepest first). Then
+     delete those folders.
+  3. Delete the run's `solutionName` package, latest version first, until
+     `uip solution packages list --name` returns none.
   4. Delete every Studio Web solution discoverable from a `.uipx` under the
      sandbox CWD (mirrors `_shared`/`_setup/cleanup_solutions.py`'s glob),
      deduped by SolutionId so the same id is never deleted twice even if
@@ -40,8 +41,12 @@ PACKAGES_DELETE_TIMEOUT = 60
 SOLUTION_DELETE_TIMEOUT = 60
 FOLDERS_LIST_TIMEOUT = 60
 
+UNINSTALL_EXIT_GRACE = 15
+
 PAGE_SIZE = 100
 MAX_PAGES = 20
+MAX_PACKAGE_VERSIONS = 10
+SUCCESS = "Success"
 
 # post_run is killed at 300s (api_workflow_composition.yaml); stop short so
 # later phases are skipped cleanly instead of killed mid-call.
@@ -99,21 +104,22 @@ def run_folder_paths(parent_folder_path: str, run_id: str) -> list[str]:
     return sorted(paths, key=lambda path: path.count("/"), reverse=True)
 
 
-def uninstall_deployments(folder_path: str) -> None:
-    rows = _list_all(
-        ["uip", "solution", "deploy", "list", "--folder-path", folder_path],
-        DEPLOY_LIST_TIMEOUT,
-    )
-    if not rows:
-        logger.info("no deployments found under %s", folder_path)
+def uninstall_deployments(solution_name: str, folder_paths: list[str]) -> None:
+    rows = _list_all(["uip", "solution", "deploy", "list"], DEPLOY_LIST_TIMEOUT)
+    names = sorted({
+        row["Name"]
+        for row in rows
+        if isinstance(row, dict)
+        and row.get("Name")
+        and (row.get("PackageName") == solution_name or row.get("FolderPath") in folder_paths)
+    })
+    if not names:
+        logger.info("no deployments found for %s", solution_name)
         return
-    for row in rows:
-        name = row.get("Name") if isinstance(row, dict) else None
-        if not name:
-            continue
+    for name in names:
         result = _run(
-            ["uip", "solution", "deploy", "uninstall", name, "--yes"],
-            DEPLOY_UNINSTALL_TIMEOUT,
+            ["uip", "solution", "deploy", "uninstall", name, "--yes", "--timeout", str(DEPLOY_UNINSTALL_TIMEOUT)],
+            DEPLOY_UNINSTALL_TIMEOUT + UNINSTALL_EXIT_GRACE,
         )
         status = result.get("Result") if isinstance(result, dict) else None
         logger.info("uninstall %s -> %s", name, status or "unknown")
@@ -126,24 +132,24 @@ def delete_folder(folder_path: str) -> None:
 
 
 def delete_package_versions(solution_name: str) -> None:
-    rows = _list_all(["uip", "solution", "packages", "list", "--name", solution_name], PACKAGES_LIST_TIMEOUT)
-    matches = [
-        row
-        for row in rows
-        if isinstance(row, dict) and str(row.get("name") or row.get("Name") or "") == solution_name
-    ]
-    for row in matches:
-        version = row.get("version") or row.get("Version")
-        if not version:
-            continue
+    for _ in range(MAX_PACKAGE_VERSIONS):
+        rows = _list_all(["uip", "solution", "packages", "list", "--name", solution_name], PACKAGES_LIST_TIMEOUT)
+        latest = next(
+            (row.get("LatestVersion") for row in rows if isinstance(row, dict) and row.get("Name") == solution_name),
+            None,
+        )
+        if not latest:
+            logger.info("no published package versions left for %s", solution_name)
+            return
         result = _run(
-            ["uip", "solution", "packages", "delete", solution_name, str(version), "--yes"],
+            ["uip", "solution", "packages", "delete", solution_name, str(latest), "--yes"],
             PACKAGES_DELETE_TIMEOUT,
         )
         status = result.get("Result") if isinstance(result, dict) else None
-        logger.info("delete package %s %s -> %s", solution_name, version, status or "unknown")
-    if not matches:
-        logger.info("no published package versions named %s", solution_name)
+        logger.info("delete package %s %s -> %s", solution_name, latest, status or "unknown")
+        if status != SUCCESS:
+            return
+    logger.warning("stopped after %d package versions: %s", MAX_PACKAGE_VERSIONS, solution_name)
 
 
 def delete_studio_web_solutions() -> None:
@@ -190,8 +196,8 @@ def main() -> int:
         folder_paths = run_folder_paths(parent_folder_path, run_id) if parent_folder_path and run_id else []
         if folder_path and folder_path not in folder_paths:
             folder_paths.append(folder_path)
+        uninstall_deployments(solution_name, folder_paths)
         for path in folder_paths:
-            uninstall_deployments(path)
             delete_folder(path)
         if solution_name:
             delete_package_versions(solution_name)
