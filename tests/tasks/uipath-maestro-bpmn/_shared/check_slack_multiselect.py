@@ -26,15 +26,14 @@ Assertion map (Flow -> BPMN):
   F check_multiselect_flow.py:51-57   is_users_key(): 'users' with an optional
                                        array-notation suffix                    -> is_users_key(): identical regex
   F check_multiselect_flow.py:60-76   find_users(): recursive dict/list search
-      -> find_users(): identical recursive search over the merged body object
+      -> find_users(): identical recursive search over the body object
   I   locate/parse .bpmn, no name hint (this script is shared by both tasks;
       complex_array's own project-name hint is handled by its own
       check_complex_array.py, not here)                                        -> parse_bpmn()
   I   parse a connector node's request body (Flow read a native `inputs` dict;
       BPMN puts the whole request in `uipath:input` elements)                  -> body_object()
-  T   the registry's two observed body forms both count: one whole-body
-      `target="body"` JSON blob (name="body"), or one typed `target="body"`
-      input per field (name=<field>)                                          -> bpmn_check.body_object()
+  T   the body must be the one `target="body"` JSON object the runtime
+      consumes; several inputs fail (they don't merge at runtime)            -> bpmn_check.body_object()
   DROPPED  require_no_private_connector_values, require_sequence_integrity,
            require_di_for_visible_elements (not in Flow; `bpmn validate`
            criterion covers structure)
@@ -56,6 +55,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    BodyShapeError,
     body_object,
     context_value,
     elements,
@@ -151,12 +151,16 @@ def main() -> None:
     reasons = []
     for task in tasks:
         node_id = task.attrib.get("id", "<unknown>")
-        users = find_users(body_object(task))
+        try:
+            users = find_users(body_object(task))
+        except BodyShapeError as exc:
+            reasons.append(f"node '{node_id}': {exc}")
+            continue
         if users is None:
             reasons.append(f"node '{node_id}': no 'users' multiselect field found")
             continue
         if expected_count == "populated":
-            if users:
+            if any(str(user).strip() for user in users):
                 print(f"OK: {path} — node '{node_id}' users={users}")
                 sys.exit(0)
             reasons.append(f"node '{node_id}': users field is empty")

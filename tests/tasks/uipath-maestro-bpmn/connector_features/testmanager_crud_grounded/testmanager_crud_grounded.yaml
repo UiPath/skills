@@ -1,8 +1,4 @@
-# Ported from Flow `connector_features/testmanager_crud_grounded.yaml`.
-# Flow's task carries `skip: true` (pending agent-reliability confirmation).
-# Per BATCH1-ADDENDUM.md: Test Manager `skip: true` is NOT carried over --
-# the codereval Test Manager connection exists, and a skipped port yields no
-# signal -- this port runs so the BPMN suite measures it.
+# Skipped: grades an agent-written result.json; unskip once it grades the live run.
 task_id: skill-bpmn-testmanager-crud-grounded
 description: >
   Data-grounded (Maestro BPMN): agent builds a process that creates a Test
@@ -15,7 +11,7 @@ description: >
   connector node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper (create = TestCase/POST, get =
   TestCase/GETBYID|GET) instead of Flow's two per-operation connector node
-  types, and Flow's `skip: true` is not carried over (see header comment).
+  types.
 tags:
   - uipath-maestro-bpmn
   - e2e
@@ -23,6 +19,7 @@ tags:
   - "lifecycle:generate"
   - "shape:multi-node"
   - connector
+skip: true
 
 sandbox:
   template_sources:

@@ -6,10 +6,8 @@ description: >
   Ported from Flow `connector_features/enum.yaml`; the Gmail Send Mail
   connector node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper instead of a Flow connector node, and the
-  request body is graded in either of two accepted shapes — one JSON
-  target="body" input, or one typed target="body" input per field — since
-  BPMN's canonical single-blob shape coexists with the CLI manifest's stale
-  separate-inputs guidance (registry-workflow.md §3 "Body shape").
+  request body is graded as the one JSON target="body" input the runtime
+  consumes (registry-workflow.md §3 "Body shape").
   Validate-only, matching Flow's own scope — the Flow source never called
   `flow debug` either, only `flow validate`.
 tags:

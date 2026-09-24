@@ -41,8 +41,8 @@ Assertion map (Flow -> BPMN):
       -> bpmn_live.run_debug has no retry/backoff parameter to begin with
        (a retried Create-Issue would duplicate the ticket)
   F    check_escalation_jira_ticket.py:70-90    except-branch: on a debug
-      -> on subprocess.TimeoutExpired from run_debug, scrape partial
-       timeout, best-effort scrape partial output for <PROJECT>-\\d+             stdout/stderr for <PROJECT>-\\d+
+      -> on CheckFailure from run_debug, scrape the debug log file
+       timeout, best-effort scrape partial output for <PROJECT>-\\d+             for <PROJECT>-\\d+
        candidates, keep only ones whose
        candidates, keep only ones owned (summary carries correlationId)         summary carries correlationId, journal
        them, then fail
@@ -117,7 +117,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -135,18 +134,19 @@ from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     CheckFailure,
+    DebugEvidence,
     connector_response_values,
     element_output_records,
+    fetch_incidents,
+    fetch_variables,
     get_ci,
-    incident_records,
+    import_exact,
     index_runtime_connectors,
-    payload_data,
     q,
+    require_clean_run,
     resolve_runtime_key,
     root_scope,
-    run_cli,
     run_debug,
-    sha256,
     UIPATH_NS,
 )
 
@@ -155,13 +155,8 @@ JIRA_CREATE_OP = "curated_create_issue"  # matches the catalog op customer_escal
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
 CASE_SENSITIVE = {"caseKey", "jiraIssueKey"}  # opaque ids -- exact-case match
 OUTPUT_NAMES = ("severity", "caseKey", "jiraIssueKey")
-COMPLETED_STATUSES = {"Completed", "Successful"}
 
 LIVE_RUN_DIR = Path("escalation-jira-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
 MAX_CANDIDATE_ISSUE_READS = 2  # headroom; one Create-Issue node normally executes once
 
 
@@ -236,8 +231,8 @@ def resolve_contract(root: ET.Element) -> Contract:
     connectors = index_runtime_connectors(process)
     jira_create_ids = tuple(
         element_id
-        for (key, route), element_ids in connectors.items()
-        if key == JIRA_CONNECTOR and JIRA_CREATE_OP in route
+        for (key, path, _object_name), element_ids in connectors.items()
+        if key == JIRA_CONNECTOR and JIRA_CREATE_OP in path
         for element_id in element_ids
     )
     if not jira_create_ids:
@@ -280,7 +275,7 @@ def _recover_partial_keys(project_key: str, correlation: str, raw_text: str) -> 
         return []
     try:
         conn = jira_is.connection_id()
-    except SystemExit:
+    except (SystemExit, Exception):  # noqa: BLE001 -- connection_id() raises SystemExit
         return []
     owned = []
     for key in cands:
@@ -309,31 +304,9 @@ def main() -> None:
 
     contract = resolve_contract(root)
     project_dir = resolve_project(os.path.basename(bpmn_path))
-    original_hash = sha256(Path(bpmn_path))
-
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "EscalationJiraLiveEval"
-    initialized = run_cli(["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT)
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        _fail(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip", "solution", "projects", "import", str(project_dir.resolve()),
-            "--solutionFile", str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
+    imported_project = import_exact(
+        Path(bpmn_path), project_dir, LIVE_RUN_DIR / "EscalationJiraLiveEval"
     )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / os.path.basename(bpmn_path)) != original_hash:
-        _fail("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
     # No whole-run retries: this process CREATES a Jira issue, so a retried
     # whole run on a transient error could create a duplicate ticket that this
@@ -342,23 +315,20 @@ def main() -> None:
     log_file = LIVE_RUN_DIR / "debug.log"
     try:
         debug_data, instance_id = run_debug(imported_project, seed["inputs"], log_file)
-    except subprocess.TimeoutExpired as exc:
-        partial = "".join(
-            s.decode() if isinstance(s, bytes) else (s or "") for s in (exc.stdout, exc.stderr)
-        )
+    except CheckFailure as error:
+        try:
+            partial = log_file.read_text(encoding="utf-8")
+        except OSError:
+            partial = ""
         owned = _recover_partial_keys(project_key, correlation, partial)
         _journal(owned)
         _fail(
-            f"bpmn debug timed out after {exc.timeout}s"
+            str(error)
             + (f"; recorded this-run key(s) {owned} for teardown" if owned else "")
         )
     print(f"OK: debug completed (instance {instance_id})")
 
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
-    )
-    _payload, variables_data = payload_data(variables, "variables-all")
+    variables_data, variables_text = fetch_variables(instance_id)
 
     # Journal the created key BEFORE any assertion -- it was created regardless
     # of the verdict below, and post_run's teardown_jira.py replays the journal
@@ -366,35 +336,10 @@ def main() -> None:
     jira_keys = _harvest_jira_keys(contract, variables_data)
     _journal(jira_keys)
 
-    incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=INCIDENTS_TIMEOUT,
+    incidents, incidents_data = fetch_incidents(instance_id)
+    require_clean_run(
+        debug_data, DebugEvidence(variables_data, variables_text, incidents, incidents_data)
     )
-    _payload, incidents_data = payload_data(incidents, "incidents")
-
-    final_status = get_ci(debug_data, "FinalStatus")
-    if final_status not in COMPLETED_STATUSES:
-        faulted = [
-            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
-            for item in get_ci(debug_data, "ElementExecutions", []) or []
-            if isinstance(item, dict)
-            and str(get_ci(item, "Status") or "").casefold() != "completed"
-        ]
-        records = incident_records(incidents_data)
-        detail = []
-        if faulted:
-            detail.append(f"non-completed elements: {faulted}")
-        if records:
-            detail.append(f"incidents: {json.dumps(records)[:1500]}")
-        suffix = "; " + "; ".join(detail) if detail else ""
-        _fail(f"bpmn debug did not complete (finalStatus={final_status})" + suffix)
-    print("OK: bpmn debug completed")
-
-    records = incident_records(incidents_data)
-    if records is None:
-        _fail(f"incidents response has an unknown shape: {incidents_data!r}")
-    if records:
-        _fail(f"unexpected incidents: {records}")
 
     # Execution evidence: the Jira CREATE-ISSUE element specifically must have
     # executed (not merely any Jira element -- a read op could surface an
@@ -425,7 +370,7 @@ def main() -> None:
         for fields in [jira_is.get_issue(conn, k)]
         if fields is not None and correlation in str(fields.get("summary", ""))
     ]
-    _journal(owned or jira_keys)  # re-journal narrowed to confirmed-owned when possible
+    _journal(owned)
     if not owned:
         _fail(
             f"none of {jira_keys} is a Jira issue whose summary contains "

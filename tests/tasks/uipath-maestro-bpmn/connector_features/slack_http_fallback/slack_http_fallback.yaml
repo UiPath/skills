@@ -12,8 +12,7 @@ description: >
   the HTTP-fallback node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper with connectorKey uipath-salesforce-slack
   targeting the emoji.list endpoint (registry-workflow.md §"Connectionless vs
-  connector HTTP" -- see the grader's GUESS note on the open question of
-  whether a connector-authenticated Intsvc.HttpExecution form also exists),
+  connector HTTP"),
   `flow debug`'s single-call inline payload becomes an ephemeral-solution
   import + `bpmn debug` + `debug-instance incidents` read, and the check_debug
   criterion's timeout is raised from Flow's 720s to 930s to cover the extra

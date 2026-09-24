@@ -31,11 +31,13 @@ Assertion map (Flow → BPMN):
                                   (flow_check.run_debug raises on a non-Completed status internally;
                                   `bpmn debug` returns only an instance id, so the check is explicit here)
                                   → FinalStatus in COMPLETED_STATUSES and debug-instance incidents is empty
+  ADDED            a Get-Issue node completed in debug ElementExecutions (Flow's payload only carries
+                    outputs of nodes that ran)
   F check_jira_get_issue.py:55   assert_outputs_contain(payload, seed["summary"])
-                                  → seeded summary found among the root scope's variable leaves AND every
-                                    element's Outputs in `debug-instance variables-all` (LIVE-ADDENDUM: a
-                                    root PUBLIC OUTPUT has read back null even when mapped correctly, so the
-                                    search is not scoped to a declared output variable)
+                                  → seeded summary found in the Get-Issue node's own Outputs or the root
+                                    Globals minus input echoes in `debug-instance variables-all`
+                                    (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read back null even when
+                                    mapped correctly, so the search is not scoped to a declared output)
   I                locate/parse .bpmn (file exists, well-formed XML, project directory resolved)
                                   → bpmn_check.find_bpmn_file()/resolve_project()
   I                ephemeral solution init + `solution projects import` + sha256 pin of the imported
@@ -71,12 +73,15 @@ from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
     connector_context,
+    debug_evidence,
+    element_output_records,
     get_ci,
-    incident_records,
-    payload_data,
+    import_exact,
+    input_echo_ids,
+    normalized_identifier,
+    require_clean_run,
     root_scope,
-    run_cli,
-    sha256,
+    value_leaves,
 )
 
 JIRA_KEY = "uipath-atlassian-jira"
@@ -87,11 +92,6 @@ ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 NAME_HINT = "JiraGetIssue"
 
 LIVE_RUN_DIR = Path("jira-get-issue-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
-COMPLETED_STATUSES = {"Completed", "Successful"}
 
 # Worst-case wall clock this checker can spend, priced the way
 # _shared/test_criterion_budgets.py prices a run_debug(...) call: the debug
@@ -109,17 +109,6 @@ COMPLETED_STATUSES = {"Completed", "Successful"}
 
 def _fail(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
-
-
-def _leaves(value):
-    if isinstance(value, dict):
-        for v in value.values():
-            yield from _leaves(v)
-    elif isinstance(value, list):
-        for v in value:
-            yield from _leaves(v)
-    elif value is not None:
-        yield value
 
 
 def is_get_issue_node(node_name: str, object_name: str, method: str) -> bool:
@@ -154,18 +143,31 @@ def find_get_issue_nodes(root: ET.Element) -> list[ET.Element]:
     return found
 
 
-def collect_output_haystack(variables_data: object) -> str:
-    """Value leaves of the root scope's Globals AND every element's Outputs.
+def completed_ids(debug_data: object, element_ids: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            get_ci(item, "ElementId")
+            for item in get_ci(debug_data, "ElementExecutions", []) or []
+            if isinstance(item, dict)
+            and get_ci(item, "ElementId") in element_ids
+            and str(get_ci(item, "Status") or "").casefold() == "completed"
+        )
+    )
 
-    A root public output has been observed to read back null even when
-    correctly mapped (LIVE-ADDENDUM), so the search is not scoped to one
-    declared output variable -- it mirrors Flow's own
-    assert_outputs_contain(), which flattens the whole outputs payload.
-    """
-    leaves = list(_leaves(get_ci(root_scope(variables_data), "Globals", {})))
-    for scope in get_ci(variables_data, "Variables", []) or []:
-        for element in get_ci(scope, "Elements", []) or []:
-            leaves.extend(_leaves(get_ci(element, "Outputs", {})))
+
+def collect_output_haystack(
+    variables_data: object, get_ids: tuple[str, ...], skip: set[str]
+) -> str:
+    """The Get-Issue node's own Outputs plus root Globals that are not input
+    echoes, so a summary typed into an input cannot pass without the Get."""
+    leaves = list(value_leaves(element_output_records(variables_data, get_ids)))
+    skipped = {normalized_identifier(name) for name in skip}
+    globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
+    if isinstance(globals_, dict):
+        for name, value in globals_.items():
+            if normalized_identifier(name) in skipped:
+                continue
+            leaves.extend(value_leaves(value))
     return "\n".join(str(v) for v in leaves).lower()
 
 
@@ -195,84 +197,32 @@ def main() -> None:
     print(f"OK: bpmn references a Get-Issue op and the seeded key {issue_key}")
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
-    original_hash = sha256(Path(bpmn_path))
-
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "JiraGetIssueLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    imported_project = import_exact(
+        Path(bpmn_path), project_dir, LIVE_RUN_DIR / "JiraGetIssueLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / os.path.basename(bpmn_path)) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
     debug_data, instance_id = bpmn_live.run_debug(
         imported_project, {}, LIVE_RUN_DIR / "debug.log"
     )
     print(f"OK: debug completed (instance {instance_id})")
 
-    final_status = get_ci(debug_data, "FinalStatus")
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
-    )
-    _payload, variables_data = payload_data(variables, "variables-all")
+    evidence = debug_evidence(instance_id)
+    require_clean_run(debug_data, evidence)
 
-    incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=INCIDENTS_TIMEOUT,
-    )
-    _payload, incidents_data = payload_data(incidents, "incidents")
-    incidents_list = incident_records(incidents_data)
-
-    if final_status not in COMPLETED_STATUSES:
-        detail = []
-        faulted = [
-            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
-            for item in get_ci(debug_data, "ElementExecutions", []) or []
-            if isinstance(item, dict)
-            and str(get_ci(item, "Status") or "").casefold() != "completed"
-        ]
-        if faulted:
-            detail.append(f"non-completed elements: {faulted}")
-        if incidents_list:
-            detail.append(f"incidents: {json.dumps(incidents_list)[:1500]}")
-        raise CheckFailure(
-            f"final status was {final_status!r}"
-            + ("; " + "; ".join(detail) if detail else "")
+    get_ids = tuple(node.attrib["id"] for node in get_issue_nodes if node.attrib.get("id"))
+    ran = completed_ids(debug_data, get_ids)
+    if not ran:
+        _fail(
+            f"no Get-Issue node among {list(get_ids)} completed in the debug trace; "
+            "the issue was not actually read"
         )
-    if incidents_list is None:
-        raise CheckFailure(f"incidents response has an unknown shape: {incidents_data!r}")
-    if incidents_list:
-        raise CheckFailure(f"unexpected incidents: {incidents_list}")
-    print("OK: bpmn debug completed (FinalStatus=%s, no incidents)" % final_status)
+    print(f"OK: Get-Issue node(s) {list(ran)} completed")
 
-    haystack = collect_output_haystack(variables_data)
+    haystack = collect_output_haystack(evidence.variables, ran, input_echo_ids(root))
     if seed["summary"].lower() not in haystack:
         _fail(
-            f"outputs do not contain the seeded issue summary {seed['summary']!r}\n"
+            f"Get-Issue outputs and non-input globals do not contain the seeded "
+            f"issue summary {seed['summary']!r}\n"
             f"outputs: {haystack[:1000]}"
         )
     print("OK: bpmn outputs contain the seeded issue summary")

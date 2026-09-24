@@ -1,15 +1,6 @@
 # Flow → BPMN eval parity map
 
-Flow tasks: 131 · BPMN tasks: 82 · generated 2026-09-19
-
-| Bucket | Count |
-|---|---|
-| Ported 1:1 | 21 |
-| Covered by an equivalent BPMN task | 18 |
-| Portable — structural (authoring + validate) | 29 |
-| Portable — live (bpmn debug + tenant re-read) | 17 |
-| Portable pending a feasibility probe | 16 |
-| Not portable (Flow-only surface) | 30 |
+Flow tasks: 131 · BPMN tasks: 82
 
 ## Porting ledger
 
@@ -55,7 +46,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `connector_features/jdbc_databricks_query/…` | same | PASS (run 35538279757) | structural |
 | `connector_features/slack-http-fallback/…` | `connector_features/slack_http_fallback/` | PASS (run 35783045540) | it.1 grader wanted `emoji.list`; the connector's generic resource is `emoji_list_GET` |
 | `connector_trigger/webhook_waitfor_parallel.yaml` | same | PASS (run 35783045540) | it.1 grader classified the wait by BPMN tag; agent emits `intermediateCatchEvent` + `Intsvc.WaitForEvent` and `Intsvc.UnifiedHttpRequest` |
-| `connector_features/testmanager_crud_grounded/…` | same | PASS (run 35783045540) | it.1 two byte-identical `.bpmn` copies read as ambiguity |
+| `connector_features/testmanager_crud_grounded/…` | same | SKIPPED, as in Flow | grades an agent-written `result.json`; unskip once it grades the live run |
 | `interactive/cli_dice_roller_simulated/…` | same | PASS (run 35783045540) | |
 | `multi_node/billing_invoice_lookup/…` | same | PASS (run 35785806030) | it.1 grader read its own ephemeral live solution as a second project; run 35783045540 was a platform 504 |
 | `multi_node/slack_weather_pipeline/…` | same | PASS it.3 (run 35785806030) | it.1 channel not found, it.2 wrong Slack connection bound (401); Flow passes 6/12 nightlies |
@@ -80,7 +71,11 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `connector_features/ceql_where.yaml` | `connector_features/ceql_where/` | runs 35783045540, 35785806030: agent writes the connector's CEQL `where` string, never Flow's numeric-groupOperator tree; no BPMN carrier |
 | `connector_features/enhanced_enum.yaml` | `connector_features/enhanced_enum/` | runs 35789221753, 35790934047: no WooCommerce connector node produced |
 
-## Ported 1:1 (21)
+## Initial classification (2026-09-19)
+
+The buckets the ports were chosen from. The ledger above supersedes a row once its task is ported or parked.
+
+### Ported 1:1 (21)
 
 | Flow task | BPMN target / note |
 |---|---|
@@ -96,7 +91,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `hitl/quality_04_brownfield_insert.yaml` | hitl/quality_brownfield_insert |
 | `hitl/smoke_02_completed_port_wired.yaml` | hitl/smoke_completed_wired |
 | `hitl/smoke_03_multi_outcome_routing.yaml` | hitl/smoke_multi_outcome_routing |
-| `interactive/customer_escalation_triage/customer_escalation_triage.yaml` | e2e/customer_escalation_triage (live, this branch) |
+| `interactive/customer_escalation_triage/customer_escalation_triage.yaml` | e2e/customer_escalation_triage (live) |
 | `multi_node/calculator/calculator.yaml` | multi_node/calculator (structural only; Flow is live) |
 | `multi_node/customer_escalation/customer_escalation.yaml` | multi_node/customer_escalation |
 | `multi_node/dice_roller/dice_roller.yaml` | multi_node/dice_roller (structural only; Flow is live) |
@@ -106,7 +101,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `multi_node/reading_list/reading_list.yaml` | multi_node/reading_list (structural only; Flow is live) |
 | `multi_node/wiki_pageviews/wiki_pageviews.yaml` | multi_node/wiki_pageviews (structural only; Flow is live) |
 
-## Covered by an equivalent BPMN task (18)
+### Covered by an equivalent BPMN task (18)
 
 | Flow task | BPMN target / note |
 |---|---|
@@ -129,7 +124,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `smoke/registry_discovery.yaml` | smoke/registry_discovery |
 | `smoke/scheduled_trigger.yaml` | single_node/timer_start |
 
-## Portable — structural (authoring + validate) (29)
+### Portable — structural (authoring + validate) (29)
 
 | Flow task | BPMN target / note |
 |---|---|
@@ -144,7 +139,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `connector_features/datafabric_connector/trigger_lifecycle.yaml` | Intsvc.EventTrigger Record Created/Updated + downstream ActivityExecution |
 | `connector_features/drive_to_slack.yaml` | two ActivityExecution nodes; binary output chaining; validate-only |
 | `connector_features/non-catalog-http-fallback/non_catalog_http_fallback.yaml` | generic HTTP connector (uipath-uipath-http) ActivityExecution |
-| `connector_features/slack-http-fallback/slack_http_fallback.yaml` | connector-mode HTTP fallback (Intsvc.HttpExecution on Slack connection) |
+| `connector_features/slack-http-fallback/slack_http_fallback.yaml` | connector-mode HTTP fallback (Intsvc.ActivityExecution on Slack connection) |
 | `connector_features/testmanager_attachments/testmanager_attachments.yaml` | one ActivityExecution per Test Manager operation; validate-only |
 | `connector_features/testmanager_execution_results/testmanager_execution_results.yaml` | one ActivityExecution per Test Manager operation; validate-only |
 | `connector_features/testmanager_generic_records/testmanager_generic_records.yaml` | one ActivityExecution per Test Manager operation; validate-only |
@@ -163,7 +158,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `single_node/outlook_trigger_inbox/outlook_trigger_inbox.yaml` | Intsvc.EventTrigger startEvent with fresh parentFolderId reference resolution |
 | `single_node/outlook_waitfor_email/outlook_waitfor_email.yaml` | Intsvc.WaitForEvent receiveTask with subject filter |
 
-## Portable — live (bpmn debug + tenant re-read) (17)
+### Portable — live (bpmn debug + tenant re-read) (17)
 
 | Flow task | BPMN target / note |
 |---|---|
@@ -172,7 +167,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `connector_features/jdbc_databricks_query/jdbc_databricks_query.yaml` | JDBC ActivityExecution; live |
 | `connector_features/testmanager_crud_grounded/testmanager_crud_grounded.yaml` | Test Manager create+get round trip; live debug |
 | `connector_trigger/webhook_waitfor_parallel.yaml` | parallelGateway + Intsvc.WaitForEvent (webhook) + HttpExecution self-trigger; live debug |
-| `e2e/escalation_jira_ticket/escalation_jira_ticket.yaml` | sibling of the live escalation port on this branch; reuse escalation_is.py |
+| `e2e/escalation_jira_ticket/escalation_jira_ticket.yaml` | sibling of the live escalation port; reuse escalation_is.py |
 | `e2e/escalation_orchestrator_paths/escalation_orchestrator_paths.yaml` | exclusiveGateway paths + Orchestrator.* nodes; live debug |
 | `e2e/escalation_slack_alert/escalation_slack_alert.yaml` | sibling of the live escalation port; reuse escalation_is.py |
 | `e2e/jira_create_issue/jira_create_issue.yaml` | Jira ActivityExecution; live debug + tenant re-read; teardown journal |
@@ -185,7 +180,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `multi_node/slack_channel_description/slack_channel_description.yaml` | Intsvc.ActivityExecution Slack; Slack plumbing in e2e/customer_escalation_triage/escalation_is.py |
 | `multi_node/slack_weather_pipeline/slack_weather_pipeline.yaml` | HttpExecution + Slack ActivityExecution; live debug |
 
-## Portable pending a feasibility probe (16)
+### Portable pending a feasibility probe (16)
 
 | Flow task | BPMN target / note |
 |---|---|
@@ -206,7 +201,7 @@ One row per task, final state. Iterations are summarised in the notes; runs are 
 | `multi_node/billing_resolution_writer/billing_resolution_writer.yaml` | inline agent → StartAgentJob substitute |
 | `single_node/file_attachment/file_attachment.yaml` | file-typed process variable: confirm canvas variable contract supports it |
 
-## Not portable (Flow-only surface) (30)
+### Not portable (Flow-only surface) (30)
 
 | Flow task | BPMN target / note |
 |---|---|

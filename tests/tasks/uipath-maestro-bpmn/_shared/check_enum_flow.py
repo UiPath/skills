@@ -9,14 +9,10 @@ JSON `inputs.detail.bodyParameters` walk to an XML walk over the
 registry-driven `Intsvc.*` connector shell (see skills/uipath-maestro-bpmn/
 references/registry-workflow.md §3 "Body shape").
 
-registry-workflow.md documents the canonical hand-authored body shape as
+registry-workflow.md documents the only body shape the runtime consumes:
 exactly ONE `target="body"` input holding the whole request as a JSON CDATA
-blob. The CLI manifest's stale `InputNotes`, however, still tell an author to
-add one `uipath:input` per request field, and BATCH1-ADDENDUM's own lessons
-record agents emitting both shapes for other Intsvc.ActivityExecution
-parameters (curated separate path/query inputs vs. one JSON blob). Per this
-task's instructions, both body forms are accepted here too: one JSON blob
-input, or one typed `target="body"` input per field.
+blob. Several `target="body"` inputs do not merge at runtime, so that shape
+fails here (bpmn_check.body_object).
 
 Assertion map (Flow -> BPMN):
   F check_enum_flow.py:39-44  structure: flow exists, valid JSON,          -> check_structure(): locate/parse .bpmn
@@ -32,13 +28,9 @@ Assertion map (Flow -> BPMN):
     inputs.detail.bodyParameters, keep the best (fewest-missing) partial      carrying a target="body" input, keep
     match for the failure message                                            the best (fewest-missing) partial match
   I             locate/parse .bpmn                                        -> parse_bpmn(name_hint)
-  T             body read in both forms: one JSON blob, or one typed      -> body_fields(): single JSON-parseable
-    input per field (task instruction; mirrors the CLI manifest's stale      target="body" input -> its parsed
-    separateInputs InputNotes as a real, if non-canonical, shape)             object; multiple target="body" inputs,
-                                                                               each name=field -> {name: value} map
-  T             `=`-prefixed expression values pass any type/value check  -> body_fields_match() treats a value
-    (grading-contract-wide translation tolerance for expression strings)     starting with "=" as satisfying its
-                                                                               expected field unconditionally
+  T             `=`-prefixed expression value                              -> body_fields_match() accepts it only
+                                                                               when it carries the expected literal
+                                                                               (`=js:'high'`)
 
 No Flow assertions dropped: `structure`'s existence/parse check and
 `body_params`'s to/importance field match both have a BPMN counterpart above.
@@ -57,7 +49,14 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import body_object, context_inputs, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    BodyShapeError,
+    body_object,
+    context_inputs,
+    elements,
+    fail,
+    parse_bpmn,
+)
 
 # Kept identical to Flow's own _EXPECTED_BODY (check_enum_flow.py:49-52): only
 # `to` and `importance` are asserted, matching the code, not its docstring.
@@ -93,24 +92,22 @@ def check_structure(name_hint: str) -> None:
 
 
 def body_fields(node: ET.Element) -> dict[str, str] | None:
-    """The node's request body as a field->value map, in either registry form
-    (one JSON blob, or one typed input per field), via bpmn_check.body_object;
-    None when the node has no target="body" input at all."""
+    """The node's request body as a field->value map; None when the node has
+    no target="body" input at all. Raises BodyShapeError for a body the
+    runtime cannot consume."""
     if not any(inp.attrib.get("target") == "body" for inp in context_inputs(node)):
         return None
-    fields = {
+    return {
         str(k): (v if isinstance(v, str) else json.dumps(v))
         for k, v in body_object(node).items()
     }
-    return fields or None
 
 
 def body_fields_match(fields: dict[str, object]) -> list[str]:
     """Missing/mismatched field descriptions; empty list means OK.
 
-    A value beginning with "=" is an expression (`=vars.X`, `=js:...`) and
-    passes unconditionally -- the grading-contract-wide translation tolerance
-    for expression strings.
+    An expression (`=js:'high'`) passes only when it carries the expected
+    literal.
     """
     lowered = {str(k).lower(): v for k, v in fields.items()}
     missing: list[str] = []
@@ -120,7 +117,7 @@ def body_fields_match(fields: dict[str, object]) -> list[str]:
             missing.append(f"{key}={expected!r} (missing)")
             continue
         actual_str = str(actual).strip()
-        if actual_str.startswith("="):
+        if actual_str.startswith("=") and expected.lower() in actual_str.lower():
             continue
         if actual_str.lower() != expected.lower():
             missing.append(f"{key}={expected!r} (got {actual!r})")
@@ -133,13 +130,18 @@ def check_body_params(name_hint: str) -> None:
     checked_any = False
     candidates = [node for tag in CANDIDATE_TAGS for node in elements(root, tag)]
     for node in candidates:
-        fields = body_fields(node)
+        node_id = node.attrib.get("id", "<unknown>")
+        try:
+            fields = body_fields(node)
+        except BodyShapeError as exc:
+            checked_any = True
+            best_missing = best_missing or [f"node {node_id!r}: {exc}"]
+            continue
         if fields is None:
             continue
         checked_any = True
         missing = body_fields_match(fields)
         if not missing:
-            node_id = node.attrib.get("id", "<unknown>")
             print(f"OK: body payload on node {node_id!r} carries expected to/importance")
             return
         if best_missing is None or len(missing) < len(best_missing):
@@ -147,9 +149,8 @@ def check_body_params(name_hint: str) -> None:
 
     if not checked_any:
         fail(
-            f"No node in {path} has a target=\"body\" input. Hand-authored connector "
-            f"nodes must carry either one JSON target=\"body\" input holding the "
-            f"whole request object, or one target=\"body\" input per field."
+            f"No node in {path} has a target=\"body\" input. A hand-authored connector "
+            f"node carries one JSON target=\"body\" input holding the whole request object."
         )
     fail(f"target=\"body\" input found but missing or wrong fields: {best_missing}. BPMN: {path}")
 

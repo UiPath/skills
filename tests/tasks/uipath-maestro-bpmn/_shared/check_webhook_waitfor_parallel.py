@@ -65,7 +65,7 @@ from _shared.bpmn_check import (  # noqa: E402
     has_typed_uipath_extension,
     parse_bpmn,
 )
-from _shared.graph import reachable  # noqa: E402
+from _shared.graph import reachable, reaches  # noqa: E402
 
 BPMN_NS = NS["bpmn"]
 WAIT_TYPE = "Intsvc.WaitForEvent"
@@ -200,6 +200,17 @@ def main() -> None:
             "no populated headers/parameters context field)"
         )
     print("OK: manual GET HttpExecution sendTask to webhook URL, no headers/query")
+
+    wait_id, get_id = attr(event_nodes[0], "id"), attr(http_nodes[0], "id")
+    from_start = reachable(root, start_id)
+    if wait_id not in from_start or get_id not in from_start:
+        fail("the wait-for-event and HTTP-request nodes must both be reachable from the manual start")
+    if reaches(root, wait_id, get_id) or reaches(root, get_id, wait_id):
+        fail(
+            f"{wait_id!r} and {get_id!r} sit in series on one branch; the wait and the GET "
+            "must run on parallel branches or the wait never sees the request"
+        )
+    print("OK: wait-for-event and HTTP-request run on parallel branches")
 
     end_ids = {attr(e, "id") for e in elements(root, "endEvent")}
     if not end_ids:

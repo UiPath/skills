@@ -29,7 +29,8 @@ Assertion map (Flow -> BPMN):
   F check_smoke_error.py:40-42  `len(good_queries) < 2` -> fail            -> `good_queries < 2` check
   I                             locate/parse .bpmn                        -> parse_bpmn()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
-  T                             entity name anywhere in inputs             -> mentions_entity()
+  T                             entity as the generic objectName, or an    -> mentions_entity()
+                                 exact target="path" input value
   DROPPED  topology/parallel-branch parsing    (Flow's own grader does not parse it either -- see its docstring)
   DROPPED  require_no_private_connector_values (not in Flow)
   DROPPED  require_sequence_integrity          (not in Flow; `bpmn validate` criterion covers structure)
@@ -77,12 +78,13 @@ _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
 
 
 def mentions_entity(task: ET.Element, entity: str) -> bool:
-    for inp in context_inputs(task):
-        value = inp.attrib.get("value") or ""
-        text = inp.text or ""
-        if entity in value or entity in text:
-            return True
-    return False
+    if is_generic_entity_object(context_value(task, "objectName"), entity):
+        return True
+    return any(
+        inp.attrib.get("target") == "path"
+        and (inp.attrib.get("value") or inp.text or "").strip() == entity
+        for inp in context_inputs(task)
+    )
 
 
 def is_generic_entity_object(object_name: str, entity: str) -> bool:

@@ -27,20 +27,14 @@ description: >
   acr_user`) instead of a Flow connector node with a node-type slug,
   `flow debug`'s single-call inline payload becomes an ephemeral-solution
   import + `bpmn debug` + `debug-instance variables-all`/`incidents` read, and
-  the array-output check searches the root scope's Globals plus every
-  element's Outputs instead of one inline debug payload's flow-output
-  globals. The live-check criterion timeout is raised from Flow's 720s to
+  the array-output check reads the declared process output's Global, falling
+  back to the list node's own Outputs only when every output reads back null. The live-check criterion timeout is raised from Flow's 720s to
   1050s: the BPMN sequence adds ephemeral solution init/import and two
   separate `debug-instance` reads that flow's single inline `flow debug` call
   did not need (see check_generic_dynamic_node.py's budget comment) — the one
   sanctioned deviation from "criteria identical" per LIVE-ADDENDUM, since the
   budget is a property of the CLI surface, not of what is graded.
 tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:generate", "shape:single-node", connector, uipath-servicenow-servicenow]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 sandbox:
   template_sources:

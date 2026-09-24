@@ -86,7 +86,6 @@ Usage (from a task's run_command, cwd = sandbox root):
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -106,13 +105,15 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
+    INCIDENTS_TIMEOUT,
     CheckFailure,
+    DebugEvidence,
     connector_context,
-    get_ci,
+    import_exact,
     incident_records,
     payload_data,
+    require_clean_run,
     run_cli,
-    sha256,
 )
 
 NAME_HINT = "SlackEmojiListTest"
@@ -127,10 +128,6 @@ EMOJI_ENDPOINT_RE = re.compile(r"emoji[._]list")
 ACTIVITY_TYPES = ("Intsvc.ActivityExecution", "Intsvc.HttpExecution", "Intsvc.UnifiedHttpRequest")
 
 LIVE_RUN_DIR = Path("slack-emoji-list-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-INCIDENTS_TIMEOUT = 120
-COMPLETED_STATUSES = {"Completed", "Successful"}
 
 # Worst-case wall clock check_debug can spend, priced the way
 # _shared/test_criterion_budgets.py prices a run_debug(...) call: the call
@@ -227,76 +224,28 @@ def check_fallback() -> None:
 def check_debug() -> None:
     bpmn_path = find_bpmn_file(NAME_HINT)
     project_dir = resolve_project(os.path.basename(bpmn_path))
-    original_hash = sha256(Path(bpmn_path))
-
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "SlackEmojiListTestLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    imported_project = import_exact(
+        Path(bpmn_path), project_dir, LIVE_RUN_DIR / "SlackEmojiListTestLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / os.path.basename(bpmn_path)) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
     debug_data, instance_id = bpmn_live.run_debug(
         imported_project, {}, LIVE_RUN_DIR / "debug.log"
     )
     print(f"OK: debug completed (instance {instance_id})")
 
-    final_status = get_ci(debug_data, "FinalStatus")
     incidents = run_cli(
         ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
         timeout=INCIDENTS_TIMEOUT,
     )
     _payload, incidents_data = payload_data(incidents, "incidents")
-    incidents_list = incident_records(incidents_data)
-
-    if final_status not in COMPLETED_STATUSES:
-        detail = []
-        faulted = [
-            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
-            for item in get_ci(debug_data, "ElementExecutions", []) or []
-            if isinstance(item, dict)
-            and str(get_ci(item, "Status") or "").casefold() != "completed"
-        ]
-        if faulted:
-            detail.append(f"non-completed elements: {faulted}")
-        if incidents_list:
-            detail.append(f"incidents: {json.dumps(incidents_list)[:1500]}")
-        raise CheckFailure(
-            f"final status was {final_status!r}"
-            + ("; " + "; ".join(detail) if detail else "")
-        )
-    if incidents_list is None:
-        raise CheckFailure(f"incidents response has an unknown shape: {incidents_data!r}")
-    if incidents_list:
-        raise CheckFailure(f"unexpected incidents: {incidents_list}")
-    print(
-        "OK: uip maestro bpmn debug finished with FinalStatus=%s (no incidents)"
-        % final_status
+    evidence = DebugEvidence(
+        variables=None,
+        variables_text="",
+        incidents=incident_records(incidents_data),
+        incidents_raw=incidents_data,
     )
+    require_clean_run(debug_data, evidence)
 
 
 DISPATCH = {

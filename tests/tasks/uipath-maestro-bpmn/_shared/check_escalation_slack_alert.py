@@ -67,17 +67,20 @@ from _shared import bpmn_check  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     CheckFailure,
+    INCIDENTS_TIMEOUT,
+    SOLUTION_IMPORT_TIMEOUT,
+    SOLUTION_INIT_TIMEOUT,
+    VARIABLES_ALL_TIMEOUT,
+    debug_evidence,
     element_output_records,
     get_ci,
+    import_exact,
     incident_records,
     index_runtime_connectors,
-    payload_data,
     q,
     resolve_runtime_key,
     root_scope,
-    run_cli,
     run_debug,
-    sha256,
     UIPATH_NS,
 )
 
@@ -99,10 +102,6 @@ LIVE_RUN_DIR = Path("escalation-slack-alert-live")
 # cover their sum plus bpmn_live.CRITERION_MARGIN_SECONDS.
 DEBUG_TIMEOUT_SECONDS = 480  # bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT, spelled out so the
 # static budget guard can price this call without following the import.
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
 STEP_TIMEOUTS = (
     DEBUG_TIMEOUT_SECONDS,
     SOLUTION_INIT_TIMEOUT,
@@ -177,8 +176,8 @@ def resolve_contract(root: ET.Element) -> Contract:
     def ids_for(connector_key: str, path_needle: str) -> tuple[str, ...]:
         found = tuple(
             element_id
-            for (key, route), element_ids in connectors.items()
-            if key == connector_key and path_needle in route
+            for (key, path, _object_name), element_ids in connectors.items()
+            if key == connector_key and path_needle in path
             for element_id in element_ids
         )
         if not found:
@@ -407,58 +406,19 @@ def main() -> None:
         raise CheckFailure("seed.json must contain exactly one case")
     case = cases[0]
 
-    original_hash = sha256(Path(bpmn_path))
-
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "EscalationSlackAlertLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)],
-        timeout=SOLUTION_INIT_TIMEOUT,
+    imported_project = import_exact(
+        Path(bpmn_path), project_dir, LIVE_RUN_DIR / "EscalationSlackAlertLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / Path(bpmn_path).name) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
     debug_data, instance_id = run_debug(
         imported_project, case["inputs"], LIVE_RUN_DIR / "debug.log"
     )
     print(f"OK: debug completed (instance {instance_id})")
 
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
+    evidence = debug_evidence(instance_id)
+    ts = assert_outcome(
+        contract, case, debug_data, evidence.variables, evidence.incidents_raw
     )
-    _payload, variables_data = payload_data(variables, "variables-all")
-
-    incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
-        timeout=INCIDENTS_TIMEOUT,
-    )
-    _payload, incidents_data = payload_data(incidents, "incidents")
-
-    ts = assert_outcome(contract, case, debug_data, variables_data, incidents_data)
     print(
         f"OK: {case['name']} completed -- Sev1 + engineering classified, "
         f"correlationId preserved, and the Slack alert was posted (ts={ts})"

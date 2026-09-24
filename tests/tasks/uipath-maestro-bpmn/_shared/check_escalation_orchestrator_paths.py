@@ -51,8 +51,7 @@ Assertion map (Flow -> BPMN):
   I               locate/parse .bpmn, resolve project directory
       -> resolve_project() / resolve_contract()
   I               ephemeral solution init + import + sha256 pin, run bpmn debug per case, read variables-all
-      -> LIVE-tier canonical pattern (bpmn_live.py; copied from
-         e2e/customer_escalation_triage/check_customer_escalation_behavior.py)
+      -> LIVE-tier canonical pattern (bpmn_live.import_exact() + run_debug())
   T               finalStatus/elementExecutions completion check (flow_check.run_debug does this inline for `flow
      debug`; `bpmn debug` does not)
       -> per-case FinalStatus check in verify_case()
@@ -88,18 +87,21 @@ from _shared import graph  # noqa: E402
 from _shared.bpmn_check import NS, attr, elements, resolve_project  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
+    COMPLETED_STATUSES,
     CheckFailure,
     UIPATH_NS,
+    VARIABLES_ALL_TIMEOUT,
     connector_context,
     element_output_records,
     get_ci,
+    import_exact,
     index_runtime_connectors,
     payload_data,
     q,
     root_scope,
     run_cli,
     run_debug,
-    sha256,
+    value_leaves,
 )
 
 SLACK_KEY = "uipath-salesforce-slack"
@@ -118,11 +120,7 @@ CLASSIFICATION_FIELDS = ("escalationPath", "severity", "engineeringNeeded", "res
 NAMED_OUTPUT_FIELDS = CLASSIFICATION_FIELDS + ("caseKey",)
 
 LIVE_RUN_DIR = Path("escalation-orchestrator-live")
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
 DEBUG_TIMEOUT_SECONDS = 300  # literal on the run_debug call below -- the budget guard reads this statically
-VARIABLES_ALL_TIMEOUT = 120
-COMPLETED_STATUSES = {"Completed", "Successful"}
 _SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 
 
@@ -164,8 +162,8 @@ def resolve_contract(path: Path) -> Contract:
     connectors = index_runtime_connectors(process)
     slack_ids = tuple(
         element_id
-        for (key, route), element_ids in connectors.items()
-        if key == SLACK_KEY and SLACK_SEND_PATH_HINT in route
+        for (key, connector_path, _object_name), element_ids in connectors.items()
+        if key == SLACK_KEY and SLACK_SEND_PATH_HINT in connector_path
         for element_id in element_ids
     )
     if not slack_ids:
@@ -332,17 +330,6 @@ def _loose_contains(haystack: str, needle: str) -> bool:
     return norm(needle) in norm(haystack)
 
 
-def _leaves(value):
-    if isinstance(value, dict):
-        for v in value.values():
-            yield from _leaves(v)
-    elif isinstance(value, list):
-        for v in value:
-            yield from _leaves(v)
-    elif value is not None:
-        yield value
-
-
 def public_value_present(
     variables_data, expected, *, exclude_ids: tuple[str, ...], case_sensitive: bool
 ) -> bool:
@@ -351,12 +338,12 @@ def public_value_present(
     leaf search rather than one pinned root-output id."""
 
     target = normalized(expected, case_fold=not case_sensitive)
-    candidates = list(_leaves(get_ci(root_scope(variables_data), "Globals", {})))
+    candidates = list(value_leaves(get_ci(root_scope(variables_data), "Globals", {})))
     for scope in get_ci(variables_data, "Variables", []) or []:
         for element in get_ci(scope, "Elements", []) or []:
             if get_ci(element, "ElementId") in exclude_ids:
                 continue
-            candidates.extend(_leaves(get_ci(element, "Outputs", {})))
+            candidates.extend(value_leaves(get_ci(element, "Outputs", {})))
     return any(normalized(v, case_fold=not case_sensitive) == target for v in candidates)
 
 
@@ -508,37 +495,9 @@ def main() -> None:
     assert_send_identity(process, contract.slack_ids)
     assert_error_handlers(root, process, contract.slack_ids)
 
-    original_hash = sha256(bpmn_path)
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "EscalationOrchestratorLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    imported_project = import_exact(
+        bpmn_path, project_dir, LIVE_RUN_DIR / "EscalationOrchestratorLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project_dir.name
-    if sha256(imported_project / BPMN_NAME) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
     escalation_fired: set = set()
     triage_fired: set = set()
