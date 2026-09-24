@@ -68,7 +68,8 @@ async function execute(context) {
   if (!listed?.body?.ok) {
     throw new Error('Failed to retrieve user groups' + JSON.stringify(listed?.body ?? listed?.raw));
   }
-  return { status: 200, headers: [], body: listed.body.usergroups ?? [] };
+  listed.body = listed.body.usergroups ?? [];   // mutate, never rebuild
+  return listed;
 }
 ```
 This returns Slack's first page only; pagination is not handled. `usergroups.list`

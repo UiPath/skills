@@ -76,8 +76,10 @@ The procedure, per lookup field:
      }
 
      // A LIST action returns the RELEVANT RECORDS ARRAY — the vendor envelope
-     // unwrapped, and nothing else.
-     return { status: 200, headers: [], body: listed.body.members ?? [] };
+     // unwrapped, and nothing else. Mutate the intsvc.http result so its
+     // status and content-type header travel with it.
+     listed.body = listed.body.members ?? [];
+     return listed;
    }
    ```
 

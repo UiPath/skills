@@ -105,9 +105,26 @@ got an answer (network, login), and 3 on a bad argument — so `set -e` will not
 stop you on a vendor rejection; branch on `Data.Status` and `Data.Body` yourself.
 
 Returning an `intsvc.http` result **untouched** relays the vendor's original
-bytes verbatim (status, ordered/duplicate headers, body). Returning a fabricated
-object re-encodes it — the right call for a list whose envelope is noise, the
-wrong one when fidelity matters.
+bytes verbatim (status, ordered/duplicate headers, body). When the body must
+change — a list unwrapping its envelope — **mutate that result**, don't build a
+new one:
+
+```js
+listed.body = listed.body.usergroups ?? [];
+return listed;               // status and headers, content-type included, kept
+```
+
+Only when there is no `intsvc.http` result to return (a script that makes no
+vendor call) build one, and give it a JSON content type — without it the
+consumer receives the body as a text string, not JSON:
+
+```js
+return {
+  status: 200,
+  headers: [{ name: 'content-type', value: 'application/json' }],
+  body: records,
+};
+```
 
 ## Detecting vendor failure
 

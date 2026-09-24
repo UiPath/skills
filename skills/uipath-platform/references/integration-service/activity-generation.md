@@ -145,6 +145,10 @@ and routing all work.
 
 ### 4. Write the main script, then test it
 
+Save it as `$WORK/<scriptRef>.js`: the file's base name **is** the `scriptRef`
+the min.json declares in step 5, and `flow node add --scripts $WORK` finds each
+script by that name alone. A lookup script from step 3 follows the same rule.
+
 **Decide first whether the operation has side effects.** Reads may be run
 immediately; writes may not be run at all until the user chooses to. Do not
 execute anything before you have placed the operation on one side of that line.
@@ -156,7 +160,7 @@ execute anything before you have placed the operation on one side of that line.
 ```bash
 uip is resources run script \
   --connection-id <connectionId> \
-  --inline-script @$WORK/<Name>.js \
+  --inline-script @$WORK/<scriptRef>.js \
   --body '{ "channel": "C0A66HP9KKM" }' \
   --output json
 ```
@@ -209,7 +213,7 @@ for a read, with the agreed values:
 ```bash
 uip is resources run script \
   --connection-id <connectionId> \
-  --inline-script @$WORK/<Name>.js \
+  --inline-script @$WORK/<scriptRef>.js \
   --body '{ "name": "test-1756900000" }' \
   --output json
 ```
@@ -265,7 +269,7 @@ records-array wrapper field — the action returns the bare array.
 
 ```bash
 uip is activities metadata generate $WORK/<Name>.min.json
-uip is activities script update $WORK/<Name>.js --metadata $WORK/<Name>.json
+uip is activities script update $WORK/<scriptRef>.js --metadata $WORK/<Name>.json
 ```
 
 `generate` validates before it writes — a rejected run leaves no artifact behind.
@@ -285,10 +289,10 @@ metadata so the two cannot drift. Re-running replaces the header in place.
 ## What you produce
 
 ```
-$WORK/<Name>.js            the main action, verified, with its type header
-$WORK/<Lookup>.js          one per lookup field, each verified
-$WORK/<Name>.min.json      the reviewable contract
-$WORK/<Name>.json          the compiled activity metadata
+$WORK/<scriptRef>.js        the main action, verified, with its type header
+$WORK/<lookupScriptRef>.js  one per lookup field, each verified
+$WORK/<Name>.min.json       the reviewable contract
+$WORK/<Name>.json           the compiled activity metadata
 ```
 
 ## Keep the scripts readable
