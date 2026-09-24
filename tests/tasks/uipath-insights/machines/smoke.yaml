@@ -264,7 +264,11 @@ success_criteria:
       Score 1.0 if the response reports busyness as durations, minutes, or
       counts, or says plainly that a percentage of capacity is not available
       from these commands. Score 1.0 if every machine read came back empty or
-      failed and the response reports that instead of a number.
+      failed and the response reports that instead of a number. A split of
+      runtime between unattended and attended work, given as the two
+      durations or as their shares of total runtime ("100% unattended"), is
+      a composition of two returned durations and not a capacity figure;
+      do not penalize it.
 
       Score 0.0 if the response states a utilization or busyness percentage,
       or builds one by dividing runtime by the window length, by a slot or
