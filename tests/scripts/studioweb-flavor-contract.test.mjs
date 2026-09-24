@@ -220,3 +220,22 @@ test("the studioweb functions and coded-app flavors do not forbid editing", (t) 
     );
   }
 });
+
+// The Studio Web shell registers `node` / `js-exec` on QuickJS (Autopilot
+// `shell/shellService.ts`), so the flavors must name what is really missing —
+// npm and a full Node.js runtime — rather than deny that `node` exists.
+test("the studioweb functions and coded-app flavors do not deny the QuickJS node command", (t) => {
+  const output = buildStudioweb(t);
+
+  for (const skillName of ["uipath-functions", "uipath-coded-apps"]) {
+    const skillDir = join(output, skillName);
+    const entry = HOST_SCOPED_SKILLS.find((candidate) => candidate.skill === skillName);
+    const paths = ["SKILL.md", ...entry.references.map((reference) => join("references", reference))];
+    for (const path of paths) {
+      const text = readFileSync(join(skillDir, path), "utf8");
+      assert.ok(!/no local (Python, )?Node/.test(text), `${skillName}/${path} must not claim there is no Node`);
+    }
+    const skill = readFileSync(join(skillDir, "SKILL.md"), "utf8");
+    assert.ok(skill.includes("QuickJS sandbox"), `${skillName} must say the shell's node is a QuickJS sandbox`);
+  }
+});
