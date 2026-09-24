@@ -116,7 +116,7 @@ Read the UIAutomation version in the summarizer's `Packages:` line (the `to` val
 
 | Analyze outcome | Action |
 |---|---|
-| No stop condition | Continue to Step 4 without asking. When the user asked only for an analysis, a report or a plan (Rule 4), stop here instead: present the summary with the proposed treatment of each needs-attention item, and continue to Step 4 only on the user's go. A treatment the user chose there that edits the output is applied after Step 5 and before Step 6, under the rules of [runtime-verification-guide.md § Fix and rerun loop](references/runtime-verification-guide.md#fix-and-rerun-loop): its Limits and Sources sub-steps, and the step 3 backup as edit 1. |
+| No stop condition | Continue to Step 4 without asking. When the user asked only for an analysis, a report or a plan (Rule 4), stop here instead: present the summary with the proposed treatment of each needs-attention item, and continue to Step 4 only on the user's go. A treatment the user chose there that edits the output is applied after Step 5 and before Step 6, under the rules of [runtime-verification-guide.md § Fix and rerun loop](references/runtime-verification-guide.md#fix-and-rerun-loop): its Limits and Sources sub-steps, the step 3 backup as edit 1, and step 4's Remediated annotation once the run passes. |
 | `RESTORE-MISSING-PACKAGE` / `RESTORE-INCOMPATIBLE-PACKAGE` | Stop. Explain which package, offer the Orchestrator-feed command with placeholders (Rule 6) or `--ignore-missing-dependencies` with its consequences. Rerun analyze after the user acts. |
 | `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED` | Rule 9. Stop. |
 | Package guide stop condition | Follow the guide. |
