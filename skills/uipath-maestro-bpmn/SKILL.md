@@ -52,7 +52,7 @@ edits and preserve content you did not author: unknown `uipath:*` elements, `uip
 tags, imported Integration Service payloads, and stable element IDs. Do not
 regenerate the whole file or drop extension data the skill does not recognize —
 preserve-only structures (see the blocklist in
-[references/structural-bpmn.md](references/structural-bpmn.md)) round-trip
+[references/structural-bpmn.md](references/structural-bpmn.md#do-not-generate-for-new-authoring-preserve-on-round-trip-only)) round-trip
 untouched. Never normalize existing nodes to this skill's canonical templates:
 do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
@@ -174,12 +174,10 @@ that mode, immediately create `registry-evidence/`, run and save `registry pull
 json`, and `registry get <type> --output json` for each requested type; do not
 read deep authoring references or scaffold a project. For authoring asks, author
 early: do not pre-read every reference before writing. Read a reference only
-when you reach the structure it covers, get the needed templates, then write the
-first complete draft before further spelunking. If
-[references/structural-bpmn.md](references/structural-bpmn.md) or
-[references/expression-authoring.md](references/expression-authoring.md)
-directly covers the requested construct, write a first complete draft before
-further spelunking.
+when you reach the structure it covers, and read only the section covering it —
+[references/structural-bpmn.md](references/structural-bpmn.md) opens with a
+section index naming every anchor. Get the needed templates, then write the
+first complete draft before further spelunking.
 
 For registry-evidence-only tasks, follow the command-first recipe in
 [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
@@ -222,7 +220,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then run
-   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For a new local project, initialize the
+   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md#diagram-interchange--bpmndi-registry-gap--always-generated). For a new local project, initialize the
    supported scaffold with `uip maestro bpmn init <ProjectName> --output json`,
    edit at the returned `Data.Path`, and preserve its generated metadata. For a
    source-only draft the user has not asked to package or operate, pass
@@ -302,7 +300,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    Give public inputs and outputs explicit runtime bridges, and converge routes
    returning one result on a single completion EndEvent — for the two-layer
    contract see
-   [references/structural-bpmn.md](references/structural-bpmn.md#variables-bpmnvariables).
+   [references/structural-bpmn.md](references/structural-bpmn.md#variables).
 4. **Validate.** Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
