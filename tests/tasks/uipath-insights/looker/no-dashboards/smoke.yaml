@@ -1,0 +1,83 @@
+task_id: skill-insights-smoke-looker-no-dashboards
+description: >
+  Smoke test against the looker-dashboards `uip` shim. The tenant has no
+  personal, tenant or template Looker dashboards and this deployment answers
+  that with HTTP 500, which the CLI reports as `server_error` with
+  `RetryWillNotFix` (cli commit ceb85297b). The agent should list once, not
+  retry, not blame the session, and pass on the fix the Instructions name.
+tags: [uipath-insights, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../mock_template}
+    - {type: template_dir, path: fixture}
+
+initial_prompt: |
+  Using UiPath Insights through `uip insights`: what Looker-era Insights
+  dashboards do we have? I want to embed one on our intranet.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent listed once and did not retry the RetryWillNotFix failure"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+list\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    max_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run an interactive uip login"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!uip\s)(?:[^&;|\n]|\\\n))*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt a Looker dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+(create|create-from-template|update|delete|remove|duplicate|copy|export|download|restore|import|check)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the shim or its fixture"
+    tool_name: "Bash"
+    command_pattern: 'mocks/(?:looker\.json|help\.json|uip\b)'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reply says the tenant has no Looker dashboards and names the fix"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The listing failed with `server_error` and `Retry: RetryWillNotFix`.
+      Its Message says the tenant has no personal, tenant or template Looker
+      dashboards and this deployment reports that as an error. Its
+      Instructions say to create a dashboard in the Insights app or ask for
+      the tenant's template models to be provisioned, and not to retry.
+
+      Score 1.0 only if the reply says the tenant has no Looker dashboards
+      to embed yet, says retrying will not change that, and names creating a
+      dashboard in the Insights app or getting the templates provisioned as
+      the way forward.
+
+      Score 0.0 if the reply calls it a temporary outage, suggests retrying
+      or waiting, blames the login or permissions, presents an embed link,
+      or suggests a CLI command that creates a Looker dashboard.
+    weight: 3.0
+    pass_threshold: 1.0

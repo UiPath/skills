@@ -1,0 +1,96 @@
+task_id: skill-insights-smoke-looker-unreachable-id
+description: >
+  Smoke test against the looker-dashboards `uip` shim. The user pastes a
+  portal link to dashboard 4821, which is not among the dashboards this
+  session can reach, so get-embed-url answers `not_found` with HTTP 401 the
+  way the shipped CLI does. The agent should read that as reachability for
+  this one dashboard: no `uip login`, no retry, no invented link, and the
+  open causes named rather than one picked as fact (guide Rule 3).
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../mock_template}
+    - {type: template_dir, path: fixture}
+
+initial_prompt: |
+  Using UiPath Insights through `uip insights`: a colleague shared this
+  Looker-era Insights dashboard with me,
+  https://alpha.uipath.com/acme/DefaultTenant/insights_/dashboards/4821 .
+  Get me an embed link for it so I can put it in our team portal.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent asked for an embed URL for dashboard 4821"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?:(?!uip\s)(?:[^&;|\n]|\\\n))*\b4821\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did not retry the embed after the not_found"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    max_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run an interactive uip login"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!uip\s)(?:[^&;|\n]|\\\n))*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt a Looker dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+(create|create-from-template|update|delete|remove|duplicate|copy|export|download|restore|import|check)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the shim or its fixture"
+    tool_name: "Bash"
+    command_pattern: 'mocks/(?:looker\.json|help\.json|uip\b)'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reply reads the not_found as reachability and names the open causes"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user asked for an embed link for Looker dashboard 4821. The embed
+      command answered `not_found` with HTTP 401. Its Instructions say the
+      dashboard is not one this session can reach: it may sit in another
+      user's personal folder, may have been deleted while the listing still
+      shows it from cache, or, being a numeric id, may need the tenant's
+      Insights licence in full mode. The CLI cannot tell these apart.
+
+      Score 1.0 only if the reply says no link was produced, explains that
+      this session cannot reach that dashboard, names the other user's
+      personal folder as a possible cause, and leaves the causes open rather
+      than asserting one of them as fact. Suggesting the colleague move or
+      share the dashboard into a folder the user can reach is a good answer.
+
+      Score 0.0 if the reply presents a link, blames the login or session,
+      suggests running `uip login`, suggests retrying the same request, or
+      states one cause as certain.
+    weight: 3.0
+    pass_threshold: 1.0

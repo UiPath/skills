@@ -14,8 +14,8 @@ description: >
   create and no tenant guarantees.
 tags: [uipath-insights, smoke, mode:operate, lifecycle:discover]
 
-# The two `looker-dashboards` verbs ship in UiPath/cli#PENDING (branch
-# `feature/insights-looker-embed-url`, head 5d1320840 on 2026-09-24), which is
+# The two `looker-dashboards` verbs ship in UiPath/cli#4495 (branch
+# `feature/insights-looker-embed-url`, head 624f051bf on 2026-09-24), which is
 # not merged and not published. Until a dev build carries them both --help
 # gates below exit 3 on an unknown command, which is the task working
 # correctly and the smoke check going red for a reason unrelated to the skill.
@@ -192,16 +192,36 @@ success_criteria:
   # criterion takes one literal `path` and scores 0.0 when the file is missing
   # (coder_eval 0.12.4, criteria/file_matches_regex.py), so a single-path check
   # would both miss every other filename and fail the runs that correctly write
-  # nothing. run_command runs with cwd set to the sandbox root, and grep exits 1
-  # when it selects no lines, which is the pass here. The excludes keep the
-  # sweep off the harness's own `.venv` and `.npm-prefix` and off installed
-  # packages; a read error exits 2 and fails, which is the safe direction for a
-  # credential check.
+  # nothing. run_command runs with cwd set to the sandbox root. The sweep skips
+  # dot-directories and dot-files, which keeps it off the harness's own `.venv`
+  # and `.npm-prefix`, and skips installed packages; an unreadable file counts
+  # as a hit, which is the safe direction for a credential check. It is Python
+  # rather than `grep -r --exclude-dir='.*' .` because BSD grep reads that
+  # exclude as matching the starting `.` and scans nothing.
   - type: run_command
     description: "No file written anywhere in the sandbox carries a minted embed URL"
-    command: "grep -rIl --exclude-dir='.*' --exclude-dir=node_modules -e 'login/embed/' ."
+    command: |
+      python3 - <<'PY'
+      import os, sys
+      hits = []
+      for root, dirs, files in os.walk("."):
+          dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("mocks", "node_modules")]
+          for name in files:
+              if name.startswith("."):
+                  continue
+              path = os.path.join(root, name)
+              try:
+                  with open(path, encoding="utf-8", errors="ignore") as handle:
+                      found = "login/embed/" in handle.read()
+              except OSError:
+                  found = True
+              if found:
+                  hits.append(path)
+      print("\n".join(hits))
+      sys.exit(1 if hits else 0)
+      PY
     timeout: 60
-    expected_exit_code: 1
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
