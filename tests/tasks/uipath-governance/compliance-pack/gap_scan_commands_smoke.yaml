@@ -4,7 +4,9 @@ description: >
   state coverage, NOT deployed-policy commands or pack-walker.mjs. Tests the correct
   two-command sequence in the plugin architecture.
 
-  Platform note: uip commands fail with auth errors - expected.
+  Platform note: in CI the tenant is live and these commands succeed; locally
+  they fail with auth errors. The prompt must not assert either way - see
+  drift_restore_smoke.yaml for the failure this caused.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 
@@ -25,11 +27,20 @@ initial_prompt: |
   Run a posture analysis for the ISO 42001 compliance standard against my tenant. Show me which
   recommended settings are configured and which are not yet applied.
 
-  Capture all command output to ./output.txt
-  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+  Keep a copy of every command's output in ./output.txt - append with
+  `>> output.txt 2>&1`, or `| tee -a output.txt` where the skill redirects that
+  command's output to a session file of its own. The skill's session-file layout
+  wins; output.txt is an extra copy for review, not a replacement.
 
   Important:
-  - uip CLI not connected - auth errors expected. Run once, capture, move on.
+  - A uip command may fail with an auth error. If one does, carry on with the
+    remaining steps - do NOT retry or login.
+  - Decide whether a command succeeded from the `Result` field of that command's
+    own JSON response. Do NOT search the accumulated output.txt for words like
+    "unauthorized" or "forbidden" - the compliance standard's control
+    descriptions contain them as ordinary policy text, so that check reports
+    failure on a good run.
+  - Run each command once, capture output, move on.
   - Always pass --output json.
   - Do NOT prompt for confirmation.
 
