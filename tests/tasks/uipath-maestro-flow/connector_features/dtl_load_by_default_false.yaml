@@ -51,6 +51,17 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # An unconfigured node (no inputs.detail) passes `flow validate` with only a
+  # warning, so without this criterion a build that never touched the feature
+  # scored 1.0. With no WooCommerce connection in the tenant, every arm must fail.
+  - type: run_command
+    description: "The WooCommerce node's attribute_term dropdown is configured (term id or expression) on a real connection"
+    command: "python3 $REFERENCE_DIR/connector_features/check_dtl_load_by_default_false.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "The completed flow validates"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
