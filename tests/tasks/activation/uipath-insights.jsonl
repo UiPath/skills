@@ -53,3 +53,6 @@
 {"id": "uipath-insights-053", "prompt": "Rename my Insights dashboard and put the failures chart first.", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-054", "prompt": "Delete the test Insights dashboard I made yesterday, but keep a copy of it.", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-055", "prompt": "Give the new order process the same Insights dashboard the old one has.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-056", "prompt": "Give me an embed link for the Attended Reporting dashboard so I can drop it into our internal page.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-057", "prompt": "Our embedded Insights dashboard shows an unauthorized message for one user. Why?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-058", "prompt": "Export the Business ROI Looker dashboard from Insights so we can move it to another tenant.", "expected_skill": "uipath-insights"}
