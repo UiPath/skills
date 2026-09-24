@@ -211,7 +211,7 @@ truncates to `11`. Preserve an existing value byte-for-byte when editing rather
 than normalising or bumping it — the serializer runs whatever migrations sit
 above it.
 
-Give every root-level `bpmn:startEvent` exactly one stable GUID in
+Give every root-level **manual** `bpmn:startEvent` exactly one stable GUID in
 `<uipath:entryPointId value="..." />`, declared as a **direct child** of that
 start event's own `<bpmn:extensionElements>`. Direct-child placement is not a
 style preference: `validate` finds the element at any depth
@@ -225,7 +225,8 @@ excludes any start event carrying an `eventDefinition` or a `uipath:event`
 extension, so a timer or connector start is never an entry point — an
 `entryPointId` on one is accepted but inert. With no manual root start
 `refresh` throws `BPMN file must contain a root manual start event with a
-uipath:entryPointId` and `pack` fails on the stale `entry-points.json`.
+uipath:entryPointId`, and a scaffolded project's `entry-points.json` goes
+stale, failing `validate` and `pack`.
 
 Public entry-point variables have a two-layer runtime contract:
 
