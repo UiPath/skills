@@ -90,7 +90,7 @@ Key options:
 | `--auto-update` / `--no-auto-update` | Auto-pick the latest package version on deploy |
 | `--job-priority <Low\|Normal\|High>` | Default execution priority. The CLI sets the matching `SpecificPriorityValue` band (Low=25, Normal=45, High=65) — the API derives the band from that value, so the change actually applies. |
 | `--specific-priority <1-100>` | Numeric priority override (mutually exclusive with `--job-priority`). Use when you need fine-grained ordering inside the same priority bucket. |
-| `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud robot sizing for serverless runtimes |
+| `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud serverless machine size (the label the Orchestrator UI uses). Omit it to leave the process on `Automatic` (stored as no size — Orchestrator then lets the serverless service pick). Also settable on `processes update`. |
 | `--input-arguments <json>` | Default input arguments (merged with per-job inputs) |
 | `--environment-variables <pairs>` | Default environment variables — newline-separated `KEY=VALUE` pairs, **not** JSON (merged with per-job env) |
 | `--tags <list>` | Comma-separated tags for filtering |
@@ -125,6 +125,11 @@ uip or processes update <process-key-guid> --environment-variables $'API_HOST=ap
 # so the CLI sends a bare newline to make the clear actually happen).
 uip or processes update <process-key-guid> --environment-variables '' --output json
 
+# Resize the serverless machine after deploy. A process created some other way — a
+# solution deploy always lands on Automatic — can be resized here without the UI.
+# Omitting --robot-size keeps the stored size; no value sets it back to Automatic.
+uip or processes update <process-key-guid> --robot-size Large --output json
+
 # Walk the package version history (every package version this release ever pointed at)
 uip or processes version-history <process-key-guid> --output json
 
@@ -157,6 +162,8 @@ uip or processes delete <process-key-guid> --yes --output json
 > target exists — check `OverwriteProperties` yourself when a job fails to bind.
 
 `processes update` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
+
+> **`--robot-size` on a license-slots tenant.** On tenants where serverless runs on license slots, Orchestrator refuses a size *change* on update — HTTP `400`, `'RobotSize' is not editable.` (`ErrorCode 1024`, `FieldNotEditable`) — and the CLI passes that error through; the Orchestrator UI hides the field there. The refusal fires only when the value actually changes to a non-null size, so an unrelated update (e.g. `--description`) that echoes the current size back is unaffected.
 
 ## Step 4: Start Job
 
