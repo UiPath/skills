@@ -1716,6 +1716,20 @@ def test_assert_output_not_serialized_object_plain_prose():
     flow_check.assert_output_not_serialized_object(payload, "emailBody")
 
 
+def test_assert_output_not_serialized_object_structured_value():
+    """A whole agent-output object (or array) mapped into the text field fails too."""
+    for value in ({"subject": "Resolution", "body": "Dear Acme"}, [{"body": "Dear Acme"}]):
+        with pytest.raises(SystemExit):
+            flow_check.assert_output_not_serialized_object(_named_globals(emailBody=value), "emailBody")
+
+
+def test_named_global_reads_globals_then_global_variables():
+    assert flow_check._named_global(_named_globals(emailBody="x"), "EMAILBODY")[0] == "x"
+    payload = {"variables": {"globals": {}, "globalVariables": [{"id": "emailBody", "value": "y"}]}}
+    assert flow_check._named_global(payload, "emailBody")[0] == "y"
+    assert flow_check._named_global({}, "emailBody") == (None, {})
+
+
 def test_assert_output_not_serialized_object_braces_in_prose():
     for text in ("Credit {INV-1} issued.", "{Dear customer} we approved it", '"just a quoted string"', "42"):
         flow_check.assert_output_not_serialized_object(_named_globals(emailBody=text), "emailBody")
