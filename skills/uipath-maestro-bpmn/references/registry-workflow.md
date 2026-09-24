@@ -365,9 +365,8 @@ the template's second bug.** Verified end-to-end for
    Re-read it after every deploy: `deploy run` creates a new folder.
 3. With both fields correct — `releaseKey` bound to the resource's real `Key`,
    `folderKey` literal to the folder's real `FolderKey` — the node runs to
-   completion. The template's own `folderId`/`folderPath`/`name` context
-   fields are not needed for `Orchestrator.ExecuteApiWorkflowAsync` and can be
-   dropped.
+   completion. For `Orchestrator.ExecuteApiWorkflowAsync`, drop the
+   template's own `folderId`/`folderPath`/`name` context fields.
 
 For the other types in the list, apply step 1 only. Apply step 2 after a
 live run faults with `key:FolderKey`; without a run, report the node
