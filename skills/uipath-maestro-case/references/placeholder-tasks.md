@@ -81,7 +81,7 @@ When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit
 
 ## `registry-resolved.json` Entry Shape
 
-A placeholder-bound entry is an ordinary ledger object — Rule 9's keys with `selected: null`, the unresolved reason in the identity slot, and the wiring that had no schema to bind against captured in `wiringNotes`:
+A placeholder-bound entry is an ordinary ledger object — Rule 10's keys with `selected: null`, the unresolved reason in the identity slot, and the wiring that had no schema to bind against captured in `wiringNotes`. The object below is **one element of the file's bare top-level array** (Rule 10) — the file is never an envelope object wrapping the entries under a key:
 
 ```json
 {
@@ -94,7 +94,7 @@ A placeholder-bound entry is an ordinary ledger object — Rule 9's keys with `s
   "selected": null,
   "taskTypeId": "<UNRESOLVED: processOrchestration-index.json empty in tenant>",
   "folder-path": "<UNRESOLVED>",
-  "rationale": "Empty exact-name lookup after a successful registry pull; user declined the Rule 17 create gate.",
+  "rationale": "Empty exact-name lookup after a successful registry pull; user declined the Rule 18 create gate.",
   "wiringNotes": [
     "lob = =metadata.lob",
     "sourceDocs <- \"Submission Review\".\"Fetch Submission from U Submit\".submissionData",
@@ -106,21 +106,30 @@ A placeholder-bound entry is an ordinary ledger object — Rule 9's keys with `s
 Rules:
 - **Omit the resolved-schema keys `inputs` / `outputs`** — no schema to wire against.
 - **Put the intended wiring in `wiringNotes`, one string per mapping.** Phase 2 reads it back into the completion report so the user knows what to attach after registering the resource.
-- **Keep every Rule 9 key.** `matches` is `[]` and `selected` is `null` after a genuine empty lookup; the `<UNRESOLVED: <reason>>` text goes in the identity slot — `taskTypeId` / `typeId` / `connectionId`.
+- **Keep every Rule 10 key.** `matches` is `[]` and `selected` is `null` after a genuine empty lookup; the `<UNRESOLVED: <reason>>` text goes in the identity slot — `taskTypeId` / `typeId` / `connectionId`.
 - **Do not restate the SDD contract** — display name, required, run-only-once, activation mode, entry rule, lane, and verify text stay in `sdd.md`. See [planning.md § Step 4](planning.md).
 
 ## What Validation Catches
 
-`uip maestro case validate` on a caseplan with placeholders emits warnings, not errors:
+`uip maestro case validate` on a caseplan with placeholders emits warnings, not errors, under the **default and `--strict` profiles**:
 
-- `Stage "<name>" has a task with no configuration` — one per placeholder.
+- `Task "<name>" (type "<type>") has an empty "data" block, so no other check can run on it.` — one per placeholder.
 - `Stage "<name>" has no tasks` — if every task in a stage is absent (not even a placeholder).
 
-These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids fabricated task mocks (except the sanctioned connector-rule stub — see § Connector condition rules).
+**Under `--sdd`, the ledger decides whether a placeholder warns or fails.** The SDD says the resource resolved, so an empty `data: {}` is a contradiction the audit must judge, and `tasks/registry-resolved.json` is the only evidence that settles it:
+
+| Ledger evidence for the task | Code | Severity |
+|---|---|---|
+| Entry present with `matches: []` / `selected: null` | `STRICT_SDD_PLACEHOLDER_UNRESOLVABLE` | warning — the placeholder is correct; the tenant lacks the resource |
+| No entry found (missing file, or entries the reader cannot locate) | `STRICT_SDD_PLACEHOLDER_RESOLVED` | **error** — validation fails |
+
+This is why Rule 10's container shape is not cosmetic: a ledger written as an envelope the reader cannot locate turns every justified placeholder into a hard `--sdd` failure. Write the bare top-level array.
+
+Warnings are **expected** and do not block the build. Other errors appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids fabricated task mocks (except the sanctioned connector-rule stub — see § Connector condition rules).
 
 ## Upgrade Procedure — Placeholder → Full Task
 
-> **Built-inline agents / API workflows are not placeholders.** An `agent` or `api-workflow` the user chose to **Create** at the Rule 17 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
+> **Built-inline agents / API workflows are not placeholders.** An `agent` or `api-workflow` the user chose to **Create** at the Rule 18 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
 
 When the user has registered the real resource:
 
@@ -218,7 +227,7 @@ The user uses the placeholder/external lists to drive external resource creation
 - **Do NOT skip task-entry conditions on placeholders.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
 - **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
-- **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 17 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
+- **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 18 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
 - **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, case-management, connectors, agentic process) and to `uipath-planner`.
 
 <!-- END: placeholder-tasks.md -->

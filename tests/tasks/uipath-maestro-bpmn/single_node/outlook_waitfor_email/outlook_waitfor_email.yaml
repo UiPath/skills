@@ -28,7 +28,6 @@ sandbox:
       mount_point: _setup
 run_limits:
   expected_turns: 55
-  turn_timeout: 600
 
 reference:
   directory: ../..

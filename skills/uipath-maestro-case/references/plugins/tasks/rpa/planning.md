@@ -38,7 +38,7 @@ Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Om
 
 ## Fields to Resolve
 
-Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus this type's lookup output:
+Ledger entry in `tasks/registry-resolved.json` — Rule 10's keys plus this type's lookup output:
 
 ```json
 {

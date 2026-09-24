@@ -20,6 +20,7 @@ The `expected_skill` field on each row is the row's true label (the skill it sho
 
 ```bash
 export SKILLS_REPO_PATH=/path/to/skills
+python3 skills/tests/scripts/stage_plugin_root.py
 uv run --project /path/to/coder_eval coder-eval run \
   skills/tests/tasks/activation/activation.yaml \
   -e skills/tests/experiments/activation.yaml \

@@ -4,6 +4,8 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 
 > **Destructive commands require `-y, --yes`.** Every irreversible `uip ixp` command (all `delete`s and `fields change-type`) gates on `-y/--yes`; the CLI never prompts. Always pass `-y/--yes`.
 
+> **Length limits.** Instructions and prompts are at most **4096 characters**, at every level. Names and field types are at most **64**; a project name at most **116**; a project or deployment title at most **1024**. A longer value fails the whole call with `Result: ValidationError` and nothing is written. Shorten it and retry — do not split one prompt across calls.
+
 ## Projects
 
 | Command | Description |

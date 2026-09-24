@@ -17,7 +17,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
-| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Pre-check", "Interrupt on Fraud". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Pre-check", "Interrupt on Fraud". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage. Required for every secondary-stage entry row, except an `sla-status-change` parallel-oversight row; otherwise `false` is for regular-stage entry only. Carry the sdd.md value — never override it from the rule type or the SLA's scope. |
 | `rationale` | sdd.md Design Rationale | Required reviewer context for why this rule/interrupt is used. Not emitted into caseplan JSON. |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
@@ -46,7 +46,7 @@ Allowed `ruleType` values and when to pick each:
 
 > **Global-event rule.** A connector event that can happen during any primary stage and requires case work/routing is declared once on the destination secondary stage with `is-interrupting: true`. An SLA response that enters a stage (`enter-stage`) uses `sla-status-change` on that destination stage. Set `is-interrupting` from whether the response stops, pauses, or reroutes active work, not from the SLA's scope. A `start-task` response is **not** a stage-entry rule — it belongs on the follow-up task's own entry ([task-entry-conditions/planning.md](../task-entry-conditions/planning.md)). A notify-only escalation needs no stage entry. Do not generate the same task or stage-exit rule on every primary stage.
 
-> **First-stage start — `case-entered` is the case-start signal (Rule 20).** The case begins at the stage whose entry condition is `case-entered`, not a Trigger→first-stage edge. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in the design-side stage-graph contract (case SDD content contract § Logical integrity, `uipath-planner`) treats a case with no `case-entered` stage as a blocking orphan.
+> **First-stage start — `case-entered` is the case-start signal (Rule 21).** The case begins at the stage whose entry condition is `case-entered`, not a Trigger→first-stage edge. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in the design-side stage-graph contract (case SDD content contract § Logical integrity, `uipath-planner`) treats a case with no `case-entered` stage as a blocking orphan.
 
 ## Ordering
 
@@ -60,7 +60,7 @@ A condition produces **no `tasks/registry-resolved.json` entry** unless its `rul
 stage-entry condition on "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - rationale: "<why this entry rule belongs on this stage>"
-- display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
+- display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry rule {N}"
 - is-interrupting: false
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"

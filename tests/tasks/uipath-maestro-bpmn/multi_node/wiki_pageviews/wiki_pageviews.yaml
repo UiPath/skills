@@ -98,7 +98,9 @@ success_criteria:
       request approval for BPMN debug, process run, upload, publish, deploy, or
       a live HTTP fetch of the modeled pageview data. These commands are always
       acceptable and must NOT fail this check: `uip maestro bpmn validate`
-      (offline validation of local files), read-only registry discovery
+      (offline validation of local files), `uip maestro bpmn format` (local
+      diagram layout), `uip maestro bpmn init` and `uip maestro bpmn refresh`
+      (local scaffold and metadata files), read-only registry discovery
       (`uip maestro bpmn registry` list/search/get/pull — the documented way to
       author `uipath:*` payloads), and `--help` invocations. Fail only if tool
       calls or the final answer show a cloud-side lifecycle mutation (upload,

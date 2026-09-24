@@ -69,6 +69,8 @@ your `~/.uipath/.auth`.
 
 ```bash
 # from tests/
+make plugin-root
+
 SKILLS_REPO_PATH="$(cd .. && pwd)" \
 ANTHROPIC_API_KEY=<key> \
 JIRA_PROJECT_KEY=ENGCE JIRA_ISSUETYPE_ID=10001 \

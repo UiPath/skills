@@ -26,7 +26,7 @@ Follow the pipeline in [connector-trigger-planning.md § Planning Pipeline](../.
 
 T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in multi-trigger cases — see [planning.md Case Triggers](../../../planning.md).
 
-Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus the resolved connector fields:
+Ledger entry in `tasks/registry-resolved.json` — Rule 10's keys plus the resolved connector fields:
 
 ```json
 {
@@ -53,9 +53,9 @@ A case-level trigger has no stage, so `stage` is `null`. `event-mode` is `pollin
 
 ## Unresolved Fallback
 
-Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-planning.md § 1 No-match](../../../connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-planning.md § Resolve the connection](../../../connector-trigger-planning.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
+Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-planning.md § 1 No-match](../../../connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 18 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-planning.md § Resolve the connection](../../../connector-trigger-planning.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
 
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the trigger activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
+> **Rule 18 exception.** Empty `Connections` from `get-connection` (the trigger activity exists in typecache but no IS connection is registered) does NOT require the Rule 18 gate — proceed directly to placeholder.
 
 > **Planning emits the element; execution emits a placeholder trigger node.** "Cannot resolve the connector / connection yet" is not a reason to drop the trigger from `caseplan.json` — the no-omission rule (planning.md completeness principle) applies to triggers the same as it does to stages, tasks, and conditions. The pattern mirrors the connector-trigger task placeholder in [placeholder-tasks.md](../../../placeholder-tasks.md): structure preserved, runtime config deferred.
 
@@ -64,7 +64,7 @@ If the connector or connection cannot be resolved:
 - Omit `input-values:` and `filter:` from the element — there is no schema to wire against.
 - **Execution creates a placeholder trigger node** with `serviceType: "Intsvc.EventTrigger"` as the only `data.inputs` field (no `context[]`, `metadata`, `inputs`, `outputs`, or `bindings`). The node carries `id`, `display.label`, `description`, `parentElement`, `typeVersion`, and standard render fields so the FE renders it as an event trigger awaiting attachment. See [`impl-json.md` § Placeholder fallback](impl-json.md#placeholder-fallback-unresolved-connector--connection).
 - The matching `entry-points.json` entry **is still appended** — entry-points are structural BPMN references and do not depend on connector resolution.
-- **No trigger-edge is created** (Rule 20). The first stage's `case-entered` entry condition starts the case regardless of whether this trigger is resolved or a placeholder.
+- **No trigger-edge is created** (Rule 21). The first stage's `case-entered` entry condition starts the case regardless of whether this trigger is resolved or a placeholder.
 - Document the missing trigger and its `<UNRESOLVED>` fields in the completion report so the user knows what to attach after registering the IS connection.
 
 <!-- END: planning.md -->

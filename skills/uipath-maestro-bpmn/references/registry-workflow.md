@@ -13,8 +13,9 @@ uip maestro bpmn registry search <keyword> --output json  # find a type by inten
 uip is connections list --all-folders --output json   # live IS connections (all folders)
 ```
 
-Map the user's intent to an extension type from the list. Confirm the choice
-with the user (and the specific connection / process / queue) before authoring.
+Map the user's intent to an extension type from the list. Pick the
+best-evidenced type, connection, process and queue and say in your summary
+which you used and which others tied; ask only under SKILL.md Rule 4.
 **Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
 
 **Connection discovery must be exhaustive.** Always pass `--all-folders` to
@@ -339,10 +340,9 @@ next section for the fix.
 except `releaseKey`, which carries `bindingInfo` — `resource: "process"`,
 `propertyAttribute: "Key"` — in `validator/bpmn-spec.json`). Pasted with the
 template's blank placeholders it passes `validate` and packs clean, then
-faults at runtime because nothing ever resolves `releaseKey`:
-
-- `StartJob` → `170005 Required field 'releaseKey' missing`
-- `ExecuteApiWorkflowAsync` → `170009 Could not get value for key:ReleaseKey from context in input`
+faults at runtime because nothing ever resolves `releaseKey`
+(`ExecuteApiWorkflowAsync`: `170009 Could not get value for key:ReleaseKey
+from context in input`).
 
 **The fix is not to drop `releaseKey` — it is to resolve it, and to correct
 the template's second bug.** Verified end-to-end for
@@ -354,33 +354,31 @@ the template's second bug.** Verified end-to-end for
    process-kind `<uipath:binding resource="process" propertyAttribute="Key"
    default="<resolved-key>" />`, referenced from the context as
    `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list
-   --folder-path <path> --all-fields --output json` → the deployed resource's
+   --folder-path <path> --output json` → the deployed resource's
    `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
 2. **The template's `folderId` context field is misnamed — the runtime reads
    `folderKey`, not `folderId` or `folderPath`.** Populating `releaseKey`
    alone still faults with `Could not get value for key:FolderKey from
    context in input`. Add a context field literally named `folderKey` holding
-   the target folder's `FolderKey` GUID (the same `or processes list
-   --all-fields` response carries it as `FolderKey`) — a plain literal value,
-   not a binding (this field has no `bindingInfo` in the served template).
+   the target folder's `FolderKey` GUID (the same `or processes list`
+   response carries it as `FolderKey`) — a plain literal value, not a binding.
+   Re-read it after every deploy: `deploy run` creates a new folder.
 3. With both fields correct — `releaseKey` bound to the resource's real `Key`,
    `folderKey` literal to the folder's real `FolderKey` — the node runs to
    completion. The template's own `folderId`/`folderPath`/`name` context
    fields are not needed for `Orchestrator.ExecuteApiWorkflowAsync` and can be
    dropped.
 
-This is a property of the wrapper **family**, not confirmed per-type: every
-type in the list above shares the identical broken template (same misnamed
-field, same blank `releaseKey` placeholder), so the same `releaseKey` +
-`folderKey` substitution is the first thing to try — but re-verify each type
-with a live run rather than assuming the fix transfers unchanged; only
-`Orchestrator.ExecuteApiWorkflowAsync` has been confirmed this way so far.
+For the other types in the list, apply the same substitution and re-verify
+with a live run.
 
 When the caller asks for API workflow invocation/status/result fields, map those
 fields as `uipath:output` rows on the API workflow `bpmn:serviceTask` itself
 using the discovered output names/types and `source` expressions, for example
 `source="=invocation"`, `source="=status"`, and `source="=result"` (or the exact
-schema fields returned by discovery). Do not add a downstream script task solely
+schema fields returned by discovery). For a `=result.<key>` source, use the key
+a debug run showed when one ran (SKILL.md rule 17 step 5); otherwise use the
+schema field name and report the mapping as unverified. Do not add a downstream script task solely
 to split the API workflow service-task result into variables; that hides the
 requested service-task output contract from the model.
 
@@ -400,7 +398,8 @@ properties, connection binding, and schemas.
 For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
 from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
 use `connection`); the timer trigger binds no connection. After authoring the
-connection binding, run `uip maestro bpmn refresh <project>` so the binding is
+connection binding, lay the diagram out (`uip maestro bpmn format <file.bpmn>`)
+and then run `uip maestro bpmn refresh <project>` so the binding is
 materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose
 connection is not materialized passes `validate` but faults at runtime with a
 null connection (error 102010). Use `refresh`, not the deprecated
@@ -439,8 +438,11 @@ auth, schema, or enrichment decision is missing).
 4. Author the structural BPMN the registry does not emit: sequence flows,
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.
-5. Generate the `bpmndi:BPMNDiagram`: `uip maestro bpmn format <file.bpmn>`
+5. Generate the `bpmndi:BPMNDiagram`, after the final source edit:
+   `uip maestro bpmn format <file.bpmn>`
 6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).
+   Re-run step 5 after any later source edit — `validate` errors on a node with
+   no shape, so a stale diagram fails it.
 
 ## OOTB extension types (29, login-free)
 

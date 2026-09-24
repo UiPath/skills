@@ -48,7 +48,7 @@ names it, never before the source exists:
 ```bash
 uip maestro flow check <Name>.flow.ts --source
 # run each prepare the check names, with the exact command it prints:
-npx flow-sdk registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
+uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
 uip maestro flow check <Name>.flow.ts --source    # re-check until clean
 uip maestro flow compile <Name> -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json

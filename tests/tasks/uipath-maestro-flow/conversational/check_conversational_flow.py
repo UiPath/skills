@@ -146,8 +146,12 @@ def _expression(value: object) -> tuple[str | None, str | None]:
     """Return (expression, error) for one settings binding.
 
     The contract is a structured `{"type": "jsExpression", "expression": ...}`
-    object. A bare `=js:` string is the pre-1.3 form: Studio Web renders it as
-    literal text rather than a binding, so it is graded as a failure here.
+    object: the form Studio Web's conversational-agent settings editor writes
+    on a fresh edit (flow-v1 `ConversationalAgentSettingsEditor.tsx`). A bare
+    `=js:` string is a legacy form that the product still reads as a binding:
+    flow-schema `coerceToExpressionValue` turns it into the same jsExpression,
+    and both lower to the same BPMN. This check pins the current fresh-write
+    form and grades a string as a failure.
     """
     if isinstance(value, dict):
         if value.get("type") != "jsExpression":

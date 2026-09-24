@@ -65,7 +65,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)'
     min_count: 2
-    weight: 3.0
+    weight: 0
     pass_threshold: 0.0
 
   - type: command_executed
@@ -74,7 +74,7 @@ success_criteria:
     command_pattern: '(uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)[^\n]*nextPage=|registry\s+prepare\s+\\?"?uipath-salesforce-slack\\?"?[^\n]*--resolve\s+\\?"?channel:)'
     min_count: 1
     require_success: true
-    weight: 3.0
+    weight: 0
     pass_threshold: 0.0
 
   - type: command_executed

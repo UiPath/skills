@@ -20,8 +20,10 @@ The skill's Data Service connector emits TWO valid activity shapes for the
 same operation (confirmed against a real CI artifact, 2026-09):
 
   - The curated per-operation form: ``objectName`` is one of the catalog's
-    ``*Curated``/``*_V3`` names (``CreateEntityRecordCurated``,
-    ``GetEntityRecordByIdCurated``, ...).
+    spellings for the operation -- plain, ``*Curated``/``*V2``, or ``*_V3``
+    (``CreateEntityRecord``, ``CreateEntityRecordCurated``,
+    ``CreateEntityRecord_V3``, ...). ``uip is activities list`` serves all
+    three; the plain one is what codex authored on 2026-09-23.
   - The generic entity-CRUD form: ``objectName`` is the entity name itself
     (``FlowCodeEvalEntity``) on every node, and the verb lives in
     ``operation``/``method`` instead (``Create``/``POST``,
@@ -80,8 +82,13 @@ from _shared.bpmn_check import (  # noqa: E402
 ENTITY = "FlowCodeEvalEntity"
 CONNECTOR_KEY = "uipath-uipath-dataservice"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
-CREATE_CURATED_NAMES = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
-GET_CURATED_NAMES = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
+CREATE_CURATED_NAMES = {"CreateEntityRecord", "CreateEntityRecordCurated", "CreateEntityRecord_V3"}
+GET_CURATED_NAMES = {
+    "GetEntityRecord",
+    "GetEntityRecordById",
+    "GetEntityRecordByIdCurated",
+    "GetEntityRecord_V3",
+}
 REQUIRED_EXPANSION = {1, 2, 3}
 
 _CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)

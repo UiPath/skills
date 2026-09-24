@@ -26,9 +26,9 @@ export default flow('postcard-caption')
   .step('write', inlineAgent({
     model: 'gpt-5.4',
     systemPrompt:
-      'You write postcard captions. Given a place and a mood, return ONLY a JSON '
-      + 'object with keys "caption" (one cheerful sentence, no more than 15 words) '
-      + 'and "tone" (one word). No other text.',
+      'You write postcard captions for a given place and mood. Return a result '
+      + 'conforming to the output schema. caption: one cheerful sentence, no more '
+      + 'than 15 words. tone: one word.',
     userPrompt: 'Place: {{input.place}}\nMood: {{input.mood}}',
     inputs: { place: input('place'), mood: input('mood') },
     returns: { caption: 'string', tone: 'string' },

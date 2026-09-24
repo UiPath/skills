@@ -6,10 +6,13 @@ drafts a resolution and then posts it to Slack. Three layers:
   1. Structural: the flow contains an inline autonomous agent node (anti-hardcode
      — a Script node cannot stand in for the agent) AND a real Slack connector
      send node.
-  2. Draft behavior: `flow debug` completes; the drafted email — landed in the
-     mapped `emailBody` output — cites the invoice and the approved credit, AND
-     `emailBody` is the EXECUTED agent node's own output (not a JS template that
-     fabricates it from the trigger inputs — the node-type check is source-only).
+  2. Draft behavior: `flow debug` completes; `emailSubject` and `emailBody` are
+     text, not the agent's whole answer serialized into one field
+     ('{"subject":…,"body":…}', which every substring check below would accept);
+     the drafted email — landed in the mapped `emailBody` output — cites the
+     invoice and the approved credit, AND `emailBody` is the EXECUTED agent node's
+     own output (not a JS template that fabricates it from the trigger inputs —
+     the node-type check is source-only).
   3. Slack outcome: the `Send Message to channel` activity actually posted — the
      flow surfaces the posted message's ts as `slackMessageId`, verified against
      the executed send node's own response, and the message carries the drafted
@@ -37,6 +40,7 @@ from _shared.flow_check import (  # noqa: E402
     assert_named_equals,
     assert_named_output_contains,
     assert_output_nonempty,
+    assert_output_not_serialized_object,
     assert_slack_message_posted,
     completed_node_ids_of_type,
     node_output_leaves,
@@ -75,6 +79,11 @@ def main():
     assert_output_nonempty(payload, "emailSubject")
     # Body must be mapped, cite the invoice, and state the approved credit.
     body = assert_output_nonempty(payload, "emailBody")
+    # Neither may be the agent's whole answer packed into one string field
+    # ('{"subject":…,"body":…}'): the invoice and credit substrings, the exact-leaf
+    # provenance and the Slack body[:80] checks below all pass on that blob.
+    assert_output_not_serialized_object(payload, "emailSubject")
+    assert_output_not_serialized_object(payload, "emailBody")
     assert_named_output_contains(payload, "emailBody", INVOICE)
     assert_named_output_contains(payload, "emailBody", ["1610", "1,610"], require_all=False)
     print(f"OK: emailBody drafted, cites invoice {INVOICE} and the approved credit")

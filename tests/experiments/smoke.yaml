@@ -35,10 +35,10 @@ defaults:
     permission_mode: acceptEdits
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
-      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+      You are a coding agent. Work in your sandbox and the skills plugin. Never read the eval harness's own files — task definitions, graders, reference solutions — and do not access files in sibling runs/* directories.
     plugins:
       - type: "local"
-        path: "$SKILLS_REPO_PATH"
+        path: "$SKILLS_REPO_PATH/.plugin-root"
     ignore_patterns: []
 
   checker_context:
