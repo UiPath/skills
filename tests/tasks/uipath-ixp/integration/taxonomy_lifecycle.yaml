@@ -95,7 +95,7 @@ success_criteria:
     description: "Bulk-updated field prompts via update-prompts --updates"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Discount)(?=.*Discount taken off the invoice total)(?=.*Penalty Fee)(?=.*Late penalty added to the invoice total))[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*"group"\s*:\s*"Adjustments")(?=.*"name"\s*:\s*"Discount")(?=.*Discount taken off the invoice total)(?=.*"name"\s*:\s*"Penalty Fee")(?=.*Late penalty added to the invoice total))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 

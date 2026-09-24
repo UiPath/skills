@@ -150,7 +150,7 @@ Structural edits to a field within an existing field group. For instruction-only
 | `uip ixp fields delete <project-name> --group <field-group-name> --field <name> -y --output json` | Remove a field from a field group. `-y, --yes` is **required** (the CLI never prompts). |
 | `uip ixp fields rename <project-name> --group <field-group-name> --field <name> --new-name <name> --output json` | Rename a field. Preserves `field_id` and existing annotations. |
 | `uip ixp fields change-type <project-name> --group <field-group-name> --field <name> --type <type-name> -y --output json` | Change a field's type. **IRREVERSIBLE** — the field is replaced by a new one, so all existing annotations for that field are deleted. `-y, --yes` is **required** (the CLI never prompts). |
-| `uip ixp fields update-prompts <project-name> --updates <json> --output json` | Bulk-update per-field extraction instructions. `--updates` is a JSON array `[{"name":"<field>","instructions":"..."}]` matched by `moon_form` field name (across all field groups). Existing field definitions are preserved. Unmatched names are reported in the response without failing the command. |
+| `uip ixp fields update-prompts <project-name> --updates <json> --output json` | Bulk-update per-field extraction instructions. `--updates` is a JSON array `[{"group":"<field-group>","name":"<field>","instructions":"..."}]` matched by `label_def` group name + `moon_form` field name. Existing field definitions are preserved. The command fails if a supplied group or field cannot be found. |
 
 ### Moving a field to a different field group
 
