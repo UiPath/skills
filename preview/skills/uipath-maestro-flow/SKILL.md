@@ -32,6 +32,9 @@ uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
 Do not hand-write the skeleton.
 Decompiling the trigger-only artifact `flow init` writes produces exactly that skeleton, and it carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
 So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
+**Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd <Solution> && uip maestro flow init <Name> --automate )`; the bare verb ("automate invoice intake") asks for a plain Flow.
+Nothing after `init` changes; the flag writes `runtimeOptions.profile` into `operate.json` plus a `.maestro_automate` marker (how Orchestrator and Studio Web tell the two apart), and `compile -o` rewrites only the `.flow`, so both survive.
+
 `--no-pipeline` keeps the greenfield seed to one file; `<Name>.pipeline.mjs` is the brownfield read/modify/write helper ([`references/brownfield.md`](references/brownfield.md)) and is noise here.
 
 An existing project needs no `init`: skip the first two commands and seed from the `.flow` that is already there.
