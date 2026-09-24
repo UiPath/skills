@@ -2,17 +2,23 @@
   "Result": "Success",
   "Code": "AgentHubMcpList",
   "Data": {
-    "items": [
+    "Items": [
       {
-        "id": "mcp-mock-uipath-01",
-        "slug": "test-mcp-skill",
-        "name": "Test MCP Skill",
-        "type": "uipath",
-        "folderKey": "folder-mock-shared",
-        "description": "Mock uipath-type server for skill regression tests."
+        "Id": "mcp-mock-uipath-01",
+        "Name": "Test MCP Skill",
+        "Slug": "test-mcp-skill",
+        "Description": "Mock uipath-type server for skill regression tests.",
+        "Version": "1.0.0",
+        "IsActive": true,
+        "UseRelay": false,
+        "Type": 0,
+        "Status": 1,
+        "FolderKey": "folder-mock-shared",
+        "RuntimesCount": 0,
+        "McpUrl": "https://mock.uipath.example.com/mockorg/mocktenant/agenthub_/mcp/folder-mock-shared/test-mcp-skill"
       }
     ],
-    "total": 1,
-    "count": 1
+    "Total": 1,
+    "Count": 1
   }
 }

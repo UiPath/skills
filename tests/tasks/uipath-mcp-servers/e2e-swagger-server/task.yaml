@@ -3,7 +3,7 @@ description: >
   E2E (live DefaultTenant): register a `swagger`-type AgentHub MCP server from the public Swagger
   Petstore OpenAPI spec, refresh its tools (sync), verify the server resolved, then the harness
   deletes it.
-tags: [uipath-mcp-servers, e2e, mode:build]
+tags: [uipath-mcp-servers, e2e, mode:build, lifecycle:setup]
 sandbox:
   template_sources:
     - type: template_dir
@@ -49,9 +49,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Ran refresh-tools with --folder-key (the refresh-tools endpoint requires the folder key, not --folder-path)"
+    description: "Ran refresh-tools with a folder context (--folder-key or --folder-path; the CLI resolves the path)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-key'
+    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-(key|path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

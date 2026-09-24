@@ -3,7 +3,7 @@ description: >
   E2E (live DefaultTenant): register a `command`-type AgentHub MCP server that launches the public
   MCP reference "everything" server over stdio, trigger refresh-tools (async), verify the server
   resolved, then the harness deletes it.
-tags: [uipath-mcp-servers, e2e, mode:build]
+tags: [uipath-mcp-servers, e2e, mode:build, lifecycle:setup]
 sandbox:
   template_sources:
     - type: template_dir
@@ -50,9 +50,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Triggered refresh-tools with --folder-key (async for command servers; endpoint requires the folder key)"
+    description: "Triggered refresh-tools with a folder context (--folder-key or --folder-path; async for command servers)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-key'
+    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-(key|path)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
