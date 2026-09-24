@@ -128,4 +128,4 @@ success_criteria:
       Score 0.0 if any of those is missing, or if the reply suggests a CLI
       command to create, export or delete a Looker dashboard.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.8

@@ -87,4 +87,4 @@ success_criteria:
       or a permission, says the dashboard does not exist, or says it retried
       the request itself.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.8

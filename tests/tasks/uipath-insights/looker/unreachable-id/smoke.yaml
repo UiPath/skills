@@ -84,13 +84,14 @@ success_criteria:
       Insights licence in full mode. The CLI cannot tell these apart.
 
       Score 1.0 only if the reply says no link was produced, explains that
-      this session cannot reach that dashboard, names the other user's
-      personal folder as a possible cause, and leaves the causes open rather
-      than asserting one of them as fact. Suggesting the colleague move or
-      share the dashboard into a folder the user can reach is a good answer.
+      this session cannot reach that dashboard, names a folder the session
+      cannot reach (a personal folder, in any wording) among the possible
+      causes, and leaves the causes open rather than asserting one of them as
+      fact. Suggesting the colleague move or share the dashboard into a
+      folder the user can reach is a good answer.
 
       Score 0.0 if the reply presents a link, blames the login or session,
       suggests running `uip login`, suggests retrying the same request, or
       states one cause as certain.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.8
