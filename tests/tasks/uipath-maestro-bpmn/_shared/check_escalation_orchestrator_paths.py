@@ -24,7 +24,8 @@ Assertion map (Flow -> BPMN):
       -> assert_send_identity(): every Slack sendTask carries target=query name=send_as value=user
   F check_escalation_orchestrator_paths.py:55   assert_named_equals(payload, name, expected, ...)
       -> public_value_present(): normalized value present among root Globals leaves + non-classifier element Outputs
-         leaves, input echoes (input_echo_ids) excluded from both (see NOTE below)
+         leaves, input echoes (input_echo_ids) excluded from both except for caseKey, which the
+         contract sets to the correlationId input (see NOTE below)
   F check_escalation_orchestrator_paths.py:65   assert_slack_message_posted(payload, "slackMessageId", ...)
       -> assert_slack_posted(): fired Slack sendTask's own Outputs.response carries a ts-shaped id, the seeded
          channel, and correlationId + escalationPath in its text
@@ -116,6 +117,7 @@ PROJECT_NAME = "CustomerEscalationOrchestrator"
 BPMN_NAME = f"{PROJECT_NAME}.bpmn"
 
 CASE_SENSITIVE = {"caseKey"}  # opaque id -- exact-case match
+PASSTHROUGH_FIELDS = {"caseKey"}  # the contract sets it to the correlationId input
 CLASSIFICATION_FIELDS = ("escalationPath", "severity", "engineeringNeeded", "responseMode")
 NAMED_OUTPUT_FIELDS = CLASSIFICATION_FIELDS + ("caseKey",)
 
@@ -451,7 +453,8 @@ def verify_case(contract: Contract, imported_project: Path, case: dict) -> dict:
         if not public_value_present(
             variables_data,
             expected_value,
-            exclude_ids=contract.classifier_ids + contract.echo_ids,
+            exclude_ids=contract.classifier_ids
+            + (() if field in PASSTHROUGH_FIELDS else contract.echo_ids),
             case_sensitive=field in CASE_SENSITIVE,
         ):
             raise CheckFailure(f"{case['name']}: no public output carries {field}={expected_value!r}")
