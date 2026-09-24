@@ -25,12 +25,13 @@ found via `registry search`, is a **false negative** — never conclude "no
 connection exists" or ask the user to create one until you have searched the
 registry for the real connector key and listed across all folders.
 
-`registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB
+`registry list` returns four buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
-`uip login`). Each extension-type row carries `ExtensionType`, `Label`,
-`BpmnElement` (the host BPMN element), `ExtensionTag`, and
-`RequiresDiscovery` (`Yes` means you must resolve a concrete resource — process,
-queue, connection — before the node is runnable).
+`uip login`), and `ProcessesByType` (`Processes` counted per `processType`,
+every type present even at 0). Each extension-type row carries
+`ExtensionType`, `Label`, `BpmnElement` (the host BPMN element),
+`ExtensionTag`, and `RequiresDiscovery` (`Yes` means you must resolve a
+concrete resource — process, queue, connection — before the node is runnable).
 
 In temp/smoke sandboxes, a CLI/tooling mismatch can produce valid JSON that is
 only a failure envelope (for example `"Result": "Failure"`) instead of registry
@@ -382,18 +383,32 @@ from the **trigger** catalogue, not from `uip is resources`. Omit `--operation`
 and the call fails with `Event enrichment requires --operation`.
 
 ```bash
-uip is activities list <connectorKey> --triggers --output json   # trigger Name + ObjectName
+uip is activities list <connectorKey> --triggers --output json   # Name + ObjectName + IsCurated
+uip is triggers objects <connectorKey> <OPERATION> --connection-id <id> --output json  # generic rows only
+uip is triggers describe <connectorKey> <operation> <objectName> --connection-id <id> --output json
 uip maestro bpmn registry get <Intsvc.EventTrigger|Intsvc.WaitForEvent> \
     --connection-id <id> --object-name <ObjectName> --operation <Name> --output json
 ```
 
-Take the pair from a row whose `IsCurated` is `Yes`; ignore any generic
-`CREATED` / `UPDATED` row, which carries `IsCurated: No` and `ObjectName: N/A`.
-The enrichment returns the trigger's `EventParameters`, `FilterFields` and
-`OutputFields` — build the filter tree's leaves from `FilterFields`, never from
-an activity's `RequestFields`.
+Prefer a row whose `IsCurated` is `Yes`. A generic `CREATED` / `UPDATED` /
+`DELETED` row (`IsCurated: No`, `ObjectName: N/A`) is the correct path when no
+curated row covers the event, and for a connector that exposes only generic
+rows (`uipath-uipath-jdbc`) it is the only path; take its object from
+`uip is triggers objects`, which omits connection-specific objects and can
+return an empty list without `--connection-id`.
 
-Pairs already confirmed:
+`registry get` returns the node template and its `InputFields`, not the event
+schema. That comes from `uip is triggers describe`: build the filter tree's
+leaves from its `FilterFields`, never from an activity's `RequestFields`;
+`EventParameters` are the trigger's scoping inputs, `OutputFields` the event
+payload.
+
+`uip is triggers` and `registry get` uppercase the operation, so a connector
+whose trigger operations are mixed case (`uipath-uipath-testmanager`:
+`Created`, `Updated`, `Finished`) returns HTTP 404 / `IS enrichment error` and
+has no reachable trigger in CLI 1.204.0.
+
+Curated pairs already confirmed:
 
 | Connector key | Trigger operation | Object |
 | --- | --- | --- |
