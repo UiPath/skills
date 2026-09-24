@@ -14,7 +14,8 @@ sandbox:
 initial_prompt: |
   The UiPath Studio project in `InvoiceIntake/` was inherited from another team.
   Extract a genome from it so we have a ground-truth blueprint of what it does.
-  Write the genome into the current directory.
+  Write the genome into the current directory. There are no other resources
+  for this process beyond the project itself.
 
   Before starting, load the uipath-genome skill and follow its extraction workflow.
   Do not ask me what the project does — read the files. Do not run any `uip` commands.

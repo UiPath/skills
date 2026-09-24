@@ -12,7 +12,7 @@
 
 ## Overview
 
-{1-3 paragraphs: purpose, business problem, who it is for, what triggers it. Standalone project whose Transactional Shape applies the shape: the first paragraph names its role — dispatcher, performer, dispatcher + performer.}
+{1-3 paragraphs: purpose, business problem, who it is for, what triggers it.}
 
 ## Target Applications
 
@@ -81,17 +81,27 @@
 
 ## Transactional Shape
 
-{Does the project iterate over units of work — items that succeed, fail, are retried and are tracked independently? Standalone project: the whole shape below, and the role word in the Overview when the Recommendation applies it. Component of a process: this project's role only (producer: source, reference rule, fate of the queued source item; consumer: step groups, outcomes, counts, configuration split, traceability) and the Recommendation `per the process genome — applied.` or `per the process genome — not applied.`; the process genome carries the tables across components.}
+{Does the project iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe; never decide. Standalone project: the `Flows:` line and the whole block below per flow. Component of a process: one block per flow it takes part in, each with only the `Role:` line, the As-is rows that concern this project (a producer: source, reference rule, fate of the queued source item; a consumer: step groups, outcomes, counts, configuration split, traceability) and the line `Split options: per the process genome, Flow N.`}
+
+**Flows:** Flow 1 — {unit}: steps {a–b} → steps {c–d}. *(standalone project only)*
+
+### Flow 1 — {unit of work}: {producer} → {consumer}
+
+**Role:** {producer | consumer | consumer of Flow {M} and producer of this flow} — {one sentence}. *(component of a process only)*
 
 **Unit of work:** one {item}; reference {identifying field(s)}; fields as in {Interface / Handoffs row}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
+**Alternative units of work:** one {other item} — fits when {condition}. *(every viable granularity, or "none")*
 
-| Producer | Reads | Writes items to | Reference rule | Trigger |
-|---|---|---|---|---|
-| {entry point} | {source} | {queue name / the consumer's own list} | {uniqueness; duplicates} | {schedule or event} |
+**As-is** — how the project handles the units today:
 
-| Consumer | Takes items from | Mode | Once per run | Per item | At the end |
-|---|---|---|---|---|---|
-| {entry point} | {queue name / the source} | {queue \| direct} — {reason} | steps {n} | steps {p–q} | steps {r} |
+| Aspect | As-is |
+|---|---|
+| Produced by | {steps that create items; how often; one source or several; guarded by a lock or ledger?} |
+| Consumed by | {steps that take items; one robot or several; how items are picked; order} |
+| Item store | {queue / table / in-memory list / folder}; per-item state as {status, tags, fields, output} |
+| Coordination | {parent items, ledgers, locks, tag joins — what each is for; "none"} |
+| Item kinds | {one kind, or several routed inside the consumer — what differs} |
+| Step groups | once per run: steps {n}; per item: steps {p–q}; at the end: steps {r} |
 
 | Outcome | When | Effect |
 |---|---|---|
@@ -99,10 +109,20 @@
 | Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
+**Split options** — for the unit of work and each alternative unit; runner counts are deployment settings, never options; none asserted:
+
+| Unit of work | Option | Processes | Item store | Requires | Changes against as-is |
+|---|---|---|---|---|---|
+| {unit} | A — one process, both roles | one RPA process (REFramework direct mode or a plain per-item loop) | in-process list (one job, one runner); no queue | {nothing else touches the items; one runner; a rerun is safe} | {…} |
+| {unit} | B — a producer process and a consumer process | two RPA processes (two projects, or two entry points each published as a process), each with its own trigger and runner count | one Orchestrator queue per unit of work | {several consumer runners, retries across runs, different cadences, machines, credentials or ownership} | {…} |
+| {unit} | C — one process, both roles, with a queue | one RPA process, one entry point and one trigger: every job produces behind a once-guard, then consumes the queue (REFramework queue mode, producer steps in its initialisation); any number of identical runners | one Orchestrator queue per unit of work | {several runners, retries across runs or a later reader of the items, while both roles share cadence, machines, credentials and owner; population once per period (unique reference or kept ledger)} | {…} |
+| {alternative unit} | A — one process, both roles | … | … | … | {…} |
+| {alternative unit} | B — a producer process and a consumer process | … | … | … | {…} |
+| {alternative unit} | C — one process, both roles, with a queue | … | … | … | {…} |
+
+**Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
-**Recommendation:** {Apply — {reason}. | Not recommended — {reason}.}
-**Alternative unit of work:** one {other item} — not chosen because {reason}; choose it when {condition}. *(only when a second granularity is viable)*
 
 *Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's}."*
 
@@ -127,5 +147,7 @@
 | Workflow step | Source artifact | Notes |
 |---------------|-----------------|-------|
 | {Step N} | {Source framework}: `{file or object name}` ({id} where names repeat); {data sets that drive it} | {ambiguity, dead code, or unresolved reference} |
+| Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
+| Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export and Inventory rows from the process genome; a standalone component genome carries them itself.*
+*A component of a process genome inherits the Source framework, Source export, Inventory and Related resources rows from the process genome; a standalone component genome carries them itself.*

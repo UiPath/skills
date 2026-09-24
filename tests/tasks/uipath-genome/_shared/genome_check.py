@@ -4,7 +4,7 @@
 Usage:
   genome_check.py component <genome.md> [--expect TOKEN ...] [--source-map TOKEN ...] [--part-of]
   genome_check.py process   <genome.md> --components <dir> --skills SKILL ... [--expect TOKEN ...]
-  … [--shape applied|declined|stub [--mode queue|direct]]   asserts the Transactional Shape verdict
+  … [--shape transactional|stub [--flows N] [--unit TOKEN ...]]   asserts what the Transactional Shape describes
 
 Exit 0 when every check passes; exit 1 with one diagnostic line per failure.
 """
@@ -61,11 +61,13 @@ def body_without_source_map(text: str) -> str:
     return re.split(r"^## Source Map\s*$", text, maxsplit=1, flags=re.M)[0]
 
 
+SPLIT_OPTIONS = {"A", "B", "C"}  # A one process, no queue; B producer and consumer processes; C one process with a queue
 MIN_STEPS = 5
 MIN_CRITERIA = 5
 MIN_QUESTIONS = 3
-SHAPE: str | None = None   # --shape: assert the Transactional Shape verdict of the genome given on the command line
-MODE: str | None = None    # --mode: with --shape applied, the mode the Consumer row must name
+SHAPE: str | None = None        # --shape: transactional | stub, for the genome given on the command line
+FLOWS: int | None = None        # --flows: with --shape transactional, the number of ### Flow blocks expected
+UNITS: list[str] = []           # --unit: tokens each expected in some "**Unit of work:**" line
 
 
 def common_checks(text: str, level: str, sections: list[str]) -> list[str]:
@@ -92,15 +94,7 @@ def common_checks(text: str, level: str, sections: list[str]) -> list[str]:
         for name in set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading))):
             if name in OPERATE_SKILLS:
                 errors.append(f"operate-only skill '{name}' used in {heading}; it belongs under Platform Dependencies")
-    ts = section_body(text, "Transactional Shape")
-    ts_stub = ts.strip().startswith("Not transactional")
-    if ts_stub and "**Recommendation:**" in ts:
-        errors.append("Transactional Shape: the stub carries a Recommendation line")
-    if ts and not ts_stub:
-        if "**Recommendation:**" not in ts:
-            errors.append("Transactional Shape: no Recommendation line and not the stub")
-        if "| Producer |" not in ts and "| Consumer |" not in ts:
-            errors.append("Transactional Shape: neither a Producer nor a Consumer table")
+    errors.extend(shape_structure(text, level))
     criteria = re.findall(r"^- \[[ x]\] ", section_body(text, "Acceptance Criteria"), re.M)
     if len(criteria) < MIN_CRITERIA:
         errors.append(f"acceptance criteria: {len(criteria)} found, expected >= {MIN_CRITERIA}")
@@ -115,33 +109,120 @@ def criteria_lines(text: str) -> list[str]:
     return [l for l in section_body(text, "Acceptance Criteria").splitlines() if l.startswith("- [")]
 
 
-def check_shape(text: str, shape: str, mode: str | None, standalone: bool) -> list[str]:
-    """Assert the Transactional Shape's verdict (--shape) and, when applied, its mode and seam."""
+def table_rows(block: str, header_start: str) -> list[list[str]]:
+    """Data rows of the first markdown table in block whose header row starts with header_start."""
+    lines = block.splitlines()
+    for i, line in enumerate(lines):
+        if line.strip().startswith(header_start):
+            rows = []
+            for row in lines[i + 2:]:
+                if not row.strip().startswith("|"):
+                    break
+                rows.append([c.strip() for c in row.strip().strip("|").split("|")])
+            return rows
+    return []
+
+
+def flow_blocks(ts: str) -> list[tuple[str, str]]:
+    """(heading, body) per '### Flow N' block of the Transactional Shape."""
+    parts = re.split(r"^(### Flow\b.*)$", ts, flags=re.M)
+    return [(parts[i].strip(), parts[i + 1]) for i in range(1, len(parts) - 1, 2)]
+
+
+def shape_structure(text: str, level: str) -> list[str]:
+    """Structure the format guide requires of every Transactional Shape (no verdict; flows; per-unit split options)."""
     errors: list[str] = []
     ts = section_body(text, "Transactional Shape")
-    rec = next((l for l in ts.splitlines() if l.startswith("**Recommendation:**")), "")
+    if not ts.strip():
+        return errors
+    stub = ts.strip().startswith("Not transactional")
+    if "**Recommendation:**" in ts or re.search(r"^\|\s*(Producer|Consumer)\s*\|", ts, re.M):
+        errors.append("Transactional Shape: carries a verdict (Recommendation line or Producer/Consumer mode tables) — describe, never decide")
+    if level == "process":
+        for row in table_rows(section_body(text, "Components"), "| #"):
+            if len(row) > 2 and re.search(r"\b(dispatcher|performer)\b", row[2], re.I):
+                errors.append(f"Components: role word in the Type cell of '{row[1]}' — it reads the component type only")
+    if stub:
+        return errors
+    flows = flow_blocks(ts)
+    if not flows:
+        errors.append("Transactional Shape: no '### Flow N' block and not the stub")
+        return errors
+    in_process = level == "component" and "Part of:" in text
+    if not in_process and "**Flows:**" not in ts:
+        errors.append("Transactional Shape: no 'Flows:' line")
+    for heading, body in flows:
+        name = heading.lstrip("# ").split(":")[0].strip()
+        if in_process:
+            if "**Role:**" not in body:
+                errors.append(f"Transactional Shape {name}: component inside a process has no 'Role:' line")
+            if "per the process genome" not in body:
+                errors.append(f"Transactional Shape {name}: component inside a process does not point to the process genome's split options")
+            continue
+        for token, what in (("**Unit of work:**", "Unit of work line"), ("| Aspect | As-is |", "As-is table"),
+                            ("| Success |", "Success outcome"), ("| Business exception |", "Business exception outcome"),
+                            ("| System exception |", "System exception outcome")):
+            if token not in body:
+                errors.append(f"Transactional Shape {name}: missing {what}")
+        split = table_rows(body, "| Unit of work | Option |")
+        if not split:
+            errors.append(f"Transactional Shape {name}: no Split options table keyed by unit of work")
+            continue
+        units: dict[str, set[str]] = {}
+        for row in split:
+            if len(row) >= 2:
+                m = re.match(r"([ABC])\b", row[1])
+                if m:
+                    units.setdefault(row[0], set()).add(m.group(1))
+        for unit, opts in units.items():
+            if opts != SPLIT_OPTIONS:
+                errors.append(f"Transactional Shape {name}: unit '{unit}' lacks option(s) {sorted(SPLIT_OPTIONS - opts)}")
+        alt = next((l for l in body.splitlines() if l.startswith("**Alternative units of work:**")), "")
+        if alt and not re.search(r":\*\*\s*none\b", alt, re.I) and len(units) < 2:
+            errors.append(f"Transactional Shape {name}: alternative units of work named but split options cover only one unit")
+        header = next((l for l in body.splitlines() if l.strip().startswith("| Unit of work | Option |")), "")
+        cols = [c.strip().lower() for c in header.strip().strip("|").split("|")]
+        if "requires" not in cols or "changes against as-is" not in cols:
+            errors.append(f"Transactional Shape {name}: Split options table has no Requires and Changes against as-is columns")
+        elif "pros" in cols or "cons" in cols:
+            errors.append(f"Transactional Shape {name}: Split options table carries Pros / Cons columns")
+        else:
+            ir, ic = cols.index("requires"), cols.index("changes against as-is")
+            for row in split:
+                if len(row) > max(ir, ic) and row[1][:1] in SPLIT_OPTIONS:
+                    if not row[ir] or not row[ic]:
+                        errors.append(f"Transactional Shape {name}: option {row[1][:1]} of '{row[0]}' has an empty Requires or Changes cell")
+                    if re.search(r"\b(recommended|best option|preferred)\b", row[ir] + " " + row[ic], re.I):
+                        errors.append(f"Transactional Shape {name}: option {row[1][:1]} of '{row[0]}' ranks the options")
+    return errors
+
+
+def check_shape(text: str, shape: str, flows: int | None, units: list[str]) -> list[str]:
+    """Assert what the Transactional Shape of the genome given on the command line describes (--shape)."""
+    errors: list[str] = []
+    ts = section_body(text, "Transactional Shape")
+    stub = ts.strip().startswith("Not transactional")
     if shape == "stub":
-        if not ts.strip().startswith("Not transactional"):
+        if not stub:
             errors.append("Transactional Shape: expected the 'Not transactional' stub")
         return errors
-    if shape == "declined":
-        if not re.search(r"Not recommended|— not applied", rec):
-            errors.append("Transactional Shape: Recommendation is not the 'Not recommended' verdict")
+    if stub:
+        errors.append("Transactional Shape: expected flow blocks, found the stub")
         return errors
-    if not re.search(r"\bApply\b|— applied", rec):
-        errors.append("Transactional Shape: Recommendation is not the 'Apply' verdict")
-    consumer_rows = [l for l in ts.splitlines() if l.startswith("|") and "Consumer" not in l and "---" not in l
-                     and re.search(r"\|\s*(queue|direct)\b", l)]
-    if not consumer_rows:
-        errors.append("Transactional Shape: no Consumer row with a queue/direct Mode cell")
-    elif mode and not any(re.search(rf"\|\s*{mode}\b[^|]*(—|-)[^|]*\|", l) for l in consumer_rows):
-        errors.append(f"Transactional Shape: no Consumer row whose Mode cell reads '{mode} — <reason>'")
-    if not re.search(r"retr(y|ie)", ts, re.I) or not re.search(r"consecutive", ts, re.I):
-        errors.append("Transactional Shape: outcomes do not state the per-item retry and the consecutive-failure stop")
+    blocks = flow_blocks(ts)
+    if flows is not None and len(blocks) != flows:
+        errors.append(f"Transactional Shape: {len(blocks)} flow block(s), expected {flows}")
+    unit_lines = " ".join(l for l in ts.splitlines() if l.startswith("**Unit of work:**")).lower()
+    for tok in units:
+        if tok.lower() not in unit_lines:
+            errors.append(f"Transactional Shape: no Unit of work line names '{tok}'")
+    for heading, body in blocks:  # an RPA consumer owes the per-item retry and the consecutive-failure stop
+        if "No RPA consumer" in body:
+            continue
+        if not re.search(r"retr(y|ie)", body, re.I) or not re.search(r"consecutive", body, re.I):
+            errors.append(f"Transactional Shape {heading.lstrip('# ').split(':')[0]}: outcomes do not state the per-item retry and the consecutive-failure stop")
     if re.search(r"\{[a-z][^}]*\}", ts):
         errors.append("Transactional Shape: unfilled template placeholder left in the section")
-    if standalone and not re.search(r"\bperformer\b", section_body(text, "Overview"), re.I):
-        errors.append("Transactional Shape applied on a standalone component, but the Overview names no 'performer'")
     return errors
 
 
@@ -174,7 +255,7 @@ def check_component(path: Path, expect: list[str], source_map: list[str], part_o
     if part_of and "Part of:" not in text:
         errors.append("component inside a process genome lacks the 'Part of:' line")
     if SHAPE and shape_check:
-        errors.extend(check_shape(text, SHAPE, MODE, standalone="Part of:" not in text))
+        errors.extend(check_shape(text, SHAPE, FLOWS, UNITS))
     for tok in expect:
         if tok.lower() not in text.lower():
             errors.append(f"expected token '{tok}' not found")
@@ -205,7 +286,7 @@ def check_process(path: Path, components_dir: Path, skills: list[str], expect: l
         else:
             component_errors.extend(check_component(target, [], [], part_of=True, shape_check=False))
     if SHAPE:
-        errors.extend(check_shape(text, SHAPE, MODE, standalone=False))
+        errors.extend(check_shape(text, SHAPE, FLOWS, UNITS))
     handoffs = [l for l in section_body(text, "Handoffs").splitlines() if l.startswith("|")]
     if len(handoffs) < 4:  # header + separator + >= 2 rows
         errors.append(f"handoffs table: {max(0, len(handoffs) - 2)} rows, expected >= 2")
@@ -218,7 +299,7 @@ def check_process(path: Path, components_dir: Path, skills: list[str], expect: l
 
 
 def main() -> int:
-    global MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS, SHAPE, MODE
+    global MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS, SHAPE, FLOWS, UNITS
     ap = argparse.ArgumentParser()
     ap.add_argument("level", choices=["component", "process"])
     ap.add_argument("genome")
@@ -233,13 +314,15 @@ def main() -> int:
                     help="minimum acceptance criteria (format guide: 3 simple, 5 medium, 7 complex)")
     ap.add_argument("--min-questions", type=int, default=MIN_QUESTIONS,
                     help="minimum configuration questions (format guide: stub allowed for simple, 3 medium, 5 complex)")
-    ap.add_argument("--shape", choices=["applied", "declined", "stub"], default=None,
-                    help="assert the Transactional Shape verdict of the given genome (components linked from a process are not checked)")
-    ap.add_argument("--mode", choices=["queue", "direct"], default=None,
-                    help="with --shape applied: the mode the Consumer row's Mode cell must name, with its reason")
+    ap.add_argument("--shape", choices=["transactional", "stub"], default=None,
+                    help="assert the Transactional Shape of the given genome: flow blocks, or the stub (components linked from a process are checked for structure only)")
+    ap.add_argument("--flows", type=int, default=None,
+                    help="with --shape transactional: the number of '### Flow N' blocks expected")
+    ap.add_argument("--unit", nargs="*", default=[],
+                    help="with --shape transactional: tokens each expected in some 'Unit of work' line")
     args = ap.parse_args()
     MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS = args.min_steps, args.min_criteria, args.min_questions
-    SHAPE, MODE = args.shape, args.mode
+    SHAPE, FLOWS, UNITS = args.shape, args.flows, args.unit
 
     path = Path(args.genome)
     if not path.exists():
