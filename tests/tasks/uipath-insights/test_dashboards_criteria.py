@@ -35,6 +35,7 @@ CAPTURES = [
     f"{GET} \\\n  --output json > dashboard.json",
     "uip insights dashboards get --process-key abc --output json > dash.json",
     f'bash -lc "{GET} > dashboard.json"',
+    f"{GET} | jq \\\n  -r .Data > d.json",
 ]
 
 NOT_CAPTURES = [
