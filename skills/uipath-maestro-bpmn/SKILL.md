@@ -317,16 +317,18 @@ For registry-evidence-only tasks, follow the command-first recipe in
 
    Exit 0 = valid; exit 1 = validation failed. Read severity from each issue's
    `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which
-   counts errors while the list under it prints warnings too. Validate once, fix
-   only error-severity findings, and do not re-validate in a loop chasing
-   warnings. `read but never assigned` is a defect no error covers: nothing
-   writes a value the process reads, so a step that should produce it does not.
+   counts errors while the list under it prints warnings too. Fix only
+   error-severity findings and re-validate after each fix; stop re-validating
+   once every remaining finding is a warning or the placeholder pair below.
+   `read but never assigned` is a defect no error covers: nothing writes a
+   value the process reads, so a step that should produce it does not.
    `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
    about one unresolved node, and the binding half is a live tenant lookup. In a
    runnable deliverable, bind the node to a deployed resource. When the user
    asked for a placeholder, draft, or boundary handoff, no invented identifier
    can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
-   expected result, so report the pair once and stop.
+   expected result. Report the pair once and continue; `refresh` (step 5)
+   succeeds with it unresolved.
 
    Validation is structural preflight, not runtime proof — see
    [references/cli-conventions.md](references/cli-conventions.md). When
@@ -337,8 +339,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-5. **Refresh derived metadata when package-ready output is required.** After
-   source validation passes, regenerate the four CLI-owned package files:
+5. **Refresh derived metadata when package-ready output is required.** Once step
+   4 leaves no fixable error, regenerate the four CLI-owned package files:
 
    ```bash
    uip maestro bpmn refresh <project-path> --output json
