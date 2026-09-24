@@ -1,7 +1,5 @@
 # Flow → BPMN eval parity map
 
-Flow tasks: 131 · BPMN tasks: 82
-
 ## Porting ledger
 
 One row per task, final state. Iterations are summarised in the notes; runs are GitHub Actions `run-coder-eval.yml` ids on the alpha tenant, codex driver. Structural rows landed in PR #3426; live and field-shape rows are PR #3502; parked rows live on branch `test/bpmn-port-parked` (stacked on #3502), each with `skip: true` and its evidence in the YAML.
