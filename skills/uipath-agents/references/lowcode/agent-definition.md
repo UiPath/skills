@@ -301,7 +301,7 @@ Three token types: `simpleText`, `variable`, `expression`.
 3. Text inside `@{ }` → `{ "type": "expression", "rawString": "<expr>" }` (strip delimiters; Studio expression referencing an agent resource or output — see families below)
 4. Every segment including whitespace gets its own entry
 
-`@{ }` (`expression`) references an agent resource or output by family + name — `tools.<Name>`, `contexts.<Name>`, `escalations.<Name>`, or `output.<path>` — with the inner text verbatim as `rawString` (e.g. `@{contexts.Knowledge}` → `rawString: "contexts.Knowledge"`). `{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` targets are runtime-resolved and must never be declared under `inputSchema.properties`.
+`@{ }` (`expression`) references an agent resource or output by family + name — `@{tools.<Name>}`, `@{contexts.<Name>}`, `@{escalations.<Name>}`, or `@{output.<path>}` — with the inner text verbatim as `rawString` (e.g. `@{contexts.Knowledge}` → `rawString: "contexts.Knowledge"`). `{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` targets are runtime-resolved and must never be declared under `inputSchema.properties`.
 
 **Example — adjacent variables:**
 
