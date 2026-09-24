@@ -262,12 +262,13 @@ NARROW_TASKS = {
     },
 }
 
-# Tasks in this tree that grade the alerts, RBAC and filter-discovery command
-# families. The jobs playbook does not run those reads, so the routing question
-# does not arise for them. The pattern, count and advisory guards below still
-# cover them.
+# Tasks in this tree that grade the alerts, RBAC, filter-discovery and export
+# command families. The jobs playbook does not run those reads, so the routing
+# question does not arise for them. The pattern, count and advisory guards
+# below still cover them.
 OTHER_TASKS = (
     "alerts/smoke.yaml",
+    "export/verify_smoke.yaml",
     "filters/smoke.yaml",
     "rbac/smoke.yaml",
 )
@@ -278,6 +279,7 @@ OTHER_TASKS = (
 EXPECTED_COMMAND_CRITERIA = {
     "alerts/smoke.yaml": 10,
     "envelope-contract/all_commands_envelope_e2e.yaml": 8,
+    "export/verify_smoke.yaml": 7,
     "filters/smoke.yaml": 6,
     "job-health/job_health_investigation_e2e.yaml": 5,
     "rbac/smoke.yaml": 8,
@@ -338,19 +340,25 @@ _OPEN_QUANTIFIER = r"(?:\*|\+|\{\d*,\}|\{\d*,(?:[2-9]|\d\d+)\})"
 _WIDE_ATOM = re.compile(r"(?<!\\)(?P<atom>\.|\[(?:\\.|[^\]\\])*\])" + _OPEN_QUANTIFIER)
 
 
+def _stays_inside_one_token(probe):
+    return not any(probe.fullmatch(char) for char in (" ", "\t", *SEPARATORS))
+
+
 def _is_a_hand_rolled_gap(atom):
     """True when this atom, left open-ended, is a gap between two anchors.
 
-    A negated class is one by construction: it stands for "anything except a
-    few characters". This repo has two approved spellings for a gap, so a third
-    one is reported even when it happens to exclude the separators, because the
-    exclusion is what strands it at a backslash continuation. Any other atom is
-    reported when it can match both a letter and a separator, which is what
-    carries a match out of one command and into the next under re.DOTALL.
+    A negated class is one unless it also excludes whitespace: then it is a
+    single-token atom like `[^\\s&;|]+`, which cannot cross the space between
+    two tokens, let alone a separator. Any other negated class stands for
+    "anything except a few characters", and a third spelling of a gap is
+    reported even when it excludes the separators, because the exclusion is
+    what strands it at a backslash continuation. Any other atom is reported
+    when it can match both a letter and a separator, which is what carries a
+    match out of one command and into the next under re.DOTALL.
     """
-    if atom.startswith("[^"):
-        return True
     probe = re.compile(atom, FLAGS)
+    if atom.startswith("[^"):
+        return not _stays_inside_one_token(probe)
     return probe.fullmatch("a") is not None and any(probe.fullmatch(sep) for sep in SEPARATORS)
 
 
@@ -462,7 +470,9 @@ def test_gaps_between_anchors_use_an_approved_form(task_file):
         )
 
 
-@pytest.mark.parametrize("gap", (".*", ".+", ".{0,200}", r"[\s\S]*", r"[^&;|\n]*", r"[\s\S]{2,}"))
+@pytest.mark.parametrize(
+    "gap", (".*", ".+", ".{0,200}", r"[\s\S]*", r"[^&;|\n]*", r"[\s\S]{2,}", r"[^\n&;|]+", r"[^\s&]+")
+)
 def test_the_gap_guard_rejects_every_spelling_of_a_wildcard(gap):
     """The guard is an allowlist, so it is not dodged by respelling `.*`."""
     assert _unapproved_gaps(rf"uip\s+insights\s+jobs\s+summary\s{gap}--time-range")
@@ -473,7 +483,7 @@ def test_the_gap_guard_accepts_the_approved_forms(gap):
     assert not _unapproved_gaps(rf"uip\s+insights\s+jobs\s+summary\s{gap}--time-range")
 
 
-@pytest.mark.parametrize("atom", (r"\S+", r"\d{13}", r"[\s=]+", ".?", '"?'))
+@pytest.mark.parametrize("atom", (r"\S+", r"\d{13}", r"[\s=]+", ".?", '"?', r"[^\s&;|]+"))
 def test_the_gap_guard_leaves_narrow_atoms_alone(atom):
     """None of these can carry a match from one command into the next."""
     assert not _unapproved_gaps(rf"uip\s+insights\s+jobs\s+{atom}summary")

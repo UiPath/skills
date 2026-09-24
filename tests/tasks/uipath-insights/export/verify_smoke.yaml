@@ -81,8 +81,8 @@ success_criteria:
   #
   # Where a criterion below spans tokens with a wildcard, it is bounded with
   # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, and all three parts are load-bearing.
-  # The one exception is the invented-flag criterion, which spells its span
-  # out token by token instead; its own comment says why.
+  # The two exceptions are the substitution and invented-flag criteria, which
+  # spell their span out token by token instead; their own comments say why.
   # The grader matches each pattern against two haystacks: the raw
   # `bash -lc "..."` text, which keeps newlines, and a normalized one that
   # unwraps the wrapper and re-joins the shlex tokens with single spaces
@@ -163,14 +163,16 @@ success_criteria:
     pass_threshold: 1.0
 
   # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
-  # invocation. The flag branch names only the flags these two commands accept,
-  # because the (?!uip\s) barrier crosses newline-batched neighbours and a
-  # generic --flag would match a neighbour's `curl --data $BODY`. The second
-  # branch catches a variable id in the verify positional.
+  # invocation. Same token-by-token span as the invented-flag criterion below,
+  # for the same reason: the (?!uip\s) wildcard crosses a newline-batched
+  # neighbour on the normalized haystack, so a compliant read next to
+  # `curl --output $OUT` would fail. The span ends in a substituted value,
+  # either behind one of the flags these commands accept or as the verify
+  # positional.
   - type: command_not_executed
     description: "Agent did not use command substitution or a shell variable in an export-configurations command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+export-configurations(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+export-configurations\s+verify\s+"?(\$\(|`|\$[A-Za-z_])'
+    command_pattern: 'uip\s+insights\s+export-configurations\s+\S+(?:\s+(?:--(?:output|limit|offset)(?:[\s=]+[^\s&;|]+)?|-o[\s=]+[^\s&;|]+|\d+))*?\s+(?:(?:--(?:limit|offset|output)|-o)[\s=]+)?"?(\$\(|\$\{|`|\$[A-Za-z_])'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
