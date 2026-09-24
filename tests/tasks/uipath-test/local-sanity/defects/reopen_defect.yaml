@@ -1,0 +1,47 @@
+task_id: skill-test-reopen-defect
+description: >
+  P&E GA-validation scenario 7.3 (defects).
+  Reopened the defect on the failing HEALTH case by re-tagging it and attaching the latest run as evidence
+  (objectlabel add + attachment upload). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:objectlabel-add]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  That PDF generation case in the HEALTH project in Test Manager is failing
+  again after the supposed fix. Flag it back open as a bug, and attach a short
+  evidence note (a small text file) to the case so we have proof.
+
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Re-flagged the HEALTH case as an open defect (objectlabel add)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--object-type\s+TestCase)(?=.*--labels\s+.*defect)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Attached the latest run as evidence (attachment upload)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+attachment\s+upload\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

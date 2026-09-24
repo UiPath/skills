@@ -1,0 +1,38 @@
+task_id: skill-test-wrong-environment
+description: >
+  P&E GA-validation scenario 6.8 (test execution).
+  Environment mismatch warning before proceeding. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testsets-run]
+
+skip: true
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+
+initial_prompt: |
+  In Test Manager, run one of the HEALTH project's test sets on the serverless
+  robot. That set's normally a staging thing — call that out for me, but go
+  ahead and run it anyway.
+
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Environment mismatch warning before proceeding"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:executions\s+run|testsets?\s+run|testcases?\s+run)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

@@ -1,0 +1,35 @@
+task_id: skill-test-add-label
+description: >
+  P&E GA-validation scenario 8.1 (labels and tags).
+  Added the flaky label to a HEALTH case (objectlabel add). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:objectlabel-add]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  One of the cases in the HEALTH project over in Test Manager keeps going green then red for no reason. Stick a 'flaky' tag on it so the team knows.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added the flaky label to a HEALTH case (objectlabel add)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--labels)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

@@ -1,0 +1,37 @@
+task_id: skill-test-attach-log-to-execution
+description: >
+  P&E GA-validation scenario 9.1 (attachments).
+  Uploaded a log attachment in HEALTH (uip tm attachment). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:attachment-upload]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, grab the latest execution in the HEALTH project, write a
+  small error-log file, and attach it to that execution's result.
+
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Uploaded a log attachment in HEALTH (uip tm attachment)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+attachment\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir
