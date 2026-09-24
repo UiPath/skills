@@ -32,23 +32,23 @@ defaults:
       extra_mounts:
         # uip login state. Same destination nightly.yaml uses; do not "fix" it.
         - ~/.uipath:/.uipath:rw
-        # Repo root. Narrowing plugins.path to preview/ drops the automatic
-        # repo-root mount this experiment otherwise relies on for plugin
-        # discovery. (No criterion shells out to $SKILLS_REPO_PATH any more —
-        # that addressing was replaced by sandbox.template_sources +
-        # $REFERENCE_DIR; this mount is unrelated to grading.) Destination must
-        # be the host path, which the framework only expands from 0.11.2 on
-        # (UiPath/coder_eval#128); earlier versions reject it at load.
-        - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
+        # Staged plugin root. Narrowing plugins.path to preview/ drops the
+        # automatic mount this experiment otherwise relies on for plugin
+        # discovery. NEVER widen this to $SKILLS_REPO_PATH: that mounts
+        # tests/tasks — graders and reference answers — into the agent's
+        # container. Destination must be the host path, which the framework
+        # only expands from 0.11.2 on (UiPath/coder_eval#128); earlier versions
+        # reject it at load.
+        - $SKILLS_REPO_PATH/.plugin-root:$SKILLS_REPO_PATH/.plugin-root:ro
 
   agent:
     permission_mode: acceptEdits
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     plugins:
-      # PREVIEW ONLY. Also the source of the automatic repo-path bind mount.
+      # PREVIEW ONLY. Also the source of the automatic staged-root bind mount.
       # Must stay the plugin ROOT (holds .claude-plugin/ + skills/), never preview/skills.
       - type: "local"
-        path: "$SKILLS_REPO_PATH/preview"
+        path: "$SKILLS_REPO_PATH/.plugin-root/preview"
     ignore_patterns: []
 
   pre_run:
@@ -56,7 +56,7 @@ defaults:
     # the same setup nightly.yaml runs. Unconditional here: a preview run always
     # authors through the SDK. Replaces the old in-sandbox `npm install`, which the
     # shared image made unnecessary when it started baking the package.
-    - command: bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"
+    - command: bash "$SKILLS_REPO_PATH/.plugin-root/tests/scripts/stage-preview-sdk-workspace.sh"
       timeout: 30
 
   post_run:

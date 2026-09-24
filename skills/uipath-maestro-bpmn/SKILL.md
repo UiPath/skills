@@ -185,8 +185,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
-   `--all-folders` — a folder-scoped list silently misses connections). Confirm
-   every selection with the user (use AskUserQuestion). Never fabricate an identifier.
+   `--all-folders` — a folder-scoped list silently misses connections). Never
+   fabricate an identifier; ask only under Rule 4, otherwise decide.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
@@ -215,7 +215,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
    a stable manual entry point, one structural task, and complete DI. **Do not
    reverse-engineer authoring patterns from task fixtures, generated package
-   files, or the CLI's compiled bundle (`@uipath/cli/dist/*.js`)** — such
+   files, or any installed package bundle under `node_modules`** — such
    spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
@@ -294,10 +294,15 @@ For registry-evidence-only tasks, follow the command-first recipe in
    rest. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
-   synthetic local project. Every root start event needs a
+   synthetic local project. Every root **manual** start event needs a
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
-   writing an empty entry-point list.
+   writing an empty entry-point list. A connector or timer start is not
+   manual, so a project that runs `refresh` or `pack` keeps the initializer's
+   manual start alongside it; only a source-only draft replaces it. Clearing
+   the resulting stale-entry error by editing or deleting `entry-points.json`
+   instead of running `refresh` passes `validate` and `pack` while shipping an
+   empty `bindings_v2.json`.
    Give public inputs and outputs explicit runtime bridges, and converge routes
    returning one result on a single completion EndEvent — for the two-layer
    contract see
@@ -333,18 +338,27 @@ For registry-evidence-only tasks, follow the command-first recipe in
    uip maestro bpmn validate <file.bpmn> --output json
    ```
 
-   Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
-   with its rule code). Warnings do not fail the run: validate once, fix only
-   error-severity findings, and do not re-validate in a loop chasing warnings.
-   Each error-severity fix is a source edit, so re-run step 4 before validating
-   again.
-   Two warnings are defects rather than noise, because no error covers them.
-   `read but never assigned` says nothing writes a value the process reads, so
-   a step that should produce it does not. `MISSING_RESOURCE` says a node has
-   no target selected; in a runnable deliverable, bind it. For a draft or
-   boundary handoff the user asked for, an unresolved node warns
-   `MISSING_RESOURCE` by design: keep its public placeholder, never invent an
-   identifier (Rule 2), and report the warning rather than clearing it.
+   Exit 0 = valid; exit 1 = validation failed. Read severity from each issue's
+   `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which
+   counts errors while the list under it prints warnings too. Fix only
+   error-severity findings, then re-run step 4 and validate again; stop
+   re-validating once every remaining finding is a warning or the placeholder
+   pair below. `read but never assigned` is a defect no error covers: nothing
+   writes a value the process reads, so a step that should produce it does not.
+   `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
+   about one unresolved node, and the binding half is a live tenant lookup. In a
+   runnable deliverable, bind the node to a deployed resource. When the user
+   asked for a placeholder, draft, or boundary handoff, no invented identifier
+   can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
+   expected result. Report the pair once and continue; `refresh` (step 6)
+   succeeds with it unresolved.
+
+   `[warning] [(xml)] unknown attribute <type>` is expected noise from the
+   script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
+   `type` is required on `uipath:input`, `uipath:output`, and
+   `uipath:inputOutput`; removing it there fails the load with
+   `BPMN_PARSE_ERROR ... to be a string`. Do not bisect the file and do not
+   read package bundles under `node_modules` to find the rule.
 
    Validation is structural preflight, not runtime proof — see
    [references/cli-conventions.md](references/cli-conventions.md). When
@@ -355,8 +369,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-6. **Refresh derived metadata when package-ready output is required.** After
-   source validation passes, regenerate the four CLI-owned package files:
+6. **Refresh derived metadata when package-ready output is required.** Once
+   step 5 leaves no fixable error, regenerate the four CLI-owned package files:
 
    ```bash
    uip maestro bpmn refresh <project-path> --output json
@@ -428,10 +442,14 @@ and honestly surfaced to the user as gaps when asked.
    as `<bpmn:startEvent>`, `<bpmn:intermediateCatchEvent>`,
    `<bpmn:scriptTask>`, and `<bpmn:endEvent>`. Do not write PascalCase tags
    like `<bpmn:IntermediateCatchEvent>`.
-4. **Confirm before authoring.** Confirm the chosen connector/connection/process
-   and the process structure with the user (AskUserQuestion). When the source
-   is an image, confirm the full inventory, not a summary — see
-   [Authoring from an image](#authoring-from-an-image).
+4. **One clarifying round, then author.** Ask (AskUserQuestion) only for a
+   choice that the request and the CLI evidence leave undecidable and whose
+   wrong answer is unrecoverable or forces an invented identifier; batch those
+   into one round before authoring and never open a second. Decide everything
+   else, author, and name each assumption and what tied in your summary. When
+   the request says not to pause for approval or confirmation, ask nothing.
+   When the source is an image, confirm the full inventory, not a summary —
+   see [Authoring from an image](#authoring-from-an-image).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as

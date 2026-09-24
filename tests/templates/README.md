@@ -16,6 +16,7 @@ targets, so templates and scaffolding live here instead.
 4. Run locally:
    ```
    cd tests
+   make plugin-root
    SKILLS_REPO_PATH=$(cd .. && pwd) \
      .venv/bin/coder-eval run tasks/<skill>/<feature>/<file>.yaml \
      -e experiments/default.yaml

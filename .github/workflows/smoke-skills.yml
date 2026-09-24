@@ -486,6 +486,12 @@ jobs:
       - name: Stage _shared grader helpers
         run: bash tests/scripts/stage_shared.sh
 
+      # The agent reads everything under the plugin path (docker bind-mounts it
+      # at its host path), so it must not be the repo root — that hands the agent
+      # tests/tasks: the graders and the *.reference.flow answers.
+      - name: Stage the agent-visible plugin root
+        run: python tests/scripts/stage_plugin_root.py
+
       - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
@@ -535,6 +541,30 @@ jobs:
       - name: Fix permissions on /tmp/runs
         if: always()
         run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
+
+      # Troubleshoot fixture-drift check. Was a coder-eval task until the agent's
+      # plugin mount stopped exposing the repo: the validator walks `uip <cmd>
+      # --help` for every mocked command across all ~298 troubleshoot manifests,
+      # so it needs the image's baked CLI AND the whole task tree — which no
+      # sandbox may see. No agent is involved, so run it in the image directly.
+      #
+      # continue-on-error, and after the smoke run rather than before it: as a
+      # task this was one row of a 95% pass-rate gate, so one failure never
+      # blocked a PR. Hard-failing here would be a NEW escalation, and
+      # `uip or jobs traces` is already drifted in 8 manifests (#1587), so it
+      # would block every PR in the repo on a defect none of them introduced.
+      # It still runs on every PR, which a `paths:` filter would not: a CLI bump
+      # breaks manifests with no repo change at all.
+      - name: Verify troubleshoot manifest commands
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo:ro" \
+            -v "$HOME/.uipath:/.uipath:rw" \
+            --entrypoint python \
+            skills-image:latest \
+            /repo/tests/tasks/uipath-troubleshoot/_shared/scripts/verify_manifest_commands.py \
+            || { echo "::error::troubleshoot manifest drift — a mocked uip command no longer exists (see the [BAD] line above)"; exit 1; }
 
       - name: Summarize results
         if: always()

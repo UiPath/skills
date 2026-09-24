@@ -10,7 +10,7 @@ Signature:
 
 ```ts
 .step('triage', inlineAgent({ model: 'gpt-5.4',
-  systemPrompt: 'Return JSON with category.',
+  systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
   userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
   returns: { category: 'string' } }))
 ```
@@ -21,6 +21,11 @@ Select a model currently available to the tenant (`uip agent model list`) and
 write prompts that make the requested decision and answer contract explicit.
 Static checks can establish wiring and output shape, never the semantic quality
 of the model's answer.
+
+`returns` is the answer contract: the agent runtime returns those fields as a
+typed object, so describe what each field holds ("Return a result conforming to
+the output schema. `<field>`: `<how to fill it>`.") and never ask for JSON text,
+which makes the model pack its whole answer into one string field.
 
 ## Context grounding
 

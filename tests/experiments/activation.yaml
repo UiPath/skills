@@ -47,7 +47,7 @@ defaults:
     allowed_tools: [Skill, Bash, Read, Write, Edit, Glob, Grep]
     plugins:
       - type: local
-        path: $SKILLS_REPO_PATH
+        path: $SKILLS_REPO_PATH/.plugin-root
     ignore_patterns: []
 
   checker_context:

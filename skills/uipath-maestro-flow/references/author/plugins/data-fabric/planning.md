@@ -45,7 +45,7 @@ Use these nodes when the record lives in **Data Fabric** and the flow itself is 
 | Append a new row (case, audit entry, request) | Yes — Create (native entity) |
 | Remove a row the flow has finished with | Yes — Delete (native entity) |
 | Write to a federated entity | No — and the connector is not a way round it; writing a federated entity is blocked. Write to the source system instead, via its own connector or [http](../http/planning.md) |
-| React to a record being created/updated **elsewhere** | No — that is a trigger; use [connector-trigger](../connector-trigger/planning.md) (`uipath.connector.trigger.uipath-uipath-dataservice.record-created` / `record-updated`) |
+| React to a record being created/updated **elsewhere** | Not with a connector trigger — Data Fabric ships **no** `uipath.connector.trigger.uipath-uipath-dataservice.*` node, and the Integration Service `CREATED`/`UPDATED` webhook has no Flow node that consumes it. Poll instead: `core.trigger.scheduled` → Read (`multiple`). The scheduled trigger's `output` port carries no payload (no `outputDefinition`), so there is no last-run timestamp to filter on — filter on a status column the flow's own Update advances, or the poll re-processes every row each tick |
 | Aggregate, group, or reshape rows already in memory | No — use [Transform](../transform/planning.md) |
 | Bulk-load a CSV into an entity | No — that is a data-loading job, not a flow step; use `uip df records import` out of band |
 | Read a record from a non-UiPath system | No — use [connector](../connector/planning.md) or [http](../http/planning.md) |

@@ -218,7 +218,7 @@ source needs one only when asked for it. Where it appears, the attribute is
 keep current. Preserve an existing value byte-for-byte when editing rather than
 normalising or bumping it.
 
-Give every root-level `bpmn:startEvent` exactly one stable GUID in
+Give every root-level **manual** `bpmn:startEvent` exactly one stable GUID in
 `<uipath:entryPointId value="..." />` (generate a fresh one; never the example
 UUID), declared as a **direct child** of that start event's own
 `<bpmn:extensionElements>`. Direct-child placement is not a style preference:
@@ -231,13 +231,10 @@ Subprocess start events do not carry an entry-point id.
 Only a **manual** root start becomes an `entry-points.json` entry. Derivation
 excludes any start event carrying an `eventDefinition` or a `uipath:event`
 extension, so a timer or connector start is never an entry point — an
-`entryPointId` on one is accepted but inert. Because `refresh` throws
-`BPMN file must contain a root manual start event with a uipath:entryPointId`
-when no manual root start remains, a package-ready project must keep one. When
-adding a timer or connector start, add it alongside the initializer's manual
-start rather than replacing it. A process with only a timer or connector start
-is source-only: `validate` stays clean, and `refresh` and `pack` are
-unavailable for it.
+`entryPointId` on one is accepted but inert. With no manual root start
+`refresh` throws `BPMN file must contain a root manual start event with a
+uipath:entryPointId`, and a scaffolded project's `entry-points.json` goes
+stale, failing `validate` and `pack`.
 
 Public entry-point variables have a two-layer runtime contract:
 
