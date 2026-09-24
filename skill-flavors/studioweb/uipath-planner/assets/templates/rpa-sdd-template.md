@@ -1,5 +1,5 @@
 <!--skill-flavor:packaging-solution:start-->
-**Packaging = the open Studio Web solution.** Each project is created inside it with `uip <family> init <PROJECT_NAME>`; an RPA project stops at that scaffold, because authoring RPA workflows is not supported in Studio Web — the SDD hands their implementation to the user in the Studio Web designer or to Autopilot in Studio Desktop. There is no solution to initialize, add projects to, pack, or refresh — the host keeps solution resources in sync. After the implementation specialist reports its tasks complete, the open solution is the deliverable.
+**Packaging = the open Studio Web solution.** Each project is created inside it with `uip <family> init <PROJECT_NAME>`; there is no solution to initialize, add projects to, pack, or refresh — the host keeps solution resources in sync. After the implementation specialist reports its tasks complete, the open solution is the deliverable.
 <!--skill-flavor:packaging-solution:end-->
 
 <!--skill-flavor:packaging-solution-promote:start-->

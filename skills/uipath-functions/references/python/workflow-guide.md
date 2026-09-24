@@ -4,9 +4,6 @@ The end-to-end Python Coded Function workflow: scaffold → schema → logic →
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
-
-
-
 ## Step 1: Scaffold
 
 ```bash

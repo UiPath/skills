@@ -4,7 +4,6 @@ The local loop for JS/TS coded functions: `uip function serve` for the HTTP surf
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
-
 ## `uip function serve` — local HTTP server
 
 ```bash

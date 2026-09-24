@@ -4,7 +4,6 @@ Scaffold a production-ready UiPath Coded Action App — a React form component r
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
-
 ## What Is a Coded Action App?
 
 When an automation creates a human task (via `CreateAppTask` RPA activity/Maestro `User Task`/Agent `Escalation`/Flow `HITL node`), the assigned action app is rendered in Action Center for the reviewer. The app:

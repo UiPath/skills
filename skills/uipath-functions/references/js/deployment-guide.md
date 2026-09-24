@@ -4,7 +4,6 @@ Pack → publish → release update → live HTTP endpoint. Covers package anato
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
-
 ## Pack
 
 ```bash
