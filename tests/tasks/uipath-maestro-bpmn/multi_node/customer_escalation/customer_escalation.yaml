@@ -97,7 +97,9 @@ success_criteria:
       commands. Read-only registry discovery commands such as `uip maestro bpmn
       registry pull`, `registry list`, and `registry get` are allowed because
       they fetch authoring templates and do not mutate a tenant or lifecycle
-      state; `uip maestro bpmn validate` (offline validation of local files)
-      and `--help` invocations are likewise always acceptable and must NOT
+      state; `uip maestro bpmn validate` (offline validation of local files),
+      `uip maestro bpmn format` (local diagram layout), `uip maestro bpmn init`
+      and `uip maestro bpmn refresh` (local scaffold and metadata files), and
+      `--help` invocations are likewise always acceptable and must NOT
       fail this check. Fail only if tool calls or the final answer show a
       cloud-side lifecycle mutation or a request to perform one.

@@ -1,0 +1,98 @@
+task_id: skill-bpmn-datafabric-smoke-file-activities
+description: >
+  Smoke: DF connector file activities — Download + Create + Upload + Delete
+  wired against the `file1` FILE field on FlowCodeEvalEntity. Exercises
+  cross-record file transfer: Download from a fixed source record, Create a
+  new destination record, Upload the downloaded file to the new record
+  (a process variable bridges download → upload; recordId bound to create
+  output), then Delete the file from the new record. Presence + wiring
+  enforcement lives in the verifier. Ported from Flow
+  `connector_features/datafabric_connector/smoke_file_activities.yaml`;
+  connector activities are modeled as bpmn:sendTask nodes carrying the
+  registry Intsvc.ActivityExecution wrapper instead of Flow connector nodes,
+  and the grader walks the XML `uipath:input`/`uipath:output` tree instead of
+  Flow's `inputs.detail` JSON.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector, uipath-uipath-dataservice]
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 2400
+  task_timeout: 5400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build this with the UiPath Data Service Integration Service connector
+  (`uipath-uipath-dataservice`) activities for every entity operation.
+
+  Build a UiPath Maestro BPMN process that transfers a file between two Data
+  Fabric records on the `FlowCodeEvalEntity` entity, `file1` field. Do NOT
+  indirect the entity name or field name through process variables. Chain
+  four operations in order:
+
+  1. Download File from Record Field — use a valid UUID literal of your
+     choice for the source recordId. Assign the download output to a process
+     variable.
+  2. Create Entity Record — create a new FlowCodeEvalEntity record. Populate
+     the body with plausible sample values on at least `title` (STRING),
+     `description` (MULTILINE_TEXT), and `score` (DECIMAL). Deterministic
+     literals are fine.
+  3. Upload File to Record Field — bind the file input to the process
+     variable produced by step 1; bind recordId to the Create activity's
+     output Id (do NOT hard-code).
+  4. Delete File from Record Field — bind recordId to the same Create
+     activity output Id used in step 3.
+
+  Use the Data Fabric Integration Service connector activities for these
+  operations.
+
+  The process is not complete until `uip maestro bpmn validate` passes.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "Final .bpmn passes `uip maestro bpmn validate`"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .bpmn has upload + download + delete file-record-field nodes on FlowCodeEvalEntity/file1, a create node whose output id feeds upload+delete, and reuses the downloaded file's output variable in upload"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_smoke_file_activities.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

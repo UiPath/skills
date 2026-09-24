@@ -22,6 +22,21 @@ ARG CLI_VERSION=dev
 # override this with an exact version for a reproducible comparison.
 ARG FLOW_SDK_VERSION=latest
 
+# Which published connectors library the image carries. `latest` follows the
+# stable alias download.uipath.com/maestro/registry/library-json.zip, like
+# FLOW_SDK_VERSION follows the SDK's rolling release. A build number
+# (`connectors-library-2026.09.9`, or `2026.09.9`) pins that build's immutable
+# copy under maestro/registry/versions/ instead. The alias is not safe to
+# follow blindly: on 2026-09-22 it was overwritten with a 2-connector build and
+# every connector task in that day's run authored against it.
+#
+# The pin applies twice. The build-time pull below fetches the pinned archive,
+# and that is the library `flow compile` reads (FLOW_SDK_LIBRARY_JSON). The value
+# is also persisted as ENV, so an agent's own bare `uip maestro registry pull`
+# stays on the same build: the SDK honours CONNECTORS_LIBRARY_VERSION from the
+# release carrying UiPath/flow-builder-sdk#769 (older SDKs ignore it).
+ARG CONNECTORS_LIBRARY_VERSION=latest
+
 # The package NAME is a build arg for the same reason the version is: the rename
 # split the published history. `@uipath/maestro-builder-sdk` starts at 5.0.0;
 # everything at or below 4.0.0 exists only under `@uipath/flow-sdk`. So a
@@ -216,10 +231,22 @@ RUN set -euo pipefail && \
     registry_status=skipped && \
     source_check_status=skipped && \
     library_hash='' && \
+    connectors_library_version="${CONNECTORS_LIBRARY_VERSION:-latest}" && \
+    connectors_library_url='' && \
+    if [ "$connectors_library_version" != latest ]; then \
+      connectors_library_build="$(printf '%s' "$connectors_library_version" | \
+        sed -nE 's/^(connectors-library-)?([0-9]{4}\.[0-9]{2}\.[0-9]+)$/\2/p')"; \
+      if [ -z "$connectors_library_build" ]; then \
+        echo "ERROR: CONNECTORS_LIBRARY_VERSION must be 'latest' or a build number such as connectors-library-2026.09.9, got '$connectors_library_version'" >&2; \
+        exit 1; \
+      fi; \
+      connectors_library_url="https://download.uipath.com/maestro/registry/versions/connectors-library-${connectors_library_build}/library-json.zip"; \
+      echo "Pinning the connectors library to $connectors_library_url"; \
+    fi && \
     if [ "$sdk_status" = available ]; then \
       registry_status=failed; \
       if registry_output="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
-        uip maestro registry pull --force --output json 2>&1)"; then \
+        uip maestro registry pull --force ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
         printf '%s\n' "$registry_output"; \
         registry_snapshot=''; \
         if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
@@ -272,8 +299,9 @@ RUN set -euo pipefail && \
       --arg sdkStatus "$sdk_status" \
       --arg registryStatus "$registry_status" \
       --arg libraryHash "$library_hash" \
+      --arg connectorsLibraryVersion "$connectors_library_version" \
       --arg sourceCheckStatus "$source_check_status" \
-      '{sdk: {requestedVersion: $requestedVersion, resolvedVersion: (if $resolvedVersion == "" then null else $resolvedVersion end), status: $sdkStatus}, registry: {libraryHash: (if $libraryHash == "" then null else $libraryHash end), status: $registryStatus}, sourceCheck: {status: $sourceCheckStatus}}' \
+      '{sdk: {requestedVersion: $requestedVersion, resolvedVersion: (if $resolvedVersion == "" then null else $resolvedVersion end), status: $sdkStatus}, registry: {requestedVersion: $connectorsLibraryVersion, libraryHash: (if $libraryHash == "" then null else $libraryHash end), status: $registryStatus}, sourceCheck: {status: $sourceCheckStatus}}' \
       > "$FLOW_SDK_SETUP_STATUS" && \
     cat "$FLOW_SDK_SETUP_STATUS"
 
@@ -282,6 +310,10 @@ RUN set -euo pipefail && \
 # non-default build (an old-name baseline) would install one name and have the
 # stager look for the other.
 ENV FLOW_SDK_PKG_NAME=${FLOW_SDK_PKG_NAME}
+
+# Persisted for the same reason: task-time pulls must resolve to the library the
+# image was built with (see the ARG above).
+ENV CONNECTORS_LIBRARY_VERSION=${CONNECTORS_LIBRARY_VERSION}
 
 ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
     FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md \

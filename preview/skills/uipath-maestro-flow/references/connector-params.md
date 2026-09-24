@@ -4,14 +4,14 @@
 
 Call a curated or generic Integration Service operation.
 
-**Data Fabric entity operations are Integration Service connector actions.**
+**Some Data Fabric entity operations are Integration Service connector actions.**
 "Data Fabric" and "Data Service" name one product — the tenant displays connector
-key `uipath-uipath-dataservice` as *UiPath Data Fabric* — so a task naming either
-one routes here for every entity operation EXCEPT read-one
-(`dataFabricRead()`) and update-one (`dataFabricUpdate()`), the only two verbs
-`core.datafabric.*` has. Create, delete, get-by-id, query-many with a row limit
-and the file record fields are connector actions; see
-[`data-fabric.md`](data-fabric.md) for the routing table.
+key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE:
+`core.datafabric.*` has all four verbs (`dataFabricRead()`,
+`dataFabricCreate()`, `dataFabricUpdate()`, `dataFabricDelete()`), and the read
+verb covers filters, paging, sort, and get-by-id (filter on `Id`). What still
+routes here is the file record fields and the Record Created / Updated events;
+see [`data-fabric.md`](data-fabric.md) for the routing table.
 
 Signatures:
 
@@ -87,11 +87,10 @@ To read the Markdown directly, ask where it is:
 FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md)"
 ```
 
-The four library verbs are `pull`, `search`, `path` and `prepare`. Like the
-authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of
-their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace. In
-a workspace with no `uip`, `npx flow-sdk registry <verb>` is the same command
-with the same arguments.
+The four library verbs are `pull`, `search`, `path` and `prepare`.
+Like the authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace.
+`uip` is the entry point and is what delivers these skills, so it is present wherever this guidance is being read.
+(The package also exposes a `flow-sdk` bin for invoking the same commands directly, which is what the printed remedies fall back to when nothing sets `FLOW_SDK_INVOKED_AS`.)
 
 **`uip maestro registry` is not `uip maestro flow registry`.** The names are one
 word apart and the jobs are unrelated: this one is the connector library the
@@ -117,9 +116,9 @@ and a logged-in `uip`; without one, fall back to the curated operation in the
 markdown library.
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action>
+uip maestro registry prepare <connector-key> <action>
 # Generic operation: materialize the one connected object the task uses.
-npx flow-sdk registry prepare <connector-key> <action> --object <api-object-name>
+uip maestro registry prepare <connector-key> <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
@@ -186,7 +185,7 @@ case-insensitive on API name and display name, narrowed to objects that
 support the action's verb):
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> --object Company__C
+uip maestro registry prepare <connector-key> <action> --object Company__C
 #   object: matched "Company__C" -> Company__c
 ```
 
@@ -272,7 +271,7 @@ very value `-f` wants.** Do not run one prepare to resolve them and retype the
 ids into a second command: pass both flags together —
 
 ```bash
-npx flow-sdk registry prepare uipath-atlassian-jira create-issue \
+uip maestro registry prepare uipath-atlassian-jira create-issue \
   --resolve fields.project.key:key=UIP --resolve fields.issuetype.id:name=Bug \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
@@ -326,7 +325,7 @@ inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
 parent when you omit it; the fix is always the entity name:
 
 ```bash
-npx flow-sdk registry prepare uipath-uipath-dataservice create-entity-record \
+uip maestro registry prepare uipath-uipath-dataservice create-entity-record \
   -f entityName=FlowCodeEvalEntity
 # → 8 input field(s): entityName, expansionLevel + the entity's own fields
 ```
@@ -359,7 +358,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> \
+uip maestro registry prepare <connector-key> <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -436,12 +435,24 @@ Author the field's helper call and keep going:
 channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 ```
 
+`.byEmail` is an **alias**, and aliases are generated onto the descriptor.
+`lookup()` takes two forms, and only one of them carries them:
+
+| form | when | helpers |
+| --- | --- | --- |
+| `lookup(SendMessageToUser, 'channel')` | you imported the descriptor `prepare` generated | `.byEmail(v)`, `.byRealName(v)`, … plus `.by(name, v)` |
+| `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | Generic CRUD, or no descriptor in hand | `.by(name, v)` only |
+
+Do not carry an alias from the first row into the second.
+There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
+Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
+
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
 and it is the only tenant call the whole loop needs:
 
 ```bash
-npx flow-sdk registry prepare uipath-salesforce-slack send-message-to-user \
+uip maestro registry prepare uipath-salesforce-slack send-message-to-user \
   --resolve channel:profile.email=dustin@example.com
 ```
 
@@ -479,10 +490,20 @@ message names the connection it read and, once every candidate has been tried,
 the one command that shows what the collection holds. Tenant discovery is still
 not a phase of this loop. When the candidates share a name, pick one
 by the `--connection-id <id>` each candidate line prints; `bindings.json` is
-written on that route too. The entries are named `<connector's last segment>`
-(`slack`) and `shared` unless you pass `--bind-connection` / `--bind-folder`;
-`connection:` and `folder:` in source must use those names, and `compile` warns
-`CONNECTION_STUB` when they do not resolve to a tenant id.
+written on that route too. The entries are named after the `connection:` and
+`folder:` labels your source already uses for this connector (for example
+`is-sandboxes`); a source that uses none gets `<connector's last segment>`
+(`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both.
+A label `prepare` cannot read without running the source (a computed value, or
+a step whose connector it cannot trace) is never guessed: `prepare` prints a
+`bindings:` line naming that step, and binds the one label it did read for the
+connector, or the default when it read none.
+`prepare` refuses, before it writes anything, a source that gives one connector
+several labels, or gives two connectors the same connection label (one label
+binds one connection). The `next:` line prints the names it bound. `compile`
+refuses a label that a `bindings.json` with entries does not declare
+(`BINDING_UNDECLARED`), and warns `CONNECTION_STUB` when a declared one does not
+resolve to a tenant id.
 
 `check` names the exact command when a lookup is unresolved, and warns when a
 lookup field is given a literal id. It also speaks up when a lookup field is

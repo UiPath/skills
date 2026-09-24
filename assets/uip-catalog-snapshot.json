@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-22T04:05:16Z",
-  "cli_version": "1.204.0-dev.8771",
+  "generated_at": "2026-09-24T04:05:46Z",
+  "cli_version": "1.204.0-dev.8826",
   "verbs": [
     "admin",
     "admin audit",
@@ -350,6 +350,7 @@
     "codedapp publish",
     "codedapp pull",
     "codedapp push",
+    "codedapp validate",
     "coder",
     "completion",
     "config",
@@ -1093,7 +1094,6 @@
     "or jobs resume",
     "or jobs start",
     "or jobs stop",
-    "or jobs traces",
     "or libraries",
     "or libraries delete",
     "or libraries download",
@@ -1410,6 +1410,7 @@
     "solution deploy config link",
     "solution deploy config set",
     "solution deploy config unlink",
+    "solution deploy delete",
     "solution deploy list",
     "solution deploy run",
     "solution deploy status",

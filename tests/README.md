@@ -61,12 +61,20 @@ make tags TAGS="integration connector-feature" EXPERIMENT=experiments/smoke.yaml
 make test-uipath-maestro-flow
 
 # Run a single task file
+make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
   -e experiments/default.yaml
 ```
 
 The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.
+
+Every `make` run target stages `.plugin-root` first — the pruned plugin tree the
+experiments hand the agent, built by `tests/scripts/stage_plugin_root.py`. The
+experiments never point the agent at the repo root, because coder_eval mounts
+that path into the task container and the repo root carries `tests/tasks`: the
+graders and the reference answers. Call `coder-eval` directly and you must run
+`make plugin-root` yourself, or the agent loads no skills.
 
 ### Parallelism
 
@@ -296,6 +304,7 @@ route — i.e. those with an `llm_judge` or `agent_judge` criterion. A task with
 
 ```bash
 cd tests && make install          # once
+make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run <task.yaml> \
   -e experiments/default.yaml -v
 ```
@@ -647,6 +656,7 @@ runs/
 
 4. **Re-run a single task with verbose output:**
    ```bash
+   make plugin-root
    SKILLS_REPO_PATH=$(cd .. && pwd) \
      .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
      -e experiments/default.yaml -v

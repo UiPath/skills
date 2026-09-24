@@ -1,0 +1,132 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+task_id: skill-bpmn-expense-approval-simulated
+description: >
+  Expense-approval process with an inline HITL review step (start → script →
+  HITL → script → end), driven by a simulated developer who describes the
+  outcome but withholds the schema details until asked. Tests whether the agent
+  elicits the field names/types/directions and approval outcomes before building.
+  Validate-only — Actions.HITL user tasks block on human review and can't be
+  bpmn-debugged.
+  Ported from Flow `interactive/expense_approval_simulated/expense_approval_simulated.yaml`;
+  the HITL quick-form's schema fields/outcomes become Actions.HITL context
+  inputs and typed outputs bound to declared process variables, and Flow's
+  node-id data binding ($vars.<node>.output.<field>) becomes a flat
+  vars.<VarId> variable reference.
+tags: [uipath-maestro-bpmn, uipath-human-in-the-loop, e2e, "mode:build", "lifecycle:generate", devcon, simulation]
+
+# skip:true, tenant-gated. The `validate` criterion below (weight 3.0,
+# pass_threshold 1.0, gating) cannot pass until a deployed Action App exists in
+# the eval tenant: `Actions.HITL` resolves against a placeholder appId and the
+# validator reports MISSING_BINDING. Every other criterion passes today (runs
+# 35501830119, 35503094182), so the criteria stay untouched — unskip once the
+# eval tenant has a deployed Action App to bind against.
+skip: true
+
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
+  max_turns: 90
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+reference:
+  directory: ../..
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a developer's non-technical manager sponsoring an automation. You
+    know the business process for expense approvals cold, but you have never
+    built a process and you speak in plain English, never in code. You are
+    friendly but impatient: if the agent dithers, prod it to just build
+    something. You cannot read or write code — if the agent shows you code,
+    say "I trust you, just make it work."
+
+  goal: |
+    You want a UiPath Maestro BPMN process that routes employee expense
+    reports to a manager for approval and logs the outcome.
+
+    OPENING MESSAGE: open the way you would to a colleague — a short paragraph
+    covering the outcome you want plus the details that matter to you: the
+    manager needs to see the expense amount, who submitted it, the category,
+    and the expense ID; what the manager fills in is their decision, approve
+    or reject, plus an optional reason if they reject; and the very last step
+    of the process takes whatever the manager entered — their decision and any
+    reason they typed — and logs it, keeping that record inside the process
+    itself rather than in some other system. Say that it has
+    to be built as a UiPath Maestro BPMN process — not an API workflow, not a
+    standalone script — and that you want it validated before you sign off. Do
+    not name files or paths and do not use technical wording. Close by
+    inviting the agent to ask you anything it needs before it starts building.
+    Keep the withheld items below to yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "ExpenseApproval" (in a solution of the same name).
+      - The approver group is "expense-approvers".
+      - Where the expense details come from: nowhere real yet — mock them for now.
+      - You do not require the project to execute before signing off (a manager
+        has to review it live, so it can't be run automatically).
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'HITL', 'schema', 'field', 'direction', 'outcome', 'node', or 'script' unless the agent brings them up first."
+    - "Do not reveal the 'expense-approvers' group unless asked who approves."
+    - "If the agent offers to keep the record in an external system (Data Service, a database, a spreadsheet, an email), decline before it builds: you want the last step of the process to write down what the manager entered, nothing more."
+    - "Do not reveal the project name 'ExpenseApproval' unless asked what to name it."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro BPMN process at all (e.g. an API workflow), tell it you specifically want a Maestro BPMN process — i.e. a `.bpmn` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the process, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # Name-agnostic: any unambiguous generated .bpmn must validate. The exact
+  # project name is scored separately below.
+  - type: run_command
+    description: "uip maestro bpmn validate passes (any .bpmn)"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Mirrors the skills-repo check_devcon_expense_approval.py: exactly one
+  # Actions.HITL user task whose activity presents context inputs and typed
+  # outputs, captures the manager decision (boolean OR string output naming
+  # approve/approved/decision) and a text reason output field, is wired
+  # downstream (single completion edge — BPMN has no per-outcome ports), and
+  # is read downstream via a bpmn:scriptTask referencing vars.<id>.
+  - type: run_command
+    description: "BPMN has a correct inline HITL schema, decision capture, outcome wiring, and downstream vars.<id> access"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py expense"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the process behaves identically whatever it's
+  # called. Non-gating: reports whether the agent elicited the exact name
+  # (score 1/0), but pass_threshold 0 keeps a cosmetic miss from failing the
+  # task and the low weight keeps it from dominating the score.
+  - type: run_command
+    description: "Project/BPMN file is named ExpenseApproval (elicited from the user)"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('ExpenseApproval*.bpmn')) else 1)\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

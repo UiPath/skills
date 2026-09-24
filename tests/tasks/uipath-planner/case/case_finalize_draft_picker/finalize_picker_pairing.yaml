@@ -15,6 +15,15 @@ run_limits:
   max_turns: 60
   turn_timeout: 1500
 
+# Inherit agent from the experiment; override only allowed_tools. The lane's
+# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Agent tool is present. Run 35267119510 measured the alternative: every task
+# without Agent was killed at exactly its turn wall (picker 1500.0s,
+# response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both
+# tasks with it scored 1.000 under wall. The walk is generation, not tooling.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
 sandbox:
   template_sources:
     - type: template_dir
@@ -46,10 +55,62 @@ initial_prompt: |
   row; do not add a second, non-completing row.
 
 success_criteria:
+  # No validator archaeology before the write. The § Validation gate is a checklist the
+  # agent ANSWERS in the transcript — there is no script, so every call that goes looking
+  # for one is pure loss. Reading the old `audit_sdd.py` source instead of running it is
+  # what burned three full turn walls in run 2026-09-08_05-15-45 with zero bytes written;
+  # the script is gone, and these four rows now watch the same behaviour on its remains
+  # (`audit_sdd`, `scripts/case/`) so a relapse fails in minutes instead of timing out.
+  #
+  # One criterion per file-reading tool: `tool_name` is a per-criterion filter, and run
+  # 34310755247 measured each escape route separately. Coverage gaps that run proved:
+  # `wc -l audit_sdd.py` scored clean on reject-route — kept in the verb list, because it is
+  # the FIRST rung of the ladder and not a harmless line count: in both the loan and sla
+  # runs that same `wc` is immediately followed by `sed` range reads of the whole file.
+  # The Grep and Glob rows close the tool surface rather than a measured escape: no run had
+  # yet reached the validator through them, but nothing stopped it, and Grep is this lane's
+  # heaviest reader (10 calls in the original skill-case-phase-0-finalize-draft failure,
+  # all aimed at the guides and template rather than the validator).
+  - type: command_not_executed
+    description: "Advisory: no gate script is read — the § Validation gate is a checklist, not a file"
+    tool_name: "Read"
+    command_pattern: '(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: no gate script is paged, counted, or hunted for from the shell"
+    tool_name: "Bash"
+    command_pattern: '(grep|rg|sed|awk|cat|head|tail|less|wc|find|ls)\b[^\n]*(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: no gate script is searched with the Grep tool"
+    tool_name: "Grep"
+    command_pattern: '(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: no gate script is located with the Glob tool — reference paths resolve against the skill base dir"
+    tool_name: "Glob"
+    command_pattern: '(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
   - type: file_exists
     description: "Finalization produced the approved sdd.md"
     path: "sdd.md"
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Planner Handoff header records the conformance-checklist verdict (Template validation: passed) — the ready flip ran the gate"
+    command: "grep -Eiq 'Template validation[*| ]+passed' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

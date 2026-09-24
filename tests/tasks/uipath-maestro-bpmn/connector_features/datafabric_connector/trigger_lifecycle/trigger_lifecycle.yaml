@@ -1,0 +1,109 @@
+task_id: skill-bpmn-datafabric-trigger-lifecycle
+description: >
+  Integration coverage for Data Fabric Record Created and Record Updated
+  triggers, including trigger-side date filters, downstream Query/Get/Delete
+  wiring, and preservation of entity resources on every activity.
+  Ported from the retired Flow task
+  `connector_features/datafabric_connector/trigger_lifecycle.yaml`, which was
+  replaced by Flow
+  `connector_features/datafabric_connector/scheduled_poll_lifecycle.yaml`
+  because the Maestro Flow registry
+  ships no Data Fabric connector trigger node. BPMN reaches the same IS webhook
+  through `Intsvc.EventTrigger`, so this task stands. Flow
+  modeled this as a solution with two Flow projects (one per trigger); BPMN
+  has no multi-file solution concept, so both trigger branches are modeled as
+  two independent `bpmn:startEvent` entries (each carrying the registry
+  `Intsvc.EventTrigger` wrapper) inside ONE process. Flow's
+  `$vars.<node>.output.<f>` node-id bindings (trigger Id -> Get -> Delete)
+  become `vars.<VarId>` process-variable references, tracing through an
+  intermediate `BPMN.Variables` copy if the agent adds one.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", connector, "feature:trigger", "feature:records", "feature:entities", "feature:activities", uipath-uipath-dataservice]
+
+run_limits:
+  max_turns: 120
+  expected_turns: 80
+  turn_timeout: 2400
+  task_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build this with the UiPath Data Service Integration Service connector
+  (`uipath-uipath-dataservice`) activities for every entity operation.
+
+  Create a new UiPath Maestro BPMN process named DataFabricTriggerRegression
+  using the configured UiPath Data Fabric connection, with two independent
+  connector-trigger start events:
+
+  Branch 1: ContractRegistryRecordCreated
+  - Start the process with a Data Fabric Record Created trigger on the
+    ContractRegistry entity.
+  - Add a trigger filter where dueDate is less than 2026-08-04.
+  - Add Query Entity Records immediately after that trigger, also on
+    ContractRegistry, with the same dueDate < 2026-08-04 filter and a maximum
+    of 100 records.
+
+  Branch 2: FileUploadVerifyRecordUpdatedDelete
+  - Start the process with a Data Fabric Record Updated trigger on the
+    FileUploadVerify_20260618 entity.
+  - Get the entity record by ID using the Id from the Record Updated trigger
+    output.
+  - Delete the same record using that Id.
+
+  For both branches, keep the configured connection and correct entity on
+  every trigger and Data Fabric activity.
+
+  Use the Data Fabric Integration Service connector activities
+  (`uipath-uipath-dataservice`) for these operations, not a native Data
+  Fabric node.
+
+  The process is not complete until `uip maestro bpmn validate` passes.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "Final .bpmn passes `uip maestro bpmn validate`"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Created and updated trigger start events contain filters, downstream activities, and non-null entity bindings"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_trigger_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

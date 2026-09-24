@@ -23,7 +23,7 @@ run_limits:
   turn_timeout: 2100
 
 reference:
-  directory: ../../../../../scripts
+  directory: .
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectionParityCase"

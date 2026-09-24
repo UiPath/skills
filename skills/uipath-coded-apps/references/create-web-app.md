@@ -2,6 +2,8 @@
 
 Scaffold a new UiPath Coded Web Application using Vite + React + TypeScript with the `@uipath/uipath-typescript` SDK.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 Order matters: the project is scaffolded and the SDK **installed before scopes are determined**, so the scope decision reads the per-method scope table shipped inside the installed package (version-exact) instead of relying on memorized tables.
 
 ## Pre-flight: Collect Required Information

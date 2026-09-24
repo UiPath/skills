@@ -2,6 +2,8 @@
 
 Complete reference for all `uip codedapp` subcommands.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## Prerequisites
 
 - **Authentication**: Run `uip login` before using cloud commands (auth is handled by the `uip` CLI, not the codedapp tool)

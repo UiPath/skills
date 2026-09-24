@@ -1,0 +1,80 @@
+task_id: skill-bpmn-outlook-waitfor-email
+description: >
+  Build-and-validate: a Maestro BPMN process with a manual start, a mid-flow
+  Wait-for-event node that pauses the process until a Microsoft Outlook 365
+  email is received in the Inbox (registry `Intsvc.WaitForEvent` on a
+  `bpmn:receiveTask`, connector `uipath-microsoft-outlook365`) WHOSE SUBJECT
+  CONTAINS the fixed string "TestWaitFor", then an End. Exercises the
+  connector-wait registry wrapper (event node added mid-flow with the
+  registry template, NOT replacing the manual start; bound to the Outlook
+  connection) AND the structured `filter` tree (a subject / Contains /
+  "TestWaitFor" literal leaf -- never a bare filter-expression string). No
+  execution -- `bpmn debug` is intentionally omitted; the task only requires
+  the process to build and validate. Distinct from a connector-trigger START
+  event, which would use the same event to start the process; this one uses
+  it as a mid-flow wait. Ported from Flow
+  `single_node/outlook_waitfor_email/outlook_waitfor_email.yaml`; the Flow
+  Wait-for-event node (matched by a `type` substring) becomes a
+  `bpmn:receiveTask` carrying the registry `Intsvc.WaitForEvent` wrapper, and
+  the Flow node-id/JSON walk becomes an XML walk over the receiveTask's
+  `uipath:input` context fields and filter payload.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "feature:trigger", connector, uipath-microsoft-outlook365, filter, wait-for-event]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  expected_turns: 55
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN process named "OutlookWaitForEmail".
+
+  Keep the process's manual start. After it, add a mid-flow Wait-for-event
+  node that pauses the process until a Microsoft Outlook 365 email is
+  received in the **Inbox** folder whose SUBJECT CONTAINS the string
+  "TestWaitFor". Then End the process.
+
+  Validate the process.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  # ── Structural: process builds and validates ───────────────────────────
+  - type: run_command
+    description: "uip maestro bpmn validate passes on the process file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Composite: event node mid-flow + subject-contains-"TestWaitFor" filter ─
+  - type: run_command
+    description: "Mid-flow Outlook email-received node filters subject contains 'TestWaitFor'"
+    command: "python3 $REFERENCE_DIR/_shared/check_outlook_waitfor_email.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

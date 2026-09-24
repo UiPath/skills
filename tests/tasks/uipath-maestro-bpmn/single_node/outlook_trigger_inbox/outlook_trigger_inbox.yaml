@@ -1,0 +1,117 @@
+task_id: skill-bpmn-outlook-trigger-inbox
+description: >
+  Regression test for PR #348: verifies the agent freshly resolves the
+  Outlook email-received trigger's `parentFolderId` reference field
+  against the currently-bound connection, instead of reusing a cached
+  or remembered ID from an earlier process. The `command_executed` check
+  catches the skip-the-resolve pathology; the folder-ID post-hoc check
+  catches the resolved-but-stale pathology. A `bpmn debug` step is
+  intentionally omitted — seeding a self-addressed email through the
+  test-tenant Outlook connection is not reliable (the receiving mailbox
+  may route self-sends via inbox rules that bypass the connector's
+  trigger lookback). Adding a debug E2E requires a dedicated service
+  mailbox with no rules; tracked as follow-up.
+  Ported from Flow `single_node/outlook_trigger_inbox/outlook_trigger_inbox.yaml`;
+  the trigger node (a `.flow` JSON node typed
+  `uipath.connector.trigger.uipath-microsoft-outlook365.email-received`)
+  becomes a `bpmn:startEvent` carrying the registry `Intsvc.EventTrigger`
+  wrapper, and the JSON field walk (`inputs.detail.connectionId` /
+  `inputs.detail.eventParameters.parentFolderId`) becomes an XML
+  `uipath:input` walk over the startEvent's `uipath:event` context,
+  resolving the standard `=bindings.<id>` connection indirection where present.
+tags: [uipath-maestro-bpmn, integration, "lifecycle:generate", "shape:single-node", "feature:trigger", connector, "mode:build"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  expected_turns: 61
+  turn_timeout: 1200
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN process named "OutlookTriggerInbox" with the
+  main file at OutlookTriggerInbox/OutlookTriggerInbox.bpmn, started by a
+  Microsoft Outlook 365 email-received trigger on the **Inbox** folder.
+
+  When the trigger fires, compute `{ subject: <the trigger's subject output> }`,
+  then end the process with a single output variable named `matchedSubject`
+  mapped from that subject value.
+
+  Validate the process.
+  Do not reuse any folder ID you may have seen before.
+
+  Use the connection in Shared/uipath-maestro-flow folder.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-microsoft-outlook365=uipath-maestro-flow'
+    timeout: 120
+
+success_criteria:
+  # ── Structural: process builds and validates ───────────────────────────
+  - type: run_command
+    description: "uip maestro bpmn validate passes on the process file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process has a uipath-microsoft-outlook365 email-received trigger start event"
+    command: "python3 $REFERENCE_DIR/_shared/check_outlook_trigger_inbox.py check_trigger_node"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent queried trigger objects for the connector's EMAIL_RECEIVED operation (connector-trigger Step 1b)"
+    tool_name: "Bash"
+    command_pattern: '(?s)\A(?=.*uipath-microsoft-outlook365)(?=.*uip\s+is\s+triggers\s+objects).*EMAIL_RECEIVED'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: agent described the trigger object for EMAIL_RECEIVED (connector-trigger Step 1b-2) — required event params (e.g. parentFolderId) live in describe's EventParameters, not in triggers objects' parameters[]"
+    tool_name: "Bash"
+    command_pattern: '(?s)\A(?=.*uipath-microsoft-outlook365)(?=.*uip\s+is\s+triggers\s+describe).*EMAIL_RECEIVED'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Process carries a MailFolder reference on its bound Outlook connection"
+    command: "python3 $REFERENCE_DIR/_shared/check_outlook_trigger_inbox.py check_folder_binding"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process's parentFolderId is a live MailFolder ID on the bound Outlook connection"
+    command: "python3 $REFERENCE_DIR/_shared/check_outlook_trigger_inbox.py check_folder_id_fresh"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

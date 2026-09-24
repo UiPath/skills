@@ -1,0 +1,135 @@
+task_id: skill-case-phase-0-case-reasoning-regressions
+description: >
+  Design-only run for a case that combines the known task-sequencing
+  regressions: parallel tasks after a predecessor, payment obligation racing,
+  invalid selected adhoc dependencies, and deterministic rejection routing.
+tags:
+  - uipath-planner
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:approval-gate
+  - feature:conversational
+
+run_limits:
+  # Aligned to the design-task family (finalize_from_draft 4200/3600,
+  # sdd_response_map 4200/3600, finalize_reject_route 4200/3600). This is a
+  # from-scratch greenfield design and was carrying the tightest wall of any
+  # design task in the suite. Same argument finalize_reject_route records for
+  # its own bump: a task should not carry a wall tighter than its siblings.
+  # Held at parity after the real cause was found: simulation.max_turns.
+  # Every passing task in this suite runs a simulator capped at 8-12 turns
+  # (picker 8, reject 8, finalize 10, loan 10, response_map 12). This task
+  # was capped at 35 and procurement at 30 — the only two that fail. The
+  # lane holds exactly ONE Case Review confirmation, so a 35-turn allowance
+  # buys an interview the lane never asks for: run 35545625376 ended on
+  # task_timeout (4200s) and NOT turn_timeout (3600s), i.e. no single turn
+  # was over-long — 18 bounded turns simply summed past the budget. The
+  # apparent 12.1 output tok/s was the same artifact: simulator turns spend
+  # wall-clock without producing agent output tokens.
+  task_timeout: 4200
+  max_turns: 150
+  turn_timeout: 3600
+
+# Inherit agent from the experiment; override only allowed_tools. The lane's
+# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Agent tool is present. Run 35267119510 measured the alternative: every task
+# without Agent was killed at exactly its turn wall (picker 1500.0s,
+# response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both
+# tasks with it scored 1.000 under wall. The walk is generation, not tooling.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Design a "CaseReasoningRegression" Maestro case and produce `sdd.md`. Stop
+  after the SDD — do not create caseplan.json.
+
+  The requirements below are complete and settled — do not redesign them or
+  re-interview me on the stages, tasks, routing, or deadlines.
+
+  This is a design-only exercise: do not query tenant registry, connections,
+  schemas, or users. Use concrete
+  intended resource and system names, leave identities unresolved, and defer
+  authoritative tenant resolution to the later build run. Do not inspect plugin
+  planning docs.
+
+  Primary stages are Intake, Issuing Permit, and Close.
+
+  Intake receives a permit application and reviews it. If the reviewer rejects
+  the application, route deterministically to an Application Rejected terminal
+  outcome. Do not make the worker choose the rejected stage manually.
+
+  In Issuing Permit, Collect Fees runs first. After Collect Fees completes,
+  Wait for Payment Confirmation listens for a Payment Gateway confirmation
+  event while Payment Deadline tracks the payment obligation deadline. Those two
+  are independent and must start in parallel after Collect Fees while payment is
+  pending. Generate Permit starts only after payment confirmation succeeds. If
+  the payment obligation breaches, route to a Deadline Intervention secondary
+  stage.
+
+  Internal Notes is optional worker-launched side work in Issuing Permit.
+  Nothing required should depend on Internal Notes completing.
+
+success_criteria:
+  - type: run_command
+    description: "The SDD was produced without building the case"
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Known case-reasoning invariants are represented in sdd.md"
+    command: "python3 \"$REFERENCE_DIR/check_case_reasoning_regressions.py\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The design reasons from case semantics instead of phrase-to-rule translation"
+    files:
+      - sdd.md
+    max_file_chars: 180000
+    include_agent_output: false
+    include_reference: false
+    prompt: |
+      Review the CaseReasoningRegression SDD.
+
+      Score 1.0 only when:
+      - Payment Deadline and Wait for Payment Confirmation start while payment
+        is pending after Collect Fees. They are represented as a parallel
+        after-predecessor group, not as duplicate event-triggered tasks gated
+        by selected-tasks-completed("Collect Fees").
+      - Generate Permit depends on successful payment confirmation, not on the
+        payment deadline branch completing.
+      - selected-tasks-completed never selects the optional Internal Notes
+        adhoc task.
+      - Application Rejected is deterministic routing from the review decision,
+        not a dangling user-selected-stage without a wait-for-user exit.
+
+      Score 0.5 for one minor omission that does not break the case graph.
+      Score 0.0 for duplicate immediate selected-task gates, dangling
+      user-selected-stage, or a required dependency on Internal Notes.
+    weight: 3.0
+    pass_threshold: 0.8
+
+simulation:
+  enabled: true
+  persona: |
+    You are the operations owner who supplied the complete requirements in the
+    opening message.
+  goal: |
+    Get an approved sdd.md, then stop before implementation.
+  constraints:
+    - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, routes, or deadlines."
+    - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
+    - "Do not authorize creating caseplan.json, running, publishing, or deploying."
+  # 12, matching sdd_response_map — the closest analogue (design-only,
+  # greenfield, same 4200/3600 budget), which scores 1.000. Was 35.
+  max_turns: 12

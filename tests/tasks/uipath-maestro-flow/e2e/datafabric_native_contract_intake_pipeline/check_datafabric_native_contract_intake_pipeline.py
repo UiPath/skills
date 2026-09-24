@@ -3,7 +3,7 @@
 `core.datafabric.*` entity nodes — native node shape only:
 
 - >=1 core.datafabric.create on ContractRegistry, fieldValues has contractTitle
-- >=1 core.datafabric.read (resultMode: single) on ContractRegistry, filtered
+- >=1 core.datafabric.read (resultMode single, or absent) on ContractRegistry, filtered
       on Id, wired to the create node's output Id
 - >=1 core.datafabric.read (resultMode: multiple) on ContractRegistry,
       filtered on contractTitle, sorted by priority DESC
@@ -14,11 +14,22 @@
 
 Loop / branch / multi-node orchestration is intentionally NOT enforced —
 that's core-flow ownership, not the entity nodes'. Node-definition/manifest
-shape (definitions[], no instance outputs/model block, no error port) is
-covered separately by check_native_node_shape.py."""
+shape (definitions[] copied from the registry, instance outputs that match
+the definition, no instance model block, no error port) is covered
+separately by check_native_node_shape.py."""
 import glob
 import json
+import os
 import sys
+
+_d = os.path.dirname(os.path.abspath(__file__))
+while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
+    _d = os.path.dirname(_d)
+sys.path.insert(0, _d)
+from _shared.advisory_flow_utils import (  # noqa: E402
+    entity_config,
+    native_filter_rows,
+)
 
 ENTITY = "ContractRegistry"
 CREATE_T = "core.datafabric.create"
@@ -27,8 +38,21 @@ UPDATE_T = "core.datafabric.update"
 DELETE_T = "core.datafabric.delete"
 
 
-def entity_config(node):
-    return node.get("inputs", {}).get("entityConfig", {}) or {}
+# Every entityConfig key the product reads or persists on a Data Fabric node
+# (flow-workbench eed682f19): services serialization/entity-vdo.ts
+# `interface EntityConfig` and its Create/Update extensions, plus the keys the
+# canvas entity panels persist (properties-panel/EntityConfigField.tsx
+# `EntityConfigInputs`, entity/useEntityPanelState.ts `EntitySelectionPatch`).
+# The builder SDK refuses the same set (typed-raw-node.ts
+# DATAFABRIC_ENTITY_CONFIG_KEYS). A key outside it is carried into the file
+# and never read.
+KNOWN_ENTITY_CONFIG_KEYS = {
+    "entityName", "resultMode",
+    "_recordLimit", "_skip", "_sort", "_selectedFieldNames", "_filters",
+    "_entityFields", "_relatedFields", "_choiceSets", "_outputSchema",
+    "_folderKey", "_folderPath", "_entityKey", "_resourceKey", "_entityDisplayName", "_entitySubType",
+    "fieldValues", "fieldUpdates", "recordSource", "readEntityNodeId", "recordId",
+}
 
 
 def targets_entity(node):
@@ -36,15 +60,22 @@ def targets_entity(node):
 
 
 def filters_rows(node):
-    return ((entity_config(node).get("_filters") or {}).get("rows")) or []
+    # `_filters` is either the grouped `{logicalOperator, rows, groups}` object
+    # or the flat row list. The platform's serializer reads both (entity-vdo.ts
+    # branches on Array.isArray), so the shared walker takes both as well.
+    return native_filter_rows(node)
+
+
+def _rows(value):
+    return [row for row in value if isinstance(row, dict)] if isinstance(value, list) else []
 
 
 def field_values(node):
-    return entity_config(node).get("fieldValues") or []
+    return _rows(entity_config(node).get("fieldValues"))
 
 
 def field_updates(node):
-    return entity_config(node).get("fieldUpdates") or []
+    return _rows(entity_config(node).get("fieldUpdates"))
 
 
 def is_wired_to_create(expr, create_ids):
@@ -78,10 +109,17 @@ def has_contract_title_filter(node):
 
 
 def has_priority_desc_sort(node):
-    sort = entity_config(node).get("_sort") or {}
+    sort = entity_config(node).get("_sort")
+    if not isinstance(sort, dict):
+        return False
     field = str(sort.get("field", ""))
     direction = str(sort.get("direction", ""))
     return field.lower() == "priority" and direction.lower() == "desc"
+
+
+def unread_keys(node):
+    """entityConfig keys the product never reads."""
+    return sorted(set(entity_config(node)) - KNOWN_ENTITY_CONFIG_KEYS)
 
 
 def main() -> int:
@@ -120,7 +158,10 @@ def main() -> int:
 
         create_ids = [c.get("id") for c in creates]
 
-        single_reads = [r for r in reads if entity_config(r).get("resultMode") == "single"]
+        # The platform reads anything but "multiple" as single, an absent
+        # resultMode included (flow-schema utils.ts `resolveReadResultMode`);
+        # read 1.0, the builder SDK's read-one default, writes none.
+        single_reads = [r for r in reads if entity_config(r).get("resultMode") != "multiple"]
         multi_reads = [r for r in reads if entity_config(r).get("resultMode") == "multiple"]
 
         if not single_reads:
@@ -138,7 +179,15 @@ def main() -> int:
             print(f"FAIL: {path} — multi-record read has no contractTitle filter", file=sys.stderr)
             continue
         if not any(has_priority_desc_sort(r) for r in multi_reads):
-            print(f"FAIL: {path} — no multi-record read with priority DESC sort", file=sys.stderr)
+            hint = ""
+            unread = {r.get("id"): unread_keys(r) for r in multi_reads if unread_keys(r)}
+            if unread:
+                named = "; ".join(f"{nid!r} carries {', '.join(f'`{k}`' for k in keys)}"
+                                  for nid, keys in unread.items())
+                hint = (f" ({named}, which the platform never reads — the node sorts by "
+                        f"`_sort: {{field, direction}}`, flow-workbench entity-vdo.ts)")
+            print(f"FAIL: {path} — no multi-record read with priority DESC sort{hint}",
+                  file=sys.stderr)
             continue
 
         if not updates:
