@@ -145,7 +145,7 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 | `--component-description <text>` | No | Human-readable label for the component |
 | `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |
 | `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |
-| `--parent <component-id>` | No | Parent agent node component ID. When set, the simulation is added as a child tool simulation nested inside the parent agent node's simulation. If no parent *simulation* exists yet, one is auto-created (type `agent`, strategy `Llm`) — but the parent agent *node* must already exist in the `.flow`; see [Add the parent agent node first](#add-the-parent-agent-node-first). `--component-type` defaults to `Node`. |
+| `--parent <component-id>` | No | Parent agent node component ID. When set, the simulation is added as a child tool simulation nested inside the parent agent node's simulation. If no parent *simulation* exists yet, one is auto-created (type `agent`, strategy `Llm`). `--component-type` defaults to `Node`. |
 | `--path <path>` | No | (see Common Options) |
 
 **Strategy guide:**
@@ -155,6 +155,13 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 | `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions` (output schema auto-resolved) |
 | `Static` | Output is fixed and deterministic | `--mock-value` |
 
+**`Llm` reads the `.flow`; `Static` does not.** Add the targeted node to `nodes[]` before any `Llm` call — an eval set and a data point are not enough. `Static` succeeds against a component that does not exist, so a sequence mixing both strategies fails on the `Llm` call alone and the earlier `Static` success proves nothing about the node. A top-level `Llm` target needs readable outputs: a connector node with a configured `inputs.detail`, an agent node with a non-empty `inputs.agentOutputVariables`, or any node carrying `outputs`. `uip maestro flow node add` never writes `outputs`, so a bare `core.logic.mock` node fails with `Could not auto-resolve output schema … The node has no declared outputs` as a top-level target — it resolves only as a `--parent` child, from its definition's `outputDefinition`.
+
+| Missing | Error |
+|---------|-------|
+| top-level node | `Component "<component-id>" not found in the flow. Verify the component ID.` |
+| `--parent` agent node | `Parent agent "<component-id>" not found in the flow.` |
+
 **Output schema auto-resolution:** The CLI always auto-resolves the output schema for both top-level and child (`--parent`) simulations:
 
 - **Top-level simulations:** reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`).
@@ -162,11 +169,7 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 - **Child simulations (same-solution agents):** reads the inline agent's `agent.json` and matches the tool by name in the `resources[]` array.
 - **Child simulations (published agents):** calls the platform API (`simulatableComponents`) using the current login session to fetch the tool's schema. Requires `uip login`.
 
-Fails with an actionable error if the node/tool is not found or has no outputs.
-
-**Add the parent agent node first.** `--parent` with `--strategy Llm` requires the parent agent node to already be in `nodes[]`, wired to each child tool node by an edge on its `tool` port. Without it the call fails with `Parent agent "<component-id>" not found in the flow.` — an eval set and data point are not enough. `--strategy Static` does not read the flow and succeeds against a parent that does not exist, so a sequence mixing both strategies fails on the `Llm` call alone.
-
-The `--parent` value is the agent node's `id`; each `<component-id>` is a tool node's `id`:
+A `--parent` agent node must also be wired to each child tool node by an edge on its `tool` port. The `--parent` value is the agent node's `id`; each `<component-id>` is a tool node's `id`:
 
 ```json
 { "nodes": [

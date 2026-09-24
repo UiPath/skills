@@ -7,7 +7,9 @@ actually mutated the file:
   1. An eval-set JSON exists somewhere in the sandbox with name == "Sim Set",
      carrying a data point named "hello" in `evaluations[]`.
   2. That data point has a non-empty `simulations` array.
-  3. The Llm simulation targeting `agent-lookup` is still present (add worked).
+  3. The Llm simulation targeting `agent-lookup` is still present, carrying the
+     output schema the CLI auto-resolved from that node's declared `result`
+     output (add worked against a node that is really in the flow).
   4. The Static simulation targeting `connector-send-email` is gone (the
      `simulation remove` actually wrote back to disk, not just printed OK).
 
@@ -24,6 +26,7 @@ from pathlib import Path
 
 KEPT = "agent-lookup"
 REMOVED = "connector-send-email"
+KEPT_OUTPUT = "result"
 
 
 def _load_jsons(root: Path) -> list[tuple[Path, dict]]:
@@ -36,6 +39,19 @@ def _load_jsons(root: Path) -> list[tuple[Path, dict]]:
         if isinstance(value, dict):
             out.append((p, value))
     return out
+
+
+def _resolved_output(schema: object) -> bool:
+    """True when the schema carries the targeted node's declared output.
+
+    The CLI writes `outputSchema` only by resolving it from the node named in
+    `simulation add`, so the property is what distinguishes a real resolution
+    from a hand-written stub.
+    """
+    if not isinstance(schema, dict):
+        return False
+    properties = schema.get("properties")
+    return isinstance(properties, dict) and KEPT_OUTPUT in properties
 
 
 def _component_ids(sim: dict) -> list[str]:
@@ -129,15 +145,16 @@ def main() -> None:
                 for sim in sims
                 if KEPT in _component_ids(sim)
                 and sim.get("simulationStrategy") == "Llm"
-                and sim.get("outputSchema")
+                and _resolved_output(sim.get("outputSchema"))
             ),
             None,
         )
         if llm is None:
             sys.exit(
-                f'FAIL: no Llm simulation for "{KEPT}" has an explicit outputSchema'
+                f'FAIL: no Llm simulation for "{KEPT}" has an outputSchema '
+                f'with a "{KEPT_OUTPUT}" property auto-resolved from the node'
             )
-        print(f"OK: Llm simulation {KEPT!r} persists with an output schema")
+        print(f"OK: Llm simulation {KEPT!r} persists with its resolved output schema")
         return
 
     if check == "static-absent":
