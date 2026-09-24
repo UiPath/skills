@@ -159,6 +159,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `uipath-review checker unit tests` | `test-helpers.yml` |
 | `uipath-planner checker unit tests` | `test-helpers.yml` |
 | `uipath-coded-apps checker unit tests` | `test-helpers.yml` |
+| `uipath-ixp checker unit tests` | `test-helpers.yml` |
 | `uipath-admin verify negative controls` | `test-helpers.yml` |
 | `runtime-payload key-casing contract guard` | `test-helpers.yml` |
 | `maestro-bpmn contract guards` | `test-helpers.yml` |

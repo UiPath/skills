@@ -1,0 +1,1505 @@
+{
+  "id": "b2a7f7ce-2e1b-461b-af2e-a76d3095126e",
+  "version": "1.9",
+  "name": "ExpenseApproval",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play"
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": {
+            "type": "literal",
+            "expression": "null",
+            "fieldType": "string"
+          },
+          "var": "output"
+        }
+      },
+      "inputs": {}
+    },
+    {
+      "id": "fetchExpense",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 544,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "fetchExpense",
+        "icon": "code"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output",
+          "properties": {
+            "sourceExpenseId": {
+              "type": "string"
+            },
+            "amount": {
+              "type": "number"
+            },
+            "submitter": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "inputs": {
+        "script": "\n        return {\n          sourceExpenseId: $vars.start.output.requestedExpenseId,\n          amount: 842.75,\n          submitter: \"Jordan Lee\",\n          category: \"Travel\"\n        };\n      "
+      }
+    },
+    {
+      "id": "managerReview",
+      "type": "uipath.human-in-the-loop",
+      "typeVersion": "1.1",
+      "ui": {
+        "position": {
+          "x": 832,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "managerReview",
+        "icon": "users"
+      },
+      "model": {
+        "type": "bpmn:UserTask",
+        "serviceType": "Actions.HITL"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": {
+            "type": "literal",
+            "expression": "=result",
+            "fieldType": "string"
+          },
+          "var": "output",
+          "properties": {
+            "approved": {
+              "type": "boolean"
+            },
+            "rejectionReason": {
+              "type": "string"
+            },
+            "Action": {
+              "type": "string",
+              "enum": [
+                "Approve",
+                "Reject"
+              ],
+              "default": "Approve"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Action",
+            "fieldType": "string"
+          },
+          "var": "status",
+          "enum": [
+            "Approve",
+            "Reject"
+          ],
+          "default": "Approve"
+        }
+      },
+      "inputs": {
+        "type": "quick",
+        "title": "Expense approval review",
+        "priority": "Medium",
+        "labels": "Expense Approval",
+        "recipient": {
+          "channels": [
+            "ActionCenter",
+            "Email"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "staticGroupName",
+            "value": "expense-approvers"
+          }
+        },
+        "schema": {
+          "schemaId": "5dc20109-9922-5274-be0b-2e91676d308f",
+          "fields": [
+            {
+              "id": "expenseId",
+              "label": "Expense ID",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.fetchExpense.output.sourceExpenseId"
+            },
+            {
+              "id": "amount",
+              "label": "Amount",
+              "type": "number",
+              "direction": "input",
+              "binding": "vars.fetchExpense.output.amount"
+            },
+            {
+              "id": "submitter",
+              "label": "Submitted by",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.fetchExpense.output.submitter"
+            },
+            {
+              "id": "category",
+              "label": "Category",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.fetchExpense.output.category"
+            },
+            {
+              "id": "approved",
+              "label": "Approved",
+              "type": "boolean",
+              "direction": "output",
+              "variable": "vars.approved",
+              "required": true
+            },
+            {
+              "id": "rejectionReason",
+              "label": "Rejection reason (optional)",
+              "type": "text",
+              "direction": "output",
+              "variable": "vars.rejectionReason"
+            }
+          ],
+          "outcomes": [
+            {
+              "id": "approve",
+              "name": "Approve",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            },
+            {
+              "id": "reject",
+              "name": "Reject",
+              "type": "string",
+              "isPrimary": false,
+              "action": "Continue"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "captureApproval",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 1120,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "captureApproval",
+        "icon": "code"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "outputs": {
+        "output": {
+          "type": "boolean",
+          "description": "The return value of the script",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "inputs": {
+        "script": "return true;"
+      }
+    },
+    {
+      "id": "captureRejection",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 1408,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "captureRejection",
+        "icon": "code"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "outputs": {
+        "output": {
+          "type": "boolean",
+          "description": "The return value of the script",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "inputs": {
+        "script": "return true;"
+      }
+    },
+    {
+      "id": "logOutcome",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 1696,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "logOutcome",
+        "icon": "code"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output",
+          "properties": {
+            "loggedExpenseId": {
+              "type": "string"
+            },
+            "managerApproved": {
+              "type": "boolean"
+            },
+            "managerRejectionReason": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "inputs": {
+        "script": "\n        return {\n          loggedExpenseId: $vars.fetchExpense.output.sourceExpenseId,\n          managerApproved: $vars.decisionApproved,\n          managerRejectionReason: $vars.decisionReason\n        };\n      "
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 1984,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "inputs": {},
+      "outputs": {
+        "loggedExpenseId": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.logOutcome.output.loggedExpenseId",
+            "fieldType": "string"
+          },
+          "var": "loggedExpenseId"
+        },
+        "managerApproved": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.logOutcome.output.managerApproved",
+            "fieldType": "boolean"
+          },
+          "var": "managerApproved"
+        },
+        "managerRejectionReason": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.logOutcome.output.managerRejectionReason",
+            "fieldType": "string"
+          },
+          "var": "managerRejectionReason"
+        },
+        "decisionApproved": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.decisionApproved",
+            "fieldType": "boolean"
+          },
+          "var": "decisionApproved"
+        },
+        "decisionReason": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.decisionReason",
+            "fieldType": "string"
+          },
+          "var": "decisionReason"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_0",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "fetchExpense",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_1",
+      "sourceNodeId": "fetchExpense",
+      "sourcePort": "success",
+      "targetNodeId": "managerReview",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_2",
+      "sourceNodeId": "managerReview",
+      "sourcePort": "outcome-approve",
+      "targetNodeId": "captureApproval",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_3",
+      "sourceNodeId": "managerReview",
+      "sourcePort": "outcome-reject",
+      "targetNodeId": "captureRejection",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_4",
+      "sourceNodeId": "captureApproval",
+      "sourcePort": "success",
+      "targetNodeId": "logOutcome",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_5",
+      "sourceNodeId": "captureRejection",
+      "sourcePort": "success",
+      "targetNodeId": "logOutcome",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_6",
+      "sourceNodeId": "logOutcome",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0.0",
+      "category": "trigger",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "minConnections": 1,
+                "severity": "warning",
+                "validationMessage": "Trigger must connect to at least one workflow node (not configuration nodes)"
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0.0",
+      "category": "data-operations",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop",
+      "version": "1.1",
+      "category": "human-task",
+      "description": "Pause the process and wait for human task completion",
+      "tags": [
+        "human-task",
+        "hitl",
+        "human-in-the-loop",
+        "approval"
+      ],
+      "sortOrder": 50,
+      "display": {
+        "label": "Human Task — Quick Form / App",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "outcome-{item.id}",
+              "label": "{item.name}",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              },
+              "repeat": "inputs.schema.outcomes"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:UserTask",
+        "serviceType": "Actions.HITL"
+      },
+      "inputDefaults": {
+        "type": "quick",
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            {
+              "id": "submit",
+              "name": "Submit",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output"
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status (completed, cancelled, timeout)",
+          "source": "=result.Action",
+          "var": "status"
+        }
+      },
+      "form": {
+        "id": "hitl-properties",
+        "title": "Human task configuration",
+        "sections": [
+          {
+            "id": "task-type",
+            "title": "Task Type",
+            "collapsible": false,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                  {
+                    "label": "Quick Form",
+                    "value": "quick"
+                  },
+                  {
+                    "label": "Custom App",
+                    "value": "custom"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "delivery",
+            "title": "Task delivery",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.recipient",
+                "type": "custom",
+                "component": "hitl-channel-selector",
+                "label": "Delivery Channels",
+                "description": "Select where the task should be sent"
+              }
+            ]
+          },
+          {
+            "id": "schema",
+            "title": "Schema",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.schema",
+                "type": "custom",
+                "component": "hitl-schema-editor",
+                "label": "Task Schema",
+                "description": "Define the input and output parameters for this task"
+              }
+            ]
+          },
+          {
+            "id": "additional-properties",
+            "title": "Additional properties",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.title",
+                "type": "text",
+                "label": "Task title"
+              },
+              {
+                "name": "inputs.priority",
+                "type": "select",
+                "label": "Priority",
+                "options": [
+                  {
+                    "label": "Low",
+                    "value": "Low"
+                  },
+                  {
+                    "label": "Medium",
+                    "value": "Medium"
+                  },
+                  {
+                    "label": "High",
+                    "value": "High"
+                  }
+                ]
+              },
+              {
+                "name": "inputs.labels",
+                "type": "text",
+                "label": "Labels",
+                "placeholder": "Comma-separated (e.g. finance,approval)"
+              }
+            ]
+          },
+          {
+            "id": "app",
+            "title": "Custom Approval App",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.app",
+                "type": "custom",
+                "component": "hitl-app-picker",
+                "label": "Action App",
+                "description": "Select the coded action app for this task"
+              },
+              {
+                "name": "inputs.appInputBindings",
+                "type": "custom",
+                "component": "hitl-app-inputs",
+                "label": "Inputs",
+                "description": "Map app inputs to expressions/variables"
+              }
+            ]
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "requestedExpenseId",
+        "name": "requestedExpenseId",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "loggedExpenseId",
+        "name": "loggedExpenseId",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "managerApproved",
+        "name": "managerApproved",
+        "direction": "out",
+        "type": "boolean"
+      },
+      {
+        "id": "managerRejectionReason",
+        "name": "managerRejectionReason",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "decisionApproved",
+        "name": "decisionApproved",
+        "direction": "inout",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      {
+        "id": "decisionReason",
+        "name": "decisionReason",
+        "direction": "inout",
+        "type": "string",
+        "defaultValue": ""
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "fetchExpense.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "fetchExpense",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "fetchExpense.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "fetchExpense",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "managerReview.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": {
+          "nodeId": "managerReview",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "managerReview.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": {
+          "nodeId": "managerReview",
+          "outputId": "status"
+        }
+      },
+      {
+        "id": "captureApproval.output",
+        "type": "boolean",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "captureApproval",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "captureApproval.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "captureApproval",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "captureRejection.output",
+        "type": "boolean",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "captureRejection",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "captureRejection.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "captureRejection",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "logOutcome.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logOutcome",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logOutcome.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "logOutcome",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.loggedExpenseId",
+        "type": "string",
+        "description": "",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "loggedExpenseId"
+        }
+      },
+      {
+        "id": "end.managerApproved",
+        "type": "boolean",
+        "description": "",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "managerApproved"
+        }
+      },
+      {
+        "id": "end.managerRejectionReason",
+        "type": "string",
+        "description": "",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "managerRejectionReason"
+        }
+      },
+      {
+        "id": "end.decisionApproved",
+        "type": "boolean",
+        "description": "",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "decisionApproved"
+        }
+      },
+      {
+        "id": "end.decisionReason",
+        "type": "string",
+        "description": "",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "decisionReason"
+        }
+      }
+    ],
+    "variableUpdates": {
+      "captureApproval": [
+        {
+          "variableId": "decisionApproved",
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.managerReview.output.approved",
+            "fieldType": "boolean"
+          }
+        }
+      ],
+      "captureRejection": [
+        {
+          "variableId": "decisionApproved",
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.managerReview.output.approved",
+            "fieldType": "boolean"
+          }
+        },
+        {
+          "variableId": "decisionReason",
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.managerReview.output.rejectionReason",
+            "fieldType": "string"
+          }
+        }
+      ],
+      "end": [
+        {
+          "variableId": "loggedExpenseId",
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.logOutcome.output.loggedExpenseId",
+            "fieldType": "string"
+          }
+        },
+        {
+          "variableId": "managerApproved",
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.logOutcome.output.managerApproved",
+            "fieldType": "boolean"
+          }
+        },
+        {
+          "variableId": "managerRejectionReason",
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.logOutcome.output.managerRejectionReason",
+            "fieldType": "string"
+          }
+        }
+      ]
+    }
+  },
+  "subflows": {},
+  "bindings": [],
+  "solutionId": "",
+  "projectId": ""
+}

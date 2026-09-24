@@ -179,7 +179,7 @@ The table is the authoritative router. `Section` identifies the governed H2; `Re
 | Data Fabric delete | `core.datafabric.delete` (declares NO outputs) | `dataFabricDelete(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Subflow | `core.subflow` | `subflow(...)` | [Subflow](#subflow) | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
 | Human task | `uipath.human-in-the-loop` | `hitl(...)` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/GallerySubmission.flow.ts` |
-| Human quick form | `uipath.human-in-the-loop.quick-form` | `hitl({ variant: 'quick-form', ... })` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
+| Human quick form | `uipath.human-in-the-loop.quick-form` (one exit per outcome: `.stepSwitch` routes them, a plain `.step()` continues every outcome) | `hitl({ variant: 'quick-form', ... })` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
 | Human action app | `uipath.human-in-the-loop.coded-action-app` | `hitl({ variant: 'action-app', ... })` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/KilnReview.flow.ts` |
 | RPA workflow | `uipath.core.rpa-workflow.<key>` | `rpaWorkflow(...)` | [RPA workflow](#rpa-workflow) | [rpa-workflow.md](references/rpa-workflow.md) | `examples/WorkshopInventory.flow.ts` |
 | Queue item | `core.action.queue.create*` | `queueItem(...)` | [Queue item](#queue-item) | [queue.md](references/queue.md) | `examples/HerbariumDispatch.flow.ts` |
@@ -750,7 +750,7 @@ Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipi
 .return({ status: v('status') })
 ```
 
-More than one outcome routes per outcome by DEFAULT (`outcome-<slug>` exits). `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns; `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. `outcomePorts: false` — or a variant, or `{ version: '1.0' }` — keeps the single `completed` exit instead, where you route on `out('review', 'Action')`.
+Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed` on a task that has outcomes, and every outcome must be wired. `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns — on the default node, on quick-form, or on a pinned task. After a default-node task with more than one outcome, `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. After quick-form, `outcomePorts: false` or `{ version: '1.0' }`, a plain `.step()` continues EVERY outcome to the next step, each on its own edge, where you route on `out('review', 'Action')`.
 
 **Reference: [`references/hitl.md`](references/hitl.md)**
 
@@ -822,8 +822,9 @@ Signatures: `connector(descriptor, inputs, opts?)`;
   { connection: 'jira', folder: 'shared' }))
 ```
 
-Data Fabric is key `uipath-uipath-dataservice`: every entity operation lives
-here ([Data Fabric](#data-fabric)). Discover tenant-specific fields and ids; preserve every scenario-named input.
+Data Fabric is also connector key `uipath-uipath-dataservice`: use it for file
+record fields, Record Created/Updated events, or a scenario that names the
+connector. Record CRUD is native ([Data Fabric](#data-fabric)). Discover tenant-specific fields and ids; preserve every scenario-named input.
 
 **Reference: [`references/connector-params.md`](references/connector-params.md)**
 

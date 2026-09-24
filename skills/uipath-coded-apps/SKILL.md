@@ -9,6 +9,8 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Task
 
 Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## When to Use This Skill
 
 - User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
