@@ -163,9 +163,9 @@ uip solution deploy run -n "InvoiceAutomation-v2" \
   --folder-name "MySolutionFolder" --output json
 ```
 
-A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`, along with `DeploymentKey`, `PipelineDeploymentId` and `InstanceId`. If the package requires configuration before it can activate, deploy still succeeds but activation surfaces an explicit error pointing at `deploy activate <name>` — fix the config and retry the activate.
+A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`, along with `DeploymentKey`, `PipelineDeploymentId` and `InstanceId`. When a resource needs "Setup activation" in Orchestrator before the deployment can be activated — an Integration Service connection that must be authenticated, typically — the run is still `Result: Success`: the install landed, `ActivationStatus: NeedsSetupToActivate`, `PendingResources` names each resource with its `Reason` (`[CNS1072] You will need to authenticate this connection before proceeding further`), and `NextSteps` gives the Orchestrator step. Do **not** run the deploy again: the deployment exists. On such a run the pipeline itself can end at `ValidationFailed` **after** the install landed (the deployment record reports `SuccessfulInstall`); the CLI still reports the deployment, keeps the pipeline's word in `Status`, and opens `NextSteps` with the pipeline's errors, which are the activation's. `ReadyToActivate` means the install landed and the activation did not run: `uip solution deploy activate <name>`. Any other refused activation is a failure with `Retry activation with: uip solution deploy activate <name>`.
 
-This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions`, and nothing is provisioned. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
+This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions`, and nothing is provisioned — that is a `ValidationFailed` before the install; the one whose record reports `SuccessfulInstall` is the landed case above, and a success. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
 
 The rejected attempt stays behind as a **pending draft** under that `--name`, and its key is in `Instructions` — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) for how to finish or drop it.
 
@@ -230,6 +230,8 @@ The `deploy run` command returns a pipeline deployment ID. Use it to check progr
 ```bash
 uip solution deploy status <pipeline-deployment-id> --output json
 ```
+
+`deploy status` also accepts a **deployment name** or **key** (the `DeploymentKey` in the `deploy run` output, or a key from `deploy list`): it then reports the record's `OperationStatus`, `DeploymentStatus`, `ActivationStatus`, `Actions`, whether the key is `Superseded`, and, when the deployment is not live, `PendingResources` (each with its `Reason`) and `NextSteps` — see [Check Deployment Status](activate-and-manage.md#step-2-check-deployment-status).
 
 The CLI also falls back to the persistent `searchSearchDeployments22` record if the pipeline service has already recycled the in-flight tracking ID — so a deployment that finishes while the CLI is between polls is still surfaced as `DeploymentSucceeded` rather than a polling failure.
 
