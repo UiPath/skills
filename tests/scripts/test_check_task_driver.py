@@ -229,6 +229,22 @@ class TestStagedSkillGate:
         assert rc == 1, out
         assert "stage a skill directory" in out
 
+    def test_a_skill_subdirectory_is_caught(self, tmp_path):
+        # Staging skills/<name>/references puts the same v1 guidance in cwd as
+        # staging the skill root does. The first version of this gate anchored on
+        # end-of-string and let it through.
+        rc, out = _run(self._write(tmp_path, "../../../../../skills/uipath-maestro-bpmn/references"))
+        assert rc == 1, out
+        assert "stage a skill directory" in out
+
+    def test_a_data_dir_inside_a_skill_is_left_alone(self, tmp_path):
+        # The bug is guidance in cwd, not the `skills/` prefix. uipath-coded-apps
+        # legitimately stages fixture data that lives inside its skill folder, and
+        # the first widening of this gate broke it.
+        rc, out = _run(self._write(tmp_path, "../../../../../skills/uipath-coded-apps/assets/fixtures"))
+        assert rc == 0, out
+        assert "stage a skill directory" not in out
+
     def test_setup_and_fixture_entries_are_left_alone(self, tmp_path):
         rc, out = _run(self._write(tmp_path, "../_setup"))
         assert rc == 0, out

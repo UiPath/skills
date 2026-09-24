@@ -22,20 +22,6 @@ zero on an otherwise-correct run. This gate blocks that footgun.
 If a task genuinely needs the Windows toolchain, tag it ``windows`` — do not
 pin the driver.
 
-Gate 3: no task stages a skill directory into the agent's sandbox
------------------------------------------------------------------
-
-``sandbox.template_sources`` is for pre_run/post_run tooling and fixtures. A
-skill arrives through the plugin catalog (``agent.plugins``), which is what
-selects the GENERATION under test — so a copy of ``skills/<name>/`` in the
-agent's working directory hands a preview-arm run the shipped v1 guidance and
-quietly destroys the comparison. Every uipath-maestro-bpmn task did this until
-2026-09-23; agents read the cwd copy and authored against the wrong generation.
-No other skill family ever did.
-
-The README invariant alone did not hold: the porting brief kept telling authors
-to add the line. This gate makes it fail instead.
-
 Gate 2: experiment hook commands must be a single line
 ------------------------------------------------------
 
@@ -49,6 +35,20 @@ It does not detect one-line POSIX sh; see the known-gap test for that cost.
 Scope is what cmd.exe can reach: every experiment hook (they run for all tasks,
 including the Windows split) plus the hooks of ``windows``-tagged tasks. A task
 without that tag never runs on Windows, so its hooks are left alone.
+
+Gate 3: no task stages a skill directory into the agent's sandbox
+-----------------------------------------------------------------
+
+``sandbox.template_sources`` is for pre_run/post_run tooling and fixtures. A
+skill arrives through the plugin catalog (``agent.plugins``), which is what
+selects the GENERATION under test — so a copy of ``skills/<name>/`` in the
+agent's working directory hands a preview-arm run the shipped v1 guidance and
+quietly destroys the comparison. Every uipath-maestro-bpmn task did this until
+2026-09-23; agents read the cwd copy and authored against the wrong generation.
+No other skill family ever did.
+
+The README invariant alone did not hold: the porting brief kept telling authors
+to add the line. This gate makes it fail instead.
 
 Usage:
     python3 scripts/check-task-driver.py                              # tests/tasks
@@ -168,11 +168,15 @@ def main(argv: list[str]) -> int:
         sandbox = doc.get("sandbox")
         if not isinstance(sandbox, dict):
             continue
+        # The bug is GUIDANCE in the agent's cwd: the skill root, or its
+        # references/. A data directory that merely lives inside a skill
+        # folder is legitimate staging — uipath-coded-apps stages
+        # skills/uipath-coded-apps/assets/fixtures and should keep working.
         for src in sandbox.get("template_sources") or []:
             if not isinstance(src, dict):
                 continue
             src_path = str(src.get("path") or "")
-            if re.search(r"(^|/)skills/[^/]+/?$", src_path):
+            if re.search(r"(^|/)skills/[^/]+(/references(/|$)|/?$)", src_path):
                 staged_skills.append((path, src_path))
         driver = sandbox.get("driver")
         if driver == "tempdir":
@@ -227,9 +231,11 @@ def main(argv: list[str]) -> int:
         )
         print()
 
+    if not staged_skills:
+        print("OK — no task stages a skill directory via template_sources.")
+
     if not offenders:
-        if not staged_skills:
-            print("OK — no task pins `sandbox.driver: tempdir` or stages a skill directory.")
+        print("OK — no task pins `sandbox.driver: tempdir`.")
         return rc
 
     print(f"FAIL — {len(offenders)} task(s) pin `sandbox.driver: tempdir`:\n")
