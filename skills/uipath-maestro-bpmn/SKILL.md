@@ -509,57 +509,40 @@ and honestly surfaced to the user as gaps when asked.
    Integration Service draft or boundary handoff asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
 17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
-   workflow, agent) is a five-step sequence, in this order — stopping after
-   handing the resource to its owning skill and getting hand-back notes is not
-   done.**
+   workflow, agent) is a five-step sequence, in this order. Stopping after
+   the owning skill hands the resource back is not done.**
 <!--skill-flavor:delegated-resource-solution-first:start-->
    (1) Create or open the solution **first** (`uip solution init`), and
    author the resource's project **inside** it, so it registers in the
-   `.uipx` — a project created outside any solution has no path to deployment.
+   `.uipx`. A project created outside any solution has no path to deployment.
 <!--skill-flavor:delegated-resource-solution-first:end-->
+<!--skill-flavor:delegated-resource-author-deploy:start-->
    (2) Delegate authoring to the resource's owning skill (e.g.
-   `uipath-api-workflow`, `uipath-rpa`) with an explicit argument contract —
+   `uipath-api-workflow`, `uipath-rpa`) with an explicit argument contract:
    declared inputs and outputs, not an unauthored scaffold. (3) Deploy the
    resource (pack, publish, `solution deploy run`) **before** binding it into
-   the BPMN node — the invoking node's context needs the resource's real
-   release key and folder key, which exist only once deployed; re-read the
-   deployment key from `deploy list` after an upgrade, since upgrading rotates
-   it and reusing the stale key gives `4005`. (4) Discover the deployed
-   resource's identity with `uip or processes list --folder-path <path>
-   --all-fields --output json` and bind the invoking node to it — rule 18's
-   verified contract — never a fabricated or placeholder key. (5) Verify by
-   running the process (`uip maestro bpmn debug`) and reading the invoking
-   node's own output in `debug-instance variables-all` — a clean
-   `validate`/`pack` proves nothing about whether the resource was ever
-   reached at runtime, or which key its output landed under. Map
-   `=result.<key>` to the key the real response used, never the declared
-   output-schema property name — a scalar output can surface under a
-   generic key instead, and a stale assumed key breaks the mapping silently.
-18. **Job-wrapper registry templates ship a resolvable-looking but broken
-   context; do not paste it as served.** `Orchestrator.StartJob`,
-   `Orchestrator.ExecuteApiWorkflowAsync`, `Orchestrator.BusinessRules`, and
-   `Orchestrator.StartAgenticProcess[Async]` / `StartCaseMgmtProcess[Async]`
-   all serve the same template: a hidden, unbound `releaseKey` context field
-   plus a **misnamed** `folderId` field. Pasted verbatim it passes `validate`
-   and packs clean, then faults at runtime because nothing ever resolves
-   `releaseKey` (`170005` for `StartJob`, `170009` for
-   `ExecuteApiWorkflowAsync` — `Could not get value for key:ReleaseKey from
-   context in input`). Populating `releaseKey` alone is not enough either: the
-   runtime then reports `Could not get value for key:FolderKey`, because the
-   context field the runtime actually reads is `folderKey` (the folder's
-   `FolderKey` GUID) — **not** the template's own `folderId` field, and not
-   `folderPath`. Verified end-to-end for `Orchestrator.ExecuteApiWorkflowAsync`:
-   `<uipath:context>` with **only** `releaseKey` (bound via `=bindings.<id>` to
-   the resource's real `Key`, per the existing resource-binding contract) and
-   a literal `folderKey` (the target folder's real `FolderKey` GUID) —
-   discover both with `uip or processes list --all-fields` after deploying —
-   runs to completion; `name`/`folderPath` context fields are not needed for
-   this type. `Orchestrator.ExecuteApiWorkflowAsync` **waits** for the result
-   despite its name — there is no separate fire-and-forget API-workflow
-   wrapper. The other types in this family share the identical template bug
-   (same misnamed field, same blank placeholders); apply the same
-   `releaseKey` + `folderKey` fix and re-verify with a live run before trusting
-   it — do not assume without checking. Full contract and fault codes:
+   the BPMN node; its release key and folder key exist only once deployed.
+   To redeploy, follow `uipath-solution`'s upgrade path.
+<!--skill-flavor:delegated-resource-author-deploy:end-->
+   (4) Read the deployed resource's `Key` and `FolderKey` from
+   `uip or processes list --folder-path <path> --output json` and bind the
+   node per rule 18, never a fabricated or placeholder key. Re-read both after
+   every deploy: `deploy run` creates a new folder, so a literal `folderKey`
+   from an earlier deploy points at the old one. (5) Unless the task forbids
+   live runs or asks for a draft or handoff, run the process
+   (`uip maestro bpmn debug`) and read the node's output in
+   `debug-instance variables-all`. Map `=result.<key>` to the key that output
+   used; a scalar can surface under a generic key instead of the schema
+   property name. Without a run, use the schema name and report the mapping
+   as unverified.
+18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
+   `ExecuteApiWorkflowAsync`, `BusinessRules`, `StartAgenticProcess[Async]`,
+   `StartCaseMgmtProcess[Async]`) serve a context that validates but faults at
+   runtime. This is the one exception to rule 6's paste-literally.** In
+   `<uipath:context>`, keep only `releaseKey` bound via `=bindings.<id>` to
+   the resource's `Key`, and add a literal `folderKey` with the folder's
+   `FolderKey`. Drop `folderId`, `folderPath`, and `name`. Verified only for
+   `ExecuteApiWorkflowAsync`; re-verify the others with a live run. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
 
 ## References

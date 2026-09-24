@@ -340,10 +340,9 @@ next section for the fix.
 except `releaseKey`, which carries `bindingInfo` — `resource: "process"`,
 `propertyAttribute: "Key"` — in `validator/bpmn-spec.json`). Pasted with the
 template's blank placeholders it passes `validate` and packs clean, then
-faults at runtime because nothing ever resolves `releaseKey`:
-
-- `StartJob` → `170005 Required field 'releaseKey' missing`
-- `ExecuteApiWorkflowAsync` → `170009 Could not get value for key:ReleaseKey from context in input`
+faults at runtime because nothing ever resolves `releaseKey`
+(`ExecuteApiWorkflowAsync`: `170009 Could not get value for key:ReleaseKey
+from context in input`).
 
 **The fix is not to drop `releaseKey` — it is to resolve it, and to correct
 the template's second bug.** Verified end-to-end for
@@ -355,33 +354,31 @@ the template's second bug.** Verified end-to-end for
    process-kind `<uipath:binding resource="process" propertyAttribute="Key"
    default="<resolved-key>" />`, referenced from the context as
    `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list
-   --folder-path <path> --all-fields --output json` → the deployed resource's
+   --folder-path <path> --output json` → the deployed resource's
    `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
 2. **The template's `folderId` context field is misnamed — the runtime reads
    `folderKey`, not `folderId` or `folderPath`.** Populating `releaseKey`
    alone still faults with `Could not get value for key:FolderKey from
    context in input`. Add a context field literally named `folderKey` holding
-   the target folder's `FolderKey` GUID (the same `or processes list
-   --all-fields` response carries it as `FolderKey`) — a plain literal value,
-   not a binding (this field has no `bindingInfo` in the served template).
+   the target folder's `FolderKey` GUID (the same `or processes list`
+   response carries it as `FolderKey`) — a plain literal value, not a binding.
+   Re-read it after every deploy: `deploy run` creates a new folder.
 3. With both fields correct — `releaseKey` bound to the resource's real `Key`,
    `folderKey` literal to the folder's real `FolderKey` — the node runs to
    completion. The template's own `folderId`/`folderPath`/`name` context
    fields are not needed for `Orchestrator.ExecuteApiWorkflowAsync` and can be
    dropped.
 
-This is a property of the wrapper **family**, not confirmed per-type: every
-type in the list above shares the identical broken template (same misnamed
-field, same blank `releaseKey` placeholder), so the same `releaseKey` +
-`folderKey` substitution is the first thing to try — but re-verify each type
-with a live run rather than assuming the fix transfers unchanged; only
-`Orchestrator.ExecuteApiWorkflowAsync` has been confirmed this way so far.
+For the other types in the list, apply the same substitution and re-verify
+with a live run.
 
 When the caller asks for API workflow invocation/status/result fields, map those
 fields as `uipath:output` rows on the API workflow `bpmn:serviceTask` itself
 using the discovered output names/types and `source` expressions, for example
 `source="=invocation"`, `source="=status"`, and `source="=result"` (or the exact
-schema fields returned by discovery). Do not add a downstream script task solely
+schema fields returned by discovery). For a `=result.<key>` source, use the key
+a debug run showed when one ran (SKILL.md rule 17 step 5); otherwise use the
+schema field name and report the mapping as unverified. Do not add a downstream script task solely
 to split the API workflow service-task result into variables; that hides the
 requested service-task output contract from the model.
 

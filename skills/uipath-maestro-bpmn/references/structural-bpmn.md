@@ -723,8 +723,8 @@ each with its rule code (gateway/condition, superfluous-gateway,
 error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,
 input-type, event-object, and IS-connector checks). Warnings are reported but do
-not block — that does not mean ignore them; read `Data.Warnings` and triage by
-code:
+not block. Triage them by code: on pass they are in `Data.Warnings` (one
+string), on failure in `Instructions` with the errors.
 
 - **`VARIABLE_DOES_NOT_EXIST`** — a reference with no matching declaration.
   Always a defect; fix it.
