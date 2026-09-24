@@ -18,8 +18,8 @@ description: >
   administrator.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
-# The two `export-configurations` verbs ship in UiPath/cli#PENDING (branch
-# `feature/insights-export-configurations`, head d0f71a3f1 on 2026-09-24),
+# The two `export-configurations` verbs ship in UiPath/cli#4494 (branch
+# `feature/insights-export-configurations`, head 52d340d7b on 2026-09-24),
 # which is not merged and not published. Until a dev build carries them, both
 # --help gates below exit 3 on an unknown command, which is the task working
 # correctly and the smoke check going red for a reason that has nothing to do
@@ -79,8 +79,10 @@ success_criteria:
   # credit for the read as well (dashboards/smoke.yaml:81-107 records the
   # same choice; the RBAC task's anchored exclusion still carries that gap).
   #
-  # Every wildcard in this file is bounded with
+  # Where a criterion below spans tokens with a wildcard, it is bounded with
   # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, and all three parts are load-bearing.
+  # The one exception is the invented-flag criterion, which spells its span
+  # out token by token instead; its own comment says why.
   # The grader matches each pattern against two haystacks: the raw
   # `bash -lc "..."` text, which keeps newlines, and a normalized one that
   # unwraps the wrapper and re-joins the shlex tokens with single spaces
@@ -143,7 +145,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not attempt an export configuration write"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+export-configurations\s+(create|update|delete|set|remove|add|test|enable|disable)\b'
+    command_pattern: 'uip\s+insights\s+export-configurations\s+(create|new|update|edit|modify|patch|configure|set|delete|remove|add|test|enable|disable)\b'
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -179,10 +181,19 @@ success_criteria:
   # command here takes a secret, and inventing one is how a connection string
   # ends up in shell history. `--destination` and `--type` are the two most
   # plausible inventions once the guide names destination types.
+  #
+  # This one does NOT use the shared (?!uip\s) wildcard. `--type` and
+  # `--destination` are generic enough to sit on a non-uip neighbour, and on
+  # the normalized haystack a newline is already a space, so the wildcard
+  # would walk into `cat report --type foo` and fail a compliant run. The
+  # span between the verb and the invented flag is therefore spelled out as
+  # the only tokens these two commands accept: --output, --limit, --offset,
+  # -o, and the verify positional. Anything else, a redirect included, stops
+  # the match at the end of the invocation.
   - type: command_not_executed
     description: "Agent did not invent identity or credential flags on an export read"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+export-configurations\s+\S+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(tenant|organization|connection-string|access-key|api-key|secret|destination|type)\b'
+    command_pattern: 'uip\s+insights\s+export-configurations\s+\S+(?:\s+(?:--(?:output|limit|offset)(?:[\s=]+[^\s&;|]+)?|-o[\s=]+[^\s&;|]+|\d+))*\s+--(tenant|organization|connection-string|access-key|api-key|secret|destination|type)\b'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0

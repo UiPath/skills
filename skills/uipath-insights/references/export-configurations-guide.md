@@ -1,6 +1,6 @@
 # Export Configuration Commands
 
-Use this guide when the request concerns the organization's unified export configurations: what is configured, and whether Insights can still reach a destination. Unified export streams Insights data (Orchestrator jobs, audit logs, Maestro, agent traces, prompt logs) to a destination the customer owns: an Azure Event Hub, an AWS SQS queue, an OTLP endpoint, Arize, or a Databricks table through Integration Service. These two commands read those configurations and probe their destinations. Neither exports anything, changes a configuration, or sends a credential. The rows are organization-wide rather than tenant-scoped, and reading them needs the organization administrator role.
+Use this guide when the request concerns the organization's unified export configurations: what is configured, and whether Insights can still reach a destination. Unified export streams Insights data (Orchestrator jobs, audit logs, Maestro, agent traces, prompt logs) to a destination the customer owns: an Azure Event Hub, an AWS SQS queue, an OTLP endpoint, Arize, or a Databricks table through Integration Service. These two commands read those configurations and probe their destinations. Neither exports anything, changes a configuration, or takes a credential from you: the server fills each stored secret in from the row itself. The one thing the CLI does re-send is a destination's stored custom headers on `verify <id>`, read back from the same API a moment earlier. The rows are organization-wide rather than tenant-scoped, and reading them needs the organization administrator role.
 
 `Data` keys are PascalCase in the CLI's JSON output: read `Success`, `VerifySupported`, `DestinationType`, `HasApiKey`. Reading a lowercase key returns `undefined`.
 
@@ -58,7 +58,7 @@ Rows are ordered by `Id` on both commands. `verify` with no id sorts ascending; 
 
 `Pagination.Total` on `list` counts every configuration, not the page. A 50-row result is a full page rather than a complete list: keep going until `HasMore` is false before concluding a destination is not configured, and say in the answer whether every page was retrieved.
 
-`CustomHeaders` is an array of `{Key, Value}` on the two types that carry it, and an empty array when none is stored. It is present on those types even when empty.
+`CustomHeaders` is an array of `{Key, Value}` on the two types that carry it, and an empty array when none is stored. It is present on those types even when empty. Every `Value` is the literal `[redacted]`, because a header can itself be a credential. Report the keys, and never quote a `Value` as the stored header value. `verify <id>` does send the stored header values to the destination, since Insights fills a secret in from the stored row but not a header; its `Instructions` say so when it did.
 
 `HasApiKey` is a boolean saying only whether an API key is stored. `AccessKeyId` is the AWS public key id. Neither is a secret, and no command returns a connection string, an access key or an API key.
 
@@ -72,19 +72,20 @@ Read the `Instructions` sentence the CLI returns with each of these. It carries 
 - A row with `VerifySupported: false`. Not probed at all (Rule 3). Its `Success` is a placeholder.
 - `Result: ConfigError`, `ErrorCode: configuration_error`, `Retry: RetryWillNotFix`, exit 1. The deployment does not serve these routes (Rule 5). Report and stop.
 - `Result: Failure`, `ErrorCode: permission_denied`, exit 1. The caller is not an organization administrator (Rule 4). The shared message says "in the current tenant" while these rows are organization-wide; the `Instructions` carry the correct scope.
-- `Result: Failure`, `ErrorCode: not_found`, `Retry: RetryWillNotFix`, exit 1 on `verify <id>`. Either the id is not one the organization owns, or it was deleted between the two calls the by-id check makes. Run `list` again: a missing row means it was deleted, and a `ConfigError` from the list means the flag was switched off in between.
+- `Result: Failure`, `ErrorCode: not_found`, `Retry: RetryWillNotFix`, exit 1 on `verify <id>`, with a `Message` saying the id is not one this organization owns. The id was absent from the list the CLI fetched a moment earlier. Report it as not listed, never as deleted: a wrong id, a deleted one, and a Splunk HEC or unmigrated row the list never returns all land here. Re-running `list` cannot tell those apart.
+- `Result: Failure`, `ErrorCode: not_found`, `Retry: RetryWillNotFix`, exit 1 on `verify <id>`, with a `Message` saying the configuration was listed a moment ago and answered 404 on verify. It went away between the two calls the by-id check makes. Run `list` again: a missing row confirms the deletion, and a `ConfigError` from the list means the flag was switched off in between.
 - `Result: ValidationError`, `ErrorCode: invalid_argument`, exit 3. The positional was not a positive integer. No request was sent, so this says nothing about whether the configuration exists.
 - `Result: AuthenticationError`, exit 2. No usable session. Correct it and run again; neither route answers 401 for a permission reason, so the login advice is right here.
 - `ErrorCode: rate_limited` with `Retry: RetryLater`. The one branch where a later retry is right.
 - HTTP 500 or 503 with the status in `Message` and no `ErrorCode`. The Portal or something it depends on failed. Report and stop.
-- `ErrorCode: unknown_error` on `verify <id>`. Insights refused the body this CLI built for that row's destination type, so nothing was probed. Read `Message`: it names the two causes and neither is a destination problem.
+- `ErrorCode: unknown_error` on `verify <id>`. Insights refused the body this CLI built for that row's destination type, so nothing was probed. `Message` names only the destination-type mismatch; read `Instructions` for the two causes, and neither is a destination problem.
 - A malformed response. Read `Message` for the shape violation. Retrying cannot fix it.
 
 ## Investigation Workflow: Is Our Export Still Working
 
 1. Run `export-configurations list --output json` to see what is configured and to get the ids. Page until `Pagination.HasMore` is false.
 2. Run `export-configurations verify --output json` once for every destination, or `verify <id>` when the user named one configuration. Do not run both forms for the same question.
-3. Read `Data[].Success` per row. Group the answer by destination type and result, and name the `VerifySupported: false` rows separately as unprobed.
+3. Read `Data[].Success` per row. The all-rows form returns `Id`, `Success`, `VerifySupported` and `Message` alone, so join its rows to the step 1 `list` rows on `Id` to get each row's `DestinationType`; only the by-id form carries that field itself. Group the answer by destination type and result, and name the `VerifySupported: false` rows separately as unprobed.
 4. For a failed row, quote its `Message` as the reason Insights saw, then say what it does not prove: a reachable destination is not evidence that data is arriving, and an unreachable one does not say whether the credentials or the destination changed.
 5. If either command is denied, run `uip login status --output json` and report its `Tenant` value with the boundary from Rule 4. Do not suggest changing access from this skill.
 6. When the question is why an export stopped arriving and `verify` reports every row reachable, the Insights side is answered and the destination side is not. Name `uipath-troubleshoot` for the destination and stop.
