@@ -2204,3 +2204,56 @@ def _fail_with_capture(msg: str):
 
 def _fail(msg: str):
     sys.exit(f"FAIL: {msg}")
+
+
+_JSON_FENCE = re.compile(r"^```[A-Za-z]*[ \t]*\n?(.*?)\n?```$", re.S)
+
+
+def assert_output_not_serialized_object(payload: dict, name: str) -> None:
+    """Fail when a named output global holds a SERIALIZED JSON object or array
+    instead of the text itself.
+
+    The shape this catches: an inline agent whose prompt asks for JSON text while
+    its ``returns`` already declares the fields packs its whole answer into ONE
+    string field. skill-flow-devcon-billing-resolution-writer, 2026-09-23 (v2, 3
+    of 3 debug runs): ``body`` = ``'{"subject":"Resolution for Invoice …","body":
+    "Dear …"}'``. The platform accepts it (validate Valid, debug Completed, the
+    Slack post succeeds), and every substring and provenance check passes on it,
+    because the invoice number is inside the JSON and the blob IS a leaf of the
+    agent's output. The customer still gets JSON instead of an email.
+
+    Reads the global the way :func:`assert_output_nonempty` does. A Markdown code
+    fence and surrounding whitespace are stripped before decoding. Prose passes,
+    including prose with braces (``"Credit {INV-1} issued"``), and so does JSON
+    that decodes to a scalar.
+    """
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    globals_dict = _get_ci(variables, "globals", "Globals") or {}
+    value = _get_ci(globals_dict, name)
+    if value is None:
+        for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+            if str(_get_ci(v, "id", "Id", "name", "Name") or "").lower() == name.lower():
+                value = _get_ci(v, "value", "Value")
+                break
+    if not isinstance(value, str):
+        return
+    text = value.strip()
+    fenced = _JSON_FENCE.match(text)
+    if fenced:
+        text = fenced.group(1).strip()
+    if not text.startswith(("{", "[")):
+        return
+    try:
+        decoded = json.loads(text)
+    except ValueError:
+        return
+    if isinstance(decoded, dict):
+        what = f"object (keys: {', '.join(map(str, decoded.keys())) or 'none'})"
+    elif isinstance(decoded, list):
+        what = f"array ({len(decoded)} item(s))"
+    else:
+        return
+    _fail_with_capture(
+        f"{name} is a serialized JSON {what}, not the text itself — the agent packed "
+        f"its structured answer into one field\n{name}={value[:500]!r}"
+    )

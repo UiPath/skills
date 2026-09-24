@@ -1655,3 +1655,67 @@ def test_run_debug_invariants_under_random_schedules(seed, monkeypatch):
     for cap, cli in caps:
         assert cap > 0, f"non-positive subprocess cap {cap}"
         assert cli < cap, f"CLI timeout {cli} does not fit inside the {cap}s cap"
+
+
+# ── assert_output_not_serialized_object ──────────────────────────────────────
+# The 2026-09-23 v2 debug (skill-flow-devcon-billing-resolution-writer, cmd 23):
+# the inline agent packed its whole answer into `body`.
+_PACKED_BODY = (
+    '{"subject":"Resolution for Invoice INV-2026-0042","body":"Dear Acme Industries,'
+    '\\n\\nThank you for your patience while we reviewed your billing dispute. We have '
+    'completed our review of invoice INV-2026-0042 and approved a credit in the amount '
+    'of $125.50.\\n\\nBest regards,\\nBilling Support"}'
+)
+# The 2026-08-31_06 mirror image: the JSON landed in `subject`.
+_PACKED_SUBJECT = (
+    '{"subject":"Resolution for Invoice MCS-2026-04872","body":"Dear Northwind Traders,'
+    '\\n\\nWe approved a credit of $1,610."}'
+)
+_PLAIN_BODY = (
+    "Dear Acme Industries,\n\nWe have completed our review of invoice INV-2026-0042 "
+    "and approved a credit of $125.50.\n\nBest regards,\nBilling Support"
+)
+
+
+def _named_globals(**globals_):
+    return {"variables": {"globals": dict(globals_)}}
+
+
+def test_assert_output_not_serialized_object_packed_body():
+    payload = _named_globals(emailSubject="Billing dispute resolution email drafted", emailBody=_PACKED_BODY)
+    with pytest.raises(SystemExit) as exc:
+        flow_check.assert_output_not_serialized_object(payload, "emailBody")
+    assert "emailBody is a serialized JSON object (keys: subject, body)" in str(exc.value)
+
+
+def test_assert_output_not_serialized_object_packed_subject():
+    payload = _named_globals(emailSubject=_PACKED_SUBJECT, emailBody="Completed drafting the email as JSON.")
+    with pytest.raises(SystemExit) as exc:
+        flow_check.assert_output_not_serialized_object(payload, "emailSubject")
+    assert "emailSubject is a serialized JSON object" in str(exc.value)
+
+
+def test_assert_output_not_serialized_object_fenced_and_array():
+    fenced = _named_globals(emailBody="```json\n" + _PACKED_BODY + "\n```")
+    with pytest.raises(SystemExit, match="serialized JSON object"):
+        flow_check.assert_output_not_serialized_object(fenced, "emailBody")
+    array = _named_globals(emailBody='[{"subject":"x","body":"y"}]')
+    with pytest.raises(SystemExit, match="serialized JSON array"):
+        flow_check.assert_output_not_serialized_object(array, "emailBody")
+
+
+def test_assert_output_not_serialized_object_reads_the_typed_array_shape():
+    payload = {"variables": {"globalVariables": [{"id": "emailBody", "value": _PACKED_BODY}]}}
+    with pytest.raises(SystemExit, match="serialized JSON object"):
+        flow_check.assert_output_not_serialized_object(payload, "emailBody")
+
+
+def test_assert_output_not_serialized_object_plain_prose():
+    payload = _named_globals(emailSubject="Resolution for Invoice INV-2026-0042", emailBody=_PLAIN_BODY)
+    flow_check.assert_output_not_serialized_object(payload, "emailSubject")
+    flow_check.assert_output_not_serialized_object(payload, "emailBody")
+
+
+def test_assert_output_not_serialized_object_braces_in_prose():
+    for text in ("Credit {INV-1} issued.", "{Dear customer} we approved it", '"just a quoted string"', "42"):
+        flow_check.assert_output_not_serialized_object(_named_globals(emailBody=text), "emailBody")
