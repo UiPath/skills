@@ -3,7 +3,7 @@ description: >
   E2E (live DefaultTenant): register a `remote`-type AgentHub MCP server pointing at the public
   DeepWiki MCP endpoint, refresh its tools (sync), verify the server resolved, then the harness
   deletes it.
-tags: [uipath-mcp-servers, e2e, mode:build]
+tags: [uipath-mcp-servers, e2e, mode:build, lifecycle:setup, outcome-graded]
 sandbox:
   template_sources:
     - type: template_dir
@@ -40,9 +40,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Ran refresh-tools with --folder-key (the refresh-tools endpoint requires the folder key, not --folder-path)"
+    description: "Ran refresh-tools with a folder context (--folder-key or --folder-path; the CLI resolves the path)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-key'
+    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-(key|path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -59,6 +59,14 @@ success_criteria:
     timeout: 60
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live tenant: the server points at DeepWiki and the sync refresh stored its tools"
+    command: 's="$(jq -r .slug report.json)"; uip agenthub mcp get "$s" --folder-path Shared --output json | jq -e ".Data.Type == 4 and ((.Data.Arguments // \"\") | rtrimstr(\"/\")) == \"https://mcp.deepwiki.com/mcp\"" && uip agenthub mcp-tools list --mcp "$s" --folder-path Shared --output json | jq -e ".Data.Total > 0"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
 post_run:

@@ -225,6 +225,7 @@
 # MCP skill (UiPath AgentHub MCP server registration + tool authoring)
 /skills/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
+/tests/tasks/activation/uipath-mcp-servers.jsonl @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
 /skills/uipath-insights/ @UiPath/insights
