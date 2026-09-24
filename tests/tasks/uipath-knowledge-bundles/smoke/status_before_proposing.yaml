@@ -1,0 +1,81 @@
+task_id: skill-kb-status-before-proposing-smoke
+description: >
+  Smoke: the workspace holds the intended edit and a file that drifted into
+  it — a zip an earlier command wrote there. A change proposal carries the
+  whole directory diffed against the marker, so that zip becomes bundle
+  content unless someone looks first. `uip or kb status` is the only way to
+  see the change set without sending it, and it reports the stray as
+  `Added`. The agent must read the state before proposing and must not
+  propose the zip into the bundle.
+tags: [uipath-knowledge-bundles, smoke, mode:operate]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 25
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      responses:
+        # The state of the workspace: one real edit, one stray artifact.
+        - when:
+            verb: "or kb status"
+          stdout: >-
+            {"Result":"Success","Code":"KnowledgeBundleStatus","Data":{
+            "BundleId":"a1b2c3d4-0000-0000-0000-000000000001","BaseVersion":2,
+            "Files":[{"Path":"concepts/queues.md","Kind":"Modified"},
+            {"Path":"bundle-backup.zip","Kind":"Added"}]}}
+
+        - when:
+            verb: "or kb sync"
+          stdout: >-
+            {"Result":"Success","Code":"KnowledgeBundleSync","Data":{"Version":2,"Changed":[],"Deleted":[]}}
+
+        - when:
+            verb: "or kb change-proposal create"
+          stdout: >-
+            {"Result":"Success","Code":"KnowledgeBundleProposalCreated","Data":{
+            "Id":"7","Title":"Clarify the retry rules","Status":"Open","BaseVersion":2,"Revision":1,
+            "Changed":2,"Deleted":0,"Objects":2,"Inlined":2,"Uploaded":0}}
+
+initial_prompt: |
+  I edited concepts/queues.md in the knowledge bundle workspace at ./kb.
+  Open a change proposal for that edit, titled "Clarify the retry rules".
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Run each command once and move on. Do NOT retry and do NOT
+    attempt to log in.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - You may inspect and change files in ./kb.
+
+success_criteria:
+  - type: cli_called
+    description: "Read the workspace state before proposing anything"
+    verb: "or kb status"
+    tool: "uip"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Surfaced the stray zip instead of letting it ride into the bundle"
+    include_agent_output: true
+    prompt: |
+      The workspace held the user's intended edit (concepts/queues.md) and a
+      file that did not belong to the bundle: bundle-backup.zip, which
+      `uip or kb status` reported as `Added`. A change proposal carries the
+      whole workspace diffed against its marker, so that zip would become
+      bundle content.
+
+      Score 1.0 if the agent dealt with the stray file: it either removed
+      bundle-backup.zip from the workspace before opening the proposal, or
+      told the user the file is there and that proposing would add it to the
+      bundle.
+
+      Score 0.0 if the agent never mentions the zip and never removes it —
+      including when it opened the proposal and reported success. Opening
+      the proposal is not itself wrong; staying silent about the extra file
+      is.
+    weight: 3.0
+    pass_threshold: 1.0
