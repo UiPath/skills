@@ -281,7 +281,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    artifact the CLI must supply.
    Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
    start event id or adds or removes an entry point — **not only when packaging
-   or operating**. `operate.json` and `entry-points.json` are generated once and
+   or operating**. Lay the diagram out first (step 4): `refresh` validates
+   before it writes, so a node you just added fails it with `MISSING_DI_SHAPE`. `operate.json` and `entry-points.json` are generated once and
    do not follow source edits, so step 5's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
    <bpmn:startEvent id="Event_start"> exists`. Authoring from the skeleton above
@@ -303,8 +304,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    returning one result on a single completion EndEvent — for the two-layer
    contract see
    [references/structural-bpmn.md](references/structural-bpmn.md#variables-bpmnvariables).
-4. **Lay out the diagram.** After the last source edit, before anything that
-   reads the file:
+4. **Lay out the diagram.** After the last source edit, and before any
+   `validate`, `refresh`, or `pack` — including the `refresh` step 3 calls for:
 
    ```bash
    uip maestro bpmn format <file.bpmn>
