@@ -103,7 +103,11 @@ of the return having to work out which arm ran.
   Add a step after the task inside the arm, for example
   `a.step('review', hitl(…)).step('record', …)`: every outcome continues to
   `record`, and only `record` reaches the join. `.stepSwitch` does not help
-  here, because its arms rejoin at the same join.
+  here, because its arms rejoin at the same join. A `.stepSwitch` on a task
+  inside an arm needs the same step after it: with an empty `Approve` arm and a
+  `Reject` arm that runs `rej`, the arm would end on two paths (the `Approve`
+  outcome edge and `rej`), and `check` refuses that too
+  (HITL_FAN_OUT_INTO_JOIN). Write `a.stepSwitch('review', …).step('record', …)`.
 
   The action-app and document-validation variants are different: their outcomes
   live in the app, `completed` is the only handle the designer draws for them,
