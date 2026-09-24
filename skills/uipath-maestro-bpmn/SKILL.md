@@ -221,7 +221,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
-   expression/error mappings, retry attributes). Leave the diagram to step 5;
+   expression/error mappings, retry attributes). Leave the diagram to step 4;
    do not hand-author `bpmndi:*` while the source is still moving. For a new local project, initialize the
    supported scaffold with `uip maestro bpmn init <ProjectName> --output json`,
    edit at the returned `Data.Path`, and preserve its generated metadata. For a
@@ -335,9 +335,10 @@ For registry-evidence-only tasks, follow the command-first recipe in
    ```
 
    Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
-   with its rule code). Every error-severity fix is a source edit, so go back
-   through step 4 before validating again. Warnings do not fail the run: validate once, fix only
+   with its rule code). Warnings do not fail the run: validate once, fix only
    error-severity findings, and do not re-validate in a loop chasing warnings.
+   Each error-severity fix is a source edit, so re-run step 4 before validating
+   again.
    Two warnings are defects rather than noise, because no error covers them.
    `read but never assigned` says nothing writes a value the process reads, so
    a step that should produce it does not. `MISSING_RESOURCE` says a node has
