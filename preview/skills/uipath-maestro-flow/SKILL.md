@@ -886,8 +886,9 @@ Signatures: `connector(descriptor, inputs, opts?)`;
   { connection: 'jira', folder: 'shared' }))
 ```
 
-Data Fabric is key `uipath-uipath-dataservice`: every entity operation lives
-here ([Data Fabric](#data-fabric)). Discover tenant-specific fields and ids; preserve every scenario-named input.
+Data Fabric is also connector key `uipath-uipath-dataservice`: use it for file
+record fields, Record Created/Updated events, or a scenario that names the
+connector. Record CRUD is native ([Data Fabric](#data-fabric)). Discover tenant-specific fields and ids; preserve every scenario-named input.
 
 **Reference: [`references/connector-params.md`](references/connector-params.md)**
 
