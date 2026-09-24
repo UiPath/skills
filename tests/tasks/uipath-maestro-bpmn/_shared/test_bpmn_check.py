@@ -375,9 +375,6 @@ def test_validate_bpmn_fails_malformed_xml_without_calling_the_cli(tmp_path, mon
     assert validate_bpmn.main([]) == 1
 
 
-# --- body_object: both request-body shapes agents emit -----------------------
-
-
 def _send_task(payload: str) -> ET.Element:
     return ET.fromstring(
         f'<bpmn:sendTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
@@ -400,65 +397,49 @@ def test_body_object_reads_a_single_json_blob() -> None:
     }
 
 
-def test_body_object_merges_several_json_blobs_later_wins() -> None:
-    task = _send_task(
-        '<uipath:context><uipath:input name="body" type="json" target="body">'
-        '<![CDATA[{"a": 1, "b": 1}]]></uipath:input></uipath:context>'
-        '<uipath:input name="extra" type="json" target="body">'
-        '<![CDATA[{"b": 2, "c": 3}]]></uipath:input>'
-    )
-    assert bpmn_check.body_object(task) == {"a": 1, "b": 2, "c": 3}
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"a": 1}]]></uipath:input>'
+        '<uipath:input name="extra" type="json" target="body"><![CDATA[{"b": 2}]]></uipath:input>',
+        '<uipath:input name="score" type="number" target="body" value="7" />'
+        '<uipath:input name="title" type="string" target="body" value="T" />',
+    ],
+)
+def test_body_object_rejects_several_body_inputs(payload: str) -> None:
+    with pytest.raises(bpmn_check.BodyShapeError, match="does not merge"):
+        bpmn_check.body_object(_send_task(payload))
 
 
-def test_body_object_coerces_per_field_inputs_by_type() -> None:
-    task = _send_task(
-        '<uipath:input name="score" type="number" target="body"><![CDATA[7.25]]></uipath:input>'
-        '<uipath:input name="viewCount" type="number" target="body"><![CDATA[350]]></uipath:input>'
-        '<uipath:input name="rank" type="integer" target="body" value="4" />'
-        '<uipath:input name="ratio" type="number" target="body" value="9.0" />'
-        '<uipath:input name="active" type="boolean" target="body"><![CDATA[true]]></uipath:input>'
-        '<uipath:input name="archived" type="boolean" target="body" value="False" />'
-        '<uipath:input name="tags" type="json" target="body"><![CDATA[["x", "y"]]]></uipath:input>'
-        '<uipath:input name="title" type="string" target="body" value="AllTypesTest-Smoke" />'
-        '<uipath:input name="code" type="string" target="body" value="350" />'
-        '<uipath:input name="releaseDate" type="string" target="body"><![CDATA[2024-03-10]]></uipath:input>'
-    )
-    body = bpmn_check.body_object(task)
-    assert body == {
-        "score": 7.25,
-        "viewCount": 350,
-        "rank": 4,
-        "ratio": 9,
-        "active": True,
-        "archived": False,
-        "tags": ["x", "y"],
-        "title": "AllTypesTest-Smoke",
-        "code": "350",
-        "releaseDate": "2024-03-10",
-    }
-    assert type(body["score"]) is float
-    assert type(body["viewCount"]) is int and type(body["ratio"]) is int
-    assert type(body["active"]) is bool
+def test_body_object_rejects_a_per_field_scalar() -> None:
+    task = _send_task('<uipath:input name="score" type="number" target="body" value="7" />')
+    with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
+        bpmn_check.body_object(task)
 
 
-def test_body_object_mixes_a_blob_with_per_field_inputs() -> None:
+def test_body_object_ignores_non_body_inputs() -> None:
     task = _send_task(
         '<uipath:input name="body" type="json" target="body"><![CDATA[{"title": "T"}]]></uipath:input>'
-        '<uipath:input name="score" type="number" target="body" value="9" />'
         '<uipath:input name="entityName" type="string" target="path" value="FlowCodeEvalEntity" />'
     )
-    assert bpmn_check.body_object(task) == {"title": "T", "score": 9}
+    assert bpmn_check.body_object(task) == {"title": "T"}
 
 
 def test_body_object_leaves_expressions_as_strings() -> None:
     task = _send_task(
-        '<uipath:input name="score" type="number" target="body" value="=vars.Score" />'
-        '<uipath:input name="active" type="boolean" target="body"><![CDATA[=js:vars.flag]]></uipath:input>'
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"score": "=vars.Score", "active": "=js:vars.flag"}]]></uipath:input>'
     )
     assert bpmn_check.body_object(task) == {
         "score": "=vars.Score",
         "active": "=js:vars.flag",
     }
+
+
+def test_body_object_rejects_a_whole_body_expression() -> None:
+    task = _send_task('<uipath:input name="body" type="json" target="body" value="=vars.payload" />')
+    with pytest.raises(bpmn_check.BodyShapeError, match="expression"):
+        bpmn_check.body_object(task)
 
 
 def test_body_object_is_empty_without_body_inputs() -> None:
@@ -467,15 +448,20 @@ def test_body_object_is_empty_without_body_inputs() -> None:
     assert bpmn_check.body_fields(task) == []
 
 
+def test_body_object_is_empty_for_an_empty_body_input() -> None:
+    task = _send_task('<uipath:input name="body" type="json" target="body" />')
+    assert bpmn_check.body_object(task) == {}
+
+
 def test_body_object_fails_a_malformed_body_blob() -> None:
     bad_json = _send_task(
         '<uipath:input name="body" type="json" target="body"><![CDATA[{"a": ]]></uipath:input>'
     )
-    with pytest.raises(SystemExit, match="not valid JSON"):
+    with pytest.raises(bpmn_check.BodyShapeError, match="not valid JSON"):
         bpmn_check.body_object(bad_json)
 
     not_object = _send_task(
         '<uipath:input name="body" type="json" target="body"><![CDATA[[1, 2]]]></uipath:input>'
     )
-    with pytest.raises(SystemExit, match="must be an object"):
+    with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
         bpmn_check.body_object(not_object)

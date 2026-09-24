@@ -40,10 +40,9 @@ Re-homing decisions vs the Flow grader:
     this also matches how the batch's other Data Fabric checkers resolved the
     same rule.
   - Flow's ``bodyParameters`` dict becomes the dict
-    ``bpmn_check.body_object()`` decodes from the node's ``target="body"``
-    inputs: the canonical ONE CDATA JSON object (registry-workflow.md §3),
-    or one typed input per field (CI run 35777886090) coerced back to its
-    JSON literal.
+    ``bpmn_check.body_object()`` decodes from the node's ONE
+    ``target="body"`` CDATA JSON object (registry-workflow.md §3); several
+    ``target="body"`` inputs fail, because the runtime does not merge them.
   - Flow's ``queryParameters.queryExpression`` / ``.limit`` have no fixed
     field name in the Data Service registry contract available here (no
     local Data Service connection to ``describe`` request fields against --
@@ -87,15 +86,13 @@ Re-homing decisions vs the Flow grader:
     extension -- structural-bpmn.md's own manual-start derivation rule).
   - NOT ported: a per-node connection-binding requirement
     (``=bindings.<id>`` resolving to a declared ``resource="Connection"``
-    binding) and a hard failure when a node carries other-than-exactly-one
-    ``target="body"`` input. Neither has a Flow counterpart -- Flow's
-    grader has no concept of connections, and Flow reads
-    ``bodyParameters`` as a plain dict (empty when absent, last-key-wins
-    semantics don't apply to a Flow JSON object). ``body_object`` mirrors
-    that: zero ``target="body"`` inputs yields an empty body (fields report
-    as missing, same failure Flow would produce), and more than one is
-    decoded together, later inputs winning on a key collision, instead of
-    failing outright.
+    binding) and a hard failure when a node carries no ``target="body"``
+    input. Neither has a Flow counterpart -- Flow's grader has no concept of
+    connections, and Flow reads ``bodyParameters`` as a plain dict (empty
+    when absent). ``body_object`` mirrors that: zero ``target="body"``
+    inputs yields an empty body (fields report as missing, same failure
+    Flow would produce). More than one fails, because the runtime does not
+    merge them.
   - NOT ported: a non-null-value check on the Create body's six fields.
     Flow only asserts the keys are present (``FIELDS - set(body)``); it
     never inspects the values, so requiring non-null values is stricter
@@ -131,7 +128,7 @@ Assertion map (Flow -> BPMN):
   T  curated|generic entity-CRUD node classification -> is_kind()
   T  entity name anywhere in inputs/objectName/path   -> entity_ok()
   T  inputs at any depth                              -> all_node_values()/body_object()
-  T  per-field target="body" inputs → bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
+  T  body must be one target="body" JSON object → bpmn_check.body_object()  (several inputs fail: the runtime does not merge them)
   T  expression strings (=...) passing type checks    -> UPDATE_TITLE_VAR_RE match on `=vars.<id>`
   T  vars.<VarId> references in place of Flow node-id refs -> Get-by-Id wired_var check
   T  transitive variable derivation through BPMN.Variables copy tasks -> derives_from_crud()
@@ -139,7 +136,7 @@ Assertion map (Flow -> BPMN):
   DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
   DROPPED  connection-binding requirement (=bindings.<id>)  (Flow grader has no connection concept)
-  DROPPED  hard-fail on other-than-exactly-one target="body" input (Flow reads bodyParameters as a plain dict; no such limit)
+  DROPPED  hard-fail on zero target="body" inputs (Flow reads bodyParameters as a plain dict; absent is empty)
   DROPPED  Update-precedes-Get `graph.reaches` ordering check (Flow's record_id check is a data reference, not an order assertion)
   DROPPED  non-null-value check on Create body fields (Flow only checks key presence, not values -- stricter than F)
 """
@@ -155,6 +152,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    BodyShapeError,
     all_node_values,
     body_object,
     context_value,
@@ -295,7 +293,10 @@ def main() -> None:
     if not creates:
         fail(f"no {ENTITY} Create Entity Record sendTask found")
     create = creates[0]
-    create_body = body_object(create)
+    try:
+        create_body = body_object(create)
+    except BodyShapeError as exc:
+        fail(f"Create node body: {exc}")
     missing = FIELDS - set(create_body)
     if missing:
         fail(f"Create body missing fields: {sorted(missing)}")
@@ -315,7 +316,10 @@ def main() -> None:
     if not updates:
         fail(f"no {ENTITY} Update Entity Record sendTask found")
     update = updates[0]
-    update_body = body_object(update)
+    try:
+        update_body = body_object(update)
+    except BodyShapeError as exc:
+        fail(f"Update node body: {exc}")
     if "contractTitle" not in update_body:
         fail("Update body does not update contractTitle")
     title_value = update_body["contractTitle"]

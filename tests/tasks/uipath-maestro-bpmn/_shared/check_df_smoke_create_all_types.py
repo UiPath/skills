@@ -19,26 +19,21 @@ Assertion map (Flow → BPMN):
   F check_smoke_create_all_types.py:102-103 fail if no create-entity-record node found    → fail if find_create_tasks() empty
   I                locate/parse .bpmn (file exists, well-formed XML, no name hint)         → parse_bpmn()
   I                parse target="body" CDATA as JSON (Flow read bodyParameters)            → bpmn_check.body_object()
-  T                per-field target="body" inputs → bpmn_check.body_object()                 → one typed input per field (CI run 35777886090) reads as the same body dict
+  T                body must be one target="body" JSON object → bpmn_check.body_object()    → several inputs fail (the runtime does not merge them)
   T                curated|generic entity-CRUD node classification                        → find_create_tasks() / _is_generic_create_form()
   T                inputs at any depth                                                    → all_node_values()/body_object() walk `.//uipath:input`
   T                entity name anywhere in node's inputs/objectName/path                  → entity_values check
   T                expression strings (=…) passing type checks                            → _is_expression()
   DROPPED          "exactly one Create node" hard failure   (Flow returns on the first match in node order; no uniqueness assertion)
-  DROPPED          "exactly one target=body input" hard failure   (Flow read bodyParameters structurally; parsing it is I, enforcing single-body is not)
   DROPPED          require_no_private_connector_values      (not in Flow)
   DROPPED          require_sequence_integrity               (not in Flow; `bpmn validate` criterion covers structure)
   DROPPED          require_di_for_visible_elements           (not in Flow; `bpmn validate` criterion covers structure)
 
 Where Flow's grader read `node.inputs.detail.bodyParameters` as a JSON object
 already embedded in the .flow file, this grader reads the sendTask's
-`target="body"` inputs through `bpmn_check.body_object()`, which returns the
-same dict from either shape agents emit: one `<uipath:input name="body"
-type="json" target="body">` CDATA blob, or one typed input per field
-(`type="number"`/`"boolean"`/`"string"`, CI run 35777886090) coerced back to
-its JSON literal -- so a `type="number"` 7.25 is a float and a
-`type="boolean"` true is a bool, and the literal-shape checks below are
-identical for both. Flow accepted a
+one `<uipath:input name="body" type="json" target="body">` CDATA object
+through `bpmn_check.body_object()`. Several `target="body"` inputs fail,
+because the runtime does not merge them. Flow accepted a
 `=js:`-prefixed string as an expression binding for any field (grading wiring,
 not literal choice); the BPMN skill's expression prefix is a bare `=`
 (`=vars.X`, `=js:...`), so any string starting with `=` is accepted here,
@@ -73,7 +68,7 @@ Checks performed:
      accepted Create Entity Record shape (see above); the first match is
      graded.
   3. That node targets entity FlowCodeEvalEntity.
-  4. That node has target="body" input(s) whose decoded request body
+  4. That node has one target="body" JSON object that
      covers all 8 fields with Flow's literal-shape checks.
 """
 
@@ -87,6 +82,7 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
+    BodyShapeError,
     all_node_values,
     body_fields,
     body_object,
@@ -203,7 +199,10 @@ def main() -> None:
 
     if not body_fields(task):
         fail('no target="body" input found on the Create node')
-    body = body_object(task)
+    try:
+        body = body_object(task)
+    except BodyShapeError as exc:
+        fail(f"Create node body: {exc}")
 
     missing = set(EXPECTED) - set(body.keys())
     if missing:

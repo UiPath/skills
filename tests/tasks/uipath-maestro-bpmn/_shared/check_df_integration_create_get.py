@@ -54,7 +54,7 @@ Assertion map (Flow -> BPMN):
   T                                     entity name anywhere in inputs   -> mentions_entity()
   T                                     GETBYID/GET(List) equivalence    -> is_retrieval_node() List/GET branch
   T                                     expression/body JSON at any depth -> expansion_level() query-or-body read
-  T                                     per-field target="body" inputs → bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
+  T                                     body must be one target="body" JSON object → bpmn_check.body_object()  (several inputs fail that node: the runtime does not merge them)
   DROPPED  require_no_private_connector_values  (not in Flow grader)
   DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
@@ -71,6 +71,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    BodyShapeError,
     body_object,
     context_value,
     elements,
@@ -179,7 +180,11 @@ def is_retrieval_node(task: ET.Element, object_name: str) -> bool:
     if _RETRIEVE_OP_RE.match(operation) or method == "GETBYID":
         return True
     if _LIST_OP_RE.match(operation) or method == "GET":
-        return expansion_level(task) is not None or has_id_filter(task)
+        try:
+            level = expansion_level(task)
+        except BodyShapeError:
+            level = None
+        return level is not None or has_id_filter(task)
     return False
 
 
@@ -189,6 +194,7 @@ def main() -> None:
     creates = 0
     gets = 0
     expansion_levels: set[int] = set()
+    body_errors: list[str] = []
 
     for task in connector_nodes(root):
         if not mentions_entity(task, ENTITY):
@@ -198,7 +204,11 @@ def main() -> None:
             creates += 1
         elif is_retrieval_node(task, object_name):
             gets += 1
-            level = expansion_level(task)
+            try:
+                level = expansion_level(task)
+            except BodyShapeError as exc:
+                body_errors.append(f"{task.attrib.get('id')}: {exc}")
+                continue
             if level is not None:
                 expansion_levels.add(level)
 
@@ -214,7 +224,7 @@ def main() -> None:
     if missing:
         fail(
             f"Get nodes missing expansionLevel(s) {sorted(missing)} "
-            f"(found: {sorted(expansion_levels)})"
+            f"(found: {sorted(expansion_levels)}, body errors: {body_errors})"
         )
     print(f"OK: Get nodes cover expansionLevel {sorted(expansion_levels)}")
 

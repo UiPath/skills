@@ -21,7 +21,7 @@ Assertion map (Flow → BPMN):
   F check_smoke_query_filter.py:145-151  >=1 node with descending sort (isAscending=false)         → is_descending()
   I                locate/parse .bpmn (file exists, well-formed XML, no name hint)                 → parse_bpmn()
   I                parse a target="body" CDATA as JSON when present (Flow read structured fields)  → validate_body_inputs() (bpmn_check.body_object()) / parse_json_maybe()
-  T                per-field target="body" inputs → bpmn_check.body_object()                         → one typed input per field (CI run 35777886090) is a valid body, not a JSON-parse failure
+  T                body must be one target="body" JSON object → bpmn_check.body_object()            → several inputs fail (the runtime does not merge them)
   T                curated|generic entity-CRUD node classification                                 → query_entity_nodes()
   T                inputs at any depth                                                             → all_inputs() walks `.//uipath:input`
   T                ORDER BY in query text                                                          → bpmn_check.order_by() fallback in sorted_field()/is_descending()
@@ -94,9 +94,8 @@ Checks performed:
      Query Entity Records (QueryEntityRecordsCurated|QueryEntityRecords_V3)
      or objectName == FlowCodeEvalEntity with operation List / method GET
      (a dynamic per-entity query shape).
-  3. Any `target="body"` request body present decodes via
-     `bpmn_check.body_object()`: a `name="body"` blob must be a valid JSON
-     object, and per-field typed inputs are fields, not malformed JSON
+  3. Any `target="body"` request body present is one JSON object, via
+     `bpmn_check.body_object()`; several `target="body"` inputs fail
      (optional -- absence is not an error).
   4. Every one of the nine filter conditions appears somewhere across the
      three nodes, and the complete nine-condition set appears together in
@@ -120,6 +119,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    BodyShapeError,
     body_object,
     context_value,
     elements,
@@ -218,12 +218,11 @@ def query_entity_nodes(root: ET.Element) -> list[ET.Element]:
 
 
 def validate_body_inputs(task: ET.Element) -> None:
-    """A target="body" request body is optional; if present it must decode.
-
-    ``body_object`` fails the check itself on a ``name="body"`` blob that is
-    not a JSON object, and reads per-field typed inputs as fields.
-    """
-    body_object(task)
+    """A target="body" request body is optional; if present it must be one JSON object."""
+    try:
+        body_object(task)
+    except BodyShapeError as exc:
+        fail(f"Query node {task.attrib.get('id', '<unnamed>')!r} body: {exc}")
 
 
 def parse_json_maybe(value: str):

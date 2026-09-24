@@ -158,98 +158,48 @@ def _input_payload(inp: ET.Element) -> str:
     return (inp.attrib.get("value") or "").strip()
 
 
-def _coerce_body_value(raw: str, declared: str, parsed, parsed_ok: bool):
-    """One per-field body input's value, coerced by its declared ``type``.
-
-    ``number``/``integer`` become an ``int`` when the literal is integral and
-    a ``float`` otherwise, ``boolean`` becomes a ``bool``, ``json`` becomes the
-    parsed payload, and anything else stays the raw string. A value the
-    declared type cannot parse stays the raw string rather than failing --
-    the grader that cares asserts the shape itself.
-    """
-    if declared in ("number", "integer", "decimal", "double", "float", "long", "int"):
-        try:
-            number = float(raw)
-        except ValueError:
-            return raw
-        return int(number) if number.is_integer() else number
-    if declared in ("boolean", "bool"):
-        lowered = raw.lower()
-        if lowered in ("true", "false"):
-            return lowered == "true"
-        return raw
-    if declared == "json":
-        return parsed if parsed_ok else raw
-    return raw
+class BodyShapeError(ValueError):
+    """The node's ``target="body"`` inputs are not one JSON object."""
 
 
 def body_object(element: ET.Element) -> dict:
-    """The request body ``element``'s ``target="body"`` inputs encode, as a dict.
+    """The request body ``element``'s ``target="body"`` input encodes.
 
-    Agents emit a connector request body in two shapes, both valid, and this
-    is the one definition that reads either (CI run 35777886090 produced the
-    second on tasks whose earlier runs produced the first):
+    The runtime reads exactly one ``target="body"`` input as the whole body;
+    several do not merge (skills/uipath-maestro-bpmn/references/registry-workflow.md,
+    "Body shape"). So the only gradeable shape is::
 
-    * **one JSON blob** -- ``<uipath:input name="body" type="json"
-      target="body"><![CDATA[{...}]]></uipath:input>``, sometimes split across
-      several inputs whose objects merge;
-    * **one typed input per field** -- ``<uipath:input name="score"
-      type="number" target="body"><![CDATA[7.25]]></uipath:input>``.
+        <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
 
-    Every ``target="body"`` input at any depth is read, in document order,
-    and classified:
-
-    1. An input named ``body`` is the whole request body. Its payload MUST
-       be a JSON object -- a payload that does not parse, or that parses to
-       something other than an object, fails the check, exactly as each
-       grader's own body parser did before this helper existed.
-    2. Any other input whose payload is a JSON object (declared
-       ``type="json"`` or not) is merged into the body wholesale.
-    3. Everything else is one field, keyed by ``name`` and coerced by
-       ``type`` (see :func:`_coerce_body_value`).
-
-    Later inputs win on a key collision, matching the runtime's
-    last-one-wins behaviour. An expression payload (``=vars.X``, ``=js:...``)
-    stays the string it is whatever the declared type says, so a grader can
-    still tell a bound expression from a literal.
-
-    Returns ``{}`` when there is no ``target="body"`` input; a grader that
-    must distinguish "no body input at all" from "an empty body" checks
-    :func:`body_fields` as well.
+    Returns ``{}`` when there is no ``target="body"`` input or it is empty. Raises
+    :class:`BodyShapeError` for several inputs, or one whose payload is an
+    expression or anything but a JSON object. A ``=vars.X`` value inside the
+    object stays the string it is.
     """
-    body: dict = {}
-    for inp in body_fields(element):
-        raw = _input_payload(inp)
-        name = inp.attrib.get("name") or ""
-        declared = (inp.attrib.get("type") or "").strip().lower()
-        if not raw:
-            continue
-        try:
-            parsed = json.loads(raw)
-            parsed_ok = True
-        except (json.JSONDecodeError, ValueError):
-            parsed, parsed_ok = None, False
+    fields = body_fields(element)
+    if not fields:
+        return {}
+    if len(fields) > 1:
+        names = [inp.attrib.get("name") or "" for inp in fields]
+        raise BodyShapeError(
+            f'{len(fields)} target="body" inputs {names}; the runtime does not '
+            f"merge them, so the request carries only the last one"
+        )
 
-        if name == "body":
-            if not parsed_ok:
-                fail(f'target="body" input is not valid JSON: raw={raw!r}')
-            if not isinstance(parsed, dict):
-                fail(
-                    f'target="body" JSON must be an object, got '
-                    f"{type(parsed).__name__}: raw={raw!r}"
-                )
-            body.update(parsed)
-            continue
-        if parsed_ok and isinstance(parsed, dict):
-            body.update(parsed)
-            continue
-        if not name:
-            continue
-        if raw.startswith("="):
-            body[name] = raw
-            continue
-        body[name] = _coerce_body_value(raw, declared, parsed, parsed_ok)
-    return body
+    raw = _input_payload(fields[0])
+    if not raw:
+        return {}
+    if raw.startswith("="):
+        raise BodyShapeError(f'target="body" input is an expression, not a literal object: {raw!r}')
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        raise BodyShapeError(f'target="body" input is not valid JSON: raw={raw!r}') from None
+    if not isinstance(parsed, dict):
+        raise BodyShapeError(
+            f'target="body" JSON must be an object, got {type(parsed).__name__}: raw={raw!r}'
+        )
+    return parsed
 
 
 def all_node_values(element: ET.Element) -> list[str]:

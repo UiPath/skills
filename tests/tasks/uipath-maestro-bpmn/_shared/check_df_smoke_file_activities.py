@@ -41,12 +41,10 @@ instead of assuming Flow's JSON shape:
   * Download's `recordId` literal UUID -> a bare (non-expression) UUID-shaped
     value on any of Download's inputs (Flow required a UUID literal here too).
   * Create's single-body-dict read -> Flow's grader reads ONE
-    ``bodyParameters`` dict; here ``bpmn_check.body_object()`` decodes every
-    ``target="body"`` input into one dict -- merging JSON blobs and folding
-    per-field typed inputs in alongside them (a hand-authored file may
-    legitimately or accidentally carry more than one -- registry-workflow.md
-    §3 -- but Flow's own grader never penalized node shape, only body
-    *content*, so an extra body input is not itself a failure here).
+    ``bodyParameters`` dict; here ``bpmn_check.body_object()`` decodes the
+    node's ONE ``target="body"`` JSON object (registry-workflow.md §3).
+    Several ``target="body"`` inputs fail, because the runtime does not
+    merge them.
   * Upload's multipart `file` binding -> Flow accepted any `=js:$vars.*`
     expression naming *any* variable in scope (its own docstring: "download
     output, typed file global, or start-input file parameter all pass").
@@ -67,8 +65,7 @@ Checks performed:
      Create: curated or generic entity-CRUD form -- see above).
   3. Download, Upload, and Delete each reference field "file1".
   4. Download's recordId is a literal (non-expression) UUID.
-  5. Create's request body (every target="body" input decoded and merged,
-     JSON blob or per-field typed inputs) covers title/description/score.
+  5. Create's one target="body" JSON object covers title/description/score.
   6. Upload's `target="file"`/`name="file"` input carries a `vars.<id>`
      reference (any variable).
   7. Upload and Delete both reference Create's output variable for recordId.
@@ -84,8 +81,7 @@ Assertion map (Flow -> BPMN):
   T                                          curated|generic Create classification (integration_create_get precedent) -> is_create_node()
   T                                          entity name anywhere in node inputs/objectName/path -> mentions(task, ENTITY)
   T                                          vars.<VarId> substring reference in place of Flow node-id/variable-chain reference -> has_variable_reference()
-  T                                          merge every target="body" input instead of requiring exactly one -> bpmn_check.body_object()
-  T                                          per-field target="body" inputs -> bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
+  T                                          body must be one target="body" JSON object -> bpmn_check.body_object()  (several inputs fail: the runtime does not merge them)
   DROPPED  require_no_private_connector_values  (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_sequence_integrity            (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow; `validate` criterion already covers structure)
@@ -105,6 +101,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    BodyShapeError,
     all_node_values,
     body_object,
     context_value,
@@ -256,7 +253,10 @@ def main() -> None:
         fail("Download node has no literal (non-expression) UUID-shaped recordId value")
     print(f"OK: Download recordId is a literal UUID ({dl_uuid})")
 
-    create_body = body_object(create)
+    try:
+        create_body = body_object(create)
+    except BodyShapeError as exc:
+        fail(f"Create node body: {exc}")
     if not create_body:
         fail(f'no parseable target="body" JSON object found on the Create node')
     missing_fields = REQUIRED_CREATE_BODY - set(create_body.keys())

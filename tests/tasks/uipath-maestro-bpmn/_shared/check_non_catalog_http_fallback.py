@@ -23,7 +23,7 @@ Assertion map (Flow -> BPMN):
   T                collect uipath:input elements at any depth under the node            -> context_value()/body_object() walk `.//uipath:input`
   T                endpoint value found in either a sibling context field or inside      -> target_paths()
                    the request body (the skill does not pin where it lands)
-  T                per-field target="body" inputs → bpmn_check.body_object()           -> one typed input per field (CI run 35777886090) decodes to the same body dict
+  T                body must be one target="body" JSON object → bpmn_check.body_object() -> several inputs fail that node (the runtime does not merge them)
 
 WRAPPER: only `Intsvc.ActivityExecution` is accepted. registry-workflow.md
 §"Connectionless vs connector HTTP" (line 342) reserves `Intsvc.HttpExecution`
@@ -53,6 +53,7 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
+    BodyShapeError,
     body_object,
     context_value,
     elements,
@@ -142,11 +143,20 @@ def check_fallback() -> None:
         f"{HTTP_CONNECTOR_KEY!r} with a connection present"
     )
 
-    if not any(targets_me_endpoint(t) for t in fallback_nodes):
+    body_errors: list[str] = []
+    targets_me = False
+    for t in fallback_nodes:
+        try:
+            if targets_me_endpoint(t):
+                targets_me = True
+                break
+        except BodyShapeError as exc:
+            body_errors.append(f"{t.attrib.get('id', '?')}: {exc}")
+    if not targets_me:
         fail(
             f"No {HTTP_CONNECTOR_KEY!r} node targets the {ME_ENDPOINT!r} "
             "endpoint (expected the Spotify '/me' path, which returns the "
-            "current user's profile)."
+            f"current user's profile). Body errors: {body_errors}"
         )
     print(f"OK: fallback node targets Spotify's '{ME_ENDPOINT}' endpoint")
     print(f"OK: {path} -- all Spotify HTTP-fallback structural checks passed")

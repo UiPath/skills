@@ -35,13 +35,10 @@ CRUD-chain re-homing decisions vs the Flow grader:
     ``all_node_values``/``has_priority_desc_sort``), not one named field --
     matching the batch's sibling checkers.
   - Flow's ``bodyParameters`` dict becomes the dict
-    ``bpmn_check.body_object()`` decodes from every ``target="body"`` input
-    -- JSON blobs merged, per-field typed inputs folded in alongside them
-    (registry-workflow.md §3 documents ONE `target="body"` input as the
-    canonical shape, but Flow's own grader never penalized node shape -- only
-    body *content* -- so more than one such input is not itself a
-    chain-criterion failure here; see ``--shape`` mode below for the shape
-    assertion Flow actually never made either).
+    ``bpmn_check.body_object()`` decodes from the node's ONE
+    ``target="body"`` JSON object (registry-workflow.md §3). Several
+    ``target="body"`` inputs fail that node, because the runtime does not
+    merge them.
   - Flow's ``wired_to_create`` (``recordId`` expr is ``=js:`` and contains a
     create node id) becomes a real variable-binding assertion: the consuming
     node's inputs must contain ``vars.<V>`` where ``V`` is one of the Create
@@ -101,7 +98,7 @@ Checks performed (`--shape` mode):
      `Intsvc.ActivityExecution` typed `<uipath:activity>` extension.
 
 Assertion map (Flow -> BPMN):
-  F check_e2e_contract_intake_pipeline.py:97-101   >=1 create on ENTITY, body has contractTitle       -> creates[0] + "contractTitle" in merged body_json(create)
+  F check_e2e_contract_intake_pipeline.py:97-101   >=1 create on ENTITY, body has contractTitle       -> creates[0] + "contractTitle" in body_json(create)
   F check_e2e_contract_intake_pipeline.py:106-111  get recordId wired to create output                -> wired_to_create(get, create_vars)
   F check_e2e_contract_intake_pipeline.py:113-118  >=1 query on ENTITY sorted priority DESC            -> has_priority_desc_sort(query)
   F check_e2e_contract_intake_pipeline.py:120-132  update body keys=={"status"}, wired to create output -> body_json(update)=={"status"} + wired_to_create(update, create_vars)
@@ -111,8 +108,7 @@ Assertion map (Flow -> BPMN):
   T                                                 curated|generic objectName classification           -> is_kind()
   T                                                 entity name anywhere in node inputs/objectName/path  -> entity_ok()
   T                                                 vars.<VarId> substring reference in place of Flow node-id reference -> wired_to_create()
-  T                                                 merge every target="body" input instead of requiring exactly one (chain criterion only) -> body_json()
-  T                                                 per-field target="body" inputs -> bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
+  T                                                 body must be one target="body" JSON object (chain criterion only) -> body_json() via bpmn_check.body_object()  (several inputs fail: the runtime does not merge them)
   DROPPED  require_no_private_connector_values  (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_sequence_integrity            (not in Flow; `validate` criterion already covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow; `validate` criterion already covers structure)
@@ -132,6 +128,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    BodyShapeError,
     all_node_values,
     body_fields,
     body_object,
@@ -217,15 +214,9 @@ def is_kind(task: ET.Element, curated_objects: set[str], kind: str) -> bool:
 
 
 def body_json(task: ET.Element, label: str) -> dict:
-    """The node's request body, from either shape agents emit.
+    """The node's request body, its one `target="body"` JSON object.
 
-    Flow's grader reads a single `bodyParameters` dict and never penalized
-    node *shape* -- only body *content* (see module docstring). A
-    hand-authored BPMN file may carry more than one `target="body"` input, or
-    one typed input per field, without that being a chain-criterion failure
-    Flow ever asserted, so this decodes whatever is there via
-    `bpmn_check.body_object()` rather than hard-failing on the count or the
-    shape.
+    Raises `BodyShapeError` when the inputs are not one JSON object.
     """
     if not body_fields(task):
         fail(f'no target="body" input found on the {label} node')
@@ -296,7 +287,10 @@ def main() -> None:
     if not creates:
         fail(f"no {ENTITY} Create Entity Record sendTask found")
     create = creates[0]
-    create_body = body_json(create, "Create")
+    try:
+        create_body = body_json(create, "Create")
+    except BodyShapeError as exc:
+        fail(f"Create node body: {exc}")
     if "contractTitle" not in create_body:
         fail("Create body missing contractTitle")
     print(f"OK: Create Entity Record node on {ENTITY} populates contractTitle")
@@ -319,9 +313,18 @@ def main() -> None:
 
     if not updates:
         fail(f"no {ENTITY} Update Entity Record sendTask found")
-    update_candidates = [u for u in updates if set(body_json(u, "Update").keys()) == {"status"}]
+    update_candidates = []
+    keys_seen = []
+    for u in updates:
+        try:
+            keys = sorted(body_json(u, "Update").keys())
+        except BodyShapeError as exc:
+            keys_seen.append(f"{u.attrib.get('id')}: {exc}")
+            continue
+        keys_seen.append(keys)
+        if keys == ["status"]:
+            update_candidates.append(u)
     if not update_candidates:
-        keys_seen = [sorted(body_json(u, "Update").keys()) for u in updates]
         fail(f"no Update node whose body is exactly {{'status'}} (found: {keys_seen})")
     if not any(wired_to_create(u, create_vars) for u in update_candidates):
         fail(f"no status-only Update node's recordId is wired to Create output vars.{{{', '.join(create_vars)}}}")

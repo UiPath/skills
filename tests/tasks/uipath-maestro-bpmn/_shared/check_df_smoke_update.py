@@ -26,9 +26,9 @@ same as ``check_df_integration_create_get.py``.
 Modes:
   --ops     Assert >=1 classified node per {create, update, get, delete} on
             FlowCodeEvalEntity. Mirrors Flow's ``check_ops_present.py``.
-  --partial Assert the classified Update node's request body (its
-            ``target="body"`` inputs decoded by ``bpmn_check.body_object()``
-            -- one JSON blob or one typed input per field) has
+  --partial Assert the classified Update node's request body (its one
+            ``target="body"`` JSON object, decoded by
+            ``bpmn_check.body_object()``) has
             only the key ``score``, with value 9.0 -- OR an ``=`` expression,
             which passes any type check the same way Flow's grader waves
             through ``=js:...`` (see _porting/BATCH1-ADDENDUM.md "Grader rule for body
@@ -44,11 +44,10 @@ Assertion map (Flow -> BPMN):
   T  inputs at any depth                              -> node_inputs() (`.//uipath:input`)
   T  GETBYID/GET equivalence                          -> is_retrieval_node() List/GET + has_id_filter() branch
   T  expression strings (=...) passing type checks    -> check_partial() `score.startswith("=")` branch
-  T  per-field target="body" inputs → bpmn_check.body_object()  (one typed input per field, CI run 35777886090, decodes to the same body dict)
+  T  body must be one target="body" JSON object → bpmn_check.body_object()  (several inputs fail: the runtime does not merge them)
   DROPPED  require_no_private_connector_values  (not in Flow grader)
   DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
-  DROPPED  hard-fail on other-than-exactly-one target="body" input on Update node (Flow reads bodyParameters as a plain dict; no such limit)
 """
 
 from __future__ import annotations
@@ -63,6 +62,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    BodyShapeError,
     body_object,
     context_value,
     elements,
@@ -218,12 +218,10 @@ def check_partial() -> None:
         fail(f"{path}: no Update Entity Record node found on {ENTITY}")
 
     task = updates[0]
-    # Flow reads bodyParameters as a plain dict (`{}` when absent) -- no Flow
-    # equivalent polices a node's target="body" input count. Zero inputs is
-    # an empty body (fails the key check below with a clear message); more
-    # than one is decoded together, later inputs winning on a key collision,
-    # rather than treating either shape as a hard error.
-    body = body_object(task)
+    try:
+        body = body_object(task)
+    except BodyShapeError as exc:
+        fail(f"{path}: Update node's body: {exc}")
 
     keys = set(body.keys())
     if keys != {"score"}:
