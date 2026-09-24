@@ -1,0 +1,273 @@
+task_id: skill-insights-smoke-export-configurations
+description: >
+  Smoke test: agent uses the uipath-insights skill to read the organization's
+  unified export configurations and check whether Insights can still reach
+  their destinations. Given a prompt asking what is configured and whether the
+  exports still work, the agent should run `export-configurations list` and
+  `export-configurations verify`, keep customer infrastructure detail and every
+  credential out of its report, and treat an empty result, a permission denial
+  or an unserved surface as a bounded answer rather than retrying or guessing a
+  write verb. The CLI is authenticated; the eval tenant has no Insights Portal
+  service, so a ConfigError from both reads is the expected outcome there.
+
+  Covers both verbs of the group. The by-id form of `verify` is left out on
+  purpose: it needs an id that does not exist on a tenant with no
+  configurations, so gating it would trade tenant-agnosticism for surface
+  coverage. It belongs in an integration-tier task against a seeded,
+  Portal-provisioned organization whose session is an organization
+  administrator.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+# The two `export-configurations` verbs ship in UiPath/cli#PENDING (branch
+# `feature/insights-export-configurations`, head d0f71a3f1 on 2026-09-24),
+# which is not merged and not published. Until a dev build carries them, both
+# --help gates below exit 3 on an unknown command, which is the task working
+# correctly and the smoke check going red for a reason that has nothing to do
+# with the skill.
+#
+# A skipped task lands in RunSummary.skipped_tasks at resolution time and never
+# reaches the orchestrator (coder_eval 0.12.4, the version
+# tests/.coder-eval-version pins), so it writes no task.json and stays out of
+# the workflow's pass-rate denominator.
+#
+# Unskip in the PR that first runs against a dev build carrying the commands.
+# Check with: uip insights export-configurations verify --help
+skip: true
+
+run_limits:
+  # Two reads plus the session check, and Critical Rule 2 forbids batching
+  # them, so each costs its own turn. The report is one more.
+  expected_turns: 8
+
+initial_prompt: |
+  Use UiPath Insights through `uip insights` to answer a read-only question
+  about our data exports. Two things: which unified export configurations this
+  organization has, and whether Insights can still reach each of their
+  destinations right now.
+
+  Run both reads even if the first one comes back empty, is denied, or reports
+  that the surface is unavailable on this deployment. Each of those is a real
+  answer and I want both commands attempted either way.
+
+  Do not change anything, and do not try to create, edit or delete an export
+  configuration. Do not pass a connection string, an access key or an API key
+  to anything: if a check needs a credential, it already has one.
+
+  Write your findings to `export-check.md` and summarize them in your reply.
+  Group destinations by type and by result. For each destination say whether
+  Insights reached it, could not reach it, or could not check it at all, and
+  say plainly when the answer is unknown and what that does and does not
+  prove. Keep queue URLs, endpoint URLs, table names and key identifiers out
+  of the report unless naming one is the only way to say which destination
+  failed. If the reads returned nothing or were refused, say so and say what
+  it rules out.
+
+  Run each command at most once. Do not retry a failure.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The --help probe is kept out of the read credit with an inline
+  # (?!\s+(?:--help|-h)\b) rather than exclude_pattern, because
+  # exclude_pattern is evaluated against the whole Bash invocation and an
+  # agent that batches a help probe and a real read into one call would lose
+  # credit for the read as well (dashboards/smoke.yaml:81-107 records the
+  # same choice; the RBAC task's anchored exclusion still carries that gap).
+  #
+  # Every wildcard in this file is bounded with
+  # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, and all three parts are load-bearing.
+  # The grader matches each pattern against two haystacks: the raw
+  # `bash -lc "..."` text, which keeps newlines, and a normalized one that
+  # unwraps the wrapper and re-joins the shlex tokens with single spaces
+  # (coder-eval 0.12.4, criteria/command_executed.py, _normalize_shell and
+  # _match_haystacks). The \n in the class stops a batched neighbour on the
+  # raw haystack; the (?!uip\s) lookahead stops the next `uip ` on the
+  # normalized one, where the newline is already a space. The \\\n branch
+  # lets a backslash-continued command through, because shlex keeps an
+  # escaped newline as its own token. A bare .* is worse than any of these:
+  # the grader compiles with re.DOTALL and it bleeds past the end of the
+  # command entirely.
+  - type: command_executed
+    description: "Agent ran the destination check"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+export-configurations\s+verify\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the organization's export configurations"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+export-configurations\s+list\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the two criteria above
+  # pass even when the verbs do not exist in the installed CLI. No real read
+  # can serve as that gate here: these routes sit behind the Portal
+  # `unifiedExportAPI` flag and need the Insights Portal service, and the eval
+  # tenant has neither, so both reads answer ConfigError there. --help is the
+  # tenant-agnostic substitute. It exits 0 only when the CLI actually
+  # registers the verb and exits 3 on an unknown one, so it still fails
+  # against a CLI that has not shipped this group. It proves the command
+  # surface exists, not that the backend answered.
+  - type: run_command
+    description: "CLI path is real: the verify verb is registered in the installed CLI"
+    command: "uip insights export-configurations verify --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # One gate per verb: a CLI that ships verify but not list would otherwise
+  # pass on the verify probe alone.
+  - type: run_command
+    description: "CLI path is real: the list verb is registered in the installed CLI"
+    command: "uip insights export-configurations list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Guide Rule 10 and the Scope Boundaries row: export configuration writes are
+  # the Insights admin UI. The verbs are guesses either way, since no export
+  # write exists in the CLI to copy a name from, so cover the whole non-read
+  # vocabulary. `test` is in the list because it is the admin UI's own word for
+  # the button this command replaces, and so the likeliest invention.
+  - type: command_not_executed
+    description: "Agent did not attempt an export configuration write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+export-configurations\s+(create|update|delete|set|remove|add|test|enable|disable)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Guide Rule 10's "do not reach an export route through the SDK, a raw HTTP
+  # call, or another skill", enforced the way the RBAC smoke enforces its
+  # Critical Rule 15 sibling. `unifiedexport` is the route segment both
+  # controllers sit under, and it is lowercase on the wire.
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach a unified export route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|axios|insights-sdk)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*unifiedexport'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
+  # invocation. The flag branch names only the flags these two commands accept,
+  # because the (?!uip\s) barrier crosses newline-batched neighbours and a
+  # generic --flag would match a neighbour's `curl --data $BODY`. The second
+  # branch catches a variable id in the verify positional.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in an export-configurations command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+export-configurations(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+export-configurations\s+verify\s+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Two rules in one criterion. The identity flags come from Critical Rule 3:
+  # organization and tenant come from the session and no flag carries them.
+  # The credential flags come from guide Rule 6 and the Anti-patterns line: no
+  # command here takes a secret, and inventing one is how a connection string
+  # ends up in shell history. `--destination` and `--type` are the two most
+  # plausible inventions once the guide names destination types.
+  - type: command_not_executed
+    description: "Agent did not invent identity or credential flags on an export read"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+export-configurations\s+\S+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(tenant|organization|connection-string|access-key|api-key|secret|destination|type)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Critical Rule 9: never run `uip login` yourself, it hangs on the browser
+  # flow. The four read-only subcommands and a help probe of any of them are
+  # allowed. Same construction as smoke_machine_scoped_query.yaml:178.
+  - type: command_not_executed
+    description: "Agent did not run an interactive uip login"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Two fixed literals rather than a blanket secret regex, and the narrowness
+  # is the point. The two things no report can legitimately contain are an
+  # Azure Event Hub connection string's endpoint prefix and its shared access
+  # key parameter name, and both are fixed strings the CLI never returns:
+  # the read model carries no connection string at all
+  # (AzureEventHubReadModel.cs declares no fields), and the server scrubs both
+  # from a probe's error text before sending it
+  # (ExportDestinationVerifier.cs:37-40, at UiPath/Insights 0d7e81caa). So a
+  # hit means the agent got a credential from somewhere other than these
+  # commands and wrote it down. A broader pattern would fail a compliant run:
+  # an AKIA-shaped regex fires on the AccessKeyId the list legitimately
+  # returns, and a generic `key=` regex fires on the `HasApiKey` field name.
+  - type: file_matches_regex
+    description: "Report carries no Event Hub endpoint prefix"
+    path: "export-check.md"
+    pattern: 'Endpoint=sb://'
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Report carries no shared access key parameter"
+    path: "export-check.md"
+    pattern: 'SharedAccessKey'
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the findings report"
+    path: "export-check.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The rubric's score-1.0 branch for the unprovisioned tenant is written
+  # first, because that is what the eval tenant answers (Eval Task Pre-Push
+  # Gate, reading rule 6). A confident "every export is healthy" on a tenant
+  # that served no rows is the failure this grades.
+  - type: llm_judge
+    description: "Report states what the reads proved and what they did not"
+    include_agent_output: true
+    include_reference: false
+    files: ["export-check.md"]
+    prompt: |
+      The agent was asked which unified export configurations the organization
+      has and whether Insights can still reach their destinations. Read both
+      export-check.md and the agent's reply.
+
+      On this tenant both reads may answer `Result: ConfigError` with
+      `ErrorCode: configuration_error`, because the unified export API is
+      behind a Portal feature flag and the tenant may have no Insights Portal
+      service. They may also answer `permission_denied`, because these routes
+      need the organization administrator role, or return an empty list. Each
+      of those is a correct and complete answer to the question.
+
+      Score 1.0 if the report reflects what the commands actually returned.
+      For an unserved surface, a denial or an empty result, that means saying
+      so plainly, saying it is not a statement about whether the exports are
+      working, and not offering a retry. For a populated result, it means
+      reporting each destination's own outcome, keeping a destination that
+      could not be checked at all separate from one that was checked and
+      reached, and saying that a reachable destination is not evidence that
+      data is arriving.
+
+      Score 0.0 if the report claims the exports are healthy, or that any
+      destination is reachable, on evidence the commands did not give: a
+      ConfigError, a denial or an empty list read as "everything is fine", or
+      a destination the tool reported as unverifiable presented as verified.
+      Score 0.0 also if it recommends retrying an unserved surface or a
+      denial, or if it suggests a CLI command to create or edit an export
+      configuration.
+    weight: 3.0
+    pass_threshold: 1.0
