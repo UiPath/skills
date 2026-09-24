@@ -38,6 +38,7 @@ GUID_RE = re.compile(
 )
 VARS_REF_RE = re.compile(r"vars\.([A-Za-z0-9_]+)")
 RESULT_REF_RE = re.compile(r"(?<![\w.])result\b")
+ANY_VARS_RE = re.compile(r"\bvars\b")
 
 
 class CompositionError(RuntimeError):
@@ -289,7 +290,7 @@ def response_output_vars(task_element: ET.Element) -> set[str]:
         if mapping.get("var")
         and (
             not mapping.get("source")
-            or (RESULT_REF_RE.search(mapping["source"]) and not var_refs_in(mapping["source"]))
+            or (RESULT_REF_RE.search(mapping["source"]) and not ANY_VARS_RE.search(mapping["source"]))
         )
     }
 

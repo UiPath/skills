@@ -176,10 +176,22 @@ class ShapeCheckMutationTests(unittest.TestCase):
         self.assert_rejected("stray_output_write", "'message' is also published from")
 
     def test_node_output_falls_back_to_input(self):
-        self.assert_rejected("node_output_falls_back_to_input", "no end event publishes 'message'")
+        for name in (
+            "node_output_falls_back_to_input",
+            "node_output_bracket_fallback",
+            "node_output_optional_chain_fallback",
+        ):
+            with self.subTest(name):
+                self.assert_rejected(name, "no end event publishes 'message'")
 
     def test_end_mapping_mixes_input(self):
-        self.assert_rejected("end_mapping_mixes_input", "'message' is also published from")
+        for name in (
+            "end_mapping_mixes_input",
+            "end_mapping_bracket_mix",
+            "end_mapping_optional_chain_mix",
+        ):
+            with self.subTest(name):
+                self.assert_rejected(name, "'message' is also published from")
 
     def test_unregistered_bpmn_project(self):
         self.assert_rejected("unregistered_bpmn_project", "BPMN project at .* is not registered")

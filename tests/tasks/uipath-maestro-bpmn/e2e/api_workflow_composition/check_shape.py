@@ -347,7 +347,10 @@ def check_resource_row(
     }
     def reads_only_response(source: Optional[str]) -> bool:
         refs = composition.var_refs_in(source)
-        return bool(refs) and refs <= response_var_ids
+        if not refs or not refs <= response_var_ids:
+            return False
+        rest = composition.VARS_REF_RE.sub("", source or "")
+        return not composition.ANY_VARS_RE.search(rest)
 
     stray_sources = [
         mapping.get("source")
