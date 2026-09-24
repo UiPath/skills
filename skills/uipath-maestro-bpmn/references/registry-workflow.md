@@ -26,12 +26,13 @@ found via `registry search`, is a **false negative** — never conclude "no
 connection exists" or ask the user to create one until you have searched the
 registry for the real connector key and listed across all folders.
 
-`registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB
+`registry list` returns four buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
-`uip login`). Each extension-type row carries `ExtensionType`, `Label`,
-`BpmnElement` (the host BPMN element), `ExtensionTag`, and
-`RequiresDiscovery` (`Yes` means you must resolve a concrete resource — process,
-queue, connection — before the node is runnable).
+`uip login`), and `ProcessesByType` (`Processes` counted per `processType`,
+every type present even at 0). Each extension-type row carries
+`ExtensionType`, `Label`, `BpmnElement` (the host BPMN element),
+`ExtensionTag`, and `RequiresDiscovery` (`Yes` means you must resolve a
+concrete resource — process, queue, connection — before the node is runnable).
 
 In temp/smoke sandboxes, a CLI/tooling mismatch can produce valid JSON that is
 only a failure envelope (for example `"Result": "Failure"`) instead of registry
@@ -86,9 +87,11 @@ generated packages to invent the missing live schema.
 
 ## 3. Connector (`Intsvc.*`) enrichment
 
-For connector types (`requiresDiscovery: Yes`, e.g.
-`Intsvc.ActivityExecution`, `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`),
-resolve a live connection and object, then enrich:
+For connector **activity** types (`requiresDiscovery: Yes`, e.g.
+`Intsvc.ActivityExecution`), resolve a live connection and object, then enrich.
+`Intsvc.EventTrigger` and `Intsvc.WaitForEvent` also require discovery but
+resolve their object elsewhere — see
+[Integration Service triggers](#integration-service-triggers).
 
 ```bash
 uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
@@ -116,6 +119,52 @@ So take the object from this table rather than inferring it. Confirm it with
 | `uipath-atlassian-jira` | `curated_get_issue` | Get Issue | `Retrieve` |
 | `uipath-atlassian-jira` | `curated_edit_issue` | Update Issue | `Replace` |
 | `uipath-salesforce-slack` | `send_message_to_channel_v2` | Send Message to Channel | `Create` |
+| `uipath-microsoft-outlook365` | `send-mail-v2` | Send Email | `Create` |
+| `uipath-uipath-dataservice` | `<EntityName>` | Create Entity Record | `Create` |
+| `uipath-uipath-dataservice` | `<EntityName>` | Update Entity Record | `Replace` |
+| `uipath-uipath-dataservice` | `GetEntityRecordByIdCurated` | Get Entity Record by ID | `List` |
+| `uipath-uipath-dataservice` | `DeleteEntityRecordCurated` | Delete Entity Record | `Create` |
+| `uipath-uipath-dataservice` | `QueryEntityRecordsCurated` | Query Entity Records | `Create` |
+| `uipath-uipath-dataservice` | `UploadFileToRecordField` | Upload File to Record Field | `Create` |
+| `uipath-uipath-dataservice` | `DownloadFileFromRecordField` | Download File from Record Field | `List` |
+| `uipath-uipath-dataservice` | `DeleteFileFromRecordField` | Delete File from Record Field | `Delete` |
+| `uipath-uipath-testmanager` | `TestSet` | Create / Get / Update / Delete Test Set | `Create` / `Retrieve` / `Update` / `Delete` |
+| `uipath-uipath-testmanager` | `AssignTestCasesToTestSet` | Assign Test Cases to Test Set | `Create` |
+| `uipath-uipath-testmanager` | `GetAssignedTestCasesForTestSet` | Get Assigned Test Cases for Test Set | `List` |
+| `uipath-uipath-testmanager` | `ExecuteTestSet` | Execute Test Set | `Create` |
+| `uipath-uipath-testmanager` | `TestCase` | Create / Get / Update / Delete Test Case | `Create` / `Retrieve` / `Update` / `Delete` |
+| `uipath-uipath-testmanager` | `ExecuteTestCases` | Execute Test Cases | `Create` |
+| `uipath-uipath-testmanager` | `TestExecution` | Get / Delete Test Execution | `Retrieve` / `Delete` |
+| `uipath-uipath-testmanager` | `GetTestCaseLogsOfTestExecution` | Get Test Case Logs of Test Execution | `List` |
+| `uipath-uipath-testmanager` | `TestCaseLog` | Get Test Case Log | `Retrieve` |
+| `uipath-uipath-testmanager` | `GetRobotLogs` | Get Robot Logs | `List` |
+| `uipath-uipath-testmanager` | `GetAssertions` | Get Assertions | `List` |
+| `uipath-uipath-testmanager` | `DownloadAssertion` | Download Assertion | `Retrieve` |
+| `uipath-uipath-testmanager` | `GetTestSteps` | Get Test Steps | `List` |
+| `uipath-uipath-testmanager` | `GetTestStepLogs` | Get Test Step Logs | `List` |
+
+Operation names are the connector's, not the verb: Get Entity Record is
+`List`, Delete Entity Record and Query are `Create`. `describe` rejects the
+intuitive name, so do not change them.
+
+`<EntityName>` is the tenant entity's own object: `uip is resources list`
+shows one per entity, named after it, with `Custom: yes`. Its `RequestFields`
+are the entity's columns, so Create and Update take their body from it.
+`CreateEntityRecordCurated` and `UpdateEntityRecordV2` report an empty
+`RequestFields`; do not use them.
+
+The file rows take the field as a `fieldName` path parameter. Their `V2`
+counterparts expose no field parameter, so do not use them.
+
+For a Data Fabric operation not listed, drop objects whose display name ends
+in `(Preview)` or `(Deprecated)`, then prefer a path starting with `/v2/`.
+
+`send-mail-v2` defaults its `saveAsDraft` query parameter to `true`, which
+saves a draft instead of sending. Add a `target="query"` `saveAsDraft` input
+set to `false`. Its `body` parameter is `multipart`: keep the message in the
+one `target="body"` input and set the context `metadata` input to
+`{"inputMetadata":{"type":"multipart","multipart":{"bodyFieldName":"body"}}}`.
+Without it the runtime sends the body as JSON.
 
 For a connector or operation not listed, describe every candidate and keep
 the ones whose `Operation.Curated` names the activity asked for. Expect more
@@ -343,11 +392,48 @@ requested service-task output contract from the model.
 the exact `registry get Intsvc.TimerTrigger` template. It does not require a
 live connection or schema enrichment.
 
-`Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` do need
-their **trigger properties** enriched/bound through the CLI — the same
-enrichment path as `Intsvc.*` activities (§3). A hand-authored connector
-trigger shell stays **draft** until the CLI supplies the concrete trigger
-properties, connection binding, and schemas.
+`Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` enrich
+through `registry get` like a §3 activity, but their object and operation come
+from the **trigger** catalogue, not from `uip is resources`. Omit `--operation`
+and the call fails with `Event enrichment requires --operation`.
+
+```bash
+uip is activities list <connectorKey> --triggers --output json   # Name + ObjectName + IsCurated
+uip is triggers objects <connectorKey> <OPERATION> --connection-id <id> --output json  # generic rows only
+uip is triggers describe <connectorKey> <operation> <objectName> --connection-id <id> --output json
+uip maestro bpmn registry get <Intsvc.EventTrigger|Intsvc.WaitForEvent> \
+    --connection-id <id> --object-name <ObjectName> --operation <Name> --output json
+```
+
+Prefer a row whose `IsCurated` is `Yes`. A generic `CREATED` / `UPDATED` /
+`DELETED` row (`IsCurated: No`, `ObjectName: N/A`) is the correct path when no
+curated row covers the event, and for a connector that exposes only generic
+rows (`uipath-uipath-jdbc`) it is the only path; take its object from
+`uip is triggers objects`, which omits connection-specific objects and can
+return an empty list without `--connection-id`.
+
+`registry get` returns the node template and its `InputFields`, not the event
+schema. That comes from `uip is triggers describe`: build the filter tree's
+leaves from its `FilterFields`, never from an activity's `RequestFields`;
+`EventParameters` are the trigger's scoping inputs, `OutputFields` the event
+payload.
+
+`uip is triggers` and `registry get` uppercase the operation, so a connector
+whose trigger operations are mixed case (`uipath-uipath-testmanager`:
+`Created`, `Updated`, `Finished`) returns HTTP 404 / `IS enrichment error` and
+has no reachable trigger in CLI 1.204.0.
+
+Curated pairs already confirmed:
+
+| Connector key | Trigger operation | Object |
+| --- | --- | --- |
+| `uipath-microsoft-outlook365` | `EMAIL_RECEIVED` | `Message` |
+| `uipath-atlassian-jira` | `ISSUE_CREATED` | `curated_get_issue` |
+| `uipath-salesforce-slack` | `SLACK_EVENT_MESSAGE` | `slack_events_message` |
+| `uipath-uipath-dataservice` | `CREATED_V3` | `EntityTriggers_V3` |
+
+A hand-authored connector trigger shell stays **draft** until the CLI supplies
+the concrete trigger properties, connection binding, and schemas.
 
 For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
 from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
