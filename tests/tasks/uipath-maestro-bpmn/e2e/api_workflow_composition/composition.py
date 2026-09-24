@@ -280,13 +280,17 @@ def output_mappings_of(task_element: ET.Element) -> list[dict[str, str]]:
 
 def response_output_vars(task_element: ET.Element) -> set[str]:
     """Vars the node fills from its own response: `source` absent (the whole
-    response) or reading `result`, e.g. `=result.message`."""
+    response) or reading `result` and no process variable, e.g.
+    `=result.message` but not `=js:result?.message ?? vars.Var_Name`."""
 
     return {
         mapping["var"]
         for mapping in output_mappings_of(task_element)
         if mapping.get("var")
-        and (not mapping.get("source") or RESULT_REF_RE.search(mapping["source"]))
+        and (
+            not mapping.get("source")
+            or (RESULT_REF_RE.search(mapping["source"]) and not var_refs_in(mapping["source"]))
+        )
     }
 
 

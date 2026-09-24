@@ -78,6 +78,7 @@ FOLDERS_GET_TIMEOUT = 60
 PROCESSES_LIST_TIMEOUT = 60
 VALID_STATUS = "Valid"
 VARIABLE_DOES_NOT_EXIST = "VARIABLE_DOES_NOT_EXIST"
+CONTRACT_TYPE = "string"
 
 
 # ---------------------------------------------------------------------------
@@ -344,11 +345,15 @@ def check_resource_row(
         for vid, decl in declared.items()
         if decl.get("kind") == "output" and decl.get("name") == row["output"]
     }
+    def reads_only_response(source: Optional[str]) -> bool:
+        refs = composition.var_refs_in(source)
+        return bool(refs) and refs <= response_var_ids
+
     stray_sources = [
         mapping.get("source")
         for mapping in composition.end_event_mappings(process)
         if mapping.get("var") in output_var_ids
-        and not composition.var_refs_in(mapping.get("source")) & response_var_ids
+        and not reads_only_response(mapping.get("source"))
     ]
     if stray_sources:
         problems.append(
@@ -397,6 +402,22 @@ def check_published_contract(
     if not out_props:
         problems.append("entry-points.json declares no output at all")
 
+    if len(in_props) != 1:
+        problems.append(f"entry-points.json input must publish exactly one property, got {sorted(in_props)}")
+    expected_outputs = set(composition.resource_output_names(resources))
+    if out_props and set(out_props) != expected_outputs:
+        problems.append(
+            f"entry-points.json output must publish exactly {sorted(expected_outputs)}, "
+            f"got {sorted(out_props)}"
+        )
+    non_string = sorted(
+        name
+        for name, schema in {**in_props, **out_props}.items()
+        if not isinstance(schema, dict) or schema.get("type") != CONTRACT_TYPE
+    )
+    if non_string:
+        problems.append(f"entry-points.json properties {non_string} must be type {CONTRACT_TYPE!r}")
+
     return problems
 
 
@@ -426,6 +447,8 @@ def collect_shape_problems(
     entry_points = composition.load_entry_points(bpmn_path.parent)
 
     problems: list[str] = []
+    if uipx_path is not None and not composition.project_is_registered(uipx_path, bpmn_path.parent):
+        problems.append(f"BPMN project at {bpmn_path.parent} is not registered in {uipx_path.name}")
     for row in resources:
         project_dir = composition.find_resource_project(root, row)
         problems += check_resource_row(
