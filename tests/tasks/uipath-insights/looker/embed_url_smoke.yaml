@@ -15,7 +15,7 @@ description: >
 tags: [uipath-insights, smoke, mode:operate, lifecycle:discover]
 
 # The two `looker-dashboards` verbs ship in UiPath/cli#PENDING (branch
-# `feature/insights-looker-embed-url`, head 82cbc1e5c on 2026-09-24), which is
+# `feature/insights-looker-embed-url`, head 5d1320840 on 2026-09-24), which is
 # not merged and not published. Until a dev build carries them both --help
 # gates below exit 3 on an unknown command, which is the task working
 # correctly and the smoke check going red for a reason unrelated to the skill.
@@ -186,14 +186,22 @@ success_criteria:
   # write it into a file and this checks it did not write it anywhere. The
   # `login/embed/` path segment is the fixed part of every Looker embed URL
   # (ApiHelpers builds it), so it is a literal rather than a blanket secret
-  # regex, which would fire on something legitimate (lesson 20). A file that
-  # does not exist passes, which is the intended outcome: the task asks for no
-  # file at all.
-  - type: file_matches_regex
-    description: "No written file carries a minted embed URL"
-    path: "report.md"
-    pattern: 'login/embed/'
-    must_match: false
+  # regex, which would fire on something legitimate (lesson 20).
+  #
+  # This is a run_command sweep rather than file_matches_regex because that
+  # criterion takes one literal `path` and scores 0.0 when the file is missing
+  # (coder_eval 0.12.4, criteria/file_matches_regex.py), so a single-path check
+  # would both miss every other filename and fail the runs that correctly write
+  # nothing. run_command runs with cwd set to the sandbox root, and grep exits 1
+  # when it selects no lines, which is the pass here. The excludes keep the
+  # sweep off the harness's own `.venv` and `.npm-prefix` and off installed
+  # packages; a read error exits 2 and fails, which is the safe direction for a
+  # credential check.
+  - type: run_command
+    description: "No file written anywhere in the sandbox carries a minted embed URL"
+    command: "grep -rIl --exclude-dir='.*' --exclude-dir=node_modules -e 'login/embed/' ."
+    timeout: 60
+    expected_exit_code: 1
     weight: 2.0
     pass_threshold: 1.0
 
