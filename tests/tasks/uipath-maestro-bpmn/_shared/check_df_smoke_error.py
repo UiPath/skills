@@ -14,8 +14,8 @@ skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 BPMN has no fixed home for `entityName` (BATCH1-ADDENDUM.md "Where connector
 node values live in BPMN" and its "CI run 35488848026" section on the two
 valid activity shapes). A node names its entity when any one of these
-equals it: the generic-form `objectName`, a `target="path"` input value, or a
-`/`-separated segment of the context `path` field.
+equals it: the generic-form `objectName`, any input's value (path, query,
+body or untargeted), or a `/`-separated segment of the context `path` field.
 
 Assertion map (Flow -> BPMN):
   F check_smoke_error.py:29-31  entity_of(node) == NonExistentEntity on a
@@ -27,7 +27,7 @@ Assertion map (Flow -> BPMN):
   I                             locate/parse .bpmn                        -> parse_bpmn()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
   T                             entity as the generic objectName, an exact -> mentions_entity()
-                                 target="path" input value, or an exact
+                                 input value on any target, or an exact
                                  context `path` segment
   DROPPED  topology/parallel-branch parsing    (Flow's own grader does not parse it either -- see its docstring)
   DROPPED  require_no_private_connector_values (not in Flow)
@@ -81,8 +81,7 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
     if entity in context_value(task, "path").strip().split("/"):
         return True
     return any(
-        inp.attrib.get("target") == "path"
-        and (inp.attrib.get("value") or inp.text or "").strip() == entity
+        (inp.attrib.get("value") or inp.text or "").strip() == entity
         for inp in context_inputs(task)
     )
 
