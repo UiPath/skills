@@ -187,8 +187,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
-   `--all-folders` — a folder-scoped list silently misses connections). Confirm
-   every selection with the user (use AskUserQuestion). Never fabricate an identifier.
+   `--all-folders` — a folder-scoped list silently misses connections). Never
+   fabricate an identifier; ask only under Rule 4, otherwise decide.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
@@ -439,10 +439,14 @@ and honestly surfaced to the user as gaps when asked.
    as `<bpmn:startEvent>`, `<bpmn:intermediateCatchEvent>`,
    `<bpmn:scriptTask>`, and `<bpmn:endEvent>`. Do not write PascalCase tags
    like `<bpmn:IntermediateCatchEvent>`.
-4. **Confirm before authoring.** Confirm the chosen connector/connection/process
-   and the process structure with the user (AskUserQuestion). When the source
-   is an image, confirm the full inventory, not a summary — see
-   [Authoring from an image](#authoring-from-an-image).
+4. **One clarifying round, then author.** Ask (AskUserQuestion) only for a
+   choice that the request and the CLI evidence leave undecidable and whose
+   wrong answer is unrecoverable or forces an invented identifier; batch those
+   into one round before authoring and never open a second. Decide everything
+   else, author, and name each assumption and what tied in your summary. When
+   the request says not to pause for approval or confirmation, ask nothing.
+   When the source is an image, confirm the full inventory, not a summary —
+   see [Authoring from an image](#authoring-from-an-image).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
