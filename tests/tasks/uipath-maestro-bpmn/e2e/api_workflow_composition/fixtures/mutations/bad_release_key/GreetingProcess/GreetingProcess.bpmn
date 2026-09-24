@@ -28,7 +28,7 @@
           <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
           <uipath:context>
             <uipath:input name="releaseKey" type="string" value="=bindings.Binding_GreetingApiRelease" />
-            <uipath:input name="folderKey" type="string" value="1efad159-0c94-46d7-ad7a-4bdd22b4720b" />
+            <uipath:input name="folderKey" type="string" value="22222222-2222-4222-8222-222222222222" />
           </uipath:context>
           <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"name": "=vars.Var_Name"}]]></uipath:input>
           <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ApiResponse" />

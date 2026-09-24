@@ -339,6 +339,23 @@ def check_resource_row(
             f"{sorted(response_var_ids)}"
         )
 
+    output_var_ids = {
+        vid
+        for vid, decl in declared.items()
+        if decl.get("kind") == "output" and decl.get("name") == row["output"]
+    }
+    stray_sources = [
+        mapping.get("source")
+        for mapping in composition.end_event_mappings(process)
+        if mapping.get("var") in output_var_ids
+        and not composition.var_refs_in(mapping.get("source")) & response_var_ids
+    ]
+    if stray_sources:
+        problems.append(
+            f"{row['kind']}: {row['output']!r} is also published from "
+            f"{stray_sources} -- every write must come from {node_id!r}'s response"
+        )
+
     return problems
 
 

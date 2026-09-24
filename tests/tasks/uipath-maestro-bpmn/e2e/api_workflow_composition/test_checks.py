@@ -39,8 +39,8 @@ MUTATIONS = HERE / "fixtures" / "mutations"
 # Match the literal GUIDs baked into both the real gold fixture and the
 # synthetic mutation fixtures (see fixtures/mutations' generation) -- the
 # "real tenant" values every resolver below stands in for.
-RELEASE_KEY_GOOD = "C6ABA92A-AEB1-47FD-ACFF-39D5FA1CE45F"
-FOLDER_KEY_GOOD = "1efad159-0c94-46d7-ad7a-4bdd22b4720b"
+RELEASE_KEY_GOOD = "11111111-1111-4111-8111-111111111111"
+FOLDER_KEY_GOOD = "22222222-2222-4222-8222-222222222222"
 
 
 def matching_resolvers():
@@ -171,6 +171,9 @@ class ShapeCheckMutationTests(unittest.TestCase):
         # The node's own output reads the process input, not `result`, so the
         # published value never touches the API workflow's response.
         self.assert_rejected("node_publishes_input", "no end event publishes 'message'")
+
+    def test_stray_output_write(self):
+        self.assert_rejected("stray_output_write", "'message' is also published from")
 
     def test_undeclared_var_read(self):
         self.assert_rejected("undeclared_var_read", "undeclared variable id")
