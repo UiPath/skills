@@ -1,0 +1,185 @@
+task_id: skill-migrator-plan-check-app-state
+description: >
+  Local-only: the user asks for a plan first. The agent stops after analyze
+  (Rule 4) and proposes a treatment for the Try Catch that still catches the
+  classic SelectorNotFoundException; the user answers with a free-text go:
+  replace it with an explicit check and run it. The agent upgrades, replaces
+  the Try Catch with Check App State through the RPA authoring skill's
+  subagent (an authoring edit, backed up as edit 1), and runs the migrated
+  project once. Graded on the backup, the edit's shape (one element search:
+  the Click takes the element Check App State found; a fresh target Guid; the
+  Remediated annotation), the run log, a build the harness runs itself and an
+  untouched source. Needs Windows, Edge with the UiPath extension, internet
+  access to datatables.net, and a `uip` login with a Studio licence. It drives
+  the desktop for about 10 minutes, so it is skipped in CI and the nightly.
+  Run it locally as tests/README.md § Running a judge-free task locally
+  describes, with -e experiments/smoke-windows.yaml and --include-skipped.
+tags: [uipath-activity-migrator, e2e, mode:build, lifecycle:generate, windows]
+skip: true  # local-only: needs Edge, the UiPath extension and a Studio-licensed login
+
+run_limits:
+  expected_turns: 60
+  max_turns: 120
+  task_timeout: 3000
+  turn_timeout: 3000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../migrate-classic/fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: ../migrate-classic/fixture
+
+initial_prompt: |
+  i want to migrate the ConsentBannerProbe project to the modern uia activities. make a plan
+
+simulation:
+  enabled: true
+  persona: |
+    You are the developer who owns ConsentBannerProbe. You asked for a plan
+    before any change. You are at this machine, Edge is installed with the
+    UiPath extension, and you want the migrated project checked by a real run.
+  goal: |
+    Get the plan, then let the agent migrate the project, replace the Try
+    Catch with an explicit check, and run the result once.
+  constraints:
+    - "When asked which UIAutomation line or version to target, choose the recommended option."
+    - "When the agent presents its plan and asks how to proceed, reply exactly: replace with explicit check and run it"
+    - "If the agent still asks whether to run the migrated project, answer yes."
+    - "When asked to approve an edit or a fix, accept it."
+    - "If the same failure comes back after a fix, choose to undo the fix and stop."
+    - "When asked to close windows or tabs a failed run left open, say they are closed and the agent can rerun."
+    - "When asked whether to run or validate the original, unmigrated project, answer no."
+    - "Never invent facts about the project, the applications it drives, or the environment."
+    - "Keep replies to one sentence or a numbered option."
+    - "Never tell the agent to stop, skip a step, or rewrite files wholesale."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:(?!\n|&&|\|\||;|\|).)*--output-path)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the migrated workflow"
+    command_pattern: 'uip\s+rpa\s+run(?=(?:(?!\n|&&|\|\||;|\|).)*--file-path)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never ran the check under the debugger"
+    command_pattern: 'uip\s+rpa\s+debug\s+start'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never passed --skip-build"
+    command_pattern: '--skip-build'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never ran or validated the source project"
+    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:(?!\n|&&|\|\||;|\|).)*--project-dir\s+"?[^"\s]*[\\/]ConsentBannerProbe"?(?:\s|$))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # An edit the user asked for before the first run is edit 1 (runtime guide,
+  # Fix and rerun loop); its backup still holds the Try Catch.
+  - type: file_check
+    description: "The file was backed up to runtime-fixes/1 before the edit, with the Try Catch still in it"
+    path: "ConsentBannerProbe/.upgrade/runtime-fixes/1/Main.xaml"
+    patterns:
+      - pattern: '<TryCatch\s[^>]*DisplayName="Dismiss consent banner if shown"'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "The Try Catch is replaced by Check App State and the annotation is Remediated"
+    path: "ConsentBannerProbe_Upgraded/Main.xaml"
+    patterns:
+      - pattern: '<uix:NCheckState\s'
+        must_match: true
+      - pattern: '<TryCatch\s[^>]*DisplayName="Dismiss consent banner if shown"'
+        must_match: false
+      - pattern: 'TypeArguments="ui:SelectorNotFoundException"'
+        must_match: false
+      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+        must_match: true
+      - pattern: 'PostMigration Action Required'
+        must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Runtime guide, Limits: no element is resolved more often than the classic
+  # construct resolved it. Check App State keeps what it found in
+  # OutUiElement and the Click acts on that element through InUiElement.
+  - type: run_command
+    description: "One element search: the Click takes the element Check App State found"
+    command: |-
+      python -c "import re, sys; s = open('ConsentBannerProbe_Upgraded/Main.xaml', encoding='utf-8').read(); m = re.search(r'<uix:NCheckState\s[^>]*OutUiElement=\x22\[(\w+)\]\x22', s); c = re.search(r'<uix:NClick\s[^>]*DisplayName=\x22Dismiss consent banner\x22[^>]*>', s); sys.exit(0 if m and c and ('InUiElement=\x22[' + m.group(1) + ']\x22') in c.group(0) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Runtime guide, Limits: a new target gets a fresh Guid, never one copied
+  # from another target.
+  - type: run_command
+    description: "Every target in Main.xaml has its own Guid"
+    command: |-
+      python -c "import re, sys; s = open('ConsentBannerProbe_Upgraded/Main.xaml', encoding='utf-8').read(); g = re.findall(r'<uix:TargetAnchorable\b[^>]*?\bGuid=\x22([0-9a-fA-F-]+)\x22', s); sys.exit(0 if g and len(g) == len(set(g)) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "The run passed"
+    path: "ConsentBannerProbe/.upgrade/run-latest.log"
+    patterns:
+      - pattern: '"HasErrors":\s*false|"errors":\s*\[\s*\]'
+        must_match: true
+      - pattern: 'execution ended in: \d\d:\d\d:\d\d'
+        must_match: true
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source project.json and Main.xaml are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'ConsentBannerProbe'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('ConsentBannerProbe', f), shallow=False) for f in ('Main.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits 0 against the edited output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('ConsentBannerProbe_Upgraded'), '--output', 'json'], env=env))"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
