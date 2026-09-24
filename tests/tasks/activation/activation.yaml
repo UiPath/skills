@@ -15,6 +15,7 @@ dataset:
     - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
     - uipath-functions.jsonl
+    - uipath-genome.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
@@ -213,6 +214,13 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-connector-builder activation"
     skill_name: uipath-connector-builder
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-genome activation"
+    skill_name: uipath-genome
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:

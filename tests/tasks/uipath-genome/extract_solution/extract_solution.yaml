@@ -1,0 +1,103 @@
+task_id: skill-genome-extract-solution
+description: >
+  E2E: agent uses the uipath-genome skill to extract a process genome plus one
+  component genome per project from a staged three-project solution (Flow
+  orchestrator → RPA intake robot → API workflow ERP posting, joined by an
+  Orchestrator queue and a Slack alert connection). Grades the hierarchical layout,
+  the Components and Handoffs tables, per-component Interface and Source Map, and
+  current skill names.
+tags: [uipath-genome, e2e, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 30
+  task_timeout: 2400
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The UiPath solution in `InvoiceOps/` runs our nightly accounts-payable intake.
+  We need a ground-truth understanding of it at both the process level and the
+  individual project level before we redesign it. Extract a genome for the whole
+  solution and write it into the current directory. There are no other
+  resources for this process beyond the solution itself.
+
+  Before starting, load the uipath-genome skill and follow its extraction workflow.
+  Read every project in the solution — do not ask me what any of them does, and do
+  not run any `uip` commands. Work autonomously; do not pause for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Process genome written with the slugified solution name"
+    path: "invoice-ops-genome.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Component genome for the Flow orchestrator"
+    path: "invoice-ops-genome/invoice-orchestrator-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Component genome for the RPA intake project"
+    path: "invoice-ops-genome/invoice-intake-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Component genome for the API workflow"
+    path: "invoice-ops-genome/post-to-erp-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process genome and every linked component pass structural and wording checks"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py process
+      invoice-ops-genome.md
+      --components invoice-ops-genome
+      --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
+      --expect ERP_InvoicePosting Slack
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Handoffs and platform dependencies capture the queue, the Slack channel, the schedule, and the folder"
+    path: "invoice-ops-genome.md"
+    includes:
+      - "ERP_InvoicePosting"
+      - "#ap-alerts"
+      - "22:00"
+      - "Finance/AP"
+    weight: 2.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "API workflow component records the ERP endpoint, the API-key asset, and the duplicate-invoice failure"
+    path: "invoice-ops-genome/post-to-erp-genome.md"
+    includes:
+      - "erp.contoso.com"
+      - "ErpApiKey"
+      - "duplicate"
+    weight: 1.5
+    pass_threshold: 0.66
+
+  - type: command_not_executed
+    description: "Extraction does not build, run, or deploy anything"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa\s+(run|build)|solution\s+(pack|publish|deploy)|maestro\s+flow\s+debug)'
+    weight: 1.0
+    pass_threshold: 1.0

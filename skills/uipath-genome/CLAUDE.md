@@ -1,0 +1,49 @@
+# uipath-genome — Subject Homes
+
+Every subject is stated in full in exactly one file; every other mention is a one-line pointer to that file and section. Edit the home; leave the pointers. A change touching more than the home plus its pointers is putting content in the wrong file.
+
+## Home per subject
+
+| Subject | Home |
+|---|---|
+| Genome levels (component / process), test-components-are-one-test-project exception, section rules, stubs, population matrix, `*[Inferred]*`, write-then-offer-edits, complexity inference | `references/genome-format-guide.md` |
+| Composite UI interaction **contract** (what a substep must carry) | `genome-format-guide.md` § Workflow |
+| Credential asset per login account; secrets never in genome, data file or report | `genome-format-guide.md` § Platform Dependencies |
+| Source Map contract rows; "genome files are the only output" (locators and rows stay in export) | `genome-format-guide.md` § Source Map |
+| Transactional Shape: the unit-of-work test and its granularity (alternative unit of work), flows versus nested levels (the two tests of rule 12), producer and consumer roles and the Type-cell role word, queue-vs-direct choice, the three outcomes and the conditional Postponed row, step groups, two-level sources folded into one unit of work, configuration split, traceability, one Recommendation verdict, stub | `genome-format-guide.md` § Transactional Shape |
+| Extraction pipeline, related-resources question, evidence policy for blanket screen captures, completing and checking Source Map | `references/extraction-guide.md` |
+| Authoring steps, platform-capability suggestions, bounded follow-ups, authored edit table | `references/authoring-guide.md` |
+| Build With skill names, decision tree, operate-only skills | `references/skill-mapping-guide.md` |
+| Configuration and scaffolding questions, project/solution resolution, library gating, skill groups, owning-skill contract, subagents, acceptance verdicts, completion report, applying or declining the transactional shape at build (question, template creation, surface mapping, four-exit verification, report line) | `references/execution-guide.md` |
+| Migration preflight (including the secret scrub), what each **kind** of source step becomes at build time, link ordering and idempotency, Object Repository identity, composite **patterns** (build), verification on acting activity, Element Scope, the three verification verdicts per family, result parity, test-data pipeline, executor records | `references/source-migration-guide.md` |
+| Every UiPath-side selector fact: tag chain per technology, attribute catalog and tiers, matching semantics, rules 1–16 (criteria, purpose, `aaname`, anchors, position, tables, scope, identifiers, description, confidence, no-selector, one tag one node, driver verification, widget anatomy), § Checking a definition | `references/selector-translation-guide.md` |
+| Definition and anchor shapes when no application reachable (temporary) | `references/offline-definition-workarounds-guide.md` |
+| UiPath source facts: detection, inventory, signals per artifact type, platform resources, pitfalls, which REFramework file feeds which Transactional Shape row | `references/uipath-source-guide.md` |
+| What a framework pack must contain | `CONTRACT.md` in the framework migration pack — ask the user for its location |
+| Framework facts only: detection, inventory, signals, composite-action wording, locator formats, per-field translation tables, framework pitfalls, inventory scripts, worked examples | `<PACK_DIR>/<framework>/source-guide.md`, `selectors-guide.md`, `scripts/`, `examples/` in the framework migration pack — never in this skill |
+| Mode detection, framework pack resolution (ask for location, select row, run then read), one- or two-sentence rules naming subject and home, task navigation | `SKILL.md` § Source Frameworks |
+
+## Rules
+
+1. **Generic first, framework second, never application-only.** A rule that holds for any source lives in a generic guide; a source guide keeps only what is specific to its framework and points to the generic rule. Application material (Workday, SAP, …) survives only as a worked example inside the generic rule it illustrates or in that framework's guides.
+2. **A procedure lives in the guide of the mode that runs it.** Extraction-time steps in the extraction guide, execution-time steps in the execution or migration guide, even when both run the same script.
+3. **SKILL.md is a router.** A Critical Rule names the subject and its home in one or two sentences; it never restates conditions, numbers or examples. Anti-patterns in SKILL.md route; the prohibition in full lives with the subject.
+4. **Anti-pattern lists hold only the file's own subjects.** Everything else is a pointer, or is deleted when the home already states the prohibition.
+5. **A pointer may add detail only when that detail exists nowhere else.** Prefer adding it to the home.
+6. **Catalog files are read by section, rule files in full.** The attribute catalog in the selector guide and the per-technology tables in a selectors guide are catalogs: list headings, read the sections for the technologies in play. Rules, procedures and contracts are read whole. Say which kind a file is at its top.
+7. **Keep the external contracts** unchanged unless the change is the point: frontmatter `description`, the pack resolution steps and the pack's README § Frameworks table shape, the Source Map contract rows, script names and flags.
+8. **No meta-commentary.** Do not write sentences about the document's own editorial behaviour or reconcile differences between files in prose; if two files disagree, fix one.
+9. **No UIA CLI syntax outside the offline guide.** `uip rpa uia` subcommands, their flags and artifact filenames are co-versioned with `UiPath.UIAutomation.Activities` and drift. Name the capability (driver default, attribute listing, selector evaluator, snapshot reload, the OR CLI's listing / replace / create commands, element-interaction probes) and route syntax to the package guide `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` § Documentation. The vocabulary is defined once in selector-translation-guide rule 15. Generic `uip rpa` commands (`validate`, `activities get-default-xaml`, …) are stable and allowed. `offline-definition-workarounds-guide.md` is the labelled temporary exception.
+10. **Conflicts resolve toward the most recently verified statement** (a live driver pass beats a first-pass inference beats a vendor document), and the resolution is recorded in the PR.
+
+## Where to put new content
+
+| New content | Home |
+|---|---|
+| UiPath selector fact (new attribute, tier, matching quirk, node rule) | selector-translation-guide — then reference from framework guide |
+| New build pattern for a composite interaction | source-migration-guide § Composite interactions (+ source guide's wording row) |
+| Framework's new action, locator format or pitfall | that framework's source or selectors guide |
+| New genome section or content rule | genome-format-guide (+ templates) |
+| New scaffolding question or report line | execution-guide |
+| A framework's transactional construct (queue, work list, per-item loop, framework template) | UiPath: uipath-source-guide § Signals — XAML › REFramework projects; any other framework: its source guide in the framework migration pack, pointing to genome-format-guide § Transactional Shape — nothing in this skill |
+| New framework | A `<framework>/` pack in the framework migration pack (source guide, selectors guide, script, example, smoke task) plus its row in its README § Frameworks — in one change there; nothing in this skill |

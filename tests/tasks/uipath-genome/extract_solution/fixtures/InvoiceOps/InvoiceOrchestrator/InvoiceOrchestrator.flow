@@ -1,0 +1,184 @@
+{
+  "version": "2.0",
+  "name": "InvoiceOrchestrator",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.scheduled",
+      "display": { "label": "Nightly at 22:00" },
+      "inputs": {
+        "entryPointId": "f0e1d2c3-aaaa-4bbb-8ccc-dddddddddddd",
+        "isDefaultEntryPoint": true,
+        "timerType": "preset",
+        "timerPreset": "daily",
+        "time": "22:00",
+        "timezone": "Europe/Bucharest"
+      },
+      "outputs": { "mailboxFolder": { "type": "string" } }
+    },
+    {
+      "id": "runIntake",
+      "type": "uipath.core.rpa-workflow.invoice-intake",
+      "display": { "label": "Run invoice intake robot" },
+      "inputs": {
+        "in_MailboxFolder": "${$vars.start.mailboxFolder}",
+        "errorHandlingEnabled": true
+      },
+      "outputs": { "jobState": { "type": "string" } }
+    },
+    {
+      "id": "readQueue",
+      "type": "core.action.queue.get-items",
+      "display": { "label": "Read approved invoices from queue" },
+      "inputs": {
+        "queueName": "<bindings.ERP_InvoicePosting.name>",
+        "folderPath": "<bindings.ERP_InvoicePosting.folderPath>",
+        "status": "New",
+        "maxItems": 500
+      },
+      "outputs": { "items": { "type": "array" } }
+    },
+    {
+      "id": "hasItems",
+      "type": "core.logic.decision",
+      "display": { "label": "Any approved invoices?" },
+      "inputs": { "expression": "$vars.readQueue.items.length > 0" }
+    },
+    {
+      "id": "forEachInvoice",
+      "type": "core.logic.loop",
+      "display": { "label": "For each approved invoice" },
+      "inputs": { "collection": "$vars.readQueue.items", "parallel": false, "itemVariable": "invoice" }
+    },
+    {
+      "id": "postToErp",
+      "type": "uipath.core.api-workflow.post-to-erp",
+      "display": { "label": "Post invoice to ERP" },
+      "inputs": {
+        "vendorName": "${$vars.invoice.specificContent.VendorName}",
+        "invoiceNumber": "${$vars.invoice.specificContent.InvoiceNumber}",
+        "amount": "${$vars.invoice.specificContent.Amount}",
+        "pdfPath": "${$vars.invoice.specificContent.PdfPath}",
+        "errorHandlingEnabled": true
+      },
+      "outputs": { "erpDocumentNumber": { "type": "string" }, "status": { "type": "string" } }
+    },
+    {
+      "id": "posted",
+      "type": "core.logic.decision",
+      "display": { "label": "Posted?" },
+      "inputs": { "expression": "$vars.postToErp.status === 'posted'" }
+    },
+    {
+      "id": "markSuccess",
+      "type": "core.action.queue.set-transaction-status",
+      "display": { "label": "Mark queue item Successful" },
+      "inputs": { "itemId": "${$vars.invoice.id}", "status": "Successful", "output": { "ErpDocumentNumber": "${$vars.postToErp.erpDocumentNumber}" } }
+    },
+    {
+      "id": "markFailed",
+      "type": "core.action.queue.set-transaction-status",
+      "display": { "label": "Mark queue item Failed (business exception)" },
+      "inputs": { "itemId": "${$vars.invoice.id}", "status": "Failed", "errorType": "BusinessException", "reason": "${$vars.postToErp.status}" }
+    },
+    {
+      "id": "alertSlack",
+      "type": "uipath.connector.uipath-slack.send-message",
+      "display": { "label": "Alert #ap-alerts on failure" },
+      "inputs": {
+        "connectionId": "<bindings.5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c.connectionId>",
+        "channel": "#ap-alerts",
+        "text": "Invoice ${$vars.invoice.specificContent.InvoiceNumber} could not be posted to ERP: ${$vars.postToErp.status}"
+      }
+    },
+    {
+      "id": "intakeFailed",
+      "type": "uipath.connector.uipath-slack.send-message",
+      "display": { "label": "Alert #ap-alerts: intake robot failed" },
+      "inputs": {
+        "connectionId": "<bindings.5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c.connectionId>",
+        "channel": "#ap-alerts",
+        "text": "Nightly invoice intake failed: ${$vars.runIntake.error.message}. No invoices were posted."
+      }
+    },
+    {
+      "id": "stop",
+      "type": "core.logic.terminate",
+      "display": { "label": "Stop – intake failed" },
+      "inputs": { "message": "Invoice intake robot failed" }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "display": { "label": "Done" },
+      "outputs": {
+        "postedCount": "${$vars.forEachInvoice.results.filter(r => r.status === 'posted').length}",
+        "failedCount": "${$vars.forEachInvoice.results.filter(r => r.status !== 'posted').length}"
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "runIntake", "targetPort": "input" },
+    { "id": "e2", "sourceNodeId": "runIntake", "sourcePort": "success", "targetNodeId": "readQueue", "targetPort": "input" },
+    { "id": "e3", "sourceNodeId": "runIntake", "sourcePort": "error", "targetNodeId": "intakeFailed", "targetPort": "input" },
+    { "id": "e4", "sourceNodeId": "intakeFailed", "sourcePort": "output", "targetNodeId": "stop", "targetPort": "input" },
+    { "id": "e5", "sourceNodeId": "readQueue", "sourcePort": "output", "targetNodeId": "hasItems", "targetPort": "input" },
+    { "id": "e6", "sourceNodeId": "hasItems", "sourcePort": "true", "targetNodeId": "forEachInvoice", "targetPort": "input" },
+    { "id": "e7", "sourceNodeId": "hasItems", "sourcePort": "false", "targetNodeId": "end", "targetPort": "input" },
+    { "id": "e8", "sourceNodeId": "forEachInvoice", "sourcePort": "start", "targetNodeId": "postToErp", "targetPort": "input" },
+    { "id": "e9", "sourceNodeId": "postToErp", "sourcePort": "success", "targetNodeId": "posted", "targetPort": "input" },
+    { "id": "e10", "sourceNodeId": "postToErp", "sourcePort": "error", "targetNodeId": "markFailed", "targetPort": "input" },
+    { "id": "e11", "sourceNodeId": "posted", "sourcePort": "true", "targetNodeId": "markSuccess", "targetPort": "input" },
+    { "id": "e12", "sourceNodeId": "posted", "sourcePort": "false", "targetNodeId": "markFailed", "targetPort": "input" },
+    { "id": "e13", "sourceNodeId": "markFailed", "sourcePort": "output", "targetNodeId": "alertSlack", "targetPort": "input" },
+    { "id": "e14", "sourceNodeId": "alertSlack", "sourcePort": "output", "targetNodeId": "forEachInvoice", "targetPort": "continue" },
+    { "id": "e15", "sourceNodeId": "markSuccess", "sourcePort": "output", "targetNodeId": "forEachInvoice", "targetPort": "continue" },
+    { "id": "e16", "sourceNodeId": "forEachInvoice", "sourcePort": "completed", "targetNodeId": "end", "targetPort": "input" }
+  ],
+  "definitions": [
+    {
+      "type": "uipath.core.rpa-workflow.invoice-intake",
+      "model": {
+        "bindings": {
+          "resourceKey": "<bindings.InvoiceIntake.folderPath>.<bindings.InvoiceIntake.name>",
+          "resourceSubType": "Process",
+          "serviceType": "Orchestrator.StartJob"
+        },
+        "context": [{ "name": "in_MailboxFolder", "type": "string" }]
+      }
+    },
+    {
+      "type": "uipath.core.api-workflow.post-to-erp",
+      "model": {
+        "bindings": {
+          "resourceKey": "<bindings.PostToErp.folderPath>.<bindings.PostToErp.name>",
+          "resourceSubType": "ApiWorkflow",
+          "serviceType": "Orchestrator.ExecuteApiWorkflowAsync"
+        },
+        "context": [
+          { "name": "vendorName", "type": "string" },
+          { "name": "invoiceNumber", "type": "string" },
+          { "name": "amount", "type": "number" },
+          { "name": "pdfPath", "type": "string" }
+        ]
+      }
+    }
+  ],
+  "bindings": [
+    { "id": "b1", "name": "name", "resource": "process", "resourceKey": "InvoiceIntake", "default": "InvoiceIntake", "resourceSubType": "Process" },
+    { "id": "b2", "name": "folderPath", "resource": "process", "resourceKey": "InvoiceIntake", "default": "Finance/AP", "resourceSubType": "Process" },
+    { "id": "b3", "name": "name", "resource": "process", "resourceKey": "PostToErp", "default": "PostToErp", "resourceSubType": "ApiWorkflow" },
+    { "id": "b4", "name": "folderPath", "resource": "process", "resourceKey": "PostToErp", "default": "Finance/AP", "resourceSubType": "ApiWorkflow" },
+    { "id": "b5", "name": "name", "resource": "queue", "resourceKey": "ERP_InvoicePosting", "default": "ERP_InvoicePosting" },
+    { "id": "b6", "name": "folderPath", "resource": "queue", "resourceKey": "ERP_InvoicePosting", "default": "Finance/AP" }
+  ],
+  "variables": {
+    "nodes": [
+      { "id": "start.mailboxFolder", "binding": { "nodeId": "start", "outputId": "mailboxFolder" } },
+      { "id": "readQueue.items", "binding": { "nodeId": "readQueue", "outputId": "items" } },
+      { "id": "postToErp.status", "binding": { "nodeId": "postToErp", "outputId": "status" } },
+      { "id": "postToErp.erpDocumentNumber", "binding": { "nodeId": "postToErp", "outputId": "erpDocumentNumber" } }
+    ]
+  },
+  "layout": { "nodes": {} }
+}
