@@ -29,7 +29,7 @@ List the organization's unified export configurations. Rows carry no stored secr
 uip insights export-configurations list --output json
 ```
 
-**Key Data fields:** `Id`, `TenantId`, `ExportProtocol`, `DataSources`, `DestinationType`, `CreatedAt`, plus the non-secret fields of that row's own destination type: `AccessKeyId`, `QueueUrl`, `Region` for `AwsSqs`; nothing extra for `AzureEventHub`; `Url`, `HasApiKey`, `CustomHeaders` for `GenericEndpoint`; `Url`, `SpaceId`, `ProjectName`, `CustomHeaders` for `Arize`; `ConnectionId`, `TableName` for `IsDatabricks`. Takes `--limit` (default 50) and `--offset`, and returns `Pagination`.
+**Key Data fields:** `Id`, `TenantId`, `ExportProtocol`, `DataSources`, `DestinationType`, `CreatedAt`, plus the non-secret fields of that row's own destination type: `AccessKeyId`, `QueueUrl`, `Region` for `AwsSqs`; nothing extra for `AzureEventHub`; `Url`, `HasApiKey`, `CustomHeaders` for `GenericEndpoint`; `Url`, `SpaceId`, `ProjectName`, `CustomHeaders` for `Arize`; `ConnectionId`, `TableName` for `IsDatabricks`. A row whose `DestinationType` is none of those five is a type Insights added after this CLI version, and it carries the shared fields only; `Instructions` says so when the page holds one. Takes `--limit` (default 50) and `--offset`, and returns `Pagination`.
 
 **Use when:** the user asks what exports are configured, or an id is needed for `verify`.
 
@@ -78,10 +78,11 @@ Read the `Instructions` sentence the CLI returns with each of these. It carries 
 - `Result: AuthenticationError`, exit 2. No usable session. Correct it and run again; neither route answers 401 for a permission reason, so the login advice is right here.
 - `ErrorCode: rate_limited` with `Retry: RetryLater`. The one branch where a later retry is right.
 - HTTP 500 or 503 with the status in `Message` and no `ErrorCode`. The Portal or something it depends on failed. Report and stop.
-- `ErrorCode: unknown_error`, `Retry: RetryWillNotFix` on `verify <id>`. Nothing was probed, and `Message` says which of three causes applies. None is a destination problem, and retrying changes none of them.
+- `ErrorCode: unknown_error`, `Retry: RetryWillNotFix` on `verify <id>`. Nothing was probed, and `Message` says which of four causes applies. None is a destination problem, and retrying changes none of them.
   - The listed row has no stored value, or a blank one, for a field the by-id check must send. No request was sent. Run `verify` with no id, which checks the row from its stored details.
   - The tenant the configuration is stored under is not in Insights' tenant registry for this organization. Report it; an organization administrator can delete the configuration or create it again under a current tenant.
   - Insights refused the body for its destination type. Read `Instructions` for the two causes.
+  - The row's destination type is one this CLI version does not know, so no request was sent. Run `verify` with no id, which covers the row whatever its type.
 - A malformed response. Read `Message` for the shape violation. Retrying cannot fix it.
 
 ## Investigation Workflow: Is Our Export Still Working
