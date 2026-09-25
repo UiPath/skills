@@ -61,6 +61,9 @@ defaults:
   # rest. Newlines would put the sh code back on cmd's first line, so keep it
   # one line and never reformat this into a block scalar.
   pre_run:
+    - command: ':; P="$SKILLS_REPO_PATH"; set -- "$P"/skills/*/SKILL.md; [ -f "$P/.claude-plugin/plugin.json" ] && [ -f "$1" ] || { echo "preflight: plugin root $P has no .claude-plugin/plugin.json or skills/*/SKILL.md, so the plugin loads no skills and every skill_triggered criterion scores 0; stage or mount it before coder-eval run"; exit 1; }'
+      timeout: 10
+      fail_on_error: true
     - command: ':; if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"; fi'
       timeout: 30
 

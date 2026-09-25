@@ -47,6 +47,11 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
+  pre_run:
+    - command: ':; P="$SKILLS_REPO_PATH"; set -- "$P"/skills/*/SKILL.md; [ -f "$P/.claude-plugin/plugin.json" ] && [ -f "$1" ] || { echo "preflight: plugin root $P has no .claude-plugin/plugin.json or skills/*/SKILL.md, so the plugin loads no skills and every skill_triggered criterion scores 0; stage or mount it before coder-eval run"; exit 1; }'
+      timeout: 10
+      fail_on_error: true
+
   post_run:
     - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
       timeout: 30

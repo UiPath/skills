@@ -34,6 +34,11 @@ defaults:
         api_base: CODEX_BASE_URL
         api_key: CODEX_API_KEY
 
+  pre_run:
+    - command: ':; P="$SKILLS_REPO_PATH"; set -- "$P"/skills/*/SKILL.md; [ -f "$P/.claude-plugin/plugin.json" ] && [ -f "$1" ] || { echo "preflight: plugin root $P has no .claude-plugin/plugin.json or skills/*/SKILL.md, so the plugin loads no skills and every skill_triggered criterion scores 0; stage or mount it before coder-eval run"; exit 1; }'
+      timeout: 10
+      fail_on_error: true
+
   # Sandbox cleanup between tasks. Tasks that upload Studio Web solutions
   # wire cleanup_solutions.py into their own post_run — that must run before
   # this step (still needs npm-installed CLIs).

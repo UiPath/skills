@@ -61,6 +61,11 @@ defaults:
         api_base: CODEX_BASE_URL
         api_key: CODEX_API_KEY
 
+  pre_run:
+    - command: ':; P="$SKILLS_REPO_PATH"; set -- "$P"/skills/*/SKILL.md; [ -f "$P/.claude-plugin/plugin.json" ] && [ -f "$1" ] || { echo "preflight: plugin root $P has no .claude-plugin/plugin.json or skills/*/SKILL.md, so the plugin loads no skills and every skill_triggered criterion scores 0; stage or mount it before coder-eval run"; exit 1; }'
+      timeout: 10
+      fail_on_error: true
+
   # Drop <sandbox>/{node_modules,.npm-prefix,.venv} so preserved artifacts stay slim
   # and Node module resolution can't leak across concurrent sandboxes
   # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674). Also drop
