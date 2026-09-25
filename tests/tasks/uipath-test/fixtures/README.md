@@ -27,6 +27,8 @@ and therefore exact for this scheme.
 | `project_scaffold_build` | its own throwaway project | the `EVFX-SCAFFOLD-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
+| `manual_execution_record_integration` | CLAIM | `EVFX-MANUAL-SET`, `EVFX-MANUAL-TC{1,2,3}` | Set and cases only, no execution — the task opens one, and `pre_run` deletes the ones earlier runs opened so growth stays flat |
+| `reporting_date_backdate_operate` | CLAIM | `EVFX-REPORT-SET`, `EVFX-REPORT-TC{1,2}` | One **open** execution, `EVFX-REPORT-RUN` — the premise is that it is not closed; `pre_run` deletes the previous run's and opens a fresh one |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
@@ -100,11 +102,21 @@ behaviour.
 
 ## Steady state
 
-Four test sets and eleven test cases, fixed — `EVFX-RERUN-SET`,
-`EVFX-FLAKY-SET`, `EVFX-SIGNOFF-SET`, `EVFX-JUNIT-SET` and their cases. Nothing
-accretes: `execution_rerun` repairs one execution rather than appending,
-`junit_export` and `release_readiness` seed once, `flaky` appends only to
-restore intermittency, and `organize` sweeps its own scratch.
+Seven persistent `EVFX-` test sets and their cases — `EVFX-RERUN-SET`,
+`EVFX-FLAKY-SET`, `EVFX-SIGNOFF-SET`, `EVFX-JUNIT-SET`, `EVFX-TRIAGE-SET`,
+`EVFX-MANUAL-SET` and `EVFX-REPORT-SET`. `organize` also uses
+`EVFX-ORG-SRC-TC*` cases, but the `EVFX-ORG-SET-<timestamp>-*` sets it creates
+are scratch, swept in its own `post_run`, and are not steady state.
+
+The sets and cases never accrete. Executions are the exception, and there are
+two shapes. Most tasks hold the count at zero growth by construction:
+`execution_rerun` repairs one execution rather than appending, `junit_export`
+and `release_readiness` seed once, `flaky` appends only to restore
+intermittency, and `organize` sweeps its own scratch. `manual_execution_record`
+and `reporting_date_backdate` instead open one execution per run and delete
+what the previous run left, so growth is flat at one rather than zero — that is
+deliberate, because both tasks consume the execution they are given, and it is
+only possible because `executions delete` exists.
 
 ## Why
 

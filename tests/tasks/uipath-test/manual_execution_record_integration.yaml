@@ -1,0 +1,275 @@
+task_id: skill-test-manual-execution-record-integration
+description: >
+  Integration test: a tester ran three cases by hand and needs them recorded in
+  Test Manager — exercising the manual-execution lifecycle no existing task
+  covers (`executions create`, `executions testcaselogs list`, `testcaselog
+  start`/`finish`, `executions get-stats`). Every other execution task READS or
+  RE-RUNS executions the fixture seeded; this one is the only task that opens a
+  run and records results into it.
+
+  The prompt deliberately no longer names an executor. `testcaselog finish`
+  requires `--executed-by`, but Test Manager validates it non-empty and then
+  drops it — the command object carries no such field and the log records the
+  authenticated caller — so grading an attribution the server overrides would
+  fail every run.
+
+  The interesting judgement is what the agent does NOT do. A manual run closes
+  itself when its last test case log finishes, so `executions finish` is not the
+  normal last step — it is the force-close for a run you want to end with logs
+  still open. An agent that reaches for `finish` here has misread the lifecycle.
+  The prompt carries no skill-load hint: the create-then-log-per-case shape, the
+  need to resolve each case's TestCaseId from the run's own logs, and
+  `--output json` are all left to the skill.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:execution]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 50
+  turn_timeout: 1200
+  task_timeout: 1500
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
+# EVFX- contract.
+#
+# This task APPENDS: every run opens a new execution on its set. Left alone that
+# grows without bound, and a later run reading "the latest execution" would find
+# a different one each time. pre_run therefore deletes the executions previous
+# runs left behind, which keeps growth flat at one. That is only possible
+# because `executions delete` exists; before it, a task like this had to either
+# repair one execution in place or leak.
+pre_run:
+  - timeout: 280
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-MANUAL-SET"
+      CASES = ["EVFX-MANUAL-TC1", "EVFX-MANUAL-TC2", "EVFX-MANUAL-TC3"]
+
+      # Provisioning failures exit NON-ZERO, so a setup fault is never reported
+      # as an agent regression.
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      # The six executions verbs ship in a later CLI than this task's fixture can
+      # assume. Probe first and FAIL rather than seeding: without them the agent
+      # cannot do the task, and a silent seed reports that as an agent regression.
+      r = subprocess.run(["uip", "tm", "executions", "create", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions create' - needs the release "
+               "carrying the executions lifecycle verbs")
+      r = subprocess.run(["uip", "tm", "executions", "delete", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions delete'")
+
+      # 1. test set — create if absent, never delete
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P,
+               "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      set_id = ts.get("Id")
+      if not set_key:
+          fail(f"{SET} has no key")
+
+      # 2. cases — create if absent, then assign (assign is idempotent)
+      keys = []
+      for name in CASES:
+          tc = by_name(f"case.find.{name}", "testcases", name)
+          if not tc:
+              call(f"case.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"case.refind.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      # Assert the assignment landed. It is the condition the task reads, and
+      # call() swallows a failure - without this the run opens an execution
+      # over an empty set and the agent is scored for having no log to start.
+      d = call("cases.verify", "tm", "testsets", "list-testcases",
+               "--project-key", P, "--test-set-key", set_key)
+      assigned = {x.get("Name") for x in (d.get("Data") or [])}
+      missing = [c for c in CASES if c not in assigned]
+      if missing:
+          fail(f"cases not assigned to {SET}: {missing}")
+
+      # 3. remove what earlier runs opened, so growth stays flat at one
+      if set_id:
+          d = call("execs.list", "tm", "executions", "list", "--project-key", P,
+                   "--test-set-id", set_id, "--limit", "100")
+          for row in (d.get("Data") or []):
+              eid = row.get("Id")
+              if eid:
+                  call(f"exec.delete.{eid[:8]}", "tm", "executions", "delete",
+                       "--execution-id", eid, "--project-key", P, "--yes")
+
+      print(f"FIXTURE: ready set_key={set_key!r} cases={keys!r}", flush=True)
+      EOF
+
+initial_prompt: |
+  I just finished a manual pass over the three cases in our "EVFX-MANUAL-SET"
+  test set in the CLAIM project (Test Manager). EVFX-MANUAL-TC1 and
+  EVFX-MANUAL-TC3 passed; EVFX-MANUAL-TC2 failed. Nothing is recorded yet —
+  I ran them by hand, outside any robot.
+
+  Please get that session into Test Manager as a run with those three results,
+  and then tell me the totals the run itself reports. No need to check back
+  with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent opened a manual execution over the test set (`executions create --test-set-key`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-set-key\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the run's own logs to resolve each TestCaseId (`executions testcaselogs list`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+testcaselogs\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # One criterion per result rather than min_count: 3 on a shared pattern —
+  # min_count counts TOOL CALLS, not occurrences, so an agent that chains its
+  # three logs into one `... && ...` call would be docked for doing the
+  # natural thing. The lookaheads are segment-scoped for the same reason: a
+  # call-wide `[\s\S]*` would let a flag from a neighbouring command satisfy
+  # this one. The `(?!uip\s)` matters as much: the grader also matches a
+  # shlex-normalised haystack where newlines become spaces, so without it a
+  # `--help` probe on one line and a real call on the next read as one command.
+  # The two escape branches are kept disjoint (`\\\r?\n` vs `\\[^\r\n]`): under
+  # DOTALL a shared `\\.` makes both match a backslash-newline, and each
+  # line-continuation in a failing segment then doubles the search.
+  # A non-`uip` neighbouring line can still leak a flag; the run_command
+  # criteria are what actually decide those runs.
+  - type: command_executed
+    description: "Agent started a log for a case (`testcaselog start`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+start\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent recorded the two passes (`testcaselog finish --result Passed`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Passed\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent recorded the one failure (`testcaselog finish --result Failed`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Failed\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The point of the task. A manual run closes itself when its last log
+  # finishes, so reaching for the force-close means the lifecycle was misread.
+  - type: command_not_executed
+    description: "Agent did not force-close the run with `executions finish`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Guards the third case. With min_count 1 the Passed and Failed criteria above
+  # are each satisfied by one log, so nothing else would notice TC3 missing.
+  # Asserted on the server's own totals rather than on what the agent typed.
+  - type: run_command
+    description: "The run Test Manager stored really holds 3 results: 2 passed, 1 failed"
+    command: |
+      python3 -c "
+      import json, subprocess, sys
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      # Scoped to this task's own set. CLAIM is shared by eleven tasks and
+      # 'executions list' sends no orderBy, so 'the newest run in the project'
+      # would read a sibling task's execution.
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-MANUAL-SET')
+      sid = next((x['Id'] for x in (sets.get('Data') or [])
+                  if x.get('Name') == 'EVFX-MANUAL-SET'), None)
+      assert sid, 'EVFX-MANUAL-SET not found'
+      runs = (uip('tm','executions','list','--project-key','CLAIM',
+                  '--test-set-id',sid,'--limit','100').get('Data') or [])
+      assert runs, 'no execution on EVFX-MANUAL-SET'
+      # Created is a millisecond ISO-8601 stamp, so this is a real recency pick
+      # even if the agent opened more than one run.
+      st = max(runs, key=lambda r: r.get('Created') or '')
+      got = {k: st.get(k) for k in ('Passed','Failed','None')}
+      assert st.get('Passed') == 2, f'expected Passed=2, got {got}'
+      assert st.get('Failed') == 1, f'expected Failed=1, got {got}'
+
+      # Totals alone do not say WHICH case failed: recording TC2 passed and
+      # TC3 failed inverts what the user asked for and still tallies 2/1.
+      logs = (uip('tm','executions','testcaselogs','list',
+                  '--execution-id',st['Id'],'--project-key','CLAIM').get('Data') or [])
+      by_name = {(r.get('TestCase') or {}).get('Name'): r.get('Result') for r in logs}
+      want = {'EVFX-MANUAL-TC1':'Passed','EVFX-MANUAL-TC2':'Failed','EVFX-MANUAL-TC3':'Passed'}
+      wrong = {k:(by_name.get(k),v) for k,v in want.items() if by_name.get(k) != v}
+      assert not wrong, f'wrong case recorded the failure: got/want {wrong}'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent reported the run's own totals (`executions get-stats`), not a hand tally"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+get-stats\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
