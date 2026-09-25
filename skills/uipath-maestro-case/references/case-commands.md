@@ -281,11 +281,12 @@ uip maestro case splice <caseplan.json> --task-id <taskId> --spec tasks/spec-cac
 
 | Flag | Description |
 |------|-------------|
-| `--task-id <id>` | **(required)** the task's `id` from `nodes[].data.tasks[][].id` |
-| `--spec <file>` | **(required)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
+| `--task-id <id>` | **(required unless `--task-name`)** the task's `id` from `nodes[].data.tasks[][].id` |
+| `--task-name <name>` | the task's `displayName`, spelled exactly as the plan has it; pass this or `--task-id`, never both |
+| `--spec <file>` | **(required unless `--described`)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
 | `--connection-id <id>` | **(required)** the connection the spec was fetched for; root bindings are keyed on it and reused when the pair already exists |
 | `--folder-key <key>` | Omit it. Splice reads `Data.Connection.FolderKey` from the `--spec` file itself; a value that disagrees with the spec is refused (exit 1, nothing written). Never copy a folder key from another task's spec |
-| `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks; mutually independent of `--spec` |
+| `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks. Pass exactly one of `--spec` / `--described`: the CLI refuses both together |
 | `--out <file>` | write elsewhere instead of in place |
 
 Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` is refused — the message names both ids and no file is written.
