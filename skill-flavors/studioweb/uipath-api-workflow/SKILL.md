@@ -125,9 +125,9 @@ Fix failures in category order — **Structure > Expression > Activity Config > 
 <!--skill-flavor:file-run-cli:end-->
 
 <!--skill-flavor:trigger-binding-registration:start-->
-    - **Studio Web owns the trigger's deployment registration.** The host derives it from the saved workflow, so treat the host-generated bindings and solution resources as authoritative, as in rule 16. You own the workflow side: keep the trigger as the first activity, and keep its `objectName` / `eventType` / `eventMode` / `filterExpression` accurate. After saving, confirm the activity renders as a **trigger card** — a plain connector card signals wrong event metadata, and the registration the host derives from it will be equally wrong. Re-stub to correct it.
+    - **Studio Web owns the trigger's deployment registration.** It derives the `EventTrigger` binding from the saved workflow; treat host-generated bindings and solution resources as authoritative (rule 16). Keep the trigger's `objectName` / `eventType` / `eventMode` / `filterExpression` accurate. After saving, confirm it renders as a **trigger card**; a plain connector card means wrong event metadata — re-stub.
 <!--skill-flavor:trigger-binding-registration:end-->
 
 <!--skill-flavor:trigger-debug-contract:start-->
-    - **A `webhooks` trigger is exercised by supplying the payload yourself.** A webhook event arrives only from the vendor, so verify the workflow body by passing the event payload as the execution input through the host `RunProject` operation, shaped like the event's output fields. A `polling` trigger behaves differently: it replays the most recent real matching event, which reaches the live vendor connection and is therefore side-effecting under rule 21.
+    - **Exercise a trigger by supplying the payload.** Pass an execution input shaped like the event's output fields through the host `RunProject` operation; the trigger passes it through. With no input the runtime fetches a recent event through the live connection (`polling` always, `webhooks` only where the connector supports debug polling) — side-effecting under rule 21.
 <!--skill-flavor:trigger-debug-contract:end-->
