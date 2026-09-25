@@ -304,8 +304,14 @@ naming the activity when the defect is one attribute on the binding. The
 ## Agent wrapper selection — pick by `processType`, not the label
 
 When a node invokes an agent, choose the wrapper by the resource's
-**`processType`** (from `uip or processes list --all-fields`), not its display
-label:
+**`processType`**, not its display label. The default
+`uip or processes list --folder-path <path> --output json` row has no
+`processType` field; add `--all-fields` to the same call to get it —
+`uip or processes list --folder-path <path> --all-fields --output json`.
+That response is camelCase (`processType`, `key`, `folderKey`), unlike the
+default list's PascalCase (`Key`, `FolderKey`): read `key`/`folderKey` from
+this same `--all-fields` response rather than switching commands or casing
+partway through.
 
 - Coded Python agents publish as `processType: "Function"` — use the
   `Orchestrator.StartJob` process contract, **not** `StartAgentJob`.

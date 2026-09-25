@@ -525,13 +525,14 @@ and honestly surfaced to the user as gaps when asked.
    the BPMN node; its release key and folder key exist only once deployed.
    To redeploy, follow `uipath-solution`'s upgrade path.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
-   (4) Pick the wrapper by `processType`
+   (4) Pick the wrapper by `processType`, read from
+   `uip or processes list --folder-path <path> --all-fields --output json`
    ([registry-workflow.md](references/registry-workflow.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
    a low-code agent uses `Orchestrator.StartAgentJob`, whose template (rule
    6) binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
-   the deployed resource's `Key` and `FolderKey` from
-   `uip or processes list --folder-path <path> --output json` and bind per
-   rule 18, never a fabricated or placeholder key. Re-read both after
+   the same `--all-fields` response's `key` and `folderKey` (camelCase; the
+   default list without `--all-fields` omits `processType` entirely) and bind
+   per rule 18, never a fabricated or placeholder key. Re-read both after
    every deploy: `deploy run` creates a new folder, so a literal `folderKey`
    from an earlier deploy points at the old one. (5) Unless the task forbids
    live runs or asks for a draft or handoff, run the process
