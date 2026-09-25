@@ -61,6 +61,11 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+# Graders live beside this file and import ../../_shared/case_check.py, so the
+# reference root is the skill's task tree (never staged into the agent's sandbox).
+reference:
+  directory: ../..
+
 initial_prompt: |
   I have an approved SDD for our contract review-and-execution case-management
   solution - it's staged as `sdd.md` in this folder. Build a UiPath Case
@@ -98,7 +103,7 @@ success_criteria:
 
   - type: run_command
     description: "caseplan preserves the SDD topology: 8 stages (3 secondary), condition-derived transitions incl. the corrections loop, 3 case exits, 30 tasks across 5 types, run-once set, return-to-origin intervention lane, case + 7 stage SLAs with escalations, runtime flags"
-    command: "python3 $TASK_DIR/check_contract_exec_case.py"
+    command: "python3 $REFERENCE_DIR/golden_rebuild/contract_execution/check_contract_exec_case.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -106,7 +111,7 @@ success_criteria:
 
   - type: run_command
     description: "every resource task is resolved against the live tenant: expected name/folder binding keys in caseplan + bindings_v2, both webhook connection IDs, the activity type ID, connector service types, and the withdrawal stage-entry connector rule; no skeleton tasks"
-    command: "python3 $TASK_DIR/check_contract_exec_bindings.py"
+    command: "python3 $REFERENCE_DIR/golden_rebuild/contract_execution/check_contract_exec_bindings.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -114,7 +119,7 @@ success_criteria:
 
   - type: run_command
     description: "caseplan semantically implements the SDD dataflow and gate logic (producer ownership, globally unique output IDs, decision/signature gate polarity, sla-status-change wiring, literal fidelity, Scenario E outcome outputs)"
-    command: "python3 $TASK_DIR/check_contract_exec_semantics.py"
+    command: "python3 $REFERENCE_DIR/golden_rebuild/contract_execution/check_contract_exec_semantics.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
@@ -122,7 +127,7 @@ success_criteria:
 
   - type: run_command
     description: "task-output sub-property names keep the SDD's exact casing (request_body / unusualClauses / authorityLevel / deviationFlags / counterpartyProfile / riskFlags) and every dotted access off a task-output object is null-guarded"
-    command: "python3 $TASK_DIR/check_contract_exec_fieldnames.py"
+    command: "python3 $REFERENCE_DIR/golden_rebuild/contract_execution/check_contract_exec_fieldnames.py"
     timeout: 120
     expected_exit_code: 0
     weight: 3.0
