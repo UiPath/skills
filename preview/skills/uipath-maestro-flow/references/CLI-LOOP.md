@@ -11,8 +11,13 @@ choosing the loop, before authoring the source. Once the source first
 compiles, emit it into that nested project artifact—not `/tmp`—and keep the
 artifact current after every source edit.
 
-Tenant discovery is not a phase of either loop. Author the source first, from
-the task's own words; the source `check` names every tenant call you owe —
+Tenant discovery is not a phase of either loop, with one exception: choosing
+the node. When the request needs an external service, document extraction, or
+another tenant capability, one
+`uip maestro flow registry search '<service>' --output json` picks the node type before authoring (`check` cannot name a call for a node you
+never wrote, so a script or `mock()` written in its place goes unflagged).
+After that, author the source from the task's own words; the source `check`
+names every tenant call you owe —
 each unresolved lookup, unmaterialized object, and out-of-snapshot field, with
 the exact `registry prepare` command — so the one expensive call is spent
 once, after the cheap pass has found everything else that is wrong.

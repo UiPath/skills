@@ -14,8 +14,12 @@ Signature: `mock()`.
 ```
 
 Use a real script when downstream work needs temporary fixed data; that script
-has the same behavior locally and after deployment. Use a placeholder only to
-make a missing capability visible. Do not use it merely to disable a step or as
+has the same behavior locally and after deployment. A script is never a
+stand-in for the capability itself (an extraction, an external service, a
+connector action): run
+`uip maestro flow registry search '<capability>' --output json` first, and use
+the node it finds. Use a placeholder only when that search comes back empty; it
+makes the missing capability visible. Do not use it merely to disable a step or as
 the only work in a finished Flow.
 
 ## Unknown node types
