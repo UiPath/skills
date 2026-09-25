@@ -393,11 +393,14 @@ Each C# expression in a XAML workflow compiles as a lambda expression tree, whic
 
 When a transform hits these limits, use `Invoke Code` — see [data-manipulation-guide.md](../data-manipulation-guide.md) for the escalation path.
 
-## XAML Expressions Cannot Reference Coded Source File Types
+## Coded Source File Types in XAML Expressions Need a Namespace Import
 
-XAML expressions (C# or VB) cannot call types defined in the project's coded source files (`.cs`) — the expression compiler does not reference the coded-workflows assembly. `validate` and `build` fail with `CS0103` / `BC30451` on the type name.
+XAML expressions (C# or VB) use the types a project's coded source files (`.cs`) define — a DTO as a variable or argument type, a static helper called inside an expression — once the workflow imports the namespace the `.cs` file declares. The coded files compile into the `<ProjectName>.Core` assembly.
 
-**Fix:** inline the logic in `InvokeCode`, or invoke a coded workflow via `InvokeWorkflowFile`. Helpers shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
+- **Import:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation`.
+- **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
+
+Without the import, `validate` and `build` fail with `CS0103` / `BC30451` on a helper's name and `CS0246` / `BC30002` on a type name. Types shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
 
 ## WriteTextFile Emits a UTF-8 BOM When Encoding Is Set
 

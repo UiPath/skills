@@ -2,13 +2,13 @@
 
 **Package anchor:** `UiPath.System.Activities` 26.4 (verified against 26.4.1-preview).
 
-Copy-safe snippets for the 13 activities listed below. **Supersedes the Rule 21 discovery procedure for these activities only** — when authoring one of these, skip `activities find`, skip `activities get-default-xaml`, skip the per-activity `<Activity>.md` read, and copy the snippet here.
+Copy-safe snippets for the 14 activities listed below. **Supersedes the Rule 21 discovery procedure for these activities only** — when authoring one of these, skip `activities find`, skip `activities get-default-xaml`, skip the per-activity `<Activity>.md` read, and copy the snippet here.
 
 For every other activity, full Rule 21 applies. Self-extending this card by personal judgment ("this one feels simple, I'll skip the procedure") is the failure mode.
 
 ## Card entries
 
-`Sequence` · `If` · `Switch<T>` · `TryCatch` · `While` · `DoWhile` · `ForEach<T>` · `Assign` · `LogMessage` · `WriteLine` · `Delay` · `Throw` · `Rethrow`
+`Sequence` · `If` · `Switch<T>` · `TryCatch` · `While` · `DoWhile` · `ForEach<T>` · `Assign` · `MultipleAssign` · `LogMessage` · `WriteLine` · `Delay` · `Throw` · `Rethrow`
 
 ## How to read the snippets
 
@@ -261,9 +261,56 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 </Assign>
 ```
 
-**Notes:** Type safety comes from the arguments — the typed `OutArgument`/`InArgument` above surface mismatch errors at `validate` time. `To` must be a writable expression (variable, argument, indexer) — Studio's emitter uses `VisualBasicReference` (or `CSharpReference` in C# projects) for the writable side and `VisualBasicValue` (or `CSharpValue`) for the readable side. One `Assign` per target — no multi-target form.
+**Notes:** Type safety comes from the arguments — the typed `OutArgument`/`InArgument` above surface mismatch errors at `validate` time. `To` must be a writable expression (variable, argument, indexer) — Studio's emitter uses `VisualBasicReference` (or `CSharpReference` in C# projects) for the writable side and `VisualBasicValue` (or `CSharpValue`) for the readable side. One target per `Assign`; two or more consecutive assignments go into one Multiple Assign (next entry), which reads as one block instead of a stack of `Assign`s.
 
 **Long-form:** [`activity-docs/UiPath.System.Activities/26.4/activities/Assign.md`](activity-docs/UiPath.System.Activities/26.4/activities/Assign.md)
+
+---
+
+### Multiple Assign
+**Class:** `UiPath.Core.Activities.MultipleAssign`
+**XAML prefix:** `xmlns:ui="http://schemas.uipath.com/workflow/activities"`; declare `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"` for the operations list (Legacy/.NET 4.6.1 projects use `assembly=mscorlib`).
+
+**Snippet** (two `String` targets — each operation is typed on its own arguments):
+```xml
+<ui:MultipleAssign DisplayName="Multiple Assign">
+  <ui:MultipleAssign.AssignOperations>
+    <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
+      <ui:AssignOperation>
+        <ui:AssignOperation.To>
+          <OutArgument x:TypeArguments="x:String">
+            <VisualBasicReference x:TypeArguments="x:String" ExpressionText="trimmedName" />
+          </OutArgument>
+        </ui:AssignOperation.To>
+        <ui:AssignOperation.Value>
+          <InArgument x:TypeArguments="x:String">
+            <VisualBasicValue x:TypeArguments="x:String" ExpressionText="fullName.Trim()" />
+          </InArgument>
+        </ui:AssignOperation.Value>
+      </ui:AssignOperation>
+      <ui:AssignOperation>
+        <ui:AssignOperation.To>
+          <OutArgument x:TypeArguments="x:String">
+            <VisualBasicReference x:TypeArguments="x:String" ExpressionText="upperName" />
+          </OutArgument>
+        </ui:AssignOperation.To>
+        <ui:AssignOperation.Value>
+          <InArgument x:TypeArguments="x:String">
+            <VisualBasicValue x:TypeArguments="x:String" ExpressionText="trimmedName.ToUpperInvariant()" />
+          </InArgument>
+        </ui:AssignOperation.Value>
+      </ui:AssignOperation>
+    </scg:List>
+  </ui:MultipleAssign.AssignOperations>
+</ui:MultipleAssign>
+```
+
+**Non-obvious properties:**
+- `AssignOperations` — `List<AssignOperation>`, hidden in the property grid. Each `AssignOperation` has one `To` and one `Value`, typed and bound like `Assign.To` / `Assign.Value`; targets of different types mix freely in one list.
+
+**Notes:** Operations run in list order, so a later `Value` reads a target an earlier operation set (`upperName` reads `trimmedName`). A failed operation raises with its value and target expressions in the message. C# projects bind `To` and `Value` in this property-element form with `CSharpReference` / `CSharpValue` per [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); the package doc's attribute form (`To="[firstName]"`) is bracket syntax, which is VB only.
+
+**Long-form:** the installed package's `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/activities/MultipleAssign.md` (no bundled copy); snippet shape verified against 26.8.2.
 
 ---
 

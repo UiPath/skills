@@ -353,7 +353,7 @@ Structure decisions that keep components extractable later.
 
 #### Single responsibility
 
-One workflow file = one meaningful action, named for it (`ProcessInvoice.xaml`, `LoginToApplication.xaml`). Split a workflow when it exceeds ~20-30 activities.
+One workflow file = one meaningful action, named for it (`ProcessInvoice.xaml`, `LoginToApplication.xaml`). Split a workflow when it exceeds ~20-30 activities. What stays inline instead of becoming a file: SKILL.md Common Rule 4b.
 
 #### Standard folder shape
 
