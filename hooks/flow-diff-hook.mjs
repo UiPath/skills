@@ -122,8 +122,11 @@ function readStdin() {
     process.stdin.on('data', (chunk) => {
       data += chunk;
     });
-    process.stdin.on('end', () => resolve(data));
-    setTimeout(() => resolve(data), 2_000);
+    const timer = setTimeout(() => resolve(data), 2_000);
+    process.stdin.on('end', () => {
+      clearTimeout(timer);
+      resolve(data);
+    });
   });
 }
 
