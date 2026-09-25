@@ -111,14 +111,18 @@ INT_RE = re.compile(r"-?\d+")
 
 
 def find_int_in_range(leaves: list, lo: int, hi: int) -> int | None:
-    """First whole-integer leaf in [lo, hi]: an int, or a string that is only
-    an integer. `roll: 7.5` or a timestamp never yields a digit run.
+    """First whole-integer leaf in [lo, hi]: an int, a whole-valued float
+    (the script task runs on Jint, whose numbers are doubles, so a correct
+    roll can read back as `5.0`), or a string that is only an integer.
+    `roll: 7.5` or a timestamp never qualifies.
     """
     for leaf in leaves:
         if isinstance(leaf, bool):
             continue
         if isinstance(leaf, int):
             value = leaf
+        elif isinstance(leaf, float) and leaf.is_integer():
+            value = int(leaf)
         elif isinstance(leaf, str) and INT_RE.fullmatch(leaf.strip()):
             value = int(leaf.strip())
         else:
