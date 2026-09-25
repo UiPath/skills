@@ -230,10 +230,15 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Same segment shape as the criteria above, so a backslash continuation and a
+  # `uip` neighbour behave the same here. The residual gap is the grader's
+  # normalised haystack, where newlines become spaces: a curl to some unrelated
+  # host plus a later non-`uip` line mentioning testexecutions still reads as
+  # one command. Bounded - the run_command criterion below decides the outcome.
   - type: command_not_executed
     description: "Agent did not reach past the CLI to confirm the stored date"
     tool_name: "Bash"
-    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|])*testexecutions?\b'
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testexecutions?\b'
     max_count: 0
     weight: 1.0
     pass_threshold: 1.0
