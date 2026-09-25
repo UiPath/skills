@@ -84,7 +84,8 @@ The library and its Markdown go to a shared cache
 To read the Markdown directly, ask where it is:
 
 ```bash
-FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)"
+FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)" \
+  || echo "no connector library yet: run uip maestro registry pull" >&2
 ```
 
 The four library verbs are `pull`, `search`, `path` and `prepare`.
