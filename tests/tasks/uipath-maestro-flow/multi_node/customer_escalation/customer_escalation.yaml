@@ -21,6 +21,14 @@ run_limits:
 reference:
   directory: ../..
 
+# The high-touch branch names its Slack channel. Left unnamed, a headless
+# agent must invent a destination: on 2026-09-25 v2 invented
+# `customer-escalations`, which exists on none of the tenant's three Slack
+# connections, so `prepare` refused and compile never wrote the .flow, while
+# v1 listed the channels and happened on `support-escalations`. The row graded
+# destination discovery by luck, not the routing flow it exists for.
+# `support-escalations` (C0BT28C6H34) is on the top-level Shared folder's
+# connection (2bbc2253), the same one complex_array names (#3554).
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new
   Outlook inbox emails and routes each one based on two signals: whether
@@ -32,8 +40,10 @@ initial_prompt: |
   classification, then branch with a decision node on the combined
   result.
 
-  - High-touch branch (urgent AND VIP): notify on Slack and reply to
-    the sender via Outlook with a fast-response acknowledgment.
+  - High-touch branch (urgent AND VIP): post to the Slack channel
+    `support-escalations` (the Slack connection in the top-level Shared
+    folder) and reply to the sender via Outlook with a fast-response
+    acknowledgment.
   - Standard branch: generate a support ticket in a script node and
     reply to the sender via Outlook with the ticket details.
 
