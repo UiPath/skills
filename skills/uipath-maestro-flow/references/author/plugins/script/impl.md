@@ -94,5 +94,5 @@ Property access is **case-sensitive** — these casings resolve: `.FullName`, `.
 | Timeout after 30s | Script too expensive | Simplify logic or split into multiple scripts |
 | `console is not defined` | Used `console.log()` | Remove — use `return { debug: val }` instead |
 | `fetch is not defined` | Tried to make HTTP call | Use an HTTP node or connector node instead |
-| `[300501] Error invoking script task` with `Unexpected token` | Malformed JavaScript — `flow validate` does not parse script bodies, so syntax errors surface only at runtime | Re-check the script body's syntax with `node -e "new Function(<script>)"` before validate |
+| `[300501] Error invoking script task` with `Unexpected token` | Malformed JavaScript — `flow validate` does not parse script bodies, so syntax errors surface only at runtime | Check with `node -e "new Function(<script>)"` before validate |
 | `Identifier 'X' has already been declared` | `X` collides with a runtime-injected global (known: `aggregate`) | Rename `X` (e.g. `agg`) |
