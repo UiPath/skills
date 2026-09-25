@@ -17,7 +17,7 @@ RESOLVED_SCHEMA = {"type": "object", "properties": {"result": {"type": "string"}
 def _eval_set(*, output_schema: object, keep_removed: bool = False) -> dict:
     simulations: list[dict] = [
         {
-            "componentId": "agent-lookup",
+            "componentId": "agentLookup",
             "componentType": "agent",
             "simulationStrategy": "Llm",
             "simulationInstruction": "Return a plausible lookup result.",
@@ -27,7 +27,7 @@ def _eval_set(*, output_schema: object, keep_removed: bool = False) -> dict:
     if keep_removed:
         simulations.append(
             {
-                "componentId": "connector-send-email",
+                "componentId": "connectorSendEmail",
                 "componentType": "connector",
                 "simulationStrategy": "Static",
                 "mockValue": {"status": "ok"},
