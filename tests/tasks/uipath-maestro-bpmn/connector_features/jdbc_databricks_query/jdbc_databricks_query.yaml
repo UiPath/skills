@@ -25,8 +25,6 @@ tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:sing
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../../_setup
       mount_point: _setup
 

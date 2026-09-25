@@ -31,8 +31,6 @@ tags:
 
 sandbox:
   template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
 
 run_limits:
   expected_turns: 35
