@@ -23,7 +23,7 @@ There is no `create-definition`. Two ways to obtain a first file:
 2. **No seed available** — author the minimal shape below, then mutate via `update-definition`.
 
 ```xml
-<uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" Guid="<fresh-guid>"
+<uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0"
                       ScopeSelectorArgument="&lt;html app='chrome.exe' title='*App*' /&gt;"
                       SearchSteps="Selector" Version="V6">
   <uix:TargetAnchorable.Anchors>
@@ -45,10 +45,10 @@ Field semantics deciding whether an offline file behaves:
 | `FullSelectorArgument` | the **partial** strict selector, relative to the scope. Full selector is scope + partial, computed at runtime, never written |
 | `ScopeSelectorArgument` | the window selector. Only the main target carries one; anchors inherit it |
 | `DesignTimeRectangle` | **load-bearing wherever anchors, CV or Image are used**: the reference geometry anchor scoring measures against, so zeros silently degrade an anchored fuzzy target. Zeros are fine only for a strict, unanchored target |
-| `Guid` | one per element, never shared (also the id sent with a semantic request) |
+| `Guid` | No author-supplied value needed. `update-definition` or Object Repository registration generates it when absent; registration may preserve a value already present |
 | `ElementType` | cosmetic — logging and design-time hints only; `None` is harmless |
 
-**Seed leakage.** `update-definition` writes only the options passed and leaves everything else untouched, so every field the seed carried survives into each copy — its `FullSelectorArgument` and its `Guid`. Pass `--full-selector` on every element (a fuzzy-only element otherwise keeps the seed's strict selector), and give each element its own `Guid`. `update-definition` exposes no `--guid`, so a shared `Guid` can only be changed by writing the file; Object Repository identity is the `referenceId`, so it appears cosmetic.
+**Seed leakage.** `update-definition` writes only the options passed and leaves everything else untouched, so fields the seed carried can survive into each copy. Pass `--full-selector` on every element (a fuzzy-only element otherwise keeps the seed's strict selector). No `Guid` step is needed: Object Repository uses its `referenceId` for element identity, and `create-elements` accepts definitions with or without a `Guid`.
 
 **Kind conversion.** `--full-selector` on a definition whose search step is `FuzzySelector` also flips `SearchSteps` to `Selector, SemanticSelector`. The old `FuzzySelectorArgument` stays as inert, disabled residue; no command clears it — re-copy the seed and re-apply to purge it. `fuzzify` is one-way (strict → fuzzy); there is no de-fuzzify.
 
@@ -89,7 +89,7 @@ Shape of a populated anchor list (one anchor). Working examples in this repo: `t
 Checklist when authoring one offline:
 
 - **`Capacity` is not load-bearing — don't compute it.** The CLI normalizes whatever you write to `Capacity="4"`.
-- **Anchor `Guid` is optional** — omit it and `create-elements` assigns one.
+- **Anchor `Guid` need not be set** — `create-elements` generates it when absent.
 - **Anchor `SearchSteps`: set exactly one step** and fill the argument that matches it (`FuzzySelector` → `FuzzySelectorArgument`). Only one targeting method is used at runtime, so a second step or a second populated argument is never evaluated — files carrying both exist, but the extra one is dead weight, not a fallback.
 - **The main target's `SearchSteps` must include `FuzzySelector`**, or the anchor is ignored. `Selector, FuzzySelector` together is valid — the strict step runs first and the anchor serves the fuzzy step.
 - `DesignTimeRectangle` / `ElementType` are design-time only; zeros are fine offline.
@@ -113,7 +113,7 @@ The whole seed `create-screen` accepts — `Area` zeros are fine offline, `Selec
 One definition file per command. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move — the relay commands print little or nothing on success.
 
 1. Screen seed → `target-app update-definition --name --description --selector`.
-2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --activity-type` per element; `--full-selector` on every element and an own `Guid` per copy (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling.
+2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --activity-type` per element; `--full-selector` on every element (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling.
 3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with the element definitions under that screen.
 4. `link-screen` on the card's workflow, then `link-elements` — never two link commands on one file at once.
 
