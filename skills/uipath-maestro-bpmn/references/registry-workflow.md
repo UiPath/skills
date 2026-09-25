@@ -96,11 +96,12 @@ resolve their object elsewhere — see
 ```bash
 uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
 uip is resources list <connectorKey> --connection-id <id> --output json   # the objects that connector exposes
+uip is activities list <connectorKey> --output json   # the catalog: ObjectName + MethodName per activity (takes no --connection-id)
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
 
-### Picking the object: take it from the table, do not infer it
+### Picking the object: the table first, then the parameters
 
 A connector exposes several objects that perform the same operation, and
 `uip is resources describe` cannot rank them. Four Jira objects create an
@@ -168,10 +169,34 @@ Without it the runtime sends the body as JSON.
 
 For a connector or operation not listed, describe every candidate and keep
 the ones whose `Operation.Curated` names the activity asked for. Expect more
-than one to survive — that is what happens on Jira — and treat the remainder
-as undecidable from the CLI: pick one, then say in your summary which object
-you used and which others tied. Never pick silently — `validate` and `pack`
-accept any object name, so nothing local tells the user you guessed.
+than one to survive: the catalog serves a plain, a `V2` and a `_V3` spelling
+of the same activity, and Jira has four.
+
+**Break the tie on parameters, not on the name.** Describe cannot tell you
+which candidate is the live one, but it does tell you which ones cannot do
+the job. Of the survivors, keep only those whose `Parameters` and
+`RequestFields` carry every value the task names. UiPath Data Service serves
+`UploadFileToRecordField` beside `UploadFileToRecordFieldV2`, and only the
+unsuffixed one takes a `fieldName` parameter: V2 takes `entityName`,
+`recordId`, `file` and `expansionLevel`, with no way to name the field. A task
+that names a field can only be built on the unsuffixed object. Pick by display
+name there and you author a process that cannot do what was asked, and it
+still passes `validate` and `pack`.
+
+If several still survive they are undecidable from the CLI: pick one, and say
+in your summary which you used and which tied. If none of them exposes a value
+the task requires, say that instead of dropping the requirement or smuggling it
+in as an input name. Never pick silently — `validate` and `pack` accept any
+object name, so nothing local tells the user you guessed.
+
+`describe` is the contract. Never run the operation (`uip is resources run
+...`) to learn a field name, a filter syntax or a default: that executes
+against the live tenant, and its create and delete verbs leave records behind.
+The answer is already in `Parameters`/`RequestFields`. A failed `describe` is
+not a contract either. If it errors with `Operation '<x>' not found`, take the
+operation it lists and re-run, rather than authoring the node from a guess.
+The listed operation wins even when the verb reads oddly for the activity:
+Data Service models `DownloadFileFromRecordFieldV2` as `Create`, not `List`.
 
 The response adds an enrichment block with the live field metadata. Match the
 key case-insensitively — the CLI's output formatter has changed key casing
@@ -277,14 +302,28 @@ value, so pass `--operation Create`.
 ### Required `Parameters` are separate from the body — emit every one
 
 `uip is resources describe` reports `Parameters` alongside `RequestFields`.
-Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
-`file`) — never folded into the body. Emit an input for every parameter marked
-`Required: true`, using its `DefaultValue` when the request has no better
-value:
+Each parameter is its own input, and its `target` is the parameter's own
+`Type`: `path`, `query`, `body` or `multipart` (`validator/bpmn-spec.json`).
+Emit an input for every parameter marked `Required: true`, using its
+`DefaultValue` when the request has no better value:
 
 ```xml
-<uipath:input target="query" name="send_as" type="string" value="bot" />
+<uipath:input name="entityName" target="path"      type="string" value="FlowCodeEvalEntity" />
+<uipath:input name="fieldName"  target="path"      type="string" value="file1" />
+<uipath:input name="recordId"   target="path"      type="string" value="=vars.Var_CreatedRecord.Id" />
+<uipath:input name="send_as"    target="query"     type="string" value="bot" />
+<uipath:input name="file"       target="multipart" type="file"   value="=vars.Var_DownloadedFile" />
 ```
+
+A path parameter is required even though the context `path` field already
+shows it as a `{placeholder}`: the placeholder is the template, the input is
+the value.
+
+A `body`-typed parameter is the one exception to "its own input". The node
+already carries exactly one `target="body"` input holding the whole request
+object, and a second one does not merge: the last wins and the provider
+receives a bare scalar (see *Body shape* above). Carry that parameter as a
+field inside that single body object, under the name describe gives it.
 
 Omitting one is accepted by local validation and by `pack`, then fails only at
 runtime with `400` and `Value for required parameter '<name>' not found`. A
