@@ -89,16 +89,12 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 <!--skill-flavor:connector-solution-registration:end-->
    - See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) for the discovery flow, field-shape rules, and multipart.
 
-16a. **Triggers are a separate catalog, a separate activity shape, and a mandatory second artifact.** When the workflow must start from a connector event (Slack button clicked, new Outlook calendar entry, new Salesforce record), author it with `uip api-workflow registry resolve "<keyword>" --kind trigger` then `registry stub` — never by hand. Full flow, filter syntax and anti-patterns: [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md). Non-negotiables:
-    - **`--kind trigger` is required to find one.** Triggers live in a different TypeCache catalog; the default activity search returns none of them, and a miss there is NOT proof the trigger doesn't exist.
-    - **The trigger is the FIRST activity** in the root sequence, right after `WorkflowStart`, and there is at most one. It compiles to `call: "UiPath.IntSvcEvent"` — not `UiPath.IntSvc`.
+16a. **A connector-event trigger is a separate catalog, a separate activity shape, and a second artifact.** When the workflow must start from an event (Slack button clicked, new Outlook calendar entry), run `uip api-workflow registry resolve "<keyword>" --kind trigger` then `registry stub` — never hand-author. The stub is the workflow's FIRST activity after `WorkflowStart`, at most one, `call: "UiPath.IntSvcEvent"`. A `GenericTrigger` needs `--object-name`. Full flow, filter syntax, anti-patterns: [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md).
 <!--skill-flavor:trigger-binding-registration:start-->
-    - **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json`, which is what registers the Orchestrator event trigger on deploy. **Without it the workflow validates, packs, publishes and deploys clean — and then never fires.** Every gate reports success, so nothing else will catch this. In Solutions mode follow with `uip solution resources refresh` as in rule 16.
+    - **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json` that registers the Orchestrator event trigger on deploy. **Without it the workflow validates, packs, publishes and deploys clean — and never fires.** No gate catches this. In Solutions mode follow with `uip solution resources refresh` (rule 16).
 <!--skill-flavor:trigger-binding-registration:end-->
-    - **A `GenericTrigger` needs `--object-name`** (a `CuratedTrigger` pins its object). Discover with `uip is triggers objects <connector-key> <EVENT> --output json`.
-    - **Slot key and export bucket differ for triggers** — slot `Button_Clicked_1`, bucket `button_1`. Read the payload as `$context.outputs.<ExportBucketKey>.content`, using the stub's `Data.ExportBucketKey` verbatim.
 <!--skill-flavor:trigger-debug-contract:start-->
-    - **`eventMode: "webhooks"` cannot be debugged locally.** `uip api-workflow run` only replays a real event for `polling` triggers; for webhooks, pass `--input-arguments` to feed a simulated payload and exercise the rest of the workflow. A polling replay hits the live vendor connection — treat it as side-effecting under rule 21.
+    - **A `webhooks` trigger cannot run locally without input.** `uip api-workflow run` replays a live event only for `polling` (side-effecting under rule 21); for either mode, `--input-arguments` shaped like the event payload exercises the rest of the workflow offline.
 <!--skill-flavor:trigger-debug-contract:end-->
 
 <!--skill-flavor:runtime-invocation-io:start-->

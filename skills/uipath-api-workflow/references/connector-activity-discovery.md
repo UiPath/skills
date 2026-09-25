@@ -232,7 +232,7 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 
 ## Limits
 
-1. Triggers (`"CuratedTrigger"`, `"GenericTrigger"`) need `resolve --kind trigger` and stub into `call: "UiPath.IntSvcEvent"` plus a mandatory `EventTrigger` binding; author them with [trigger-authoring-guide.md](trigger-authoring-guide.md), not this flow. `GenericTrigger` takes `--object-name`. Other event-shaped types (`"CuratedWaitFor"`, `"GenericWaitFor"`, `"GenericPersistence"`, and similar) cannot be stubbed; escalate to manual authoring.
+1. **Triggers are a different flow.** `"CuratedTrigger"` / `"GenericTrigger"` live in a separate catalog (`resolve --kind trigger`) and stub into `call: "UiPath.IntSvcEvent"` plus an `EventTrigger` binding — see [trigger-authoring-guide.md](trigger-authoring-guide.md). Other event-shaped flavors (`"CuratedWaitFor"`, `"GenericWaitFor"`, `"GenericPersistence"`, …) are rejected with `Activity type 'X' is not supported` — escalate to manual authoring.
 2. `stub` does not validate `--inputs`; unknown fields are silently dropped. Check the IS schema.
 3. Subsequent designer saves can re-introduce Response-activity mangling; see [troubleshooting.md](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text).
 
