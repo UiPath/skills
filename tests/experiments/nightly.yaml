@@ -36,10 +36,10 @@ defaults:
     permission_mode: acceptEdits
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
-      You are a coding agent. Work in your sandbox and the skills plugin. Never read the eval harness's own files — task definitions, graders, reference solutions — and do not access files in sibling runs/* directories.
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
     plugins:
       - type: "local"
-        path: "$SKILLS_REPO_PATH/.plugin-root"
+        path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
   checker_context:
@@ -61,7 +61,7 @@ defaults:
   # rest. Newlines would put the sh code back on cmd's first line, so keep it
   # one line and never reformat this into a block scalar.
   pre_run:
-    - command: ':; if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then bash "$SKILLS_REPO_PATH/.plugin-root/tests/scripts/stage-preview-sdk-workspace.sh"; fi'
+    - command: ':; if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"; fi'
       timeout: 30
 
   # Sandbox cleanup between tasks. Tasks that upload Studio Web solutions
