@@ -32,7 +32,9 @@ which makes the model pack its whole answer into one string field.
 Context signature:
 `{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension? }`.
 
-Resolve the index from the tenant. Know the name — use `solution resources list`; discovering what exists — use the `uip context-grounding` bridge below, which reports every index with its folder.
+Resolve the index from the tenant.
+Know the name: use `solution resources list` below.
+Discovering what exists: use the `uip context-grounding` bridge, which reports every index with its folder.
 Not `uip maestro flow registry` (node manifests), not `uip maestro registry` (the connector library), not `uip or folders list`.
 
 ```bash
