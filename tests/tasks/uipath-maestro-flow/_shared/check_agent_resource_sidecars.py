@@ -3,60 +3,63 @@
 
 An inline agent's capability is TWO artifacts. The `.flow` carries a
 `uipath.agent.resource.*` node wired to one of the agent's handles; the agent
-PROJECT carries the same resource as `<agent-source>/resources/<resource-id>/resource.json`
+PROJECT carries the same resource as `<agent-source>/resources/<dir>/resource.json`
 (or, equivalently, an entry in `agent.json`'s `resources[]` — `uip agent refresh`
-reads both into one list). The runtime's view comes from the project: nothing in
-the CLI derives an agent resource from the flow, and `uip agent refresh` strips and
-re-derives the NODE from the file, never the other way round.
+reads both into one list). On the CLI path the project is the runtime's only view:
+refresh strips the node and re-derives it from the file, so a node with no file is
+inert, and validate, debug and a non-empty answer all still pass.
 
-So the node alone is inert, and nothing else in the ladder can see it. Measured
-2026-09-24 on this very task: a flow with a context-index node and no
-`resource.json` passed `uip maestro flow validate` with `Status: Valid` and no
-warnings, ran to completion under `flow debug`, returned a non-empty
-determination — and its agent answered *"the required Billing Dispute SOP excerpts
-are not present in the available context or tools"*. Every criterion scored 1.00.
-Debugging the same artifact by hand, the agent invented its policy basis ("Per
-STANDARD Billing Dispute SOP guidelines … TYPICALLY 5-10 business days") where a
-grounded build quotes the index ("SOP AR-SOP-014, §5.4 - Incorrect Rate").
+Measured 2026-09-24 on this task: a flow with a context-index node and no
+`resource.json` scored 1.00 on every criterion while its agent answered that the
+SOP excerpts were not in its context or tools. A grader cannot read a rationale
+and tell retrieval from invention; it can read this, offline, because the join is
+an id.
 
-A grader cannot read a rationale and tell retrieval from invention. It CAN read
-this, offline, with no tenant: the join is an id, so it is exact.
+GATED families are the ones a correct build is expected to carry a file for:
+`context.`, and the deployed-resource tool kinds. Everything else is exempt with
+a reason, because gating a family nothing can emit is a criterion no one passes:
 
-EXEMPT: `tool.connector.*`. `uip agent refresh --inline-in-flow` generates those
-resource.json files FROM the flow's connector nodes (uipcli's
-`flow-connector-tool-service.ts`, ported from flow-core's `agent-connector-tool`
-mapper), so their absence before a refresh is by design and not a defect. Every
-other family — context, mcp, a2a, the per-instance tool kinds, escalation — has no
-such generator.
+  * `tool.connector.*` — `uip agent refresh --inline-in-flow` GENERATES it from
+    the flow's own connector node (uipcli `flow-connector-tool-service.ts`), so
+    its absence before a refresh is by design.
+  * `tool.ixp.*`, `tool.clientside*` — writing the file makes `flow validate`
+    FAIL after refresh (measured in flow-builder-sdk#806): refresh strips the node
+    and cannot rebuild the configuration it carried.
+  * `tool.mcp.*`, `tool.a2a*`, `tool.builtin.*` — need a tenant read or a
+    toolType mapping the compiler does not have.
+  * `escalation*` — needs the Action Center app's ActionSchema and recipients.
+  * `memory.*` — a FEATURE (`features/<id>/feature.json`), not a resource.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py [<FlowName>.flow]
+    python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py <FlowName>.flow
 
-Exit 0 on pass (including a flow with no agent-resource nodes at all, which this
-check has nothing to say about); exit 1 with a `FAIL:` line naming each node whose
-resource is missing, and where it was looked for.
+Exit 0 on pass (including a flow with no gated resource nodes at all); exit 1
+with a `FAIL:` line naming each node whose resource is missing.
 """
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from advisory_flow_utils import fail, load_flow, unwrap
 
 AGENT_TYPES = ("uipath.agent.autonomous", "uipath.agent.conversational")
 RESOURCE_PREFIX = "uipath.agent.resource."
-# Family -> the `$resourceType` its resource.json must declare. Keyed by the node
-# type segment after the prefix, longest match first so `tool.connector` is tested
-# before `tool`.
-RESOURCE_TYPES = (
+# Node-type prefix -> the `$resourceType` its file must declare. Only the families
+# a correct build is expected to carry a file for; see the module docstring for
+# why each of the others is left out. Longest prefix first is not needed here —
+# these do not overlap — but the deployed-tool namespaces are listed in full so a
+# new one has to be added deliberately rather than swept in by a bare `tool.`.
+GATED = (
     ("context.", "context"),
-    ("tool.mcp.", "mcp"),
-    ("tool.", "tool"),
-    ("escalation.", "escalation"),
-    ("memory.", None),  # a FEATURE (features/<id>/feature.json), not a resource
+    ("tool.process.", "tool"),
+    ("tool.api.", "tool"),
+    ("tool.processorchestration.", "tool"),
+    ("tool.flow.", "tool"),
+    ("tool.agent.", "tool"),
+    ("tool.function.", "tool"),
 )
-# See the module docstring: the CLI generates these from the flow itself.
-GENERATED_FROM_FLOW = ("tool.connector.",)
 
 
 def _family(node_type: str) -> str:
@@ -64,7 +67,8 @@ def _family(node_type: str) -> str:
 
 
 def _expected_resource_type(family: str) -> str | None:
-    for prefix, resource_type in RESOURCE_TYPES:
+    """The `$resourceType` this node's file must declare, or None when exempt."""
+    for prefix, resource_type in GATED:
         if family.startswith(prefix):
             return resource_type
     return None
@@ -73,12 +77,9 @@ def _expected_resource_type(family: str) -> str | None:
 def _declared_ids(agent_dir: Path) -> dict[str, str]:
     """Resource id -> `$resourceType`, from both places `uip agent refresh` reads.
 
-    The join is the resource's `id` FIELD, not its directory name. Real agent
-    projects name the directory after the resource — `resources/CountSources/`,
-    `resources/WebSearch/`, `resources/SupportKnowledge/` — and carry a uuid in
-    `id`; `compile` happens to name it for the uuid. Keying on the directory would
-    pass the SDK's own output and fail every designer-authored project, so fall
-    back to the directory name only when a resource declares no `id`.
+    Join on the `id` field; the directory name is only a fallback. Real projects
+    name the directory after the resource (`resources/CountSources/`) and carry a
+    uuid in `id`, while `compile` names it for the uuid.
     """
     declared: dict[str, str] = {}
     for resource_file in sorted(agent_dir.glob("resources/*/resource.json")):
@@ -101,7 +102,10 @@ def _declared_ids(agent_dir: Path) -> dict[str, str]:
 
 
 def main() -> None:
-    flow_path, flow, nodes = load_flow("*.flow")
+    # POP the name off argv and hand it to `load_flow` as the name to find, the
+    # way every sibling checker pins one. Left in argv it would be read as a
+    # literal path instead, and the YAML cannot know the generated nesting.
+    flow_path, flow, nodes = load_flow(sys.argv.pop(1) if len(sys.argv) > 1 else "*.flow")
     edges = flow.get("edges") or []
     project_dir = flow_path.parent
 
@@ -124,7 +128,7 @@ def main() -> None:
     for node in resources:
         family = _family(str(node["type"]))
         expected_type = _expected_resource_type(family)
-        if expected_type is None or family.startswith(GENERATED_FROM_FLOW):
+        if expected_type is None:
             continue
         agent_id = owner.get(node["id"])
         if agent_id is None:

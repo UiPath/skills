@@ -85,7 +85,7 @@ success_criteria:
     pass_threshold: 0.0
   - type: run_command
     description: 'The grounding is LIVE, not just wired: the context-index node resolves to a resource.json in the inline agent project, which is where the runtime reads it from'
-    command: python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py
+    command: python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py BillingDisputeAnalyst.flow
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
