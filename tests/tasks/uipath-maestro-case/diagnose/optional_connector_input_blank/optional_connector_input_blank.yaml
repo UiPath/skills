@@ -1,0 +1,88 @@
+task_id: skill-case-diagnose-optional-connector-input-blank
+description: >
+  Diagnose mode. The staged case PASSES `uip maestro case validate` with zero
+  findings and faults on its first run. Review's connector task carries the
+  activity's optional `file` input with an empty-string value, and Integration
+  Services reads that as a multipart attachment with no content, answering 400
+  'Unable to parse multipart body'. The task is the stage's first sequential
+  task, so the review task behind it never opens. Written as null the same case
+  runs end to end. The validator returns Valid for the empty string, for null,
+  and for the input deleted outright, so it cannot separate the three. The two
+  other optional fields carry an empty object in the same build and cause
+  nothing, so the empty object is fine and only the file field is sensitive.
+  Grades the traps: deleting the input, inventing a value, blanking the message
+  body, or dropping a slot's `id` or `elementId`.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, connector, feature:connections]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ passes
+  `uip maestro case validate` cleanly. On its first run the case faults before
+  any stage completes, and the incident reads:
+
+    Request to Integration Services failed with status code '400',
+    message: {"message":"Unable to parse multipart body"}
+
+  Find out why and fix it. Keep the intended design: three stages,
+  Intake to Review to Decision, the connector task in Review sending its
+  message, and Decision gated on what that task writes.
+
+  - A clean validate is NOT evidence the case is healthy here. The defect is
+    something validate cannot see.
+  - The connector activity's schema fields stay declared on the task. Deleting
+    an input is not the same as leaving it unset.
+  - Do NOT invent a value for an input nothing in the case supplies.
+  - Do NOT blank the message the task sends.
+  - Do NOT delete the gate, the stages, the tasks, the outputs, or the trigger.
+  - Do NOT retype the connector task.
+  - Do NOT run `uip maestro case debug`.
+  - Do NOT ask for approval. Work end-to-end and finish with validate passing.
+
+  Scope: this is a targeted repair of one input value, not a build.
+
+  - This case is offline. The resource names and ids in it are placeholders, and
+    nothing here needs looking up on a tenant. Do not run `uip` commands that
+    reach one.
+  - The defect and its fix are both inside
+    LinearThreeStages/LinearThreeStages/caseplan.json. Nothing else changes.
+  - Read the case definition and the skill's input binding rules only. You do
+    NOT need to read the reference set exhaustively; the read-to-EOF rule is
+    lifted for this repair.
+  - If you are on your third edit, stop editing and re-read what the skill says
+    a blank value means and where a blank value is allowed.
+
+  Load the uipath-maestro-case skill and follow its validate to fix loop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "uip maestro case validate still passes after the repair"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The optional file input is still declared and carries null rather than an empty string or an invented value, every optional slot keeps its minted fields, the message body survives, and the outputs and gate are untouched"
+    command: "python3 $TASK_DIR/check_optional_connector_input_blank.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
