@@ -78,7 +78,6 @@ After write:
 1. Run the smoke test pattern to confirm the mock dispatcher resolves:
    ```bash
    cd tests
-   make plugin-root
    .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.
@@ -112,6 +111,7 @@ Scenarios sit in group folders. Do NOT add a scenario at the flat suite root —
 ```
 tests/tasks/uipath-troubleshoot/
 ├── _shared/                     # shared mock dispatcher + scripts (never a scenario)
+├── smoke-manifest-commands/     # the sole smoke task (stays at root)
 ├── activity-packages/           # FLAT — scenarios named <token>-<slug>
 │   ├── db-execute-query-timeout-expired/      data/m/r/ …
 │   ├── excel-rr-sheet-bytes/                   data/m/r/ …
@@ -225,13 +225,13 @@ Every faithful-replay scenario is an end-to-end investigation — tag it **`e2e`
 
 The PR smoke gate (`.github/workflows/smoke-skills.yml`) treats **any** change under `skills/uipath-troubleshoot/` as a skill-source change and runs that skill's **entire `smoke`-tagged set**. A `smoke`-tagged scenario therefore runs on every docs/playbook PR — each scenario is a multi-minute agent run, so the gate becomes slow, expensive, and exposes unrelated PRs to scenario flakiness and CI-infra blips (image-pull, judge variance). That is the wrong signal for a fast PR gate.
 
-**No troubleshoot task carries `smoke`.** The fixture/manifest-command validation that used to hold that tag is now a plain step in `.github/workflows/smoke-skills.yml` (`Verify troubleshoot manifest commands`), running `_shared/scripts/verify_manifest_commands.py` in the eval image. Same gate, same trigger, no agent run: it reads every manifest in this tree, which no sandbox may mount.
+**The ONLY troubleshoot task tagged `smoke` is [`smoke-manifest-commands`](./smoke-manifest-commands/task.yaml)** — a fast, deterministic fixture/manifest-command validation (no agent investigation). It is the sole troubleshoot smoke-gate check by design.
 
 Rules:
 
 1. New scenarios get `e2e` (+ product/domain tags) — **do NOT add `smoke`**.
 2. Do not add `smoke` to any scenario to "make it run in CI"; the e2e suite (`tests/experiments/e2e.yaml`) covers scenarios.
-3. No file here carries `smoke`; the deterministic gate is the workflow step above.
+3. The only file that may carry `smoke` is `smoke-manifest-commands/task.yaml`.
 
 ### Investigation output location
 
@@ -382,7 +382,7 @@ success_criteria:
 - **Do not** keep names that encode the diagnosis. The agent-visible surfaces — process / project / release names, workflow / `.xaml` filenames, `x:Class`, activity `DisplayName`, and the `initial_prompt` — MUST NOT broadcast the failure. Real sessions routinely carry such names (`ERN_O365_MailFolderNotFound`, activity `"Get Mail from nonexistent folder (expect ArgumentNullException)"`); left in, the agent passes by reading the name instead of investigating — or never invokes the skill at all. Neutralize them to realistic business names during generation, exactly like the PII scrub, keeping the fault ONLY in the retrieved log/exception text. A user pasting the *symptom* into the prompt (`faulted with System.IO.FileNotFoundException`) is fine; a *name* that states the cause is not.
 - **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<group>/<scenario>/`.
 - **Do not** create a scenario without a verified resolution. The LLM judge needs an authoritative ground truth; a half-baked `RESOLUTION.md` produces flaky scores.
-- **Do not** tag a scenario `smoke` — scenarios are `e2e`, and no troubleshoot task carries `smoke` (see [Tier tag](#tier-tag-scenarios-are-e2e-never-smoke)).
+- **Do not** tag a scenario `smoke` — scenarios are `e2e`. The only troubleshoot task allowed the `smoke` tag is `smoke-manifest-commands` (see [Tier tag](#tier-tag-scenarios-are-e2e-never-smoke)).
 
 ## Scripts
 

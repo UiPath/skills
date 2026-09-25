@@ -403,12 +403,6 @@ jobs:
       - name: Stage _shared grader helpers
         run: bash tests/scripts/stage_shared.sh
 
-      # The agent reads everything under the plugin path (docker bind-mounts it
-      # at its host path), so it must not be the repo root — that hands the agent
-      # tests/tasks: the graders and the *.reference.flow answers.
-      - name: Stage the agent-visible plugin root
-        run: python tests/scripts/stage_plugin_root.py
-
       # Two-step split: this step COMPUTES, the composite action below EXECUTES.
       # `working-directory:` is illegal on a `uses:` step and a job-level
       # `defaults.run` does not reach inside a composite, so everything
@@ -1178,13 +1172,6 @@ jobs:
           echo "installed @uipath/delegate-stdio@$resolved — DELEGATE_STDIO_PATH=$bundle"
           echo "DELEGATE_STDIO_PATH=$bundle"   >> "$GITHUB_ENV"
           echo "DELEGATE_INTEROP_EXE=$interop_exe" >> "$GITHUB_ENV"
-
-      # The agent reads everything under the plugin path (docker bind-mounts it
-      # at its host path), so it must not be the repo root — that hands the agent
-      # tests/tasks: the graders and the *.reference.flow answers.
-      - name: Stage the agent-visible plugin root
-        shell: bash
-        run: python tests/scripts/stage_plugin_root.py
 
       # Run tasks one at a time on Windows: Helm state leaks between tasks
       # (stale Studio session, locked NuGet cache), so the loop kills Helm

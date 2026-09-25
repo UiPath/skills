@@ -106,12 +106,6 @@ jobs:
       - name: Install coder-eval
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
-      # The agent reads everything under the plugin path (docker bind-mounts it
-      # at its host path), so it must not be the repo root — that hands the agent
-      # tests/tasks: the graders and the *.reference.flow answers.
-      - name: Stage the agent-visible plugin root
-        run: python tests/scripts/stage_plugin_root.py
-
       - name: Run activation gate
         env:
           # Pass matrix value via env (not direct ${{ }} interpolation in run:)
