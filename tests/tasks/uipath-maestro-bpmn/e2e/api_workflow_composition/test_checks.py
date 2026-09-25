@@ -175,6 +175,15 @@ class ShapeCheckMutationTests(unittest.TestCase):
     def test_stray_output_write(self):
         self.assert_rejected("stray_output_write", "'message' is also published from")
 
+    def test_node_overwrites_response_from_input(self):
+        # The invoking node itself declares a second `uipath:output` on the
+        # same activity, same var, reading the process input instead of its
+        # response -- must not slip past because `owner == node_id` for both.
+        self.assert_rejected(
+            "node_overwrites_response_from_input",
+            r"also written by .*Task_InvokeGreeting.*only Task_InvokeGreeting's own response mapping may write",
+        )
+
     def test_node_output_falls_back_to_input(self):
         for name in (
             "node_output_falls_back_to_input",
@@ -217,7 +226,7 @@ class ShapeCheckMutationTests(unittest.TestCase):
         # the BPMN wiring is otherwise gold-identical.
         self.assert_rejected(
             "script_overwrites_node_output",
-            r"also written by .*Task_Decoy.*only 'Task_InvokeGreeting' may write",
+            r"also written by .*Task_Decoy.*only Task_InvokeGreeting's own response mapping may write",
         )
 
     def test_unauthored_scaffold(self):
