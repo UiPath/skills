@@ -164,7 +164,7 @@ success_criteria:
     # is graded is that the id came from the CLI and not from thin air.
     description: "Agent listed executions through the CLI rather than inventing an id"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+list(-filtered)?\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+executions?\s+list(-filtered)?\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -175,7 +175,7 @@ success_criteria:
   - type: command_executed
     description: "Agent closed the run first, by finishing its logs or forcing the close"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+(testcaselog\s+finish|executions?\s+finish)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)'
+    command_pattern: 'uip\s+tm\s+(testcaselog\s+finish|executions?\s+finish)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -183,7 +183,7 @@ success_criteria:
   - type: command_executed
     description: "Agent started a log, which is what makes the open run closable at all"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+start\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)'
+    command_pattern: 'uip\s+tm\s+testcaselog\s+start\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -191,7 +191,7 @@ success_criteria:
   - type: command_executed
     description: "Agent booked the run to the requested day (`executions set-reporting-date --reporting-date 2026-09-21`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+set-reporting-date\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--reporting-date\s+2026-09-21)'
+    command_pattern: 'uip\s+tm\s+executions?\s+set-reporting-date\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--reporting-date\s+2026-09-21)'
     min_count: 1
     weight: 3.5
     pass_threshold: 1.0

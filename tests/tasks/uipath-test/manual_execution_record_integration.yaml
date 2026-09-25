@@ -160,7 +160,7 @@ success_criteria:
   - type: command_executed
     description: "Agent opened a manual execution over the test set (`executions create --test-set-key`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--test-set-key\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+executions?\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-set-key\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -168,7 +168,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read the run's own logs to resolve each TestCaseId (`executions testcaselogs list`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+testcaselogs\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+executions?\s+testcaselogs\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -181,10 +181,15 @@ success_criteria:
   # this one. The `(?!uip\s)` matters as much: the grader also matches a
   # shlex-normalised haystack where newlines become spaces, so without it a
   # `--help` probe on one line and a real call on the next read as one command.
+  # The two escape branches are kept disjoint (`\\\r?\n` vs `\\[^\r\n]`): under
+  # DOTALL a shared `\\.` makes both match a backslash-newline, and each
+  # line-continuation in a failing segment then doubles the search.
+  # A non-`uip` neighbouring line can still leak a flag; the run_command
+  # criteria are what actually decide those runs.
   - type: command_executed
     description: "Agent started a log for a case (`testcaselog start`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+start\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)'
+    command_pattern: 'uip\s+tm\s+testcaselog\s+start\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -192,7 +197,7 @@ success_criteria:
   - type: command_executed
     description: "Agent recorded the two passes (`testcaselog finish --result Passed`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--result\s+Passed\b)'
+    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Passed\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -200,7 +205,7 @@ success_criteria:
   - type: command_executed
     description: "Agent recorded the one failure (`testcaselog finish --result Failed`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--result\s+Failed\b)'
+    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Failed\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -210,7 +215,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not force-close the run with `executions finish`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)'
+    command_pattern: 'uip\s+tm\s+executions?\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -255,7 +260,7 @@ success_criteria:
   - type: command_executed
     description: "Agent reported the run's own totals (`executions get-stats`), not a hand tally"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+get-stats\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\.)*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+executions?\s+get-stats\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
