@@ -121,14 +121,14 @@ Driver's own attribute preference when generating a selector, in order (stage on
 | Attribute | Meaning | Tier / role |
 |---|---|---|
 | `automationid` | AutomationId | very reliable |
-| `role` | localized control type, lower-case (`button`, `combo box`, `edit`) | very reliable — language-dependent: on a non-English runtime keep it only as captured live |
+| `role` | language-agnostic control type, lower-case (`button`, `combo box`, `edit`) | very reliable — the role value does not change with the UI language |
 | `cls`, `name`, `helpText`, `legacyAccHelp`, `legacyAccDescription` | class name, Name, help text | alright |
 | `tableCol`, `tableRow`, `rowName`, `colName` | grid position and headers | table |
 | `roleint`, `enabled`, `ispwd`, `kbfocus`, `itemstatus`, `itemtype`, `accelkey`, `acskey` | control type id, state, keys | last resort — only to make the selector unique |
 | `rtid`, `pid` | runtime id, process | runtime — never |
 | `idx` | | position |
 
-UI Automation control type → `role` (English runtime):
+UI Automation control type → `role` (same values across UI languages):
 
 | Control type | `role` | Control type | `role` |
 |---|---|---|---|
