@@ -89,7 +89,7 @@ Path/query event parameters get a companion `Property` entry (`key` = event oper
 
 ## Filter expression
 
-`filterExpression` is JMESPath: mandatory half (from event parameters, written by `stub`) `&&` user half (a condition on `filterFields`, written by you). Quoting follows the field type: strings single-quoted, booleans and numbers backtick JSON literals — `(channel_id == 'C123') && (isAllDay == \`true\`)`. Double quotes are not JMESPath string literals. Bad quoting passes `validate` and fails at subscription time or matches nothing. After editing `with.filterExpression`, re-run `bindings sync` (fact 2).
+`filterExpression` is JMESPath: mandatory half (from event parameters, written by `stub`) `&&` user half (a condition on `filterFields`, written by you). Quoting follows the field type: strings single-quoted, booleans and numbers backtick JSON literals — `(channel_id == 'C123') && (isAllDay == \`true\`)`. Double quotes are not JMESPath string literals. Bad quoting passes `validate` and fails at subscription time or matches nothing. Editing `with.filterExpression` is a trigger edit (fact 2).
 
 ## Exercising a trigger before deploy
 
