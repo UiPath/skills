@@ -1,0 +1,113 @@
+task_id: skill-bpmn-generic-dynamic-node
+description: >
+  Connector feature: validate a generic (dynamic) connector node end-to-end. A
+  generic activity encodes only the operation in its registry type; the object
+  is supplied dynamically at authoring time, so the agent must resolve the
+  object name and set it via `registry get Intsvc.ActivityExecution
+  --object-name <object>`. Uses ServiceNow's generic "List All Records"
+  activity (API `objectName: "acr_user"`) as the concrete generic activity,
+  bound to the tenant's ServiceNow connection, then runs `bpmn debug`.
+  Exercises connector discovery (including connections in non-default
+  folders), generic-activity object-name resolution, connection binding, and
+  live execution. The `acr_user` table is empty in the codereval tenant, so
+  the call legitimately returns `[]`; the checker asserts the node is a
+  generic list activity (an `Intsvc.ActivityExecution` node with
+  `objectName: "acr_user"` and operation/method classifying it as List, the
+  registry's only form for this activity — it has no curated alternative),
+  `FinalStatus: "Completed"` with no incidents, and an array-typed output
+  (empty allowed) rather than requiring rows.
+  Connection note: ServiceNow developer instances hibernate after inactivity.
+  If a run fails with a connection error, log into the ServiceNow account to
+  wake the instance, then re-run.
+
+  Ported from Flow `connector_features/generic_dynamic_node/generic_dynamic_node.yaml`;
+  the connector node is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper (context fields connectorKey/objectName/
+  operation/method — registry-confirmed via `registry get ... --object-name
+  acr_user`) instead of a Flow connector node with a node-type slug,
+  `flow debug`'s single-call inline payload becomes an ephemeral-solution
+  import + `bpmn debug` + `debug-instance variables-all`/`incidents` read, and
+  the array-output check reads the declared process output's Global, falling
+  back to the list node's own Outputs only when every output reads back null. The live-check criterion timeout is raised from Flow's 720s to
+  1050s: the BPMN sequence adds ephemeral solution init/import and two
+  separate `debug-instance` reads that flow's single inline `flow debug` call
+  did not need (see check_generic_dynamic_node.py's budget comment) — the one
+  sanctioned deviation from "criteria identical" per LIVE-ADDENDUM, since the
+  budget is a property of the CLI surface, not of what is graded.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, outcome-graded]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+run_limits:
+  task_timeout: 2490
+  max_turns: 120
+  turn_timeout: 1200
+
+reference:
+  directory: ../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-servicenow-servicenow'
+    timeout: 120
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN process project named "AcrUserList" inside a
+  solution of the same name, with a manual start.
+  The process must call ServiceNow to list all records in the Acr User
+  object, then surface the returned records as a process output variable.
+
+  Bind it to the tenant's ServiceNow connection. Then debug the process to
+  confirm the connector call completes.
+
+  Use the connection present in Shared/uipath-maestro-flow.
+
+  Do NOT substitute a mock for the
+  connector.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  # ── BPMN file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro bpmn validate passes on the BPMN file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Agent invoked debug ────────────────────────────────────────────────
+  - type: command_executed
+    description: "Advisory: live-v1 agent ran bpmn debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+
+  # ── Execution: connector calls ServiceNow and surfaces an array output ──
+  - type: run_command
+    description: "ServiceNow list-all-records node on acr_user executes and surfaces an array output"
+    command: "python3 $REFERENCE_DIR/_shared/check_generic_dynamic_node.py"
+    timeout: 1050
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

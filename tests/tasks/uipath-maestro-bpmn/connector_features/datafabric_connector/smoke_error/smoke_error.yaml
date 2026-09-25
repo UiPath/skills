@@ -1,0 +1,98 @@
+task_id: skill-bpmn-datafabric-smoke-error
+description: >
+  Smoke: attempt a record creation against a non-existent entity — expect a
+  structured 4xx and zero side effects on FlowCodeEvalEntity. Static-validate
+  only, same as Flow's own grader (its docstring notes the check is
+  entity-binding only, topology is not parsed): this port does not run
+  `bpmn debug` to observe the runtime 4xx or replay a live re-read of
+  FlowCodeEvalEntity.
+  Ported from Flow `connector_features/datafabric_connector/smoke_error.yaml`;
+  connector activities are modeled as bpmn:sendTask nodes carrying the registry
+  Intsvc.ActivityExecution wrapper instead of Flow connector nodes, and the
+  grader accepts either the curated per-operation objectName or the generic
+  entity-CRUD form the connector skill may emit for the same operation.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1500
+  task_timeout: 2400
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build this with the UiPath Data Service Integration Service connector
+  (`uipath-uipath-dataservice`) activities for every entity operation.
+
+  Build a UiPath Maestro BPMN process that:
+
+  1. Attempts to create a record on entity 'NonExistentEntity' with
+     title='ErrorTestRecord', score=5.0. Expect an error — do not swallow it.
+  2. In a parallel branch (so it runs even after the failure), Query
+     FlowCodeEvalEntity for title='ErrorTestRecord'.
+  3. In the same parallel branch, Query FlowCodeEvalEntity with no filter.
+
+  Use the Data Service Integration Service connector activities for these
+  operations.
+
+  The process is not complete until `uip maestro bpmn validate` passes.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Advisory: agent queried the registry for Create Entity Record on the non-existent entity"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(CreateEntityRecordCurated|CreateEntityRecord_V3|NonExistentEntity)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+  - type: command_executed
+    description: "Advisory: agent queried the registry for the follow-up Query Entity Records nodes"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(QueryEntityRecordsCurated|QueryEntityRecords_V3|FlowCodeEvalEntity)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0.0
+  - type: command_executed
+    description: "BPMN file was validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: "Create targets NonExistentEntity; Queries target FlowCodeEvalEntity"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_smoke_error.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import glob
+import json
 import os
 import re
 import sys
@@ -54,10 +55,20 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
     projects = _project_files(paths)
     if len(projects) == 1:
         return projects[0]
+    # Byte-identical copies (the agent copied its scaffold into the solution
+    # wrapper; CI run 35538279757, testmanager_crud_grounded) are one artifact.
+    if len({_sha256(p) for p in paths}) == 1:
+        return paths[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")
 
 
-def resolve_project(bpmn_name: str) -> Path:
+def _sha256(path: str | Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
     """Locate the project directory containing ``bpmn_name``.
 
     Grades the project wherever the agent placed it (top level or nested under
@@ -66,8 +77,19 @@ def resolve_project(bpmn_name: str) -> Path:
     project unambiguously: exactly one ``bpmn_name`` with project.uiproj beside
     it, so a stray draft copy is never graded (``find_bpmn_file`` would
     silently return the alphabetically-first match).
+
+    ``exclude_under``: directories whose contents are not candidates. A live
+    grader's own ephemeral solution (``uip solution projects import``) leaves a
+    second, byte-identical project under its run directory; a later criterion
+    in the same task must not read that copy as ambiguity (CI run 35538279757,
+    billing_invoice_lookup ``bindings``).
     """
-    candidates = _project_files(Path.cwd().rglob(bpmn_name))
+    excluded = [Path(d).resolve() for d in exclude_under]
+    candidates = [
+        p
+        for p in _project_files(Path.cwd().rglob(bpmn_name))
+        if not any(p.resolve().is_relative_to(d) for d in excluded)
+    ]
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
@@ -144,6 +166,73 @@ def all_node_values(element: ET.Element) -> list[str]:
         if inp.text and inp.text.strip():
             values.append(inp.text.strip())
     return values
+
+
+def body_fields(element: ET.Element) -> list[ET.Element]:
+    """Every ``uipath:input`` under ``element`` carrying ``target="body"``.
+
+    The raw elements, for a grader that needs to assert on the inputs
+    themselves (presence, count) rather than on the request body they encode.
+    Use :func:`body_object` for the body.
+    """
+    return [inp for inp in context_inputs(element) if inp.attrib.get("target") == "body"]
+
+
+def _input_payload(inp: ET.Element) -> str:
+    """One input's literal payload: CDATA/text first, then ``value``.
+
+    Agents write the same field either way -- a CDATA body blob, or a
+    ``value`` attribute for a short scalar -- and the two never both carry
+    content on one input.
+    """
+    text = (inp.text or "").strip()
+    if text:
+        return text
+    return (inp.attrib.get("value") or "").strip()
+
+
+class BodyShapeError(ValueError):
+    """The node's ``target="body"`` inputs are not one JSON object."""
+
+
+def body_object(element: ET.Element) -> dict:
+    """The request body ``element``'s ``target="body"`` input encodes.
+
+    The runtime reads exactly one ``target="body"`` input as the whole body;
+    several do not merge (skills/uipath-maestro-bpmn/references/registry-workflow.md,
+    "Body shape"). So the only gradeable shape is::
+
+        <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
+
+    Returns ``{}`` when there is no ``target="body"`` input or it is empty. Raises
+    :class:`BodyShapeError` for several inputs, or one whose payload is an
+    expression or anything but a JSON object. A ``=vars.X`` value inside the
+    object stays the string it is.
+    """
+    fields = body_fields(element)
+    if not fields:
+        return {}
+    if len(fields) > 1:
+        names = [inp.attrib.get("name") or "" for inp in fields]
+        raise BodyShapeError(
+            f'{len(fields)} target="body" inputs {names}; the runtime does not '
+            f"merge them, so the request carries only the last one"
+        )
+
+    raw = _input_payload(fields[0])
+    if not raw:
+        return {}
+    if raw.startswith("="):
+        raise BodyShapeError(f'target="body" input is an expression, not a literal object: {raw!r}')
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        raise BodyShapeError(f'target="body" input is not valid JSON: raw={raw!r}') from None
+    if not isinstance(parsed, dict):
+        raise BodyShapeError(
+            f'target="body" JSON must be an object, got {type(parsed).__name__}: raw={raw!r}'
+        )
+    return parsed
 
 
 def has_type(element: ET.Element, token: str) -> bool:

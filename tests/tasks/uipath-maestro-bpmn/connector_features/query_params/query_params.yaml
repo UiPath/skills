@@ -1,0 +1,82 @@
+task_id: skill-bpmn-query-params
+description: >
+  Tests the query parameters IS feature — configures a connector node with a
+  query parameter on the Google Tasks connector.
+  Ported from Flow `connector_features/query_params.yaml`; the Google Tasks
+  list-tasks connector node is modeled as a bpmn:sendTask carrying the
+  registry Intsvc.ActivityExecution wrapper instead of a Flow connector node,
+  and the generic-HTTP-connector fallback the prompt asks for is modeled as
+  the same wrapper with connectorKey uipath-uipath-http (BATCH1-ADDENDUM's
+  connector-mode-HTTP-via-generic-connector pattern) or as a connectionless
+  Intsvc.HttpExecution/UnifiedHttpRequest node. Validate-only, matching
+  Flow's own scope — the Flow source never called `flow debug` either, only
+  `flow validate`.
+tags:
+  - uipath-maestro-bpmn
+  - integration
+  - "lifecycle:generate"
+  - "shape:multi-node"
+  - connector
+  - "mode:build"
+
+run_limits:
+  expected_turns: 43
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a new UiPath Maestro BPMN process project called "QueryParamsTest" with a manual start.
+  You need a process that lists all Google Tasks including hidden ones. Discover
+  the right Google Tasks list operation and set its "show hidden" query
+  parameter so hidden tasks are returned.
+  Validate the final BPMN file.
+  If the Google Tasks connector operation is not present in the registry, use
+  a managed HTTP fallback through the generic `uipath-uipath-http` connector
+  for the same REST call and finish after validation.
+  Do not keep searching for a connector node that the registry does not expose.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "BPMN file exists and is well-formed XML"
+    command: "python3 -c \"import sys; sys.path.insert(0, '$REFERENCE_DIR'); from _shared.bpmn_check import parse_bpmn; parse_bpmn('QueryParamsTest')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN uses Google Tasks connector or task-specific managed HTTP fallback"
+    command: "python3 $REFERENCE_DIR/_shared/check_managed_http_fallback.py QueryParamsTest uipath-google-tasks query_params"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

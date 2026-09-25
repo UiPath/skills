@@ -1,0 +1,105 @@
+task_id: skill-bpmn-path-params
+description: >
+  Tests the path parameters IS feature — configures a connector node with a
+  path parameter on the Jira "Get Issue" activity. Project + issue type are
+  freely chosen by the agent; the issue key is deterministic so the test can
+  verify the path-parameter wiring.
+  Ported from Flow `connector_features/path_params.yaml`; the Jira Get Issue
+  connector node is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper instead of a Flow connector node, and the
+  path-parameter value must appear as an exact `target="path"` input value or
+  inside a url/path/endpoint context field. Validate-only, matching Flow's own scope — the Flow
+  source never called `flow debug` either, only `flow validate`.
+tags:
+  - uipath-maestro-bpmn
+  - integration
+  - "lifecycle:generate"
+  - "shape:multi-node"
+  - connector
+  - "mode:build"
+
+run_limits:
+  expected_turns: 52
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a new UiPath Maestro BPMN process project called "PathParamsTest" with a manual start.
+  Build a process that retrieves a single Jira issue using the Jira
+  connector. Pick any Jira project and any issue type from what is
+  available on the connection — those values are your choice. The issue key
+  MUST be "ENGCE-00000".
+  Validate the final BPMN file.
+  If the Jira connector is not present in the registry, use a HTTP fallback for the
+  equivalent REST call and finish after validation. Do not keep searching for a connector
+  node that the registry does not expose.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Advisory: live-v1 agent listed connections before choosing one"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Tenant has at least one Jira connection (precondition for connector authoring)"
+    command: "python3 $REFERENCE_DIR/_setup/preflight_connections.py uipath-atlassian-jira"
+    timeout: 35
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN file exists and is well-formed XML"
+    command: "python3 -c \"import sys; sys.path.insert(0, '$REFERENCE_DIR'); from _shared.bpmn_check import parse_bpmn; parse_bpmn('PathParamsTest')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN uses Jira connector or task-specific managed HTTP fallback"
+    command: "python3 $REFERENCE_DIR/_shared/check_managed_http_fallback.py PathParamsTest uipath-atlassian-jira path_params"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN path parameters carry the issue key ENGCE-00000"
+    command: "python3 $REFERENCE_DIR/_shared/check_path_param_value.py PathParamsTest ENGCE-00000"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

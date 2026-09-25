@@ -165,7 +165,7 @@ def test_find_bpmn_file_without_hint_prefers_the_project_file(tmp_path, monkeypa
     project.mkdir()
     (project / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
     (project / "project.uiproj").write_text("{}", encoding="utf-8")
-    (tmp_path / "draft.bpmn").write_text("<x/>", encoding="utf-8")
+    (tmp_path / "draft.bpmn").write_text("<draft/>", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
 
     assert bpmn_check.find_bpmn_file().endswith("Proj/Proj.bpmn")
@@ -373,3 +373,127 @@ def test_validate_bpmn_fails_malformed_xml_without_calling_the_cli(tmp_path, mon
     monkeypatch.setattr(validate_bpmn.subprocess, "run", _no_cli)
 
     assert validate_bpmn.main([]) == 1
+
+
+def test_find_bpmn_file_without_hint_accepts_identical_copies(tmp_path, monkeypatch) -> None:
+    """Two byte-identical .bpmn files, both beside a project.uiproj: one
+    artifact, not ambiguity (the agent copied its scaffold into the solution
+    wrapper on CI run 35538279757). Differing content still fails."""
+    for d in ("Proj", "ProjSolution/Proj"):
+        (tmp_path / d).mkdir(parents=True)
+        (tmp_path / d / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+        (tmp_path / d / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file().endswith("Proj.bpmn")
+
+    (tmp_path / "Proj" / "Proj.bpmn").write_text("<y/>", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        bpmn_check.find_bpmn_file()
+
+
+def test_resolve_project_excludes_the_live_run_copy(tmp_path, monkeypatch) -> None:
+    """A live grader's ephemeral solution holds an imported copy of the
+    project; ``exclude_under`` keeps it out of the candidate set."""
+    for d in ("ProjSolution/Proj", "proj-live/ProjLiveEval/Proj"):
+        (tmp_path / d).mkdir(parents=True)
+        (tmp_path / d / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+        (tmp_path / d / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit):
+        bpmn_check.resolve_project("Proj.bpmn")
+    resolved = bpmn_check.resolve_project("Proj.bpmn", exclude_under=[Path("proj-live")])
+    assert resolved == tmp_path / "ProjSolution" / "Proj"
+
+
+def _send_task(payload: str) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:sendTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
+        f'id="Send_1"><bpmn:extensionElements><uipath:activity version="v1">'
+        f"{payload}</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+
+
+def test_body_object_reads_a_single_json_blob() -> None:
+    task = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"title": "T", "score": 7.25, "active": true, "viewCount": 3}'
+        "]]></uipath:input>"
+    )
+    assert bpmn_check.body_object(task) == {
+        "title": "T",
+        "score": 7.25,
+        "active": True,
+        "viewCount": 3,
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"a": 1}]]></uipath:input>'
+        '<uipath:input name="extra" type="json" target="body"><![CDATA[{"b": 2}]]></uipath:input>',
+        '<uipath:input name="score" type="number" target="body" value="7" />'
+        '<uipath:input name="title" type="string" target="body" value="T" />',
+    ],
+)
+def test_body_object_rejects_several_body_inputs(payload: str) -> None:
+    with pytest.raises(bpmn_check.BodyShapeError, match="does not merge"):
+        bpmn_check.body_object(_send_task(payload))
+
+
+def test_body_object_rejects_a_per_field_scalar() -> None:
+    task = _send_task('<uipath:input name="score" type="number" target="body" value="7" />')
+    with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
+        bpmn_check.body_object(task)
+
+
+def test_body_object_ignores_non_body_inputs() -> None:
+    task = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"title": "T"}]]></uipath:input>'
+        '<uipath:input name="entityName" type="string" target="path" value="FlowCodeEvalEntity" />'
+    )
+    assert bpmn_check.body_object(task) == {"title": "T"}
+
+
+def test_body_object_leaves_expressions_as_strings() -> None:
+    task = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"score": "=vars.Score", "active": "=js:vars.flag"}]]></uipath:input>'
+    )
+    assert bpmn_check.body_object(task) == {
+        "score": "=vars.Score",
+        "active": "=js:vars.flag",
+    }
+
+
+def test_body_object_rejects_a_whole_body_expression() -> None:
+    task = _send_task('<uipath:input name="body" type="json" target="body" value="=vars.payload" />')
+    with pytest.raises(bpmn_check.BodyShapeError, match="expression"):
+        bpmn_check.body_object(task)
+
+
+def test_body_object_is_empty_without_body_inputs() -> None:
+    task = _send_task('<uipath:input name="limit" type="number" target="query" value="100" />')
+    assert bpmn_check.body_object(task) == {}
+    assert bpmn_check.body_fields(task) == []
+
+
+def test_body_object_is_empty_for_an_empty_body_input() -> None:
+    task = _send_task('<uipath:input name="body" type="json" target="body" />')
+    assert bpmn_check.body_object(task) == {}
+
+
+def test_body_object_fails_a_malformed_body_blob() -> None:
+    bad_json = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"a": ]]></uipath:input>'
+    )
+    with pytest.raises(bpmn_check.BodyShapeError, match="not valid JSON"):
+        bpmn_check.body_object(bad_json)
+
+    not_object = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA[[1, 2]]]></uipath:input>'
+    )
+    with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
+        bpmn_check.body_object(not_object)
