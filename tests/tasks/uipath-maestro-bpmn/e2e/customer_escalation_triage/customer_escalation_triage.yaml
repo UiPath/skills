@@ -36,8 +36,6 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../../_setup
       mount_point: _setup
     - type: template_dir
@@ -85,7 +83,7 @@ initial_prompt: |
      "Degraded" serviceState; Sev3 otherwise). Use the classification node the
      skill documents as executing at runtime.
   2. Create a Jira issue with the Atlassian Jira "Create Issue" connector
-     activity, authored from its registry template and Integration Service
+     activity, resolved to its registered type and Integration Service
      definition. The summary MUST include the correlationId verbatim (e.g.
      "[<severity>] <correlationId> customer escalation"). Use the Atlassian
      Jira connection named "is-sandboxes-test@uipath.com-uipath-sandbox-380"

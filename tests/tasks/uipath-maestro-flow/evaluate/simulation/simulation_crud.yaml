@@ -6,14 +6,15 @@ description: >
   Skill-guided simulation CRUD: agent uses the uipath-maestro-flow skill's
   evaluate capability to scaffold a Flow project, build an eval set + data
   point, then add, inspect, and remove node simulations on that data point.
-  Covers both Static and LLM strategies with an explicit LLM output schema.
+  Covers both Static and Llm strategies, including an Llm output schema
+  auto-resolved from the targeted agent node's declared outputs.
   Purely local, with no authentication, upload, or evaluation run. Verifies
   that the requested simulation state persists into the eval-set JSON.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, feature:eval]
 
 run_limits:
-  expected_turns: 20
-  max_turns: 60
+  expected_turns: 25
+  max_turns: 90
 
 reference:
   directory: ../..
@@ -28,6 +29,12 @@ initial_prompt: |
 
   Declare a string input variable named `name` before adding the data point.
 
+  Put both simulation targets in the flow before adding any simulation: an
+  autonomous agent node with id `agent-lookup` declaring one string output
+  variable `result`, and a node with id `connector-send-email` standing in for
+  an email connector that is not published yet. The flow does not have to pass
+  `uip maestro flow validate`.
+
   Create an eval set named `Sim Set` in the Flow project, using its default
   entry point and current evaluators.
 
@@ -39,9 +46,9 @@ initial_prompt: |
   `{"status":"ok","messageId":"abc123"}`.
 
   Add an `Llm` simulation on the same data point targeting agent component
-  `agent-lookup`, with instructions `Return a plausible lookup result.` and
-  explicit output schema
-  `{"type":"object","properties":{"result":{"type":"string"}}}`.
+  `agent-lookup`, with instructions `Return a plausible lookup result.` Its
+  output schema is auto-resolved from the agent node's declared outputs — do
+  not pass an output-schema flag.
 
   Inspect the simulations to confirm both are present.
 
@@ -87,6 +94,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Flow artifact carries both simulation target component ids"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SimEval 'agent-lookup' 'connector-send-email'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Sim Set eval-set artifact exists"
     command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check eval-set"
     timeout: 10
@@ -111,7 +126,7 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "The Llm agent-lookup simulation persists with an explicit output schema"
+    description: "The Llm agent-lookup simulation persists with the auto-resolved output schema"
     command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check llm-simulation"
     timeout: 10
     expected_exit_code: 0

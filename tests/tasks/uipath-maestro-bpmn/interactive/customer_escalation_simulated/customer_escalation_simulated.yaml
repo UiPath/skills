@@ -26,11 +26,6 @@ run_limits:
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 

@@ -48,8 +48,6 @@ For a Data Fabric task at depth `connector_features/datafabric_connector/<name>/
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../../../_setup
       mount_point: _setup
     - type: template_dir

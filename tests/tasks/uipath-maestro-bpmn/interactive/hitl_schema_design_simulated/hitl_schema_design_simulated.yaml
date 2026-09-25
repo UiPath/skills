@@ -30,11 +30,6 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1200
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 
 reference:

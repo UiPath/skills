@@ -2,6 +2,8 @@
 
 Core concepts for UiPath workflow XAML files, the authoring workflow (Discovery → Generate/Edit → Validate & Fix → Response), and rules for generating and/or editing XAML content.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 **Read contract (Rule 22) — plain full Read, no prior lookup:** this file is the mandatory read in its entirety and holds nothing else — emit the Read in the same assistant turn as the other T1 reads (cards, pitfalls heading list). The per-operation and per-activity catalogs (§ Common Editing Operations, § XAML Reference Examples) live in [xaml-editing-catalog.md](xaml-editing-catalog.md) and load per entry only: Grep `^###` on that file, Read the entries matching the operation or activity at hand; unsure → read it.
 
 ## Critical Rules — XAML (Rules 16–21a, 24)

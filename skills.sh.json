@@ -7,6 +7,7 @@
       "description": "Build automations: RPA workflows, Maestro flows and BPMN, agents, coded apps, API workflows, connectors, functions, and document understanding.",
       "skills": [
         "uipath-rpa",
+        "uipath-activity-migrator",
         "uipath-maestro-flow",
         "uipath-agents",
         "uipath-maestro-bpmn",

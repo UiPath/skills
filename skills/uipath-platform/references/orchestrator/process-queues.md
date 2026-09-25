@@ -51,8 +51,19 @@ Key options:
 | `--encrypted` | Store queue item data encrypted |
 | `--retention-action` | Action for completed items: `Delete`, `Archive`, or `None` (default: Delete) |
 | `--retention-period <days>` | Days to retain completed items (default: 30) |
+| `--retention-bucket <bucket-key>` | Storage bucket **key (GUID)** that archived completed items go to — required with `--retention-action Archive`, rejected with any other action |
 | `--stale-retention-action` | Action for uncompleted items: `Delete`, `Archive`, or `None` (default: Delete) |
 | `--stale-retention-period <days>` | Days to retain uncompleted items (default: 180) |
+| `--stale-retention-bucket <bucket-key>` | Storage bucket key (GUID) for archived uncompleted items — required with `--stale-retention-action Archive` |
+
+**Archiving queue items.** `Archive` exports items into a storage bucket before deleting them. Get the bucket key from `uip or buckets list --folder-path <folder> --output json` (`Key` column; numeric ids are rejected). The bucket must be in, or shared to, the queue's folder — otherwise Orchestrator answers `404 Bucket does not exist` (share it with `uip or buckets share <bucket-key> --folder-path <queue-folder>`). A tenant may also require `--encrypted` on every new queue.
+
+```bash
+uip or queues create "InvoiceQueue" --folder-path "Finance" \
+  --retention-action Archive --retention-bucket <bucket-key> \
+  --stale-retention-action Archive --stale-retention-bucket <bucket-key> \
+  --output json
+```
 
 ### List Queues
 
@@ -68,8 +79,14 @@ Filter by name with `--name` (contains match). Paginate with `--limit` / `--offs
 # Get queue details (cross-folder, no --folder-path needed)
 uip or queues get <queue-key> --output json
 
-# Update queue properties (cross-folder)
+# Update queue properties (cross-folder). Flags you don't pass keep their stored values.
 uip or queues update <queue-key> --max-retries 5 --no-auto-retry --output json
+
+# Retention on update: a path that already archives keeps its bucket on unrelated edits;
+# switching it to Delete/None clears the bucket automatically; switching to Archive
+# needs --retention-bucket / --stale-retention-bucket unless a bucket is already stored.
+uip or queues update <queue-key> --retention-action Delete --output json
+uip or queues update <queue-key> --retention-action Archive --retention-bucket <bucket-key> --output json
 
 # Delete queue (cross-folder). Refuses if the queue still has items;
 # pass --force to delete it and its items anyway.
@@ -310,4 +327,5 @@ Curated queue-item rows expose both `Key` and `UniqueKey` (PascalCase). With `--
 
 - [resources.md](resources.md) -- Orchestrator resources overview and libraries
 - [Triggers & Webhooks](triggers-and-webhooks.md) -- Queue triggers fire automations when item count exceeds a threshold
+- [Business ROI](business-roi.md) -- `uip or queue-roi`: the manual time, volume and cost a queue saves
 - [Setup Environment](setup-environment.md) -- Folder and machine setup

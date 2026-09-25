@@ -129,7 +129,7 @@ uip solution
   │     ├── status <id>                   Check deployment status
   │     ├── list                          List deployments
   │     ├── activate <name>               Activate a deployment (only needed after --skip-activate or to retry a failed auto-activation)
-  │     ├── upgrade <deployment-key>      Move a deployment to a newer package version in place, keeping its existing configuration
+  │     ├── upgrade <deployment-key>      Move a deployment to another published version in place (newer or older), keeping its existing configuration; or --name <n> --package-name <p>
   │     ├── uninstall <name>              Uninstall a deployment — removes its resources and folder, leaves the deployment
   │     ├── delete <name>                 Delete what uninstall leaves behind, a superseded version, or a failed install (--yes)
   │     └── config

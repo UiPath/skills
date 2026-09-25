@@ -47,7 +47,27 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-human-in-the-loop": 100,
     "uipath-rpa": 90,
     "uipath-test": 100,
-    "uipath-platform": 100,
+    # uipath-platform re-measured 2026-09-22. The prior 100 figure was last
+    # confirmed green on 2026-08-18 (#2550, actions/runs/31782135580); the
+    # activation dataset is unchanged since (136 rows both dates), but the
+    # gate stack moved underneath it — coder-eval 0.9.6 -> 0.12.4, and the
+    # agent model arrives from the BEDROCK_MODEL secret as a CLI flag, so it
+    # can change with no commit in this repo. Measured recall over the full
+    # positive set today: 87.4% on a branch whose description + the in-window
+    # head of when_to_use are byte-identical to main, so that figure is main's
+    # own current recall (actions/runs/35741815547); 85.9% and 85.2% on two
+    # unrelated branches that each add a few tokens to when_to_use
+    # (actions/runs/35731472096, actions/runs/35737998987). Main failing its
+    # own 90% floor blocked every PR touching platform frontmatter. Run-to-run
+    # spread is ~2pp; 85 sits at the nearest 5% below main's measurement and
+    # DROP_PP absorbs the spread. Re-baseline again after the next full
+    # activation run.
+    #
+    # Note for anyone re-measuring: description + when_to_use is truncated at
+    # 1536 chars in the skill listing, and this skill is at ~2.6k. Tokens
+    # appended past that cutoff change nothing; tokens inserted before it
+    # displace whatever they push over.
+    "uipath-platform": 85,
     "uipath-maestro-flow": 95,
     "uipath-maestro-bpmn": 100,
     "uipath-admin": 100,

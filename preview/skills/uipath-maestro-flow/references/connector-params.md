@@ -84,7 +84,8 @@ The library and its Markdown go to a shared cache
 To read the Markdown directly, ask where it is:
 
 ```bash
-FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md)"
+FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)" \
+  || echo "no connector library yet: run uip maestro registry pull" >&2
 ```
 
 The four library verbs are `pull`, `search`, `path` and `prepare`.
@@ -435,6 +436,18 @@ Author the field's helper call and keep going:
 channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 ```
 
+`.byEmail` is an **alias**, and aliases are generated onto the descriptor.
+`lookup()` takes two forms, and only one of them carries them:
+
+| form | when | helpers |
+| --- | --- | --- |
+| `lookup(SendMessageToUser, 'channel')` | you imported the descriptor `prepare` generated | `.byEmail(v)`, `.byRealName(v)`, … plus `.by(name, v)` |
+| `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | Generic CRUD, or no descriptor in hand | `.by(name, v)` only |
+
+Do not carry an alias from the first row into the second.
+There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
+Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
+
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
 and it is the only tenant call the whole loop needs:
@@ -478,10 +491,20 @@ message names the connection it read and, once every candidate has been tried,
 the one command that shows what the collection holds. Tenant discovery is still
 not a phase of this loop. When the candidates share a name, pick one
 by the `--connection-id <id>` each candidate line prints; `bindings.json` is
-written on that route too. The entries are named `<connector's last segment>`
-(`slack`) and `shared` unless you pass `--bind-connection` / `--bind-folder`;
-`connection:` and `folder:` in source must use those names, and `compile` warns
-`CONNECTION_STUB` when they do not resolve to a tenant id.
+written on that route too. The entries are named after the `connection:` and
+`folder:` labels your source already uses for this connector (for example
+`is-sandboxes`); a source that uses none gets `<connector's last segment>`
+(`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both.
+A label `prepare` cannot read without running the source (a computed value, or
+a step whose connector it cannot trace) is never guessed: `prepare` prints a
+`bindings:` line naming that step, and binds the one label it did read for the
+connector, or the default when it read none.
+`prepare` refuses, before it writes anything, a source that gives one connector
+several labels, or gives two connectors the same connection label (one label
+binds one connection). The `next:` line prints the names it bound. `compile`
+refuses a label that a `bindings.json` with entries does not declare
+(`BINDING_UNDECLARED`), and warns `CONNECTION_STUB` when a declared one does not
+resolve to a tenant id.
 
 `check` names the exact command when a lookup is unresolved, and warns when a
 lookup field is given a literal id. It also speaks up when a lookup field is

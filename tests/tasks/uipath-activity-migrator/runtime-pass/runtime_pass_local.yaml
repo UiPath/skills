@@ -1,0 +1,201 @@
+task_id: skill-migrator-runtime-pass
+description: >
+  Local-only: the agent migrates StaffDirectoryAudit, applies the
+  post-migration fixes the user approves, and, on the user's yes, runs the
+  migrated project against the real applications on this machine: Edge on
+  the DataTables demo page and the Windows Calculator. The run passes the
+  first time, so the fix and rerun loop never starts. Graded on the same
+  structural outcome as the e2e task, plus the run log, the screenshot the
+  workflow writes, the absence of runtime fixes, a build the harness runs
+  itself and an untouched source. Needs Windows, Edge with the UiPath
+  extension, the Windows Calculator, internet access to datatables.net, and a
+  `uip` login with a Studio licence. It drives the desktop for about 15
+  minutes, so it is skipped in CI and the nightly.
+  Run it locally as tests/README.md § Running a judge-free task locally
+  describes, with -e experiments/smoke-windows.yaml and --include-skipped.
+tags: [uipath-activity-migrator, e2e, mode:build, lifecycle:generate, windows]
+skip: true  # local-only: needs Edge, the UiPath extension, the Calculator and a Studio-licensed login
+
+run_limits:
+  expected_turns: 70
+  max_turns: 130
+  task_timeout: 3600
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../migrate-with-fixes/fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: ../migrate-with-fixes/fixture
+
+initial_prompt: |
+  migrate activities in the StaffDirectoryAudit project
+
+simulation:
+  enabled: true
+  persona: |
+    You are the developer who owns StaffDirectoryAudit and asked for the
+    migration. You are at this machine, Edge is installed with the UiPath
+    extension, and you want the migrated project checked by a real run.
+  goal: |
+    Let the agent migrate the project, apply the post-migration fixes it
+    proposes, and run the result once, so it reaches the report.
+  constraints:
+    - "When asked which UIAutomation line or version to target, choose the recommended option."
+    - "When asked which post-migration edits or annotation rewrites to apply, choose to apply all of them."
+    - "When asked whether to run the migrated project now, answer yes."
+    - "When a fix is proposed after a failed run, accept it so the agent applies it and runs again."
+    - "If the same failure comes back after a fix, choose to undo the fix and stop."
+    - "When asked whether to continue after three fixes, answer no."
+    - "When asked to close windows or tabs a failed run left open, say they are closed and the agent can rerun."
+    - "When asked whether to run or validate the original, unmigrated project, answer no."
+    - "When asked for a variable's value or a config value you do not know, say the value in the XAML files is the one to use."
+    - "Never invent facts about the project, the applications it drives, or the environment."
+    - "Keep replies to one sentence or a numbered option."
+    - "Never tell the agent to stop, skip a step, or rewrite files wholesale."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:(?!\n|&&|\|\||;|\|).)*--output-path)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Version-agnostic on purpose: the recommended UIAutomation line moves with
+  # releases, and the fix outcome below must hold on newer patches too.
+  - type: file_check
+    description: "Output project.json is a Windows project"
+    path: "StaffDirectoryAudit_Upgraded/project.json"
+    patterns:
+      - pattern: '"targetFramework"\s*:\s*"Windows"'
+        must_match: true
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Same expected end state as the e2e task and the fix-only smoke.
+  - type: run_command
+    description: "GetStaffRecords.xaml has one generated card unwrapped and one IsLoose removed, nothing else"
+    command: |-
+      python -c "import re, sys; s = open('StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml', encoding='utf-8').read(); c = lambda p: len(re.findall(p, s)); sys.exit(0 if c('IsLoose=' + chr(34) + 'True' + chr(34)) == 2 and c('uix:NApplicationCard ') == 7 and c('ToStringWithDelimiter') == 4 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Fixed constructs in GetStaffRecords.xaml carry the Remediated annotation line"
+    path: "StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml"
+    patterns:
+      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VerifyHeadcount.xaml is structurally unchanged and its healthy constructions were marked Verified healthy (at least 3 of 4)"
+    command: |-
+      python -c "import re, sys; s = open('StaffDirectoryAudit_Upgraded/VerifyHeadcount.xaml', encoding='utf-8').read(); c = lambda p: len(re.findall(p, s)); sys.exit(0 if c('ToStringWithDelimiter') == 6 and c('uix:NApplicationCard ') == 4 and c('IsLoose=' + chr(34) + 'True' + chr(34)) == 0 and s.count('Verified healthy by uipath-activity-migrator') >= 3 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Runtime guide § Run: the check uses `run`, once here.
+  - type: command_executed
+    description: "Agent ran the migrated workflow"
+    command_pattern: 'uip\s+rpa\s+run(?=(?:(?!\n|&&|\|\||;|\|).)*--file-path)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never ran the check under the debugger"
+    command_pattern: 'uip\s+rpa\s+debug\s+start'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never passed --skip-build"
+    command_pattern: '--skip-build'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cancelled the execution after running"
+    command_pattern: 'uip\s+rpa\s+execution\s+cancel'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never ran or validated the source project"
+    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:(?!\n|&&|\|\||;|\|).)*--project-dir\s+"?[^"\s]*[\\/]StaffDirectoryAudit"?(?:\s|$))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "The run passed"
+    path: "StaffDirectoryAudit/.upgrade/run-latest.log"
+    patterns:
+      - pattern: '"HasErrors":\s*false|"errors":\s*\[\s*\]'
+        must_match: true
+      - pattern: 'StaffDirectoryAudit execution ended in: \d\d:\d\d:\d\d'
+        must_match: true
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # "Capture directory view" writes screenshot.png into the project folder:
+  # proof the run reached GetStaffRecords.xaml, not only Main.xaml's start.
+  - type: file_exists
+    description: "The workflow's screenshot was written by the run"
+    path: "StaffDirectoryAudit_Upgraded/screenshot.png"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The first run passes, so the fix and rerun loop never starts.
+  - type: run_command
+    description: "No runtime fix was applied"
+    command: |-
+      python -c "import os, sys; sys.exit(1 if os.path.exists(os.path.join('StaffDirectoryAudit', '.upgrade', 'runtime-fixes')) else 0)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 5: the source project is never written to (only its .upgrade folder).
+  - type: run_command
+    description: "Source workflows and project.json are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'StaffDirectoryAudit'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('StaffDirectoryAudit', f), shallow=False) for f in ('Main.xaml', 'GetStaffRecords.xaml', 'VerifyHeadcount.xaml', 'BuildReport.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits 0 against the migrated and fixed output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('StaffDirectoryAudit_Upgraded'), '--output', 'json'], env=env))"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

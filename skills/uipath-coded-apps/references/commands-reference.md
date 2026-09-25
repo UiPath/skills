@@ -2,6 +2,8 @@
 
 Complete reference for all `uip codedapp` subcommands.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## Prerequisites
 
 - **Authentication**: Run `uip login` before using cloud commands (auth is handled by the `uip` CLI, not the codedapp tool)
@@ -110,8 +112,8 @@ uip codedapp pack <dist> [options]
 | `-n, --name <name>` | Package name | Prompted interactively |
 | `-v, --version <version>` | Package version | `1.0.0` |
 | `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
-| `-a, --author <author>` | Package author | `UiPath Developer` |
-| `--description <desc>` | Package description | Prompted |
+| `--author <author>` | Package author | `UiPath Developer` |
+| `--description <text>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |

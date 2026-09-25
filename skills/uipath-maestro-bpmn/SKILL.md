@@ -52,7 +52,7 @@ edits and preserve content you did not author: unknown `uipath:*` elements, `uip
 tags, imported Integration Service payloads, and stable element IDs. Do not
 regenerate the whole file or drop extension data the skill does not recognize —
 preserve-only structures (see the blocklist in
-[references/structural-bpmn.md](references/structural-bpmn.md)) round-trip
+[references/structural-bpmn.md](references/structural-bpmn.md#do-not-generate-for-new-authoring-preserve-on-round-trip-only)) round-trip
 untouched. Never normalize existing nodes to this skill's canonical templates:
 do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
@@ -166,7 +166,7 @@ dropping and merging items while summarizing, then building from the summary.
 
 ## Workflow
 
-Work the five steps quickly, but keep the path matched to the user's ask. Treat
+Work the six steps quickly, but keep the path matched to the user's ask. Treat
 requests to discover before authoring, save raw registry JSON/evidence, or "do
 not author yet" as discovery-only even if they describe an eventual BPMN. In
 that mode, immediately create `registry-evidence/`, run and save `registry pull
@@ -174,12 +174,10 @@ that mode, immediately create `registry-evidence/`, run and save `registry pull
 json`, and `registry get <type> --output json` for each requested type; do not
 read deep authoring references or scaffold a project. For authoring asks, author
 early: do not pre-read every reference before writing. Read a reference only
-when you reach the structure it covers, get the needed templates, then write the
-first complete draft before further spelunking. If
-[references/structural-bpmn.md](references/structural-bpmn.md) or
-[references/expression-authoring.md](references/expression-authoring.md)
-directly covers the requested construct, write a first complete draft before
-further spelunking.
+when you reach the structure it covers, and read only the section covering it —
+[references/structural-bpmn.md](references/structural-bpmn.md) opens with a
+section index naming every anchor. Get the needed templates, then write the
+first complete draft before further spelunking.
 
 For registry-evidence-only tasks, follow the command-first recipe in
 [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
@@ -187,8 +185,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
-   `--all-folders` — a folder-scoped list silently misses connections). Confirm
-   every selection with the user (use AskUserQuestion). Never fabricate an identifier.
+   `--all-folders` — a folder-scoped list silently misses connections). Never
+   fabricate an identifier; ask only under Rule 4, otherwise decide.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
@@ -217,12 +215,12 @@ For registry-evidence-only tasks, follow the command-first recipe in
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
    a stable manual entry point, one structural task, and complete DI. **Do not
    reverse-engineer authoring patterns from task fixtures, generated package
-   files, or the CLI's compiled bundle (`@uipath/cli/dist/*.js`)** — such
+   files, or any installed package bundle under `node_modules`** — such
    spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
-   expression/error mappings, retry attributes), then run
-   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For a new local project, initialize the
+   expression/error mappings, retry attributes). Leave the diagram to step 4;
+   do not hand-author `bpmndi:*` while the source is still moving. For a new local project, initialize the
    supported scaffold with `uip maestro bpmn init <ProjectName> --output json`,
    edit at the returned `Data.Path`, and preserve its generated metadata. For a
    source-only draft the user has not asked to package or operate, pass
@@ -281,8 +279,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    artifact the CLI must supply.
    Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
    start event id or adds or removes an entry point — **not only when packaging
-   or operating**. `operate.json` and `entry-points.json` are generated once and
-   do not follow source edits, so step 4's validator fails on the mismatch:
+   or operating**. Lay the diagram out first (step 4): `refresh` validates
+   before it writes, so a node you just added fails it with `MISSING_DI_SHAPE`. `operate.json` and `entry-points.json` are generated once and
+   do not follow source edits, so step 5's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
    <bpmn:startEvent id="Event_start"> exists`. Authoring from the skeleton above
    renames the initializer's `Event_start`, so a source-only draft needs this
@@ -295,15 +294,39 @@ For registry-evidence-only tasks, follow the command-first recipe in
    rest. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
-   synthetic local project. Every root start event needs a
+   synthetic local project. Every root **manual** start event needs a
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
-   writing an empty entry-point list.
+   writing an empty entry-point list. A connector or timer start is not
+   manual, so a project that runs `refresh` or `pack` keeps the initializer's
+   manual start alongside it; only a source-only draft replaces it. Clearing
+   the resulting stale-entry error by editing or deleting `entry-points.json`
+   instead of running `refresh` passes `validate` and `pack` while shipping an
+   empty `bindings_v2.json`.
    Give public inputs and outputs explicit runtime bridges, and converge routes
    returning one result on a single completion EndEvent — for the two-layer
    contract see
-   [references/structural-bpmn.md](references/structural-bpmn.md#variables-bpmnvariables).
-4. **Validate.** Check well-formedness first. `validate` tokenizes with a
+   [references/structural-bpmn.md](references/structural-bpmn.md#variables).
+4. **Lay out the diagram.** After the last source edit, and before any
+   `validate`, `refresh`, or `pack` — including the `refresh` step 3 calls for:
+
+   ```bash
+   uip maestro bpmn format <file.bpmn>
+   ```
+
+   It overwrites the file's `bpmndi:BPMNDiagram` in place, so the canvas
+   renders the process arranged instead of stacked at the origin. Every
+   deliverable gets this, source-only drafts included. It is also a hard
+   precondition for the next two steps, not a cosmetic pass: a node with no
+   `BPMNShape` or a flow with no `BPMNEdge` fails `validate` with
+   `MISSING_DI_SHAPE` / `MISSING_DI_EDGE`, no diagram at all fails it with
+   `BPMN_PARSE_ERROR`, and `refresh` validates before it writes, so it fails
+   the same way. Edit the source again and the layout is stale — re-run this
+   step before re-validating. If `format` reports `unknown command`, update the
+   CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if
+   upgrading is unavailable, hand-author the fallback DI structure in
+   [references/structural-bpmn.md](references/structural-bpmn.md).
+5. **Validate.** Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
    else. Then run the CLI validator, which runs the full PO.Frontend canvas
@@ -315,16 +338,27 @@ For registry-evidence-only tasks, follow the command-first recipe in
    uip maestro bpmn validate <file.bpmn> --output json
    ```
 
-   Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
-   with its rule code). Warnings do not fail the run: validate once, fix only
-   error-severity findings, and do not re-validate in a loop chasing warnings.
-   Two warnings are defects rather than noise, because no error covers them.
-   `read but never assigned` says nothing writes a value the process reads, so
-   a step that should produce it does not. `MISSING_RESOURCE` says a node has
-   no target selected; in a runnable deliverable, bind it. For a draft or
-   boundary handoff the user asked for, an unresolved node warns
-   `MISSING_RESOURCE` by design: keep its public placeholder, never invent an
-   identifier (Rule 2), and report the warning rather than clearing it.
+   Exit 0 = valid; exit 1 = validation failed. Read severity from each issue's
+   `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which
+   counts errors while the list under it prints warnings too. Fix only
+   error-severity findings, then re-run step 4 and validate again; stop
+   re-validating once every remaining finding is a warning or the placeholder
+   pair below. `read but never assigned` is a defect no error covers: nothing
+   writes a value the process reads, so a step that should produce it does not.
+   `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
+   about one unresolved node, and the binding half is a live tenant lookup. In a
+   runnable deliverable, bind the node to a deployed resource. When the user
+   asked for a placeholder, draft, or boundary handoff, no invented identifier
+   can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
+   expected result. Report the pair once and continue; `refresh` (step 6)
+   succeeds with it unresolved.
+
+   `[warning] [(xml)] unknown attribute <type>` is expected noise from the
+   script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
+   `type` is required on `uipath:input`, `uipath:output`, and
+   `uipath:inputOutput`; removing it there fails the load with
+   `BPMN_PARSE_ERROR ... to be a string`. Do not bisect the file and do not
+   read package bundles under `node_modules` to find the rule.
 
    Validation is structural preflight, not runtime proof — see
    [references/cli-conventions.md](references/cli-conventions.md). When
@@ -335,15 +369,15 @@ For registry-evidence-only tasks, follow the command-first recipe in
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-5. **Refresh derived metadata when package-ready output is required.** After
-   source validation passes, regenerate the four CLI-owned package files:
+6. **Refresh derived metadata when package-ready output is required.** Once
+   step 5 leaves no fixable error, regenerate the four CLI-owned package files:
 
    ```bash
    uip maestro bpmn refresh <project-path> --output json
    ```
 
    Treat a nonzero result as a source/precondition failure: fix the BPMN or
-   `project.uiproj`, revalidate, and refresh again — never repair the generated
+   `project.uiproj`, re-run steps 4 and 5, and refresh again — never repair the generated
    JSON by hand. Refresh is needed only for a package-ready, upload, debug,
    publish, or deploy deliverable, not for a source-only draft. For the full
    contract (scope, idempotency, binding rules) see
@@ -408,12 +442,19 @@ and honestly surfaced to the user as gaps when asked.
    as `<bpmn:startEvent>`, `<bpmn:intermediateCatchEvent>`,
    `<bpmn:scriptTask>`, and `<bpmn:endEvent>`. Do not write PascalCase tags
    like `<bpmn:IntermediateCatchEvent>`.
-4. **Confirm before authoring.** Confirm the chosen connector/connection/process
-   and the process structure with the user (AskUserQuestion). When the source
-   is an image, confirm the full inventory, not a summary — see
-   [Authoring from an image](#authoring-from-an-image).
+4. **One clarifying round, then author.** Ask (AskUserQuestion) only for a
+   choice that the request and the CLI evidence leave undecidable and whose
+   wrong answer is unrecoverable or forces an invented identifier; batch those
+   into one round before authoring and never open a second. Decide everything
+   else, author, and name each assumption and what tied in your summary. When
+   the request says not to pause for approval or confirmation, ask nothing.
+   When the source is an image, confirm the full inventory, not a summary —
+   see [Authoring from an image](#authoring-from-an-image).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
+   `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
+   the last write to the `.bpmn` and before `validate` or `refresh`, both of
+   which error on a node with no shape.
 6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
    `uipath:event` / `uipath:mapping` templates declare their type as a nested
    `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored

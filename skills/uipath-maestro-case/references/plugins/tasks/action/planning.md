@@ -42,7 +42,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 
 Query by the exact concrete `resource-name` from the SDD. `Action App ID` determines whether the prior phase resolved the app; an unresolved ID does not erase or replace the intended title. Action lookups stay in `action-apps-index.json` — never adopt a same-named resource from another cache type.
 
-See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for the fallback rationale.
+See [registry-discovery.md](../../../registry-discovery.md#when-a-search-returns-nothing) for the fallback rationale.
 
 ## Unresolved Fallback
 

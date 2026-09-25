@@ -22,13 +22,10 @@ tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "sh
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../../_setup
       mount_point: _setup
 run_limits:
   expected_turns: 55
-  turn_timeout: 600
 
 reference:
   directory: ../..
