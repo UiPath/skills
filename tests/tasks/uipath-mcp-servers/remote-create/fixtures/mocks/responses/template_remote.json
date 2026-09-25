@@ -2,14 +2,12 @@
   "Result": "Success",
   "Code": "AgentHubMcpTemplate",
   "Data": {
-    "type": "remote",
-    "name": "remote-server",
-    "slug": "remote-server",
-    "description": "",
-    "version": "1.0.0",
-    "uri": "https://example.invalid",
-    "headers": {
-      "Authorization": "Bearer {{asset:ASSET_NAME}}"
-    }
+    "Name": "Example MCP",
+    "Slug": "example-mcp",
+    "Description": "Ready-to-edit server description.",
+    "Version": "1.0.0",
+    "Uri": "https://example.com/mcp",
+    "Headers": "{}",
+    "UseRelay": false
   }
 }

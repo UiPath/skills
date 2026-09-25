@@ -1,20 +1,17 @@
 {
   "Result": "Success",
-  "Code": "AgentHubMcpCreateSchema",
+  "Code": "AgentHubMcpTemplate",
   "Data": {
-    "type": "object",
-    "required": ["name", "slug", "description", "uri"],
-    "properties": {
-      "name":        { "type": "string" },
-      "slug":        { "type": "string", "pattern": "^[a-z0-9-]+$", "minLength": 3, "maxLength": 50 },
-      "description": { "type": "string", "minLength": 1, "maxLength": 4000 },
-      "version":     { "type": "string" },
-      "uri":         { "type": "string", "format": "uri" },
-      "headers":     {
-        "type": "object",
-        "description": "HTTP headers sent with every MCP request. Values may use the form '{{asset:<asset-name>}}' to reference an Orchestrator asset, resolved at runtime via the caller's bearer token + folder context.",
-        "additionalProperties": { "type": "string" }
-      }
+    "Type": "object",
+    "Required": ["name", "slug", "uri"],
+    "Properties": {
+      "Name": { "Type": "string" },
+      "Slug": { "Type": "string" },
+      "Description": { "Type": "string" },
+      "Version": { "Type": "string" },
+      "Uri": {},
+      "Headers": {},
+      "UseRelay": {}
     }
   }
 }

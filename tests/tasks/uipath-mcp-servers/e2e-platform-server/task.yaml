@@ -1,9 +1,10 @@
 task_id: skill-mcp-servers-e2e-platform-server
 description: >
-  E2E (live DefaultTenant): register a `platform`-type AgentHub MCP server bound to the
-  `orchestrator` first-party service, exposing only the `Releases_Get` and `QueueDefinitions_Get`
-  tools; refresh (sync), verify exactly those two tools resolved, then the harness deletes it.
-tags: [uipath-mcp-servers, e2e, mode:build]
+  E2E (live DefaultTenant): register a `platform`-type Agent Gateway MCP server bound to the
+  `testmanager` first-party service (enabled in every cloud, unlike `orchestrator`), exposing only
+  the `Get_test_sets` and `Get_test_cases` operations; refresh (sync), verify exactly those two
+  tools resolved, then the harness deletes it.
+tags: [uipath-mcp-servers, e2e, mode:build, lifecycle:setup, outcome-graded]
 sandbox:
   template_sources:
     - type: template_dir
@@ -16,10 +17,10 @@ run_limits:
 initial_prompt: |
   Work autonomously — take this end to end and don't stop to ask me anything.
 
-  I want to expose a couple of Orchestrator operations as MCP tools. Register a platform-type MCP
-  server in the Shared folder, name it "E2E Platform Orchestrator", bound to the orchestrator
-  service, and expose only two tools: Releases_Get and QueueDefinitions_Get. Then refresh its
-  tools. Give it a unique slug (append the Unix epoch, e.g. platform-e2e-<EPOCH>).
+  I want to expose a couple of Test Manager operations as MCP tools in Agent Gateway. Register a
+  platform-type MCP server in the Shared folder, name it "E2E Platform Test Manager", bound to the
+  Test Manager service, and expose only two operations: Get_test_sets and Get_test_cases. Then
+  refresh its tools. Give it a unique slug (append the Unix epoch, e.g. platform-e2e-<EPOCH>).
 
   When it's done, leave a report.json in the working dir for cleanup:
   {"slug": "<slug>", "folder_path": "Shared"}
@@ -40,25 +41,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Bound the orchestrator service"
+    description: "Bound the testmanager service by its exact id (--service or an inline --body serviceName; not testmanagerExternal or other variants)"
     tool_name: "Bash"
-    command_pattern: '(?si)mcp\s+create\s+platform.*orchestrator'
+    command_pattern: '(?s)mcp\s+create\s+platform.*(--service[\s=]+[''"]?testmanager\b|serviceName\x5c?"\s*:\s*\x5c?"testmanager\x5c?")'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Selected the Releases_Get tool"
+    description: "Selected the Get_test_sets operation (--tool or an inline --body)"
     tool_name: "Bash"
-    command_pattern: '--tool\s+"?Releases_Get'
+    command_pattern: '(?s)(--tool[\s=]+[''"]?Get_test_sets\b|mcp\s+create\s+platform.*\x5c?"Get_test_sets\x5c?")'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Selected the QueueDefinitions_Get tool"
+    description: "Selected the Get_test_cases operation (--tool or an inline --body)"
     tool_name: "Bash"
-    command_pattern: '--tool\s+"?QueueDefinitions_Get'
+    command_pattern: '(?s)(--tool[\s=]+[''"]?Get_test_cases\b|mcp\s+create\s+platform.*\x5c?"Get_test_cases\x5c?")'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -70,16 +71,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Ran refresh-tools with --folder-key (sync for platform; the refresh-tools endpoint requires the folder key)"
+    description: "Ran refresh-tools with a folder context (--folder-key or --folder-path; sync for platform)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-key'
+    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-(key|path)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Live tenant: the platform server exposes the two selected tools"
-    command: 'uip agenthub mcp-tools list --mcp "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e ".Data.Items | length >= 2"'
+    description: "Live tenant: the platform server exposes exactly the two selected operations"
+    command: 'uip agenthub mcp-tools list --mcp "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e "[.Data.Items[].Name] | sort == [\"Get_test_cases\", \"Get_test_sets\"]"'
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

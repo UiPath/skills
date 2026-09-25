@@ -2,11 +2,27 @@
   "Result": "Success",
   "Code": "AgentHubMcpToolsList",
   "Data": {
-    "items": [
-      { "id": "tool-mock-remote-01", "name": "search",  "mcpName": "mock-remote-api", "description": "Search the mock API." },
-      { "id": "tool-mock-remote-02", "name": "fetch",   "mcpName": "mock-remote-api", "description": "Fetch a document by id." }
+    "Items": [
+      {
+        "Id": "tool-mock-remote-01",
+        "Type": 0,
+        "Name": "search",
+        "McpName": "search",
+        "Description": "Search the mock API.",
+        "ServerId": "mcp-mock-remote-01",
+        "InputSchema": "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}"
+      },
+      {
+        "Id": "tool-mock-remote-02",
+        "Type": 0,
+        "Name": "fetch",
+        "McpName": "fetch",
+        "Description": "Fetch a document by id.",
+        "ServerId": "mcp-mock-remote-01",
+        "InputSchema": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"}}}"
+      }
     ],
-    "total": 2,
-    "count": 2
+    "Total": 2,
+    "Count": 2
   }
 }

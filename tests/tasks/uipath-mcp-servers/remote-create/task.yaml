@@ -1,7 +1,7 @@
 task_id: skill-mcp-servers-remote-create
 description: |
-  Register a remote-type AgentHub MCP server pointing at an external HTTP MCP endpoint with Bearer auth backed by an Orchestrator asset reference. Exercises the generic Server Types path: slug regex, --print-schema/template discovery, --file payload submission, post-create refresh-tools + verify. Uses the manifest-driven uip mock — no real tenant call.
-tags: [uipath-mcp-servers, smoke, 'mode:build']
+  Register a remote-type Agent Gateway MCP server pointing at an external HTTP MCP endpoint with Bearer auth backed by an Orchestrator asset reference. Exercises the generic Server Types path: slug regex, --print-schema/template discovery (PascalCase output, camelCase payload), `headers` as `Name: value` lines with a `%ASSETS/<name>%` value, --file payload submission, post-create refresh-tools + verify. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:setup']
 agent:
   type: claude-code
   allowed_tools: [Skill, Bash, Read, Write]
@@ -17,7 +17,8 @@ initial_prompt: |
 
   TASK: Register a remote-type AgentHub MCP server in the Shared folder.
     - Target URL: https://mock.api.example.com
-    - Auth: Bearer token from Orchestrator asset SLACK_BOT_TOKEN
+    - Auth: an Authorization header whose value comes from the Orchestrator
+      asset SLACK_BOT_TOKEN (the asset holds the full `Bearer <token>` value)
     - Use slug: mock-remote-api (must match ^[a-z0-9-]+$, length 3-50)
     - Suggested display name: "Mock Remote API"
 
@@ -33,13 +34,18 @@ success_criteria:
 - {type: file_exists, path: payload.json, description: '`payload.json` was produced'}
 - {type: file_exists, path: create-command.sh, description: '`create-command.sh` was produced'}
 - type: file_contains
-  description: payload references the remote URL
+  description: payload references the remote URL under the camelCase `uri` key (PascalCase keys are dropped by the CLI)
   path: payload.json
-  includes: ['https://mock.api.example.com']
+  includes: ['https://mock.api.example.com', '"uri"']
+- type: file_matches_regex
+  description: 'the camelCase `headers` string in payload.json carries an `Authorization: %ASSETS/SLACK_BOT_TOKEN%` line (the service rejects an object and does not parse a JSON-encoded string)'
+  path: payload.json
+  pattern: '"headers"\s*:\s*"(?:[^"\\]|\\.)*?Authorization\s*:\s*%ASSETS/SLACK_BOT_TOKEN%'
 - type: file_contains
-  description: payload expresses the Bearer asset reference via the schema-documented form
+  description: the asset reference has no `Bearer ` prefix (a prefixed reference is sent literally) and uses no invented syntax
   path: payload.json
-  includes: [SLACK_BOT_TOKEN]
+  includes: ['%ASSETS/SLACK_BOT_TOKEN%']
+  excludes: ['Bearer %ASSETS', '{{asset']
 - type: file_contains
   description: create-command invokes `mcp create remote` (slug/uri/headers live in payload.json via --file)
   path: create-command.sh
@@ -48,7 +54,7 @@ success_criteria:
   command_pattern: uip\s+agenthub\s+mcp\s+create\s+remote\b.*(--file|--body), min_count: 1}
 - {type: command_executed, description: Agent refreshed tools after create, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp\s+refresh-tools\s+mock-remote-api,
   min_count: 1}
-- {type: command_executed, description: 'Agent verified after create/refresh via a Critical-Rule-3 inspection verb (mcp list / mcp get / mcp-tools list)', tool_name: Bash,
+- {type: command_executed, description: 'Agent verified after create/refresh via a Critical-Rule-5 inspection verb (mcp list / mcp get / mcp-tools list)', tool_name: Bash,
   command_pattern: uip\s+agenthub\s+(mcp\s+(get|list)|mcp-tools\s+list),
   min_count: 1}
 run_limits: {max_turns: 60}

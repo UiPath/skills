@@ -2,27 +2,27 @@
   "Result": "Success",
   "Code": "AgentHubMcpToolsCandidates",
   "Data": {
-    "items": [
+    "Items": [
       {
-        "id": "process-mock-invoice-01",
-        "name": "MockInvoiceProcess",
-        "displayName": "Mock Invoice Process",
-        "category": "automation",
-        "targetIdentifier": "process-mock-invoice-01",
-        "folderKey": "folder-mock-shared",
-        "description": "Mock automation process for skill regression tests."
+        "Id": "process-mock-invoice-01",
+        "Name": "MockInvoiceProcess",
+        "Description": "Mock automation process for skill regression tests.",
+        "Folder": { "Key": "folder-mock-shared", "Name": "Shared" },
+        "EntityType": "Process",
+        "EntitySubType": "Process"
       },
       {
-        "id": "process-mock-onboarding-01",
-        "name": "MockOnboardingProcess",
-        "displayName": "Mock Onboarding Process",
-        "category": "automation",
-        "targetIdentifier": "process-mock-onboarding-01",
-        "folderKey": "folder-mock-shared",
-        "description": "Mock onboarding automation."
+        "Id": "process-mock-onboarding-01",
+        "Name": "MockOnboardingProcess",
+        "Description": "Mock onboarding automation.",
+        "Folder": { "Key": "folder-mock-shared", "Name": "Shared" },
+        "EntityType": "Process",
+        "EntitySubType": "Process"
       }
     ],
-    "total": 2,
-    "count": 2
+    "Total": 2,
+    "Count": 2,
+    "Category": "automation",
+    "RcsFilter": { "EntityTypes": ["Process"], "EntitySubType": ["Process"] }
   }
 }

@@ -209,9 +209,10 @@
 # IXP skill
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
-# MCP skill (UiPath AgentHub MCP server registration + tool authoring)
-/skills/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
-/tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
+# MCP skill (Agent Gateway MCP servers; owners mirror UiPath/cli packages/agenthub-tool)
+/skills/uipath-mcp-servers/ @edis-uipath @alessandromuresan @radugheo @arabelaa @PopescuTudor @giuliastf @ionmincu @cristipufu @UiPath/team-coded-agents
+/tests/tasks/uipath-mcp-servers/ @edis-uipath @alessandromuresan @radugheo @arabelaa @PopescuTudor @giuliastf @ionmincu @cristipufu @UiPath/team-coded-agents
+/tests/tasks/activation/uipath-mcp-servers.jsonl @edis-uipath @alessandromuresan @radugheo @arabelaa @PopescuTudor @giuliastf @ionmincu @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
 /skills/uipath-insights/ @UiPath/insights

@@ -1,29 +1,34 @@
 # uipath-mcp-servers — eval task suite
 
-Regression tasks for the `uipath-mcp-servers` skill. Each scenario replays the agent's reasoning against a manifest-driven `uip` CLI mock — no live UiPath tenant, no network. All fixtures use synthetic, public-safe values (mock connector instances, mock project keys, mock channel IDs).
+Regression tasks for the `uipath-mcp-servers` skill (Agent Gateway MCP servers). Two kinds:
+
+- **Mocked smoke tasks** replay the agent against a manifest-driven `uip` CLI mock — no live UiPath tenant, no network. All fixtures use synthetic, public-safe values.
+- **Live e2e tasks** (`e2e-*`) run the real CLI against the shared test tenant. Each writes `report.json` (`{"slug", "folder_path"}`) and the `post_run` hook `_setup/cleanup_mcp_server.py` deletes that server (`mcp delete --yes`).
 
 ## Layout
 
 ```
 tests/tasks/uipath-mcp-servers/
-├── _shared/
-│   └── mock_template/
-│       └── mocks/
-│           └── uip                       # shared Python dispatcher (copy of diagnostics/_shared)
-├── README.md                             # this file
-├── remote-create/                        # generic Server Types: remote MCP + asset substitution + refresh-tools
-└── resource-create/                      # generic Tool Kinds: create-resource on a uipath-type server
-    ├── task.yaml                         # TaskDefinition; uses --dry-run on every mutation
-    └── fixtures/
-        └── mocks/
-            └── responses/
-                ├── manifest.json         # rule dispatch (substring match → response file)
-                └── *.json                # canned per-rule responses
+├── README.md                          # this file
+├── _shared/mock_template/mocks/uip    # shared Python mock dispatcher (mocked tasks)
+├── _setup/cleanup_mcp_server.py       # e2e post_run cleanup
+├── remote-create/                     # mocked
+├── resource-create/                   # mocked
+├── update-cross-folder-retarget/      # mocked
+│   ├── task.yaml
+│   └── fixtures/mocks/responses/
+│       ├── manifest.json              # rule dispatch (substring match → response file)
+│       └── *.json                     # canned per-rule responses
+├── e2e-command-server/                # live
+├── e2e-platform-server/               # live
+├── e2e-remote-server/                 # live
+├── e2e-swagger-server/                # live
+└── e2e-uipath-allkinds/               # live
 ```
 
 ## Running
 
-From the repo root:
+From the repo root (one-time `make install` in `tests/` first):
 
 ```bash
 cd tests
@@ -31,22 +36,28 @@ make plugin-root
 .venv/bin/coder-eval run tasks/uipath-mcp-servers/resource-create/task.yaml -e experiments/default.yaml -v
 ```
 
-A passing run produces `score: 1.0`. Inspect `mocks/.calls.jsonl` in the run artifact to confirm which mock rules fired.
+A passing run produces `score: 1.0`. Inspect `mocks/.calls.jsonl` in the run artifact to confirm which mock rules fired. The `e2e-*` tasks need an authenticated `uip` (they run under `experiments/nightly.yaml`).
 
 ## Coverage
 
-Rule numbers below reference SKILL.md generic Critical Rules (1-5).
+Rule numbers reference the SKILL.md Critical Rules (1-8).
 
-| Scenario | Rules exercised | Key assertion |
-|---|---|---|
-| `remote-create`            | generic 2, 3, 4, 5           | slug regex compliance; discover payload shape via `--print-schema`/`template remote`; submit via `--file`/`--body`; refresh-tools + verify |
-| `resource-create`          | generic 4, 5                 | `mcp-tools create-resource`; `--category automation`; `candidates --category automation`; `template resource`; verify via `mcp-tools list` |
+| Scenario | Tier | Rules | Key assertion |
+|---|---|---|---|
+| `remote-create`                | smoke (mock) | 1, 3, 4, 5, 7 | camelCase `--file` / `--body` payload with `uri` and a `headers` string carrying an `Authorization: %ASSETS/SLACK_BOT_TOKEN%` line (no `Bearer ` prefix); `refresh-tools`; verify via `mcp get` / `mcp list` / `mcp-tools list` |
+| `resource-create`              | smoke (mock) | Tools section | `candidates --category automation`; `template resource`; `mcp-tools create-resource ... --dry-run` scoped to the server |
+| `update-cross-folder-retarget` | smoke (mock) | Tools section | `mcp-tools update` (not a new create) with `--target-identifier` + explicit `--target-folder-*` |
+| `e2e-command-server`           | e2e (live)   | 2, 7          | `create command --command`; async `refresh-tools` with a folder flag; `mcp get` resolves the server |
+| `e2e-platform-server`          | e2e (live)   | 2, 7, `platform` | `create platform --service testmanager --tool Get_test_sets --tool Get_test_cases`; `mcp-tools list` returns exactly those two |
+| `e2e-remote-server`            | e2e (live)   | 2, 7          | `create remote`; sync `refresh-tools` with a folder flag; `mcp get` resolves the server |
+| `e2e-swagger-server`           | e2e (live)   | 2, 7          | `create swagger --spec-url`; sync `refresh-tools` with a folder flag; `mcp get` resolves the server |
+| `e2e-uipath-allkinds`          | e2e (live)   | Tools section | one `create-resource` per category (automation / agent / agentic-process / api-workflow) on one server; 4 tools listed |
 
 ## Why synthetic fixtures (not live captures)
 
-The repo policy is "public-safe fixture corpus" — no tenant data, no real connection GUIDs, no internal project names. Other skills (`uipath-diagnostics`, `uipath-maestro-bpmn`) follow this pattern. Every value in the fixtures here uses a `mock-*` / `MOCKPROJ` / `mock.user@example.com` style placeholder.
+The repo policy is "public-safe fixture corpus" — no tenant data, no real connection GUIDs, no internal project names. Every value in the fixtures here uses a `mock-*` / `MOCKPROJ` / `mock.user@example.com` style placeholder.
 
-If you need to validate the skill against a real tenant, **don't commit those captures**. Capture locally, run the skill, observe behavior, then update the synthetic fixtures here if the shape changed.
+If you need to validate the skill against a real tenant, **don't commit those captures**. Capture locally, run the skill, observe behavior, then update the synthetic fixtures here if the shape changed. The real CLI PascalCases every key it prints; mirror that in new fixtures (`remote-create` and `resource-create` do; `update-cross-folder-retarget` still uses older camelCase shapes).
 
 ## Capturing fresh shapes from a live tenant (for fixture maintenance)
 
@@ -56,8 +67,11 @@ When a real CLI response shape changes (new field, renamed key), recapture out-o
 # Folder enumeration
 uip or folders list --output json
 
-# AgentHub server listing
+# Server listing and schemas
 uip agenthub mcp list --folder-path Shared --output json
+uip agenthub mcp get <slug> --folder-path Shared --output json
+uip agenthub mcp create remote --print-schema --output json
+uip agenthub mcp template remote --output json
 uip agenthub mcp-tools list --mcp <slug> --folder-path Shared --output json
 
 # Resource discovery and authoring
@@ -71,7 +85,7 @@ uip agenthub mcp-tools create-resource --mcp <slug> --name "<name>" --descriptio
 uip agenthub mcp-tools get --name "<tool>" --mcp <slug> --folder-path <folder> --output json
 uip agenthub mcp-tools update <tool-id> --mcp <slug> --folder-path <folder> --description "<text>" \
   --metadata "<json>" --input-schema "<json>" --output-schema "<json>" --dry-run --output json
-uip agenthub mcp-tools delete <tool-id> --mcp <slug> --folder-key <guid> --output json
+uip agenthub mcp-tools delete <tool-id> --mcp <slug> --folder-key <guid> --yes --output json
 ```
 
 Then translate the captured shapes into the per-scenario `manifest.json` + response files using synthetic values.
@@ -87,4 +101,4 @@ Then translate the captured shapes into the per-scenario `manifest.json` + respo
 
 ## Notes on the mock dispatcher
 
-The `mocks/uip` script is the [shared dispatcher from uipath-diagnostics](../uipath-diagnostics/_shared/mock_template/mocks/uip) — substring-match-first, supports `passthrough: true` for open-ended commands, logs every call to `.calls.jsonl`. Don't edit per scenario; if a new dispatch behavior is needed, update the upstream copy and propagate.
+`_shared/mock_template/mocks/uip` is substring-match-first, supports `passthrough: true` for open-ended commands, and logs every call to `.calls.jsonl`. Don't edit it per scenario.
