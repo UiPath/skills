@@ -351,7 +351,10 @@ For registry-evidence-only tasks, follow the command-first recipe in
    asked for a placeholder, draft, or boundary handoff, no invented identifier
    can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
    expected result. Report the pair once and continue; `refresh` (step 6)
-   succeeds with it unresolved.
+   succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
+   it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
+   the node reading a start-event-scoped caller input is expected; see
+   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
 
    `[warning] [(xml)] unknown attribute <type>` is expected noise from the
    script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
@@ -505,6 +508,50 @@ and honestly surfaced to the user as gaps when asked.
    generate them — never the deprecated `update-metadata`. An
    Integration Service draft or boundary handoff asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
+17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
+   workflow, agent) is a five-step sequence, in this order. Stopping after
+   the owning skill hands the resource back is not done.**
+<!--skill-flavor:delegated-resource-solution-first:start-->
+   (1) Create or open the solution **first** (`uip solution init`; on
+   `unknown command`, the older `uip solution new`), and
+   author the resource's project **inside** it, so it registers in the
+   `.uipx`. A project created outside any solution has no path to deployment.
+<!--skill-flavor:delegated-resource-solution-first:end-->
+<!--skill-flavor:delegated-resource-author-deploy:start-->
+   (2) Delegate authoring to the resource's owning skill (e.g.
+   `uipath-api-workflow`, `uipath-rpa`) with an explicit argument contract:
+   declared inputs and outputs, not an unauthored scaffold. (3) Deploy the
+   resource (pack, publish, `solution deploy run`) **before** binding it into
+   the BPMN node; its release key and folder key exist only once deployed.
+   To redeploy, follow `uipath-solution`'s upgrade path.
+<!--skill-flavor:delegated-resource-author-deploy:end-->
+   (4) Pick the wrapper by `ProcessType`, read from
+   `uip or processes list --folder-path <path> --all-fields --output json`
+   ([registry-workflow.md](references/registry-workflow.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
+   a low-code agent uses `Orchestrator.StartAgentJob`, whose template (rule
+   6) binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
+   the same response's `Key` and `FolderKey` (PascalCase, like the default
+   list; the default list without `--all-fields` omits `ProcessType`) and
+   bind per rule 18, never a fabricated or placeholder key. Re-read both
+   after every deploy: `deploy run` creates a new folder, so a literal
+   `folderKey` from an earlier deploy points at the old one. (5) Unless the task forbids
+   live runs or asks for a draft or handoff, run the process
+   (`uip maestro bpmn debug`) and read the node's output in
+   `debug-instance variables-all`. Map `=result.<key>` to the key that output
+   used; a scalar can surface under a generic key instead of the schema
+   property name. Without a run, use the schema name and report the mapping
+   as unverified.
+18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
+   `ExecuteApiWorkflowAsync`, `BusinessRules`, `StartAgenticProcess[Async]`,
+   `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
+   validates but faults at runtime. This is the one exception to rule 6's
+   paste-literally.** For all of them, bind `releaseKey` via
+   `=bindings.<id>` to the resource's `Key`. For `ExecuteApiWorkflowAsync`
+   only, also add a literal `folderKey` with the folder's `FolderKey` and
+   drop `folderId`, `folderPath`, and `name`. For the others, keep the
+   template's remaining fields and make that swap only after a live run
+   faults with `key:FolderKey`; without a run, report the node unverified. Details:
+   [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
 
 ## References
 
