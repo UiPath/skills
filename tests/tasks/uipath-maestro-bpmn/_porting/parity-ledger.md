@@ -39,7 +39,7 @@ Final is the latest run after the review fixes; each row's earlier result is kep
 | `e2e/jira_create_issue/…` | same | PASS (run 36056004092) | earlier PASS (run 35503094182) |
 | `e2e/escalation_jira_ticket/…` | same | PASS (run 36056004092) | earlier PASS (run 35503094182) |
 | `e2e/escalation_orchestrator_paths/…` | same | PASS (run 36058708886) | earlier PASS (run 35503094182); 7 debug runs |
-| `e2e/escalation_slack_alert/…` | same | FAIL (runs 36053143338, 36056004092) | after the review fixes the Slack step faulted at runtime in both runs (102010 `folderKey` in the first); earlier PASS it.2 (run 35524004307); it.1 agent omitted the Slack `folderKey` binding (102010) |
+| `e2e/escalation_slack_alert/…` | same | FAIL (runs 36053143338, 36056004092); grader verified | both runs faulted on the agent's Slack send node, not the grader: run 36053143338 has NO `folderKey` input on the node (incident 102010 "Value cannot be null (Parameter 'Folder')"); run 36056004092 has the folderKey binding but omits the required `send_as` parameter (incident 102003, IS 400 "Value for required parameter 'send_as' not found"). The grader reads `final status Faulted` off variables-all/incidents, as it did when it.2 passed (run 35524004307). Skill finding: Slack send-message node authoring (folderKey binding, required `send_as`). |
 | `multi_node/slack_channel_description/…` | same | PASS (run 36056004092) | earlier PASS it.2 (run 35525387843); it.1 agent omitted the channel parameter |
 | `connector_features/datafabric_connector/smoke_error.yaml` | `…/smoke_error/` | PASS (run 36056004092) | earlier PASS (run 35538279757); structural |
 | `connector_features/generic_dynamic_node/…` | same | PASS (run 36056004092) | earlier PASS (run 35538279757) |
