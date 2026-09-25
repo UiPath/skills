@@ -1,0 +1,311 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="VerifyHeadcount" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common" xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_FirstCount" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_SecondCount" Type="InArgument(x:Int32)" />
+    <x:Property Name="out_TotalText" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="32">
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Models</x:String>
+      <x:String>UiPath.UIAutomationNext.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Models.CV</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities.Services.RuntimeAnalyze.Contracts</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>UiPath.Platform.SyncObjects</x:String>
+      <x:String>System.ComponentModel</x:String>
+      <x:String>UiPath.Shared.Telemetry</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="64">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>System.Linq.Expressions</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Primitives</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic.Core</AssemblyReference>
+      <AssemblyReference>UiPath.Workflow</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic.Forms</AssemblyReference>
+      <AssemblyReference>System.CodeDom</AssemblyReference>
+      <AssemblyReference>netstandard</AssemblyReference>
+      <AssemblyReference>System.AppContext</AssemblyReference>
+      <AssemblyReference>System.ComponentModel</AssemblyReference>
+      <AssemblyReference>System.Configuration.ConfigurationManager</AssemblyReference>
+      <AssemblyReference>System.Console</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Globalization.Extensions</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.Runtime</AssemblyReference>
+      <AssemblyReference>System.Runtime.Extensions</AssemblyReference>
+      <AssemblyReference>System.Runtime.InteropServices</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Security.Permissions</AssemblyReference>
+      <AssemblyReference>System.Threading.Tasks</AssemblyReference>
+      <AssemblyReference>System.Threading.Thread</AssemblyReference>
+      <AssemblyReference>System.Windows</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Linq.Parallel</AssemblyReference>
+      <AssemblyReference>System.Linq.Queryable</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Verify headcount" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="ui:UiElement" Name="calculatorWindow" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="displayText" />
+      <Variable x:TypeArguments="x:Boolean" Name="numberPadReady" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:StartProcess Arguments="{x:Null}" WorkingDirectory="{x:Null}" sap2010:Annotation.AnnotationText="[PostMigration Action Required]: ERROR: Migration not implemented." DisplayName="Launch calculator" FileName="calc.exe" sap2010:WorkflowViewState.IdRef="StartProcess_1" />
+    <Delay DisplayName="Wait for calculator to start" Duration="00:00:04" sap2010:WorkflowViewState.IdRef="Delay_1" />
+    <uix:NCheckState DelayAfter="0" DelayBefore="0" DisplayName="Find calculator window" HealingAgentBehavior="Disabled" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" OutUiElement="[calculatorWindow]" Timeout="30" Version="V5">
+      <uix:NCheckState.IfExists>
+        <Sequence DisplayName="Target appears" />
+      </uix:NCheckState.IfExists>
+      <uix:NCheckState.IfNotExists>
+        <Sequence DisplayName="Target does not appear" />
+      </uix:NCheckState.IfNotExists>
+      <uix:NCheckState.Target>
+        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" Guid="3e2ca403-ae5a-4b3c-a93d-4b63ba22dfd0" ScopeSelectorArgument="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+      </uix:NCheckState.Target>
+    </uix:NCheckState>
+    <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Attach calculator" HealingAgentBehavior="Job" sap2010:WorkflowViewState.IdRef="WindowScope_1" OpenMode="Never" ScopeGuid="2d75ebb2-dd05-426b-b163-010047c497dc" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Calculator session" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <uix:NClick ActivateBefore="True" AlterIfDisabled="True" ClickType="Single" DisplayName="Clear display" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="Click_1" InteractionMode="HardwareEvents" KeyModifiers="None" MouseButton="Left" Timeout="15" Version="V5">
+              <uix:NClick.PointOffset>
+                <uix:PointOffset>
+                  <uix:PointOffset.X>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </uix:PointOffset.X>
+                  <uix:PointOffset.Y>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </uix:PointOffset.Y>
+                </uix:PointOffset>
+              </uix:NClick.PointOffset>
+              <uix:NClick.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;uia automationid='clearButton' /&gt;" Guid="d2e20f4a-c22c-468a-81ef-af6df4e0c494" ScopeSelectorArgument="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NClick.Target>
+            </uix:NClick>
+            <uix:NApplicationCard sap2010:Annotation.AnnotationText="[PostMigration Action Required]: WARNING: This generated Use Application/Browser uses an expression as its application selector. If it or its child activity fails, move the child outside this generated Use Application/Browser, then delete it." AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="592a87c8-ef1a-475d-828a-4a2761521fb5" Timeout="15" Version="V2">
+              <uix:NApplicationCard.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NClick ActivateBefore="True" AlterIfDisabled="True" sap2010:Annotation.AnnotationText="[PostMigration Action Required]: WARNING: This activity is inside a generated Use Application/Browser whose application selector is an expression. If the activity fails, move it outside the generated Use Application/Browser, then delete the generated one." ClickType="Single" DisplayName="Enter north office headcount" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="Click_4" InteractionMode="HardwareEvents" KeyModifiers="None" MouseButton="Left" Timeout="15" Version="V5">
+                      <uix:NClick.PointOffset>
+                        <uix:PointOffset>
+                          <uix:PointOffset.X>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </uix:PointOffset.X>
+                          <uix:PointOffset.Y>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </uix:PointOffset.Y>
+                        </uix:PointOffset>
+                      </uix:NClick.PointOffset>
+                      <uix:NClick.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="[(&quot;&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;&lt;uia automationid='num&quot; &amp; in_FirstCount.ToString() &amp; &quot;Button' /&gt;&quot;).ToStringWithDelimiter()]" Guid="5138e905-ddf4-4322-ac9f-055d07a5f79f" ScopeSelectorArgument="[(&quot;&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;&lt;uia automationid='num&quot; &amp; in_FirstCount.ToString() &amp; &quot;Button' /&gt;&quot;).ToStringWithDelimiter()]" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NClick.Target>
+                    </uix:NClick>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NApplicationCard.Body>
+              <uix:NApplicationCard.OCREngine>
+                <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                </ActivityFunc>
+              </uix:NApplicationCard.OCREngine>
+              <uix:NApplicationCard.TargetApp>
+                <uix:TargetApp Area="0, 0, 0, 0" Selector="[(&quot;&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;&lt;uia automationid='num&quot; &amp; in_FirstCount.ToString() &amp; &quot;Button' /&gt;&quot;).ToStringWithDelimiter()]" Version="V3" />
+              </uix:NApplicationCard.TargetApp>
+            </uix:NApplicationCard>
+            <uix:NClick ActivateBefore="True" AlterIfDisabled="True" ClickType="Single" DisplayName="Press plus" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="Click_2" InteractionMode="HardwareEvents" KeyModifiers="None" MouseButton="Left" Timeout="15" Version="V5">
+              <uix:NClick.PointOffset>
+                <uix:PointOffset>
+                  <uix:PointOffset.X>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </uix:PointOffset.X>
+                  <uix:PointOffset.Y>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </uix:PointOffset.Y>
+                </uix:PointOffset>
+              </uix:NClick.PointOffset>
+              <uix:NClick.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;uia automationid='plusButton' /&gt;" Guid="ce49455b-3b18-4059-aeae-725940f7c0b8" ScopeSelectorArgument="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NClick.Target>
+            </uix:NClick>
+            <uix:NApplicationCard sap2010:Annotation.AnnotationText="[PostMigration Action Required]: WARNING: This generated Use Application/Browser uses an expression as its application selector. If it or its child activity fails, move the child outside this generated Use Application/Browser, then delete it." AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="3eb389e5-4e32-4973-a9c9-04af555442c3" Timeout="15" Version="V2">
+              <uix:NApplicationCard.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NClick ActivateBefore="True" AlterIfDisabled="True" sap2010:Annotation.AnnotationText="[PostMigration Action Required]: WARNING: This activity is inside a generated Use Application/Browser whose application selector is an expression. If the activity fails, move it outside the generated Use Application/Browser, then delete the generated one." ClickType="Single" DisplayName="Enter south office headcount" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="Click_5" InteractionMode="HardwareEvents" KeyModifiers="None" MouseButton="Left" Timeout="15" Version="V5">
+                      <uix:NClick.PointOffset>
+                        <uix:PointOffset>
+                          <uix:PointOffset.X>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </uix:PointOffset.X>
+                          <uix:PointOffset.Y>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </uix:PointOffset.Y>
+                        </uix:PointOffset>
+                      </uix:NClick.PointOffset>
+                      <uix:NClick.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="[(&quot;&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;&lt;uia automationid='num&quot; &amp; in_SecondCount.ToString() &amp; &quot;Button' /&gt;&quot;).ToStringWithDelimiter()]" Guid="5ecc4672-8ac9-495e-b2f9-18c29b900727" ScopeSelectorArgument="[(&quot;&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;&lt;uia automationid='num&quot; &amp; in_SecondCount.ToString() &amp; &quot;Button' /&gt;&quot;).ToStringWithDelimiter()]" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NClick.Target>
+                    </uix:NClick>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NApplicationCard.Body>
+              <uix:NApplicationCard.OCREngine>
+                <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                </ActivityFunc>
+              </uix:NApplicationCard.OCREngine>
+              <uix:NApplicationCard.TargetApp>
+                <uix:TargetApp Area="0, 0, 0, 0" Selector="[(&quot;&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;&lt;uia automationid='num&quot; &amp; in_SecondCount.ToString() &amp; &quot;Button' /&gt;&quot;).ToStringWithDelimiter()]" Version="V3" />
+              </uix:NApplicationCard.TargetApp>
+            </uix:NApplicationCard>
+            <uix:NClick ActivateBefore="True" AlterIfDisabled="True" ClickType="Single" DisplayName="Press equals" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="Click_3" InteractionMode="HardwareEvents" KeyModifiers="None" MouseButton="Left" Timeout="15" Version="V5">
+              <uix:NClick.PointOffset>
+                <uix:PointOffset>
+                  <uix:PointOffset.X>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </uix:PointOffset.X>
+                  <uix:PointOffset.Y>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </uix:PointOffset.Y>
+                </uix:PointOffset>
+              </uix:NClick.PointOffset>
+              <uix:NClick.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;uia automationid='equalButton' /&gt;" Guid="601f9676-cf10-4cde-9f54-dbc71e5a816f" ScopeSelectorArgument="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NClick.Target>
+            </uix:NClick>
+            <Delay DisplayName="Wait for result" Duration="00:00:01" sap2010:WorkflowViewState.IdRef="Delay_2" />
+            <uix:NGetAttributeGeneric x:TypeArguments="ui:GenericValue" Attribute="Name" DelayAfter="0" DelayBefore="0" DisplayName="Read calculator display" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="GetAttribute_1" Result="[displayText]" Timeout="15">
+              <uix:NGetAttributeGeneric.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;uia automationid='CalculatorResults' /&gt;" Guid="4a897eec-22ba-4b38-a75e-2ae7e45b094a" ScopeSelectorArgument="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NGetAttributeGeneric.Target>
+            </uix:NGetAttributeGeneric>
+            <uix:NElementScope DelayAfter="0" DelayBefore="0" DisplayName="Inspect number pad" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="ElementScope_1" InteractionMode="HardwareEvents" IsLoose="False" ScopeGuid="bad7a2f7-9345-4f85-a615-46c03bfb1352" Timeout="15" Version="V5">
+              <uix:NElementScope.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NCheckState DelayAfter="0" DelayBefore="0" DisplayName="Check keypad is available" Exists="[numberPadReady]" HealingAgentBehavior="Disabled" sap2010:WorkflowViewState.IdRef="UiElementExists_1" Timeout="10" Version="V5">
+                      <uix:NCheckState.IfExists>
+                        <Sequence DisplayName="Target appears" />
+                      </uix:NCheckState.IfExists>
+                      <uix:NCheckState.IfNotExists>
+                        <Sequence DisplayName="Target does not appear" />
+                      </uix:NCheckState.IfNotExists>
+                      <uix:NCheckState.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;uia automationid='num5Button' /&gt;" Guid="7d6df841-5c0e-40bd-812e-f63a9b6f0819" ScopeSelectorArgument="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;&lt;uia automationid='NumberPad' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NCheckState.Target>
+                    </uix:NCheckState>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NElementScope.Body>
+              <uix:NElementScope.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;uia automationid='NumberPad' /&gt;" Guid="8211d2ed-46e5-4a67-8537-ef532183187e" ScopeSelectorArgument="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NElementScope.Target>
+            </uix:NElementScope>
+            <ui:LogMessage DisplayName="Log calculator state" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[String.Format(&quot;Calculator display: '{0}'. Keypad available: {1}.&quot;, displayText, numberPadReady)]" />
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" Version="V3" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+    <Assign DisplayName="Normalise total" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[out_TotalText]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(displayText Is Nothing, "", displayText.ToString().Replace("Display is", "").Trim())]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Always" DisplayName="Close calculator" HealingAgentBehavior="Job" sap2010:WorkflowViewState.IdRef="CloseApplication_1" OpenMode="Never" ScopeGuid="8ac88346-8018-4906-b0e9-86dc8e4535d4" Timeout="15" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" />
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;wnd app='applicationframehost.exe' cls='ApplicationFrameWindow' title='Calculator' /&gt;" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+    <ui:LogMessage DisplayName="Log headcount total" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Combined headcount for the two offices: {0}&quot;, out_TotalText)]" />
+  </Sequence>
+</Activity>

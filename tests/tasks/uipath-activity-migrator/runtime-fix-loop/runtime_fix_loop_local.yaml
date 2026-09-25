@@ -1,0 +1,163 @@
+task_id: skill-migrator-runtime-fix-loop
+description: >
+  Local-only: the agent migrates ConsentBannerProbe and, on the user's yes,
+  runs the migrated project against the real applications on this machine.
+  The page the workflow opens never shows the consent banner, so the migrated
+  Click throws the modern NodeNotFoundException while its Try Catch still
+  catches the classic SelectorNotFoundException: run 1 fails, the failure is
+  attributed to the migration, one fix grounded on the tool's annotation
+  retypes the Catch, and run 2 passes. Graded on the backup, the fixed XAML,
+  the last run's log, a build the harness runs itself and an untouched source.
+  Needs Windows, Edge with the UiPath extension, internet access to
+  datatables.net, and a `uip` login with a Studio licence. It drives the
+  desktop for about 10 minutes, so it is skipped in CI and the nightly.
+  Run it locally as tests/README.md § Running a judge-free task locally
+  describes, with -e experiments/smoke-windows.yaml and --include-skipped.
+tags: [uipath-activity-migrator, e2e, mode:build, lifecycle:generate, windows]
+skip: true  # local-only: needs Edge, the UiPath extension and a Studio-licensed login
+
+run_limits:
+  expected_turns: 50
+  max_turns: 100
+  task_timeout: 2400
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../migrate-classic/fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: ../migrate-classic/fixture
+
+initial_prompt: |
+  migrate activities in the ConsentBannerProbe project
+
+simulation:
+  enabled: true
+  persona: |
+    You are the developer who owns ConsentBannerProbe and asked for the
+    migration. You are at this machine, Edge is installed with the UiPath
+    extension, and you want the migrated project checked by a real run.
+  goal: |
+    Let the agent migrate the project, run it once, and apply the fix it
+    proposes after the run fails, so it runs again and reaches the report.
+  constraints:
+    - "When asked which UIAutomation line or version to target, choose the recommended option."
+    - "When asked whether to run the migrated project now, answer yes."
+    - "When a fix is proposed after a failed run, accept it so the agent applies it and runs again."
+    - "If the same failure comes back after a fix, choose to undo the fix and stop."
+    - "When asked whether to continue after three fixes, answer no."
+    - "When asked to close windows or tabs a failed run left open, say they are closed and the agent can rerun."
+    - "When asked whether to run or validate the original, unmigrated project, answer no."
+    - "Never invent facts about the project, the applications it drives, or the environment."
+    - "Keep replies to one sentence or a numbered option."
+    - "Never tell the agent to stop, skip a step, or rewrite files wholesale."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Runtime guide § Run: the check uses `run`, twice here (fail, fix, pass).
+  - type: command_executed
+    description: "Agent ran the migrated workflow at least twice"
+    command_pattern: 'uip\s+rpa\s+run(?=(?:(?!\n|&&|\|\||;|\|).)*--file-path)'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never ran the check under the debugger"
+    command_pattern: 'uip\s+rpa\s+debug\s+start'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never passed --skip-build"
+    command_pattern: '--skip-build'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cancelled the execution after running"
+    command_pattern: 'uip\s+rpa\s+execution\s+cancel'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Runtime guide § Run rule 9: the source is never run or validated through
+  # the headless Studio; the output folder name also contains the source's.
+  - type: command_not_executed
+    description: "Agent never ran or validated the source project"
+    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:(?!\n|&&|\|\||;|\|).)*--project-dir\s+"?[^"\s]*[\\/]ConsentBannerProbe"?(?:\s|$))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Fix and rerun loop step 3: backup before the edit, edit numbered from 1.
+  - type: file_check
+    description: "The file was backed up to runtime-fixes/1 before the fix, with the classic catch still in it"
+    path: "ConsentBannerProbe/.upgrade/runtime-fixes/1/Main.xaml"
+    patterns:
+      - pattern: 'TypeArguments="ui:SelectorNotFoundException"'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The fix every observed run applied: retype the Catch to the modern
+  # exception and rewrite the tool's annotation to Remediated. The attribute
+  # form is matched because the Remediated text may name the classic type.
+  - type: file_check
+    description: "The Catch catches the modern NodeNotFoundException and the annotation is Remediated"
+    path: "ConsentBannerProbe_Upgraded/Main.xaml"
+    patterns:
+      - pattern: 'TypeArguments="\w+:NodeNotFoundException"'
+        must_match: true
+      - pattern: 'clr-namespace:UiPath\.UIAutomationNext\.Exceptions;assembly=UiPath\.UIAutomationNext"'
+        must_match: true
+      - pattern: 'TypeArguments="ui:SelectorNotFoundException"'
+        must_match: false
+      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+        must_match: true
+      - pattern: 'PostMigration Action Required'
+        must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The run log holds only the last run: it must be the passing one. Older
+  # and newer CLI builds report "no errors" with different keys.
+  - type: file_check
+    description: "The last run passed through the no-banner branch"
+    path: "ConsentBannerProbe/.upgrade/run-latest.log"
+    patterns:
+      - pattern: '"HasErrors":\s*false|"errors":\s*\[\s*\]'
+        must_match: true
+      - pattern: 'No consent banner shown; continuing\.'
+        must_match: true
+      - pattern: 'execution ended in: \d\d:\d\d:\d\d'
+        must_match: true
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source project.json and Main.xaml are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'ConsentBannerProbe'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('ConsentBannerProbe', f), shallow=False) for f in ('Main.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits 0 against the fixed output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('ConsentBannerProbe_Upgraded'), '--output', 'json'], env=env))"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,0 +1,259 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="GetStaffRecords" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_PortalUrl" Type="InArgument(x:String)" />
+    <x:Property Name="in_SearchTerm" Type="InArgument(x:String)" />
+    <x:Property Name="in_DirectoryTableSelector" Type="InArgument(x:String)" />
+    <x:Property Name="out_StaffRecords" Type="OutArgument(sd:DataTable)" />
+    <x:Property Name="out_MatchedRows" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_LeadName" Type="OutArgument(x:String)" />
+  </x:Members>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="16">
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="16">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Get staff records" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="ui:UiElement" Name="directoryTable" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="tableCssClass" />
+      <Variable x:TypeArguments="x:String" Name="tableText" />
+      <Variable x:TypeArguments="x:Boolean" Name="leadRowVisible" />
+      <Variable x:TypeArguments="x:Boolean" Name="directoryReachable" />
+      <Variable x:TypeArguments="x:String" Name="positionLabel" />
+      <Variable x:TypeArguments="ui:Image" Name="directorySnapshot" />
+      <Variable x:TypeArguments="ui:Browser" Name="portalBrowser" />
+      <Variable x:TypeArguments="x:Int32" Name="rowIndex" />
+      <Variable x:TypeArguments="x:String" Name="rowCellSelector" />
+      <Variable x:TypeArguments="x:String" Name="rowCellValue" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:OpenBrowser AutomaticallyDownloadWebDriver="{x:Null}" CommunicationMethod="{x:Null}" Hidden="{x:Null}" NewSession="{x:Null}" Private="{x:Null}" BrowserType="Edge" DisplayName="Open HR reference portal" UiBrowser="[portalBrowser]" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" Url="[in_PortalUrl]">
+      <ui:OpenBrowser.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Portal session" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <ui:WaitUiElementAppear FoundElement="[directoryTable]" WaitActive="{x:Null}" WaitVisible="{x:Null}" DisplayName="Find directory table" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1">
+              <ui:WaitUiElementAppear.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1001-11aa-4f21-9c30-51ab7d9e0001" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;" TimeoutMS="30000" WaitForReady="COMPLETE" />
+              </ui:WaitUiElementAppear.Target>
+            </ui:WaitUiElementAppear>
+            <ui:Highlight HighlightTime="{x:Null}" Color="Gold" DisplayName="Highlight directory table" sap2010:WorkflowViewState.IdRef="Highlight_1">
+              <ui:Highlight.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1002-11aa-4f21-9c30-51ab7d9e0002" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:Highlight.Target>
+            </ui:Highlight>
+            <ui:TypeInto AlterIfDisabled="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" SendWindowMessages="{x:Null}" SimulateType="{x:Null}" Activate="True" ClickBeforeTyping="True" DisplayName="Type role filter" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeInto_1" Text="[in_SearchTerm]">
+              <ui:TypeInto.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1003-11aa-4f21-9c30-51ab7d9e0003" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl tag='INPUT' type='search' /&gt;" TimeoutMS="20000" WaitForReady="COMPLETE" />
+              </ui:TypeInto.Target>
+            </ui:TypeInto>
+            <Delay DisplayName="Wait for filter to apply" Duration="00:00:02" sap2010:WorkflowViewState.IdRef="Delay_1" />
+            <ui:UiElementExists ContinueOnError="{x:Null}" DisplayName="Check lead row is present" Exists="[leadRowVisible]" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
+              <ui:UiElementExists.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1004-11aa-4f21-9c30-51ab7d9e0004" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl tableCol='1' tableRow='2' tag='TD' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:UiElementExists.Target>
+            </ui:UiElementExists>
+            <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Read lead staff name" sap2010:WorkflowViewState.IdRef="GetValue_1">
+              <ui:GetValue.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1005-11aa-4f21-9c30-51ab7d9e0005" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl tableCol='1' tableRow='2' tag='TD' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:GetValue.Target>
+              <ui:GetValue.Value>
+                <OutArgument x:TypeArguments="x:String">[out_LeadName]</OutArgument>
+              </ui:GetValue.Value>
+            </ui:GetValue>
+            <TryCatch DisplayName="Extract directory rows" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+              <TryCatch.Try>
+                <ui:ExtractData DelayBetweenPagesMS="{x:Null}" NextLinkSelector="{x:Null}" SimulateClick="{x:Null}" DataTable="[out_StaffRecords]" DisplayName="Extract staff directory" ExtractMetadata="&lt;extract&gt;&lt;column exact='0' name='Name' attr='text'&gt;&lt;webctrl tag='TR' /&gt;&lt;webctrl tag='TD' idx='1' /&gt;&lt;/column&gt;&lt;column exact='0' name='Position' attr='text'&gt;&lt;webctrl tag='TR' /&gt;&lt;webctrl tag='TD' idx='2' /&gt;&lt;/column&gt;&lt;column exact='0' name='Office' attr='text'&gt;&lt;webctrl tag='TR' /&gt;&lt;webctrl tag='TD' idx='3' /&gt;&lt;/column&gt;&lt;/extract&gt;" MaxNumberOfResults="100" sap2010:WorkflowViewState.IdRef="ExtractData_1">
+                  <ui:ExtractData.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1006-11aa-4f21-9c30-51ab7d9e0006" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;" TimeoutMS="30000" WaitForReady="COMPLETE" />
+                  </ui:ExtractData.Target>
+                </ui:ExtractData>
+              </TryCatch.Try>
+              <TryCatch.Catches>
+                <Catch x:TypeArguments="s:Exception">
+                  <ActivityAction x:TypeArguments="s:Exception">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="s:Exception" Name="extractError" />
+                    </ActivityAction.Argument>
+                    <ui:LogMessage DisplayName="Log extraction fallback" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Warn" Message="[String.Format(&quot;Directory table extraction was skipped: {0}&quot;, extractError.Message)]" />
+                  </ActivityAction>
+                </Catch>
+              </TryCatch.Catches>
+            </TryCatch>
+            <ui:GetAttribute Attribute="class" ContinueOnError="{x:Null}" DisplayName="Read table style attribute" sap2010:WorkflowViewState.IdRef="GetAttribute_1">
+              <ui:GetAttribute.Result>
+                <OutArgument x:TypeArguments="ui:GenericValue">[tableCssClass]</OutArgument>
+              </ui:GetAttribute.Result>
+              <ui:GetAttribute.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1007-11aa-4f21-9c30-51ab7d9e0007" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:GetAttribute.Target>
+            </ui:GetAttribute>
+            <ui:Click AlterIfDisabled="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" SendWindowMessages="{x:Null}" SimulateClick="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Sort by office" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT">
+              <ui:Click.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:Click.CursorPosition>
+              <ui:Click.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1008-11aa-4f21-9c30-51ab7d9e0008" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl innertext='Office' tag='TH' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:Click.Target>
+            </ui:Click>
+            <Delay DisplayName="Wait for sort" Duration="00:00:01" sap2010:WorkflowViewState.IdRef="Delay_2" />
+            <ui:GetFullText IgnoreHidden="{x:Null}" DisplayName="Read table text" sap2010:WorkflowViewState.IdRef="GetFullText_1">
+              <ui:GetFullText.Text>
+                <OutArgument x:TypeArguments="x:String">[tableText]</OutArgument>
+              </ui:GetFullText.Text>
+              <ui:GetFullText.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1009-11aa-4f21-9c30-51ab7d9e0009" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:GetFullText.Target>
+            </ui:GetFullText>
+            <ui:TakeScreenshot WaitBefore="{x:Null}" DisplayName="Capture directory view" sap2010:WorkflowViewState.IdRef="TakeScreenshot_1" Screenshot="[directorySnapshot]">
+              <ui:TakeScreenshot.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1010-11aa-4f21-9c30-51ab7d9e0010" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:TakeScreenshot.Target>
+            </ui:TakeScreenshot>
+            <ui:SendHotkey ClickBeforeTyping="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" EmptyField="{x:Null}" SendWindowMessages="{x:Null}" Activate="True" DisplayName="Scroll directory to top" sap2010:WorkflowViewState.IdRef="SendHotkey_1" Key="home" KeyModifiers="Ctrl" SpecialKey="True">
+              <ui:SendHotkey.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1011-11aa-4f21-9c30-51ab7d9e0011" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;&lt;webctrl id='example' tag='TABLE' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:SendHotkey.Target>
+            </ui:SendHotkey>
+          </Sequence>
+        </ActivityAction>
+      </ui:OpenBrowser.Body>
+    </ui:OpenBrowser>
+    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Edge" DisplayName="Attach HR reference portal" sap2010:WorkflowViewState.IdRef="BrowserScope_1" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;">
+      <ui:BrowserScope.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Directory checks" sap2010:WorkflowViewState.IdRef="Sequence_3">
+            <ui:UiElementExists ContinueOnError="{x:Null}" DisplayName="Confirm configured directory table" Exists="[directoryReachable]" sap2010:WorkflowViewState.IdRef="UiElementExists_2">
+              <ui:UiElementExists.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1012-11aa-4f21-9c30-51ab7d9e0012" Selector="[in_DirectoryTableSelector]" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:UiElementExists.Target>
+            </ui:UiElementExists>
+            <ui:LogMessage DisplayName="Log directory reachability" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Configured directory table reachable: {0}. Table style: {1}.&quot;, directoryReachable, tableCssClass)]" />
+            <Assign DisplayName="Set directory row index" sap2010:WorkflowViewState.IdRef="Assign_2">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:Int32">[rowIndex]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:Int32">3</InArgument>
+              </Assign.Value>
+            </Assign>
+            <Assign DisplayName="Build directory office cell selector" sap2010:WorkflowViewState.IdRef="Assign_3">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[rowCellSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[String.Format("&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl tag='TD' tableCol='3' tableRow='{0}' /&gt;", rowIndex)]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Read directory office cell" sap2010:WorkflowViewState.IdRef="GetValue_3">
+              <ui:GetValue.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1015-11aa-4f21-9c30-51ab7d9e0015" Selector="[rowCellSelector]" TimeoutMS="15000" WaitForReady="COMPLETE" />
+              </ui:GetValue.Target>
+              <ui:GetValue.Value>
+                <OutArgument x:TypeArguments="x:String">[rowCellValue]</OutArgument>
+              </ui:GetValue.Value>
+            </ui:GetValue>
+            <ui:LogMessage DisplayName="Log directory office cell" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[String.Format(&quot;Row {0} office cell: '{1}'.&quot;, rowIndex, rowCellValue)]" />
+            <TryCatch DisplayName="Read position column label" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+              <TryCatch.Try>
+                <Sequence DisplayName="Column label lookup" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                  <ui:AnchorBase AnchorPosition="Auto" DisplayName="Read label next to Position header" sap2010:WorkflowViewState.IdRef="AnchorBase_1">
+                    <ui:AnchorBase.AnchorProvider>
+                      <ui:WaitUiElementAppear FoundElement="{x:Null}" WaitActive="{x:Null}" WaitVisible="{x:Null}" DisplayName="Find Position header" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2">
+                        <ui:WaitUiElementAppear.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1013-11aa-4f21-9c30-51ab7d9e0013" Selector="&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl innertext='Position' tag='TH' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+                        </ui:WaitUiElementAppear.Target>
+                      </ui:WaitUiElementAppear>
+                    </ui:AnchorBase.AnchorProvider>
+                    <ui:AnchorBase.Action>
+                      <ActivityAction x:TypeArguments="ui:Anchor">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="ui:Anchor" Name="ContextAnchor" />
+                        </ActivityAction.Argument>
+                        <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Read neighbouring header" sap2010:WorkflowViewState.IdRef="GetValue_2">
+                          <ui:GetValue.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1014-11aa-4f21-9c30-51ab7d9e0014" Selector="&lt;webctrl tag='TH' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+                          </ui:GetValue.Target>
+                          <ui:GetValue.Value>
+                            <OutArgument x:TypeArguments="x:String">[positionLabel]</OutArgument>
+                          </ui:GetValue.Value>
+                        </ui:GetValue>
+                      </ActivityAction>
+                    </ui:AnchorBase.Action>
+                  </ui:AnchorBase>
+                  <ui:WaitAttribute Attribute="tag" AttributeValue="[&quot;TABLE&quot;]" DisplayName="Wait for table to settle" Element="[directoryTable]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" TimeoutMS="5000" />
+                </Sequence>
+              </TryCatch.Try>
+              <TryCatch.Catches>
+                <Catch x:TypeArguments="s:Exception">
+                  <ActivityAction x:TypeArguments="s:Exception">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="s:Exception" Name="labelError" />
+                    </ActivityAction.Argument>
+                    <ui:LogMessage DisplayName="Log label lookup skipped" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Warn" Message="[String.Format(&quot;Column label lookup skipped: {0}&quot;, labelError.Message)]" />
+                  </ActivityAction>
+                </Catch>
+              </TryCatch.Catches>
+            </TryCatch>
+          </Sequence>
+        </ActivityAction>
+      </ui:BrowserScope.Body>
+    </ui:BrowserScope>
+    <ui:CloseTab Browser="[portalBrowser]" DisplayName="Close portal tab" sap2010:WorkflowViewState.IdRef="CloseTab_1" />
+    <Assign DisplayName="Count extracted rows" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Int32">[out_MatchedRows]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Int32">[If(out_StaffRecords Is Nothing, 0, out_StaffRecords.Rows.Count)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log records collected" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[String.Format(&quot;Collected {0} directory rows. Lead staff member: '{1}'. Lead row visible: {2}. Table text length: {3}.&quot;, out_MatchedRows, out_LeadName, leadRowVisible, If(tableText Is Nothing, 0, tableText.Length))]" />
+  </Sequence>
+</Activity>
