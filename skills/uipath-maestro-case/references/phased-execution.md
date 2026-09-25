@@ -63,6 +63,15 @@ Run it **after** the Phase 1 registry gate, never before. Convert reads the docu
 | `output-type` | an output's shape, which comes from the resolved resource's schema | Step 9, via `uip maestro case tasks describe` or `case spec` |
 | `connector-context` | `folderKey` and the connector version `metadata` | Phase 3 connector context (Step 12 Check 12) |
 
+**A "no hand-off" row means the default completion rule — author it, do not research it.** An SDD exit table whose only row reads `No stage exit hand-off declared.` or `No case-exit hand-off declared.` states that the design adds **no custom routing**. It does not mean "no exit rule": every stage and the case still need one, and `validate` reports `CASE_MGMT_ROOT_CASE_EXIT_CONDITIONS_MISSING` without it. Convert leaves the row out as a `condition-rule` entry whose `detail` quotes that WHEN cell. Close it with the default, not by searching other references or the planner template for the sentinel's meaning:
+
+- Stage exit — append to that stage's `exitConditions` (see [stage-exit-conditions § required-tasks-completed](plugins/conditions/stage-exit-conditions/impl-json.md#required-tasks-completed--default-completion)):
+  `{ "id": "Condition_<6>", "displayName": "Exit rule 1", "type": "exit-only", "marksStageComplete": true, "rules": [[ { "id": "Rule_<6>", "rule": "required-tasks-completed" } ]] }`
+- Case exit — append to `metadata.caseExitRules` (see [case-exit-conditions § required-stages-completed](plugins/conditions/case-exit-conditions/impl-json.md#required-stages-completed--preferred-completion)):
+  `{ "id": "Condition_<6>", "displayName": "Complete rule 1", "marksCaseComplete": true, "rules": [[ { "id": "Rule_<6>", "rule": "required-stages-completed" } ]] }`
+
+Record each default in `build-issues.md` as "SDD declared no hand-off; default completion rule authored". This is the one gap-fill the SDD itself asks for: the sentinel is the document saying the default applies.
+
 **The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
 
 **`Unresolved[]` is a floor, not a ceiling.** It reports what convert knew it was skipping — never what convert emitted wrongly, and never what it omitted silently. Phase 4's `--strict --sdd` stays the authority, and a plain-profile `Status: Valid` on convert output is not a finished plan.
