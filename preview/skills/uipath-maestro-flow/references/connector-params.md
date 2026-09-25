@@ -84,7 +84,7 @@ The library and its Markdown go to a shared cache
 To read the Markdown directly, ask where it is:
 
 ```bash
-FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md)"
+FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)"
 ```
 
 The four library verbs are `pull`, `search`, `path` and `prepare`.
