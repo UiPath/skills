@@ -33,8 +33,6 @@ skip: true
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../../_setup
       mount_point: _setup
 
