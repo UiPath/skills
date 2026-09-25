@@ -629,6 +629,39 @@ class FieldNameCheckerTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_accepts_trailing_error_output(self) -> None:
+        """`splice` writes the FE-canonical `response` + `Error` pair; the
+        grader must pick the `=response` output, not count schema outputs."""
+        plan = fieldname_caseplan()
+        webhook = plan["nodes"][0]["data"]["tasks"][0][0]
+        webhook["data"]["outputs"].append(
+            {
+                "name": "Error",
+                "id": "err1",
+                "var": "err1",
+                "type": "jsonSchema",
+                "source": "=Error",
+                "body": {
+                    "type": "object",
+                    "properties": {"code": {"type": "string"}, "message": {"type": "string"}},
+                },
+            }
+        )
+
+        result = self._run(plan)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_rejects_missing_response_output(self) -> None:
+        plan = fieldname_caseplan()
+        webhook = plan["nodes"][0]["data"]["tasks"][0][0]
+        webhook["data"]["outputs"][0]["source"] = "=Error"
+
+        result = self._run(plan)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("source `=response`", result.stdout + result.stderr)
+
     def test_rejects_unguarded_dotted_access(self) -> None:
         plan = fieldname_caseplan()
         decision = plan["nodes"][0]["data"]["tasks"][1][0]

@@ -237,15 +237,21 @@ def _check_event_schema(plan: dict, fixture: dict):
     matches = [task for task in iter_tasks(plan) if task.get("type") == "wait-for-connector"]
     if len(matches) != 1:
         _fail(f"expected exactly 1 wait-for-connector task; got {len(matches)}")
+    # The FE-canonical connector shape (what `uip maestro case splice` writes)
+    # is the event `response` output followed by a trailing `Error` output,
+    # both jsonSchema. Select the event output by its source instead of
+    # counting schema-bearing outputs.
     outputs = [
         output
         for output in ((matches[0].get("data") or {}).get("outputs") or [])
-        if output.get("custom") is not True and isinstance(output.get("body"), dict)
+        if output.get("custom") is not True
+        and isinstance(output.get("body"), dict)
+        and str(output.get("source") or "").strip() == "=response"
     ]
     if len(outputs) != 1:
         _fail(
-            "the wait-for-connector task must expose exactly one event output carrying a "
-            f"JSON schema `body`; got {len(outputs)}"
+            "the wait-for-connector task must expose exactly one event output with "
+            f"source `=response` carrying a JSON schema `body`; got {len(outputs)}"
         )
     properties = (outputs[0]["body"].get("properties") or {})
     if not isinstance(properties, dict) or not properties:
