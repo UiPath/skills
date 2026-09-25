@@ -56,13 +56,14 @@ npm records the dependency in the nearest `package.json` up the directory tree, 
 On a `package.json` npm generated itself, `npm pkg set type=module` silences the `MODULE_TYPELESS_PACKAGE_JSON` warning every compile otherwise prints; leave an existing project's `type` alone.
 
 Integrations with non-UiPath systems are handled through connectors.
+**Choose the node before writing it.** When the request needs an external service or data (weather, Slack, a REST API), document extraction, or another tenant capability (agent, process), run `uip maestro flow registry search '<service or capability>' --output json` first, then pick connector → `http()` → the family's own factory (IxP: [`references/ixp.md`](references/ixp.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent: both validate, and neither does the work the request asked for.
 Connectors require a root-level [`bindings.json`](references/bindings.md).
 `uip maestro registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
 Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
 
 ### The connector loop: author → check → prepare → check → compile
 
-Authoring never waits on `prepare`, and no discovery command precedes the source.
+Authoring never waits on `prepare`: once the registry search above has chosen the node, no further discovery command precedes the source.
 Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check <Name>.flow.ts --source`.
 Check names every prepare you owe, with the exact command:
 `OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `bindings.json`, and repoints your import at the generated `connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
@@ -637,7 +638,7 @@ Signature: `mock()`.
   code: 'return $vars.assumedInvoiceId;' }))
 ```
 
-Use a script for stand-in data; use a placeholder only to expose a capability gap.
+Use a script for local fixed data, never in place of a capability the request needs; use a placeholder only to expose a capability gap the registry search proved.
 
 **Reference: [`references/placeholder.md`](references/placeholder.md)**
 
