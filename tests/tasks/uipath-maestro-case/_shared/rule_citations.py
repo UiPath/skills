@@ -8,12 +8,20 @@ dangling-number check stays green. Titles are stable under renumbering, so a
 title-keyed snapshot is invisible to a correct renumber and loud about an
 incorrect one.
 
-Regenerate the snapshot after deliberately changing what a document cites:
+Two snapshots, same rule: the skill tree (`rule_citations.json`) and the case
+eval corpus (`corpus_rule_citations.json` -- task YAMLs, graders, fixtures),
+whose citations are read by agents as task prompts and ran wrong through
+suites 7-10 after the Rule 4 insertion. Regenerate after deliberately
+changing what a document cites:
 
     python3 tests/tasks/uipath-maestro-case/_shared/rule_citations.py \
         > tests/tasks/uipath-maestro-case/_shared/rule_citations.json
+    python3 tests/tasks/uipath-maestro-case/_shared/rule_citations.py --corpus \
+        > tests/tasks/uipath-maestro-case/_shared/corpus_rule_citations.json
 
-The diff is the review: every line is a claim about what a doc points at.
+The diff is the review: every line is a claim about what a doc points at. A
+snapshot certifies whatever is true when it is taken, so audit a citation's
+meaning before adding it, not after.
 """
 from __future__ import annotations
 
@@ -27,6 +35,11 @@ SKILL = "uipath-maestro-case"
 SKILL_DIR = REPO_ROOT / "skills" / SKILL
 FLAVOR_ROOT = REPO_ROOT / "skill-flavors"
 SNAPSHOT = Path(__file__).with_name("rule_citations.json")
+CORPUS_DIR = REPO_ROOT / "tests" / "tasks" / SKILL
+CORPUS_SNAPSHOT = Path(__file__).with_name("corpus_rule_citations.json")
+CORPUS_SUFFIXES = {".yaml", ".yml", ".py", ".md"}
+# The guard's own sources quote rule numbers as examples, not citations.
+CORPUS_EXCLUDE = {"_shared/rule_citations.py", "_shared/test_rule_citations.py"}
 
 # `Rule N` preceded by a condition-name word (`Entry Rule 1`, `SLA Rule 1`) is a
 # NAME, not a citation. Code spans can't be excluded wholesale:
@@ -121,6 +134,29 @@ def canonical_citation_map() -> dict[str, dict[str, int]]:
                          for p in SKILL_DIR.rglob("*.md")})
 
 
+def corpus_files() -> dict[str, str]:
+    return {rel: p.read_text(encoding="utf-8", errors="ignore")
+            for p in sorted(CORPUS_DIR.rglob("*"))
+            if p.is_file() and p.suffix in CORPUS_SUFFIXES and "__pycache__" not in p.parts
+            and (rel := p.relative_to(CORPUS_DIR).as_posix()) not in CORPUS_EXCLUDE}
+
+
+def corpus_citation_map() -> dict[str, dict[str, int]]:
+    """Same shape as citation_map, over the eval corpus, resolved against the
+    canonical SKILL.md's Critical Rules."""
+    titles = rule_titles((SKILL_DIR / "SKILL.md").read_text(encoding="utf-8"))
+    out: dict[str, dict[str, int]] = {}
+    for rel, text in corpus_files().items():
+        counts: dict[str, int] = {}
+        for n in citations(text):
+            title = titles.get(n, f"<<UNRESOLVED Rule {n}>>")
+            counts[title] = counts.get(title, 0) + 1
+        if counts:
+            out[rel] = dict(sorted(counts.items()))
+    return out
+
+
 if __name__ == "__main__":
-    json.dump(canonical_citation_map(), sys.stdout, indent=2)
+    fn = corpus_citation_map if "--corpus" in sys.argv[1:] else canonical_citation_map
+    json.dump(fn(), sys.stdout, indent=2)
     sys.stdout.write("\n")
