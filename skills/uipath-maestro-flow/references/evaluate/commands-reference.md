@@ -188,7 +188,7 @@ A `--parent` agent node must also be wired to each child tool node by an edge on
 Example — LLM strategy:
 
 ```bash
-uip maestro flow eval simulation add connector-send-email \
+uip maestro flow eval simulation add connectorSendEmail \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --strategy Llm \
@@ -200,7 +200,7 @@ uip maestro flow eval simulation add connector-send-email \
 Example — Static strategy:
 
 ```bash
-uip maestro flow eval simulation add agent-lookup \
+uip maestro flow eval simulation add agentLookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --strategy Static \
@@ -216,7 +216,7 @@ Example — Child simulation (tool inside an agent node):
 # needed — --parent auto-creates the parent simulation.
 # Output schema is auto-resolved from the agent's tool definitions.
 uip maestro flow eval simulation add Web_Search \
-  --parent agent-lookup \
+  --parent agentLookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --strategy Static \
@@ -226,7 +226,7 @@ uip maestro flow eval simulation add Web_Search \
 # Add a child tool simulation (Llm). Output schema auto-resolved —
 # works for inline, same-solution, and published agents.
 uip maestro flow eval simulation add Send_Email \
-  --parent agent-lookup \
+  --parent agentLookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --strategy Llm \
@@ -256,7 +256,7 @@ uip maestro flow eval simulation list \
 
 # List child simulations on an agent node
 uip maestro flow eval simulation list \
-  --parent agent-lookup \
+  --parent agentLookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --path ./MySolution/MyFlow --output json
@@ -275,14 +275,14 @@ Remove a simulation from a data point. Returns an error if no simulation with th
 
 ```bash
 # Remove a top-level simulation
-uip maestro flow eval simulation remove connector-send-email \
+uip maestro flow eval simulation remove connectorSendEmail \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --path ./MySolution/MyFlow --output json
 
 # Remove a child simulation from an agent node
 uip maestro flow eval simulation remove Web_Search \
-  --parent agent-lookup \
+  --parent agentLookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --path ./MySolution/MyFlow --output json
