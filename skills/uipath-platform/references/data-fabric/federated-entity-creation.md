@@ -16,7 +16,7 @@ For a plain **native** entity (columns stored in UiPath, no connector) → [`ent
 ## Critical rules
 
 1. **`entityClass: "Federated"`** on the create body. Native `fields` is not required for a federated entity — its schema comes from `externalFields`.
-2. **`directionType` is numeric** — `0` = read-only, `1` = read/write. The string `"ReadOnly"` is rejected (500).
+2. **`directionType` is a string enum** — `"ReadOnly"` (read-only) or `"ReadAndWrite"` (read/write).
 3. **Each field mapping (`externalFieldMappingDetail`) must be complete** — `externalFieldName`, `externalFieldType`, `directionType`, `searchability`, `isRequiredForRead`, `sortable`. A bare mapping (only name + direction) → **500**.
 4. **`externalObjectDetail.method` is required for a *functional* (queryable) entity — and its internal casing is consumed at read time, so it must be the canonical lowercase shape.** It is the connector's operations catalog, sourced from `is resources describe`. Two traps:
    - **Create does NOT validate `method`.** Create is *accepted* with a wrong or absent `method` (returns `Success`) — the entity is built with correct schema/fields/join. The failure surfaces only at **read** time: `records list` returns a generic `"An internal error occurred"` because the query engine can't parse the catalog. Never treat create-`Success` as proof the entity works — always follow with a `records list` (Verify step).
@@ -52,10 +52,21 @@ For a plain **native** entity (columns stored in UiPath, no connector) → [`ent
 
 15. **Never silently pick a connection — ask when there's a choice.** A connection is *which account / org* the entity reads from, so it's the user's decision. From `uip is connections list <connectorKey> --all-folders --refresh`, **auto-select only when exactly one connection is `Enabled`** (and announce which one). If more than one connection matches — or more than one is `Enabled` — you MUST raise an `AskUserQuestion` (label each option by `Name` + `State`, payload = `Id`) and let the user pick. Do **not** default to the first row, a "default," or the most-recently-used.
 
+16. **A connector can back a federated entity only if it's on the tenant's federated allow-list — gate on `uip df connectors list`, never on the full IS catalog.** `uip is connectors list` is the *entire* Integration Service catalog; only a subset is enabled as federated Data Fabric sources (the tenant's `fqs-connectors-list` feature flag). `uip df connectors list --output json` returns exactly that subset as `Data: [{ ConnectorKey }]` (PascalCase in `--output json`, Rule 13). Each `ConnectorKey` **is a real IS connector key** (`uipath-salesforce-sfdc`, `uipath-snowflake-snowflake`, `uipath-servicenow-servicenow`, …) — the same value `is connections list <key>` and the create body use, so it needs no name→key resolution. Consult it in flow step 2, **before** committing to a connector:
+    - **User named no connector** ("make a federated entity", "a VDO over one of my connectors") → do **not** ask open-endedly or offer the whole IS catalog. Fetch the allow-list and present its `ConnectorKey` values **directly** as an `AskUserQuestion` dropdown — the key is self-describing, so show it verbatim (payload = `ConnectorKey`). The pick *is* the `connectorKey` used everywhere downstream. (Only if a key is cryptic, resolve a friendlier `Name` via `is connectors list` for the label — not required.)
+    - **User named a connector** → resolve its key (flow step 2), then confirm that key is one of the `ConnectorKey` values from `df connectors list` (exact match — same key namespace). **Not on the list → stop**: tell the user that connector isn't supported as a federated source on this tenant, and offer the supported list (same dropdown) to choose from instead — never build a source on an unsupported connector.
+    - **Empty list ⇒ the `fqs-connectors-list` flag is unset on this tenant — it does NOT mean "no connector is supported."** Do not block: skip the gate, tell the user the tenant has no configured federated-connector allow-list, and fall back to the normal name→key resolution (flow step 2). Hard-blocking on an empty list would break federated creation on every tenant that hasn't set the flag.
+    - Applies to **connector** (external) sources only. A **native** source — another DF entity (Rule 6) — is not an IS connector and is not gated here.
+
 ## End-to-end flow
 
-1. **Detect** the connector / external object / source entity from the prompt. Users name the *integration* ("Salesforce", "SAP", "HubSpot"), not the `connectorKey` — you must resolve the key.
+1. **Detect** the connector / external object / source entity from the prompt. Users name the *integration* ("Salesforce", "SAP", "HubSpot"), not the `connectorKey` — you must resolve the key. **If the prompt names no connector or source at all, don't guess — go straight to the federated-connector picker (Rule 16)** and offer the tenant's supported connectors as a selectable `AskUserQuestion` list.
 2. **Clarify** in one round what's missing: connector, connection, object (or source entity name), and **folder scope**.
+
+   **Gate on the federated allow-list first (Rule 16)** — `uip df connectors list --output json` returns the connectors this tenant supports as federated sources (`Data: [{ ConnectorKey }]`; each `ConnectorKey` is a real IS connector key).
+   - **No connector named** → present the list's `ConnectorKey` values **directly** in an `AskUserQuestion` dropdown (show the key verbatim — it's self-describing; payload = `ConnectorKey`). The pick *is* the `connectorKey` — skip the name→key resolution below.
+   - **Connector named** → resolve its key (below), then confirm it exact-matches a `ConnectorKey` in this list. **Not on it → stop** and offer the supported list instead; never build a source on an unsupported connector.
+   - **Empty list** ⇒ the `fqs-connectors-list` flag is unset (not "none supported"): tell the user, skip the gate, and resolve from the full catalog as below.
 
    **Resolve the `connectorKey` from the friendly name** — never hardcode or guess it (it is not simply `uipath-<name>`; e.g. Salesforce = `uipath-salesforce-sfdc`, SAP S/4HANA = `uipath-sap-s4hanacloud`):
    - `uip is connectors list --filter <name> --output json` → returns `{Name, Key}` rows. Match by `Name`, use its `Key`.
@@ -111,7 +122,7 @@ Connector-agnostic — the same shape works for any IS connector (Salesforce, SA
           "externalFieldMappingDetail": {
             "externalFieldName": "<source field name — keeps source spelling>",
             "externalFieldType": "<source dataType: string|integer|number|boolean|date|datetime>",
-            "directionType": 0,
+            "directionType": "ReadOnly",
             "searchability": { "searchable": true, "supportsOperators": { "searchableOperators": ["=", "in", "LIKE"] } },
             "isRequiredForRead": false,
             "sortable": true
@@ -241,7 +252,7 @@ Rules that differ from create:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `500 Internal Server Error` on create | `directionType` sent as string, OR a bare `externalFieldMappingDetail` | Use numeric `directionType` (0/1) and include the full mapping metadata (Rules 2, 3) |
+| `500 Internal Server Error` on create | a bare `externalFieldMappingDetail` (missing required metadata), or an invalid `directionType` value | Include the full mapping metadata and use a valid `directionType` string — `"ReadOnly"` / `"ReadAndWrite"` (Rules 2, 3) |
 | `Required parameter 'Id' was not found in GET(List) parameters` on create | internal `field.name` uses a reserved column name — typically `Id`, the connector PK mapped 1:1 | Rename the internal column (`Id` → `IdField`); keep `externalFieldName` / `primaryKey` = `Id`. Validate all internal names against the shared Name Validation first (Rule 11) |
 | Create succeeds but `records list` fails with `An internal error occurred` | `method` omitted or wrong — create does not validate it (Rule 4) | Set `externalObjectDetail.method` to the `Method` string from `is resources describe --operation List`, **verbatim**. To fix an existing entity, re-add the source with the correct `method` (`removeExternalSources` then `addExternalSources` + `addSourceJoins`) — there is no in-place `method` edit |
 | Create succeeds but `records list`/`query` returns **0 rows with no error** (structure looks correct) | `externalConnectionDetail.elementInstanceId` was built empty — the connections-list cache dropped it (warm-cache CLI bug, flow step 3) | Re-fetch the connection with `uip is connections list <connectorKey> --folder-key <fk> --refresh --output json`, take `ElementInstanceId`, and rebuild the connector source with it (`removeExternalSources` then `addExternalSources` + `addSourceJoins`) |
