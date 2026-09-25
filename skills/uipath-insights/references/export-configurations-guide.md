@@ -35,7 +35,7 @@ uip insights export-configurations list --output json
 
 ### export-configurations verify
 
-Check whether Insights can reach the organization's export destinations, using the credentials it has stored. Omit the id to check every configuration in one call; pass one to check that configuration alone.
+Have Insights test the organization's Azure Event Hub and AWS SQS destinations with the credentials it has stored; other destination types come back unprobed. Omit the id to check every configuration except Splunk HEC and unmigrated rows in one call; pass one to check that configuration alone.
 
 ```bash
 uip insights export-configurations verify --output json
