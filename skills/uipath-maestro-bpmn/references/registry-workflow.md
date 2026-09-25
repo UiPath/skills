@@ -301,21 +301,18 @@ lookup misses, producing
 naming the activity when the defect is one attribute on the binding. The
 `folderKey` input is read separately and never goes through the lookup.
 
-## Agent wrapper selection — pick by `processType`, not the label
+## Agent wrapper selection — pick by `ProcessType`, not the label
 
 When a node invokes an agent, choose the wrapper by the resource's
-**`processType`**, not its display label. The default
+**`ProcessType`**, not its display label. The default
 `uip or processes list --folder-path <path> --output json` row has no
-`processType` field; add `--all-fields` to the same call to get it —
-`uip or processes list --folder-path <path> --all-fields --output json`.
-That response is camelCase (`processType`, `key`, `folderKey`), unlike the
-default list's PascalCase (`Key`, `FolderKey`): read `key`/`folderKey` from
-this same `--all-fields` response rather than switching commands or casing
-partway through.
+`ProcessType`; add `--all-fields` to the same call and read `ProcessType`,
+`Key`, and `FolderKey` from that one response — same PascalCase as the
+default list; `--all-fields` only adds fields, it does not change casing.
 
-- Coded Python agents publish as `processType: "Function"` — use the
+- Coded Python agents publish as `ProcessType: "Function"` — use the
   `Orchestrator.StartJob` process contract, **not** `StartAgentJob`.
-- Agent Builder (low-code) publishes as `processType: "Agent"` →
+- Agent Builder (low-code) publishes as `ProcessType: "Agent"` →
   `Orchestrator.StartAgentJob`.
 - External A2A agent addressed by URL / skillId → `A2A.AgentExecution`.
 - Integration Service external agent → `Intsvc.*AgentExecution`.
