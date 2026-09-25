@@ -161,7 +161,11 @@ uip solution deploy run -n "InvoiceAutomation-v2" \
   --folder-name "MySolutionFolder" --output json
 ```
 
-A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. If the package requires configuration before it can activate, deploy still succeeds but activation surfaces an explicit error pointing at `deploy activate <name>` — fix the config and retry the activate.
+A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`, along with `DeploymentKey`, `PipelineDeploymentId` and `InstanceId`. If the package requires configuration before it can activate, deploy still succeeds but activation surfaces an explicit error pointing at `deploy activate <name>` — fix the config and retry the activate.
+
+This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions`, and nothing is provisioned. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
+
+The rejected attempt stays behind as a **pending draft** under that `--name`, and its key is in `Instructions` — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) for how to finish or drop it.
 
 To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
 
@@ -180,7 +184,6 @@ Key options:
 | `--parent-folder-path <path>` | Parent folder under which the new folder is created | -- |
 | `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
-| `--wait` | Wait for a `--personal-workspace` / `--feed` deploy to finish instead of returning as soon as it starts. Changes nothing on the tenant path, which always waits — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) | (off — return at `DeploymentStarted`) |
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
@@ -193,15 +196,12 @@ Key options:
 
 One narrow exception: a deployment that was *just* requested sits in `Draft` for a moment before the pipeline promotes it to `InProgress`, so a `Draft` read seconds after firing the command says nothing yet. What is never normal is a `Draft` that is still there after the command returned, or after a wait has ended.
 
-How you find out depends on which feed you deployed from:
+`deploy run` waits for its run on every feed — tenant, `--personal-workspace` and `--feed` alike — so the failure itself carries the server's own reasons. `Message` is only `Deployment failed with status: …`; the detail is in **`Instructions`**, as `Validation: …`, `Conflicts: …`, `Schedule: …`, `Deployment: …` — read that field, it names the resource and the property — together with the draft's key. To look at the deployment afterwards, run `uip solution deploy list` **carrying the same feed flag** — `deploy list` is tenant-scoped when none is passed and does not show a Personal Workspace or folder-feed deployment at all, so a missing row there is not an answer:
 
-- **Tenant feed** — `deploy run` always waits, and the failure carries the server's own reasons. `Message` is only `Deployment failed with status: …`; the detail is in **`Instructions`**, as `Validation: …`, `Conflicts: …`, `Schedule: …`, `Deployment: …` — read that field, it names the resource and the property.
-- **`--personal-workspace` / `--feed`** — the install is fire-and-forget by default. The command returns `Status: DeploymentStarted` the moment the request is accepted and never learns the outcome, so a deploy that fails validation seconds later still looks like a success. **Pass `--wait`** — the CLI then polls the deployment and puts the reason in `Message` (`Deployment '…' failed (OperationStatus: Draft): <reason>`). Without it, check afterwards with `uip solution deploy list` **carrying the same feed flag** — `deploy list` is tenant-scoped when none is passed and does not show a Personal Workspace or folder-feed deployment at all, so a missing row there is not an answer:
-
-  ```bash
-  uip solution deploy list --personal-workspace --output json
-  uip solution deploy list --feed "<name-or-key>" --output json
-  ```
+```bash
+uip solution deploy list --personal-workspace --output json
+uip solution deploy list --feed "<name-or-key>" --output json
+```
 
 The fix is the deploy config, not a retry — rerunning the same command with the same config reproduces the same `Draft`:
 
@@ -214,10 +214,12 @@ uip solution deploy config link config.json MyBucket --name "ExistingBucket" --f
 
 uip solution deploy run -n "MyDeployment" \
   --package-name "MySolution" --package-version "2.0.0" \
-  --folder-name "MySolutionFolder" --config-file config.json --wait --output json
+  --folder-name "MySolutionFolder" --config-file config.json --output json
 ```
 
-A `Draft` left by an **install** does not block that rerun — the CLI's "already deployed" guard deliberately lets it through, because rerunning is the fix. A `Draft` left by an **upgrade** does block: it sits against a deployment that is still live, so the retry verb there is `deploy upgrade`, not `deploy run` ([Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)).
+Rerun it with the **same** `--name` and `--package-version` as the attempt that failed — the server re-validates the draft with the new file. That holds for a draft left by an install and by an update of a live deployment alike, and the CLI's "already deployed" guard deliberately lets it through, because rerunning is the fix. Settings and resource links the file does not name keep the values the draft was rejected with, so name every one you mean to change.
+
+While the draft exists it owns the deployment, as in the Orchestrator UI, which offers only "continue editing" and "delete draft". `deploy run` refuses any *other* version for that name before sending anything (`ErrorCode: invalid_argument`, naming the draft) — including the version already live, which the server would otherwise answer by installing the draft's version instead — and `deploy upgrade` refuses the deployment outright. To drop the attempt instead, discard the draft first: in Orchestrator (Delete draft), or, for an update of an existing deployment, `uip solution deploy upgrade <draft-key> --discard-draft --version <live-version>` (see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)). The `deploy run` check reads the Solutions search, so it needs a user session; under an external app, ask only for the draft's version, or discard it first.
 
 ## Step 5: Check Deployment Status
 
