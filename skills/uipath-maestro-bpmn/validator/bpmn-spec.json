@@ -227,28 +227,33 @@
       "extensionTag": "uipath:activity",
       "contextFields": [
         {
-          "name": "releaseKey",
-          "displayName": "Process",
+          "name": "entityKey",
+          "displayName": "Business rule",
           "type": "string",
           "required": false,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
+          "binding": true,
           "defaultValue": null,
           "bindingInfo": {
-            "resource": "process",
+            "resource": "BusinessRule",
             "resourceKeyPattern": "${metadata.key}",
             "propertyAttribute": "Key"
           }
         },
         {
-          "name": "folderId",
+          "name": "name",
           "type": "string",
           "required": false,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "BusinessRule",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "name"
+          }
         },
         {
           "name": "folderPath",
@@ -256,11 +261,16 @@
           "required": false,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "BusinessRule",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "folderPath"
+          }
         },
         {
-          "name": "name",
+          "name": "_label",
           "type": "string",
           "required": false,
           "hidden": true,
@@ -278,14 +288,14 @@
       "useRelativeSource": true,
       "bindingPattern": "businessRule",
       "bindingInfo": {
-        "resource": "process",
+        "resource": "BusinessRule",
         "resourceKeyPattern": "${metadata.key}",
         "propertyAttribute": "Key",
-        "contextField": "releaseKey"
+        "contextField": "entityKey"
       },
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" type=\"string\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" type=\"string\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" type=\"string\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Execute business rule [Preview]\" type=\"Orchestrator.BusinessRules\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
+      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"entityKey\" type=\"string\" value=\"=bindings.{entityKeyBindingId}\" />\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n        <uipath:input name=\"_label\" type=\"string\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Execute business rule [Preview]\" type=\"Orchestrator.BusinessRules\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
       "discoveryNotes": "Uses getOrchestratorBusinessRules() to list available business rules"
     },
     "Intsvc.ActivityExecution": {
