@@ -24,7 +24,13 @@ from _shared.bpmn_assertions import (  # noqa: E402
 
 PROJECT = Path("BusinessRuleDecision/BusinessRuleDecision")
 BPMN_NAME = "BusinessRuleDecision.bpmn"
-RULE_CONTEXT_BINDINGS = {"entityKey": "Key", "name": "name", "folderPath": "folderPath"}
+RULE_KEY = "loan-eligibility-rule"
+# Context field -> (propertyAttribute, expected default); None leaves the default ungraded.
+RULE_CONTEXT_BINDINGS = {
+    "entityKey": ("Key", RULE_KEY),
+    "name": ("name", "LoanEligibility"),
+    "folderPath": ("folderPath", None),
+}
 
 
 def assert_rule_bindings(root, task) -> None:
@@ -35,8 +41,7 @@ def assert_rule_bindings(root, task) -> None:
     if "releaseKey" in context:
         fail("business rule must bind the BusinessRule resource, not a process releaseKey")
     bindings = {b.attrib.get("id"): b for b in root.iter(f"{{{UIPATH_NS}}}binding")}
-    keys = set()
-    for field, attr in RULE_CONTEXT_BINDINGS.items():
+    for field, (attr, default) in RULE_CONTEXT_BINDINGS.items():
         value = context.get(field, "")
         if not value.startswith("=bindings."):
             fail(f"context {field} must reference a binding (=bindings.<id>), got {value!r}")
@@ -45,11 +50,10 @@ def assert_rule_bindings(root, task) -> None:
             fail(f"context {field} references undeclared binding {value!r}")
         if binding.attrib.get("resource") != "BusinessRule" or binding.attrib.get("propertyAttribute") != attr:
             fail(f"binding for {field} must be resource=BusinessRule propertyAttribute={attr}")
-        keys.add(binding.attrib.get("resourceKey"))
-        if field == "folderPath" and binding.attrib.get("default") != "":
-            fail("a rule in the running job's folder binds folderPath to an empty string")
-    if len(keys) != 1:
-        fail(f"the three BusinessRule bindings must share one resourceKey, got {sorted(map(str, keys))}")
+        if binding.attrib.get("resourceKey") != RULE_KEY:
+            fail(f"binding for {field} must carry resourceKey={RULE_KEY!r}, got {binding.attrib.get('resourceKey')!r}")
+        if default is not None and binding.attrib.get("default") != default:
+            fail(f"binding for {field} must default to {default!r}, got {binding.attrib.get('default')!r}")
 
 
 def main() -> None:
