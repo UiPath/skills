@@ -843,7 +843,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 ## Limits of this approach
 
-1. **Triggers need `--kind trigger` on `resolve`, and stub into a different shape.** `"CuratedTrigger"` / `"GenericTrigger"` are event subscriptions, not callable tasks: they live in a separate TypeCache catalog that the default activity search never returns, and `stub` emits `call: "UiPath.IntSvcEvent"` plus a mandatory `EventTrigger` binding rather than a callable task. Author them with [trigger-authoring-guide.md](trigger-authoring-guide.md), not this flow. `GenericTrigger` takes `--object-name` like `Generic` does. Other event-shaped flavors (`"CuratedWaitFor"`, `"GenericWaitFor"`, `"GenericPersistence"`, …) are still rejected with `Activity type 'X' is not supported` — escalate those to manual authoring.
+1. **Triggers are a different flow.** `"CuratedTrigger"` / `"GenericTrigger"` live in a separate catalog (`resolve --kind trigger`) and stub into `call: "UiPath.IntSvcEvent"` plus an `EventTrigger` binding — see [trigger-authoring-guide.md](trigger-authoring-guide.md). Other event-shaped flavors (`"CuratedWaitFor"`, `"GenericWaitFor"`, `"GenericPersistence"`, …) are rejected with `Activity type 'X' is not supported` — escalate to manual authoring.
 
 2. **Stub doesn't validate `--inputs` against the IS schema.** Field names not in `requestFields` / `parameters` are silently dropped on the way through `pickFields`. Check `Data.ResponseFields` and the IS schema if a value goes missing.
 

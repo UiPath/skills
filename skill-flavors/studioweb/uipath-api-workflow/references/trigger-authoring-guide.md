@@ -1,9 +1,9 @@
 <!--skill-flavor:trigger-binding-rule:start-->
-2. **Studio Web owns the trigger's deployment registration.** The host derives it from the saved workflow, so treat the host-generated bindings and solution resources as authoritative (rule 16). You own the workflow side: keep the trigger first, and keep its `objectName` / `eventType` / `eventMode` / `filterExpression` accurate. After saving, confirm the activity renders as a **trigger card** — a plain connector card signals wrong event metadata, and what the host derives from it will be equally wrong. Re-stub to correct it.
+2. **Studio Web owns the trigger's deployment registration.** It derives the `EventTrigger` binding from the saved workflow; treat host-generated bindings and solution resources as authoritative (rule 16). Keep the trigger first and its `objectName` / `eventType` / `eventMode` / `filterExpression` accurate. After saving, confirm the activity renders as a **trigger card** — a plain connector card means wrong event metadata, and the derived registration is equally wrong. Re-stub to correct it.
 <!--skill-flavor:trigger-binding-rule:end-->
 
 <!--skill-flavor:trigger-schedule-scope:start-->
-4. **Connector events are the only trigger activities that live in the workflow file.** A manual run is the process being invoked; a schedule is an Orchestrator trigger on the deployed process, managed outside the workflow file. See [operating-published-workflows.md](operating-published-workflows.md).
+4. **Only connector events live in the workflow file.** A schedule is an Orchestrator trigger on the deployed process, managed outside the workflow. See [operating-published-workflows.md](operating-published-workflows.md).
 <!--skill-flavor:trigger-schedule-scope:end-->
 
 <!--skill-flavor:trigger-authoring-steps:start-->
@@ -17,26 +17,24 @@
 <!--skill-flavor:trigger-authoring-steps:end-->
 
 <!--skill-flavor:trigger-kind-unavailable:start-->
-If `resolve` answers `unknown option '--kind'`, the embedded CLI predates trigger support. Report that exact host capability gap and ask how the user wants to proceed — the `uiPathActivityTypeId` and `metadata.configuration` still come from `stub` alone (fact 3).
+If `resolve` answers `unknown option '--kind'`, the embedded CLI predates trigger support. Report that host capability gap and ask how the user wants to proceed — hand-authoring is not the fallback (fact 3).
 <!--skill-flavor:trigger-kind-unavailable:end-->
 
 <!--skill-flavor:trigger-binding-command:start-->
-Studio Web writes it, derived from the saved workflow. Treat the host-generated bindings and solution resources as authoritative (rule 16).
-
-You own the workflow side. After saving, confirm the activity renders as a **trigger card**: a plain connector card signals wrong event metadata, and what the host derives from it will be equally wrong. Re-stub to correct it.
+Studio Web writes it from the saved workflow, including the `Property` companion for path/query event parameters. Treat host-generated bindings and solution resources as authoritative (rule 16). After saving, confirm the activity renders as a **trigger card**; re-stub if it renders as a plain connector card.
 <!--skill-flavor:trigger-binding-command:end-->
 
 <!--skill-flavor:trigger-local-run:start-->
-A subscription fires only from the vendor, so a pre-deploy check supplies the payload itself:
+Run through the consent-gated, schema-inspected `RunProject` host operation:
 
-| `eventMode` | How to exercise it |
+| Input | Result |
 |---|---|
-| `webhooks` | Supply the event payload as the execution input through the consent-gated, schema-inspected `RunProject` host operation, shaped like the event's `outputFields`. The trigger passes it straight through; the rest of the workflow runs on it. |
-| `polling` | The same input-supplied path applies. With no input the trigger replays the most recent real matching event, which reaches the live vendor connection and is therefore side-effecting under rule 21 — get the user's consent first. |
+| Execution input shaped like `outputFields` | The trigger passes it through as the event payload; no connector call. The safe way to exercise the body. |
+| No input | The runtime fetches a recent matching event through the live connection: always for `polling`; for `webhooks` only when the connector has a debug-polling configuration, otherwise it fails with publish guidance. Reaches the vendor — side-effecting under rule 21. |
 
-Offline `uip api-workflow validate` stays the autonomous pre-flight either way.
+Studio Web's **Test trigger** panel checks filter matches against recent events without running the workflow. Offline `uip api-workflow validate` stays the autonomous pre-flight.
 <!--skill-flavor:trigger-local-run:end-->
 
 <!--skill-flavor:trigger-clean-gate-antipattern:start-->
-- **Treat a clean `uip api-workflow validate` as proof the workflow is well formed, and only that.** Whether the deployed process subscribes to the intended event follows from the saved trigger activity (fact 2), so re-read it before calling the work done.
+- **Treat a clean `uip api-workflow validate` as proof the file is well formed, and only that.** The subscription follows from the saved trigger activity (fact 2), so re-read it before calling the work done.
 <!--skill-flavor:trigger-clean-gate-antipattern:end-->
