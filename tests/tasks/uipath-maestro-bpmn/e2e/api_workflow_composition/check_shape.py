@@ -314,13 +314,17 @@ def check_resource_row(
     foreign_writes = [
         write
         for write in composition.all_output_writes(process)
-        if write.get("var") in response_var_ids and write.get("owner") != node_id
+        if write.get("var") in response_var_ids
+        and (
+            write.get("owner") != node_id
+            or not composition.is_response_mapping(write)
+        )
     ]
     if foreign_writes:
         problems.append(
             f"{row['kind']}: variable(s) {sorted(response_var_ids)} are "
             f"also written by {sorted({w['owner'] for w in foreign_writes})} "
-            f"-- only {node_id!r} may write its own output"
+            f"-- only {node_id}'s own response mapping may write its output"
         )
 
     published_targets = {
