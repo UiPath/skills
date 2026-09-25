@@ -72,7 +72,7 @@ Calendars define non-working days (holidays, company shutdowns). Time triggers r
 | `uip or calendars get <key>` | Get calendar details including excluded dates. |
 | `uip or calendars create <name>` | Create a calendar. Use `--time-zone` (defaults to UTC). |
 | `uip or calendars update <key>` | Update name or timezone (`--name`, `--time-zone`). |
-| `uip or calendars delete <key>` | Delete a calendar. |
+| `uip or calendars delete <key> --yes` | Delete a calendar. |
 
 ```bash
 # Create a calendar for US holidays

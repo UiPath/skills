@@ -3,7 +3,7 @@
 
 Wired in via ``post_run`` in case e2e task YAMLs. Runs from the sandbox CWD
 after evaluation completes; finds every ``.uipx`` file under it, reads
-``SolutionId``, and best-effort deletes each via ``uip solution delete``.
+``SolutionId``, and best-effort deletes each via ``uip solution delete --yes``.
 ``.uipx`` files without a ``SolutionId`` are skipped.
 
 Cleanup policy is controlled by the ``CASE_E2E_CLEANUP`` env var:

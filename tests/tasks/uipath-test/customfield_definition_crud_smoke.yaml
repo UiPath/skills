@@ -81,9 +81,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete delete command: `uip tm customfield delete --project-key HEALTH (--field-ids <uuid> | --name \"Eval Reviewer Team\" --object-type Requirement) --output json`"
+    description: "Complete delete command: `uip tm customfield delete --project-key HEALTH (--field-ids <uuid> | --name \"Eval Reviewer Team\" --object-type Requirement) --yes --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(--field-ids\s+\S+|--object-type\s+Requirement))uip\s+tm\s+customfield\s+delete'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(--field-ids\s+\S+|--object-type\s+Requirement))(?=.*--yes)uip\s+tm\s+customfield\s+delete'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

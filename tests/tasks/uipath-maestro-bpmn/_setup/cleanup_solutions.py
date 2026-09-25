@@ -3,7 +3,7 @@
 
 Wired in via ``post_run`` in BPMN e2e task YAMLs. Runs from the sandbox CWD
 after evaluation completes; finds every ``.uipx`` file under it, reads
-``SolutionId``, and best-effort deletes each via ``uip solution delete``.
+``SolutionId``, and best-effort deletes each via ``uip solution delete --yes``.
 ``.uipx`` files without a ``SolutionId`` are skipped.
 
 Cleanup policy is controlled by the ``BPMN_E2E_CLEANUP`` env var:
@@ -75,7 +75,8 @@ def main() -> int:
 
         if policy == "never":
             logger.info(
-                "BPMN_E2E_CLEANUP=never; preserving %s (delete later with: uip solution delete %s)",
+                "BPMN_E2E_CLEANUP=never; preserving %s "
+                "(delete later with: uip solution delete %s --yes --output json)",
                 sid,
                 sid,
             )
