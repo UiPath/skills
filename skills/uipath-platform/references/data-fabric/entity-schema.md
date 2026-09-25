@@ -366,7 +366,8 @@ uip df entities get <entity-id> --output json
 | `Id` | Entity UUID — required for all `uip df` record and entity commands |
 | `Name` | System name (e.g. `BankDetails`) |
 | `DisplayName` | Human-readable label shown in the UiPath Data Fabric UI |
-| `EntityType` | Row class — observed values: `Entity` (native, read/write), `SystemEntity` (e.g. `SystemUser`; hidden by `--native-only`). Federated rows surface here too. There is **no** `Source` field. |
+| `EntityType` | Object **kind** — observed values: `Entity`, `SystemEntity` (e.g. `SystemUser`; hidden by `--native-only`), `ChoiceSet`, `InternalEntity`. **Both native and federated entities are `Entity`** — `EntityType` does NOT distinguish them. There is **no** `Source` field. |
+| `EntityClass` | Native-vs-federated **classification** — `Native`, `Federated`, or `Case`. This is the field that tells them apart (a federated entity is `EntityType: "Entity"` + `EntityClass: "Federated"`). |
 | `EntityTypeId` | Numeric type code paralleling `EntityType` |
 | `FolderId` | Folder GUID, or all-zeros UUID for tenant level |
 | `RecordCount`, `StorageSizeInMB`, `UsedStorageSizeInMB` | Storage metrics |
@@ -392,12 +393,12 @@ Before writing records, identify complex fields by `FieldDataType.Name` and reso
 
 ## Native vs Federated Entities
 
-Each `entities list` row carries an `EntityType` field (no `Source` field exists):
+Each `entities list`/`get` row carries `EntityType` (object kind) and `EntityClass` (native-vs-federated) — no `Source` field exists:
 
-- `Entity` — native, data stored in Data Fabric, full read/write access
-- `SystemEntity` — internal entity (e.g. `SystemUser`); hidden by `--native-only`, not writable
-- Federated rows (backed by external connectors like Salesforce, Azure AD) surface here as well — read-only. The exact `EntityType` value for federated rows depends on the connector; verify by listing the tenant. `--native-only` filters them out alongside `SystemEntity`.
+- `EntityType` is the **kind**: `Entity` (a normal entity — both native AND federated), `SystemEntity` (internal, e.g. `SystemUser`; hidden by `--native-only`), `ChoiceSet`, `InternalEntity`.
+- `EntityClass` is the **classification** that separates native from federated: `Native` (data stored in Data Fabric, full read/write), `Federated` (read-only unified view over external/other sources), `Case`. A federated entity is `EntityType: "Entity"` + `EntityClass: "Federated"` — **do not rely on `EntityType` to detect federated**, it's `"Entity"` for both.
+- Filter by class with `--federated-only` / `--native-only` (omit both for all); `--native-only` also drops `SystemEntity`.
 
-**Only native entities support record creation, update, delete, and import.** Federated entities are read-only for records — read via `records list` or `records query` (query supports filter/sort/projection, but not aggregates or multi-entity joins; see federated-entity-creation.md Rule 8).
+**Only native entities support record creation, update, delete, and import.** Federated entities are read-only for records — read via `records list` or `records query` (query supports filter/sort/projection, but not aggregates or multi-entity joins; see federated-entity-creation.md Rule 9).
 
 > **Creating** a federated entity from an Integration Service connector (Salesforce, HubSpot, Data hub, …) or from another DF entity **is supported** — see [`federated-entity-creation.md`](federated-entity-creation.md) for the create payload, field mapping, `EntityClass: "Federated"`, and `--federated-only` listing. Only **record writes** to a federated entity are unsupported (data lives in the source, so writes happen there).
