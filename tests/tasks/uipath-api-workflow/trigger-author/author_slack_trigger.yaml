@@ -1,0 +1,108 @@
+task_id: skill-api-workflow-trigger-author-slack
+description: >
+  Skill-guided e2e: agent authors an event-driven API workflow from scratch —
+  a Slack "Button Clicked" CuratedTrigger as the workflow's entry point.
+  Tests the trigger discovery path end to end: 'registry resolve --kind
+  trigger' (triggers live in a catalog the default activity search never
+  returns), REQUIRED connection ping, 'registry stub' emitting
+  call:"UiPath.IntSvcEvent", the trigger placed FIRST, and the EventTrigger
+  entry in bindings_v2.json that makes a deployment actually fire.
+  AUTHORING ONLY — the agent must not run the workflow, so no vendor event is
+  consumed. REQUIRES cloud auth AND a working Slack connection in the runner's
+  tenant; runs under the authed (nightly) experiment, never the no-auth smoke
+  gate.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, feature:trigger, feature:registry]
+
+sandbox:
+  python: {}
+
+initial_prompt: |
+  Author — but do NOT run — a UiPath API Workflow that starts when a button is
+  clicked in Slack. Create the project named `SlackButton` (its workflow file
+  will be `SlackButton/Workflow.json`), wire the trigger to a working Slack
+  connection, and return the clicked payload from the workflow.
+
+  It is not complete until the project is in a state where deploying it would
+  actually subscribe to the Slack event — the workflow file alone is not
+  enough. Stop once it validates; leave no <REPLACE_WITH_*> placeholders.
+
+  Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent stubbed the trigger from the registry (rule 16a — never hand-authored)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+api-workflow\s+registry\s+stub'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Advisory only: `--kind all` is the default and also returns triggers, so an
+  # agent that omits `--kind trigger` can still reach a correct result. Records
+  # convention adherence without docking the run.
+  - type: command_executed
+    description: "ADVISORY — agent scoped the search to the trigger catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+api-workflow\s+registry\s+resolve[^\n]*--kind\s+trigger'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent verified the connection with a ping (rule 16 — REQUIRED)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+ping'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The trigger is the FIRST activity after WorkflowStart and uses the IntSvcEvent call"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python3 -c "import json,sys; d=json.load(open(sys.argv[1])); root=d[\"do\"][0]; seq=root[list(root)[0]][\"do\"]; sys.exit(0 if list(seq[0])[0]==\"WorkflowStart\" and seq[1][list(seq[1])[0]].get(\"call\")==\"UiPath.IntSvcEvent\" else 1)" "$WF"'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PRIMARY — bindings_v2.json carries the EventTrigger entry that registers the subscription on deploy"
+    command: 'B=$(find . -name bindings_v2.json -not -path "*/node_modules/*" | head -1); test -n "$B" && python3 -c "import json,sys; d=json.load(open(sys.argv[1])); t=[r for r in d.get(\"resources\",[]) if r.get(\"resource\")==\"EventTrigger\"]; sys.exit(0 if len(t)==1 and t[0][\"metadata\"].get(\"Operation\") and t[0].get(\"key\") else 1)" "$B"'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No unresolved connection placeholder survived (rule 16 — sentinel must be replaced)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); ! grep -q ''REPLACE_WITH'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the workflow — a polling replay consumes a real vendor event (rule 21; prompt forbids it)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?![^\n]*--help)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow passes offline validation"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40

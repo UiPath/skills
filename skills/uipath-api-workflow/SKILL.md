@@ -27,6 +27,7 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 - User asks about **nested control flow** — If inside ForEach, TryCatch around a loop, conditional Break, multi-way branching, etc.
 - User asks for an **Integration Service connector activity** (Gmail Send Email, Outlook Get Newest Email, GitHub Search Issues, Slack Send Message, etc.) — follow the discovery flow in [references/connector-activity-discovery.md](references/connector-activity-discovery.md)
 - User asks for a **generic HTTP Request** that needs to render in StudioWeb's designer — same discovery flow
+- User wants the workflow to **start from a connector event** ("when a Slack button is clicked"), or to change an existing trigger — see [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md)
 - User asks about **JavaScript expressions, `$context`, `$input`, `$workflow`, `WorkflowStart`, or the `export.as` pattern**
 <!--skill-flavor:surface-operations-scope:start-->
 - User asks how to **debug** a failing API workflow run — the local `validate` → `run --no-auth` loop, or a **post-publish cloud run** (job logs/traces). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
@@ -93,8 +94,15 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
     - **Connector params use flat dotted keys and BARE literals.** `"message.toRecipients": "..."`, not nested objects; plain `"x@y.com"`, not `"${'x@y.com'}"` — rule 5's wrap is **inverted** here (`${'...'}` clears the field on save). Real references (`${$context...}`) stay wrapped.
     - **NEVER use Http kind with a vendor connection UUID** (401 "Invalid Element token"). IntSvc output is wrapped: read `$context.outputs.<ExportBucketKey>.content.<field>`.
 <!--skill-flavor:connector-solution-registration:start-->
-    - **(Solutions-mode + IntSvc only)** sync the connection into the catalogue: `uip api-workflow bindings sync --workflow <Workflow.json>` then `uip solution resource refresh --solution-folder <path>`. Skip for Http kind, non-connector activities, and standalone (no `Solution/`) projects.
+    - **(Solutions-mode + IntSvc only)** sync the connection into the catalogue: `uip api-workflow bindings sync --workflow <Workflow.json>` then `uip solution resources refresh --solution-folder <path>`. Skip for Http kind, non-connector activities, and standalone (no `Solution/`) projects.
 <!--skill-flavor:connector-solution-registration:end-->
+16a. **A connector-event trigger is a separate catalog, a separate activity shape, and a second artifact.** When the workflow must start from an event (Slack button clicked, new Outlook calendar entry), run `uip api-workflow registry resolve "<keyword>" --kind trigger` then `registry stub` — never hand-author. The stub is the workflow's FIRST activity after `WorkflowStart`, at most one, `call: "UiPath.IntSvcEvent"`. A `GenericTrigger` needs `--object-name`. Full flow, filter syntax, anti-patterns: [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md).
+<!--skill-flavor:trigger-binding-registration:start-->
+    - **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json` that registers the Orchestrator event trigger on deploy. **Without it the workflow validates, packs, publishes and deploys clean — and never fires.** No gate catches this. In Solutions mode follow with `uip solution resources refresh` (rule 16).
+<!--skill-flavor:trigger-binding-registration:end-->
+<!--skill-flavor:trigger-debug-contract:start-->
+    - **A `webhooks` trigger cannot run locally without input.** `uip api-workflow run` replays a live event only for `polling` (side-effecting under rule 21); for either mode, `--input-arguments` shaped like the event payload exercises the rest of the workflow offline.
+<!--skill-flavor:trigger-debug-contract:end-->
 <!--skill-flavor:runtime-invocation-io:start-->
 17. **Pass input as a JSON string.** `--input-arguments '{"key":"value"}'`. Invalid JSON exits 1.
 18. **Always `--output json`** when parsing CLI output programmatically. Success → `{ "Result": "Success", "Code": "WorkflowRun", "Data": {...} }`. Failure → `{ "Result": "Failure", "Message": "...", "Instructions": "..." }` with exit 1.
@@ -317,6 +325,7 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [references/task-types.md](references/task-types.md) | Adding/editing any single activity — exact JSON shape, required fields, export pattern, common mistakes, basic nesting hints per type |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Combining activities into hierarchical structures — nested If, ForEach inside DoWhile, TryCatch around/inside loops, conditional Break, multi-way branching, key uniqueness rules |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
+| [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md) | **Triggers** — starting from a connector event: `resolve --kind trigger` + `stub`, the `EventTrigger` binding, JMESPath filters, polling vs webhooks |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Writing JS expressions, propagating outputs via `export.as`, accessing `$context` / `$input` / `$workflow`, JS_Invoke argument passing, strict-mode gotchas, key patterns |
 | [references/files-and-base64.md](references/files-and-base64.md) | **Files & base64** — `JobAttachment` references, the File to Base64 / Base64 to File activities (exact JSON, `$helpers.file.*`), `serializeData()` for inline bodies/Responses, passing local files in and getting files out of a run, pitfalls |
 <!--skill-flavor:cli-reference-navigation:start-->
@@ -340,6 +349,7 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [assets/templates/loop-aggregation-example.json](assets/templates/loop-aggregation-example.json) | DoWhile + ForEach + Assign accumulation — pure-compute aggregation pattern |
 | [assets/templates/nested-control-flow-example.json](assets/templates/nested-control-flow-example.json) | Heavy nesting demo — TryCatch around DoWhile around If with conditional Break |
 | [assets/templates/file-base64-roundtrip-example.json](assets/templates/file-base64-roundtrip-example.json) | **Files** — a `document` file input → File to Base64 → Base64 to File → Response returning both references. The exact `run.script` shape Studio Web writes for the two activities (rule 23). Verified end-to-end with a signed-in run: local file in → `.base64` reference → decoded file out, bytes identical. |
+| [assets/templates/trigger-workflow-template.json](assets/templates/trigger-workflow-template.json) | **Trigger** — `WorkflowStart` → `UiPath.IntSvcEvent` → Response reading the payload. `<REPLACE_WITH_*>` values are sentinels: re-stub for the real ones (rule 16a). |
 <!--skill-flavor:template-execution-proof:start-->
 | [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) | **Http kind** — HTTP Request curated activity (`call: "UiPath.Http"`) for arbitrary REST calls. Generated by `registry stub` against the catfacts URL. Shows the canonical shape: `connectionId: "ImplicitConnection"`, `unifiedTypesCompatible: true`, `savedJitInputFieldId: "in_http-request"`, URL in `bodyParameters.url`. Verified end-to-end with `uip api-workflow run --no-auth`. |
 <!--skill-flavor:template-execution-proof:end-->

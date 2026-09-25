@@ -123,3 +123,11 @@ Fix failures in category order — **Structure > Expression > Activity Config > 
 <!--skill-flavor:file-run-cli:start-->
     In Studio Web the run goes through the consent-gated, schema-inspected `RunProject` host operation; file arguments are supplied through the fields it declares for `JobAttachment` inputs (the host uploads them), and returned files appear as attachment references in the host result. Validation with `uip api-workflow validate` works offline as usual.
 <!--skill-flavor:file-run-cli:end-->
+
+<!--skill-flavor:trigger-binding-registration:start-->
+    - **Studio Web owns the trigger's deployment registration.** It derives the `EventTrigger` binding from the saved workflow; treat host-generated bindings and solution resources as authoritative (rule 16). Keep the trigger's `objectName` / `eventType` / `eventMode` / `filterExpression` accurate. After saving, confirm it renders as a **trigger card**; a plain connector card means wrong event metadata — re-stub.
+<!--skill-flavor:trigger-binding-registration:end-->
+
+<!--skill-flavor:trigger-debug-contract:start-->
+    - **Exercise a trigger by supplying the payload.** Pass an execution input shaped like the event's output fields through the host `RunProject` operation; the trigger passes it through. With no input the runtime fetches a recent event through the live connection (`polling` always, `webhooks` only where the connector supports debug polling) — side-effecting under rule 21.
+<!--skill-flavor:trigger-debug-contract:end-->

@@ -1,0 +1,85 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "tags": {},
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": []
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${ { ...Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}), ...($workflow.input || {}) } }",
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
+            }
+          },
+          {
+            "Button_Clicked_1": {
+              "call": "UiPath.IntSvcEvent",
+              "with": {
+                "connector": "uipath-salesforce-slack",
+                "connectionId": "<REPLACE_WITH_VENDOR_CONNECTION_UUID>",
+                "connectionResourceId": "<REPLACE_WITH_VENDOR_CONNECTION_UUID>",
+                "eventParameters": {
+                  "channel_id": "<CHANNEL_ID>"
+                },
+                "objectName": "button",
+                "eventType": "BUTTON_CLICKED",
+                "eventMode": "webhooks",
+                "filterExpression": "(channel_id == '<CHANNEL_ID>')"
+              },
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"button_1\": $output } }"
+              },
+              "metadata": {
+                "activityType": "Connector",
+                "fullName": "Connector",
+                "displayName": "Button Clicked",
+                "uiPathActivityTypeId": "<REPLACE_WITH_TRIGGER_TYPE_ID>",
+                "configuration": "{\"essentialConfiguration\": {\"connectorVersion\": \"\", \"executionType\": null, \"scriptRef\": null, \"customFieldsRequestDetails\": null, \"instanceParameters\": {\"connectorKey\": \"uipath-salesforce-slack\", \"objectName\": \"button\", \"activityType\": \"CuratedTrigger\", \"version\": \"1.0.0\", \"eventOperation\": \"BUTTON_CLICKED\", \"eventMode\": \"webhooks\", \"supportsStreaming\": false}, \"objectName\": \"button\", \"packageVersion\": \"1.0.0\", \"httpMethod\": null, \"path\": null, \"filter\": null}}"
+              }
+            }
+          },
+          {
+            "Response_1": {
+              "response": "${{ clicked: $context.outputs.button_1?.content }}",
+              "markJobAsFailed": false,
+              "then": "end",
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
+            }
+          }
+        ],
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
+      }
+    }
+  ],
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
+  }
+}

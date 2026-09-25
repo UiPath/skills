@@ -1,0 +1,86 @@
+task_id: skill-api-workflow-trigger-retarget-channel
+description: >
+  Skill-guided brown-field edit of a connector-event trigger, fully offline.
+  The seeded project has a Slack CuratedTrigger listening to one channel, plus
+  the matching EventTrigger entry in bindings_v2.json. The agent must retarget
+  it to a different channel. Tests the single most expensive trigger mistake:
+  editing only Workflow.json leaves the EventTrigger binding stale, so the
+  deployed process keeps subscribing to the OLD channel while every gate
+  (validate / pack / publish / deploy) still reports success. Grades the two
+  artifacts, not the commands — regenerating via 'bindings sync' and editing
+  the binding by hand are both acceptable routes to a correct result.
+  No cloud auth required: the trigger's binding is derived locally.
+tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate, feature:trigger]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  - command: "python3 _setup/seed.py"
+    timeout: 60
+
+initial_prompt: |
+  The `SlackAlert` API workflow project currently fires when a button is
+  clicked in the Slack channel `C_OLD_CHANNEL_ID`.
+
+  Retarget it to the channel `C_NEW_CHANNEL_ID` instead. It is not complete
+  until a deployment of this project would subscribe to the new channel —
+  the workflow alone is not enough.
+
+  Do NOT run the workflow. Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: run_command
+    description: "The trigger in Workflow.json now targets the new channel"
+    command: 'grep -q "C_NEW_CHANNEL_ID" SlackAlert/Workflow.json'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PRIMARY — the EventTrigger binding tracks the new channel (without it the deploy still subscribes to the old one)"
+    command: 'python3 -c "import json,sys; d=json.load(open(sys.argv[1])); t=[r for r in d[\"resources\"] if r.get(\"resource\")==\"EventTrigger\"]; sys.exit(0 if len(t)==1 and \"C_NEW_CHANNEL_ID\" in t[0][\"metadata\"].get(\"FilterExpression\",\"\") else 1)" SlackAlert/bindings_v2.json'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No reference to the old channel survives in either artifact"
+    command: '! grep -rq "C_OLD_CHANNEL_ID" SlackAlert/Workflow.json SlackAlert/bindings_v2.json'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The trigger is still the first activity after WorkflowStart, still an IntSvcEvent call"
+    command: 'python3 -c "import json,sys; d=json.load(open(sys.argv[1])); seq=d[\"do\"][0][\"Sequence_1\"][\"do\"]; sys.exit(0 if list(seq[0])[0]==\"WorkflowStart\" and seq[1][list(seq[1])[0]].get(\"call\")==\"UiPath.IntSvcEvent\" else 1)" SlackAlert/Workflow.json'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the workflow (offline sandbox; the prompt forbids it)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?![^\n]*--help)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow still passes offline validation"
+    command: 'uip api-workflow validate SlackAlert/Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
