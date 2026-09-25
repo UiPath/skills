@@ -269,6 +269,13 @@ NARROW_TASKS = {
 OTHER_TASKS = (
     "alerts/smoke.yaml",
     "filters/smoke.yaml",
+    "looker/ambiguous-title/smoke.yaml",
+    "looker/embed-by-title/smoke.yaml",
+    "looker/embed_url_smoke.yaml",
+    "looker/looker-unavailable/smoke.yaml",
+    "looker/no-dashboards/smoke.yaml",
+    "looker/paging/smoke.yaml",
+    "looker/unreachable-id/smoke.yaml",
     "rbac/smoke.yaml",
 )
 
@@ -280,6 +287,13 @@ EXPECTED_COMMAND_CRITERIA = {
     "envelope-contract/all_commands_envelope_e2e.yaml": 8,
     "filters/smoke.yaml": 6,
     "job-health/job_health_investigation_e2e.yaml": 5,
+    "looker/ambiguous-title/smoke.yaml": 4,
+    "looker/embed-by-title/smoke.yaml": 5,
+    "looker/embed_url_smoke.yaml": 7,
+    "looker/looker-unavailable/smoke.yaml": 5,
+    "looker/no-dashboards/smoke.yaml": 4,
+    "looker/paging/smoke.yaml": 3,
+    "looker/unreachable-id/smoke.yaml": 5,
     "rbac/smoke.yaml": 8,
     "smoke_absolute_time_range.yaml": 3,
     "smoke_all_commands.yaml": 7,

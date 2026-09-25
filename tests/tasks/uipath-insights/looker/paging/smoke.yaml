@@ -1,0 +1,83 @@
+task_id: skill-insights-smoke-looker-paging
+description: >
+  Smoke test against the looker-dashboards `uip` shim. The tenant folder
+  holds 62 dashboards, more than the default page of 50, so a single `list`
+  call returns `HasMore: true`. The agent should page with `--offset` or
+  raise `--limit` until it has every row, and write exactly the 62 tenant
+  titles. The file check reads the expected titles from the fixture the
+  shim serves, so the answer and the check cannot drift apart.
+tags: [uipath-insights, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../mock_template}
+    - {type: template_dir, path: fixture}
+
+initial_prompt: |
+  Using UiPath Insights through `uip insights`: write the title of every
+  Looker-era Insights dashboard in our tenant folder to tenant-dashboards.txt,
+  one per line, and tell me how many there are.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent listed the Looker-era dashboards"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+list\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt a Looker dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+(create|create-from-template|update|delete|remove|duplicate|copy|export|download|restore|import|check)\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the shim or its fixture"
+    tool_name: "Bash"
+    command_pattern: 'mocks/(?:looker\.json|help\.json|uip\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tenant-dashboards.txt holds exactly the 62 tenant titles, each once"
+    command: >-
+      python3 -c "import json, sys;
+      expected = sorted(r['Title'] for r in json.load(open('mocks/looker.json'))['folders']['tenant']);
+      got = sorted(line.strip() for line in open('tenant-dashboards.txt', encoding='utf-8') if line.strip());
+      sys.exit(0 if got == expected else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reply reports 62 tenant dashboards"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The tenant folder holds 62 Looker-era dashboards. The listing pages at
+      50 rows by default and said more rows existed, so a correct answer
+      needed a second page or a larger limit.
+
+      Score 1.0 if the reply says there are 62 dashboards in the tenant
+      folder and that the titles were written to tenant-dashboards.txt.
+
+      Score 0.0 if the reply gives any other count, presents a first page as
+      the whole folder, or says the file was not written.
+    weight: 2.0
+    pass_threshold: 0.8

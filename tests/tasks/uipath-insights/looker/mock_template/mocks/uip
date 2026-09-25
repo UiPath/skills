@@ -1,0 +1,550 @@
+#!/usr/bin/env python3
+import json
+import os
+import re
+import secrets
+import shutil
+import sys
+from urllib.parse import quote
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+TENANT_PATH = os.path.join(MOCK_DIR, "looker.json")
+HELP_PATH = os.path.join(MOCK_DIR, "help.json")
+
+FOLDERS = ["personal", "tenant", "templates", "organization"]
+DEFAULT_LIMIT = 50
+MAX_LIMIT = 10000
+THEMES = ["light", "dark"]
+EMBED_HOST = "https://insights-eucentral1-alpha.looker.uipath.com"
+
+EXIT_SUCCESS = 0
+EXIT_FAILURE = 1
+EXIT_VALIDATION = 3
+
+ID_SPACE_NOTE = (
+    "These are Looker-era dashboards; their ids work on "
+    "'uip insights looker-dashboards' commands only."
+)
+CACHE_NOTE = (
+    "The backend caches each folder for up to an hour, so a listed dashboard "
+    "may already be deleted."
+)
+PERSONAL_OMITTED_NOTE = (
+    "Personal folder omitted: the session lacks Insights Dashboard Edit, so "
+    "the backend did not list it."
+)
+PAGING_COST_NOTE = (
+    "The Looker Dashboard endpoint does not paginate, so every --offset page "
+    "repeats the whole backend request."
+)
+EMPTY_NOTE = "An empty list is a successful result, not an error."
+TRUNCATED_NOTE = (
+    "More rows exist beyond this page; page with --offset or raise --limit "
+    "before concluding a Looker dashboard is absent."
+)
+
+EMBED_CREDENTIAL_NOTE = (
+    "The URL is a signed, single-user Looker embed link that carries the "
+    "caller's identity in its query string; put it in an iframe or open it "
+    "directly, do not store, log or share it, and request a new one for each "
+    "page load."
+)
+EMBED_SESSION_NOTE = (
+    "The embed session it opens is bounded by the Insights service (twenty "
+    "hours at the source read), and the dashboard renders with the caller's "
+    "own Insights permissions and folder visibility."
+)
+EMBED_TEMPLATE_NOTE = "This embeds the built-in template."
+EMBED_SAVED_NOTE = (
+    "This embeds a saved dashboard, which needs the tenant's Insights licence "
+    "in full mode."
+)
+EMBED_LOCALE_NOTE = (
+    "Insights maps the locale to a Looker locale and uses English for any "
+    "value outside its list (en, ja, zh-cn, zh-tw, es, es-mx, tr, ko, pt, "
+    "pt-br, de, fr, ru at the source read), so an unlisted value is not an "
+    "error."
+)
+
+PORTAL_NOT_PROVISIONED = {
+    "ErrorCode": "not_found",
+    "Retry": "RetryWillNotFix",
+    "Message": "The Insights Looker Dashboard routes returned HTTP 404.",
+    "Instructions": (
+        "This route cannot miss for data reasons; the active tenant likely "
+        "does not have the Insights Portal service provisioned. Do not retry "
+        "until the tenant changes."
+    ),
+    "HttpStatus": 404,
+}
+
+LIST_FAILURES = {
+    "no_dashboards": {
+        "ErrorCode": "server_error",
+        "Retry": "RetryWillNotFix",
+        "Message": (
+            "The tenant has no personal, tenant or template Looker dashboards, "
+            "and this deployment reports that as an error."
+        ),
+        "Instructions": (
+            "Create a dashboard in the Insights app, or ask for the tenant's "
+            "template models to be provisioned. Do not retry; the same request "
+            "answers the same way until the tenant has one of those three."
+        ),
+        "HttpStatus": 500,
+    },
+    "permission_denied": {
+        "ErrorCode": "permission_denied",
+        "Retry": "RetryWillNotFix",
+        "Message": (
+            "The session cannot list Looker dashboards in the current tenant."
+        ),
+        "Instructions": (
+            "The Insights Dashboard View permission is required. Do not retry; "
+            "ask a tenant administrator for the role."
+        ),
+        "HttpStatus": 403,
+    },
+    "portal_not_provisioned": PORTAL_NOT_PROVISIONED,
+}
+
+
+def embed_failure(kind, dashboard_id):
+    failures = {
+        "unreachable": {
+            "ErrorCode": "not_found",
+            "Retry": "RetryWillNotFix",
+            "Message": (
+                f"Looker dashboard {dashboard_id} is not one this session can "
+                "embed."
+            ),
+            "Instructions": (
+                "It is not among the dashboards this session can reach: "
+                "another user's personal dashboard, and a dashboard deleted "
+                "within the last hour that 'list' still shows from its cache, "
+                "answer the same way. A numeric id also answers this way when "
+                "the tenant's Insights licence is not in full mode, which "
+                "limits embedding to template dashboards. A value that is all "
+                "digits or contains '::' is treated as an id, so a dashboard "
+                "whose title looks like one is reachable only by its id. Run "
+                "'uip insights looker-dashboards list' for the titles and ids "
+                "this session can see."
+            ),
+            "HttpStatus": 401,
+        },
+        "permission_denied": {
+            "ErrorCode": "permission_denied",
+            "Retry": "RetryWillNotFix",
+            "Message": (
+                f"The session cannot embed Looker dashboard {dashboard_id}."
+            ),
+            "Instructions": (
+                "Embedding needs the Insights Dashboard View or Edit permission "
+                "in the active tenant, and an organization-scoped dashboard "
+                "also needs organization administrator or organization viewer. "
+                "Do not retry until the role changes."
+            ),
+            "HttpStatus": 403,
+        },
+        "looker_unavailable": {
+            "ErrorCode": "server_error",
+            "Retry": "RetryLater",
+            "Message": "Looker is unavailable to Insights right now.",
+            "Instructions": (
+                "The Insights service reached Looker and Looker did not "
+                "answer. Wait and send the same request again. No automatic "
+                "retry was made."
+            ),
+            "HttpStatus": 503,
+        },
+        "embed_link_failed": {
+            "ErrorCode": "server_error",
+            "Retry": "RetryLater",
+            "Message": (
+                "Insights could not mint the embed URL for Looker dashboard "
+                f"{dashboard_id}."
+            ),
+            "Instructions": (
+                "The tenant timezone lookup, the dashboard metadata read, or "
+                "Looker's own SSO call failed. Wait and send the same request "
+                "again. No automatic retry was made."
+            ),
+            "HttpStatus": 500,
+        },
+        "portal_not_provisioned": PORTAL_NOT_PROVISIONED,
+    }
+    return failures[kind]
+
+
+class Validation(Exception):
+    def __init__(self, message, command):
+        super().__init__(message)
+        self.message = message
+        self.command = command
+
+
+def emit(payload, code):
+    sys.stdout.write(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    return code
+
+
+def join_notes(parts):
+    return " ".join(part for part in parts if part)
+
+
+def http_failure(spec, endpoint):
+    return emit(
+        {
+            "Result": "Failure",
+            "ErrorCode": spec["ErrorCode"],
+            "Retry": spec["Retry"],
+            "Message": spec["Message"],
+            "Instructions": spec["Instructions"],
+            "Context": {"HttpStatus": spec["HttpStatus"], "Endpoint": endpoint},
+        },
+        EXIT_FAILURE,
+    )
+
+
+def plain_failure(error_code, message, instructions):
+    return emit(
+        {
+            "Result": "Failure",
+            "ErrorCode": error_code,
+            "Retry": "RetryWillNotFix",
+            "Message": message,
+            "Instructions": instructions,
+        },
+        EXIT_FAILURE,
+    )
+
+
+def validation_failure(error):
+    return emit(
+        {
+            "Result": "ValidationError",
+            "ErrorCode": "invalid_argument",
+            "Message": f"error: {error.message}",
+            "Instructions": (
+                f"Run 'uip insights looker-dashboards {error.command} --help' "
+                "for usage information."
+            ),
+            "Retry": "RetryWillNotFix",
+        },
+        EXIT_VALIDATION,
+    )
+
+
+def load_tenant():
+    with open(TENANT_PATH, encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def split_flags(args):
+    positional = []
+    flags = {}
+    index = 0
+    while index < len(args):
+        token = args[index]
+        if token.startswith("-") and "=" in token:
+            name, _, value = token.partition("=")
+            flags[name] = value
+        elif token.startswith("-"):
+            has_value = index + 1 < len(args) and not args[index + 1].startswith("-")
+            flags[token] = args[index + 1] if has_value else ""
+            index += 1 if has_value else 0
+        else:
+            positional.append(token)
+        index += 1
+    return positional, flags
+
+
+def flag(flags, *names):
+    for name in names:
+        if name in flags:
+            return flags[name]
+    return None
+
+
+def parse_bounded_int(raw, option, low, high, command):
+    if raw is None:
+        return None
+    if not re.fullmatch(r"\d+", raw) or not low <= int(raw) <= high:
+        raise Validation(
+            f"option '{option}' argument '{raw}' is invalid. "
+            f"{option.split()[-2]} must be between {low} and {high}, got {raw}.",
+            command,
+        )
+    return int(raw)
+
+
+def parse_choice(raw, option, choices, command):
+    if raw is None or raw in choices:
+        return raw
+    raise Validation(
+        f"option '{option}' argument '{raw}' is invalid. Allowed choices are "
+        f"{', '.join(choices)}.",
+        command,
+    )
+
+
+def row_sort_key(row):
+    return (FOLDERS.index(row["Folder"]), str(row.get("Title") or ""), row["Id"])
+
+
+def all_rows(tenant):
+    rows = []
+    for folder in FOLDERS:
+        for entry in tenant["folders"].get(folder) or []:
+            rows.append(
+                {
+                    "Id": entry["Id"],
+                    "Title": entry["Title"],
+                    "Folder": folder,
+                    "OwnerName": entry.get("OwnerName"),
+                    "HasRoiExplore": entry.get("HasRoiExplore", False),
+                    "HasIntegrationModel": entry.get("HasIntegrationModel", False),
+                    "HasOrgScope": entry.get("HasOrgScope", False),
+                    "HasUserAttrOrCustomFields": entry.get(
+                        "HasUserAttrOrCustomFields", False
+                    ),
+                }
+            )
+    return sorted(rows, key=row_sort_key)
+
+
+def omitted_folders(tenant):
+    return [folder for folder in FOLDERS if tenant["folders"].get(folder) is None]
+
+
+def omitted_note(folders):
+    others = [folder for folder in folders if folder != "personal"]
+    if not others:
+        return ""
+    names = (
+        " and ".join(others)
+        if len(others) <= 2
+        else ", ".join(others[:-1]) + " and " + others[-1]
+    )
+    noun = "folder" if len(others) == 1 else "folders"
+    return (
+        f"The {names} {noun} answered null rather than an empty folder, which "
+        "means Insights has no Looker folder provisioned there for this tenant."
+    )
+
+
+def list_instructions(tenant, total, returned, offset, has_more):
+    omitted = omitted_folders(tenant)
+    over_paged = (
+        f"The requested --offset is past the last row: {total} rows exist. "
+        "Lower --offset to see them."
+    )
+    return join_notes(
+        [
+            ID_SPACE_NOTE,
+            CACHE_NOTE,
+            PERSONAL_OMITTED_NOTE if "personal" in omitted else "",
+            omitted_note(omitted),
+            PAGING_COST_NOTE if offset > 0 else "",
+            EMPTY_NOTE if total == 0 else "",
+            over_paged if total > 0 and returned == 0 else "",
+            TRUNCATED_NOTE if has_more else "",
+        ]
+    )
+
+
+def handle_list(flags):
+    limit = parse_bounded_int(
+        flag(flags, "--limit", "-l"), "-l, --limit <number>", 1, MAX_LIMIT, "list"
+    )
+    offset = parse_bounded_int(
+        flag(flags, "--offset", "-o"),
+        "-o, --offset <number>",
+        0,
+        sys.maxsize,
+        "list",
+    )
+    folder = parse_choice(
+        flag(flags, "--looker-folder"), "--looker-folder <folder>", FOLDERS, "list"
+    )
+    tenant = load_tenant()
+    failure = tenant.get("list_failure")
+    if failure:
+        return http_failure(LIST_FAILURES[failure], "AllDashboards/folders")
+    rows = all_rows(tenant)
+    if folder is not None:
+        rows = [row for row in rows if row["Folder"] == folder]
+    limit = DEFAULT_LIMIT if limit is None else limit
+    offset = 0 if offset is None else offset
+    page = rows[offset : offset + limit]
+    has_more = offset + len(page) < len(rows)
+    return emit(
+        {
+            "Result": "Success",
+            "Code": "InsightsLookerDashboardsList",
+            "Data": page,
+            "Pagination": {
+                "Returned": len(page),
+                "Limit": limit,
+                "Offset": offset,
+                "Total": len(rows),
+                "HasMore": has_more,
+            },
+            "Instructions": list_instructions(
+                tenant, len(rows), len(page), offset, has_more
+            ),
+        },
+        EXIT_SUCCESS,
+    )
+
+
+def looks_like_id(value):
+    return value.isdigit() or "::" in value
+
+
+def resolve(tenant, dashboard):
+    if looks_like_id(dashboard):
+        return dashboard, "id", None
+    matches = [row for row in all_rows(tenant) if row["Title"] == dashboard]
+    if not matches:
+        return None, None, plain_failure(
+            "not_found",
+            "No Looker dashboard with that title is listed for this session.",
+            "Run 'uip insights looker-dashboards list' to see the titles and ids "
+            "this session can see. The title is matched exactly, including "
+            "case. The personal folder is listed only for a session with "
+            "Insights Dashboard Edit, so a dashboard in another user's personal "
+            "folder is never listed. Pass the id instead of the title to skip "
+            "the lookup.",
+        )
+    if len(matches) > 1:
+        candidates = ", ".join(f"{row['Folder']}/{row['Id']}" for row in matches)
+        return None, None, plain_failure(
+            "invalid_argument",
+            f"{len(matches)} Looker dashboards share that title: {candidates}.",
+            "Pass one of those ids instead of the title. Run 'uip insights "
+            "looker-dashboards list' to see which is which.",
+        )
+    return matches[0]["Id"], "title", None
+
+
+def embed_url(dashboard_id, theme):
+    theme_param = "&theme=darkTheme" if theme == "dark" else ""
+    target = quote(
+        f"/embed/dashboards/{dashboard_id}?embed_domain="
+        f"{quote('https://alpha.uipath.com', safe='')}"
+        f"&query_timezone=user_timezone{theme_param}",
+        safe="",
+    )
+    return (
+        f"{EMBED_HOST}/login/embed/{target}?nonce={secrets.token_hex(16)}"
+        f"&time=1790000000&session_length=72000"
+        f"&signature={secrets.token_urlsafe(24)}"
+    )
+
+
+def embed_failure_kind(tenant, dashboard_id):
+    overrides = tenant.get("embed_failures", {})
+    if dashboard_id in overrides:
+        return overrides[dashboard_id]
+    if any(row["Id"] == dashboard_id for row in all_rows(tenant)):
+        return None
+    return "embed_link_failed" if "::" in dashboard_id else "unreachable"
+
+
+def handle_embed(positional, flags):
+    command = " ".join(["get-embed-url", *positional])
+    theme = parse_choice(
+        flag(flags, "--theme"), "--theme <theme>", THEMES, command
+    ) or "light"
+    localization = flag(flags, "--localization")
+    if localization is not None and not localization.strip():
+        raise Validation(
+            "option '--localization <locale>' argument '' is invalid.", command
+        )
+    if not positional or not positional[0].strip():
+        raise Validation("missing required argument 'dashboard'", command)
+    tenant = load_tenant()
+    list_failure = tenant.get("list_failure")
+    if list_failure == "portal_not_provisioned" and looks_like_id(positional[0]):
+        return http_failure(PORTAL_NOT_PROVISIONED, "DashboardUrl")
+    if list_failure and not looks_like_id(positional[0]):
+        return http_failure(LIST_FAILURES[list_failure], "AllDashboards/folders")
+    dashboard_id, resolved_from, failed = resolve(tenant, positional[0])
+    if failed is not None:
+        return failed
+    failure = embed_failure_kind(tenant, dashboard_id)
+    if failure:
+        return http_failure(embed_failure(failure, dashboard_id), "DashboardUrl")
+    return emit(
+        {
+            "Result": "Success",
+            "Code": "InsightsLookerDashboardEmbedUrl",
+            "Data": {
+                "DashboardId": dashboard_id,
+                "ResolvedFrom": resolved_from,
+                "Url": embed_url(dashboard_id, theme),
+                "Theme": theme,
+                "Localization": localization,
+                "FolderPermissionsSuccess": True,
+            },
+            "Instructions": join_notes(
+                [
+                    EMBED_CREDENTIAL_NOTE,
+                    EMBED_SESSION_NOTE,
+                    EMBED_TEMPLATE_NOTE if "::" in dashboard_id else EMBED_SAVED_NOTE,
+                    EMBED_LOCALE_NOTE if localization is not None else "",
+                ]
+            ),
+        },
+        EXIT_SUCCESS,
+    )
+
+
+def print_help(verb):
+    with open(HELP_PATH, encoding="utf-8") as handle:
+        texts = json.load(handle)
+    key = {"list": "list", "get-embed-url": "embed"}.get(verb, "group")
+    sys.stdout.write(texts[key])
+    return EXIT_SUCCESS
+
+
+def handle_looker(rest):
+    positional, flags = split_flags(rest)
+    verb = positional[0] if positional else None
+    if "--help" in flags or "-h" in flags or verb in (None, "help"):
+        return print_help(verb)
+    try:
+        if verb == "list":
+            return handle_list(flags)
+        if verb == "get-embed-url":
+            return handle_embed(positional[1:], flags)
+    except Validation as error:
+        return validation_failure(error)
+    return None
+
+
+def real_uip():
+    parts = [
+        entry
+        for entry in os.environ.get("PATH", "").split(os.pathsep)
+        if entry and os.path.abspath(entry) != MOCK_DIR
+    ]
+    return shutil.which("uip", path=os.pathsep.join(parts))
+
+
+def main():
+    args = sys.argv[1:]
+    if args[:2] == ["insights", "looker-dashboards"]:
+        handled = handle_looker(args[2:])
+        if handled is not None:
+            return handled
+    real = real_uip()
+    if not real:
+        sys.stderr.write("uip: command not found\n")
+        return 127
+    os.execv(real, [real] + args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
