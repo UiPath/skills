@@ -52,6 +52,32 @@ def test_citations_resolve_to_the_same_rules_as_the_snapshot():
     )
 
 
+def test_corpus_citations_resolve_to_the_same_rules_as_the_snapshot():
+    """The eval corpus cites rules in task prompts and graders; an agent reads
+    those, so a shifted number misdirects it (27 did, through suites 7-10)."""
+    expected = json.loads(rc.CORPUS_SNAPSHOT.read_text(encoding="utf-8"))
+    actual = rc.corpus_citation_map()
+    drift = []
+    for path in sorted(set(expected) | set(actual)):
+        was, now = expected.get(path, {}), actual.get(path, {})
+        for title in sorted(set(was) | set(now)):
+            if was.get(title, 0) != now.get(title, 0):
+                drift.append(f'{path}: "{title}" cited {was.get(title, 0)}x -> {now.get(title, 0)}x')
+    assert not drift, (
+        "corpus citations now point at different rules than the snapshot records:\n  "
+        + "\n  ".join(drift)
+        + "\nIf that is intended, audit each changed citation's meaning, then regenerate: "
+        "python3 tests/tasks/uipath-maestro-case/_shared/rule_citations.py --corpus > "
+        "tests/tasks/uipath-maestro-case/_shared/corpus_rule_citations.json"
+    )
+
+
+def test_no_corpus_citation_points_past_the_rules():
+    dangling = [f"{path}: {title}" for path, titles in rc.corpus_citation_map().items()
+                for title in titles if title.startswith("<<UNRESOLVED")]
+    assert not dangling, "dangling corpus citation(s):\n  " + "\n  ".join(dangling)
+
+
 def test_there_is_a_flavor_to_check():
     assert len(TREES) >= 2, "expected the default tree plus at least one flavor"
 
