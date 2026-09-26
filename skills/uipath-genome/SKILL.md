@@ -95,6 +95,7 @@ Parse and validate the genome → preflight discovery → ask every configuratio
 | Decide whether a suspected defect is the source's or the rendering's; mark it | Extract / Edit | [extraction-guide.md](references/extraction-guide.md) Step 4b; [genome-format-guide.md § Source Defects](references/genome-format-guide.md) |
 | Author from a description; edit a genome | Author / Edit | [authoring-guide.md](references/authoring-guide.md); extracted-genome edits: [extraction-guide.md](references/extraction-guide.md) Step 7 |
 | Execute: questions, projects, groups, acceptance, report | Execute | [execution-guide.md](references/execution-guide.md) |
+| Build a large group in parts — ledger, brief and rulings, read plans, progress; pause and resume after a compaction, with or without subagents | Execute | [execution-guide.md § 2.2a](references/execution-guide.md) |
 | Derive catalogs from the export; map steps to source objects | Execute | [source-migration-guide.md § Migration preflight](references/source-migration-guide.md) |
 | Build Object Repository targets from a catalog — how many elements, which screens, helpers | Execute | [source-migration-guide.md § Object Repository identity](references/source-migration-guide.md) |
 | Build a type-ahead pick, option list, date, menu path, table row or keystroke step | Execute | [source-migration-guide.md § Composite interactions](references/source-migration-guide.md) |
