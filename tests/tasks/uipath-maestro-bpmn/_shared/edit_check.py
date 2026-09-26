@@ -44,11 +44,26 @@ def load_original(task_dir: str, basename: str) -> ET.Element:
     return ET.parse(path).getroot()
 
 
+# The children of ``bpmn:extensionElements`` are compared as a SET, not a sequence.
+# The BPMN schema declares that container ``xsd:any``, unordered; the runtime reads
+# its children by type; and the two authoring routes write them in different orders —
+# these fixtures put ``uipath:scriptVersion`` before the ``uipath:mapping``, while
+# Studio Web and the builder SDK write the mapping first. Compared in document order,
+# a correct edit of a node's script body failed on nothing but that swap. Everything
+# else stays order-sensitive: variable declarations must round-trip untouched, in order.
+_UNORDERED_CONTAINERS = frozenset({"extensionElements"})
+
+
+def _children_view(element: ET.Element, views: tuple):
+    """Children in document order, or sorted where the schema says order is meaningless."""
+    return tuple(sorted(views)) if local(element.tag) in _UNORDERED_CONTAINERS else views
+
+
 def canonical(element: ET.Element):
     """A hashable, order- and whitespace-normalized view of an element subtree."""
     text = (element.text or "").strip()
     attribs = tuple(sorted(element.attrib.items()))
-    children = tuple(canonical(child) for child in element)
+    children = _children_view(element, tuple(canonical(child) for child in element))
     return (local(element.tag), attribs, text, children)
 
 
@@ -56,8 +71,9 @@ def canonical_ex(element: ET.Element, ignore: set[str] = frozenset()):
     """Like ``canonical`` but skips child elements whose local name is in ``ignore``."""
     text = (element.text or "").strip()
     attribs = tuple(sorted(element.attrib.items()))
-    children = tuple(
-        canonical_ex(child, ignore) for child in element if local(child.tag) not in ignore
+    children = _children_view(
+        element,
+        tuple(canonical_ex(child, ignore) for child in element if local(child.tag) not in ignore),
     )
     return (local(element.tag), attribs, text, children)
 
