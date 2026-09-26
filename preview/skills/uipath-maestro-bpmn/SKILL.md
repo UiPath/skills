@@ -24,8 +24,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 2. Keep `<Name>.bpmn.ts` at the workspace root, beside `package.json`.
 3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
 4. Seed the source by decompiling the stub `bpmn init` wrote —
-   `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts` — rather than
-   hand-writing the skeleton. It carries the process id and the `entryPointId` UUID the
+   `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
+   hand-writing the skeleton.
+   `--style nested` lifts an existing process's boundary events, gateways and event sub-processes into the nesting constructs wherever the graph is provably the same, and leaves the rest flat with a printed reason; without it the whole process is written flat. It carries the process id and the `entryPointId` UUID the
    product assigned, which a hand-written chain cannot invent. An existing project needs
    no `init`: seed from the `.bpmn` already there. For shape, copy the closest staged
    `examples/*.bpmn.ts`.
@@ -73,19 +74,22 @@ import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
 export default bpmn('notify')
   .name('Notify')
+  .flowMode('sequence')
+  .var('status', 'string')
   .startEvent('start')
   .task('record', { set: { status: 'ready' } })
   .endEvent('done')
-  .sequenceFlow('start', 'record')
-  .sequenceFlow('record', 'done')
   .build();
 ```
+
+In sequence mode each element continues to the next, so a process written top to bottom has no `.sequenceFlow()`; branch with `.choose()`, attach handlers in an activity's body, and read `bpmn check --graph` to see the wiring that resulted.
+The explicit form — `.sequenceFlow('start', 'record')` after the elements, in the default mode — is what `bpmn decompile` writes for an import unless `--style nested` lifts it, and both forms mix freely.
 
 ## Structure by nesting
 
 Where a relationship can be written by nesting, write it that way instead of by id.
 Each form lowers to the same elements and flows the explicit methods produce, and the explicit `.sequenceFlow()` still works anywhere, mixed freely.
-`examples/InvoiceEscalation.bpmn.ts` is a full process written this way; `examples/InvoiceApproval.bpmn.ts` is the same kind of process as a decompiled import, written flat, which is what a brownfield edit starts from.
+`examples/InvoiceEscalation.bpmn.ts` is a full process written this way, with no `.sequenceFlow()` at all; `examples/InvoiceApproval.bpmn.ts` is the same kind of process as a decompiled import, written flat, which is what a brownfield edit starts from — `bpmn decompile --style nested` lifts as much of such a file into this form as its flow ids allow.
 
 ```ts
 export default bpmn('approval')

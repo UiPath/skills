@@ -13,16 +13,29 @@
  * | a safety net for the whole process | `.eventSubProcess('failures', { error: true, errorVar: 'failure' }, …)` |
  * | classification on the caught error | a `.choose()` inside the net reading `vars.failure.code` |
  *
+ * | the process written top to bottom | `.flowMode('sequence')` — no `.sequenceFlow()` anywhere |
+ *
  * What the nesting buys, concretely: the same graph written the explicit way needs
  * two parallel gateways, two exclusive gateways each with a named `default:` flow, two
  * `.boundaryEvent()` calls each naming the task they attach to, a sub-process flagged
  * `triggeredByEvent` with its error start event written by hand, and twenty-two
- * `.sequenceFlow()` calls. Here there are two. The lowering is identical — this compiles
- * to the same 19 elements and 22 flows the explicit form would, so `check`, `validate`,
- * `merge` and `decompile` see nothing new.
+ * `.sequenceFlow()` calls. Here there are none: the scope is in sequence mode, so each
+ * element continues to the next, and the constructs imply the rest. The lowering is
+ * identical — this compiles to the same 19 elements and 22 flows the explicit form
+ * would, so `check`, `validate`, `merge` and `decompile` see nothing new.
  *
- * Two rules the file relies on, both enforced by `.build()`:
+ * Read `uip maestro bpmn check InvoiceEscalation.bpmn.ts --graph` to see the wiring that
+ * resulted, implied edges marked `~>`. The first version of this file, written in the
+ * default explicit mode, forgot the one edge out of `approve` into `route` — every gate
+ * passed, and the graph printer was what showed `approve` with no outgoing flow.
+ * `check` now warns `DEAD_END` for that shape.
  *
+ * Three rules the file relies on, all enforced by `.build()`:
+ *
+ *   - In a `sequence` scope, consecutive elements are wired in order, an element with
+ *     an explicit outgoing flow is left alone, and an element nothing leads into is
+ *     refused. Here `approve` continues into `route`, and `post` into `done`, by
+ *     position.
  *   - An INTERRUPTING handler's path rejoins at the statement after its activity
  *     (`onError` here continues into `route`), because the activity's own token is
  *     gone. A NON-INTERRUPTING one must end on its own (`onTimer` ends at `reminded`),
@@ -41,6 +54,7 @@ import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
 export default bpmn('invoice-escalation')
   .name('InvoiceEscalation')
+  .flowMode('sequence')
   .input('invoiceId', 'string', { name: 'Invoice ID' })
   .var('decision', 'string', { default: 'Pending' })
   .var('outcome', 'string', { default: 'RUNNING' })
@@ -117,10 +131,6 @@ export default bpmn('invoice-escalation')
     inputs: { invoiceId: '=vars.invoiceId' },
   })
   .endEvent('done', { name: 'Posted' })
-  // The two edges no nesting can imply: into the first construct, and out of the last
-  // statement before the end. Everything between them was written as structure.
-  .sequenceFlow('start', 'enrich')
-  .sequenceFlow('post', 'done')
   // The safety net. An event sub-process has no incoming flow; it starts when an error
   // nothing closer caught is raised anywhere in this process, and — sitting at process
   // level — ends the whole run. Its body chains from the synthesized `failures_start`.
