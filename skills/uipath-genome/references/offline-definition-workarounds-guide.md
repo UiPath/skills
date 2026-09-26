@@ -1,10 +1,10 @@
 # Offline Target Definition Workarounds — TEMPORARY
 
-**Delete this file when the UIA CLI gains a `create-definition` command and an offline `add-anchor`.** It records shapes the CLI would otherwise own, so a catalog-only migration need not rediscover them.
+**Delete this file when the UIA CLI gains a `create-definition` command and an offline `add-anchor`, and registers a number attribute bound to a selector variable.** It records shapes and workarounds the CLI would otherwise own, so a migration need not rediscover them.
 
-Scope: a migration whose only input is the target catalog derived from the source export, with **no reachable application**. `target-anchorable resolve-defaults` and `add-anchor` both take live snapshot refs (`e*`/`w*`), and there is no `create-definition`, so neither a first definition nor an anchor can be produced through the CLI there.
+Scope: a migration whose only input is the target catalog derived from the source export, with **no reachable application**. `target-anchorable resolve-defaults` and `add-anchor` both take live snapshot refs (`e*`/`w*`), and there is no `create-definition`, so neither a first definition nor an anchor can be produced through the CLI there. One section applies whether the application is reachable or not: § Selector variables in number attributes, a defect no CLI path avoids.
 
-**Precedence: whenever the application is reachable, the CLI path wins and this file does not apply.** The UIA package guide's rule stands — definitions are CLI-owned, never hand-edited. What follows is the documented exception for the offline case, not general licence.
+**Precedence: whenever the application is reachable, the CLI path wins and the offline sections do not apply.** The UIA package guide's rule stands — definitions are CLI-owned, never hand-edited. What follows is the documented exception for the offline case and for that defect, not general licence.
 
 ## Starting-point definition file
 
@@ -116,6 +116,39 @@ One definition file per command. After each `create-*` and `link-*`, count the `
 2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --activity-type` per element; `--full-selector` on every element (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling.
 3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with the element definitions under that screen.
 4. `link-screen` on the card's workflow, then `link-elements` — never two link commands on one file at once.
+5. An element with a number attribute other than `idx` bound to a selector variable takes steps 2–4 as § Selector variables in number attributes changes them.
+
+## Selector variables in number attributes
+
+A number attribute other than `idx` bound to a selector variable (`tableRow='{{Row}}'`) cannot be registered through the CLI: `tableRow` and `tableCol` on a `sap`, `uia` or `java` target, and the `nav` counts `up`, `next` and `prev`.
+
+| Command | Result |
+|---|---|
+| `target-anchorable update-definition --full-selector` with the variable | stores the `string.Format` form, reports success |
+| any later command reading that definition — `update-definition` without `--full-selector` (`--name`, `--description`, `--activity-type`), `create-elements`, `replace-elements` | `Invalid configuration for Target: The attribute '<attribute>' is not supported.` |
+| same selector, literal value | passes every command |
+| `idx` bound to a variable — any tag, in element, fuzzy, scope and screen selectors; `webctrl` table attributes bound to a variable | pass every command and resolve at run time |
+| definition's `string.Format` rewritten as an interpolated string or a concatenation | registers; `link-elements` then writes the activity's target without a strict selector and still reports success |
+
+The error names the attribute, but the attribute is valid: keep it, because the selector without it no longer names the row, column or relative node it acts on. A run evaluates the Object Repository element's selector, not the activity's copy in the workflow, and an expression selector runs only when the build compiled the same expression text from the workflow; otherwise the activity fails with `Expression Activity type 'CSharpValue`1 (…)' requires compilation in order to run`. Workaround, per element:
+
+1. Run one `target-anchorable update-definition` on the element's definition with the variable selector in `--full-selector`, and with `--name`, `--description` and `--activity-type` in the same call: every later call without `--full-selector` rejects the file. It writes the `string.Format` expression in the project's expression language.
+2. In the definition file, rewrite that expression as an interpolated string: `string.Format("…tableRow='{0}'…", Row)` becomes `$"…tableRow='{Row}'…"` (checked in a C# project).
+3. Register the definition with `create-elements` (`replace-elements` for an existing element), then link as usual.
+4. Copy the definition's `<uix:TargetAnchorable.FullSelectorArgument>` element, text unchanged, into the linked activity's `TargetAnchorable`, and keep `Reference`. The build compiles the expression, and per-file `validate`, `build` and the run accept the target.
+5. A re-link writes the target without the expression again. Re-apply step 4 after every re-link and after every `replace-elements` that changes the expression text, and list these activities in the report.
+
+Linked target after step 4 (C# project):
+
+```xml
+<uix:TargetAnchorable … Reference="<ELEMENT_REFERENCE_ID>" ScopeSelectorArgument="&lt;wnd app='saplogon.exe' cls='SAP_FRONTEND_SESSION' /&gt;" SearchSteps="Selector" Version="V6">
+  <uix:TargetAnchorable.FullSelectorArgument>
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">$"&lt;sap id='usr/…/tbl…' tableRow='{Row}' tableCol='1' /&gt;"</CSharpValue>
+    </InArgument>
+  </uix:TargetAnchorable.FullSelectorArgument>
+</uix:TargetAnchorable>
+```
 
 ## CLI behaviour observed offline
 
@@ -123,7 +156,7 @@ One definition file per command. After each `create-*` and `link-*`, count the `
 - `target-app update-definition` prints nothing on success; confirm the write by reading the definition file back (`--name` / `--description` land in its `.metadata` sibling).
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
 - Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). Carry positional indexes as selector variables ([selector-translation-guide.md](selector-translation-guide.md) rule 7) and write the change back with `target-anchorable update-definition` → `object-repository replace-elements`.
-- `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change.
+- `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change. The run uses the replaced selector at once; the activity's copy in the workflow stays as it was until Studio syncs it or the activity is re-linked, and that stale copy is not an error.
 - Element metadata `ActivityType` may stay `None` on elements registered before their acting activity was known: it only tunes selector generation, which offline has already happened; the live pass replaces the definitions anyway.
 
 ## What offline authoring cannot know
