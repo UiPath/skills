@@ -76,6 +76,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   compile the edit, then merge with `--baseline`. A bare recompile rewrites
   untouched elements and drops original layout.
 
+<!-- RULE:bpmn.brownfield.nested-style -->
+- `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs only where the lifted source builds the very same graph, and prints why each region it left flat stayed flat.
+  A flow id that is not `Flow_<source>_<target>` keeps its region flat; the graph, its ids and `merge` are unaffected either way, so the choice is about the source you read and edit, not the artifact.
+
 <!-- RULE:bpmn.brownfield.format -->
 - Format after adding elements that need diagram shapes. Avoid formatting a
   metadata-only edit because it replaces preserved geometry.
