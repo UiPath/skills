@@ -15,6 +15,7 @@ Executes contained activities first and then loops if the condition is True.
 
 | Name | Display Name | Kind | Type | Required | Default | Description |
 |------|-------------|------|------|----------|---------|-------------|
+| `Condition` | Condition | `Activity` | `bool` | No | — | The Boolean condition evaluated after each iteration. The loop continues while this is `True`. Set directly inside `<ui:InterruptibleDoWhile.Condition>` — `Condition` is an `Activity<bool>`, so no `<InArgument>` wrapper. |
 | `MaxIterations` | Max Iterations | `InArgument` | `int` | No | — | Maximum number of iterations. A value of `0` means unlimited. |
 
 ### Configuration

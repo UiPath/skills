@@ -423,9 +423,9 @@ The project's Studio host compiles the coded files when it loads the project, so
 
 **Rule:** for machine-consumed output (JSON, or CSV for downstream parsers), omit `Encoding`. If explicit encoding control is required, write via `InvokeCode`: `File.WriteAllText(path, content, new UTF8Encoding(false))`.
 
-## AppendLine Starts Each Text on a New Line and Ends Without One
+## AppendLine Writes the Line Break Before the Text, Never After
 
-`AppendLine` writes a line break before its text when the file's content does not already end with one, and never after it: two appends to a new file produce `a`, a line break, `b` — no trailing line break, and an append to a file that ends with a line break adds no empty line. Creating the file, or appending to an empty one, writes a UTF-8 BOM first even with `Encoding` unset. A reader of the file splits it on line breaks rather than counting them, and strips the BOM (`﻿`) before comparing the first line.
+`AppendLine` writes a line break before its text whenever the file already has content, and never after it. Two appends to a new file produce `a`, a line break, `b`, with no trailing line break. An append to a file that already ends with a line break therefore leaves an empty line: `x`, break, (empty), `a`. A file counts as empty at 0 bytes, or at exactly 3 bytes when read as UTF-8 (a lone BOM), so a 3-byte file such as `x` plus a line break gets no leading break. Creating the file, or appending to an empty one, writes a UTF-8 BOM first, also with `Encoding` unset; to write UTF-8 without it, leave `Encoding` empty and set `UseDefaultEncoding` (a set `Encoding` always wins over it). A reader of the file splits it on line breaks and skips empty lines rather than counting breaks, and strips the BOM (`﻿`) before comparing the first line.
 
 ## CopyFolderX Copies Into `To`, Not As `To`
 
