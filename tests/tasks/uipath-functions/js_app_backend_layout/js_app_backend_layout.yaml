@@ -1,0 +1,103 @@
+task_id: skill-functions-js-app-backend-layout
+description: >
+  Authoring integration test for the Coded App / JS-TS function backend pairing taught by
+  the uipath-functions coded-app wiring guide. Seeds an already-scaffolded
+  Coded Web App and asks for a function backend plus the app-side call. Grades
+  the layout the skill teaches: the backend is a SIBLING project with its own
+  package.json and uipath.json (never a `functions/` dir or the functions SDK
+  inside the app — one package id cannot be both a WebApp and a Function), the
+  backend name is its own package id, the app requests `OR.Default`, the app
+  calls the function through the SDK `Functions` service (never a hand-built
+  trigger URL), and no Vite proxy is added. Offline by
+  design: the registry is unreachable and `uip` is unauthenticated, so
+  install/pack/publish/deploy are out of scope and the prompt says so.
+tags: [uipath-functions, integration, mode:build, lifecycle:generate, feature:js]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/quote-app
+      mount_point: quote-app
+
+run_limits:
+  expected_turns: 20
+  max_turns: 40
+
+reference:
+  directory: .
+
+initial_prompt: |
+  I have a UiPath Coded Web App at `quote-app/` (React + Vite, already
+  published to Automation Cloud as a coded app). Give it a JS/TS coded-function
+  backend named `quote-backend` with one HTTP function `quote`:
+
+  - `POST /quote`
+  - input: `items` — array of `{ sku: string, price: number, qty: number }`
+  - output: `total` (number)
+
+  Then wire the app to it: add `quote-app/src/api/quote.ts` exporting
+  `requestQuote(sdk, items)` that calls the deployed function and returns its
+  output. The deployed app must actually be allowed to make that call for a
+  signed-in user.
+
+  Dependencies are NOT installed in this sandbox, the package registry is
+  unreachable, and `uip` is not authenticated — author every file statically
+  (if `uip function new` cannot complete offline, write the backend project's
+  files by hand). Do NOT run npm/pnpm/yarn/bun install, do NOT start a server,
+  do NOT pack, publish, or deploy. Keep the backend's `uipath.json` functions
+  map in sync by hand.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "Backend function file exists in the sibling backend project"
+    path: "quote-backend/functions/quote.ts"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "App-side call module created where the prompt asked"
+    path: "quote-app/src/api/quote.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No dependency install attempted (offline sandbox, prompt forbids it)"
+    tool_name: "Bash"
+    command_pattern: '(npm|pnpm|yarn|bun)\s+(ci|install|i|add)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No pack/publish/deploy attempted (unauthenticated sandbox, prompt forbids it)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(function\s+(pack|publish)|codedapp\s+(pack|publish|deploy))\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Sibling layout, distinct package id, app untouched by the backend, OR.Default scope, SDK Functions.invoke wiring, no Vite proxy"
+    command: "python3 $REFERENCE_DIR/check_js_app_backend_layout.py layout"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Backend function shape: defineFunction default export, POST /quote, defineSchema contracts, .ts imports, SDK in devDependencies"
+    command: "python3 $REFERENCE_DIR/check_js_app_backend_layout.py backend"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "invoke names the function as registered: process name + '_' + defineFunction name (quote-backend_quote)"
+    command: "python3 $REFERENCE_DIR/check_js_app_backend_layout.py name"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
