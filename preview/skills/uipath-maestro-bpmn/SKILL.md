@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "TRIGGER for authoring UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, semantic `.bpmn` output, and any registry-backed extension type through `.activity()` — including one the SDK ships no typed method for. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case."
+description: "TRIGGER for authoring UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, semantic `.bpmn` output, boundary handlers and branching written by nesting, event sub-processes, and any registry-backed extension type through `.activity()` — including one the SDK ships no typed method for. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -53,7 +53,10 @@ spells the paths its rows are relative to.
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Start, end, catch, throw, boundary | event methods | [Events](references/bpmn-runtime.md#events-and-timers) | `examples/NotifyChannel.bpmn.ts` |
+| Error, timer, or message ON an activity | the body callback of any activity method: `onError`, `onTimer`, `onMessage` | [ActivityBuilder](#api-index) | [Structure by nesting](#structure-by-nesting) |
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Decision, parallel split, or wait-for-first, written in place | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | [Structure by nesting](#structure-by-nesting) |
+| Safety net for a whole scope | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | [Structure by nesting](#structure-by-nesting) |
 | Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
@@ -77,6 +80,41 @@ export default bpmn('notify')
   .sequenceFlow('record', 'done')
   .build();
 ```
+
+## Structure by nesting
+
+Where a relationship can be written by nesting, write it that way instead of by id.
+Each form lowers to the same elements and flows the explicit methods produce, and the explicit `.sequenceFlow()` still works anywhere, mixed freely.
+
+```ts
+export default bpmn('approval')
+  .var('action', 'string')
+  .startEvent('start')
+  .humanTask('approve', { app: 'InvoiceApproval', actions: ['Approve', 'Reject'] }, (t) => {
+    t.onTimer('PT1H', { interrupting: false }, (b) => b.task('remind').endEvent('reminded'));
+    t.onError(true, { errorVar: 'failure' }, (b) => b.endEvent('failed', { name: 'Approval failed' }));
+  })
+  .choose('approved', [
+    { when: '=vars.action == "Approved"', label: 'Yes', body: (b) => b.task('post') },
+    { otherwise: true, label: 'No', body: (b) => b.task('reject') },
+  ])
+  .endEvent('done')
+  .sequenceFlow('start', 'approve')
+  .sequenceFlow('approve', 'approved')
+  .eventSubProcess('failures', { error: true, errorVar: 'unhandled' }, (h) =>
+    h.task('record').endEvent('recorded', { name: 'Failure recorded' }))
+  .build();
+```
+
+- A boundary event is declared on the activity it guards, in that activity's body callback, so `attachedTo` is never written.
+  An interrupting handler's path rejoins at the statement after the activity; a non-interrupting one runs beside the activity and must end its own path with an end event, `.goto()`, or an explicit flow.
+- `choose` arms need `when` or `otherwise: true`; the fallback is the default flow, and no flow id is named.
+  Arms rejoin at the next statement, through a join named `<id>_join` only when more than one arm reaches it.
+- Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
+- An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
+  To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
+  `errorVar` names the variable the caught error lands in; read it as `=vars.<errorVar>.code` and `.message`.
+- `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 
 ## Validation loop
 

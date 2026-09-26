@@ -9,6 +9,15 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Connector event payloads and timer firing are runtime facts. Static validation
   proves the declaration, not that a tenant subscription fires.
 
+<!-- RULE:bpmn.event.net-scope -->
+- An event sub-process catches only failures raised in the container it sits directly in.
+  Declared at process level it ends the whole run on the first failure; declared inside a multi-instance sub-process it ends only that iteration.
+  Place `.eventSubProcess()` in the scope whose failure it should absorb.
+
+<!-- RULE:bpmn.event.non-interrupting-path -->
+- A non-interrupting boundary handler runs beside a token that still reaches the next step, so its path must end on its own; rejoining the main path would run everything after it twice.
+  The builder refuses a non-interrupting handler path left open.
+
 ## HTTP and Orchestrator work
 
 <!-- RULE:bpmn.orchestrator.names -->
