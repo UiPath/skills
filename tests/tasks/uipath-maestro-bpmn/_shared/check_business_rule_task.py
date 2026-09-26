@@ -9,6 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_assertions import (  # noqa: E402
+    UIPATH_NS,
     activity_type,
     assert_has_shape,
     assert_package_lifecycle,
@@ -23,6 +24,36 @@ from _shared.bpmn_assertions import (  # noqa: E402
 
 PROJECT = Path("BusinessRuleDecision/BusinessRuleDecision")
 BPMN_NAME = "BusinessRuleDecision.bpmn"
+RULE_KEY = "loan-eligibility-rule"
+# Context field -> (propertyAttribute, expected default); None leaves the default ungraded.
+RULE_CONTEXT_BINDINGS = {
+    "entityKey": ("Key", RULE_KEY),
+    "name": ("name", "LoanEligibility"),
+    "folderPath": ("folderPath", None),
+}
+
+
+def assert_rule_bindings(root, task) -> None:
+    context = {
+        i.attrib.get("name"): i.attrib.get("value", "")
+        for i in task.findall(f".//{{{UIPATH_NS}}}context/{{{UIPATH_NS}}}input")
+    }
+    if "releaseKey" in context:
+        fail("business rule must bind the BusinessRule resource, not a process releaseKey")
+    bindings = {b.attrib.get("id"): b for b in root.iter(f"{{{UIPATH_NS}}}binding")}
+    for field, (attr, default) in RULE_CONTEXT_BINDINGS.items():
+        value = context.get(field, "")
+        if not value.startswith("=bindings."):
+            fail(f"context {field} must reference a binding (=bindings.<id>), got {value!r}")
+        binding = bindings.get(value.removeprefix("=bindings."))
+        if binding is None:
+            fail(f"context {field} references undeclared binding {value!r}")
+        if binding.attrib.get("resource") != "BusinessRule" or binding.attrib.get("propertyAttribute") != attr:
+            fail(f"binding for {field} must be resource=BusinessRule propertyAttribute={attr}")
+        if binding.attrib.get("resourceKey") != RULE_KEY:
+            fail(f"binding for {field} must carry resourceKey={RULE_KEY!r}, got {binding.attrib.get('resourceKey')!r}")
+        if default is not None and binding.attrib.get("default") != default:
+            fail(f"binding for {field} must default to {default!r}, got {binding.attrib.get('default')!r}")
 
 
 def main() -> None:
@@ -34,6 +65,7 @@ def main() -> None:
     for service_task in elements(root, "serviceTask"):
         if activity_type(service_task) == "Orchestrator.BusinessRules":
             fail("Orchestrator.BusinessRules must not be modeled as bpmn:serviceTask")
+    assert_rule_bindings(root, task)
 
     if len(mapping_inputs(task)) < 1:
         fail("businessRuleTask should map declared fact inputs")

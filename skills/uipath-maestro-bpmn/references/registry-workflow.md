@@ -299,10 +299,14 @@ extension type tells you the binding shape; the concrete value comes from
 discovery or the user.
 
 - **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /
-  `businessRule`): the context field named by `bindingInfo.contextField`
-  (e.g. `releaseKey`, `queueName`) holds the resource key
+  `BusinessRule`): the context field named by `bindingInfo.contextField`
+  (e.g. `releaseKey`, `queueName`, `entityKey`) holds the resource key
   (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with
   `registry search` / discovered `Processes` / `Queues`; never guess a GUID.
+  A business rule binds `entityKey`, `name`, and `folderPath` to `BusinessRule`
+  (`Key`, `name`, `folderPath`) — never a `process` `releaseKey`, even when
+  `registry get` returns one. Its unbound `_label` context holds the rule's
+  display name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
@@ -320,8 +324,9 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `default` value (the resolved key or id). On a **connection** binding
 `resourceKey` is required too — omitting it fails `validate` with
 `Integration Service activity connection binding "<id>" is missing
-resourceKey`. Other binding kinds (`process`, `queue`, `businessRule`) carry
-no `resourceKey`; do not invent one.
+resourceKey`. A `BusinessRule` binding carries the rule key as `resourceKey`.
+Other binding kinds (`process`, `queue`) carry no `resourceKey`; do not invent
+one.
 
 A folder-scoped connector activity needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the

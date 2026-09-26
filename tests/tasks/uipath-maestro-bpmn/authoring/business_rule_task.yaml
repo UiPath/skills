@@ -31,6 +31,7 @@ initial_prompt: |
   - A dedicated `bpmn:businessRuleTask` named "Evaluate Eligibility".
   - The task must use a `uipath:activity` shell with type
     `Orchestrator.BusinessRules`.
+  - The rule is named `LoanEligibility` and its key is `loan-eligibility-rule`.
   - Map rule inputs and outputs to declared variables.
   - Route through an exclusive gateway by rule outcome to approved/review
     end events.
@@ -39,6 +40,8 @@ initial_prompt: |
   Also create the standard local package files next to the BPMN:
     project.uiproj, operate.json, entry-points.json, bindings_v2.json,
     package-descriptor.json
+
+  The process is not complete until `uip maestro bpmn validate` passes.
 
   Do not use a generic service task for the business rule. Do not upload,
   publish, deploy, debug, run, or call cloud-side UiPath commands. Do not ask
@@ -52,7 +55,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Business rule task uses bpmn:businessRuleTask with Orchestrator.BusinessRules"
+    description: "Final .bpmn passes `uip maestro bpmn validate`"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Business rule task uses bpmn:businessRuleTask with Orchestrator.BusinessRules bound to the BusinessRule resource"
     command: "python3 $REFERENCE_DIR/_shared/check_business_rule_task.py"
     timeout: 30
     expected_exit_code: 0
