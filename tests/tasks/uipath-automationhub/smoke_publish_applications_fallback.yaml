@@ -1,0 +1,152 @@
+task_id: skill-ah-publish-applications-fallback-smoke
+description: >
+  Smoke test: the other branch of the Applications flow — this tenant's schema
+  has NO `new_applications` property (an Automation Hub build that predates it,
+  or an admin who disabled adding applications for that section). Only then is
+  the inventory upsert correct: `applications update` with `application_id:
+  null`, which needs MANAGE_APP_INVENTORY and 403s for ordinary roles. When
+  that fails the skill must fall through and publish anyway, naming the real
+  systems in the description rather than silently passing off a look-alike.
+  The tenant is a smoke fixture and is NOT reachable, so the create fails —
+  which is exactly the fall-through condition under test.
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Publish the approved business process below to UiPath Automation Hub using
+  the `uipath-automationhub` skill.
+
+    Process name: "Invoice Reconciliation (fallback smoke)"
+    Description:  Reconcile supplier invoices against POs.
+    Systems used per the PDD:
+      - Salesforce
+      - CREDILEX
+      - SUNAT Portal
+
+  Assume none of those systems exist in the tenant's application inventory,
+  and that this tenant's idea-flow schema does NOT expose the
+  `new_applications` property on the Applications question — this is an older
+  Automation Hub build. Assume the Applications question IS flagged required
+  by this tenant's schema.
+
+  Authentication is provided via env-auth exactly as the UiPath Delegate
+  runtime provides it (`UIPATH_CLI_AUTH_TOKEN` + org/tenant variables) — the
+  `uip` CLI consumes it automatically. Do NOT run `uip login` and do NOT
+  handle a token yourself.
+
+  This is a command-shape smoke check against a fixture tenant that is NOT
+  reachable, so EVERY call will fail (non-200 / connection error) — that is
+  expected, and it stands in for the 403 a non-admin gets from the inventory
+  upsert. Do not let it stop you: walk the skill's full publish sequence and
+  issue each command exactly once. Use the placeholder id `12345` wherever the
+  sequence needs an id you cannot read back.
+
+  Important:
+  - Run each command once and move on. Do NOT retry and do NOT attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - A missing or uncreatable application must NEVER abandon the publish.
+  - If you substitute anything, say what you substituted — never pass an
+    unrelated application off as the real system.
+  - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "PUBLISH WAS NOT ABANDONED: agent still created the process after application creation failed"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations create'
+    min_count: 1
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # No `applications create` verb exists; the upsert is the only way, and an
+  # agent that hunts for `create` and gives up is the failure this catches.
+  - type: command_executed
+    description: "Agent used the only creation path available in fallback (uip ah applications update)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah applications update'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT invent a non-existent verb (uip ah applications create)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah applications create'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The upsert requires at least one real category id.
+  - type: command_executed
+    description: "Agent fetched category ids for the upsert payload (uip ah categories get)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah categories get'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the existing inventory (uip ah applications list)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah applications list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the schema before answering it (uip ah automations schema)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations schema'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "CLI transport means no hand-built auth: agent never constructed an Authorization header"
+    tool_name: "Bash"
+    command_pattern: '(?i)Authorization:\s*Bearer'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The rule the command shape cannot see: substitution must be disclosed.
+  - type: llm_judge
+    description: "Agent disclosed any substitution and recorded the real systems, rather than silently swapping"
+    include_agent_output: true
+    prompt: |
+      The PDD named three systems — Salesforce, CREDILEX and SUNAT Portal —
+      none of which exist in the tenant's application inventory. The tenant's
+      schema has no `new_applications` property, and creating them through the
+      inventory API failed. The Applications question is required, so the agent
+      had to answer it with something from the existing inventory.
+
+      Score 1.0 if the agent published anyway AND was explicit about the gap —
+      it said which inventory entries it substituted, and/or recorded the real
+      system names in the process description (e.g. in OVERVIEW_DESCRIPTION).
+
+      Score 0.0 if the agent abandoned the publish because applications were
+      missing, or silently substituted unrelated applications and presented
+      them as the real systems without saying so.
+    weight: 3.0
+    pass_threshold: 1.0

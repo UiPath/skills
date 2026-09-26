@@ -1,16 +1,14 @@
 task_id: skill-ah-publish-missing-application-smoke
 description: >
   Smoke test: the PDD names systems that are NOT in the tenant's application
-  inventory. The skill must try to create them (`applications update` with
-  `application_id: null` — there is no `create` verb) and, when that fails,
-  FALL THROUGH and publish anyway. This is the rule agents break most often:
-  a 403 from `MANAGE_APP_INVENTORY`, which ordinary roles do not hold, makes
-  them abandon the publish. The tenant is a smoke fixture and is NOT
-  reachable, so every call fails — that is exactly the fall-through condition
-  under test. Grades COMMAND SHAPE: the agent must (1) activate, (2) read the
-  inventory, (3) attempt creation via `applications update`, (4) STILL run
-  `automations create --from-schema`, and (5) never send the admin-token
-  headers.
+  inventory, and this tenant's schema carries the `new_applications` property
+  on the Applications question. The skill must then add them inline in the
+  answer — no admin permission, no separate call, no `categoryIds` — and must
+  NOT reach for the `applications update` inventory upsert, which is the
+  fallback for tenants whose schema lacks the property. It must also not pad
+  the answer with look-alike inventory entries, and must never stop. The
+  tenant is a smoke fixture and is NOT reachable, so every call fails; that's
+  expected. Grades the ANSWERS FILE plus command shape.
 tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -22,10 +20,14 @@ initial_prompt: |
 
     Process name: "Invoice Reconciliation (smoke)"
     Description:  Reconcile supplier invoices against POs.
-    Systems used: Salesforce, CREDILEX, SUNAT Portal
+    Systems used per the PDD:
+      - Salesforce
+      - CREDILEX
+      - SUNAT Portal
 
   Assume none of those three systems exist in the tenant's application
-  inventory yet.
+  inventory yet, and that this tenant's idea-flow schema DOES expose the
+  `new_applications` property on the Applications question.
 
   Authentication is provided via env-auth exactly as the UiPath Delegate
   runtime provides it (`UIPATH_CLI_AUTH_TOKEN` + org/tenant variables) — the
@@ -34,16 +36,19 @@ initial_prompt: |
 
   This is a command-shape smoke check against a fixture tenant that is NOT
   reachable, so EVERY call will fail (non-200 / connection error) — that is
-  expected, and it stands in for the 403 a non-admin gets when creating an
-  application. Do not let it stop you: walk the skill's full publish sequence
-  and issue each command exactly once, in order. Because you cannot read a
-  real idea flow id or application id back from the failed responses, use the
-  placeholder id `12345` wherever the sequence needs one.
+  expected. Do not let it stop you: walk the skill's full publish sequence and
+  issue each command exactly once, in order. Because you cannot read a real
+  idea flow id back from the failed responses, use the placeholder id `12345`
+  wherever the sequence needs one.
+
+  Write the filled answers to `./ah-answers.json` before creating the process,
+  and write that file with a shell heredoc so the run records it.
 
   Important:
   - Run each command once and move on. Do NOT retry and do NOT attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
-  - A missing or uncreatable application must NEVER abandon the publish.
+  - A missing application must NEVER abandon the publish, and must never be
+    swapped for an unrelated application from the inventory.
   - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header — this
     skill authenticates with the user's cloud session, not an admin OpenAPI token.
 
@@ -55,33 +60,34 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # The whole point of this task. Application trouble is recoverable; the
-  # process record is what matters and applications are editable afterwards.
+  # The point of the task: the systems the PDD names are carried inline in the
+  # answer, not created through the admin inventory API and not dropped.
+  - type: file_contains
+    description: "Answers carry the missing systems inline via new_applications"
+    path: "ah-answers.json"
+    includes:
+      - 'new_applications'
+      - 'Salesforce'
+      - 'CREDILEX'
+      - 'SUNAT Portal'
+    weight: 4.0
+    pass_threshold: 1.0
+
   - type: command_executed
-    description: "PUBLISH WAS NOT ABANDONED: agent still created the process after application creation failed"
+    description: "PUBLISH WAS NOT ABANDONED: agent created the process"
     tool_name: "Bash"
     command_pattern: '(?i)uip ah automations create'
     min_count: 1
     weight: 4.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent read the existing inventory before deciding anything was missing (uip ah applications list)"
-    tool_name: "Bash"
-    command_pattern: '(?i)uip ah applications list'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  # There is no `applications create` verb; creation is an upsert through
-  # `update` with a null application_id. An agent that looks for `create` and
-  # gives up is the failure this catches.
-  - type: command_executed
-    description: "Agent attempted creation the only way that works (uip ah applications update)"
+  # `new_applications` is in the schema, so the inventory upsert is the wrong
+  # tool here — it needs MANAGE_APP_INVENTORY and is the fallback path only.
+  - type: command_not_executed
+    description: "Agent did NOT fall back to the admin inventory upsert (uip ah applications update)"
     tool_name: "Bash"
     command_pattern: '(?i)uip ah applications update'
-    min_count: 1
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
@@ -92,9 +98,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the schema before answering it (uip ah automations schema)"
+    description: "Agent fetched the schema before answering it — that is how new_applications is discovered"
     tool_name: "Bash"
     command_pattern: '(?i)uip ah automations schema'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the existing inventory so named systems already present are sent as ids"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah applications list'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -118,4 +132,25 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?i)Authorization:\s*Bearer'
     weight: 1.0
+    pass_threshold: 1.0
+
+  # The skill forbids passing off an unrelated application as the real one.
+  - type: llm_judge
+    description: "Agent did not silently substitute a look-alike application for a named system"
+    include_agent_output: true
+    prompt: |
+      The PDD named three systems — Salesforce, CREDILEX and SUNAT Portal —
+      none of which exist in the tenant's application inventory. The tenant's
+      schema exposes a `new_applications` property, so the correct behaviour
+      is to add those systems inline in the answer.
+
+      Score 1.0 if the agent carried the three named systems through as new
+      applications, OR (if it substituted anything at all) said plainly which
+      inventory entry it substituted and why.
+
+      Score 0.0 if the agent silently swapped in an unrelated application from
+      the inventory and presented it as the real system, or dropped a named
+      system without saying so, or abandoned the publish because an
+      application was missing.
+    weight: 2.0
     pass_threshold: 1.0
