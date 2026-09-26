@@ -10,8 +10,8 @@
  * | a reminder that does not cancel the approval | `t.onTimer('P2D', { interrupting: false }, …)` in the human task's body |
  * | a failure exit for the approval itself | `t.onError(true, { errorVar: 'approvalError' }, …)` |
  * | a three-way decision, one arm looping back | `.choose('route', [ … ])` with `when` / `otherwise` arms and `.goto('approve')` |
- * | a safety net for the whole process | `.eventSubProcess('failures', { error: true, errorVar: 'failure' }, …)` |
- * | classification on the caught error | a `.choose()` inside the net reading `vars.failure.code` |
+ * | a safety net for the whole process | `.eventSubProcess('failures', { error: true }, …)` |
+ * | classification on the caught error | a `.choose()` inside the net reading `vars.Error.code`, which the engine seeds there |
  *
  * | the process written top to bottom | `.flowMode('sequence')` — no `.sequenceFlow()` anywhere |
  *
@@ -134,17 +134,20 @@ export default bpmn('invoice-escalation')
   // The safety net. An event sub-process has no incoming flow; it starts when an error
   // nothing closer caught is raised anywhere in this process, and — sitting at process
   // level — ends the whole run. Its body chains from the synthesized `failures_start`.
-  .eventSubProcess('failures', { error: true, errorVar: 'failure', name: 'Failure net' }, (h) =>
+  // The engine hands the net the error as `vars.Error` (capital E: `.code`, `.message`,
+  // `.detail`, `.status`), so nothing is captured first — unlike the boundary above,
+  // where `errorVar` is what makes the error readable.
+  .eventSubProcess('failures', { error: true, name: 'Failure net' }, (h) =>
     h.choose('failureKind', [
       {
-        when: '=js:String(vars.failure.code || "").indexOf("ERP") >= 0',
+        when: '=js:String(vars.Error.code || "").indexOf("ERP") >= 0',
         label: 'ERP outage',
         body: (b) => b.task('flagOutage', { name: 'Flag ERP outage', set: { outcome: 'FAILED_ERP_OUTAGE' } }).endEvent('outage', { name: 'Escalated to IT' }),
       },
       {
         otherwise: true,
         label: 'Anything else',
-        body: (b) => b.task('flagUnknown', { name: 'Flag for finance', set: { outcome: '=js:"FAILED: " + vars.failure.message' } }).endEvent('unhandled', { name: 'Escalated to finance' }),
+        body: (b) => b.task('flagUnknown', { name: 'Flag for finance', set: { outcome: '=js:"FAILED: " + vars.Error.message' } }).endEvent('unhandled', { name: 'Escalated to finance' }),
       },
     ]),
   )

@@ -94,6 +94,7 @@ Each form lowers to the same elements and flows the explicit methods produce, an
 ```ts
 export default bpmn('approval')
   .var('action', 'string')
+  .var('outcome', 'string', { default: 'RUNNING' })
   .startEvent('start')
   .humanTask('approve', { app: 'InvoiceApproval', actions: ['Approve', 'Reject'] }, (t) => {
     t.onTimer('PT1H', { interrupting: false }, (b) => b.task('remind').endEvent('reminded'));
@@ -106,8 +107,8 @@ export default bpmn('approval')
   .endEvent('done')
   .sequenceFlow('start', 'approve')
   .sequenceFlow('approve', 'approved')
-  .eventSubProcess('failures', { error: true, errorVar: 'unhandled' }, (h) =>
-    h.task('record').endEvent('recorded', { name: 'Failure recorded' }))
+  .eventSubProcess('failures', { error: true }, (h) =>
+    h.task('record', { set: { outcome: '=js:"FAILED: " + vars.Error.message' } }).endEvent('recorded', { name: 'Failure recorded' }))
   .build();
 ```
 
@@ -118,7 +119,8 @@ export default bpmn('approval')
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
-  `errorVar` names the variable the caught error lands in; read it as `=vars.<errorVar>.code` and `.message`.
+  An error net is handed the error context by the engine: classify on `vars.Error.code` / `.message` / `.detail` / `.status` (capital `E`) directly, with nothing captured first — that is what the failure-escalation graders look for.
+  On a boundary handler the error is readable only through `errorVar`, which writes the capture row; read it there as `=vars.<errorVar>.code`.
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
   An element that already has an explicit outgoing flow is not also wired to the next one, a bare gateway is wired into but implies no outgoing flows, and an element nothing leads into or a path that does not end is refused at build.

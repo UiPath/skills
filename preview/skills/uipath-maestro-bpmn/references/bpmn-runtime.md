@@ -14,6 +14,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   Declared at process level it ends the whole run on the first failure; declared inside a multi-instance sub-process it ends only that iteration.
   Place `.eventSubProcess()` in the scope whose failure it should absorb.
 
+<!-- RULE:bpmn.event.error-context -->
+- The engine surfaces a failed element's error under the capital-`Error` key with lowercase fields (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`).
+  An error event sub-process is handed that context as its payload, so its conditions read `vars.Error.<field>` with nothing authored; `.build()` knows `Error` is in scope there and only there.
+  A boundary handler is evaluated against its activity's outputs, so there the error is readable only after `errorVar` writes the `=Error` capture row.
+
 <!-- RULE:bpmn.event.non-interrupting-path -->
 - A non-interrupting boundary handler runs beside a token that still reaches the next step, so its path must end on its own; rejoining the main path would run everything after it twice.
   The builder refuses a non-interrupting handler path left open.
