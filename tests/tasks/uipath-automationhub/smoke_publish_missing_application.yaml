@@ -1,0 +1,121 @@
+task_id: skill-ah-publish-missing-application-smoke
+description: >
+  Smoke test: the PDD names systems that are NOT in the tenant's application
+  inventory. The skill must try to create them (`applications update` with
+  `application_id: null` — there is no `create` verb) and, when that fails,
+  FALL THROUGH and publish anyway. This is the rule agents break most often:
+  a 403 from `MANAGE_APP_INVENTORY`, which ordinary roles do not hold, makes
+  them abandon the publish. The tenant is a smoke fixture and is NOT
+  reachable, so every call fails — that is exactly the fall-through condition
+  under test. Grades COMMAND SHAPE: the agent must (1) activate, (2) read the
+  inventory, (3) attempt creation via `applications update`, (4) STILL run
+  `automations create --from-schema`, and (5) never send the admin-token
+  headers.
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Publish the approved business process below to UiPath Automation Hub using
+  the `uipath-automationhub` skill.
+
+    Process name: "Invoice Reconciliation (smoke)"
+    Description:  Reconcile supplier invoices against POs.
+    Systems used: Salesforce, CREDILEX, SUNAT Portal
+
+  Assume none of those three systems exist in the tenant's application
+  inventory yet.
+
+  Authentication is provided via env-auth exactly as the UiPath Delegate
+  runtime provides it (`UIPATH_CLI_AUTH_TOKEN` + org/tenant variables) — the
+  `uip` CLI consumes it automatically. Do NOT run `uip login` and do NOT
+  handle a token yourself.
+
+  This is a command-shape smoke check against a fixture tenant that is NOT
+  reachable, so EVERY call will fail (non-200 / connection error) — that is
+  expected, and it stands in for the 403 a non-admin gets when creating an
+  application. Do not let it stop you: walk the skill's full publish sequence
+  and issue each command exactly once, in order. Because you cannot read a
+  real idea flow id or application id back from the failed responses, use the
+  placeholder id `12345` wherever the sequence needs one.
+
+  Important:
+  - Run each command once and move on. Do NOT retry and do NOT attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - A missing or uncreatable application must NEVER abandon the publish.
+  - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header — this
+    skill authenticates with the user's cloud session, not an admin OpenAPI token.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The whole point of this task. Application trouble is recoverable; the
+  # process record is what matters and applications are editable afterwards.
+  - type: command_executed
+    description: "PUBLISH WAS NOT ABANDONED: agent still created the process after application creation failed"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations create'
+    min_count: 1
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the existing inventory before deciding anything was missing (uip ah applications list)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah applications list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # There is no `applications create` verb; creation is an upsert through
+  # `update` with a null application_id. An agent that looks for `create` and
+  # gives up is the failure this catches.
+  - type: command_executed
+    description: "Agent attempted creation the only way that works (uip ah applications update)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah applications update'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT invent a non-existent verb (uip ah applications create)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah applications create'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the schema before answering it (uip ah automations schema)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations schema'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "CLI transport means no hand-built auth: agent never constructed an Authorization header"
+    tool_name: "Bash"
+    command_pattern: '(?i)Authorization:\s*Bearer'
+    weight: 1.0
+    pass_threshold: 1.0

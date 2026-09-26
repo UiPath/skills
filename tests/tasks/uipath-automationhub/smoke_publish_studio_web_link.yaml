@@ -1,0 +1,115 @@
+task_id: skill-ah-publish-studio-web-link-smoke
+description: >
+  Smoke test: Step 6b, linking a Studio Web solution to the published process.
+  The caller supplies the designer URL and does NOT say whether the solution
+  has a `.bpmn`. The skill's rule is never invent, guess or search for a
+  solution id or URL — no discovery API exists on this path — and omit
+  `hasProcessMap` when the caller doesn't know. The tenant is a smoke fixture
+  and is NOT reachable, so every call fails; that's expected. Grades COMMAND
+  SHAPE: the agent publishes over the CLI, carries the caller's URL through
+  verbatim, and never fabricates a solution id or a hasProcessMap value.
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Publish the business process below to UiPath Automation Hub using the
+  `uipath-automationhub` skill, and link it to the Studio Web solution.
+
+    Process name:  "Order Intake (smoke)"
+    Description:   Intake and triage inbound orders.
+    Studio Web solution URL:
+      https://cloud.uipath.com/smokeorg/studio_/designer/proj-smoke-0001?solutionId=sol-smoke-0001
+    Solution name: "Order Intake Solution"
+
+  I do not know whether that solution's orchestration project contains a
+  `.bpmn` file.
+
+  Authentication is provided via env-auth exactly as the UiPath Delegate
+  runtime provides it (`UIPATH_CLI_AUTH_TOKEN` + org/tenant variables) — the
+  `uip` CLI consumes it automatically. Do NOT run `uip login` and do NOT
+  handle a token yourself.
+
+  This is a command-shape smoke check against a fixture tenant that is NOT
+  reachable, so EVERY call will fail (non-200 / connection error) — that is
+  expected. Walk the skill's publish sequence and issue each command exactly
+  once. Use the placeholder id `12345` wherever the sequence needs an id you
+  cannot read back.
+
+  Important:
+  - Run each command once and move on. Do NOT retry and do NOT attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Use the solution URL exactly as given. Do NOT search for, guess or invent a
+    solution id, project id or URL, and do NOT guess the hasProcessMap value.
+  - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the process over the CLI (uip ah automations create)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations create'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent carried the caller's solution id through verbatim"
+    tool_name: "Bash"
+    command_pattern: 'sol-smoke-0001'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # No discovery API exists for Studio Web solutions on this path, so any
+  # attempt to look one up is the agent inventing a capability.
+  - type: command_not_executed
+    description: "Agent did NOT try to discover a solution (no invented solutions/projects lookup)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip (ah )?(solutions|studio|projects) '
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The caller said they don't know. Emitting either boolean is a guess.
+  - type: command_not_executed
+    description: "Agent did NOT guess hasProcessMap when the caller said they did not know"
+    tool_name: "Bash"
+    command_pattern: '(?i)"hasProcessMap"\s*:\s*(true|false)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the schema before answering it (uip ah automations schema)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations schema'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "CLI transport means no hand-built auth: agent never constructed an Authorization header"
+    tool_name: "Bash"
+    command_pattern: '(?i)Authorization:\s*Bearer'
+    weight: 1.0
+    pass_threshold: 1.0
