@@ -222,6 +222,7 @@ This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `S
 - **Auto-appends .xaml**: If the `WorkflowFileName` has no file extension, `.xaml` is appended automatically. Passing `"workflow.txt"` becomes `"workflow.txt.xaml"`.
 - **TargetSession validation**: `TargetSession.Secondary` (or any non-Current value) requires `UnSafe=True`. Without it, validation fails.
 - **Persistence with isolation**: Using `ResumeInstanceId` with Safe mode (`UnSafe=false`) without persistence support throws `NotSupportedException`.
+- **Callee argument named like an activity property**: a callee argument that shares its name with one of Invoke Workflow File's own properties (seen with `Level`) fails validation when bound, `... already exists with the name 'Level'`. Rename the argument in the callee (`MessageLevel`).
 
 ### WorkflowFileName Must Be a Plain String Path
 
@@ -399,14 +400,40 @@ XAML expressions (C# or VB) use the types a project's coded source files (`.cs`)
 
 - **Import:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation`.
 - **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
+- **Static `void` method:** an expression must return a value, so a `void` helper is called with Invoke Method — `TargetType` names the class through the same prefix, and one positional `InArgument` child per parameter follows in declaration order:
+
+  ```xml
+  <InvokeMethod DisplayName="Append the backup" MethodName="AppendEntry" TargetType="{x:Type local:StateFiles}">
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">backupPath</CSharpValue>
+    </InArgument>
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">entry</CSharpValue>
+    </InArgument>
+  </InvokeMethod>
+  ```
 
 Without the import, `validate` and `build` fail with `CS0103` / `BC30451` on a helper's name and `CS0246` / `BC30002` on a type name. Types shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
+
+The project's Studio host compiles the coded files when it loads the project, so a `.cs` file added later — or a signature changed in an existing one — stays invisible to XAML: `validate` keeps reporting the same `CS0103` / `CS0246` with the import in place. Stop that project's `UiPath.Studio.Helm` process — `uip rpa instances list` gives its id; confirm the id still belongs to `UiPath.Studio.Helm` before stopping it — and validate again; the host relaunches on the next command.
 
 ## WriteTextFile Emits a UTF-8 BOM When Encoding Is Set
 
 `WriteTextFile` with `Encoding="utf-8"` maps to .NET `Encoding.UTF8` **with preamble** — output starts with a BOM, which strict JSON parsers reject. Omitting the `Encoding` property writes BOM-less UTF-8.
 
 **Rule:** for machine-consumed output (JSON, or CSV for downstream parsers), omit `Encoding`. If explicit encoding control is required, write via `InvokeCode`: `File.WriteAllText(path, content, new UTF8Encoding(false))`.
+
+## AppendLine Starts Each Text on a New Line and Ends Without One
+
+`AppendLine` writes a line break before its text when the file's content does not already end with one, and never after it: two appends to a new file produce `a`, a line break, `b` — no trailing line break, and an append to a file that ends with a line break adds no empty line. Creating the file, or appending to an empty one, writes a UTF-8 BOM first even with `Encoding` unset. A reader of the file splits it on line breaks rather than counting them, and strips the BOM (`﻿`) before comparing the first line.
+
+## CopyFolderX Copies Into `To`, Not As `To`
+
+`CopyFolderX` places the source folder inside `To`: copying folder `case1` with `To` set to folder `done` produces a `case1` folder inside `done`. `To` must already exist; otherwise the activity fails with `Source or destination folder missing.` The package doc's example reads like a copy to a new path. Pass the parent folder as `To`.
+
+## DeleteFileX Raises on a Missing File
+
+`DeleteFileX` raises `The file was not found at the provided path.` when the file is absent, although its package doc says it does not. Where the file may be missing, check it with Path Exists first.
 
 ## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
 
@@ -820,6 +847,18 @@ The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly
 - Expression-wrapped values (`Search="[&quot;{FullName}&quot;]"`) are not affected — the expression engine handles those, not the XAML parser
 
 **Fix:** Prefix with the XAML escape sequence `{}` to indicate a literal string: `Search="{}{FullName}"`
+
+## Runs of Whitespace in Element Text Collapse — Use `xml:space="preserve"`
+
+XAML normalises an element's text content: each run of spaces, tabs and line breaks becomes one space, and leading and trailing whitespace is dropped. Expressions and literals written as element text — `<CSharpValue>`, a VB `<InArgument>[…]</InArgument>`, a literal `<InArgument>…</InArgument>` — reach the compiler normalised: `"Net  Amount"` (two spaces) runs as `"Net Amount"`, and a line break inside a C# verbatim string becomes a space. `validate`, `build` and the run pass, and a comparison against the application's text never matches.
+
+Add `xml:space="preserve"` to each element whose text holds two consecutive spaces, a tab or a line break; Studio serialises such text with the same attribute:
+
+```xml
+<CSharpValue x:TypeArguments="x:String" xml:space="preserve">"Net  Amount"</CSharpValue>
+```
+
+Attribute values keep their spaces, so a VB `[…]` attribute and a literal attribute need no marker.
 
 ## ViewState Section Corruption
 
