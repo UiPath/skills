@@ -16,8 +16,9 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.event.error-context -->
 - The engine surfaces a failed element's error under the capital-`Error` key with lowercase fields (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`).
-  An error event sub-process is handed that context as its payload, so its conditions read `vars.Error.<field>` with nothing authored; `.build()` knows `Error` is in scope there and only there.
-  A boundary handler is evaluated against its activity's outputs, so there the error is readable only after `errorVar` writes the `=Error` capture row.
+  `.eventSubProcess({ error: true })` captures it into `vars.Error` on its start event by default, so the net's conditions read `vars.Error.<field>` with nothing more written; `errorVar` renames that variable and `errorVar: false` omits the capture.
+  The platform validator needs the declaration: `vars.Error` with no captured variable is `VARIABLE_DOES_NOT_EXIST`, in a net or anywhere else.
+  A boundary handler captures nothing by default; there `errorVar` is what makes the error readable.
 
 <!-- RULE:bpmn.event.non-interrupting-path -->
 - A non-interrupting boundary handler runs beside a token that still reaches the next step, so its path must end on its own; rejoining the main path would run everything after it twice.

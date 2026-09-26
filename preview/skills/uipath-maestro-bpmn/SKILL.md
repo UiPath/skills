@@ -119,8 +119,8 @@ export default bpmn('approval')
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
-  An error net is handed the error context by the engine: classify on `vars.Error.code` / `.message` / `.detail` / `.status` (capital `E`) directly, with nothing captured first — that is what the failure-escalation graders look for.
-  On a boundary handler the error is readable only through `errorVar`, which writes the capture row; read it there as `=vars.<errorVar>.code`.
+  An error net captures the caught error into `vars.Error` on its start by default: classify on `vars.Error.code` / `.message` / `.detail` / `.status` (capital `E`) with nothing more written — the key the engine seeds and the spelling the failure-escalation graders look for. `errorVar` renames it; `errorVar: false` omits the capture.
+  A boundary handler captures nothing by default; there `errorVar` is what makes the error readable, as `=vars.<errorVar>.code`.
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
   An element that already has an explicit outgoing flow is not also wired to the next one, a bare gateway is wired into but implies no outgoing flows, and an element nothing leads into or a path that does not end is refused at build.

@@ -11,7 +11,7 @@
  * | a failure exit for the approval itself | `t.onError(true, { errorVar: 'approvalError' }, …)` |
  * | a three-way decision, one arm looping back | `.choose('route', [ … ])` with `when` / `otherwise` arms and `.goto('approve')` |
  * | a safety net for the whole process | `.eventSubProcess('failures', { error: true }, …)` |
- * | classification on the caught error | a `.choose()` inside the net reading `vars.Error.code`, which the engine seeds there |
+ * | classification on the caught error | a `.choose()` inside the net reading `vars.Error.code`, captured on the net's start by default |
  *
  * | the process written top to bottom | `.flowMode('sequence')` — no `.sequenceFlow()` anywhere |
  *
@@ -134,9 +134,9 @@ export default bpmn('invoice-escalation')
   // The safety net. An event sub-process has no incoming flow; it starts when an error
   // nothing closer caught is raised anywhere in this process, and — sitting at process
   // level — ends the whole run. Its body chains from the synthesized `failures_start`.
-  // The engine hands the net the error as `vars.Error` (capital E: `.code`, `.message`,
-  // `.detail`, `.status`), so nothing is captured first — unlike the boundary above,
-  // where `errorVar` is what makes the error readable.
+  // The start captures the caught error into `vars.Error` by default (capital E:
+  // `.code`, `.message`, `.detail`, `.status`) — `errorVar` would rename it, and the
+  // boundary above needs one written out because a boundary captures nothing on its own.
   .eventSubProcess('failures', { error: true, name: 'Failure net' }, (h) =>
     h.choose('failureKind', [
       {
