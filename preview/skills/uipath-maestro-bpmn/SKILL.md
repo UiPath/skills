@@ -53,10 +53,10 @@ spells the paths its rows are relative to.
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Start, end, catch, throw, boundary | event methods | [Events](references/bpmn-runtime.md#events-and-timers) | `examples/NotifyChannel.bpmn.ts` |
-| Error, timer, or message ON an activity | the body callback of any activity method: `onError`, `onTimer`, `onMessage` | [ActivityBuilder](#api-index) | [Structure by nesting](#structure-by-nesting) |
+| Error, timer, or message ON an activity | the body callback of any activity method: `onError`, `onTimer`, `onMessage` | [ActivityBuilder](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
-| Decision, parallel split, or wait-for-first, written in place | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | [Structure by nesting](#structure-by-nesting) |
-| Safety net for a whole scope | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | [Structure by nesting](#structure-by-nesting) |
+| Decision, parallel split, or wait-for-first, written in place | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
+| Safety net for a whole scope | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | `examples/InvoiceEscalation.bpmn.ts` |
 | Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
@@ -85,6 +85,7 @@ export default bpmn('notify')
 
 Where a relationship can be written by nesting, write it that way instead of by id.
 Each form lowers to the same elements and flows the explicit methods produce, and the explicit `.sequenceFlow()` still works anywhere, mixed freely.
+`examples/InvoiceEscalation.bpmn.ts` is a full process written this way; `examples/InvoiceApproval.bpmn.ts` is the same kind of process as a decompiled import, written flat, which is what a brownfield edit starts from.
 
 ```ts
 export default bpmn('approval')
