@@ -116,12 +116,17 @@ export default bpmn('approval')
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
   `errorVar` names the variable the caught error lands in; read it as `=vars.<errorVar>.code` and `.message`.
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
+- `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
+  An element that already has an explicit outgoing flow is not also wired to the next one, a bare gateway is wired into but implies no outgoing flows, and an element nothing leads into or a path that does not end is refused at build.
+- `uip maestro bpmn check <Name>.bpmn.ts --graph` prints the wiring that resulted, `~>` for an implied edge and `->` for an explicit one, with `[NO INCOMING]` / `[NO OUTGOING]` where they apply.
+  Read it after a structural edit in a sequence scope, because inserting a line there rewires the graph.
 
 ## Validation loop
 
 ```bash
 uip maestro bpmn init <Name>                  # once, before authoring
 uip maestro bpmn check <Name>.bpmn.ts --source
+uip maestro bpmn check <Name>.bpmn.ts --graph   # the resolved wiring, implied edges marked ~>
 uip maestro bpmn compile <Name>.bpmn.ts -o <Name>/<Name>.bpmn
 uip maestro bpmn format <Name>/<Name>.bpmn
 uip maestro bpmn validate <Name>/<Name>.bpmn --output json
