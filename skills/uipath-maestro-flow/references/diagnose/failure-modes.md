@@ -19,6 +19,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 <!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (the missing-`=js:` validator + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
+| [Unclaimed connection binding](#unclaimed-connection-binding--connection-has-an-invalid-guid-value) | `'Connection' has an invalid GUID value: '<bindings...>'` (102010) at run | Connection binding's GUID is empty/unclaimed; placeholder ships raw. Caught at validate by `unclaimed-connection-binding` (`UNCLAIMED_CONNECTION_BINDING`). |
 
 ---
 
@@ -338,6 +339,7 @@ Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expr
 - A `$vars.<nodeId>` read whose node is not in the reader's scope (`EXPRESSION_DIAGNOSTIC`, **warning** severity). The message prints the scope it *is* in: `Property '<nodeId>' does not exist on type '{ … }'`. Never ship it, but diagnose the runtime symptom from *why* the node is out of scope, because the three causes do not behave alike: a Decision or Switch is unreadable from anywhere downstream and reads `undefined`, silently yielding a wrong result instead of faulting ([decision/impl.md — Outputs](../author/plugins/decision/impl.md#outputs)); a node that runs *after* the reader faults instead, with `[400302]`/`[400300]` ([brownfield.md — Common edits](../author/brownfield.md#common-edits)); a node on a branch the reader is not on reads `undefined`, having never executed
 - Connector `inputs.detail.configuration` missing, empty, missing the `essentialConfiguration` envelope, or containing invalid JSON inside the `=jsonString:` prefix — emitted with a shape hint pointing at `uip maestro flow node configure`. Re-run that command rather than hand-editing.
 - A non-catalog activity node (`uipath.connector.custom.*`) without `inputs.inlineActivityConfiguration`, a `scriptRef` (main or lookup) with no script under `scripts`, or an `activityContext` whose `source` is not `"inline"` / whose `scriptRef` differs from the embedded one — `inline-activity` validator. Re-add the node with `node add --metadata --scripts`, or re-run `node configure`; see [connector/impl-inline.md — Validate](../author/plugins/connector/impl-inline.md#validate).
+- An **unclaimed connector connection binding** — the `<bindings.{connector} connection>` placeholder has no top-level `bindings[]` entry carrying a real connection GUID (`UNCLAIMED_CONNECTION_BINDING`) — flow-schema `unclaimed-connection-binding` rule. See [Unclaimed connection binding](#unclaimed-connection-binding--connection-has-an-invalid-guid-value).
 
 **Not caught** — these still surface only at `flow debug` or in deployed runs:
 
@@ -355,3 +357,48 @@ Triage via the diagnostic priority ladder in [troubleshooting-guide.md](troubles
 ### Reference
 
 [troubleshooting-guide.md](troubleshooting-guide.md) — start there for any "passes locally, fails in cloud" scenario.
+
+---
+
+## Unclaimed connection binding — `'Connection' has an invalid GUID value`
+
+### Symptom
+
+A run faults with:
+
+```
+'Connection' has an invalid GUID value: '<bindings.<connector-key> connection>' (102010)
+```
+
+The design-time surface reported the connection as healthy — VS Code / Studio Web showed **Connected**, and on older cli `uip maestro flow validate` returned `Result: Success` with no warning. Failure surfaced only at `flow debug`/deploy. Connector-agnostic (seen on Outlook 365, Google Sheets, Salesforce, OpenAI).
+
+Current cli catches it at validate: `unclaimed-connection-binding` emits `UNCLAIMED_CONNECTION_BINDING` (**error** severity, exits non-zero) with a remediation hint. If you see the runtime fault without a matching validate error, your cli predates the rule.
+
+### Cause
+
+The connector node carries a `model.context[]` placeholder `<bindings.{connector} connection>`, but the top-level `bindings[]` entry it resolves against has an **empty GUID** (`resourceKey: ""`, `default: ""`) or is absent. At BPMN emit the placeholder is rewritten to `=bindings.{GUID}` by matching that entry — an empty entry ships the placeholder **literally**, and the connector runtime rejects it.
+
+The binding lands empty when an intermediate node save persists an empty `connectionId` (metadata refetch / object change / partial re-open), or when the unclaimed template row is pruned. `flow validate` on older cli only checked JSON schema + graph structure, so it never noticed the binding didn't resolve.
+
+### Fix
+
+Re-claim the connection so the binding carries a real GUID:
+
+1. **Re-select the connection** in the node's properties panel (VS Code extension or Studio Web). This re-runs `node configure` and rewrites the binding with the connection GUID — the workaround that reliably fixes it.
+2. **Re-authenticate the connection** if the connection itself is stale:
+
+   ```bash
+   uip is connections list --output json          # find the connection id
+   uip is connections edit <CONNECTION_ID>         # re-authenticate
+   ```
+
+   Then re-select the connection on the node (step 1) so the flow's binding picks up the refreshed connection, and re-run `uip maestro flow validate`.
+
+> **Prefer the node-panel re-select over a hand-edit of `bindings[]`.** The binding `name`, `resource` (`"Connection"`), and `propertyAttribute` (`"ConnectionId"`) must match the node's placeholder exactly; `node configure` gets this right. See [connector/impl.md](../author/plugins/connector/impl.md) for the binding shape if you must inspect it.
+
+After re-claiming, confirm `uip maestro flow validate --output json` returns no `UNCLAIMED_CONNECTION_BINDING` error before publishing.
+
+### Reference
+
+- [connector/impl.md](../author/plugins/connector/impl.md) — connection binding shape and `node configure`.
+- MST-14920 — the validate blind spot this rule closes.
