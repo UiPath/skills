@@ -273,8 +273,12 @@ jobs:
       # against a temp CLAUDE_ENV_FILE (export line, host-wins, idempotence,
       # sanitization).
       - name: Run telemetry hook tests
-        run: pytest tests/scripts/test_send_telemetry_hook.py tests/scripts/test_set_session_env_hook.py -v
-
+        run: >
+          pytest
+          tests/scripts/test_send_telemetry_hook.py
+          tests/scripts/test_set_session_env_hook.py
+          tests/scripts/test_suggest_permissions_hook.py
+          -v
   task-gate-tests:
     runs-on: uipath-ubuntu-latest
     name: task/experiment gate unit tests
