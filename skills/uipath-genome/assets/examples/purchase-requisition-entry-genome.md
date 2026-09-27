@@ -58,12 +58,11 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 4. Which purchasing portal does entry point B sign in to? (default: the production Coupa tenant address, held as a Text asset)
 5. Which mailbox sends the requester notifications and the run summary? (default: purchasing-robot@contoso.com)
 6. Which address receives the run summary and the stop alert? (default: purchasing-operations@contoso.com)
-7. When does each entry point start, and on how many robots? (default: entry point A every business day at 06:00; entry point B from 06:30 on three unattended robots)
-8. How many times is a requisition retried after a system exception? (default: 2)
-9. After how many consecutive system exceptions does the run stop and alert purchasing operations? (default: 3)
-10. Where is the supplier checked? (default: the approved-supplier sheet; alternative: the portal's supplier search)
-11. How long does entry point B wait for the portal to return a requisition number before the submit counts as a system exception? (default: 60 seconds)
-12. Is a delivery date equal to the run date accepted? (default: yes — only a date earlier than the run date is rejected)
+7. How many times is a requisition retried after a system exception? (default: 2)
+8. After how many consecutive system exceptions does the run stop and alert purchasing operations? (default: 3)
+9. Where is the supplier checked? (default: the approved-supplier sheet; alternative: the portal's supplier search)
+10. How long does entry point B wait for the portal to return a requisition number before the submit counts as a system exception? (default: 60 seconds)
+11. Is a delivery date equal to the run date accepted? (default: yes — only a date earlier than the run date is rejected)
 
 ## Workflow
 
@@ -138,7 +137,7 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 - Approved-supplier list or cost-centre list unreadable: end the run before taking any item and alert purchasing operations, rather than rejecting requisitions against missing reference data.
 
 ### Steps 9-11: Portal lookup, creation and submit
-- Portal timeout, lost session, or an expected element not found: capture a screenshot, sign out or close the browser, sign in again, and retry the same requisition 2× (Configuration Question 8); still failing, record the item as failed with the reason and continue with the next item.
+- Portal timeout, lost session, or an expected element not found: capture a screenshot, sign out or close the browser, sign in again, and retry the same requisition 2× (Configuration Question 7); still failing, record the item as failed with the reason and continue with the next item.
 - An unsubmitted requisition left behind by a failure is abandoned before the retry, so the retry starts from the search in step 9 and finds nothing to create twice.
 
 ### Step 12: Record the outcome and notify the requester
@@ -149,7 +148,7 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 - Sign-out failure: close the browser anyway and finish the run; it is not a run failure.
 
 ### Global
-- Three consecutive system exceptions (Configuration Question 9): stop the run, sign out, close the browser, and alert purchasing operations with the three reasons; untaken items stay on the queue for the next run.
+- Three consecutive system exceptions (Configuration Question 8): stop the run, sign out, close the browser, and alert purchasing operations with the three reasons; untaken items stay on the queue for the next run.
 - Every system exception captures a screenshot of the portal before recovery, and the requisition number is recorded with the reason.
 - Unhandled exception: capture a screenshot, record the requisition number and the step, sign out and close the portal, record the item as failed, and continue with the next item unless the consecutive-failure threshold is reached.
 
@@ -178,7 +177,7 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 |---|---|---|
 | Success | every per-item step completed | item recorded as done with the Coupa requisition number, which the requester is emailed |
 | Business exception | Step 8 rules: supplier not approved, cost centre unknown, cost centre closed, mandatory field empty, delivery date in the past; Step 9 rule: already created | no retry; item recorded with the reason and the requester emailed it; nothing created in the portal; run continues |
-| System exception | every other failure — Step 6 and Steps 9-11 handlers: portal unreachable or sign-in refused, portal timeout, lost session, element not found (the step 12 mail handler retries the send only and records `notification-not-sent`, so a created requisition is never entered twice) | portal closed and signed in again, item retried 2× (Configuration Question 8), then recorded as failed with the reason; run stops after 3 consecutive (Configuration Question 9) and purchasing operations are alerted |
+| System exception | every other failure — Step 6 and Steps 9-11 handlers: portal unreachable or sign-in refused, portal timeout, lost session, element not found (the step 12 mail handler retries the send only and records `notification-not-sent`, so a created requisition is never entered twice) | portal closed and signed in again, item retried 2× (Configuration Question 7), then recorded as failed with the reason; run stops after 3 consecutive (Configuration Question 8) and purchasing operations are alerted |
 
 **Split options** — none asserted; runner counts are deployment settings:
 
@@ -192,7 +191,7 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 | one requisition line | C — one process, both roles, with a queue | one RPA process that queues the lines behind a once-guard and then works them, in every job | one queue of lines | as for B, plus the once-guard for the dispatch on every robot | as for B, with one entry point and one trigger |
 
 **Evidence:** three unattended robots share the queue from 06:30; the rows are dispatched once per business day at 06:00; an item must survive a failed run and be retried in a later one; Coupa submits a requisition with all its lines at once; purchasing operations need per-item visibility.
-**Configuration:** settings — questions 1-7 and 10 (workbook location, sheet names, queue name, portal address, sending mailbox, operations address, schedules and robot count, supplier lookup source); constants — questions 8, 9, 11 and 12 (item retries, consecutive-failure threshold, submit wait, same-day delivery date); assets — every Credential and Text row of Platform Dependencies, read at the start of the run.
+**Configuration:** settings — questions 1-6 and 9 (workbook location, sheet names, queue name, portal address, sending mailbox, operations address, supplier lookup source); constants — questions 7, 8, 10 and 11 (item retries, consecutive-failure threshold, submit wait, same-day delivery date); assets — every Credential and Text row of Platform Dependencies, read at the start of the run.
 **Traceability:** the queue item's status and history per requisition number, carrying the Coupa requisition number or the rejection reason; a screenshot on every system exception; the dispatched-timestamp column in the workbook for what was queued; one run-summary row (taken, created, rejected by reason, failed) on the summary sheet plus the same figures emailed to purchasing operations.
 
 ## Acceptance Criteria

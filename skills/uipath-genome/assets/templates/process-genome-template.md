@@ -34,7 +34,7 @@ Build order follows the table unless **Handoffs** requires otherwise.
 | Folder in `{ProcessName}.Tests` | Component | Test cases | Data file(s) |
 |---|---|---|---|
 | `{ComponentSlug}/` | {#} | {test case names} | `{ComponentSlug}.xlsx` ({n} rows) |
-| `Config/` | shared | — | configuration workflow: constants from Configuration Questions, credential-asset name → environment URL map |
+| `Config/` | shared | — | configuration workflow: the Configuration Questions' values and the constants the test components' Interfaces list, credential-asset name → environment URL map |
 
 ## Process Map
 

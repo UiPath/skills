@@ -37,12 +37,12 @@ Per artifact, in inventory order, using source guide's signal tables. Collect in
 | Triggers, schedules, entry points | Workflow step 1, Deployment |
 | Queues, assets, credentials, buckets, connections, folders | Platform Dependencies |
 | Per-item iteration with per-item outcomes: queue item fetch and status updates, a loop over rows or files with a per-item catch, a work-list read; framework state machines and their configuration workbook | **Transactional Shape** — unit of work and its alternatives, the As-is (produced by, consumed by, item store, coordination, item kinds, step groups), the outcomes, the split options derived with rule 8's table and the evidence ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); never a verdict; the framework's plumbing is not steps (source guide's framework section) |
-| Hardcoded literals: paths, URLs, addresses, names, thresholds, columns | Configuration Questions |
+| Hardcoded literals and configuration keys: paths, URLs, addresses, names, thresholds, columns | Configuration Questions for the open ones; every other one in the step, rule or handler that uses it ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)) |
 | Test cases, eval sets, assertions | Acceptance Criteria evidence |
 | Prompts and instructions (agents) | Business Rules (paraphrased) |
 | UI control recognition data (object maps, selectors, XPaths) | **Not written** ([genome-format-guide.md § Source Map](genome-format-guide.md)). Read source guide's target inventory (scratch folder) for each control's type and the actions applied to it — they decide substep wording; record counts in the Source Map |
 | Composite UI actions (type-ahead picks, menu paths, option lists, find-row-then-act, keystrokes to the focused element) | Workflow substeps carrying the full interaction contract ([genome-format-guide.md § Workflow](genome-format-guide.md)); wording per source guide's § Composite actions |
-| Data-driving rows (recordsets, data sheets) | **Not written.** Literals feed Configuration Questions; row schemas feed Interface and test components' row tables; rows stay in the export |
+| Data-driving rows (recordsets, data sheets) | **Not written.** Literals are placed like hardcoded ones (row above); row schemas feed Interface and test components' row tables; rows stay in the export |
 | Login accounts used per scenario | Platform Dependencies: one credential asset per account ([genome-format-guide.md § Platform Dependencies](genome-format-guide.md)) |
 | Blanket screenshot or capture steps | **Evidence policy**, not steps (below) |
 | Where everything came from | **Source Map** — the migration contract ([genome-format-guide.md § Source Map](genome-format-guide.md)) |
@@ -119,7 +119,7 @@ Write the **process genome first** (when applicable), then each **component geno
 | Build With / Components | Source guide § Component Detection → skill per component; [skill-mapping-guide.md](skill-mapping-guide.md) decision tree for steps inside a hybrid component. Test components: one test project, typed and laid out per [genome-format-guide.md § Build With / Components](genome-format-guide.md). |
 | Platform Dependencies | Source guide § Platform Resources. Keep source resource name. Credential asset per login account ([genome-format-guide.md § Platform Dependencies](genome-format-guide.md)). |
 | Interface | Arguments, schemas, entry points. Must agree with the Handoffs rows touching this component. |
-| Configuration Questions | Every hardcoded literal and every application choice: `N. {Question}? (default: {source value})`. |
+| Configuration Questions | Open values only: `N. {Question}? (default: {source value})`; every fixed value in the section where it acts ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)). |
 | Workflow / Process Map | Ordered from call graph; substeps for every multi-field, conditional, or transforming step; `(input: …; output: …)` annotations. |
 | Business Rules | Conditions translated per format guide, attached to their step. Agent prompts paraphrased into rules. |
 | Error Handling | Constructs translated to behaviour, attached to their step; `### Global` for global handlers. The business/system classification of per-item outcomes goes to the Transactional Shape. |
@@ -136,7 +136,7 @@ Fill every row [genome-format-guide.md § Source Map](genome-format-guide.md) li
 
 Check the contract resolves before offering edits: run the source guide's inventory into a scratch folder **outside the genome's folder** (a temp directory, or one deleted after the check), then `scripts/genome-step-map.py <genome.md> --processes <process inventory> --recordsets <recordset list> --out <scratch>` reads the written genomes' Source Map tables plus that inventory and prints one entry per component workflow step (`component`, `project`, `step`, `name`, `sourceProcesses` `{name, id}`, `recordsets`). Pass the process genome (it follows the Components table to every component genome) or a standalone component genome. It reads as a step every Source Map row keyed by a step number or a step name; every other row (framework, export, checkpoints, inventory, excluded, inferred, data files, row schema, …) is contract and is skipped whatever it is called. Fix every warning it prints — each is a step row whose reference does not resolve against the export, and execution will hit the same gap.
 
-Generalization checklist before writing Configuration Questions: file and folder paths, URLs and hosts, email addresses, server and database names, credential and asset names, queue and bucket names, folder paths, thresholds and limits, column and field names, document types, prompts' tunable parameters (model, thresholds), the application choice itself.
+Before writing Configuration Questions, sort every literal and configuration key in the working notes as open or fixed per [genome-format-guide.md § Configuration Questions](genome-format-guide.md). An open value becomes a question; a fixed value is written in the step, rule or handler that uses it. A question that only its default can answer is a fixed value.
 
 ### Step 7 — Write and offer edits
 
@@ -158,7 +158,7 @@ Write all files, then ask "Want to adjust anything?" ([genome-format-guide.md §
 ## Anti-patterns
 
 1. **Asking what the automation does.** Read it.
-2. **Transcribing instead of generalizing.** Queue name or path in the body instead of a Configuration Question with that value as default.
+2. **Transcribing an open value, or asking a fixed one.** Queue name or path in the body instead of a Configuration Question with that value as default; the mirror, a posted value, limit, wait or count the source fixes asked as a question only its default can answer ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)).
 3. **Code in the body:** activity names, node types, variable names, file names, selectors, expressions. Translate; provenance goes to the Source Map.
 4. **Integration Service as an application.** Resolve the connector to the vendor system.
 5. **Flattening a solution into one component genome**, losing handoffs between projects, or emitting one test project per business area ([genome-format-guide.md § Two Levels](genome-format-guide.md)).
@@ -168,7 +168,7 @@ Write all files, then ask "Want to adjust anything?" ([genome-format-guide.md §
 9. **Extracting the behaviour and losing the provenance** — Source Map without the export's location or without per-step source objects — or its mirror, copies of the export's catalogs beside the genome (Step 6b; [genome-format-guide.md § Source Map](genome-format-guide.md)).
 10. **Flattening a composite action to its data** — "Enter Voluntary into Primary Reason" for a type-ahead pick, "choose Terminate Employee" for a two-level menu path, "select row 2" for a row found by content ([genome-format-guide.md § Workflow](genome-format-guide.md)).
 11. **Transcribing blanket screen captures as steps or dropping them entirely.** They are the evidence policy (Step 3). A genome that mentions screenshots only in an unhandled-exception handler has dropped the suite's whole audit trail.
-12. **Transcribing framework plumbing as steps** — state transitions, retry counters, status updates, screenshots on exception — or dropping the framework's configuration workbook instead of turning its rows into Configuration Questions and Platform Dependencies ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 10).
+12. **Transcribing framework plumbing as steps** — state transitions, retry counters, status updates, screenshots on exception — or dropping the framework's configuration workbook instead of carrying each row as a Configuration Question, a fixed value where it acts, or a Platform Dependency ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 10).
 13. **Asserting a split, a store or a verdict in the Transactional Shape** — a `Recommendation` line, a role word in the Components Type cell, a Consumer row that names a mode, or a split option presented as the design — instead of the As-is, the options and the evidence ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rules 2, 3, 8).
 14. **Writing a value from its rendering** — a count read as "once" because the rendering showed nothing, a case-insensitive test written as case-sensitive, a status text paraphrased or retyped with different spacing, a parsing rule worded from the command's name instead of from its use (Step 3).
 15. **Making a scripting wrapper a library of verbs** — "Click by id", "Type by id" as public workflows — instead of the calling steps' UI actions on the elements its identities name (Step 3).

@@ -44,7 +44,7 @@
 
 ## Configuration Questions
 
-{Questions to answer before building. Extracted genomes carry the source value as the default.}
+{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default; every value the source fixes stays in the section where it acts (format guide § Configuration Questions).}
 
 1. {Question}? (default: {value})
 2. {Question}? (default: {value})

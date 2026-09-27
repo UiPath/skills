@@ -89,7 +89,7 @@ A project built on the Robotic Enterprise Framework template is recognised by it
 | Source | Feeds | How |
 |---|---|---|
 | `Data/Config.xlsx` Settings sheet: `OrchestratorQueueName`, `OrchestratorQueueFolder` | Transactional Shape As-is item store; Platform Dependencies (queue) | A queue name that the item-fetch workflow actually reads → `queue` mode, name kept as the source value. Blank, or the template's sample `ProcessABCQueue` beside a customised item fetch → `direct` mode, data source from that fetch |
-| Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Configuration Questions with the sheet value as default; the two counts in the outcomes table | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
+| Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Sorted per [genome-format-guide.md § Configuration Questions](genome-format-guide.md): an environment row (URL, path, mailbox, folder) is a Configuration Question with the sheet value as default; the two counts go in the outcomes table; every other row goes in the step or rule that uses it | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
 | Assets sheet rows | Platform Dependencies | One row per asset name; Credential when the description or the consuming activity says so, otherwise Text |
 | `Framework/InitAllApplications.xaml` (`GetAppCredentials.xaml` in older templates) | Once-per-run steps; credential assets | Open and sign-in per application |
 | `Framework/Process.xaml` (root `Process.xaml` in older templates) and every workflow it invokes | Per-item steps — the Workflow's numbered steps | The call graph starts here, not at `Main.xaml` |
@@ -174,7 +174,7 @@ Skip `bpmndi:` diagram elements.
 | `messages[role=system].content` | `agent.json` | Agent instructions — primary source of business rules; paraphrase, never quote verbatim |
 | `messages[role=user].content` with `{{input.x}}`, `@{tools.X}`, `@{contexts.X}`, `@{escalations.X}` | `agent.json` | Inputs used and resources referenced |
 | `inputSchema`, `outputSchema` (`$ref: job-attachment` = file) | `agent.json`, mirrored in `entry-points.json` | Interface |
-| `settings.{model, maxIterations, temperature}` | `agent.json` | Model and loop budget → Configuration Questions |
+| `settings.{model, maxIterations, temperature}` | `agent.json` | Model → Configuration Question, since the tenant decides which models are available; loop budget and temperature → Business Rules |
 | `resources/<Name>/resource.json` `$resourceType: "tool"`, `type`: `process`, `agent`, `api`, `processOrchestration`, `internal`; `location` (`solution` / `external`), `referenceKey`, `properties.{processName, folderPath}` | resources | Tools = handoff edges to other components; `external` = deployed dependency |
 | `$resourceType: "escalation"` with `channel.type: actionCenter`, `channel.properties.folderName` | resources | HITL escalation |
 | `$resourceType: "mcp"` (`availableTools`), `"context"` | resources | MCP servers and context-grounding indexes |

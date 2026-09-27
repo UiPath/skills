@@ -48,7 +48,7 @@ Each rule names its subject and the one guide that states it in full; the guide'
 2. **Read the source, do not ask about it.** Extraction reads every non-generated file and never asks what the automation does, only for resources beside it, which it reads and links: [extraction-guide.md](references/extraction-guide.md) Steps 1 and 3.
 3. **Infer complexity, never ask for it**, defaulting lower when ambiguous: [genome-format-guide.md § Complexity](references/genome-format-guide.md).
 4. **Replication-grade detail in behavioural wording**, with activity names, variable names, file paths and code syntax banned from the body: [genome-format-guide.md § Workflow](references/genome-format-guide.md) and § Provenance.
-5. **Generalize hardcoded values into Configuration Questions** with the source value as default: [genome-format-guide.md § Configuration Questions](references/genome-format-guide.md).
+5. **Configuration Questions carry the values left open**; a value an extracted source fixes is written where it acts, not asked: [genome-format-guide.md § Configuration Questions](references/genome-format-guide.md).
 6. **Every section present, always**, stub lines for sections that do not apply: [genome-format-guide.md § Stub Lines](references/genome-format-guide.md).
 7. **One skill per Build With row, from the mapping guide only**; operate-only skills belong under Platform Dependencies: [skill-mapping-guide.md](references/skill-mapping-guide.md).
 8. **Preamble and blueprint blockquote are mandatory**, and Build With (or Components) precedes Workflow (or Process Map) so an agent builds instead of executing the steps: [genome-format-guide.md § Two Levels](references/genome-format-guide.md) rule 5.
