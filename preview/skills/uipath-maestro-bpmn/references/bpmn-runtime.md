@@ -180,8 +180,12 @@ make from syntax alone. Exact signatures remain in the generated API.
   the entry point. Then generate the files from the built BPMN:
 
   ```sh
-  uip maestro bpmn update-metadata Demo/Demo.bpmn --output-dir Demo
+  uip maestro bpmn refresh <project-dir> --output json   # `Demo/` here; needs its project.uiproj
   ```
+
+  `Data.WrittenFiles` names the files that were stale. Do not use the deprecated
+  `update-metadata`: it does not materialize `Intsvc.*` connection bindings, so a
+  package it wrote passes `validate` and faults at run time.
 
   For `Demo.bpmn` with root start event `start`, the minimal derived values are:
 
@@ -201,9 +205,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   Inspect every generated metadata file against this contract. In particular,
   `entry-points.json.entryPoints` must be non-empty and reference the built BPMN
   plus its start id. If it is empty, do not hand-write the JSON: add/fix the
-  builder's `.metadata({ entryPointId: ... })`, rebuild, and rerun
-  `update-metadata`. A successful `update-metadata --dry-run` only proves agreement
-  with that command's output; it does not prove the entry point was discovered.
+  builder's `.metadata({ entryPointId: ... })`, rebuild, and rerun `refresh`.
 
 <!-- RULE:bpmn.layout.separate -->
 - Compile emits semantic XML. Run `uip maestro bpmn format` only when a canvas

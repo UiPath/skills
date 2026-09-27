@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "TRIGGER for authoring UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, semantic `.bpmn` output, boundary handlers and branching written by nesting, event sub-processes, Data Fabric (Data Service) record and file operations through `.dataService()`, and any registry-backed extension type through `.activity()` — including one the SDK ships no typed method for. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case."
+description: "TRIGGER for authoring, operating or diagnosing UiPath Maestro BPMN. Author `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and run the `uip maestro bpmn` check/compile/format/validate loop. Operate: refresh package metadata, pack, upload to Studio Web, publish, debug a real run, run a deployed process, inspect jobs and instances, pause/resume/cancel/retry/migrate. Diagnose a failed or stuck run: job status, incidents, runtime variables, the deployed BPMN asset, element executions, cursors, traces. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, semantic `.bpmn` output, boundary handlers and branching written by nesting, event sub-processes, Data Fabric (Data Service) record and file operations through `.dataService()`, and any registry-backed extension type through `.activity()` — including one the SDK ships no typed method for. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -69,6 +69,8 @@ spells the paths its rows are relative to.
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
+| Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
+| A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
 
 ## Minimal shape
 
@@ -143,6 +145,24 @@ uip maestro bpmn validate <Name>/<Name>.bpmn --output json
 
 `check` owns source and graph invariants. Product validation owns the compiled
 BPMN contract. Change the TypeScript source and rebuild; do not patch emitted XML.
+
+## Operating a process
+
+Refresh the package metadata, pack, upload to Studio Web (what "publish" means
+unless the user names Orchestrator), debug a real run, run a deployed process,
+inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
+`uip maestro bpmn refresh <project-path>` comes before every cloud action, and
+`bpmn debug` is a REAL run, not a validation step. Every mutation needs the
+user's decision for that action. Read
+**[`references/operate.md`](references/operate.md)**.
+
+## Diagnosing a failed run
+
+Triage in order — job status, incidents, runtime variables, the deployed BPMN
+asset, element executions and cursors, the generated package files, traces last
+— with the CLI's exact verbs, every `instance` read carrying `-f <FOLDER_KEY>`.
+Never mutate while diagnosing, and never guess a command shape: the reference
+lists them. Read **[`references/diagnose.md`](references/diagnose.md)**.
 
 ## Evidence boundary
 
