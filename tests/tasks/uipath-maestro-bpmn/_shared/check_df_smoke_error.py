@@ -24,7 +24,9 @@ Assertion map (Flow -> BPMN):
                                  `.query-entity-records` nodes             -> is_query_node() + mentions_entity()
   F check_smoke_error.py:37-39  `not error_creates` -> fail                -> `error_creates < 1` check
   F check_smoke_error.py:40-42  `len(good_queries) < 2` -> fail            -> `good_queries < 2` check
-  I                             locate/parse .bpmn                        -> parse_bpmn()
+  F check_smoke_error.py:21     `for path in glob("**/*.flow")`: the first  -> candidate_files(): every .bpmn under
+                                 file satisfying the shape passes, else fail    the sandbox, first satisfying file passes
+  I                             parse each .bpmn                          -> ET.parse()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
   T                             entity as the generic objectName, an exact -> mentions_entity()
                                  input value on any target, or an exact
@@ -50,6 +52,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -61,7 +64,6 @@ from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
     has_typed_uipath_extension,
-    parse_bpmn,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -119,33 +121,65 @@ def is_query_node(task: ET.Element, object_name: str, entity: str) -> bool:
     return bool(_LIST_OP_RE.match(operation)) or method == "GET"
 
 
-def main() -> None:
-    path, root = parse_bpmn()
+SKIP_PARTS = {"node_modules", ".npm-prefix", ".venv"}
 
+
+def candidate_files() -> list[Path]:
+    """Every .bpmn under the sandbox, as Flow's grader globbed every .flow.
+
+    The agent may split the error path into its own file beside the main
+    process (smoke run 36357685718 left DataFabricSmokeError.bpmn and
+    DataFabricSmokeError_error.bpmn in one project); Flow passes when ANY
+    file satisfies the shape, so the port does the same.
+    """
+    return sorted(
+        p for p in Path.cwd().rglob("*.bpmn") if not (SKIP_PARTS & set(p.parts))
+    )
+
+
+def shape_of(root: ET.Element) -> tuple[int, int]:
     error_creates = 0
     good_queries = 0
-
     for task in connector_nodes(root):
         object_name = context_value(task, "objectName")
         if is_create_node(task, object_name, CREATE_ENTITY) and mentions_entity(task, CREATE_ENTITY):
             error_creates += 1
         if is_query_node(task, object_name, QUERY_ENTITY) and mentions_entity(task, QUERY_ENTITY):
             good_queries += 1
+    return error_creates, good_queries
 
-    if error_creates < 1:
-        fail(f"no Create Entity Record node targeting {CREATE_ENTITY!r}")
-    print(f"OK: {error_creates} Create Entity Record node(s) on {CREATE_ENTITY}")
 
-    if good_queries < 2:
-        fail(
-            f"expected >=2 Query Entity Records node(s) on {QUERY_ENTITY!r}, "
-            f"found {good_queries}"
-        )
-    print(f"OK: {good_queries} Query Entity Records node(s) on {QUERY_ENTITY}")
+def main() -> None:
+    files = candidate_files()
+    if not files:
+        fail("no BPMN file found")
 
-    print(
-        f"OK: {path} -- create on {CREATE_ENTITY}, {good_queries} query on {QUERY_ENTITY}"
-    )
+    for path in files:
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError as exc:
+            print(f"FAIL: {path} is not well-formed XML: {exc}", file=sys.stderr)
+            continue
+        error_creates, good_queries = shape_of(root)
+        if error_creates < 1:
+            print(
+                f"FAIL: {path} -- no Create Entity Record node targeting {CREATE_ENTITY!r}",
+                file=sys.stderr,
+            )
+            continue
+        if good_queries < 2:
+            print(
+                f"FAIL: {path} -- expected >=2 Query Entity Records node(s) on "
+                f"{QUERY_ENTITY!r}, found {good_queries}",
+                file=sys.stderr,
+            )
+            continue
+        print(f"OK: {error_creates} Create Entity Record node(s) on {CREATE_ENTITY}")
+        print(f"OK: {good_queries} Query Entity Records node(s) on {QUERY_ENTITY}")
+        print(f"OK: {path} -- create on {CREATE_ENTITY}, {good_queries} query on {QUERY_ENTITY}")
+        return
+
+    fail("no .bpmn satisfies the error-path shape")
 
 
 if __name__ == "__main__":
