@@ -50,6 +50,44 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Keep connection and folder values symbolic in TypeScript and resolve them from
   `bindings.json`. Only a live run proves those environment bindings.
 
+<!-- RULE:bpmn.connector.folder-companion -->
+- A `folderKey` binding is the companion of a connection, not a resource of its
+  own: its `resourceKey` is the connection's key and only its `default` is the
+  folder key. That is how the platform resolves the connection, and `validate`
+  reports `MISSING_BINDING` for a folder binding keyed by the folder. Declare the
+  pair once — `.binding(c, { resource: 'Connection', propertyAttribute:
+  'ConnectionId', value })` and `.binding(f, { resource: 'Connection',
+  propertyAttribute: 'folderKey', value })` — and read both from the same node
+  (`connection: '=bindings.c'`, `folderKey: '=bindings.f'`); the compiler keys the
+  folder by that connection, and `check` warns `FOLDER_BINDING_KEYED_BY_FOLDER` /
+  `FOLDER_BINDING_UNPAIRED` when it cannot.
+
+<!-- RULE:bpmn.connector.data-service -->
+- Data Fabric (Data Service, connector `uipath-uipath-dataservice`) records and
+  file fields are `.dataService(id, { entity, connection, folder, op, … })`, one of
+  eight operations: `create`, `update`, `get`, `query`, `delete`, `downloadFile`,
+  `uploadFile`, `deleteFile`. It writes the `Intsvc.ActivityExecution` node the
+  way the platform's own tools do and needs no connector library or `prepare`
+  step. The response lands in `<id>_response` and the error payload in
+  `<id>_Error`, both declared for you — read the created record's id as
+  `=vars.<id>_response.Id`. Map results onto process outputs on the end event
+  (`payload: { type: 'BPMN.Variables', outputRows: [{ name, type, var, source:
+  '=vars.<id>_response' }] }`). Do not hand-fill
+  `.activity('Intsvc.ActivityExecution', …)` for these operations: the library
+  ships one Data Service operation, so `.connector()` cannot author the rest, and a
+  hand-filled node gets `objectName`, the parameter targets and the folder binding
+  wrong in ways `validate` does not report. `examples/ContractRegistry.bpmn.ts` is
+  the full lifecycle.
+
+<!-- RULE:bpmn.connector.parameter-rows -->
+- A connector's path and query parameters are one `uipath:input` row each, under
+  the library's own parameter name and tagged `target="path"` / `target="query"`;
+  the request body is the one json `target="body"` row. `.connector()` and
+  `.dataService()` write that. Through `.activity()`, an undeclared scalar input is
+  written as a `type="string"` attribute and a structured one as a json body, the
+  key as its target; when a row's target is not its name — a query parameter — spell
+  it out with `inputRows: [{ name, type, target, value }]` instead of `inputs`.
+
 ## Registry extension types
 
 <!-- RULE:bpmn.activity.escape-hatch -->
@@ -67,6 +105,15 @@ make from syntax alone. Exact signatures remain in the generated API.
 - `registry search` and `registry get` answer from a local cache that does not
   refresh itself. Run `uip maestro bpmn registry pull --force` first whenever a
   type may be newer than that cache, or a real type reads as missing.
+
+<!-- RULE:bpmn.activity.inline-spec -->
+- A type the registry does not describe at all (`registry get` answers "Extension
+  type not found") is still emittable: pass its emission spec inline,
+  `.activity(id, 'Type.Name', { spec, context, inputs })`, where `spec` is a
+  `RegistryTypeSpec` — the BPMN element and `uipath:*` tag, the context fields
+  with their types and defaults, the payload `inputPattern`, and the output row.
+  The spec is used as is, in place of the snapshot and the tenant. `decompile`
+  cannot recover it, so keep it in the source.
 
 <!-- RULE:bpmn.activity.offsnapshot-resolve -->
 - You do not have to transcribe the shape by hand: a type outside the SDK's
