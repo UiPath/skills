@@ -109,8 +109,12 @@ def one_variable(
     name: str,
     kind: str,
     element_id: str,
+    or_element_id: str | None = None,
 ) -> ET.Element:
-    # elementId is the scope: the owning element's id, never absent (#3211).
+    # elementId is the scope: the owning element's id, never absent (#3211). A public
+    # input or output has two legitimate owners: the canvas and the converter scope it
+    # to the start / end event, the builder SDK to the process it belongs to. Both
+    # validate and both resolve, so a caller names the alternative.
     # `name` is matched against the id OR the display name. The wire has both: `id` is
     # what expressions read (`vars.<id>`), `name` is what the designer shows. The v1
     # skill writes them identically; the builder SDK defaults `name` to the id but lets
@@ -123,9 +127,10 @@ def one_variable(
             for variable in variables
             if local_name(variable) == kind
             and name in (variable.attrib.get("id"), variable.attrib.get("name"))
-            and variable.attrib.get("elementId") == element_id
+            and variable.attrib.get("elementId") in {element_id, or_element_id}
         ],
-        f"{kind} variable named {name!r} (by id or name) scoped to {element_id!r}",
+        f"{kind} variable named {name!r} (by id or name) scoped to {element_id!r}"
+        + (f" or {or_element_id!r}" if or_element_id else ""),
     )
 
 
@@ -396,13 +401,13 @@ def main() -> None:
         fail("all root variables must have unique non-empty ids")
 
     public_amount = one_variable(
-        variables, name="amount", kind="input", element_id=start_id
+        variables, name="amount", kind="input", element_id=start_id, or_element_id=process_id
     )
     public_days = one_variable(
-        variables, name="daysOverdue", kind="input", element_id=start_id
+        variables, name="daysOverdue", kind="input", element_id=start_id, or_element_id=process_id
     )
     public_risk = one_variable(
-        variables, name="riskScore", kind="output", element_id=end_id
+        variables, name="riskScore", kind="output", element_id=end_id, or_element_id=process_id
     )
     # The script's result reaches a variable through the task's `=result.response`
     # output row — that row IS the contract (ScriptActivities.DoInvokeScriptTaskAsync
