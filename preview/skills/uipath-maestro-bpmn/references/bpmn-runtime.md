@@ -150,7 +150,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   untouched elements and drops original layout.
 
 <!-- RULE:bpmn.brownfield.nested-style -->
-- `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs only where the lifted source builds the very same graph, and prints why each region it left flat stayed flat.
+- `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are renamed to `Flow_<source>_<target>` and counted in the output — a flow id carries no meaning at run time, and `bpmn format` lays the diagram out again — so `--keep-flow-ids` is only for an edit that must keep every edge id, and it lifts far less.
   A flow id that is not `Flow_<source>_<target>` keeps its region flat; the graph, its ids and `merge` are unaffected either way, so the choice is about the source you read and edit, not the artifact.
 
 <!-- RULE:bpmn.brownfield.format -->

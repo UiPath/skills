@@ -26,7 +26,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 4. Seed the source by decompiling the stub `bpmn init` wrote —
    `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
    hand-writing the skeleton.
-   `--style nested` lifts an existing process's boundary events, gateways and event sub-processes into the nesting constructs wherever the graph is provably the same, and leaves the rest flat with a printed reason; without it the whole process is written flat. It carries the process id and the `entryPointId` UUID the
+   `--style nested` lifts an existing process's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in order (`flowMode('sequence')`), and leaves whatever it cannot prove flat with a printed reason; the compiled graph is verified identical before it is written. It renames the flow ids the constructs now imply (an import's `edge_…` becomes `Flow_<source>_<target>`) and says how many; pass `--keep-flow-ids` when an edit must keep every edge id byte for byte, at the cost of lifting far less. Without `--style nested` the whole process is written flat. It carries the process id and the `entryPointId` UUID the
    product assigned, which a hand-written chain cannot invent. An existing project needs
    no `init`: seed from the `.bpmn` already there. For shape, copy the closest staged
    `examples/*.bpmn.ts`.
@@ -92,7 +92,7 @@ The explicit form — `.sequenceFlow('start', 'record')` after the elements, in 
 
 Where a relationship can be written by nesting, write it that way instead of by id.
 Each form lowers to the same elements and flows the explicit methods produce, and the explicit `.sequenceFlow()` still works anywhere, mixed freely.
-`examples/InvoiceEscalation.bpmn.ts` is a full process written this way, with no `.sequenceFlow()` at all; `examples/InvoiceApproval.bpmn.ts` is the same kind of process as a decompiled import, written flat, which is what a brownfield edit starts from — `bpmn decompile --style nested` lifts as much of such a file into this form as its flow ids allow.
+`examples/InvoiceEscalation.bpmn.ts` is a full process written this way, with no `.sequenceFlow()` at all; `examples/InvoiceApproval.bpmn.ts` is a real 71-element import lifted into this form by `bpmn decompile --style nested` — sixteen decisions as `.choose()`, five error handlers in their activities' bodies, and the seven `.sequenceFlow()` calls that remain are the merges and fan-outs no construct owns.
 
 ```ts
 export default bpmn('approval')
