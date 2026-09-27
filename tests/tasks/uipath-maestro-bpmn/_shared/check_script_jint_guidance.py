@@ -111,15 +111,21 @@ def one_variable(
     element_id: str,
 ) -> ET.Element:
     # elementId is the scope: the owning element's id, never absent (#3211).
+    # `name` is matched against the id OR the display name. The wire has both: `id` is
+    # what expressions read (`vars.<id>`), `name` is what the designer shows. The v1
+    # skill writes them identically; the builder SDK defaults `name` to the id but lets
+    # an author give a display name (`.input('amount', …, { name: 'Amount' })`), and a
+    # grader keyed on `name` alone failed a correct process on capitalisation
+    # (skill-bpmn-script-jint-guidance, run 2026-09-25).
     return exactly_one(
         [
             variable
             for variable in variables
             if local_name(variable) == kind
-            and variable.attrib.get("name") == name
+            and name in (variable.attrib.get("id"), variable.attrib.get("name"))
             and variable.attrib.get("elementId") == element_id
         ],
-        f"{kind} variable named {name!r} scoped to {element_id!r}",
+        f"{kind} variable named {name!r} (by id or name) scoped to {element_id!r}",
     )
 
 

@@ -257,6 +257,83 @@ ORDER_BY_RE = re.compile(
 )
 
 
+GENERATED_PACKAGE_FILES = (
+    "bindings_v2.json",
+    "entry-points.json",
+    "operate.json",
+    "package-descriptor.json",
+)
+
+
+def require_no_hand_authored_package_files() -> None:
+    """Draft boundary: package metadata is CLI-owned, so it is either absent or CLI-shaped.
+
+    The rule used to be "none of these files may exist", which described only the v1
+    workflow (raw XML, one file). The builder-SDK skill scaffolds every project with
+    `uip maestro bpmn init`, which writes all four — and those files ARE the CLI-owned
+    boundary the task is about, so their presence is compliance, not a leak
+    (skill-bpmn-event-trigger-start and skill-bpmn-integration-service-boundary both
+    failed on exactly this, run 2026-09-25). What the boundary forbids is an agent
+    INVENTING that metadata by hand, or baking a tenant binding into a draft. So each
+    present file must carry the shape `init` / `update-metadata` write — the same
+    shape `assert_generated_project_scaffold` asserts — and bindings must stay
+    unresolved.
+    """
+    import json
+
+    hand_authored: list[str] = []
+    bound: list[str] = []
+    content_path = re.compile(r"^/content/[^#]+\.bpmn#\S+$")
+    guid = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+
+    for name in GENERATED_PACKAGE_FILES:
+        for path in sorted(glob.glob(f"**/{name}", recursive=True)):
+            if "node_modules" in Path(path).parts:
+                continue
+            try:
+                data = json.loads(Path(path).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                hand_authored.append(path)
+                continue
+            if not isinstance(data, dict):
+                hand_authored.append(path)
+                continue
+            if name == "package-descriptor.json":
+                # `init`/`update-metadata` write a `files` name->path map; a top-level
+                # `content` array is the hand-written synthetic shape.
+                if not isinstance(data.get("files"), dict):
+                    hand_authored.append(path)
+            elif name == "operate.json":
+                if not content_path.match(str(data.get("main") or "")) or data.get("contentType") != "ProcessOrchestration":
+                    hand_authored.append(path)
+            elif name == "entry-points.json":
+                points = data.get("entryPoints")
+                if not isinstance(points, list) or not all(
+                    isinstance(ep, dict) and content_path.match(str(ep.get("filePath") or "")) for ep in points
+                ):
+                    hand_authored.append(path)
+            elif name == "bindings_v2.json":
+                resources = data.get("resources")
+                if data.get("version") is None or not isinstance(resources, list):
+                    hand_authored.append(path)
+                    continue
+                # A draft has no tenant: a resolved connection id here is the leak the
+                # boundary exists to catch, whichever arm wrote it.
+                for resource in resources:
+                    if not isinstance(resource, dict):
+                        continue
+                    for value in (resource.get("value"), resource.get("connectionId"), resource.get("defaultValue")):
+                        if isinstance(value, str) and guid.match(value):
+                            bound.append(f"{path}: {value}")
+    if hand_authored:
+        fail(
+            "draft must not hand-author generated package files (leave them to "
+            f"`uip maestro bpmn init` / `update-metadata`): {hand_authored}"
+        )
+    if bound:
+        fail(f"draft bindings must stay unresolved — connection ids found: {bound}")
+
+
 def order_by(text: str) -> tuple[str, str]:
     """``(field, direction)`` from the first ORDER BY clause in ``text``.
 
