@@ -66,7 +66,7 @@ Read every relevant file. No sampling, no "the helpers are similar".
 
 ### Step 4b — Verify every suspected source defect
 
-A finding that the source misbehaves is a **suspected defect** until this step settles it. Examples: a flag set but never tested, an exit that cannot fire, a result checked but never captured, a retry an exception bypasses, a notice prepared but never sent, a branch whose test contradicts its own comment, one copy of a template doing what its sibling does not. The inventory output is a rendering the pack's script produced, and extraction has read it, not the source. So the finding may belong to the source, or to the rendering. Settle each one before anything is written about it, in two passes.
+A finding that the source misbehaves is a **suspected defect** until this step settles it. Examples: a flag set but never tested, an exit that cannot fire, a result checked but never captured, a retry an exception bypasses, a notice prepared but never sent, a branch whose test contradicts its own comment, one copy of a template doing what its sibling does not. The inventory output is a rendering the pack's script produced, and extraction has read it, not the source. So the finding may belong to the source, or to the rendering. Settle each one in two passes before it is written as a defect.
 
 1. **The rendering, in full.** Re-read every object the finding rests on in the uncompressed rendering, never a compact or folded one. That includes:
    - the call's argument and result bindings, in both directions;
@@ -88,7 +88,7 @@ Classify each finding by what the two passes show, and write it accordingly:
 | **Source rule** | rendering and source agree, and the source's comment or design shows the behaviour is intended | the rule, unmarked | nothing |
 | **Unresolved** | the structure is certain, but the behaviour turns on a setting or platform or package semantics that neither the export nor the pack documents | both readings stated, the one the rebuild follows marked `*[Inferred]*` | report the undocumented semantics for the pack |
 
-Each finding gets its own Source Map row, with the object ids, the line numbers and the classification. Each component also gets one Verification row saying that both passes were made and whether the rendering matched the source. A finding nobody verified is not written as a defect. When time does not allow both passes, it is written as the behaviour the rendering shows, flagged `*[Inferred]*`, with its Source Map row saying which pass is missing.
+Each finding gets its own Source Map row, with the object ids, the line numbers and the classification. Each component also gets one Verification row saying that both passes were made and whether the rendering matched the source. A finding nobody verified is not written as a defect. When time does not allow both passes, or a verdict does not come back, it is written as the behaviour the rendering shows, flagged `*[Inferred]*`, with its Source Map row saying which pass is missing.
 
 **With subagents.** Where the host offers subagents, the two passes run in them, in parallel, and extraction keeps only their verdicts: the direct reads and the traced bindings are most of this step's reading, and a verdict is a few lines. One subagent takes the findings of one object, or of the objects one finding spans, so it reads each source guide section once. Its brief names the findings (the behaviour suspected, with object ids and lines), the export path, `<PACK_DIR>` and its reads: this step whole; the source guide's command block with the paragraphs after it, its value syntax, and the signal rows of the commands the findings involve. The subagent writes nothing and returns, per finding, a verdict, never a retelling:
 
@@ -99,7 +99,9 @@ Each finding gets its own Source Map row, with the object ids, the line numbers 
 5. Where the intent is stated: a comment or log text at the defect, or a sibling copy that does it, with its line; otherwise "the step's purpose only". [genome-format-guide.md § Source Defects](genome-format-guide.md) decides from it which behaviour the rebuild follows.
 6. For an unresolved finding, both readings and the setting or semantics they turn on.
 
-A further suspicion the subagent meets comes back unverified, with its line, as a new finding. A fact returned without its line is unverified. When a verdict contradicts what extraction read in the rendering, extraction re-reads the cited line with the direct read before writing. Without subagents, extraction runs both passes itself.
+A further suspicion the subagent meets comes back unverified, with its line, as a new finding. A fact returned without its line is unverified, and a verdict that arrives cut off is asked for again, never completed from the part received. When a verdict contradicts what extraction read in the rendering, extraction re-reads the cited line with the direct read before writing. Without subagents, extraction runs both passes itself.
+
+**Writing while the verdicts are out.** Where the subagents run in the background, extraction does not wait for them. It goes on with the remaining steps and writes the files, each finding's step stating the behaviour the rendering shows, with no marker, no intent and no defect-index row. As each verdict arrives, extraction edits it in where the table above says: the step (the marker, the behaviour rewritten from the source, or both readings), the finding's Source Map row, and, for a defect, the process genome's index row; then the component's Verification row. Once the last verdict is in, the Source Map check runs again, and only then are edits offered.
 
 ### Step 5 — Infer complexity (component)
 
@@ -151,7 +153,7 @@ Before writing Configuration Questions, sort every literal and configuration key
 
 ### Step 7 — Write and offer edits
 
-Write all files, then ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Common follow-ups:
+Write all files, then, once every verdict on a suspected source defect is edited in, ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Common follow-ups:
 
 | Request | Update |
 |---|---|
