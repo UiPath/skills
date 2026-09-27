@@ -90,6 +90,17 @@ Classify each finding by what the two passes show, and write it accordingly:
 
 Each finding gets its own Source Map row, with the object ids, the line numbers and the classification. Each component also gets one Verification row saying that both passes were made and whether the rendering matched the source. A finding nobody verified is not written as a defect. When time does not allow both passes, it is written as the behaviour the rendering shows, flagged `*[Inferred]*`, with its Source Map row saying which pass is missing.
 
+**With subagents.** Where the host offers subagents, the two passes run in them, in parallel, and extraction keeps only their verdicts: the direct reads and the traced bindings are most of this step's reading, and a verdict is a few lines. One subagent takes the findings of one object, or of the objects one finding spans, so it reads each source guide section once. Its brief names the findings (the behaviour suspected, with object ids and lines), the export path, `<PACK_DIR>` and its reads: this step whole; the source guide's command block with the paragraphs after it, its value syntax, and the signal rows of the commands the findings involve. The subagent writes nothing and returns, per finding, a verdict, never a retelling:
+
+1. The class, from the table above.
+2. The behaviour as fact, each fact with its object id, line, and the source key and value it rests on.
+3. Whether the rendering matched the source; when not, the object and the field, for the pack report.
+4. The consequence through the bindings, each hop with its object id and line.
+5. Where the intent is stated: a comment or log text at the defect, or a sibling copy that does it, with its line; otherwise "the step's purpose only". [genome-format-guide.md § Source Defects](genome-format-guide.md) decides from it which behaviour the rebuild follows.
+6. For an unresolved finding, both readings and the setting or semantics they turn on.
+
+A further suspicion the subagent meets comes back unverified, with its line, as a new finding. A fact returned without its line is unverified. When a verdict contradicts what extraction read in the rendering, extraction re-reads the cited line with the direct read before writing. Without subagents, extraction runs both passes itself.
+
 ### Step 5 — Infer complexity (component)
 
 | Signal | Simple | Medium | Complex |

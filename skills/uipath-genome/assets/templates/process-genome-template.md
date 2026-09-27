@@ -111,6 +111,12 @@ flowchart LR
 
 - {Failure}: {recovery}
 
+*Extracted genome with source defects only — otherwise delete this block:*
+
+| Defect | Component step | Rebuild follows |
+|---|---|---|
+| {the defect in a few words} | {component #} Step {N} | {evident intent / source behaviour} |
+
 ## Transactional Shape
 
 {Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at execution. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. When a flow has no RPA consumer, one sentence naming what takes its items replaces its Consumed by row. Component genomes carry their own role per flow.}
