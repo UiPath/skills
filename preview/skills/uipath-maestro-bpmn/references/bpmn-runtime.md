@@ -3,6 +3,26 @@
 This reference contains only choices that types and static validation cannot
 make from syntax alone. Exact signatures remain in the generated API.
 
+## Variables and the process contract
+
+<!-- RULE:bpmn.variables.public-scope -->
+- Declare a process's public contract with `.input()` and `.output()`, not `.var()`:
+  the compiler scopes a top-level input to the manual start event and a top-level
+  output to the end event whose mapping writes it (`elementId`), which is where the
+  canvas declares them and where a grader of the process contract reads them. A
+  `.var()` is internal, process-level state. Name an `elementId` only to scope a
+  variable to a specific element yourself.
+
+<!-- RULE:bpmn.variables.read-inputs-directly -->
+- A script or expression reads a public input as `vars.<id>` directly; the runtime
+  seeds every declaration by id. The start-event mapping that bridges each input into
+  an internal variable is the canvas's spelling, not a requirement.
+
+<!-- RULE:bpmn.variables.input-name -->
+- Input values are matched to declarations by display `name` when a run starts, so an
+  input given a `name` (`.input('amount', 'number', { name: 'Amount' })`) is supplied
+  under `Amount`. Leave `name` off unless the caller's key is meant to differ from the id.
+
 ## Events and timers
 
 <!-- RULE:bpmn.event.payload-live -->
