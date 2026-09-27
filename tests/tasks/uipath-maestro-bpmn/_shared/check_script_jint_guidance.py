@@ -245,17 +245,22 @@ def strip_js_comments(script: str) -> str:
 def main() -> None:
     path, root = parse_bpmn("RiskScoreScriptBpmn")
     bpmn_path = Path(path)
-    project_path = bpmn_path.parent / "project.uiproj"
-    if not project_path.is_file():
-        fail(f"missing project descriptor beside BPMN: {project_path}")
-    try:
-        project = json.loads(project_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        fail(f"project.uiproj is not valid JSON: {exc}")
-    if project.get("Name") != "RiskScoreScriptBpmn":
-        fail("project.uiproj Name must be RiskScoreScriptBpmn")
-    if project.get("ProjectType") != "ProcessOrchestration":
-        fail("project.uiproj ProjectType must be ProcessOrchestration")
+    # The project descriptor `bpmn init` writes beside the artifact. A harness that
+    # builds the `.bpmn` on the grader's side (the SDK repo's ladder compiles the
+    # agent's `.bpmn.ts` into the workspace root) has no project to grade and sets
+    # BPMN_GRADER_SKIP_PROJECT=1; both arms of this suite scaffold one.
+    if os.environ.get("BPMN_GRADER_SKIP_PROJECT") != "1":
+        project_path = bpmn_path.parent / "project.uiproj"
+        if not project_path.is_file():
+            fail(f"missing project descriptor beside BPMN: {project_path}")
+        try:
+            project = json.loads(project_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"project.uiproj is not valid JSON: {exc}")
+        if project.get("Name") != "RiskScoreScriptBpmn":
+            fail("project.uiproj Name must be RiskScoreScriptBpmn")
+        if project.get("ProjectType") != "ProcessOrchestration":
+            fail("project.uiproj ProjectType must be ProcessOrchestration")
 
     process = root.find("bpmn:process", NS)
     if process is None:
@@ -347,20 +352,24 @@ def main() -> None:
     if (end_incoming_ids != [end_flow_id]) or end_outgoing_ids:
         fail("EndEvent incoming/outgoing references do not match its sequence flow")
 
-    entry_point = exactly_one(
-        start.findall(
-            "bpmn:extensionElements/uipath:entryPointId",
-            NS,
-        ),
-        "manual-start entryPointId",
-    )
-    entry_point_id = entry_point.attrib.get("value", "").strip()
-    try:
-        UUID(entry_point_id)
-    except (ValueError, AttributeError):
-        fail("manual start entryPointId must be a valid UUID")
-    if entry_point_id == "00000000-0000-4000-8000-000000000001":
-        fail("manual start entryPointId copied the documentation example")
+    # The entryPointId is what `bpmn init` assigns and `decompile` carries into the
+    # source; like the project descriptor above, it is a product of the scaffold
+    # workflow, so the same harness flag skips it.
+    if os.environ.get("BPMN_GRADER_SKIP_PROJECT") != "1":
+        entry_point = exactly_one(
+            start.findall(
+                "bpmn:extensionElements/uipath:entryPointId",
+                NS,
+            ),
+            "manual-start entryPointId",
+        )
+        entry_point_id = entry_point.attrib.get("value", "").strip()
+        try:
+            UUID(entry_point_id)
+        except (ValueError, AttributeError):
+            fail("manual start entryPointId must be a valid UUID")
+        if entry_point_id == "00000000-0000-4000-8000-000000000001":
+            fail("manual start entryPointId copied the documentation example")
 
     if attr(task, "scriptFormat") != "JavaScript":
         fail('script task must set scriptFormat="JavaScript"')
