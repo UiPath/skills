@@ -36,6 +36,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 8. **No meta-commentary.** Do not write sentences about the document's own editorial behaviour or reconcile differences between files in prose; if two files disagree, fix one.
 9. **No UIA CLI syntax outside the offline guide.** `uip rpa uia` subcommands, their flags and artifact filenames are co-versioned with `UiPath.UIAutomation.Activities` and drift. Name the capability (driver default, attribute listing, selector evaluator, snapshot reload, the OR CLI's listing / replace / create commands, element-interaction probes) and route syntax to the package guide `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` § Documentation. The vocabulary is defined once in selector-translation-guide rule 15. Generic `uip rpa` commands (`validate`, `activities get-default-xaml`, …) are stable and allowed. `offline-definition-workarounds-guide.md` is the labelled temporary exception.
 10. **Conflicts resolve toward the most recently verified statement** (a live driver pass beats a first-pass inference beats a vendor document), and the resolution is recorded in the PR.
+11. **Name the subject, not the step.** Refer to another part of a procedure by what it is — "once every verdict on a suspected source defect is edited in", not "once every Step 4b verdict is edited in" — so the reader need not look the step up. Keep a step number only in a pointer the reader follows to that section.
 
 ## Where to put new content
 
