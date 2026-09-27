@@ -70,6 +70,8 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule element the escalation fires under. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
 
+**In the planner's SDD, a stage notification names its recipient only in prose.** The stage SLA table carries titles (`At-Risk Escalation Display Name` / `Breach Escalation Display Name`), and the `### SLA Response Map` row gives the response, with Target left blank for `notify-only`. Every At-Risk row and every `notify-only` Breached row needs an escalation ([impl-json.md § The clock is not the response](impl-json.md#the-clock-is-not-the-response)). The template has the stage's Design Rationale name the recipient, and that row's Rationale cell can repeat it (e.g. "bumped up to the Category Management group so it does not stall"). Read both before writing `recipients[]`.
+
 ## Identity Resolution
 
 When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the escalation rule. Resolved UUIDs land in `recipients-resolved.json`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — the design lane records email / group name as a string in sdd.md.
