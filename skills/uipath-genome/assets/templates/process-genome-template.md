@@ -73,10 +73,10 @@ flowchart LR
     C1["[1] {Component}"]
     C2["[2] {Component}"]
   end
-  C2 -->|"depends on / invokes"| C1
+  C2 --> C1
   C1 -.->|"{data passed}"| C2
   RES["{shared platform resource}"]
-  C1 & C2 --> RES
+  C1 & C2 --- RES
 ```
 
 *When the customer needs a formal model, add a BPMN 2.0 sidecar `{process-slug}-process.bpmn` authored from this Process Map with `uipath-maestro-bpmn`, and link it here.*

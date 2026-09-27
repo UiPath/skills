@@ -101,11 +101,9 @@ flowchart LR
   A -.->|proposal, confidence| O
   Q[AP_InvoiceIntake queue]
   B[AP_Invoices bucket]
-  AC[Action Center app]
-  R --> Q
-  Q --> O
-  O & R & A --> B
-  O --> AC
+  R -.->|queue item| Q
+  Q -.-> O
+  O & R & A --- B
 ```
 
 ## Handoffs
