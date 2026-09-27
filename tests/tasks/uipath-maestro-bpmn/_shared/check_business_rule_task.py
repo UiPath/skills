@@ -25,7 +25,7 @@ from _shared.bpmn_assertions import (  # noqa: E402
 PROJECT = Path("BusinessRuleDecision/BusinessRuleDecision")
 BPMN_NAME = "BusinessRuleDecision.bpmn"
 RULE_KEY = "loan-eligibility-rule"
-# Context field -> (propertyAttribute, expected default); None leaves the default ungraded.
+# Context field -> (propertyAttribute, expected default); None requires a default of any value.
 RULE_CONTEXT_BINDINGS = {
     "entityKey": ("Key", RULE_KEY),
     "name": ("name", "LoanEligibility"),
@@ -52,6 +52,8 @@ def assert_rule_bindings(root, task) -> None:
             fail(f"binding for {field} must be resource=BusinessRule propertyAttribute={attr}")
         if binding.attrib.get("resourceKey") != RULE_KEY:
             fail(f"binding for {field} must carry resourceKey={RULE_KEY!r}, got {binding.attrib.get('resourceKey')!r}")
+        if "default" not in binding.attrib:
+            fail(f"binding for {field} must declare a default")
         if default is not None and binding.attrib.get("default") != default:
             fail(f"binding for {field} must default to {default!r}, got {binding.attrib.get('default')!r}")
 

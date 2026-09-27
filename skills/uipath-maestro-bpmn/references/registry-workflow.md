@@ -305,8 +305,11 @@ discovery or the user.
   `registry search` / discovered `Processes` / `Queues`; never guess a GUID.
   A business rule binds `entityKey`, `name`, and `folderPath` to `BusinessRule`
   (`Key`, `name`, `folderPath`) — never a `process` `releaseKey`, even when
-  `registry get` returns one. Its unbound `_label` context holds the rule's
-  display name.
+  `registry get` returns one. Its key is the rule's catalog entity key, never a
+  `Key` from `Processes` or a release key; if the user has not given it, ask.
+  A rule defined only in this solution uses its name as the key. The
+  `folderPath` binding always carries a `default`, `""` when the rule lives in
+  the running job's folder. Its unbound `_label` context holds the rule's name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
