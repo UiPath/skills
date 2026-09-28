@@ -12,9 +12,14 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+reference:
+  directory: ../_shared
 
 initial_prompt: |
   Create a blank IXP project named "test project".
@@ -26,13 +31,22 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # calls.log records `$*`, so the quoted name arrives unquoted. Only
-  # `--skip-taxonomy` (a no-op without a folder) and `--output <fmt>` may follow
-  # the name — any other token is a folder argument, which is not a blank project.
-  - type: file_matches_regex
-    description: "Agent created an empty project via `projects create \"test project\"` with no folder"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^uip\s+ixp\s+projects\s+create\s+["']?test project["']?(?:\s+(?:--skip-taxonomy|--output\s+\S+))*[ \t]*$
-    weight: 3.0
+  # argv is recorded as a list, so this also proves "test project" was passed
+  # as ONE argument — not a project "test" in a folder "project".
+  - type: cli_called
+    description: "Agent created the project with `projects create \"test project\"`"
+    verb: "ixp projects create"
+    tool: "uip"
+    positional: ["test project"]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `positional` above is a prefix match, so it also accepts a folder after the
+  # name. `--skip-taxonomy` is allowed: without a folder it has no effect.
+  - type: run_command
+    description: "No `projects create` call passed a folder — an empty project, not an upload"
+    command: "python3 $REFERENCE_DIR/check_create_no_folder.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
     pass_threshold: 1.0
