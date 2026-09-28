@@ -5,7 +5,7 @@ Evaluators, eval sets, data points and simulations are project assets managed by
 them. Use this when the request asks for evaluation assets, or for a flow to be
 evaluated.
 
-Every command takes `--path <project-dir>` — the directory holding
+Every `eval` command takes `--path <project-dir>` — the directory holding
 `project.uiproj`.
 
 **Local `add` / `list` / `remove` edit project files and need no login.**
@@ -68,12 +68,17 @@ Use the generated evaluator id or filename when explicitly passing
 `--evaluators`; a display name alone is not a stable reference. Omitting the
 flag on `eval set add` links all evaluators that currently exist.
 
-A data point's input keys must match the flow's declared inputs — `.input({ … })`
-in the source, or:
+A data point's input keys must match the flow's declared inputs. Declare them
+with `.input({ … })` in the source and compile before `eval add`: it reads them
+from the compiled `.flow`, so an input missing there fails with `Input "<name>"
+is not declared as an input variable in the flow`. Do not add inputs with
+`uip maestro flow variable add` — the next `compile -o` rewrites the `.flow`
+from the source, so the CLI edit either disappears or collides with the compiled
+input (`Variable '<name>' already exists`). To confirm what the compiled flow
+declares, pass the `.flow` file itself; `variable` takes no `--path`:
 
 ```bash
-uip maestro flow variable list --path ./MySolution/MyFlow --output json
-uip maestro flow variable add  --path ./MySolution/MyFlow --output json
+uip maestro flow variable list ./MySolution/MyFlow/MyFlow.flow --output json
 ```
 
 Build expected outputs from real records rather than invented ones, for the same
@@ -87,12 +92,14 @@ step id from the source, or the tool name for an inline agent's tool. A
 simulation is scoped to one **data point inside one set**, not to the project,
 so all three commands require `--set` and `--data-point`. `add` also requires
 `--strategy`: `Static` returns `--mock-value` verbatim, `Llm` generates a
-response from `--simulation-instructions`.
+response from `--simulation-instructions`. And it requires `--component-type`
+naming what the component is — `connector`, `agent`, `subflow` — unless
+`--parent <agent-id>` adds a child tool simulation, which defaults it to `Node`.
 
 ```bash
 uip maestro flow eval simulation add <component-id> \
   --set "Smoke Tests" --data-point <id> \
-  --strategy Static --mock-value '{"ok":true}' \
+  --strategy Static --component-type connector --mock-value '{"ok":true}' \
   --path ./MySolution/MyFlow --output json
 
 uip maestro flow eval simulation list \
