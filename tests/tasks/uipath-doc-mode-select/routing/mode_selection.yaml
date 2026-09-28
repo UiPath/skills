@@ -1,17 +1,41 @@
 task_id: skill-doc-mode-select-mode-selection
 description: >
-  Mode-selection accuracy across the whole decision surface: 27 rows, three per
-  mode across all eight, plus three whose ground truth is NONE because the work
-  is deterministic and belongs outside the taxonomy.
+  Mode-selection accuracy, run-to-run stability and paraphrase invariance.
+  54 rows: 27 workloads, each written twice in different words, six rows per
+  mode across all eight plus six whose ground truth is NONE because the work is
+  deterministic and leaves the taxonomy.
 
-  Rows are deliberately drawn from workloads the case library does NOT use. An
-  earlier version paraphrased each case's own Problem description, which meant
-  it largely measured whether an agent could match text it had just read —
-  rows shared 65-97% of their content words with their case and peaked at 0.47
-  Jaccard. These rows peak at 0.16 against any case in the library. Eighteen
-  come from separate engagements; nine are constructed in unrelated domains
-  where no distinct engagement was available. The `provenance` field records
-  which is which.
+  Three properties this set is built to protect, in the order they were added:
+
+  1. Held out. Rows are drawn from workloads the case library does not use —
+     18 from separate engagements, 9 constructed in unrelated domains. Peak
+     lexical overlap with any case is 0.16, down from 0.47 when rows were
+     written from the cases' own Problem descriptions. At that level the suite
+     largely measured whether an agent could match text it had just read.
+
+  2. Stated as a business would state it. An earlier revision spelled out the
+     decisive signal inside the prompt — "each ticket stands on its own, we are
+     not calling anything out to another system" is BT's routing conclusion,
+     not something a user says about their tickets. Those are rewritten to
+     carry only business facts, so the mapping from workload to mode is the
+     thing under test. Requirements a business really would state ("every line
+     has to point back at a source") are kept; conclusions are not.
+
+  3. Consistency, not just accuracy. Each workload appears under two phrasings
+     (variant a and b, sharing a `pair` key). Run with repeats and a row's
+     replicates also expose run-to-run stability. Accuracy alone cannot tell a
+     genuinely uncertain row from a stable-but-wrong one, and cannot see a
+     routing signal that works under one framing and fails under another.
+
+  Run it, then read it with the analyzer:
+
+      coder-eval run ... --repeats 5
+      python3 analyze_consistency.py <RUN_DIR>
+
+  which reports accuracy by mode, rows whose replicates disagreed, and pairs
+  that flipped when reworded — calling out the flips where one phrasing was
+  correct and the other was not, since those point at phrasing-dependent
+  routing copy rather than a missing signal.
 
   A row failing here means the routing signal in SKILL.md's Fast Routing table
   did not generalise past the wording of the case it was written from. Fix the
@@ -19,11 +43,11 @@ description: >
 
   Three things to know before reading a red result:
 
-  - AH is the weakest ground truth in the set and always will be. Its decisive
-    signal is a capability need verified to exist only in the advanced harness,
-    which is a design conclusion rather than something a business states about
-    its own workload. The AH rows carry the long-running, multi-stage,
-    precedence-and-resumability signals the library's AH cases use; treat a
+  - AH is the weakest ground truth in the set and structurally always will be.
+    Its decisive signal is a capability need verified to exist only in the
+    advanced harness, which is a design conclusion rather than something a
+    business states about its own workload. The AH rows carry the long-running,
+    precedence and resumability signals the library's AH cases use; treat a
     near miss onto EX or SU as weaker evidence than a miss elsewhere.
   - CS rows are expected to underperform. There is no published Classify &
     Split node configuration in Flow (references/classify-split-guide.md says
@@ -79,7 +103,7 @@ success_criteria:
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
-    suite_thresholds: {mean: 0.70}
+    suite_thresholds: {mean: 0.65}
 
 run_limits:
   max_turns: 6
