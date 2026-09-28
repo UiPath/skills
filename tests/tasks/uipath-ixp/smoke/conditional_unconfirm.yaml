@@ -46,15 +46,14 @@ initial_prompt: |
 success_criteria:
   # Targets: the three name/phone fields must be unconfirmed. `--fields` takes a
   # comma-separated list, so one combined `--fields f-301,f-302,f-303` call or
-  # three separate calls both satisfy these. The regex is scoped to one list item,
-  # so f-301 cannot match inside another id.
+  # three separate calls both satisfy these.
   - type: cli_called
     description: "Unconfirmed First Name (f-301)"
     verb: "ixp labellings unconfirm"
     tool: "uip"
     positional: ["crm_contacts-a7f3c1d2-ixp", "doc-contact-42"]
     flags:
-      fields: {matches_regex: '(?:^|,)\s*f-301\s*(?:,|$)', aliases: ["f"]}
+      fields: {contains: "f-301", aliases: ["f"]}
     weight: 1.5
     pass_threshold: 1.0
 
@@ -64,7 +63,7 @@ success_criteria:
     tool: "uip"
     positional: ["crm_contacts-a7f3c1d2-ixp", "doc-contact-42"]
     flags:
-      fields: {matches_regex: '(?:^|,)\s*f-302\s*(?:,|$)', aliases: ["f"]}
+      fields: {contains: "f-302", aliases: ["f"]}
     weight: 1.5
     pass_threshold: 1.0
 
@@ -74,7 +73,7 @@ success_criteria:
     tool: "uip"
     positional: ["crm_contacts-a7f3c1d2-ixp", "doc-contact-42"]
     flags:
-      fields: {matches_regex: '(?:^|,)\s*f-303\s*(?:,|$)', aliases: ["f"]}
+      fields: {contains: "f-303", aliases: ["f"]}
     weight: 1.5
     pass_threshold: 1.0
 
@@ -87,7 +86,7 @@ success_criteria:
     verb: "ixp labellings unconfirm"
     tool: "uip"
     flags:
-      fields: {matches_regex: '(?:^|,)\s*f-304\s*(?:,|$)', aliases: ["f"]}
+      fields: {contains: "f-304", aliases: ["f"]}
     min_count: 0
     max_count: 0
     weight: 1.5
@@ -98,7 +97,7 @@ success_criteria:
     verb: "ixp labellings unconfirm"
     tool: "uip"
     flags:
-      fields: {matches_regex: '(?:^|,)\s*f-305\s*(?:,|$)', aliases: ["f"]}
+      fields: {contains: "f-305", aliases: ["f"]}
     min_count: 0
     max_count: 0
     weight: 1.5

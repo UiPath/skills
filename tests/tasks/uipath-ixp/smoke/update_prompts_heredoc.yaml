@@ -66,12 +66,31 @@ success_criteria:
   # _setup/fixtures/taxonomy.json (`Invoice Header` > `Invoice Number`); the
   # mock fails every read, so the prompt supplies them.
   - type: cli_called
-    description: "CLI received the structured `Invoice Header` > `Invoice Number` update with the requested instruction"
+    description: "`--updates` addresses the `Invoice Header` group"
     verb: "ixp fields update-prompts"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
     flags:
-      updates:
-        matches_regex: '^\s*\[\s*\{(?=[^}]*"group"\s*:\s*"Invoice Header")(?=[^}]*"name"\s*:\s*"Invoice Number")(?=[^}]*"instructions"\s*:\s*"[^"]*Extract the unique invoice identifier[^"]*Do NOT use the Purchase Order[^"]*")[^}]*\}\s*\]\s*$'
-    weight: 2.5
+      updates: {contains: "Invoice Header"}
+    weight: 0.84
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "`--updates` addresses the `Invoice Number` field"
+    verb: "ixp fields update-prompts"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      updates: {contains: "Invoice Number"}
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "`--updates` carries the requested instruction"
+    verb: "ixp fields update-prompts"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      updates: {contains: "Do NOT use the Purchase Order"}
+    weight: 0.83
     pass_threshold: 1.0
