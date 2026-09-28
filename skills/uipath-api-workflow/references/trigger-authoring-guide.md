@@ -1,14 +1,14 @@
 # Trigger Authoring
 
-Start an API workflow from a connector event (Slack button click, new Outlook calendar entry, new Salesforce record). A trigger is an event subscription, not a callable activity: `call: "UiPath.IntSvcEvent"`, first activity after `WorkflowStart`.
+Start an API workflow from a connector event (a Slack button clicked, a new Outlook calendar entry, a new Salesforce record). The trigger is an event subscription, not a callable activity: `call: "UiPath.IntSvcEvent"`, first after `WorkflowStart`.
 
-## Critical facts
+## Rules
 
-1. **The trigger is the FIRST activity after `WorkflowStart`, and there is at most one.** Studio Web inserts it at that slot and offers "Add trigger" only while none exists.
+1. **One trigger, first after `WorkflowStart`.** Never place it elsewhere or add a second one.
 <!--skill-flavor:trigger-binding-rule:start-->
-2. **`bindings_v2.json` must carry an `EventTrigger` entry; `uip api-workflow bindings sync` writes it.** Run it after every trigger add or edit. That entry registers the Orchestrator event trigger on deploy. Without it the workflow validates, packs, publishes and deploys clean — and never fires. No gate catches this.
+2. **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json` that registers the subscription on deploy. Without it the workflow validates, packs, publishes and deploys clean, and never fires. No gate catches this.
 <!--skill-flavor:trigger-binding-rule:end-->
-3. **Never hand-author a trigger.** `registry resolve --kind trigger`, then `registry stub` (rule 16). `uiPathActivityTypeId` and `metadata.configuration` are not guessable.
+3. **Never hand-author a trigger.** `registry resolve --kind trigger`, then `registry stub` (rule 16). Use the stub output verbatim. To change the event or object, re-stub; do not edit `metadata.configuration`.
 <!--skill-flavor:trigger-schedule-scope:start-->
 4. **Only connector events live in the workflow file.** A schedule is an Orchestrator trigger on the deployed process (`uip or triggers`); a manual run is just invoking it. See [operating-published-workflows.md](operating-published-workflows.md).
 <!--skill-flavor:trigger-schedule-scope:end-->
@@ -28,68 +28,40 @@ Start an API workflow from a connector event (Slack button click, new Outlook ca
 
 Connection rules (folder-scoped listing, `ping` mandatory) are the same as for any connector activity: [connector-activity-discovery.md](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only).
 
-### Resolve
-
-Triggers live in a separate TypeCache catalog. `--kind` takes `activity`, `trigger`, or `all` (default). The keyword also matches `EventOperation`, so `resolve "button_clicked" --kind trigger` works.
+Triggers live in a separate TypeCache catalog; `--kind` takes `activity`, `trigger`, or `all` (default). The keyword also matches `EventOperation`, so `resolve "button_clicked" --kind trigger` works. Each trigger match carries `ActivityType` (`CuratedTrigger` pins its object; `GenericTrigger` needs `--object-name`), `EventOperation` (`CREATED`, `BUTTON_CLICKED`, …) and `EventMode` (`polling` or `webhooks`).
 
 <!--skill-flavor:trigger-kind-unavailable:start-->
-If `resolve` answers `unknown option '--kind'`, the installed CLI predates trigger support — upgrade it. Hand-authoring is not the fallback (fact 3).
+If `resolve` answers `unknown option '--kind'`, the installed CLI predates trigger support — upgrade it. Hand-authoring is not the fallback (rule 3).
 <!--skill-flavor:trigger-kind-unavailable:end-->
 
-Trigger matches carry `ActivityType` (`CuratedTrigger` pins its object; `GenericTrigger` needs `--object-name`), `EventOperation` (`CREATED`, `BUTTON_CLICKED`, …) and `EventMode` (`polling` / `webhooks`).
+## Event parameters
 
-### Event parameters and filter
+`uip is triggers describe` returns three groups. Only the first is an input.
 
-`uip is triggers describe` reports three groups; only the first is an input:
+- `eventParameters` scope the subscription (which channel, which folder). Pass them with `--inputs`.
+- `filterFields` are payload fields a user filter can test.
+- `outputFields` are the event payload downstream activities read.
 
-| Group | Meaning |
-|---|---|
-| `eventParameters` | Scope the subscription (which channel, which folder). Supply via `--inputs`. The stub routes each by IS location: `path`/`query` → `with.pathParameters` / `with.queryParameters`; the rest → `with.eventParameters` and the mandatory filter. |
-| `filterFields` | Payload fields a user filter can test. Not inputs. |
-| `outputFields` | The event payload downstream activities read. |
+`stub` echoes `Data.EventParameters` and `Data.FilterFields`. A required parameter you did not supply comes back as a warning. Heed it: an unscoped subscription fires on everything.
 
-`stub` returns `Data.EventParameters` and `Data.FilterFields`. A required parameter not supplied comes back as a warning — heed it; an unscoped subscription fires on everything.
+## Reading the payload
 
-## The trigger activity
-
-Skeleton: [../assets/templates/trigger-workflow-template.json](../assets/templates/trigger-workflow-template.json). Differences from a connector activity, all load-bearing:
-
-- `call: "UiPath.IntSvcEvent"`; no `method`/`endpoint`; `with.eventType` holds the event operation, `with.eventMode` is `polling` or `webhooks`.
-- `instanceParameters.activityType` is `CuratedTrigger` / `GenericTrigger` with `eventOperation` + `eventMode`; `httpMethod` and `path` are `null`. A `GenericTrigger` omits `instanceParameters.objectName`.
-- Parameter values are bare literals, never `${'...'}`-wrapped (rule 16).
-- Slot key keeps display-name word boundaries (`Button_Clicked_1`); the export bucket derives from the object (`button_1`). Read the payload as `$context.outputs.<ExportBucketKey>.content`, using the stub's `Data.ExportBucketKey` verbatim.
+Downstream activities read `$context.outputs.<ExportBucketKey>.content`, using the stub's `Data.ExportBucketKey` verbatim. Skeleton: [../assets/templates/trigger-workflow-template.json](../assets/templates/trigger-workflow-template.json).
 
 ## The EventTrigger binding
 
 <!--skill-flavor:trigger-binding-command:start-->
-`uip api-workflow bindings sync` writes it and regenerates it on every sync, so an edit to object, event, filter or connection reaches it:
-
-```json
-{
-  "resource": "EventTrigger",
-  "key": "<CONNECTION_UUID>",
-  "activityId": "Button_Clicked_1",
-  "activityDisplayName": "Button Clicked",
-  "value": { "ConnectionId": { "defaultValue": "<CONNECTION_UUID>", "isExpression": false } },
-  "metadata": {
-    "UseConnectionService": "true",
-    "Connector": "uipath-salesforce-slack",
-    "ActivityName": "Button Clicked",
-    "BindingsVersion": "2.2",
-    "ObjectName": "button",
-    "Operation": "BUTTON_CLICKED",
-    "FilterExpression": "(channel_id == '<CHANNEL_ID>')",
-    "SolutionsSupport": "true"
-  }
-}
-```
-
-Path/query event parameters get a companion `Property` entry (`key` = event operation, `ParentResourceKey: "EventTrigger.<CONNECTION_UUID>"`), also regenerated. In Solutions mode follow with `uip solution resources refresh --solution-folder <SOLUTION_DIR>` (rule 16).
+`uip api-workflow bindings sync` derives it from the trigger's `with` clause and regenerates it on every sync. After syncing, check `bindings_v2.json` for one `resource: "EventTrigger"` entry whose `key` is the connection UUID and whose `metadata.ObjectName` / `Operation` / `FilterExpression` match `with.objectName` / `eventType` / `filterExpression`. Event parameters the connector registers with (typically path and query fields) also get a `Property` entry under it. In Solutions mode follow with `uip solution resources refresh --solution-folder <SOLUTION_DIR>` (rule 16).
 <!--skill-flavor:trigger-binding-command:end-->
 
 ## Filter expression
 
-`filterExpression` is JMESPath: mandatory half (from event parameters, written by `stub`) `&&` user half (a condition on `filterFields`, written by you). Quoting follows the field type: strings single-quoted, booleans and numbers backtick JSON literals — `(channel_id == 'C123') && (isAllDay == \`true\`)`. Double quotes are not JMESPath string literals. Bad quoting passes `validate` and fails at subscription time or matches nothing. Editing `with.filterExpression` is a trigger edit (fact 2).
+`with.filterExpression` is JMESPath in two halves joined by ` && `: the mandatory half, which `stub` writes from the event parameters, and an optional user half you write against `filterFields`.
+
+- Quote by field type: strings in single quotes, booleans and numbers as backtick literals — `(channel_id == 'C123') && (isAllDay == \`true\`)`. Double quotes are identifiers in JMESPath, not strings.
+- An array field (its name contains `[*]`) is matched with a projection, not `==`: `ParentFolders[?ID=='INBOX']`. `stub` writes a plain comparison for such a field; replace it.
+- Bad quoting passes `validate` and fails at subscription time or matches nothing.
+- Editing `filterExpression` is a trigger edit (rule 2).
 
 ## Exercising a trigger before deploy
 
@@ -101,10 +73,6 @@ Path/query event parameters get a companion `Property` entry (`key` = event oper
 | No input, `eventMode: webhooks` | Fails by design; the event only arrives from the vendor. Use `--input-arguments`. |
 <!--skill-flavor:trigger-local-run:end-->
 
-## Anti-patterns
-
-- **Do NOT place the trigger anywhere but first, or add a second one.**
-- **Do NOT hand-edit `metadata.configuration`** to change event or object — re-stub; `eventOperation`, `eventMode`, `objectName` must agree across `with` and the blob.
 <!--skill-flavor:trigger-clean-gate-antipattern:start-->
-- **Do NOT treat a clean `validate` / `pack` / `publish` / `deploy` as proof the trigger fires.** Only the `EventTrigger` binding does that (fact 2).
+A clean `validate` / `pack` / `publish` / `deploy` is not proof the trigger fires. Only the `EventTrigger` binding does that (rule 2).
 <!--skill-flavor:trigger-clean-gate-antipattern:end-->
