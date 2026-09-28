@@ -78,8 +78,14 @@ plugin; everything else exits silently. A call qualifies when:
 |------|----------------|
 | `Skill` | skill name starts with `uipath:` / `uipath-` |
 | `Agent` / `spawn_agent` | spawned type is a UiPath agent (`uipath:` / `uipath-`) or a built-in/generic type (Claude's `general-purpose`, `Explore`, `Plan`, `claude`, `claude-code-guide`, `statusline-setup`, `fork`, or Codex's `default`) — **not** other plugins' (`<plugin>:<name>`) or user-defined custom agents. Claude spawns via `Agent` + `tool_input.subagent_type`; Codex via `spawn_agent` + `tool_input.agent_type` |
-| `Bash` / `PowerShell` (Autopilot / Delegate: `ExecuteBashCommand` / `ExecutePowershellCommand`) | command invokes the `uip` CLI or `rpa-tool` |
 | `Edit` / `Write` / `Read` / `Glob` / `Grep` (Autopilot / Delegate: `ReadFile` / `WriteFile` / `EditFile` / `LsDirectory`) | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
+
+Shell tool calls (`Bash` / `PowerShell`; Autopilot / Delegate:
+`ExecuteBashCommand` / `ExecutePowershellCommand`) **never** emit an event, even
+when they run `uip`. The CLI records each `uip` command itself as a `requests`
+row — exact command path, duration, exit code, error class — carrying the same
+`session_Id` plus the session context from
+[Command requests](#command-requests).
 
 ## How it works
 
@@ -123,16 +129,15 @@ Each event is an App Insights event named `uip.skills.<event>` (see
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| `schemaVersion` | `3` | Constant in the hook. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason` / `agent_model`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl`; `3` dropped `session_id` too (all CLI-stamped — see [Added by the CLI](#added-by-the-cli)) |
+| `schemaVersion` | `4` | Set by the CLI's `--hook` derivation. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason` / `agent_model`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl`; `3` dropped `session_id` too (all CLI-stamped — see [Added by the CLI](#added-by-the-cli)); `4` dropped `uipSubcommand` — shell tool calls no longer emit `tool-use` |
 | `eventName` | `session-start` | Which lifecycle event this is (see [Events](#events)). Consumed by `uip track` to pick the `uip.skills.<event>` name; **not** emitted as an event property |
-| `toolName` | `Skill`, `Bash` | Claude Code tool. From the top-level `tool_name`. `tool-use` only |
+| `toolName` | `Skill`, `Write` | Claude Code tool. From the top-level `tool_name`. `tool-use` only |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
 | `subagentModel` | `opus` | From `tool_response.resolvedModel`, normalized to a family — `opus` / `sonnet` / `haiku` / `fable` (`other` if unrecognized). The context-window marker is dropped (`claude-opus-4-8[1m]` → `opus`). Set on an Agent-**spawn** event; empty otherwise |
 | `subagentType` | `general-purpose` | From `tool_input.subagent_type` — requested subagent type. Set on an Agent-**spawn** event; empty otherwise |
 | `agentType` | `Explore` | From the top-level `agent_type` — type of the subagent the call runs **inside**. Empty on a main-loop call |
 | `agent_model` | `claude-sonnet-5` | The session's **main** model, from the top-level `model` where the agent provides it — Claude Code sends it on `SessionStart` payloads, Codex on every hook event. Full sanitized slug (no family collapse — model-comparison views need version granularity); distinct from `subagentModel` (a spawned child's model family). Empty when the payload carries none; Claude sessions get full coverage at query time by joining on the native `session_Id` from the `session-start` event |
 | `skillName` | `uipath:uipath-platform` | From `tool_input.skill`. `Skill` calls only |
-| `uipSubcommand` | `solution publish` | First 1–2 verbs derived from `tool_input.command` — never the full command line, never `stdout` |
 | `fileExtension` | `.flow` | Derived from `tool_input.file_path`. File-tool calls only |
 | `outcome` | `ok` / `failure` / `interrupted` / `unknown` | On `tool-use`, from the `tool_response` region **only**; on `completion`, `ok` (`Stop`) or `failure` (`StopFailure`) — see [Outcome semantics](#outcome-semantics) |
 | `session_source` | `startup` / `resume` / `clear` / `compact` | `session-start` only. From the top-level `source` (renamed to avoid the CLI-owned `source` dimension) |
@@ -160,14 +165,13 @@ reads each field **only** from the region where it actually lives (a real
 | Region | Fields |
 |--------|--------|
 | Envelope (top-level keys) | `toolName`, `toolUseId`, `permissionMode`, `durationMs`, `effortLevel` (`effort.level`), `agentType`, `source` (→`session_source`, session-start), `reason` (session-end), `model` (→`agent_model`) |
-| `tool_input` | `skillName`, `uipSubcommand` (from `command`), `fileExtension` (from `file_path`), `subagentType` (from `subagent_type`, or `agent_type` on a Codex `spawn_agent` call — normalized to the same field so it never collides with the envelope `agent_type`) |
+| `tool_input` | `skillName`, `fileExtension` (from `file_path`), `subagentType` (from `subagent_type`, or `agent_type` on a Codex `spawn_agent` call — normalized to the same field so it never collides with the envelope `agent_type`) |
 | `tool_response` | `outcome` (`interrupted` / `success`), `subagentModel` (`resolvedModel`) |
 
 Content nested inside a JSON string, or at the wrong depth, can never satisfy a
 top-level match — so `stdout` / prompt text cannot corrupt a field or cause
-over-attribution. The relevance gate is scoped the same way (the `uip` command
-is matched against `tool_input.command`, file extensions against
-`tool_input.file_path`).
+over-attribution. The relevance gate is scoped the same way (file extensions
+are matched against `tool_input.file_path`).
 
 ### Outcome semantics
 
@@ -209,9 +213,8 @@ independent of any subagent — the dimension for model-comparison views.
 The hook is a `PostToolUse` hook, so it also runs under any coding agent that
 honors `hooks.json` (e.g. **Codex**). Codex's payload envelope matches Claude
 Code's — `hook_event_name`, `tool_name`, `tool_use_id`, `session_id`,
-`permission_mode`, and `tool_input.{command,file_path}` are identical — so the
-`PostToolUse` gate, the `Bash`/`uip` attribution, and the file-extension
-attribution all work unchanged. Three differences are handled or accepted:
+`permission_mode`, and `tool_input.file_path` are identical — so the
+`PostToolUse` gate and the file-extension attribution work unchanged. Three differences are handled or accepted:
 
 | Difference | Handling |
 |------------|----------|
@@ -220,24 +223,24 @@ attribution all work unchanged. Three differences are handled or accepted:
 | **`duration_ms` and `effort.level` are omitted.** | Accepted. `durationMs` → `null` (dropped by the CLI), `effortLevel` → `""`. No latency or effort data for Codex |
 
 Codex has no `Skill` tool, so `skillName` and the Skill-based attribution path
-never fire — Codex attribution relies on the `uip`-command and file-extension
+never fire — Codex attribution relies on the Agent-spawn and file-extension
 signals. The cross-agent handling itself changes no keys; the current key set
-is **schema v3** (see the [field table](#properties-sent-by-the-hook)). Events
+is **schema v4** (see the [field table](#properties-sent-by-the-hook)). Events
 are distinguished by agent through the CLI-stamped client/`source` context, not
 a hook field.
 
 **UiPath Autopilot / Delegate** honor `hooks.json` with the same envelope and
-lifecycle events, but name their shell and file tools differently. Attribution
-is gated on both spellings:
+lifecycle events, but name their shell and file tools differently. Both
+spellings are handled — shell tools are dropped, file tools gated:
 
 | Tool role | Claude Code | Autopilot / Delegate |
 |-----------|-------------|----------------------|
 | Shell command | `Bash` / `PowerShell` | `ExecuteBashCommand` / `ExecutePowershellCommand` |
 | File read/write/edit/list | `Read` / `Write` / `Edit` / `Glob` / `Grep` | `ReadFile` / `WriteFile` / `EditFile` / `LsDirectory` |
 
-Their `tool_input` still carries `command` / `file_path`, so the `uip`-command
-and file-extension attribution and the `uipSubcommand` / `fileExtension`
-derivation work unchanged once the renamed tool names are gated. No key changes.
+Their `tool_input` still carries `file_path`, so the file-extension
+attribution and the `fileExtension` derivation work unchanged once the renamed
+tool names are gated. No key changes.
 
 ### Added by the CLI
 
@@ -293,11 +296,33 @@ its own on App Insights' `ai.session.id` tag; see
 |--------|-------------|
 | Tool calls per session | `count() by session_Id` |
 | Session duration | `session-end` − `session-start` per `session_Id` (fallback `max(timestamp) − min(timestamp)` where no `session-end`, e.g. Codex) |
-| Activation rate | sessions with ≥1 `tool-use` ÷ all `session-start`, by `session_Id` |
+| Activation rate | sessions with ≥1 `tool-use` or ≥1 `uip` command request ÷ all `session-start`, by `session_Id` |
 | Session outcome mix | `session-end` count by `reason`; sessions containing a `completion` with `outcome=failure` |
 | Time-to-first-skill | first `Skill` event − `session-start`, per session |
-| Retries | repeated `uipSubcommand` flipping `failure → ok`, ordered by `timestamp` then `toolUseId` |
+| Retries | `requests` in one `session_Id` with the same `name` flipping `success == false → true`, ordered by `timestamp` |
 | Hook coverage % | sessions with ≥1 `uip.skills.*` lifecycle event ÷ agent sessions seen on the command stream (`execution_context == "agent"`), per period — report alongside any hook-based rate |
+
+### Command requests
+
+The synchronous SessionStart step (`hooks/set-session-env.mjs`) also exports
+the session context the CLI stamps on every `uip` command request as optional
+dimensions — the same keys the skills events carry, so a command can be sliced
+without a join:
+
+| Request dimension | Exported variable | From the SessionStart payload |
+|-------------------|-------------------|-------------------------------|
+| `agent_model` | `UIPATH_AGENT_MODEL` | top-level `model` (string, or `{id, display_name}`) |
+| `permissionMode` | `UIPATH_PERMISSION_MODE` | top-level `permission_mode` |
+| `effortLevel` | `UIPATH_EFFORT_LEVEL` | `effort.level` |
+| `skillsVersion` | `UIPATH_SKILLS_VERSION` | `skillsVersion` in `version-manifest.json` |
+
+Each value is sanitized to `[A-Za-z0-9:._/ -]` and capped at 120 chars before
+it is written into the sourced env file. A missing value exports nothing, so
+the request carries no key. They are the session-start snapshot: SessionStart
+re-fires on `resume` / `clear` / `compact` and re-exports a changed value, but a
+mid-session model switch between those shows on the skills events only. Every
+other request dimension is unchanged. Claude Code-only, like the session id
+below.
 
 ### Cross-stream correlation (`UIPATH_SESSION_ID`)
 
