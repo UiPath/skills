@@ -129,10 +129,8 @@ Each event is an App Insights event named `uip.skills.<event>` (see
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| `schemaVersion` | `4` | Set by the CLI's `--hook` derivation. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason` / `agent_model`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl`; `3` dropped `session_id` too (all CLI-stamped — see [Added by the CLI](#added-by-the-cli)); `4` dropped `uipSubcommand` — shell tool calls no longer emit `tool-use` |
+| `schemaVersion` | `4` | Set by the CLI's `--hook` derivation. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason` / `agent_model`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl`; `3` dropped `session_id` too (all CLI-stamped — see [Added by the CLI](#added-by-the-cli)); `4` dropped `uipSubcommand` (shell tool calls no longer emit `tool-use`) and `toolName` / `toolUseId` (the kind of call is whichever of `skillName` / `fileExtension` / `subagentType` is set) |
 | `eventName` | `session-start` | Which lifecycle event this is (see [Events](#events)). Consumed by `uip track` to pick the `uip.skills.<event>` name; **not** emitted as an event property |
-| `toolName` | `Skill`, `Write` | Claude Code tool. From the top-level `tool_name`. `tool-use` only |
-| `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
 | `subagentModel` | `opus` | From `tool_response.resolvedModel`, normalized to a family — `opus` / `sonnet` / `haiku` / `fable` (`other` if unrecognized). The context-window marker is dropped (`claude-opus-4-8[1m]` → `opus`). Set on an Agent-**spawn** event; empty otherwise |
 | `subagentType` | `general-purpose` | From `tool_input.subagent_type` — requested subagent type. Set on an Agent-**spawn** event; empty otherwise |
 | `agentType` | `Explore` | From the top-level `agent_type` — type of the subagent the call runs **inside**. Empty on a main-loop call |
@@ -164,7 +162,7 @@ reads each field **only** from the region where it actually lives (a real
 
 | Region | Fields |
 |--------|--------|
-| Envelope (top-level keys) | `toolName`, `toolUseId`, `permissionMode`, `durationMs`, `effortLevel` (`effort.level`), `agentType`, `source` (→`session_source`, session-start), `reason` (session-end), `model` (→`agent_model`) |
+| Envelope (top-level keys) | `tool_name` (gate only, not sent), `permissionMode`, `durationMs`, `effortLevel` (`effort.level`), `agentType`, `source` (→`session_source`, session-start), `reason` (session-end), `model` (→`agent_model`) |
 | `tool_input` | `skillName`, `fileExtension` (from `file_path`), `subagentType` (from `subagent_type`, or `agent_type` on a Codex `spawn_agent` call — normalized to the same field so it never collides with the envelope `agent_type`) |
 | `tool_response` | `outcome` (`interrupted` / `success`), `subagentModel` (`resolvedModel`) |
 
@@ -198,7 +196,7 @@ turn ended on an API error). `session-start` and `session-end` carry no
 The three subagent fields describe two different viewpoints and are independent:
 
 - **`subagentType` + `subagentModel`** describe an Agent-**spawn** event — i.e.
-  `toolName == Agent` (Claude) or `spawn_agent` (Codex), the **parent's** view of
+  a `tool-use` event with `subagentType` set (Claude `Agent`, Codex `spawn_agent`), the **parent's** view of
   the child it launched (`tool_input.subagent_type` / Codex's
   `tool_input.agent_type`, and the resolved `tool_response.resolvedModel`).
 - **`agentType`** is set on calls made **inside** a subagent — the **child's**
