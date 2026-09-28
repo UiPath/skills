@@ -101,6 +101,18 @@ a blank is omitted from an insert so the column default applies, so an all-blank
 create writes nothing and runs green. Fix that with a real value, never a
 placeholder to satisfy the rule.
 
+**Type each flow input by the field it fills.** `uip df entities get <id>
+--output json` gives each field's type at `Data.Fields[].FieldDataType.Name`; a
+value that arrives as a flow input takes the Flow type below, and reaches the
+step as `input('<name>')`:
+
+| Field type | Flow input |
+| --- | --- |
+| `STRING`, `MULTILINE_TEXT`, `UUID`, `DATE`, `DATETIME` | `types.string` |
+| `DECIMAL`, `INTEGER` | `types.number` |
+| `BOOLEAN` | `types.boolean` |
+| `FILE` | none — a file is not a create value; upload it with the connector's file-record-field operation (table above) |
+
 **System columns are never writable.** `Id`, `CreateTime`, `CreatedBy`,
 `UpdateTime`, `UpdatedBy` are assigned by Data Fabric; a write to one is rejected
 and the rejection is only logged, so the row comes back unchanged and the run
