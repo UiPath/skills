@@ -13,8 +13,8 @@ node. Upstream data is available through `$vars`; the result is read with
 ` }))
 ```
 
-Use the named first-class node when the scenario needs HTTP (any external data
-or API call), Transform, Delay, a connector, or another product capability,
+Use the named first-class node when the scenario needs a connector or HTTP for
+any external data or API call, Transform, Delay, or another product capability,
 whether or not the request names the node. A script is appropriate for
 local calculation, reshaping that needs arbitrary code, or computing a value
 before passing a bare reference to another node.

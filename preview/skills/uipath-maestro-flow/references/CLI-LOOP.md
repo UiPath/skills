@@ -11,13 +11,10 @@ choosing the loop, before authoring the source. Once the source first
 compiles, emit it into that nested project artifact—not `/tmp`—and keep the
 artifact current after every source edit.
 
-Tenant discovery is not a phase of either loop, with one exception: choosing
-the node. For an external service, one `uip maestro registry search '<service>'`
-over the local connector library picks a connector (no hit: `http()`). For
-document extraction or another tenant capability, which that library does not
-hold, the family's `uip maestro flow registry search ... --output json` picks
-it. Both run before authoring: `check` cannot name a call for a node you never
-wrote, so a script or `mock()` written in its place goes unflagged.
+Tenant discovery is not a phase of either loop. The one step before authoring
+is choosing the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)):
+`check` cannot flag a node you never wrote, so a script or `mock()` written in
+its place goes unflagged.
 After that, author the source from the task's own words; the source `check`
 names every tenant call you owe —
 each unresolved lookup, unmaterialized object, and out-of-snapshot field, with
