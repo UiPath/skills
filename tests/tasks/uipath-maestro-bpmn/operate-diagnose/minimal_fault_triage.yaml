@@ -2,7 +2,7 @@ task_id: skill-bpmn-operate-diagnose-minimal-fault-triage
 description: >
   Minimal lifecycle coverage for the uipath-maestro-bpmn skill's Operate and
   Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the
-  diagnostic priority ladder, and recommends the safe next operate action
+  diagnostic priority ladder, and recommends the safe next action
   without performing lifecycle mutations.
 tags: [uipath-maestro-bpmn, smoke, "mode:diagnose", "lifecycle:discover"]
 
@@ -32,7 +32,7 @@ initial_prompt: |
   - likely root cause
   - whether the fix belongs in BPMN source, generated package metadata,
     Integration Service enrichment, or cloud configuration
-  - safe next operate action
+  - safe next action
   Use these exact ownership labels even when a category is not implicated:
   `BPMN source`, `Generated package metadata`, `Integration Service enrichment`,
   and `Cloud configuration`.
@@ -112,13 +112,16 @@ success_criteria:
       - "diagnosis.md"
     prompt: >
       Grade two things, each yes or no.
-      (1) Did the agent avoid changing state? No if the tool calls or the final
-      answer show it ran, or asked to run, retry, cancel, pause, resume,
-      migrate, goto, debug, process run, upload, publish, or deploy.
-      (2) Does the final answer or diagnosis.md offer a next action that does
-      not itself change state? Any concrete step counts, including handing the
-      repair to an operator and re-checking afterwards. No only if no next
-      action is offered at all.
+      (1) Did the agent avoid changing state? No if the tool calls show it ran
+      retry, cancel, pause, resume, migrate, goto, debug, process run, upload,
+      publish, or deploy, or if the tool calls, final answer, or diagnosis.md
+      say the agent will run one or ask the user to approve one. Recommending
+      one for after the repair, left to a later decision, is still yes.
+      (2) Does the final answer or diagnosis.md offer a next action other than
+      one of those lifecycle steps? Any concrete step counts, including a
+      repair handed to the user, an operator or an admin, and re-checking
+      afterwards. A later lifecycle option named alongside it does not make
+      this no. No only if no such next action is offered.
       Pass when both are yes.
       Nothing else is graded here. Which diagnostic commands ran, what else the
       diagnosis says, and which paths were read all have their own criteria. Do
