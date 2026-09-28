@@ -317,15 +317,17 @@ def find_parent_folder_id(trigger: ET.Element) -> str:
     generic Intsvc.EventTrigger schema does not pin where an Outlook-specific
     event field lands once enriched, so search (in order): a same-named
     ``uipath:input`` anywhere under the node, then a ``filter``/``parameters``
-    input whose value/text parses as JSON with that key, or a ``body`` input
-    with it under ``queryParams`` (the Studio Web shape)."""
+    input whose value/text parses as JSON with that key, or a ``target="body"``
+    input with it under ``queryParams`` (the Studio Web shape)."""
     for inp in node_inputs(trigger):
         if inp.attrib.get("name", "").lower() == "parentfolderid":
             v = inp.attrib.get("value") or (inp.text or "")
             if v.strip():
                 return v.strip()
     for inp in node_inputs(trigger):
-        if inp.attrib.get("name", "").lower() not in ("filter", "parameters", "body"):
+        name = inp.attrib.get("name", "").lower()
+        is_body = name == "body" and inp.attrib.get("target") == "body"
+        if name not in ("filter", "parameters") and not is_body:
             continue
         raw = inp.attrib.get("value") or (inp.text or "")
         if not raw or not raw.strip():
@@ -334,8 +336,8 @@ def find_parent_folder_id(trigger: ET.Element) -> str:
             parsed = json.loads(raw)
         except json.JSONDecodeError:
             continue
-        if isinstance(parsed, dict) and isinstance(parsed.get("queryParams"), dict):
-            parsed = parsed["queryParams"]
+        if is_body:
+            parsed = parsed.get("queryParams") if isinstance(parsed, dict) else None
         if isinstance(parsed, dict):
             for key, val in parsed.items():
                 if key.lower() == "parentfolderid" and isinstance(val, str) and val.strip():

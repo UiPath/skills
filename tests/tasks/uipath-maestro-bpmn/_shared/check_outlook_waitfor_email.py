@@ -62,8 +62,10 @@ FILTER_VALUE = "TestWaitFor"
 _EMAIL_RECEIVED_STEM = "emailreceiv"
 _JSONSTRING_PREFIX = "=jsonstring:"
 _SUBJECT_CONTAINS_RE = re.compile(
-    rf"(?<!!)(?i:contains)\(\s*(?i:subject)\s*,\s*['\"`]{re.escape(FILTER_VALUE)}['\"`]\s*\)"
+    rf"(?i:contains)\(\s*(?i:subject)\s*,\s*['\"`]{re.escape(FILTER_VALUE)}['\"`]\s*\)"
 )
+_NEGATED_PREFIX_RE = re.compile(r"(!|\bnot)[\s(]*$", re.IGNORECASE)
+_NEGATED_SUFFIX_RE = re.compile(r"^[\s)]*(==\s*false|!=\s*true)\b", re.IGNORECASE)
 
 
 def _stem(text: str) -> str:
@@ -127,12 +129,34 @@ def _filter_expression(body: dict) -> str:
     return filters if isinstance(filters, str) else ""
 
 
+def _has_positive_subject_clause(expression: str) -> bool:
+    for m in _SUBJECT_CONTAINS_RE.finditer(expression):
+        if _NEGATED_PREFIX_RE.search(expression[: m.start()]):
+            continue
+        if _NEGATED_SUFFIX_RE.search(expression[m.end():]):
+            continue
+        return True
+    return False
+
+
+def _is_folder_scoped(body: dict, expression: str) -> bool:
+    params = body.get("queryParams")
+    folder_id = params.get("parentFolderId") if isinstance(params, dict) else None
+    if not isinstance(folder_id, str) or not folder_id.strip():
+        return False
+    clause = rf"parentFolderId\s*==\s*['\"]{re.escape(folder_id.strip())}['\"]"
+    return bool(re.search(clause, expression))
+
+
 def has_subject_contains_filter(task: ET.Element) -> bool:
     for inp in task.iter(f"{{{NS['uipath']}}}input"):
         if inp.attrib.get("target") != "body":
             continue
         body = _parse_json_value(inp.attrib.get("value") or inp.text or "")
-        if body and _SUBJECT_CONTAINS_RE.search(_filter_expression(body)):
+        if not body:
+            continue
+        expression = _filter_expression(body)
+        if _has_positive_subject_clause(expression) and _is_folder_scoped(body, expression):
             return True
     return False
 
@@ -157,7 +181,8 @@ def main() -> None:
     if not any(has_subject_contains_filter(task) for task in event_nodes):
         fail(
             "Outlook email-received receiveTask found, but its target=\"body\" input "
-            f"has no filters.expression clause contains(subject, {FILTER_VALUE!r})"
+            f"lacks a filters.expression clause contains(subject, {FILTER_VALUE!r}) "
+            "scoped by queryParams.parentFolderId and its parentFolderId == clause"
         )
 
     print(
