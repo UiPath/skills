@@ -119,7 +119,8 @@ success_criteria:
       is given as something to do now, such as "retry the instance now", even
       when a repair is named beside it or someone else would run it. Yes only
       if every lifecycle step mentioned is explicitly deferred until after the
-      repair, left to a later decision.
+      repair, left to a later decision, or is mentioned only to say it was not
+      run, must not be run, or is not the next action.
       (2) Does the final answer or diagnosis.md offer a next action other than
       one of those lifecycle steps? Any concrete step counts, including a
       repair handed to the user, an operator or an admin, and re-checking
