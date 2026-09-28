@@ -128,13 +128,57 @@ constrains. A single pattern needs only its own guide.
 
 ## Workflow
 
-Work the five steps quickly, but keep the path matched to the user's ask. Treat
-requests to discover before authoring, save raw registry JSON/evidence, or "do
-not author yet" as discovery-only even if they describe an eventual BPMN. In
-that mode, immediately create `registry-evidence/`, run and save `registry pull
---output json`, `registry list --output json` or `registry search ... --output
-json`, and `registry get <type> --output json` for each requested type; do not
-read deep authoring references or scaffold a project. For authoring asks, author
+Move quickly, but match the path to the mode below — choose one before Discover:
+
+- **Greenfield authoring** — a new process built from a description, nothing
+  existing to edit. Scaffold with `init` in step 2b.
+- **Discovery-only** — the request asks to discover before authoring, save raw
+  registry JSON/evidence, or explicitly "do not author yet," even if it
+  describes an eventual BPMN. Do not scaffold a project. Immediately create
+  `registry-evidence/`, run and save `registry pull --output json`, `registry
+  list --output json` or `registry search ... --output json`, and `registry get
+  <type> --output json` for each requested type; do not read deep authoring
+  references. Follow the command-first recipe in
+  [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
+- **Brownfield / bare-`.bpmn` edit** — editing a `.bpmn` file that already
+  exists. Do not run `init`. If the file is bare (no `project.uiproj`),
+  bootstrap it with the two-key `project.uiproj` + `refresh` path documented in
+  step 3 instead.
+
+Then pick the **build mode**, a separate axis from the mode above. For a
+greenfield authoring ask, ask the user before scaffolding (AskUserQuestion):
+
+- **Sketch mode (recommended)** — author a skeleton of blank boxes, arrows and
+  labels, upload it, and agree the shape with the user before wiring anything
+  real. Reaches a link the user can open in about two minutes because it makes
+  no registry calls. Read
+  [references/sketch-mode.md](references/sketch-mode.md) before authoring one.
+- **Auto mode** — build the complete working implementation in one pass, with
+  real registry-owned node payloads and live resources.
+- **Something else** — let the user describe what they want instead, then
+  follow it.
+
+Resolve the mode in this order. First, an explicit instruction from the user
+("just build it", "show me the shape first") decides it — obey it and do not
+ask. Second, ask the user. Third, when nobody is available to answer
+(non-interactive or headless), take **Auto mode** and record that choice
+prominently in the final report: sketch mode's approval gate cannot be
+satisfied with no user to approve it, so sketching would stall.
+
+Sketch mode is never the deliverable on its own. The user's approval of the
+shape is what authorizes the real wiring; without it, report the skeleton as an
+unapproved sketch rather than as a finished process.
+
+Then set the **deliverable scope**, a separate axis from the mode above:
+*package-ready* when pack, upload, publish, deploy, debug, or run is asked for,
+*source-only* when none of those is. A source-only deliverable skips step 2b's
+`init` entirely — every `init` variant, including
+`--skip-solution-registration`, writes the four generated package files, and
+Rule 16 requires a source-only draft to emit only the `.bpmn` plus its notes
+file. Scope is independent of whether the process uses an Integration Service
+connector: a plain three-node RPA process can be a source-only draft too.
+
+For authoring asks (greenfield or brownfield), author
 early: do not pre-read every reference before writing. Read a reference only
 when you reach the structure it covers, get the needed templates, then write the
 first complete draft before further spelunking. If
@@ -143,9 +187,13 @@ first complete draft before further spelunking. If
 directly covers the requested construct, write a first complete draft before
 further spelunking.
 
-For registry-evidence-only tasks, follow the command-first recipe in
-[references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
-
+0. **Check login.** `uip login status --output json`, chained in the same Bash
+   call as step 1's `registry pull` — not a turn of its own. Without login,
+   `registry pull` returns only the built-in (OOTB) extension types, so
+   connector and process discovery comes back silently incomplete: tell the
+   user rather than discovering against a half-registry. Local authoring and
+   `validate` still work offline — see
+   [references/cli-conventions.md](references/cli-conventions.md#login-boundary).
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
@@ -170,33 +218,71 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `validate` does not prove that mapping is right. For the compatibility
    fallback and its scope, see
    [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
-3. **Assemble.** Author directly from the complete minimal file in
+
+**2b. Scaffold the project (greenfield, package-ready only).** Skip this step
+for discovery-only, for brownfield/bare-`.bpmn` edits, and for any source-only
+deliverable. Otherwise chain it after Discover in the same turn. First check
+for an existing solution:
+
+```bash
+find . -maxdepth 2 -type f -name '*.uipx' -print
+```
+
+If one is found, stop and ask the user which to use (AskUserQuestion: one
+option per solution found, plus "Create a new solution"). Never silently
+adopt, initialize, or repair an existing solution. Otherwise initialize the
+project with `uip maestro bpmn init <ProjectName> --output json` and author at
+the returned `Data.Path`. `init` is idempotent — re-running reports
+`AlreadyRegistered` — and outside a solution it auto-scaffolds
+`<ProjectName>Solution/`, nesting the project at
+`<ProjectName>Solution/<ProjectName>/`; a non-empty target directory is left
+untouched and the project still lands there. `--skip-solution-registration`
+suppresses the `*Solution/` wrapper and its `.uipx`, but still writes the four
+generated JSON files, so it does not produce a source-only deliverable — skip
+`init` for that instead. `init` writes six files — the
+`.bpmn`, `project.uiproj`, and the four generated JSON files
+(`bindings_v2.json`, `entry-points.json`, `operate.json`,
+`package-descriptor.json`) — preserve the four generated ones as written.
+`init` takes a project name, not a path, and writes under the current
+directory: `./<ProjectName>/` with `--skip-solution-registration` or inside an
+existing solution, `./<ProjectName>Solution/<ProjectName>/` otherwise. To land a
+project at a path the user named, `mkdir -p` its parent and run `init` there
+with the leaf as the name — and either pass `--skip-solution-registration` or
+make that parent a solution first, because default `init` inserts a
+`<ProjectName>Solution/` level the requested path does not have. Check
+`Data.Path` against the requested path before editing. The init scaffold
+declares no `xsi` namespace: add
+`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` to `bpmn:definitions`
+before writing any `xsi:type` attribute. See
+[references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
+
+3. **Assemble.** For greenfield, author into the `.bpmn` that step 2b's `init`
+   already generated, using `Edit` — never `Write` a full-file replacement over
+   it. Editing in place preserves the four generated JSON files, the
+   initializer's `Event_start` id, and its `uipath:entryPointId`; keep them, and
+   the "renamed start event ⇒ `refresh` fails on the mismatch" failure
+   described below no longer applies — `refresh` is then needed only for
+   genuine entry-point drift (an entry point added or removed) or a
+   package-ready deliverable (step 5). For brownfield and hand-authored files,
+   the failure mode and its fix still apply as written below.
+   Use the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
-   plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
-   a stable manual entry point, one structural task, and complete DI. **Do not
-   reverse-engineer authoring patterns from task fixtures, generated package
-   files, or the CLI's compiled bundle (`@uipath/cli/dist/*.js`)** — such
-   spelunking is the top reason authoring runs out of time.
+   as the shape to insert, plus each node's `xmlTemplate` (fill placeholders
+   only). That skeleton shows a stable manual entry point, one structural task,
+   and complete DI. **Do not reverse-engineer authoring patterns from task
+   fixtures, generated package files, or the CLI's compiled bundle
+   (`@uipath/cli/dist/*.js`)** — such spelunking is the top reason authoring
+   runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then run
-   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For a new local project, initialize the
-   supported scaffold with `uip maestro bpmn init <ProjectName> --output json`,
-   edit at the returned `Data.Path`, and preserve its generated metadata. For a
-   source-only draft the user has not asked to package or operate, pass
-   `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
-   created. `init` takes a project name, not a path, and writes under the
-   current directory: `./<ProjectName>/` with that flag or inside an existing
-   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise. To land a
-   project at a path the user named, `mkdir -p` its parent and run `init` there
-   with the leaf as the name — and either pass `--skip-solution-registration`
-   or make that parent a solution first, because default `init` inserts a
-   `<ProjectName>Solution/` level the requested path does not have. Check
-   `Data.Path` against the requested path before editing. The
-   init scaffold declares no `xsi` namespace: add
-   `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` to
-   `bpmn:definitions` before writing any `xsi:type` attribute. See
-   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
+   `uip maestro bpmn format <file.bpmn>` to generate the diagram. Run it after
+   each meaningful batch of edits, not only once at the end, when the user is
+   watching the canvas — without a diagram, nodes do not render (Rule 5). If
+   `format` reports `unknown command`, update the CLI (see
+   [references/cli-conventions.md](references/cli-conventions.md)); if
+   upgrading is unavailable, use the fallback DI structure in
+   [references/structural-bpmn.md](references/structural-bpmn.md).
    The runnable BPMN/start-event path belongs in lowercase `operate.json.main`,
    never `project.uiproj.main`.
    When adding draft or preserve-only case-management variants, include a real
@@ -219,38 +305,47 @@ For registry-evidence-only tasks, follow the command-first recipe in
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
-   For an Integration Service draft or boundary handoff (author locally, hand
-   enrichment to the CLI, no pack/upload/operate asked for), emit **only** the
-   `.bpmn` plus the notes file — do NOT create the four generated package files
-   (Rule 16); authoring them fails the boundary the task tests. The node itself
-   is still authored: paste the registry's `Intsvc.*` template and keep the
-   shell that template declares — `uipath:activity` for activities,
-   `uipath:event` for `Intsvc.WaitForEvent` and `Intsvc.EventTrigger` (Rule 6)
-   — plus its context and output, filling the resource identity slots with the
-   escaped public placeholders. Event context references the connection as
-   `connectionId`, activities as `connection`. A host element carrying neither
-   shell, such as a bare `bpmn:sendTask` with no `uipath:activity`, is a
-   missing node, not a draft. Only the resolved values are CLI-owned — see
-   [references/registry-workflow.md](references/registry-workflow.md#2-get-the-template-for-each-chosen-type).
-   For Integration Service draft notes, name every CLI-owned blocker literally,
-   including the exact phrase `connection binding`, plus dynamic schemas,
-   generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
-   wording such as "connection and process binding" because it hides the concrete
-   artifact the CLI must supply.
-   Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
-   start event id or adds or removes an entry point — **not only when packaging
-   or operating**. `operate.json` and `entry-points.json` are generated once and
+   Author an Integration Service connector node (`Intsvc.*`) by pasting the
+   registry's template and keeping the shell it declares — `uipath:activity`
+   for activities, `uipath:event` for `Intsvc.WaitForEvent` and
+   `Intsvc.EventTrigger` (Rule 6) — plus its context and output, filling the
+   resource identity slots with the escaped public placeholders. Event context
+   references the connection as `connectionId`, activities as `connection`. A
+   host element carrying neither shell, such as a bare `bpmn:sendTask` with no
+   `uipath:activity`, is a missing node, not a draft.
+   An unresolved node's resource — one that cannot be resolved right now
+   (login, tenant, or connection availability) — is an element-level condition,
+   independent of deliverable scope: follow the canonical rule in
+   [references/registry-workflow.md](references/registry-workflow.md#2-get-the-template-for-each-chosen-type),
+   which reports the node as **draft** and names the CLI-owned blocker
+   literally, including the exact phrase `connection binding`. That rule holds
+   regardless of whether the deliverable is source-only, so it does not by
+   itself restrict which files may exist.
+   For a source-only draft, emit **only** the `.bpmn` plus the notes file — do
+   NOT create the four generated package files (Rule 16); authoring them fails
+   the boundary the task tests. Name every CLI-owned blocker literally in the
+   notes file, including the exact phrase `connection binding`, plus dynamic
+   schemas, generated outputs, `bindings_v2.json`, and package metadata. Avoid
+   softer wording such as "connection and process binding" because it hides the
+   concrete artifact the CLI must supply.
+   For brownfield edits, hand-authored bare `.bpmn` files, and any edit that
+   changes a start event id or adds or removes an entry point, run
+   `uip maestro bpmn refresh <project-path>` — **not only when packaging or
+   operating**. `operate.json` and `entry-points.json` are generated once and
    do not follow source edits, so step 4's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
-   <bpmn:startEvent id="Event_start"> exists`. Authoring from the skeleton above
-   renames the initializer's `Event_start`, so a source-only draft needs this
-   too. Keep the output as written — that shape is the contract `pack` consumes.
+   <bpmn:startEvent id="Event_start"> exists`. Writing a full-file replacement
+   from the skeleton above renames the initializer's `Event_start` — exactly
+   the drift this checks for; editing in place, as greenfield does above,
+   avoids it. Keep the output as written — that shape is the contract `pack`
+   consumes.
    `refresh` requires an init-generated project: with no
    `project.uiproj` it fails `Required file is missing` / `RetryWillNotFix`.
-   For a bare `.bpmn` (the shape of this repo's edit fixtures), write the
-   two-key `project.uiproj` first — `{ "Name": "<ProjectName>",
-   "ProjectType": "ProcessOrchestration" }` — then refresh, which writes the
-   rest. Only fall back to the equivalent hand-authored shape in
+   For a bare `.bpmn` (the shape of this repo's edit fixtures, and the
+   brownfield mode above), write the two-key `project.uiproj` first — `{
+   "Name": "<ProjectName>", "ProjectType": "ProcessOrchestration" }` — then
+   refresh, which writes the rest. Only fall back to the equivalent
+   hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
    synthetic local project. Every root start event needs a
@@ -417,14 +512,15 @@ and honestly surfaced to the user as gaps when asked.
 16. **Generated package files are CLI-owned.** Never hand-author
    `bindings_v2.json`, `entry-points.json`, `operate.json`, or
    `package-descriptor.json`. Run `uip maestro bpmn refresh <project-path>` to
-   generate them — never the deprecated `update-metadata`. An
-   Integration Service draft or boundary handoff asks for none of those — emit
-   only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
+   generate them — never the deprecated `update-metadata`. A source-only
+   draft asks for none of those — emit only the `.bpmn` plus a `.md` notes
+   file naming the CLI-owned blockers.
 
 ## References
 
 | Topic | Read |
 | --- | --- |
+| Sketch the shape first and agree it with the user (sketch mode) | [references/sketch-mode.md](references/sketch-mode.md) |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Worked-out topology for a recurring process shape, and how shapes compose | Patterns table above → `references/patterns/*-guide.md` |
