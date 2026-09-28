@@ -21,10 +21,10 @@ Before starting, understand the limits of prompt iteration:
 
 Prompts live at two levels and are edited by two separate commands:
 
-- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field name.
+- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
 - **`uip ixp groups update-prompts <project> --updates <json>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
 
-Each command matches by name and updates only the named entries, preserving every definition you didn't change. To update both field and group instructions in the same iteration, run the two commands back-to-back.
+Each command matches by its supplied identity and updates only the named entries, preserving every definition you didn't change. Field updates are identified by group name plus field name; group updates are identified by group name. To update both field and group instructions in the same iteration, run the two commands back-to-back.
 
 **Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model sees alongside per-field instructions. If the group instruction says "Extract only fields visible on the first page" but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` if it contradicts.
 
@@ -112,7 +112,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. Output is `{ status, dataset: { entity_defs, label_groups } }` (raw snake_case); each `dataset.label_groups[]` holds `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each prompt update (v2, v3, …).
 
-The field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `fields update-prompts --updates`.
+The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates` as `group` and `name`.
 
 ### 1d. Read sample documents (2-3 documents)
 
@@ -208,13 +208,13 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 
 ### 2c. Update instructions
 
-Use **field names** for `--fields` and **label_def names** for `--groups`:
+Use the parent **field group name** and exact **field name** in each field-update object; use the **label_def/group name** in each group-update object:
 
 ```bash
 cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
 [
-  {"name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
-  {"name": "Invoice Date", "instructions": "The date the invoice was issued. Use the exact format as written in the document. Found near the invoice number."}
+  {"group": "Invoice", "name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
+  {"group": "Invoice", "name": "Invoice Date", "instructions": "The date the invoice was issued. Use the exact format as written in the document. Found near the invoice number."}
 ]
 FIELDS_EOF
 
@@ -300,7 +300,7 @@ If any fields regressed, do a selective rollback:
 ```bash
 # Only include the regressed fields, not the whole iteration
 cat > /tmp/ixp/<project-name>/prompts/rollback.json << 'FIELDS_EOF'
-[{"name": "Vendor Address", "instructions": "previous instruction for this field only"}]
+[{"group": "Invoice", "name": "Vendor Address", "instructions": "previous instruction for this field only"}]
 FIELDS_EOF
 
 uip ixp fields update-prompts <project-name> \

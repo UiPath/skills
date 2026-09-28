@@ -14,9 +14,18 @@ Signature: `mock()`.
 ```
 
 Use a real script when downstream work needs temporary fixed data; that script
-has the same behavior locally and after deployment. Use a placeholder only to
-make a missing capability visible. Do not use it merely to disable a step or as
-the only work in a finished Flow.
+has the same behavior locally and after deployment. A script is never a
+stand-in for the capability itself (an extraction, an external service, a
+connector action). Search first, as [SKILL.md, "Choose the node before
+writing it"](../SKILL.md) says, and use the node it finds; for extraction, an
+agent, or a process, run the search exactly as the family reference gives it
+([`ixp.md`](ixp.md), [`agent.md`](agent.md)). Use a placeholder only when that
+search comes back empty; it makes the missing capability visible. Do not use it
+merely to disable a step or as the only work in a finished Flow.
+
+When `check` reports `MOCK_HAS_NO_OUTPUT` because a later step reads the mock,
+keep the mock and feed that step from a separate step, as in the example above;
+never replace the mock with a script that fakes its output.
 
 ## Unknown node types
 

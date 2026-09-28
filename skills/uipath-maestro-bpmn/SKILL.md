@@ -394,7 +394,8 @@ projects through the UiPath CLI.
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a
   failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
   Runtime evidence — incidents, variables, element executions, cursors, the
-  deployed asset — comes only from a `uip maestro bpmn ... --output json` read;
+  deployed asset — comes only from a `uip maestro bpmn ... --output json` read,
+  one literal command per read, never a loop (rule 9 there);
   local `.bpmn` source and generated package files are read from disk as usual.
   Never substitute the files backing that CLI for the CLI itself — see rule 3
   in that reference.

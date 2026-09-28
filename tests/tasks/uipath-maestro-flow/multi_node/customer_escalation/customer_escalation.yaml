@@ -21,6 +21,7 @@ run_limits:
 reference:
   directory: ../..
 
+# The channel is named so a headless agent does not invent one (skills#3572).
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new
   Outlook inbox emails and routes each one based on two signals: whether
@@ -32,8 +33,10 @@ initial_prompt: |
   classification, then branch with a decision node on the combined
   result.
 
-  - High-touch branch (urgent AND VIP): notify on Slack and reply to
-    the sender via Outlook with a fast-response acknowledgment.
+  - High-touch branch (urgent AND VIP): post to the Slack channel
+    `support-escalations` (the Slack connection in the top-level Shared
+    folder) and reply to the sender via Outlook with a fast-response
+    acknowledgment.
   - Standard branch: generate a support ticket in a script node and
     reply to the sender via Outlook with the ticket details.
 
