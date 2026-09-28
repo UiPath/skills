@@ -107,6 +107,7 @@ Assertion map (Flow -> BPMN):
   F _shared/check_connector_node_shape.py:48-51    manifest(ntype) resolves (node type is real)        -> has_typed_uipath_extension(task, "activity", ACTIVITY_TYPE) in --shape mode
   I                                                 locate/parse .bpmn                                  -> parse_bpmn()
   T                                                 curated|generic objectName classification           -> is_kind()
+  T                                                 body sortOptions[] entry {fieldName: priority, isDescending: true} as a sort carrier -> has_priority_sort_option()
   T                                                 entity name anywhere in node inputs/objectName/path  -> entity_ok()
   T                                                 vars.<VarId> substring reference in place of Flow node-id reference -> wired_to_create()
   T                                                 merge every target="body" input instead of requiring exactly one (chain criterion only) -> body_json()
@@ -284,7 +285,32 @@ def has_priority_desc_sort(task: ET.Element) -> bool:
     # Fallback: a single expression/metadata string carrying both tokens
     # together (e.g. a `=js:` sort expression, or a metadata JSON blob).
     blob = node_blob(task)
-    return "priority" in blob and bool(DESC_TOKEN_RE.search(blob))
+    if "priority" in blob and DESC_TOKEN_RE.search(blob):
+        return True
+    return has_priority_sort_option(task)
+
+
+def sort_options(task: ET.Element) -> list:
+    options = []
+    for inp in node_inputs(task):
+        if inp.attrib.get("target") != "body":
+            continue
+        try:
+            body = json.loads(inp.text or "")
+        except json.JSONDecodeError:
+            continue
+        if isinstance(body, dict) and isinstance(body.get("sortOptions"), list):
+            options.extend(body["sortOptions"])
+    return options
+
+
+def has_priority_sort_option(task: ET.Element) -> bool:
+    return any(
+        isinstance(opt, dict)
+        and str(opt.get("fieldName", "")).lower() == "priority"
+        and str(opt.get("isDescending")).lower() == "true"
+        for opt in sort_options(task)
+    )
 
 
 # --------------------------------------------------------------------------
