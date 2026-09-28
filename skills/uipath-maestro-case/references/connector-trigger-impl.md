@@ -32,6 +32,8 @@ Construct the input-details object literally from the trigger's `registry-resolv
 
 Full input-details contract: [`case-spec-input-details.md`](case-spec-input-details.md).
 
+**Solution-resource pickers** among the event parameters work as for activities; see [connector-activity impl-json.md](plugins/tasks/connector-activity/impl-json.md) § Step 1.
+
 ### Step 2 — Run `case spec` with input-details
 
 ```bash
@@ -39,6 +41,7 @@ uip maestro case spec --type trigger \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
   --input-details "<json from Step 1>" \
+  --solution-folder "<SolutionDir>" \
   --output json > tasks/spec-cache.<elementId>.json
 ```
 
@@ -70,6 +73,7 @@ Mint two prefixed IDs for the connection + folder bindings:
 |---|---|
 | Connection binding | `b` + 8 alphanumeric chars (e.g. `bA1B2C3D4`) |
 | Folder binding | `b` + 8 alphanumeric chars (different from connection binding) |
+| Resource binding rows | one per `spec.resourceBindings[].rows[]` item |
 
 These ids are **picked inline by the agent** (per SKILL.md Rule 14) — no subprocess.
 
@@ -92,6 +96,7 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{CONN_BINDING_ID}}` | `caseShape.context[name="connection"].value` (string `=bindings.{{CONN_BINDING_ID}}`) | `<connBindingId>` |
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
+| `{{RESOURCE_BINDING_ID:<field>}}` | `caseShape.inputs[name="body"].body.queryParams`; only when `spec.resourceBindings[]` is present | the id minted for that row |
 
 #### Write `context` / `inputs` / `outputs` from the spec-cache
 
@@ -223,6 +228,8 @@ Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/v
 - `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `registry-resolved.json` entry
 - `<connectorKey>` (drives ConnectionBinding templated `name`): from `registry-resolved.json`
 - `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+
+**Solution-resource rows:** append them as [connector-activity impl-json.md](plugins/tasks/connector-activity/impl-json.md) § Step 9 describes.
 
 Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 
