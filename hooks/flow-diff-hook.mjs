@@ -33,7 +33,7 @@ const REQUEST_TIMEOUT_MS = 2_000;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MARKER_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** File types worth reporting at all; each window's lockfile narrows this to the ones it reviews. */
-const REVIEWABLE_EXTENSIONS = ['.flow'];
+const REVIEWABLE_EXTENSIONS = ['.flow', '.bpmn', '.case'];
 const LOCK_DIR = path.join(os.homedir(), '.uipath', 'ide');
 const SESSION_DIR = path.join(LOCK_DIR, 'sessions');
 const TOKEN = /^[0-9a-f]{64}$/;
