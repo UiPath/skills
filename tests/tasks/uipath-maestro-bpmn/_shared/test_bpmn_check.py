@@ -323,33 +323,46 @@ def _outlook_receive_task(payload: str) -> ET.Element:
     )
 
 
-def test_waitfor_rejects_a_bare_filter_expression_string() -> None:
-    """Flow rejects the bare string by design (MST-8802); the port must too.
-
-    A text-blob fallback also let the three tokens come from three unrelated
-    inputs, so "contain" could arrive inside an unrelated word.
-    """
+def test_waitfor_reads_only_the_runtime_body_filter() -> None:
     grader = _load("check_outlook_waitfor_email")
 
-    bare = _outlook_receive_task(
-        '<uipath:input name="filterExpression" '
-        "value=\"subject contains 'TestWaitFor'\" />"
+    untargeted = _outlook_receive_task(
+        '<uipath:input name="filter" type="json"><![CDATA['
+        '{"expression":"(contains(subject, \'TestWaitFor\'))",'
+        '"tree":{"filters":[{"id":"subject","operator":"Contains","value":"TestWaitFor"}]}}'
+        "]]></uipath:input>"
     )
-    assert not grader.has_subject_contains_filter(bare)
+    assert not grader.has_subject_contains_filter(untargeted)
 
-    scattered = _outlook_receive_task(
-        '<uipath:input name="subject" value="container" />'
-        '<uipath:input name="note" value="TestWaitFor" />'
-    )
-    assert not grader.has_subject_contains_filter(scattered)
-
-    structured = _outlook_receive_task(
+    tree_only = _outlook_receive_task(
         '<uipath:input name="metadata" type="json"><![CDATA['
         '{"essentialConfiguration":{"filter":{"filters":['
         '{"id":"subject","operator":"Contains","value":"TestWaitFor"}]}}}'
         "]]></uipath:input>"
     )
-    assert grader.has_subject_contains_filter(structured)
+    assert not grader.has_subject_contains_filter(tree_only)
+
+    body = _outlook_receive_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"filters":{"expression":"(parentFolderId == \'X\') && '
+        '(contains(subject, \'TestWaitFor\'))"},"queryParams":{"parentFolderId":"X"}}'
+        "]]></uipath:input>"
+    )
+    assert grader.has_subject_contains_filter(body)
+
+
+def test_trigger_inbox_reads_parent_folder_from_body_query_params() -> None:
+    grader = _load("check_outlook_trigger_inbox")
+
+    trigger = ET.fromstring(
+        f'<bpmn:startEvent xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
+        'id="Start_1"><bpmn:extensionElements><uipath:event version="v1">'
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"filters":{"expression":"(parentFolderId == \'X\')"},"queryParams":{"parentFolderId":"X"}}'
+        "]]></uipath:input></uipath:event></bpmn:extensionElements></bpmn:startEvent>"
+    )
+
+    assert grader.find_parent_folder_id(trigger) == "X"
 
 
 def test_validate_bpmn_fails_malformed_xml_without_calling_the_cli(tmp_path, monkeypatch) -> None:
