@@ -1,7 +1,7 @@
 ---
 name: uipath-genome
 description: "UiPath automation genome — portable markdown blueprint (`*-genome.md`) that documents an automation at process and component level: purpose, workflow steps, business rules, data handoffs, platform resources, acceptance criteria, and the UiPath skill that builds each part. EXTRACT a genome from an existing UiPath project or solution (`.xaml`/`.cs`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `.uipx`) or from another automation or test framework's export, as ground truth for documentation or migration to UiPath; AUTHOR one from a described idea; EXECUTE one to build the automation. Triggers: 'genome', 'blueprint', 'document this automation/solution/process', 'reverse-engineer what this project does', 'build/implement this genome'. PDD/SDD design & task derivation→uipath-planner. Build without a genome→the artifact's skill (uipath-rpa, uipath-maestro-flow, uipath-agents…). Quality review→uipath-review. Finding what to automate→uipath-automation-discovery."
-when_to_use: "User says 'genome', 'blueprint', 'document what this automation does', 'extract a spec from this project/solution', 'reverse-engineer this process', 'describe this solution at high and low level', 'I want a spec before we build', or points at a *-genome.md and asks to build/execute/implement it. NOT for PDD/SDD (→uipath-planner), not for building or fixing an automation without a genome (→the artifact's skill), not for code review (→uipath-review)."
+when_to_use: "User says 'genome', 'blueprint', 'document what this automation does', 'extract a spec from this project/solution', 'reverse-engineer this process', 'describe this solution at high and low level', 'I want a spec before we build', 'propose a workshop or demo scenario to build', or points at a *-genome.md and asks to build/execute/implement it. NOT for PDD/SDD (→uipath-planner), not for building or fixing an automation without a genome (→the artifact's skill), not for code review (→uipath-review)."
 ---
 
 # UiPath Genome — document, author, and execute automation blueprints
@@ -13,7 +13,7 @@ Genome: markdown specification an AI agent consumes to rebuild an automation —
 ## When to Use This Skill
 
 - Existing UiPath project or solution to document, understand, or prepare for migration ("what does this solution do", "extract a genome", "document this process at high and low level")
-- Described automation idea needing a specification before building
+- Described automation idea needing a specification before building, or a goal (a self-paced workshop, a demo, trying a product) needing a scenario proposed first
 - `*-genome.md` file to build from
 - Existing genome to update, split into components, or re-extract after source changed
 
@@ -23,7 +23,7 @@ Determine mode from input, in this order:
 
 1. **`*-genome.md` path plus build intent** ("build", "execute", "implement", "follow") → **Execute**. Read [execution-guide.md](references/execution-guide.md).
 2. **Directory, project file, solution manifest, or another framework's export** (`project.json`, `project.uiproj`, `.uipx`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.json`, `uipath.json`; or a folder with none of these holding another automation or test framework's export) → **Extract**. Read [extraction-guide.md](references/extraction-guide.md) and the framework's guides (§ Source Frameworks).
-3. **Description, idea, SOP, or process narrative** with no source project → **Author**. Read [authoring-guide.md](references/authoring-guide.md).
+3. **Description, idea, SOP, process narrative, or a goal to propose a scenario for** (a self-paced workshop, a demo, trying a product) with no source project → **Author**. Read [authoring-guide.md](references/authoring-guide.md).
 4. **`*-genome.md` path plus edit intent** ("update", "add a step", "split", "remove the inferred flags") → **Edit** in place per the edit tables in the authoring guide (Step 8) and, for an extracted genome, the extraction guide (Step 7); re-extract instead when the user says the source changed.
 
 A PDD or SDD, or a request to design a solution and derive tasks, is `uipath-planner`'s job, not a genome. Say so and stop.
@@ -75,7 +75,7 @@ Detect framework and deployment unit → ask for related resources → inventory
 
 ### Author (description → genome)
 
-Receive → choose level → infer complexity → extract → suggest platform capabilities and describe the transactional shape (as-is, split options per unit of work, evidence) → bounded follow-ups (simple 0-1, medium 1-2, complex 2-3 rounds, all questions of a round in one message) → generate → write → offer edits. Full procedure: [authoring-guide.md](references/authoring-guide.md).
+Receive (a goal: one question round, up to three proposed scenarios, the pick becomes the description) → choose level → infer complexity → extract → suggest platform capabilities and describe the transactional shape (as-is, split options per unit of work, evidence) → bounded follow-ups (simple 0-1, medium 1-2, complex 2-3 rounds, none after a picked scenario, all questions of a round in one message) → generate → write → offer edits. Full procedure: [authoring-guide.md](references/authoring-guide.md).
 
 ### Execute (genome → automation)
 

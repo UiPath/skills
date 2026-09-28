@@ -56,7 +56,9 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 ## Common Combinations
 
-- **Invoice processing (process genome):** `uipath-maestro-bpmn` orchestrator; `uipath-rpa` mailbox and Document Understanding extraction; `uipath-agents` exception triage; human validation inside BPMN (`uipath-human-in-the-loop`); `uipath-rpa` ERP posting. Platform Dependencies: exception queue, credential assets.
-- **Event-driven notification (component genome):** `uipath-rpa` coded steps for API polling and email; `uipath-rpa` XAML fallback scrape. One project, one skill, two authoring modes.
-- **Data transfer Excel → web form (component genome):** `uipath-rpa` only.
-- **AI-assisted review (process genome):** `uipath-agents` classifier; `uipath-coded-apps` review screen; `uipath-maestro-flow` glue.
+| Shape | Example | Level | Components — type (role): skill | Applications |
+|---|---|---|---|---|
+| One skill, one UI application | Excel rows keyed into a web form | component genome | RPA process: `uipath-rpa` | Excel, the web application |
+| One skill, no UI application | API polled, mail sent on change | component genome | RPA process (coded steps for polling and mail): `uipath-rpa` | REST API, mail server |
+| Several skills, no UI application | AI-assisted review | process genome | Flow (glue): `uipath-maestro-flow`; Agent (classifier): `uipath-agents`; Coded app (review screen): `uipath-coded-apps` | data through connectors or APIs |
+| Several skills, several applications | Invoice processing | process genome | BPMN process (orchestrator; human validation designed with `uipath-human-in-the-loop`): `uipath-maestro-bpmn`; RPA process (mailbox intake, Document Understanding extraction, ERP posting): `uipath-rpa`; Agent (exception triage): `uipath-agents` | mailbox, ERP; Platform Dependencies: exception queue, credential assets |

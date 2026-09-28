@@ -1,6 +1,6 @@
 # Authoring Guide — genome from a description
 
-Turn a user's free-form automation description into a genome. User describes; agent infers, fills UiPath specifics, writes. Content rules and templates: [genome-format-guide.md](genome-format-guide.md).
+Turn a user's free-form automation description, or a goal the agent proposes a scenario for, into a genome. User describes or picks; agent infers, fills UiPath specifics, writes. Content rules and templates: [genome-format-guide.md](genome-format-guide.md).
 
 ## Step 1 — Receive the description
 
@@ -10,6 +10,25 @@ Accept anything from one sentence to several pages. Do not ask the user to elabo
 - **Several paragraphs:** extract methodically; follow-ups often unnecessary.
 - **Contradictions:** name the specific conflict in the follow-up round. Do not guess which requirement wins.
 - **Existing documents (SOP, PDD, process map, transcript):** treat the document as the description. A PDD or SDD the user wants turned into a solution design belongs to `uipath-planner`, not here; a genome is the right output only when the user asks for a genome or blueprint.
+- **A goal, not a process** (a self-paced workshop, a demo, trying a product or an application): propose scenarios first (Step 1a); the picked scenario is the description.
+
+## Step 1a — Propose scenarios for a goal
+
+1. **Ask one round:** one `AskUserQuestion` batch of two multi-select questions, each skipped when the request already answers it.
+   - **Products to exercise:** RPA, agents, orchestration (Maestro Flow, BPMN, Case), document extraction, human review and apps.
+   - **Systems within reach, grouped by the setup they need:** none (local files, Excel, public APIs); a tenant connection (mail, chat, a SaaS system); an application installed or hosted for the user (SAP, an internal web application).
+
+   Group the systems by setup because every connection, account or installation is one more thing that can fail before the scenario runs; the grouping lets the user trade reach against setup.
+2. **Propose up to three scenarios** built for the answers, using only the systems within reach plus sources that need no setup. Each is a card:
+   - storyline, one sentence: what arrives, what is decided or done, where the result lands
+   - Components table, `# | Component | Type | Skill | Summary`, skills per Step 5 and [skill-mapping-guide.md](skill-mapping-guide.md); one row makes a component genome
+   - applications and the setup each needs (connection, account, installation)
+   - input source (item 3)
+   - what it exercises: products and skills
+
+   Cover different shapes of [skill-mapping-guide.md § Common Combinations](skill-mapping-guide.md) where the answers allow — one skill on one application, no UI application, several skills across applications — so the pick sets the scope while complexity is still inferred (Step 3). Invent the storyline for the answers: the combinations and [assets/examples/](../assets/examples/) give shapes and depth, not stories. Present the cards as one single-select `AskUserQuestion`, each card in its option's preview; the user merges or amends cards through Other.
+3. **An invented scenario names where its input comes from:** a public source, sample files the build writes as data files, or a generator component in the Components table. A described process brings its inputs; an invented one has none until the scenario gives them. The genome names the source in Target Applications (Actors and Systems in a process genome), and the acceptance criteria take their inputs from it.
+4. **The pick is the description.** Continue at Step 2 with the chosen, merged or amended card.
 
 ## Step 2 — Choose the level
 
@@ -56,7 +75,7 @@ Add these even when the user did not name them:
 
 ## Step 6 — Ask follow-ups (bounded)
 
-Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. After the last round, generate with defaults and stubs; never loop.
+Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. A scenario picked from proposals (Step 1a) gets none: the agent invented every detail, so no gap is left that only the user can fill, and the values left open are Configuration Questions. After the last round, generate with defaults and stubs; never loop.
 
 Ask only for gaps that change the build: missing target system, unknown trigger, undefined decision outcome, unspecified failure behaviour for a critical step, unclear ownership of a handoff, which persona signs in for a scenario when several are implied, whether items must be shared across robots or survive a run failure when the description leaves it open (evidence for the Transactional Shape's split options; the split itself is chosen at execution), and whether the UI application is reachable at build time (live capture) or not (placeholders, indicated later). Do not ask for values a Configuration Question can carry as a default.
 
