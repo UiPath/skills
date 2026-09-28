@@ -14,8 +14,8 @@ The skill emits the `30.0.0` top-level shape (`{ id, version, name, metadata, bi
 |---|---|
 | 2 — Prototyping | Informational validate, no halt on errors. |
 | 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure while each fix reduces the error count; hard stop only when two consecutive fix→validate rounds leave the count unchanged, or at 12 rounds. |
-| 5 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, re-run the upload once without `--output-filter` and dump that unfiltered response to `tasks/upload-response.json`, re-show Phase 5 prompt. |
-| 6 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
+| 5 — Publish | `uip solution upload` accepts the top-level shape. On failure, re-run the upload once without `--output-filter` and dump that unfiltered response to `tasks/upload-response.json`, report the CLI error verbatim, and re-show the Phase 5 prompt. |
+| 6 — Debug | `uip maestro case debug` accepts the top-level shape, so a debug failure is a finding about the case or its resources, not the schema. Record the CLI error verbatim in build-issues.md. |
 | 7 — Publish to Orchestrator | Packs and publishes the whole solution, so the case's top-level shape is carried through unvalidated by this step. On `pack`/`publish` failure, report the CLI error verbatim, note it in build-issues.md, and re-show the Phase 7 prompt. |
 
 Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope.
@@ -46,10 +46,12 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 **Run `uip maestro case sdd convert` before writing any Phase 2 element by hand.** The SDD determines most of the plan; convert derives that part in one call and reports what it could not. Hand-authoring what a parser already derives is the expensive path and the one that drifts from the document.
 
 ```bash
-uip maestro case sdd convert "<SDD_PATH>" --out "<CASEPLAN_PATH>" --output json
+uip maestro case sdd convert "<SDD_PATH>" --resolved tasks/registry-resolved.json --out "<CASEPLAN_PATH>" --output json
 ```
 
-Run it **after** the Phase 1 registry gate, never before. Convert reads the document only; every tenant identity it cannot supply is one the gate has already resolved, and running it first throws that away.
+Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#step-4--complete-registry-resolvedjson), never before. `--resolved` hands convert the ledger, so it binds each `selected` resource's name and folder itself instead of leaving it as a `resource-binding` entry; running convert without the ledger, or before the gate, throws that resolution away.
+
+**If convert refuses the ledger** because an entry does not match the SDD (the message names the stage, the task and the field that differs), the ledger is stale: the SDD changed after `sdd resolve` wrote it. Re-run `sdd resolve`, re-apply the Step 4 additions with Edit, and convert again. Never edit `sdd.md` or the ledger to make them agree.
 
 **Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
 
