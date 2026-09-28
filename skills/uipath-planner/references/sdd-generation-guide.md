@@ -461,7 +461,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    | Field | Value |
    |---|---|
-   | **Status** | draft → ready                                  ← the first incremental write stamps `draft`; flip to `ready` ONLY after Step 1.5 ran (every surviving SME item classified `default-carried`) AND the item 8 template-superset check passes. A `blocking` SME item keeps `draft`. Lane A derives tasks from `ready` only. `Status` answers "may tasks be derived?"; `Template validation` answers "is the file complete?" — read both.
+   | **Status** | draft → ready                                  ← the first incremental write stamps `draft`; flip to `ready` ONLY after Step 1.5 ran (every surviving SME item classified `default-carried`) AND the item 8 template-superset check passes. A `blocking` SME item keeps `draft`. Lane A derives tasks from `ready` only.
    | **Execution autonomy** | <autonomous | interactive>          ← from Phase 1 Step 0
    | **Delivery model** | <cloud | automation-suite | standalone | unspecified> ← from Phase 1 Step 0 (append the Suite version when known, e.g. `automation-suite 2025.1`)
    | **SDD scope** | <single-product | solution>                  ← from Phase 1 Step 4 (Level 1 / Level 1.75)
