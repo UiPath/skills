@@ -178,8 +178,8 @@ fails with `400 Error parsing query`. Put a requested tree in the context `metad
 and say in your summary that the runtime filter is the CEQL string.
 
 ```xml
-<uipath:input name="entityName" type="string" target="path" value="<EntityName>" />
-<uipath:input name="queryExpression" type="string" target="query" value="<field> = &apos;<value>&apos; AND <field> &gt;= <number>" />
+<uipath:input name="entityName" type="string" target="path" value="&lt;EntityName&gt;" />
+<uipath:input name="queryExpression" type="string" target="query" value="&lt;field&gt; = &apos;&lt;value&gt;&apos; AND &lt;field&gt; &gt;= &lt;number&gt;" />
 <uipath:input name="isAscending" type="boolean" target="query" value="false" />
 <uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName":"<field>"}]]></uipath:input>
 ```

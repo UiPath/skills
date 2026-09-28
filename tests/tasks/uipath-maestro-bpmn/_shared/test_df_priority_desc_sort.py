@@ -97,6 +97,7 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         IS_ASCENDING_FALSE + SORT_FIELD_BODY + '<uipath:input name="body" type="json" target="body"><![CDATA[{}]]></uipath:input>',
         IS_ASCENDING_FALSE + '<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName": "priorityLabel"}]]></uipath:input>',
         IS_ASCENDING_FALSE + FILTER_TREE_WITH_SORT,
+        IS_ASCENDING_FALSE.replace('target="query"', 'target="path"') + SORT_FIELD_BODY,
     ],
     ids=[
         "descending-false",
@@ -112,6 +113,7 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         "overridden-body",
         "body-sortfieldname-other-field",
         "sort-in-filter-tree",
+        "direction-not-query",
     ],
 )
 def test_priority_desc_sort_rejected(inputs: str) -> None:

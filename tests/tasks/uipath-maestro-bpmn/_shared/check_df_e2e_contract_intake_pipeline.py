@@ -269,6 +269,14 @@ def named_inputs(task: ET.Element) -> list[tuple[str, str]]:
     return pairs
 
 
+def query_inputs(task: ET.Element) -> list[tuple[str, str]]:
+    return [
+        ((inp.attrib.get("name") or "").strip().lower(), (inp.attrib.get("value") or inp.text or "").strip())
+        for inp in node_inputs(task)
+        if inp.attrib.get("target") == "query"
+    ]
+
+
 def sent_body(task: ET.Element) -> dict:
     bodies = [inp for inp in node_inputs(task) if inp.attrib.get("target") == "body"]
     if not bodies:
@@ -293,7 +301,7 @@ def has_priority_desc_sort(task: ET.Element) -> bool:
         name in SORT_FIELD_NAMES and "priority" in value.lower() for name, value in pairs
     )
     dir_hit = False
-    for name, value in pairs:
+    for name, value in query_inputs(task):
         if name not in SORT_DIR_NAMES:
             continue
         v = value.lower()
