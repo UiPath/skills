@@ -299,6 +299,13 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 
 If the caller does not consume an output but the callee declares it as required, declare a `discard*` variable per unused output and reference it. Omitting the binding fails validation when the callee has required out-arguments.
 
+### Out and InOut Arguments Are Not Copied Back When the Callee Faults
+
+Callee throws → caller keeps pre-invoke values of every `out_*`/`io_*` binding, even ones already assigned. Mutations to an object passed `in_*` (dictionary add, field set) survive. Same for coded workflow return values.
+
+- Never read `out_*`/`io_*` in the caller's catch.
+- Anything the caller must release on failure (connection, client, temp file): callee records it on a caller-created object passed `in_*`, not via `out_*`. REFramework: [../reframework-guide.md § Init and Close Run More Than Once](../reframework-guide.md#init-and-close-run-more-than-once-all-modes).
+
 ## Empty Argument Values
 
 `<InArgument>` and `<OutArgument>` with **empty content** pass per-file `uip rpa validate` but fail project-level `uip rpa analyze` with `Value for a required activity argument 'Value' was not supplied` — no file or activity pointer.
@@ -589,6 +596,17 @@ Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/
 
   Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
 - **GetRowItem**: Must specify at least one of `Column`, `ColumnIndex`, or `ColumnName` — all three empty causes validation error.
+
+## Database Activity Gotchas (Connect to Database, Run Query, Run Command)
+
+Probed on SQL Server, `Microsoft.Data.SqlClient`.
+
+- `ExistingDbConnection` is `InArgument<DatabaseConnection>` (docs say `Property`): `<InArgument x:TypeArguments="udb:DatabaseConnection">`, `xmlns:udb="clr-namespace:UiPath.Database;assembly=UiPath.Database"`. Omitted `CommandType` = `Text`.
+- `Parameters`: direct `InArgument`/`OutArgument`/`InOutArgument` children (element = direction), `x:Key` = SQL name without `@` (`@` prefix also binds). `scg:Dictionary` wrapper also binds at runtime.
+- `null` value → SQL NULL; no `DBNull.Value` needed. SQL name without key → `SqlException: Must declare the scalar variable "@N".` Unused key ignored.
+- Type Out/InOut parameters explicitly: `OutArgument<Object>` returns a `String`. `OutArgument<String>` needs no size.
+- Generated key in one Run Command: `INSERT ...; SET @Id = SCOPE_IDENTITY();` + `<OutArgument x:TypeArguments="x:Int64" x:Key="Id">`. (`SELECT SCOPE_IDENTITY()` in Run Query returns `decimal`.)
+- Never concatenate values into `Sql`; only trusted identifiers.
 
 ## Testing Activity Gotchas
 
