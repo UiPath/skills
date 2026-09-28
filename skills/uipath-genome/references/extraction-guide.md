@@ -66,7 +66,7 @@ Read every relevant file. No sampling, no "the helpers are similar".
 
 ### Step 4b — Verify every suspected source defect
 
-A finding that the source misbehaves is a **suspected defect** until this step settles it. Examples: a flag set but never tested, an exit that cannot fire, a result checked but never captured, a retry an exception bypasses, a notice prepared but never sent, a branch whose test contradicts its own comment, one copy of a template doing what its sibling does not. The inventory output is a rendering the pack's script produced, and extraction has read it, not the source. So the finding may belong to the source, or to the rendering. Settle each one in two passes before it is written as a defect.
+A finding that the source misbehaves is a **suspected defect** until this step settles it. Examples: a flag set but never tested, an exit that cannot fire, a result checked but never captured, an irreversible write (a posting, a creation) followed by steps that can fail before its result is recorded, a retry an exception bypasses, a notice prepared but never sent, a branch whose test contradicts its own comment, one copy of a template doing what its sibling does not. The inventory output is a rendering the pack's script produced, and extraction has read it, not the source. So the finding may belong to the source, or to the rendering. Settle each one in two passes before it is written as a defect.
 
 1. **The rendering, in full.** Re-read every object the finding rests on in the uncompressed rendering, never a compact or folded one. That includes:
    - the call's argument and result bindings, in both directions;
