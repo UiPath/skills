@@ -1,7 +1,8 @@
 task_id: skill-ixp-create-project-blank-smoke
 description: >
-  Smoke: agent creates a blank IXP project with `--skip-taxonomy` — no
-  taxonomy, no docs, so it doesn't stall waiting for files or a suggestion.
+  Smoke: agent creates an empty IXP project by omitting `<folder-path>` — no
+  taxonomy, no docs, so it doesn't stall waiting for files or a suggestion,
+  and doesn't redirect in-product (the CLI supports this directly).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -25,10 +26,13 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  # calls.log records `$*`, so the quoted name arrives unquoted. Only
+  # `--skip-taxonomy` (a no-op without a folder) and `--output <fmt>` may follow
+  # the name — any other token is a folder argument, which is not a blank project.
   - type: file_matches_regex
-    description: "Agent created a blank project via `projects create \"test project\" … --skip-taxonomy`"
+    description: "Agent created an empty project via `projects create \"test project\"` with no folder"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+create\b(?=.*test project)(?=.*--skip-taxonomy).*)[^\r\n]*$
+      (?m)^uip\s+ixp\s+projects\s+create\s+["']?test project["']?(?:\s+(?:--skip-taxonomy|--output\s+\S+))*[ \t]*$
     weight: 3.0
     pass_threshold: 1.0
