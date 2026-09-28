@@ -25,6 +25,10 @@ listing silently misses them. An empty or unmatched result from a missing
 found via `registry search`, is a **false negative** — never conclude "no
 connection exists" or ask the user to create one until you have searched the
 registry for the real connector key and listed across all folders.
+Select rows by field, never by position: `uip is connections list
+--all-folders --output json | jq '.Data[] | select(.ConnectorKey=="<connectorKey>" and .State=="Enabled")'`.
+A truncated listing is also a false negative; see
+[cli-conventions.md](cli-conventions.md).
 
 `registry list` returns four buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
@@ -273,6 +277,15 @@ six-name lexicon — List, Retrieve, Create, Update, Delete, Replace — and the
 reverse map accepts only those plus raw HTTP verbs, which is also exactly what
 `uip is resources run` exposes as subcommands. `--operation` takes the same
 value, so pass `--operation Create`.
+
+### Set every required `RequestFields` entry
+
+Put every `RequestFields` entry marked `Required: true` in the body under its
+described name. List them from the describe `--output json` result with
+`jq '.Data.RequestFields | map(select(.Required) | .Name)'`;
+never filter `RequestFields` by the names you expect. A missing Slack
+`messageToSend` faults with `invalid_blocks`. Describe omits Jira's
+`fields.summary`; set it anyway.
 
 ### Required `Parameters` are separate from the body — emit every one
 
