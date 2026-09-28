@@ -142,8 +142,8 @@ Return a concise diagnosis:
 - Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.
 - Safe next action: name the repair owner from the line above and the read-only command that shows the run's state
   before any Operate decision, e.g. "`<OWNER>` fixes `<ELEMENT_ID>`, then re-read
-  `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`" (`debug-instance incidents
-  <INSTANCE_ID>` for a debug run). Name the read; do not run it now. If no repair is needed, the read alone is the next
+  `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`" (for a debug run,
+  `uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json`). Name the read; do not run it now. If no repair is needed, the read alone is the next
   action.
   Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish, and deploy are never
   the next action. If one fits later, name it on its own line as an Operate decision outside this diagnosis. When the
