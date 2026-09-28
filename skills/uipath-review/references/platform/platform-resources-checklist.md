@@ -255,7 +255,8 @@ For deployments with >50 robots:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Pre-built connectors used instead of custom HTTP requests where available | Info | Check for HTTP Request activities that duplicate connector functionality |
+| Pre-built connectors used instead of custom HTTP requests where available | **Critical** | Check for HTTP Request activities that duplicate connector functionality. A catalog connector exists for that vendor (`uip is connectors list`) and the automation calls the API by hand anyway |
+| No catalog connector → a **custom connector** was built, not a hand-rolled authenticated call | Warning | For each third-party host the automation calls directly, confirm no connection exists for it (`uip is connections list --all-folders`). A REST+JSON API with no connector is a case for `uip is connectors builder`, not for an HTTP Request carrying a key. Storing that key in a `Credential` asset satisfies the credential rows above and still leaves the integration unmanaged — not pingable, not re-pointable per environment, absent from every connection inventory |
 | Connections use service accounts (not personal credentials) | Warning | Check connection authentication — service accounts preferred |
 | Credentials rotated on regular schedule | Warning | Check credential expiration and rotation policy |
 | Environment-specific connections configured (Dev/Test/Prod) | Warning | Verify connections point to correct environment endpoints |

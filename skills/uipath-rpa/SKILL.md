@@ -159,7 +159,7 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
 <!--skill-flavor:rules-validation-gate:end-->
 4a. **Author workflow files with file tools.** `Write` creates each `.xaml`/`.cs` file complete; `Edit` makes every later change. Do not generate workflow files with a script or template program: validation and fixes stay per file, and Object Repository links survive `Edit` but not regeneration. Many similar files: parallel `Write`s in one message, a helper workflow for a repeated pattern, or copy a validated file and `Edit` its differences.
 4b. **Write a workflow file only for a unit worth invoking.** Extract a workflow when a group of activities is reused, or when a step is large enough to read on its own. Keep a single activity, or a short run of assignments, inline at the step that uses it: the invoke and its argument bindings are as long as the body they replace, and they hide that body from the reader. Do not write a workflow that only passes its arguments to one activity (a library activity, a coded workflow); call that activity where the step needs it.
-5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
+5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing — but reach a third-party *system* through an Integration Service connector activity, or a custom connector built with `uip is connectors builder` when the catalog has none. A hand-built API call is a last resort with a stated reason: it never appears in `uip is connections list` and cannot be re-pointed per environment without republishing, and a `Credential` asset keeps the *secret* safe, not the *integration* managed.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
    - **Removing a dependency** — remove only what `uip rpa cleanup --dry-run` lists as unused ([cli-reference.md § packages install](references/cli-reference.md#packages-install)). A package may be the sole supplier of an activity used elsewhere (`MergePDFs` lives in the IntelligentOCR.StudioWeb family).
@@ -184,7 +184,6 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
     **Reading existing XAML:** activity inside `<ui:TriggerScope.Triggers>` must be a local trigger; an integration trigger there is broken — flag to the user. Activity at workflow root can be either type — check `triggerType` to disambiguate.
 
     See [trigger-pattern-guide.md](references/trigger-pattern-guide.md) for worked examples, the `SchedulingMode` reference, the catalog of trigger activities, and the procedure for editing existing `ui:TriggerScope` workflows.
-
 
 ### Destination Preflight (Both Modes)
 

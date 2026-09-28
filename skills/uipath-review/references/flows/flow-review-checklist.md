@@ -111,6 +111,15 @@ uip maestro flow validate "<PROJECT_NAME>.flow" --output json
 | Output variables map to subflow `out` direction globals | Warning | Check output mapping |
 | Subflow used for repeated logic (not one-off sequences) | Info | Evaluate reuse potential |
 
+### Managed HTTP Nodes (`core.action.http.v2`)
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| `authentication` is `"connector"`, not `"manual"`, for any authenticated vendor API | **Critical** | Read `inputs.detail.authentication`. Manual mode means the flow carries the credential: the integration never appears in `uip is connections list`, cannot be pinged, and cannot be re-pointed per environment without editing the flow |
+| Manual mode is justified | Warning | Manual mode is legitimate for a public/no-auth API, a non-REST+JSON vendor, or prototyping. For an authenticated API with no catalog connector, the answer is `uip is connectors builder` — build one and switch the node back to connector mode |
+| No credential built into headers | **Critical** | Grep `inputs.detail` for `Bearer `, `apiKey`, `token`, `x-api-key` in `headers`. An `=js:` expression reading a variable still means the flow owns the secret |
+| A curated connector activity was not available | Warning | `uip maestro flow registry search <vendor>` — an HTTP node where a `uipath.connector.<key>.<activity>` covers the operation is the wrong node |
+
 ## 4. Resource Node Quality
 
 ### Published Resources
