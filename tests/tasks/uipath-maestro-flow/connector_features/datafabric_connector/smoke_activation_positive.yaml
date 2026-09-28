@@ -4,12 +4,28 @@ description: >
   uipath-maestro-flow skill.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover]
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   max_turns: 25
 
+reference:
+  directory: .
+
+# The prompt names a real entity, created idempotently here, so both arms
+# resolve it. It used to name `ProductCatalog`, which the tenant does not have:
+# one arm stopped blocked and the other built against the look-alike
+# `ProductCatalogue`, and the pair's agent-time delta measured that choice.
+pre_run:
+  - command: 'python3 "_setup/ensure_entity.py" "_setup/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
 initial_prompt: |
   I need to create a record in my DataFabric entity from a UiPath Flow.
-  The entity is called ProductCatalog — build the Flow that does it.
+  The entity is called FlowCodeEvalEntity — build the Flow that does it.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
