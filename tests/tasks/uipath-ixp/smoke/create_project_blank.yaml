@@ -28,9 +28,8 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # argv is recorded as a list, so this also proves "test project" was passed
-  # as ONE argument — not a project "test" in a folder "project". `positional`
-  # is a prefix match, so a folder after the name is not graded.
+  # `positional` is a prefix match, so a folder after the name is not graded —
+  # the sandbox has no documents to pass.
   - type: cli_called
     description: "Agent created the project with `projects create \"test project\"`"
     verb: "ixp projects create"
