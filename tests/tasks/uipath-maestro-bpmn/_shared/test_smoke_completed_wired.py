@@ -74,7 +74,7 @@ def _write(tmp_path: Path, nodes: str, flows: list[tuple[str, str]]) -> None:
     ],
     ids=["direct-step", "outcome-gateway"],
 )
-def test_completion_wired_accepted(tmp_path, monkeypatch, nodes, flows) -> None:
+def test_wired_accepted(tmp_path, monkeypatch, nodes, flows) -> None:
     _write(tmp_path, nodes, flows)
     monkeypatch.chdir(tmp_path)
     checker.main()
@@ -92,7 +92,7 @@ def test_completion_wired_accepted(tmp_path, monkeypatch, nodes, flows) -> None:
     ],
     ids=["direct-end", "gateway-to-end", "unwired"],
 )
-def test_completion_wired_rejected(tmp_path, monkeypatch, nodes, flows) -> None:
+def test_wired_rejected(tmp_path, monkeypatch, nodes, flows) -> None:
     _write(tmp_path, nodes, flows)
     monkeypatch.chdir(tmp_path)
     with pytest.raises(SystemExit) as exc:
