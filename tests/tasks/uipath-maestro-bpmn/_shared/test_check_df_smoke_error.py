@@ -18,15 +18,20 @@ NS = (
 )
 
 
-def _node(object_name: str, entity: str, method: str) -> str:
+def _node(object_name: str, entity: str, method: str, body_entity: bool = False) -> str:
+    entity_input = (
+        f'<uipath:input name="body" type="json" target="body"><![CDATA[{{"entityName":"{entity}"}}]]></uipath:input>'
+        if body_entity
+        else f'<uipath:input name="entityName" target="path" value="{entity}"/>'
+    )
     return (
         f'<bpmn:sendTask id="T_{object_name}_{entity}"><bpmn:extensionElements>'
         '<uipath:activity><uipath:type value="Intsvc.ActivityExecution"/><uipath:context>'
         '<uipath:input name="connectorKey" value="uipath-uipath-dataservice"/>'
         f'<uipath:input name="objectName" value="{object_name}"/>'
         f'<uipath:input name="method" value="{method}"/>'
-        f'<uipath:input name="entityName" target="path" value="{entity}"/>'
-        "</uipath:context></uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+        + entity_input
+        + "</uipath:context></uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
     )
 
 
@@ -107,5 +112,20 @@ def test_no_project_file_fails_cleanly(tmp_path):
 def test_a_bare_bpmn_with_no_project_anywhere_is_graded(tmp_path):
     """Batch-10 run 35538279757 shipped one .bpmn and no project.uiproj."""
     (tmp_path / "P.bpmn").write_text(SHAPE, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 0, out
+
+
+def test_entity_named_only_in_the_body_json_counts(tmp_path):
+    """Smoke run 36443527602: curated query nodes carried the entity as a
+    body field, not a flat input."""
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        + _node("CreateEntityRecordCurated", "NonExistentEntity", "POST", body_entity=True)
+        + _node("QueryEntityRecordsCurated", "FlowCodeEvalEntity", "POST", body_entity=True)
+        + _node("QueryEntityRecordsCurated", "FlowCodeEvalEntity", "POST", body_entity=True)
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
     rc, out = _run(tmp_path)
     assert rc == 0, out

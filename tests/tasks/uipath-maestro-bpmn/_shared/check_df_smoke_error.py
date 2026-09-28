@@ -31,8 +31,9 @@ Assertion map (Flow -> BPMN):
   I                             parse each .bpmn                          -> ET.parse()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
   T                             entity as the generic objectName, an exact -> mentions_entity()
-                                 input value on any target, or an exact
-                                 context `path` segment
+                                 input value on any target, an exact
+                                 context `path` segment, or a string leaf
+                                 of the request body (either body form)
   DROPPED  topology/parallel-branch parsing    (Flow's own grader does not parse it either -- see its docstring)
   DROPPED  require_no_private_connector_values (not in Flow)
   DROPPED  require_sequence_integrity          (not in Flow; `bpmn validate` criterion covers structure)
@@ -61,6 +62,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     _project_files,
+    body_object,
     entry_point_files,
     NS,
     context_inputs,
@@ -86,10 +88,23 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
         return True
     if entity in context_value(task, "path").strip().split("/"):
         return True
-    return any(
+    if any(
         (inp.attrib.get("value") or inp.text or "").strip() == entity
         for inp in context_inputs(task)
-    )
+    ):
+        return True
+    # The entity may be a field of the request body rather than a flat input
+    # (smoke run 36443527602: body {"entityName": "FlowCodeEvalEntity", ...});
+    # body_object reads both registry body forms.
+    return entity in _string_leaves(body_object(task))
+
+
+def _string_leaves(value: object) -> list[str]:
+    if isinstance(value, dict):
+        return [leaf for v in value.values() for leaf in _string_leaves(v)]
+    if isinstance(value, list):
+        return [leaf for v in value for leaf in _string_leaves(v)]
+    return [value.strip()] if isinstance(value, str) else []
 
 
 def is_generic_entity_object(object_name: str, entity: str) -> bool:
