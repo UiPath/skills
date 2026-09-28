@@ -286,7 +286,10 @@ def list_domain_package_versions() -> list[dict[str, Any]]:
     Returns `{Key: "Id:Version", Published: ISO}` records.
     """
     package_ids: set[str] = set()
-    for marker in DOMAIN_MARKERS:
+    # Both casings: agents name packages `Falconry…`, and the feed's search is
+    # not verified to be case-insensitive. Matching below is case-insensitive.
+    terms = sorted({term for marker in DOMAIN_MARKERS for term in (marker, marker.title())})
+    for marker in terms:
         payload = run_uip_json(
             ["or", "packages", "list", "--search", marker,
              "--limit", PACKAGE_LIST_LIMIT, "--output", "json"]
