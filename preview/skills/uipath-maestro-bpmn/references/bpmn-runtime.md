@@ -175,9 +175,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   `package-descriptor.json` uses a top-level `content` array.
 
   Before `.startEvent('<start-id>')`, declare
-  `.metadata({ entryPointId: '<stable-unique-id>' })`. Compilation puts that value
-  on the root start event, which is what the package generator uses to discover
-  the entry point. Then generate the files from the built BPMN:
+  `.metadata({ entryPointId: '<uuid>' })` — a GUID, the one `bpmn init` assigned
+  and `decompile` carried into the seed, or a fresh `crypto.randomUUID()`; `validate`
+  refuses any other value (`Root start event uipath:entryPointId value … must be a
+  GUID`), and `check` reports it first. Compilation puts that value on the root
+  start event, which is what the package generator uses to discover the entry point. Then generate the files from the built BPMN:
 
   ```sh
   uip maestro bpmn refresh <project-dir> --output json   # `Demo/` here; needs its project.uiproj
