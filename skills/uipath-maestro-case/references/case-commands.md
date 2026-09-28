@@ -372,7 +372,7 @@ Returns input/output schema with names, types, and IDs. The schema is the source
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
 
-> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow.
+> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow. **Exception:** when `uip maestro case sdd resolve` reports a stale cache in `Data.Warnings`, run it once without asking, then resolve again ([SKILL.md Rule 3](../SKILL.md)).
 
 ```bash
 # Refresh cache from all resource types
