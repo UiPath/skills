@@ -37,16 +37,26 @@ def read_mode(path):
     return token if token in MODES else None
 
 
+REPLICATE = re.compile(r"^\d{2}$")
+
+
 def collect(run_dir):
     """row id -> [mode per replicate]. A replicate that produced no usable
     mode.txt is recorded as None rather than dropped — a row that fails to
-    answer is not the same as a row that answers wrongly."""
+    answer is not the same as a row that answers wrongly.
+
+    The real layout is
+        <run>/<variant>/<task>/<row>/<NN>/artifacts/<task>/<row>/mode.txt
+    so neither the parent nor the grandparent of mode.txt is the row id. The
+    stable landmark is the two-digit replicate directory: its parent is the
+    row. Anchoring on that survives changes to how the sandbox is preserved
+    underneath it."""
     out = collections.defaultdict(list)
     for p in sorted(pathlib.Path(run_dir).rglob("mode.txt")):
-        # .../<row-id>/<replicate>/mode.txt  — walk up for the first part
-        # matching a known row id is fragile, so key on the grandparent.
-        row = p.parent.parent.name
-        out[row].append(read_mode(p))
+        rep = next((a for a in p.parents if REPLICATE.match(a.name)), None)
+        if rep is None:
+            continue
+        out[rep.parent.name].append(read_mode(p))
     return out
 
 
