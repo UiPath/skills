@@ -199,8 +199,7 @@ initial_prompt: |
     },
     "task_title": "<taskTitle from registry-resolved.json or caseplan.json>",
     "priority":   "<priority value>",
-    "recipient":  "<recipient or empty if none>",
-    "validation_passed": true
+    "recipient":  "<recipient or empty if none>"
   }
 
 success_criteria:
@@ -225,10 +224,10 @@ success_criteria:
   - type: json_check
     description: "report.json preserves the HITL task contract"
     path: "report.json"
+    # No self-reported validation field: the run_command criterion above runs
+    # validate on the real file. The spec's task-less "Closed" stage makes
+    # --strict report STRICT_STAGE_NO_TASKS, and an honest report said so.
     assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
       - expression: "length(schema.input_fields)"
         operator: gte
         expected: 3
