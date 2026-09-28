@@ -86,7 +86,7 @@ success_criteria:
   - type: file_matches_regex
     description: "Agent did NOT guess hasProcessMap when the caller said they did not know"
     path: "ah-answers.json"
-    pattern: '(?s)\A(?!.*hasProcessMap).*\z'
+    pattern: '(?s)\A(?!.*hasProcessMap).*\Z'
     weight: 2.0
     pass_threshold: 1.0
 
