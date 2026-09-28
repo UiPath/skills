@@ -20,6 +20,7 @@ A Flow is authored as a root-level `<Name>.flow.ts` that imports the package dir
 **The source lives at the root; the compiled artifact does not.**
 Scaffold the project first, seed the source from it, then emit back into it — `compile -o` is the authority over where the emitted file is written.
 `<Solution>` and `<Name>` are the request's own names, used verbatim: a request that gives one name for both ("inside a solution of the same name") uses it for both, and a request that names only the Flow uses `<Name>` for both.
+**Look for an existing solution before `uip solution init`:** run `find . -maxdepth 2 -name '*.uipx'`. If one exists and a user can answer, ask which to use (one option per solution, then "Create a new solution", then "Something else") and scaffold nothing until they do; never create a second solution silently. Headless, use the solution the request names, else the only one present, else a new one named as above, and record the choice in the final response.
 
 ```bash
 uip solution init <Solution>
@@ -91,8 +92,7 @@ A Flow can have outputs, which are returned to the caller when the flow complete
 
 The `uip maestro flow` commands keep source checks, emission, and compiled-artifact checks explicit while the installed `@uipath/maestro-builder-sdk` owns their semantics. A workspace with `{ "flowSdk": { "emitOnly": true } }` in `package.json`, or `FLOW_SDK_EMIT_ONLY=1`, makes `uip maestro flow compile` emit-only and makes both `flow check` modes refuse. Product validate owns final structural verification in that mode; use product debug only when the node family and the requested evidence support it.
 
-**Run the correct loop for your packaging mode:**
-**[`references/CLI-LOOP.md`](references/CLI-LOOP.md)**.
+**Run the correct loop for your packaging mode: [`references/CLI-LOOP.md`](references/CLI-LOOP.md)**.
 
 ## Editing an existing flow
 
