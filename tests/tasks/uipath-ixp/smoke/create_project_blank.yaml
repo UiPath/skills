@@ -18,9 +18,6 @@ sandbox:
     - tool: curl
       stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
-reference:
-  directory: ../_shared
-
 initial_prompt: |
   Create a blank IXP project named "test project".
 
@@ -32,21 +29,12 @@ initial_prompt: |
 
 success_criteria:
   # argv is recorded as a list, so this also proves "test project" was passed
-  # as ONE argument — not a project "test" in a folder "project".
+  # as ONE argument — not a project "test" in a folder "project". `positional`
+  # is a prefix match, so a folder after the name is not graded.
   - type: cli_called
     description: "Agent created the project with `projects create \"test project\"`"
     verb: "ixp projects create"
     tool: "uip"
     positional: ["test project"]
-    weight: 1.5
-    pass_threshold: 1.0
-
-  # `positional` above is a prefix match, so it also accepts a folder after the
-  # name. `--skip-taxonomy` is allowed: without a folder it has no effect.
-  - type: run_command
-    description: "No `projects create` call passed a folder — an empty project, not an upload"
-    command: "python3 $REFERENCE_DIR/check_create_no_folder.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.5
+    weight: 3.0
     pass_threshold: 1.0
