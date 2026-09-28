@@ -9,7 +9,7 @@ Every recipe assumes [brownfield.md § Read this first](brownfield.md#read-this-
 | Edit | Recipe |
 |---|---|
 | Add a wait-for-timer task to a stage | [R1](#r1--add-a-wait-for-timer-task) |
-| Add a resource task (process, agent, rpa, action, api-workflow, case-management) | [R1](#r1--add-a-wait-for-timer-task) steps 1–2 and 4–6, with the shape from that type's `plugins/tasks/<type>/impl-json.md` (read it to END) |
+| Add a resource task (process, agent, rpa, action, api-workflow, function, case-management) | [R1](#r1--add-a-wait-for-timer-task) steps 1–2 and 4–6, with the shape from that type's `plugins/tasks/<type>/impl-json.md` (read it to END) |
 | Change a task's `isRequired`, `shouldRunOnlyOnce`, `description`, or `displayName` | [R2](#r2--change-a-task-envelope-field) |
 | Remove a task (any type, including one bound to a resource) | [R3](#r3--remove-a-task) |
 | Insert a regular stage between two stages | [R4](#r4--insert-a-stage-between-two-stages) |

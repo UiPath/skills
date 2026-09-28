@@ -1,6 +1,6 @@
 # Resource tasks — the shape every non-connector task shares
 
-`action`, `agent`, `api-workflow`, `case-management`, `process` and `rpa` all bind a tenant resource and share the rules below. Each type's own `impl-json.md` states only what differs — its `type` discriminator, its `data` fields, and its lookup. Read this file once per build, then that type's file.
+`action`, `agent`, `api-workflow`, `case-management`, `function`, `process` and `rpa` all bind a tenant resource and share the rules below. Each type's own `impl-json.md` states only what differs — its `type` discriminator, its `data` fields, and its lookup. Read this file once per build, then that type's file.
 
 > **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../variables/io-binding/impl-json.md). See [phased-execution.md](../../phased-execution.md).
 
