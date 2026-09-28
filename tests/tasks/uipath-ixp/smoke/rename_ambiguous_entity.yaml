@@ -1,37 +1,82 @@
 task_id: skill-ixp-rename-ambiguous-entity-smoke
 description: >
   Smoke: ambiguity guard, discovery variant. Prompt gives ONLY the ambiguous
-  ask ("rename subscriptions into Test Invoice") — no workspace facts. The
-  overlaid uip mock serves canned JSON: `projects list` shows a project
-  TITLED "subscriptions"; `projects get-taxonomy` shows a field group
-  "subscriptions" containing a field "subscriptions". The agent must
-  discover the collision itself, then ask which entity is meant (written to
-  clarification.txt — the harness is non-interactive) and execute NO
-  rename. Renaming any candidate — or several "to cover all cases" — is a
-  silent guess and fails.
+  ask ("rename subscriptions into Test Invoice") — no workspace facts.
+  `record_cli` serves canned reads: `projects list` shows a project TITLED
+  "subscriptions"; its `projects get-taxonomy` shows a field group
+  "subscriptions" containing a field "subscriptions" (the decoy project's
+  taxonomy has neither). The agent must discover the collision itself, then
+  ask which entity is meant (written to clarification.txt — the harness is
+  non-interactive) and execute NO rename. Renaming any candidate — or several
+  "to cover all cases" — is a silent guess and fails.
 
   clarification.txt is not a self-report: it is the ask-behavior under
   test, not a claim about work performed. The deterministic core is the
   no-mutation guards, plus a discovery check so a blind generic "which one
   do you mean?" (asked without looking at the workspace) does not pass.
 
-  Guards grade the mock's calls.log (actual uip executions) via
-  file_contains excludes, NOT raw-command regexes over Bash call
-  text — a correct clarification legitimately QUOTES the candidate rename
-  commands, which a text regex would false-match. The discovery criterion
-  doubles as the positive control: it proves executed reads land in the
-  graded file, so re-pointing the mock's log sink fails the test rather
-  than making the excludes pass vacuously.
+  Guards grade recorded invocations via `cli_called`, NOT raw-command regexes
+  over Bash call text — a correct clarification legitimately QUOTES the
+  candidate rename commands, which a text regex would false-match. The
+  discovery criteria double as the positive control: they prove executed
+  calls are recorded, so a broken recorder fails the test rather than making
+  the `max_count: 0` guards pass vacuously.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 8
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
-    - {type: template_dir, path: ../_shared/mock_template_ambiguous}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      responses:
+        - when:
+            verb: "ixp projects list"
+          stdout: >-
+            {"Result":"Success","Data":{"Projects":[
+            {"Id":"4c1d9e2a","Name":"subscriptions-4c1d9e2a-ixp","Title":"subscriptions","CreatedAt":"2026-05-02T09:14:33Z"},
+            {"Id":"9b31c07d","Name":"expense_reports-9b31c07d-ixp","Title":"Expense Reports","CreatedAt":"2026-03-18T11:02:51Z"}
+            ],"Total":2,"Offset":0,"Limit":50}}
+
+        - when:
+            verb: "ixp projects get"
+            positional: ["subscriptions-4c1d9e2a-ixp"]
+          stdout: '{"Result":"Success","Data":{"Name":"subscriptions-4c1d9e2a-ixp","Title":"subscriptions","Description":"Vendor subscription documents","CreatedTime":"2026-05-02T09:14:33Z"}}'
+
+        # The collision: group "subscriptions" holds a field "subscriptions".
+        # Fields live under `moon_form`, not `fields` — an agent that parses the
+        # wrong key misses the field candidate.
+        - when:
+            verb: "ixp projects get-taxonomy"
+            positional: ["subscriptions-4c1d9e2a-ixp"]
+          stdout: >-
+            {"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[
+            {"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},
+            {"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""}
+            ],"label_groups":[{"name":"default","label_defs":[
+            {"name":"subscriptions","id":"5f21c88ab90d4e17","instructions":"Fields describing the vendor subscription contract.","moon_form":[
+            {"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"subscriptions","instructions":"The subscription plan name as printed on the document. Example: 'Enterprise Annual'.","rule_set":null},
+            {"field_id":"1d8e42b7c3a95f60","id":"c128ad65bd8af3f8","field_type_id":"c128ad65bd8af3f8","kind":"Date","name":"Renewal Date","instructions":"The next renewal date of the subscription.","rule_set":null}
+            ]},
+            {"name":"Billing","id":"7be409c2d15fa833","instructions":"Billing header fields of the subscription invoice.","moon_form":[
+            {"field_id":"c47a91e05d2b3f68","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The invoice identifier.","rule_set":null}
+            ]}]}]}}}
+
+        # Decoy: nothing named "subscriptions", so reading it adds no candidate.
+        - when:
+            verb: "ixp projects get-taxonomy"
+            positional: ["expense_reports-9b31c07d-ixp"]
+          stdout: >-
+            {"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[
+            {"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}
+            ],"label_groups":[{"name":"default","label_defs":[
+            {"name":"Expense","id":"2a6c91d0e47b3f15","instructions":"Header fields of an employee expense report.","moon_form":[
+            {"field_id":"8d05b3e2a19c7f46","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Total Claimed","instructions":"The total amount the employee claims.","rule_set":null}
+            ]}]}]}}}
+
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In my IXP workspace, rename subscriptions into "Test Invoice".
@@ -48,32 +93,85 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  # Case-insensitive: "FIELD GROUP" / "Project:" are the same candidates as
+  # "field group" / "project". The field lookahead skips "field group" (so the
+  # group candidate alone can't satisfy it) and "no field" (a run that parsed
+  # the wrong taxonomy key wrote "No field ... is named subscriptions").
+  - type: file_matches_regex
     description: "The question surfaces the discovered three-way collision — names the project, the group, and the field as candidates"
     path: "clarification.txt"
-    includes: ["project", "group", "field"]
+    pattern: >-
+      (?is)\A(?=.*\bproject)(?=.*\bgroup)(?=.*(?<!\bno\s)\bfield\b(?!\s*group))
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Discovery actually happened: agent listed projects AND read the taxonomy before asking (a blind generic question can't know the collision)"
-    path: "mocks/calls.log"
-    includes: ["ixp projects list", "ixp projects get-taxonomy"]
-    weight: 1.5
+  - type: cli_called
+    description: "Discovery: listed projects before asking"
+    verb: "ixp projects list"
+    tool: "uip"
+    weight: 0.75
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent did NOT silently guess an entity: mock call log has no executed rename (projects update-title / groups rename / fields rename)"
-    path: "mocks/calls.log"
-    includes: ["# seeded by mock_template"]
-    excludes: ["ixp projects update-title", "ixp groups rename", "ixp fields rename"]
-    weight: 3.0
+  - type: cli_called
+    description: "Discovery: read the colliding project's taxonomy before asking (a blind generic question can't know the collision)"
+    verb: "ixp projects get-taxonomy"
+    tool: "uip"
+    positional: ["subscriptions-4c1d9e2a-ixp"]
+    weight: 0.75
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent did NOT rename via delete/recreate either (no executed delete in the mock call log)"
-    path: "mocks/calls.log"
-    includes: ["# seeded by mock_template"]
-    excludes: ["ixp projects delete", "ixp groups delete", "ixp fields delete"]
+  # One guard per verb rather than `verb_any_of`: on a max_count 0 guard a
+  # predicate that silently matches nothing passes on the call it forbids.
+  - type: cli_called
+    description: "Did NOT silently guess the project: no `projects update-title`"
+    verb: "ixp projects update-title"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT silently guess the field group: no `groups rename`"
+    verb: "ixp groups rename"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT silently guess the field: no `fields rename`"
+    verb: "ixp fields rename"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT rename via delete/recreate: no `projects delete`"
+    verb: "ixp projects delete"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 0.34
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT rename via delete/recreate: no `groups delete`"
+    verb: "ixp groups delete"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 0.33
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT rename via delete/recreate: no `fields delete`"
+    verb: "ixp fields delete"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 0.33
     pass_threshold: 1.0
