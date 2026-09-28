@@ -24,19 +24,19 @@ Pick this plugin when the sdd.md labels a task `function` — a deployed Coded F
 1. **Cache file:** `function-index.json`.
 2. **Identifier field:** `entityKey`.
 3. **No cross-type fallback.** A function binds with `resourceSubType: "Function"`, so only a `function-index.json` entry is a compatible match. A same-named entry in `agent-index.json`, `api-index.json`, or `process-index.json` is a different resource kind — never bind it to a `function` task.
-4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. The same function name commonly appears in several folders (one per deployed solution) — pick by folder, and record every exact-name hit in `matches`. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match; the Rule 17 gate is only for names **no** registry entry carries.
+4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. The same function name commonly appears in several folders (one per deployed solution) — pick by folder, and record every exact-name hit in `matches`. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match; the Rule 18 gate is only for names **no** registry entry carries.
 5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder"). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
 6. **Discover inputs/outputs** via `tasks describe --type function` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). A function with no input arguments returns an empty `Inputs` array; that is valid, not an error.
 
 ## Unresolved Fallback
 
-> **Not creatable inline.** `function` is a placeholder-only kind at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback): offer `Force pull and re-resolve` and `Use placeholders for all`, never `Create missing resources inline`. Do not build a Functions project from this skill.
+> **Not creatable inline.** `function` is a placeholder-only kind at the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback): offer `Force pull and re-resolve` and `Use placeholders for all`, never `Create missing resources inline`. Do not build a Functions project from this skill.
 
 Mark `<UNRESOLVED: function "<name>" in folder "<folder>" not found in registry>`. Omit the resolved-schema keys `inputs` / `outputs`; capture the intended wiring in the entry's `wiringNotes` string array. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Fields to Resolve
 
-Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus this type's lookup output:
+Ledger entry in `tasks/registry-resolved.json` — Rule 10's keys plus this type's lookup output:
 
 ```json
 {
