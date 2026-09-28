@@ -418,14 +418,14 @@ schema. That comes from `uip is triggers describe`: build the filter from its
 the trigger's scoping inputs, `OutputFields` the event payload.
 
 The runtime reads only a `target="body"` input; the template's `filter` and
-`parameters` fields, and any input without `target`, are dropped. Write one
+`parameters` fields, and any sibling input without `target`, are dropped. Write one
 `body` input as a sibling of `uipath:context`: `queryParams` holds the
 `EventParameters`; `filters.expression` AND-joins one equality clause per event
 parameter with the `FilterFields` conditions. No filter tree; only the
 expression is evaluated.
 
 ```xml
-<uipath:input name="body" type="json" target="body"><![CDATA[{"filters":{"expression":"(parentFolderId == '<inboxId>') && (contains(subject, 'Invoice'))"},"queryParams":{"parentFolderId":"<inboxId>"}}]]></uipath:input>
+<uipath:input name="body" type="json" target="body"><![CDATA[{"filters":{"expression":"(parentFolderId == '<INBOX_ID>') && (contains(subject, 'Invoice'))"},"queryParams":{"parentFolderId":"<INBOX_ID>"}}]]></uipath:input>
 ```
 
 `uip is triggers` and `registry get` uppercase the operation, so a connector
