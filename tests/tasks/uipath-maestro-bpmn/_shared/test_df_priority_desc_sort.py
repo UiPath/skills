@@ -70,12 +70,11 @@ def _sort_body(sort_options: str) -> str:
         IS_ASCENDING_FALSE + _sort_body('[{"fieldName": "priority", "isDescending": true}]'),
         _sort_body('[{"fieldName": "Priority", "isDescending": "true"}]'),
         _sort_body('[{"fieldName": "status", "isDescending": false}, {"fieldName": "priority", "isDescending": true}]'),
-        '<uipath:input name="sortFieldName" type="string" target="query" value="priority" />' + IS_ASCENDING_FALSE,
         IS_ASCENDING_FALSE + SORT_FIELD_BODY,
         IS_ASCENDING_FALSE + '<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName": "Priority"}]]></uipath:input>',
         DOCUMENTED_QUERY,
     ],
-    ids=["eval-node", "string-true", "second-entry", "sortfieldname", "body-sortfieldname", "body-capitalized", "documented"],
+    ids=["eval-node", "string-true", "second-entry", "body-sortfieldname", "body-capitalized", "documented"],
 )
 def test_priority_desc_sort_accepted(inputs: str) -> None:
     assert checker.has_priority_desc_sort(_query(inputs))
@@ -98,6 +97,10 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         IS_ASCENDING_FALSE + '<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName": "priorityLabel"}]]></uipath:input>',
         IS_ASCENDING_FALSE + FILTER_TREE_WITH_SORT,
         IS_ASCENDING_FALSE.replace('target="query"', 'target="path"') + SORT_FIELD_BODY,
+        '<uipath:input name="sortFieldName" type="string" target="query" value="priority" />' + IS_ASCENDING_FALSE,
+        IS_ASCENDING_TRUE
+        + SORT_FIELD_BODY
+        + '<uipath:input name="metadata" type="json"><![CDATA[{"note": "priority desc"}]]></uipath:input>',
     ],
     ids=[
         "descending-false",
@@ -114,6 +117,8 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         "body-sortfieldname-other-field",
         "sort-in-filter-tree",
         "direction-not-query",
+        "query-sortfieldname-alias",
+        "ascending-beats-text",
     ],
 )
 def test_priority_desc_sort_rejected(inputs: str) -> None:

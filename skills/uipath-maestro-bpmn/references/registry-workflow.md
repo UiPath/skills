@@ -173,7 +173,8 @@ No `uip maestro bpmn` command compiles a filter tree, so write the filter in
 FilterBuilder tree and no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
 `>=`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`, joined by
 `AND` / `OR`; "contains" is `LIKE '%<text>%'`. A tree in `queryExpression`
-fails with `400 Error parsing query`. Put a requested tree in the context `metadata` at
+fails with `400 Error parsing query`.
+Put a requested tree in the context `metadata` at
 `activityPropertyConfiguration.configuration.essentialConfiguration.savedFilterTrees.queryExpression`,
 and say in your summary that the runtime filter is the CEQL string.
 

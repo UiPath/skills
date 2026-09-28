@@ -296,12 +296,15 @@ def has_priority_body_sort_field(task: ET.Element) -> bool:
 
 
 def has_priority_desc_sort(task: ET.Element) -> bool:
-    pairs = named_inputs(task)
+    query = query_inputs(task)
+    unsent = set(query)
     field_hit = has_priority_body_sort_field(task) or any(
-        name in SORT_FIELD_NAMES and "priority" in value.lower() for name, value in pairs
+        name in SORT_FIELD_NAMES and "priority" in value.lower()
+        for name, value in named_inputs(task)
+        if (name, value) not in unsent
     )
     dir_hit = False
-    for name, value in query_inputs(task):
+    for name, value in query:
         if name not in SORT_DIR_NAMES:
             continue
         v = value.lower()
@@ -315,8 +318,10 @@ def has_priority_desc_sort(task: ET.Element) -> bool:
         return True
     # Fallback: a single expression/metadata string carrying both tokens
     # together (e.g. a `=js:` sort expression, or a metadata JSON blob).
+    # An explicit query direction input outranks it.
+    explicit_direction = any(name in SORT_DIR_NAMES for name, _ in query)
     blob = node_blob(task)
-    if "priority" in blob and DESC_TOKEN_RE.search(blob):
+    if not explicit_direction and "priority" in blob and DESC_TOKEN_RE.search(blob):
         return True
     return has_priority_sort_option(task)
 
