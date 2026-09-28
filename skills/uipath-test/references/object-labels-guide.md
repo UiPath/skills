@@ -13,4 +13,9 @@ Object labels are tag metadata on `Requirement`, `TestCase`, `TestSet`, `TestExe
 
 Writes are `userLabel`-only: `add --label-type` accepts `userLabel` and nothing else. Reads are unrestricted — `list --label-types` still accepts `userLabel`, `systemLabel`, and `internalLabel`, and defaults to `userLabel` + `systemLabel`.
 
-`remove` never detaches a `systemLabel`, on either selector. Both `--labels` and `--remove-all-labels` skip them server-side; the CLI lists any it kept in `SkippedSystemLabels`, and reports `Result: Skipped` when nothing removable matched (otherwise `Removed` / `AllRemoved`). `SkippedSystemLabels` is omitted when the caller cannot read the objects' labels — absence does not prove nothing was skipped; confirm with `get`. A system label surviving a remove is expected, not a failure. `systemLabel` values are backend-owned (for example `automated` on a linked test case); to see which labels on an object are system-owned, use `get` and read `LabelType`.
+`remove` detaches `userLabel`s only — never `systemLabel` or `internalLabel`, matching the Test Manager UI.
+
+- `--labels`: matched system labels are listed in `SkippedSystemLabels`; `Result: Skipped` when nothing removable matched, else `Removed`. `SkippedSystemLabels` is omitted when the caller cannot read the objects' labels — confirm with `get`.
+- `--remove-all-labels`: removes every user label, listed in `RemovedLabels`; system labels stay and are listed in `SkippedSystemLabels`. `Result: Skipped` when there were no user labels, else `AllRemoved`. Needs label read access — fails with `Result: Failure` and removes nothing when the labels cannot be read; fall back to `--labels <name...>`.
+
+A system label surviving a remove is expected, not a failure. `systemLabel` values are backend-owned (for example `automated` on a linked test case); `internalLabel`s are backend bookkeeping and hidden from `get`.
