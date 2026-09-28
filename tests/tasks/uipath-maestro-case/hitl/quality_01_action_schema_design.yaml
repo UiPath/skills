@@ -1,11 +1,12 @@
 task_id: skill-case-hitl-quality-action-schema-design
 description: >
-  Quality test: agent maps a business description to a correctly-shaped
-  `action` task — taskTitle, priority, recipient, and the planned input/
-  output fields. Verifies that even when the action-app is unresolved
-  (skeleton path), the agent records the intended contract in report.json
-  and writes valid JSON. Tests action-task field design (priority enum,
-  recipient handling, taskTitle requirement).
+  Quality test: agent turns an SDD with a HITL action task into a correctly
+  placed and enveloped `action` task. The "Review PO" action app does not
+  exist in the tenant, so the task is always a placeholder with empty `data`
+  (placeholder-tasks.md); graded from caseplan.json, never from a
+  self-written report: the action task sits in Review under its SDD name,
+  carries the SDD's isRequired / runOnlyOnce and an entry rule, and the
+  task-less Closed stage is kept.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 initial_prompt: |
   Create a UiPath Case Management project named "VendorPOReviewCase" with
@@ -184,23 +185,8 @@ initial_prompt: |
   - Treat any generated plan as pre-approved — do not block on any HARD STOP
     / AskUserQuestion approval step.
   - If the action-app or the process resource is unresolved, write a
-    skeleton task per the skeleton-tasks reference. `report.json` must still
-    capture taskTitle, priority, recipient, and the intended inputs/outputs.
+    skeleton task per the skeleton-tasks reference.
   - Do NOT run `uip maestro case debug`.
-
-  **REQUIRED — before finishing, write report.json at the sandbox root**:
-  {
-    "caseplan_path": "<path to caseplan.json>",
-    "action_task_id": "<id of the action task>",
-    "skeleton": <true|false>,
-    "schema": {
-      "input_fields":  ["<field names>"],
-      "output_fields": ["<field names>"]
-    },
-    "task_title": "<taskTitle from registry-resolved.json or caseplan.json>",
-    "priority":   "<priority value>",
-    "recipient":  "<recipient or empty if none>"
-  }
 
 success_criteria:
   - type: run_command
@@ -222,29 +208,32 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "report.json preserves the HITL task contract"
-    path: "report.json"
-    # No self-reported validation field: the run_command criterion above runs
-    # validate on the real file. The spec's task-less "Closed" stage makes
-    # --strict report STRICT_STAGE_NO_TASKS, and an honest report said so.
+    description: "The Review action task is placed and enveloped as the SDD states, and the task-less Closed stage is kept"
+    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
+    # Graded from the plan, not a self-written report. The "Review PO" app is
+    # absent from the tenant, so the task is a placeholder with empty `data`:
+    # taskTitle / priority / recipient / I/O are not in the plan to grade.
     assertions:
-      - expression: "length(schema.input_fields)"
-        operator: gte
-        expected: 3
-      - expression: "length(schema.output_fields)"
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?type=='action' && displayName=='Review PO'])"
+        operator: equals
+        expected: 1
+      - expression: "nodes[?data.label=='Review'].data.tasks[][] | [?type=='action'] | [0].isRequired"
+        operator: equals
+        expected: true
+      - expression: "nodes[?data.label=='Review'].data.tasks[][] | [?type=='action'] | [0].shouldRunOnlyOnce"
+        operator: equals
+        expected: false
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?type=='action'] | [0].entryConditions)"
         operator: gte
         expected: 1
-      - expression: "priority"
+      - expression: "length(nodes[?data.label=='Closed'])"
         operator: equals
-        expected: "High"
-      - expression: "task_title"
+        expected: 1
+      - expression: "length(nodes[?data.label=='Closed'].data.tasks[][])"
         operator: equals
-        expected: "Please review this PO and approve or reject"
-      - expression: "recipient"
-        operator: equals
-        expected: "po-approvals@corp.com"
+        expected: 0
     weight: 7.5
-    pass_threshold: 0.85
+    pass_threshold: 1.0
 
 run_limits:
   expected_turns: 66
