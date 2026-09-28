@@ -6,8 +6,12 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
 
 run_limits:
-  task_timeout: 2400
-  turn_timeout: 1800
+  # Claude nightlies pass at 1.0 on 09-16 and 09-17, then killed mid-work at
+  # the 1800s turn cap on 09-18 — the same coin-flip margin the other heavy
+  # pattern tasks showed. Budget matches external_wait/greenfield,
+  # high_volume_batch/greenfield and approval_chain/near_miss.
+  task_timeout: 3600
+  turn_timeout: 2700
   expected_turns: 26
   max_turns: 70
 
