@@ -46,7 +46,7 @@ Use this when the user asks for a blank or empty project and supplies no documen
 uip ixp projects create "<name>" --output json
 ```
 
-Stop after Step 1 — there are no documents to label. Report the `ProjectName`; the user can add documents later with `documents upload` and a taxonomy with `import-taxonomy` or `groups add`.
+Stop after Step 1 — there are no documents to label.
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
