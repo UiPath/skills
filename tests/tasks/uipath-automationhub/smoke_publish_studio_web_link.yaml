@@ -11,7 +11,7 @@ description: >
 tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 12
+  expected_turns: 24
 
 initial_prompt: |
   Publish the business process below to UiPath Automation Hub using the
@@ -37,6 +37,8 @@ initial_prompt: |
   once. Use the placeholder id `12345` wherever the sequence needs an id you
   cannot read back.
 
+  Write the filled answers to `./ah-answers.json` before creating the process.
+
   Important:
   - Run each command once and move on. Do NOT retry and do NOT attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
@@ -60,11 +62,13 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent carried the caller's solution id through verbatim"
-    tool_name: "Bash"
-    command_pattern: 'sol-smoke-0001'
-    min_count: 1
+  # The id lands in the answers document, not on a command line — grade the
+  # file, not Bash.
+  - type: file_contains
+    description: "Agent carried the caller's solution id through verbatim into the answers"
+    path: "ah-answers.json"
+    includes:
+      - 'sol-smoke-0001'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -77,11 +81,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The caller said they don't know. Emitting either boolean is a guess.
-  - type: command_not_executed
+  # The caller said they don't know, so emitting either boolean is a guess.
+  # No file-absence criterion type exists, so assert it over the whole file.
+  - type: file_matches_regex
     description: "Agent did NOT guess hasProcessMap when the caller said they did not know"
-    tool_name: "Bash"
-    command_pattern: '(?i)"hasProcessMap"\s*:\s*(true|false)'
+    path: "ah-answers.json"
+    pattern: '(?s)\A(?!.*hasProcessMap).*\z'
     weight: 2.0
     pass_threshold: 1.0
 

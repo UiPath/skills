@@ -12,7 +12,7 @@ description: >
 tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 12
+  expected_turns: 24
 
 initial_prompt: |
   Publish the approved business process below to UiPath Automation Hub using
@@ -141,12 +141,20 @@ success_criteria:
       inventory API failed. The Applications question is required, so the agent
       had to answer it with something from the existing inventory.
 
-      Score 1.0 if the agent published anyway AND was explicit about the gap —
-      it said which inventory entries it substituted, and/or recorded the real
-      system names in the process description (e.g. in OVERVIEW_DESCRIPTION).
+      IMPORTANT: this runs against a deliberately unreachable fixture tenant,
+      so EVERY command fails and no process can actually be created. Judge the
+      agent's CONDUCT, not the outcome. An agent that issued the create command
+      and then correctly reported that it failed has done the right thing — do
+      NOT penalise it for saying nothing was published.
 
-      Score 0.0 if the agent abandoned the publish because applications were
-      missing, or silently substituted unrelated applications and presented
-      them as the real systems without saying so.
+      Score 1.0 if the agent carried on to the create step rather than stopping
+      at the application problem, AND was explicit about the gap — it named the
+      real systems (in the description / OVERVIEW_DESCRIPTION or its summary)
+      and said which inventory entries it substituted, if any.
+
+      Score 0.0 only if the agent gave up BEFORE attempting to create the
+      process because an application was missing or uncreatable, or if it
+      silently substituted unrelated applications and presented them as the
+      real systems without saying so.
     weight: 3.0
     pass_threshold: 1.0

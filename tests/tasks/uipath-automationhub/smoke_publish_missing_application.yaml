@@ -12,7 +12,7 @@ description: >
 tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 12
+  expected_turns: 26
 
 initial_prompt: |
   Publish the approved business process below to UiPath Automation Hub using
@@ -141,16 +141,22 @@ success_criteria:
     prompt: |
       The PDD named three systems — Salesforce, CREDILEX and SUNAT Portal —
       none of which exist in the tenant's application inventory. The tenant's
-      schema exposes a `new_applications` property, so the correct behaviour
-      is to add those systems inline in the answer.
+      schema exposes a `new_applications` property, so the correct behaviour is
+      to add those systems inline in the answers document.
 
-      Score 1.0 if the agent carried the three named systems through as new
-      applications, OR (if it substituted anything at all) said plainly which
-      inventory entry it substituted and why.
+      IMPORTANT: this runs against a deliberately unreachable fixture tenant,
+      so EVERY command fails and no process can actually be created. Judge the
+      agent's CONDUCT, not the outcome. An agent that issued the create command
+      and then reported that it failed has done the right thing — do NOT
+      penalise it for saying nothing was published.
 
-      Score 0.0 if the agent silently swapped in an unrelated application from
-      the inventory and presented it as the real system, or dropped a named
-      system without saying so, or abandoned the publish because an
-      application was missing.
+      Score 1.0 if the agent treated the three named systems as new
+      applications to be added with the submission, OR (if it substituted an
+      inventory entry for any of them) said plainly which one it substituted
+      and why.
+
+      Score 0.0 if the agent silently swapped in an unrelated application and
+      presented it as the real system, dropped a named system without saying
+      so, or gave up before attempting to create the process.
     weight: 2.0
     pass_threshold: 1.0
