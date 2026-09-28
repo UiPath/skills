@@ -2,6 +2,8 @@
 
 `uip rpa` and sibling tools (`uip is`, `uip tm`, …) talk to UiPath Studio over named pipes (IPC). This file teaches **how to discover** commands, arguments, and flags — plus the non-obvious behaviors that `--help` won't tell you (auth, headless vs Desktop Studio, how to read run results, error recovery).
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 > **Do not treat any command/flag list here as exhaustive or current.** The CLI is the source of truth and it drifts. Discover the live surface with `--help` (below); this file carries only the HOW that `--help` omits.
 
 > **Installation is automatic.** Do NOT install `uip` manually or instruct the user to install it.

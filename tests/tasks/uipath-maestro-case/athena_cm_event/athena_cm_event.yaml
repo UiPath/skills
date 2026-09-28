@@ -72,8 +72,20 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Gating as of CLI 1.203. This was advisory while `--strict --sdd` could not
+  # see tenant state: it read an SDD that NAMES a resource as an SDD that
+  # RESOLVED it, and reported every correct placeholder as an error. The audit
+  # now consults `tasks/registry-resolved.json`, so a placeholder the ledger
+  # justifies (`matches: []` / `selected: null`) is a warning
+  # (STRICT_SDD_PLACEHOLDER_UNRESOLVABLE) and validation passes. Both branches
+  # verified at 1.203: the suite11 and suite12 artifacts pass with exit 0 and
+  # zero errors, and a doctored artifact with an unresolvable placeholder plus
+  # its ledger entry also passes. Gating therefore grades two things — the
+  # caseplan is complete against the SDD, AND the Rule 10 ledger was persisted
+  # in the shape a consumer can read. Dropping the ledger flips this to
+  # STRICT_SDD_PLACEHOLDER_RESOLVED at error, which is the intended failure.
   - type: run_command
-    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd, and the Rule 10 registry ledger justifies any placeholder"
     command: >-
       uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json

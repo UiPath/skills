@@ -2,6 +2,8 @@
 
 Detailed step-by-step procedures for all operations on UiPath coded workflow projects.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## Initialize a New Coded Project
 
 Use this procedure ONLY when the user explicitly asked for a coded project ("coded", ".cs", "C# workflow"). For ambiguous "create a workflow" / "automate X" requests, default to XAML — see [../coded-vs-xaml-guide.md](../coded-vs-xaml-guide.md).

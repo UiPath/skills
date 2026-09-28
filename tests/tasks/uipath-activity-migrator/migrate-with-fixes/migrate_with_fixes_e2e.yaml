@@ -1,0 +1,229 @@
+task_id: skill-migrator-migrate-with-fixes-e2e
+description: >
+  End-to-end: the agent uses the uipath-activity-migrator skill on a committed
+  Windows-framework project with classic UIA activities across four workflows
+  (StaffDirectoryAudit). The migration leaves `.ToStringWithDelimiter()`
+  marker selectors in two files, so the run must go through Steps 0 to 6:
+  acquisition, analyze and upgrade in SARIF mode pinned to UIAutomation
+  26.10.4 (the version the expected counts below were measured on),
+  summarizer, build, the UIA package guide's Hook 3 including the full
+  post-migration fix procedure with its single confirmation, per-file validate,
+  rebuild, and the fixed-shape report. Graded on the migrated artifact: exact
+  structural outcome of the fixes, annotation rewrites, untouched source, and a
+  build the harness runs itself. The fix gate is answered by the simulated
+  user. Windows only (migrator is a .NET 8 desktop tool; build needs Helm).
+  The runtime check is declined: the project drives Edge and the Windows
+  Calculator, which the runner cannot exercise, so the loop past the build is
+  out of scope here.
+tags: [uipath-activity-migrator, e2e, mode:build, lifecycle:generate, windows]
+
+run_limits:
+  expected_turns: 70
+  max_turns: 130
+  task_timeout: 6000
+  turn_timeout: 6000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./StaffDirectoryAudit with the Activity
+  Migrator, targeting UIAutomation 26.10.4, and leave it ready to open in
+  Studio. Do not run the migrated project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the developer who owns StaffDirectoryAudit and asked for the
+    migration. You trust the agent's procedure and want it finished. You know
+    nothing about the project beyond what is on disk.
+  goal: |
+    Let the agent complete the migration, including the post-migration fixes
+    it proposes, so the run reaches the build and the final report.
+  constraints:
+    - "When asked which UIAutomation line or version to target, choose 26.10.4."
+    - "When asked which edits or annotation rewrites to apply, choose to apply all of them: pick the recommended / first / all option."
+    - "When asked whether to run the migrated project, or any workflow, answer No."
+    - "When asked for a variable's value or a config value you do not know, say the value in the XAML files is the one to use."
+    - "Never invent facts about the project, the applications it drives, or the environment."
+    - "Keep replies to one sentence or a numbered option."
+    - "Never tell the agent to stop, skip a step, or rewrite files wholesale."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:(?!\n|&&|\|\||;|\|).)*--output-path)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No analyze or upgrade run without SARIF output"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+(analyze|upgrade)(?!(?:(?!\n|&&|\|\||;|\|).)*(--output-format\s+sarif|--help))'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pinned the UIAutomation version with the = form"
+    command_pattern: '--uia-package-version=\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never passed the UIAutomation version space-separated"
+    command_pattern: '--uia-package-version\s+\d'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent classified both SARIF logs with the skill's summarizer"
+    command_pattern: 'summarize-sarif\.mjs'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Hook 3 of the UIA guide: annotations are listed, markers are scanned.
+  - type: command_executed
+    description: "Agent listed the post-migration annotations in the output"
+    command_pattern: 'PostMigration Action Required'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated edited files at error severity"
+    command_pattern: 'uip\s+rpa\s+validate(?=(?:(?!\n|&&|\|\||;|\|).)*--min-severity\s+error)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Output project.json is a Windows project pinned to the requested UIAutomation 26.10.4"
+    path: "StaffDirectoryAudit_Upgraded/project.json"
+    patterns:
+      - pattern: '"targetFramework"\s*:\s*"Windows"'
+        must_match: true
+      - pattern: '"UiPath\.UIAutomation\.Activities"\s*:\s*"\[26\.10\.4\]"'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Same expected end state as the fix-only smoke: one generated card unwrapped
+  # and one IsLoose removed in GetStaffRecords.xaml, nothing else there.
+  - type: run_command
+    description: "GetStaffRecords.xaml has one generated card unwrapped and one IsLoose removed, nothing else"
+    command: |-
+      python -c "import re, sys; s = open('StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml', encoding='utf-8').read(); c = lambda p: len(re.findall(p, s)); sys.exit(0 if c('IsLoose=' + chr(34) + 'True' + chr(34)) == 2 and c('uix:NApplicationCard ') == 7 and c('ToStringWithDelimiter') == 4 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Fixed constructs in GetStaffRecords.xaml carry the Remediated annotation line"
+    path: "StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml"
+    patterns:
+      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VerifyHeadcount.xaml is structurally unchanged and its healthy constructions were marked Verified healthy (at least 3 of 4)"
+    command: |-
+      python -c "import re, sys; s = open('StaffDirectoryAudit_Upgraded/VerifyHeadcount.xaml', encoding='utf-8').read(); c = lambda p: len(re.findall(p, s)); sys.exit(0 if c('ToStringWithDelimiter') == 6 and c('uix:NApplicationCard ') == 4 and c('IsLoose=' + chr(34) + 'True' + chr(34)) == 0 and s.count('Verified healthy by uipath-activity-migrator') >= 3 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 5: the source project is never written to (only its .upgrade folder).
+  - type: run_command
+    description: "Source workflows and project.json are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'StaffDirectoryAudit'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('StaffDirectoryAudit', f), shallow=False) for f in ('Main.xaml', 'GetStaffRecords.xaml', 'VerifyHeadcount.xaml', 'BuildReport.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits 0 against the migrated and fixed output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('StaffDirectoryAudit_Upgraded'), '--output', 'json'], env=env))"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run or debug the migrated project"
+    command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Report shape from SKILL.md Step 6. Deliberately low weight: the artifact
+  # checks above carry the grade; this only catches the padding anti-pattern.
+  - type: llm_judge
+    description: "Final report follows the Step 6 shape: status line with counts, grouped needs-attention, no per-activity lists"
+    weight: 1.0
+    pass_threshold: 0.7
+    include_dialog: false
+    include_agent_output: true
+    prompt: |
+      Grade only the agent's last [ASSISTANT] message. A [RESULT - ...] block
+      after it repeats that message verbatim and is harness output: ignore it,
+      it is not a duplicated report.
+
+      Report contract:
+        - It opens with a heading "Migration result: <status>" followed by ONE
+          line with counts of activities migrated, left classic and needing
+          attention, the build result, the output folder, and the UIAutomation
+          version change. A "Full list: ... · Tool report: ..." line may follow.
+        - Needs-attention items are grouped by reason and by file; activities
+          left classic appear only as a count, never as a list.
+        - A "Fixes applied (<F>)" block lists what the post-migration fix
+          changed, one line per fix. <F> counts the fixes only; one extra line
+          "<k> annotations rewritten to Verified healthy" belongs to the block
+          and is not a stray list.
+        - A "Next steps" block with at most three short lines belongs to the
+          contract. A "Runtime check" block appears only when the user agreed
+          to a run; this run declines it, so its absence is correct.
+        - The report is those blocks and nothing else. Tolerated: one short
+          lead-in line before the heading and one short closing line after
+          the last block, when each only restates what the report already
+          says. Padding is anything more: a second line before or after, any
+          sentence between blocks, or a line that adds detail the rules below
+          forbid.
+        - There is no table of what changed, no description of migration
+          mechanics, no speculation about runtime behaviour, and no lines
+          about checks that found nothing.
+      Score 1.0 when every point holds, 0.7 when the shape holds but padding
+      sentences or one stray list are present, 0.3 when the counts line is
+      missing or activities are listed one by one, 0.0 when the message is
+      free prose with no status line.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}

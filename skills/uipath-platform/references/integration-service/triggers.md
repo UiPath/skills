@@ -73,7 +73,7 @@ uip is triggers objects "<connector-key>" "<OPERATION>" \
 
 For non-CRUD operations there is no objects step — use the trigger activity's **ObjectName** field directly.
 
-> Generic CRUD triggers (e.g. Data Fabric `record-created`) carry no objectName in their flow-node manifest — pass the resolved `Name` as `objectName` when configuring the trigger node (Maestro Flow: `node configure --detail.objectName`).
+> Generic CRUD triggers (e.g. Salesforce `record-created`) carry no objectName in their flow-node manifest — pass the resolved `Name` as `objectName` when configuring the trigger node (Maestro Flow: `node configure --detail.objectName`).
 
 ---
 

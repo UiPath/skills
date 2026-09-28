@@ -98,7 +98,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Native entity node instances match registry shape: definitions[] entry present, no instance outputs/model block, no error-port edge"
+    description: "Native entity node instances match the shape Studio Web writes: definitions[] entry is not a trimmed copy (model.type bpmn:Task, api-function excluded, outputDefinition except delete), instance outputs (if any) match its outputDefinition, no instance model block, no error-port edge"
     command: "python3 $REFERENCE_DIR/e2e/datafabric_native_contract_intake_pipeline/check_native_node_shape.py"
     timeout: 30
     expected_exit_code: 0

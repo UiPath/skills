@@ -8,8 +8,9 @@ Two sources, read from CWD, whichever are present:
                withheld from the sandbox, so it is recovered from `projects
                list` by the run id the backend carried into the ProjectName
 
-Only projects this run recorded are deleted — never a sweep. Best-effort and
-ALWAYS exits 0; without a tenant this is a no-op.
+Only projects this run recorded are deleted — never a sweep. A run that records
+nothing leaks its project; sweep_stale_projects.py collects those in a later
+run's pre_run. Best-effort and ALWAYS exits 0; without a tenant this is a no-op.
 """
 
 import json

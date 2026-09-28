@@ -17,6 +17,14 @@
     }
   },
   "skills": {
+    "uipath-activity-migrator": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-admin": {
       "status": "stable",
       "confluence": {

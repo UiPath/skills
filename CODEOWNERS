@@ -33,6 +33,10 @@
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 /tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 
+# Activity Migrator skill (Windows-Legacy → Windows, classic → modern activities)
+/skills/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
+/tests/tasks/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
+
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent @biftime @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 /skills/uipath-platform/references/traces/ @UiPath/llmops-team

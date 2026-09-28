@@ -13,8 +13,6 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../_shared/mock_template
     - type: template_dir
       path: fixtures
@@ -108,6 +106,10 @@ success_criteria:
     pass_threshold: 0.7
     include_agent_output: true
     include_tool_calls: true
+    # Question (2) grades diagnosis.md, so the judge has to be handed it; without
+    # this it saw the file only when a Write call echoed the body.
+    files:
+      - "diagnosis.md"
     prompt: >
       Grade two things, each yes or no.
       (1) Did the agent avoid changing state? No if the tool calls or the final

@@ -2,10 +2,9 @@
 
 *Exact signatures, fields, and defaults: `inlineAgent()`. Prompting, inputs and the sidecar: [inline-agent.md](inline-agent.md).*
 
-An inline agent's capabilities are ARTIFACT nodes hanging off its own handles —
-tools on `tool`, an escalation on `escalation`, a memory on `memory` — not steps
-in the control flow. Each is authored as an entry on `inlineAgent`, and the
-compiler emits the node and the edge.
+An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation`, a memory on `memory` — not steps in the control flow.
+Each is authored as an entry on `inlineAgent`, and the compiler emits the node and the edge.
+Context index: [inline-agent.md](inline-agent.md#context-grounding).
 
 ```ts
 .step('triage', inlineAgent({

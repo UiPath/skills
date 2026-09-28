@@ -10,11 +10,6 @@ run_limits:
   expected_turns: 20
   max_turns: 55
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -30,10 +25,10 @@ initial_prompt: |
   - The terminate end event carries a bare bpmn:terminateEventDefinition.
     Terminate is valid only on end events — do not attach it to any other node.
   - Both branches fan out from a fork gateway.
-  - Author the structural BPMN and the terminate payload per the skill's
-    structural reference; do not hand-author uipath:* XML from prose.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+  - Author the structural BPMN and the terminate payload the way your skill
+    prescribes; do not invent uipath:* XML from prose.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate the file locally before finishing by running
     `uip maestro bpmn validate <file>` (or a well-formed-XML parse if the CLI
     is unavailable).

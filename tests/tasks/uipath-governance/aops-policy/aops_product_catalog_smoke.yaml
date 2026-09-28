@@ -1,8 +1,8 @@
 task_id: skill-gov-aops-policy-product-catalog-smoke
 description: >
   Smoke test (outcome-graded): before authoring anything the agent snapshots the
-  governance catalog — every product, every license type, and one product's full
-  configuration. Graded on the catalog read back from the service: products carry
+  governance catalog — every product, every license type, and one product's own
+  catalog record. Graded on the catalog read back from the service: products carry
   their display labels and cloud/restricted flags, license types carry the
   products they apply to, and the single-product fetch matches the requested one.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, catalog]
@@ -16,7 +16,8 @@ initial_prompt: |
 
   - every available product -> ./products.json
   - every available license type -> ./license-types.json
-  - the full configuration of the `AITrustLayer` product -> ./product.json
+  - the catalog record for the `AITrustLayer` product (the product lookup
+    itself, not its policy template) -> ./product.json
 
   Do NOT prompt the user for confirmation - this is an automated test.
 

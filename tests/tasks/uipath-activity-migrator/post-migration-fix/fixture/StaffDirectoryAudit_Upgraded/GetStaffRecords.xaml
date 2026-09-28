@@ -1,0 +1,459 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="GetStaffRecords" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Common" xmlns:sd2="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_PortalUrl" Type="InArgument(x:String)" />
+    <x:Property Name="in_SearchTerm" Type="InArgument(x:String)" />
+    <x:Property Name="in_DirectoryTableSelector" Type="InArgument(x:String)" />
+    <x:Property Name="out_StaffRecords" Type="OutArgument(sd:DataTable)" />
+    <x:Property Name="out_MatchedRows" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_LeadName" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="32">
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>UiPath.UIAutomationNext.Models</x:String>
+      <x:String>UiPath.UIAutomationNext.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Models.CV</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities.Services.RuntimeAnalyze.Contracts</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>UiPath.Platform.SyncObjects</x:String>
+      <x:String>UiPath.Shared.Telemetry</x:String>
+      <x:String>System.ComponentModel</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="64">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>System.Linq.Expressions</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Primitives</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic.Core</AssemblyReference>
+      <AssemblyReference>UiPath.Workflow</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic.Forms</AssemblyReference>
+      <AssemblyReference>System.CodeDom</AssemblyReference>
+      <AssemblyReference>netstandard</AssemblyReference>
+      <AssemblyReference>System.AppContext</AssemblyReference>
+      <AssemblyReference>System.ComponentModel</AssemblyReference>
+      <AssemblyReference>System.Configuration.ConfigurationManager</AssemblyReference>
+      <AssemblyReference>System.Console</AssemblyReference>
+      <AssemblyReference>System.Globalization.Extensions</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.Runtime</AssemblyReference>
+      <AssemblyReference>System.Runtime.Extensions</AssemblyReference>
+      <AssemblyReference>System.Runtime.InteropServices</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Security.Permissions</AssemblyReference>
+      <AssemblyReference>System.Threading.Tasks</AssemblyReference>
+      <AssemblyReference>System.Threading.Thread</AssemblyReference>
+      <AssemblyReference>System.Windows</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Linq.Parallel</AssemblyReference>
+      <AssemblyReference>System.Linq.Queryable</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Get staff records" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="ui:UiElement" Name="directoryTable" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="tableCssClass" />
+      <Variable x:TypeArguments="x:String" Name="tableText" />
+      <Variable x:TypeArguments="x:Boolean" Name="leadRowVisible" />
+      <Variable x:TypeArguments="x:Boolean" Name="directoryReachable" />
+      <Variable x:TypeArguments="x:String" Name="positionLabel" />
+      <Variable x:TypeArguments="ui:Image" Name="directorySnapshot" />
+      <Variable x:TypeArguments="ui:Browser" Name="portalBrowser" />
+      <Variable x:TypeArguments="x:Int32" Name="rowIndex" />
+      <Variable x:TypeArguments="x:String" Name="rowCellSelector" />
+      <Variable x:TypeArguments="x:String" Name="rowCellValue" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Open HR reference portal" HealingAgentBehavior="Job" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" OpenMode="Always" OutUiElement="[portalBrowser]" ScopeGuid="5e753668-1a6d-47e2-bf9f-c6ca2f0847be" Timeout="60" Version="V2" WebDriverMode="Disabled">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Portal session" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <uix:NCheckState DelayAfter="0" DelayBefore="0" DisplayName="Find directory table" HealingAgentBehavior="Disabled" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" IsLoose="True" OutUiElement="[directoryTable]" Timeout="30" Version="V5">
+              <uix:NCheckState.IfExists>
+                <Sequence DisplayName="Target appears" />
+              </uix:NCheckState.IfExists>
+              <uix:NCheckState.IfNotExists>
+                <Sequence DisplayName="Target does not appear" />
+              </uix:NCheckState.IfNotExists>
+              <uix:NCheckState.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;" Guid="dad02bbf-b01f-43d2-aa1a-02562be57052" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NCheckState.Target>
+            </uix:NCheckState>
+            <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="4a0e9608-993f-447f-81ab-a62590ff8e04" Timeout="20" Version="V2">
+              <uix:NApplicationCard.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NHighlight Color="Gold" DelayAfter="0" DelayBefore="0" DisplayName="Highlight directory table" HealingAgentBehavior="SameAsCard" HighlightTime="1" sap2010:WorkflowViewState.IdRef="Highlight_1" Timeout="15" Version="V5">
+                      <uix:NHighlight.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;" Guid="ef539df8-5c86-4ea7-a462-c59526f9d0ed" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NHighlight.Target>
+                    </uix:NHighlight>
+                    <uix:NTypeInto ActivateBefore="True" AlterIfDisabled="True" ClickBeforeMode="Single" DelayBetweenKeys="0.01" DisplayName="Type role filter" EmptyFieldMode="SingleLine" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="TypeInto_1" InteractionMode="HardwareEvents" Text="[in_SearchTerm]" Timeout="20" Version="V5">
+                      <uix:NTypeInto.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl tag='INPUT' type='search' /&gt;" Guid="1bd2d606-d243-4841-8d49-a92f6c6065d1" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NTypeInto.Target>
+                    </uix:NTypeInto>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NApplicationCard.Body>
+              <uix:NApplicationCard.OCREngine>
+                <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                </ActivityFunc>
+              </uix:NApplicationCard.OCREngine>
+              <uix:NApplicationCard.TargetApp>
+                <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" Version="V3" />
+              </uix:NApplicationCard.TargetApp>
+            </uix:NApplicationCard>
+            <Delay DisplayName="Wait for filter to apply" Duration="00:00:02" sap2010:WorkflowViewState.IdRef="Delay_1" />
+            <uix:NCheckState DelayAfter="0" DelayBefore="0" DisplayName="Check lead row is present" Exists="[leadRowVisible]" HealingAgentBehavior="Disabled" sap2010:WorkflowViewState.IdRef="UiElementExists_1" IsLoose="True" Timeout="15" Version="V5">
+              <uix:NCheckState.IfExists>
+                <Sequence DisplayName="Target appears" />
+              </uix:NCheckState.IfExists>
+              <uix:NCheckState.IfNotExists>
+                <Sequence DisplayName="Target does not appear" />
+              </uix:NCheckState.IfNotExists>
+              <uix:NCheckState.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl tableCol='1' tableRow='2' tag='TD' /&gt;" Guid="d521d55b-b2ca-464d-ba5d-70278f57ddf3" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NCheckState.Target>
+            </uix:NCheckState>
+            <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="6486ea91-c40e-4104-9fb7-bd2e34457663" Timeout="15" Version="V2">
+              <uix:NApplicationCard.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NGetText DelayAfter="0" DelayBefore="0" DisplayName="Read lead staff name" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="GetValue_1" TextString="[out_LeadName]" Timeout="15" Version="V5">
+                      <uix:NGetText.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl tableCol='1' tableRow='2' tag='TD' /&gt;" Guid="aeb806d6-86a9-45a2-b815-33cc337f48c3" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NGetText.Target>
+                    </uix:NGetText>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NApplicationCard.Body>
+              <uix:NApplicationCard.OCREngine>
+                <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                </ActivityFunc>
+              </uix:NApplicationCard.OCREngine>
+              <uix:NApplicationCard.TargetApp>
+                <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" Version="V3" />
+              </uix:NApplicationCard.TargetApp>
+            </uix:NApplicationCard>
+            <TryCatch DisplayName="Extract directory rows" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+              <TryCatch.Try>
+                <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="08e84e60-2533-4788-b89d-cd78223bd266" Timeout="30" Version="V2">
+                  <uix:NApplicationCard.Body>
+                    <ActivityAction x:TypeArguments="x:Object">
+                      <ActivityAction.Argument>
+                        <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                      </ActivityAction.Argument>
+                      <Sequence DisplayName="Do">
+                        <uix:NExtractData ExtractDataSettings="{x:Null}" DataTable="[out_StaffRecords]" DelayAfter="0" DelayBefore="0" DelayBetweenPages="0.3" DisplayName="Extract staff directory" ExtractMetadata="&lt;extract&gt;&lt;column exact='0' name='Name' attr='text'&gt;&lt;webctrl tag='TR' /&gt;&lt;webctrl tag='TD' idx='1' /&gt;&lt;/column&gt;&lt;column exact='0' name='Position' attr='text'&gt;&lt;webctrl tag='TR' /&gt;&lt;webctrl tag='TD' idx='2' /&gt;&lt;/column&gt;&lt;column exact='0' name='Office' attr='text'&gt;&lt;webctrl tag='TR' /&gt;&lt;webctrl tag='TD' idx='3' /&gt;&lt;/column&gt;&lt;/extract&gt;" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="ExtractData_1" InteractionMode="Simulate" LimitExtractionTo="Rows" MaximumResults="100" Timeout="30" Version="V5">
+                          <uix:NExtractData.Target>
+                            <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;" Guid="d735113f-7671-4f5e-a283-de192509670d" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                          </uix:NExtractData.Target>
+                        </uix:NExtractData>
+                      </Sequence>
+                    </ActivityAction>
+                  </uix:NApplicationCard.Body>
+                  <uix:NApplicationCard.OCREngine>
+                    <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+                      <ActivityFunc.Argument>
+                        <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+                      </ActivityFunc.Argument>
+                    </ActivityFunc>
+                  </uix:NApplicationCard.OCREngine>
+                  <uix:NApplicationCard.TargetApp>
+                    <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" Version="V3" />
+                  </uix:NApplicationCard.TargetApp>
+                </uix:NApplicationCard>
+              </TryCatch.Try>
+              <TryCatch.Catches>
+                <Catch x:TypeArguments="s:Exception">
+                  <ActivityAction x:TypeArguments="s:Exception">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="s:Exception" Name="extractError" />
+                    </ActivityAction.Argument>
+                    <ui:LogMessage DisplayName="Log extraction fallback" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Warn" Message="[String.Format(&quot;Directory table extraction was skipped: {0}&quot;, extractError.Message)]" />
+                  </ActivityAction>
+                </Catch>
+              </TryCatch.Catches>
+            </TryCatch>
+            <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="7103fff1-afbe-456f-a733-cc0c97dda64b" Timeout="15" Version="V2">
+              <uix:NApplicationCard.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NGetAttributeGeneric x:TypeArguments="ui:GenericValue" Attribute="class" DelayAfter="0" DelayBefore="0" DisplayName="Read table style attribute" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="GetAttribute_1" Result="[tableCssClass]" Timeout="15">
+                      <uix:NGetAttributeGeneric.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;" Guid="bf296713-014e-4208-be18-5fe4ba3eee63" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NGetAttributeGeneric.Target>
+                    </uix:NGetAttributeGeneric>
+                    <uix:NClick ActivateBefore="True" AlterIfDisabled="True" ClickType="Single" DisplayName="Sort by office" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="Click_1" InteractionMode="HardwareEvents" KeyModifiers="None" MouseButton="Left" Timeout="15" Version="V5">
+                      <uix:NClick.PointOffset>
+                        <uix:PointOffset>
+                          <uix:PointOffset.X>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </uix:PointOffset.X>
+                          <uix:PointOffset.Y>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </uix:PointOffset.Y>
+                        </uix:PointOffset>
+                      </uix:NClick.PointOffset>
+                      <uix:NClick.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl innertext='Office' tag='TH' /&gt;" Guid="d15c5f33-00fc-457b-babc-c2327d33f530" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NClick.Target>
+                    </uix:NClick>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NApplicationCard.Body>
+              <uix:NApplicationCard.OCREngine>
+                <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                </ActivityFunc>
+              </uix:NApplicationCard.OCREngine>
+              <uix:NApplicationCard.TargetApp>
+                <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" Version="V3" />
+              </uix:NApplicationCard.TargetApp>
+            </uix:NApplicationCard>
+            <Delay DisplayName="Wait for sort" Duration="00:00:01" sap2010:WorkflowViewState.IdRef="Delay_2" />
+            <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="89368bf1-b2ac-4f3f-be7e-96ac813d167f" Timeout="15" Version="V2">
+              <uix:NApplicationCard.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NGetText DelayAfter="0" DelayBefore="0" DisplayName="Read table text" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="GetFullText_1" ScrapingMethod="Fulltext" ScrapingOptions="None" TextString="[tableText]" Timeout="15" Version="V5">
+                      <uix:NGetText.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;" Guid="0ff6352b-1eb5-4810-99c1-8ed494dfad7d" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NGetText.Target>
+                    </uix:NGetText>
+                    <uix:NTakeScreenshot DelayAfter="0" DelayBefore="0" DelayBeforeScreenshot="0.3" DisplayName="Capture directory view" FileName="screenshot.png" FileNameMode="None" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="TakeScreenshot_1" OutImage="[directorySnapshot]" Timeout="15" Version="V5">
+                      <uix:NTakeScreenshot.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;" Guid="6c1efdb2-939a-438a-9c22-d1d9be491bb7" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NTakeScreenshot.Target>
+                    </uix:NTakeScreenshot>
+                    <uix:NKeyboardShortcuts ClickBeforeMode="{x:Null}" ActivateBefore="True" DelayBetweenKeys="0" DisplayName="Scroll directory to top" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="SendHotkey_1" InteractionMode="HardwareEvents" Shortcuts="[d(hk)][d(ctrl)][k(home)][u(ctrl)][u(hk)]" Timeout="15" Version="V5">
+                      <uix:NKeyboardShortcuts.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="&lt;webctrl id='example' tag='TABLE' /&gt;" Guid="c6ad7b76-4239-4818-880a-ed49c13ecdb6" ScopeSelectorArgument="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NKeyboardShortcuts.Target>
+                    </uix:NKeyboardShortcuts>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NApplicationCard.Body>
+              <uix:NApplicationCard.OCREngine>
+                <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                </ActivityFunc>
+              </uix:NApplicationCard.OCREngine>
+              <uix:NApplicationCard.TargetApp>
+                <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" Version="V3" />
+              </uix:NApplicationCard.TargetApp>
+            </uix:NApplicationCard>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='msedge.exe' /&gt;" Url="[in_PortalUrl]" Version="V3" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+    <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="Attach HR reference portal" HealingAgentBehavior="Job" sap2010:WorkflowViewState.IdRef="BrowserScope_1" OpenMode="Never" ScopeGuid="f498f4eb-555f-48a3-934b-5449114d3372" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Directory checks" sap2010:WorkflowViewState.IdRef="Sequence_3">
+            <uix:NCheckState sap2010:Annotation.AnnotationText="[PostMigration Action Required]: WARNING: This activity's selector is an expression, so it searches independently of the surrounding Use Application/Browser. If it incorrectly reports that the target was not found, set the target's Window selector to match the surrounding Use Application/Browser's selector." DelayAfter="0" DelayBefore="0" DisplayName="Confirm configured directory table" Exists="[directoryReachable]" HealingAgentBehavior="Disabled" sap2010:WorkflowViewState.IdRef="UiElementExists_2" IsLoose="True" Timeout="15" Version="V5">
+              <uix:NCheckState.IfExists>
+                <Sequence DisplayName="Target appears" />
+              </uix:NCheckState.IfExists>
+              <uix:NCheckState.IfNotExists>
+                <Sequence DisplayName="Target does not appear" />
+              </uix:NCheckState.IfNotExists>
+              <uix:NCheckState.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="[(in_DirectoryTableSelector).ToStringWithDelimiter()]" Guid="21cbe78a-69e2-43fa-9e3b-d4e277ed99cb" ScopeSelectorArgument="[(in_DirectoryTableSelector).ToStringWithDelimiter()]" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+              </uix:NCheckState.Target>
+            </uix:NCheckState>
+            <ui:LogMessage DisplayName="Log directory reachability" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Configured directory table reachable: {0}. Table style: {1}.&quot;, directoryReachable, tableCssClass)]" />
+            <Assign DisplayName="Set directory row index" sap2010:WorkflowViewState.IdRef="Assign_2">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:Int32">[rowIndex]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:Int32">3</InArgument>
+              </Assign.Value>
+            </Assign>
+            <Assign DisplayName="Build directory office cell selector" sap2010:WorkflowViewState.IdRef="Assign_3">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[rowCellSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[String.Format("&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl tag='TD' tableCol='3' tableRow='{0}' /&gt;", rowIndex)]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <uix:NApplicationCard sap2010:Annotation.AnnotationText="[PostMigration Action Required]: WARNING: This generated Use Application/Browser uses an expression as its application selector. If it or its child activity fails, move the child outside this generated Use Application/Browser, then delete it." AttachMode="SingleWindow" CloseMode="Never" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" IsDisplayNameAuto="True" OpenMode="Never" ScopeGuid="7d64d114-789e-40a8-8c5b-d06958a4030d" Timeout="15" Version="V2">
+              <uix:NApplicationCard.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Do">
+                    <uix:NGetText sap2010:Annotation.AnnotationText="[PostMigration Action Required]: WARNING: This activity is inside a generated Use Application/Browser whose application selector is an expression. If the activity fails, move it outside the generated Use Application/Browser, then delete the generated one." DelayAfter="0" DelayBefore="0" DisplayName="Read directory office cell" HealingAgentBehavior="SameAsCard" sap2010:WorkflowViewState.IdRef="GetValue_3" TextString="[rowCellValue]" Timeout="15" Version="V5">
+                      <uix:NGetText.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="0, 0, 0, 0" FullSelectorArgument="[(rowCellSelector).ToStringWithDelimiter()]" Guid="894a0666-d30b-4c3d-b161-0326dcf41ce7" ScopeSelectorArgument="[(rowCellSelector).ToStringWithDelimiter()]" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Complete" />
+                      </uix:NGetText.Target>
+                    </uix:NGetText>
+                  </Sequence>
+                </ActivityAction>
+              </uix:NApplicationCard.Body>
+              <uix:NApplicationCard.OCREngine>
+                <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                </ActivityFunc>
+              </uix:NApplicationCard.OCREngine>
+              <uix:NApplicationCard.TargetApp>
+                <uix:TargetApp Area="0, 0, 0, 0" Selector="[(rowCellSelector).ToStringWithDelimiter()]" Version="V3" />
+              </uix:NApplicationCard.TargetApp>
+            </uix:NApplicationCard>
+            <ui:LogMessage DisplayName="Log directory office cell" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[String.Format(&quot;Row {0} office cell: '{1}'.&quot;, rowIndex, rowCellValue)]" />
+            <TryCatch DisplayName="Read position column label" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+              <TryCatch.Try>
+                <Sequence DisplayName="Column label lookup" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                  <ui:AnchorBase AnchorPosition="Auto" sap2010:Annotation.AnnotationText="[PostMigration Action Required]: ERROR: Migration not implemented." DisplayName="Read label next to Position header" sap2010:WorkflowViewState.IdRef="AnchorBase_1">
+                    <ui:AnchorBase.Action>
+                      <ActivityAction x:TypeArguments="ui:Anchor">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="ui:Anchor" Name="ContextAnchor" />
+                        </ActivityAction.Argument>
+                        <ui:GetValue ContinueOnError="{x:Null}" sap2010:Annotation.AnnotationText="[PostMigration Action Required]: ERROR: Activity 'UiPath.Core.Activities.GetValue' used as Action inside Anchor activity is not supported for migration" DisplayName="Read neighbouring header" sap2010:WorkflowViewState.IdRef="GetValue_2">
+                          <ui:GetValue.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1014-11aa-4f21-9c30-51ab7d9e0014" Selector="&lt;webctrl tag='TH' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+                          </ui:GetValue.Target>
+                          <ui:GetValue.Value>
+                            <OutArgument x:TypeArguments="x:String">[positionLabel]</OutArgument>
+                          </ui:GetValue.Value>
+                        </ui:GetValue>
+                      </ActivityAction>
+                    </ui:AnchorBase.Action>
+                    <ui:AnchorBase.AnchorProvider>
+                      <ui:WaitUiElementAppear FoundElement="{x:Null}" WaitActive="{x:Null}" WaitVisible="{x:Null}" sap2010:Annotation.AnnotationText="[PostMigration Action Required]: ERROR: Activity 'UiPath.Core.Activities.WaitUiElementAppear' used as Anchor (AnchorProvider) inside Anchor activity is not supported for migration." DisplayName="Find Position header" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2">
+                        <ui:WaitUiElementAppear.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="3c7a1013-11aa-4f21-9c30-51ab7d9e0013" Selector="&lt;webctrl id='example' tag='TABLE' /&gt;&lt;webctrl innertext='Position' tag='TH' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+                        </ui:WaitUiElementAppear.Target>
+                      </ui:WaitUiElementAppear>
+                    </ui:AnchorBase.AnchorProvider>
+                  </ui:AnchorBase>
+                  <ui:WaitAttribute sap2010:Annotation.AnnotationText="[PostMigration Action Required]: ERROR: Migration not implemented." Attribute="tag" AttributeValue="[&quot;TABLE&quot;]" DisplayName="Wait for table to settle" Element="[directoryTable]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" TimeoutMS="5000" />
+                </Sequence>
+              </TryCatch.Try>
+              <TryCatch.Catches>
+                <Catch x:TypeArguments="s:Exception">
+                  <ActivityAction x:TypeArguments="s:Exception">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="s:Exception" Name="labelError" />
+                    </ActivityAction.Argument>
+                    <ui:LogMessage DisplayName="Log label lookup skipped" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Warn" Message="[String.Format(&quot;Column label lookup skipped: {0}&quot;, labelError.Message)]" />
+                  </ActivityAction>
+                </Catch>
+              </TryCatch.Catches>
+            </TryCatch>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd1:Image, scg:IEnumerable(scg:KeyValuePair(sd2:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd1:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="0, 0, 0, 0" BrowserType="Edge" Selector="&lt;html app='msedge.exe' title='*Zero configuration*' /&gt;" Version="V3" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+    <uix:NNavigateBrowser Action="CloseTab" DelayAfter="0" DelayBefore="0" DisplayName="Close portal tab" sap2010:WorkflowViewState.IdRef="CloseTab_1" InUiElement="[portalBrowser]" Version="V5" />
+    <Assign DisplayName="Count extracted rows" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Int32">[out_MatchedRows]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Int32">[If(out_StaffRecords Is Nothing, 0, out_StaffRecords.Rows.Count)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log records collected" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[String.Format(&quot;Collected {0} directory rows. Lead staff member: '{1}'. Lead row visible: {2}. Table text length: {3}.&quot;, out_MatchedRows, out_LeadName, leadRowVisible, If(tableText Is Nothing, 0, tableText.Length))]" />
+  </Sequence>
+</Activity>

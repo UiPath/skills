@@ -40,11 +40,6 @@ run_limits:
 reference:
   directory: ../..
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 initial_prompt: |
   I want to automate our expense approval workflow. Here's the rough idea:
 

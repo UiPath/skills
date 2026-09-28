@@ -5,8 +5,10 @@
 ```bash
 python --version                                           # 3.11, 3.12, or 3.13
 which uv  > /dev/null 2>&1 || echo "install uv:  curl -LsSf https://astral.sh/uv/install.sh | sh"
-which uip > /dev/null 2>&1 || echo "install uip: npm install -g @uipath/cli"
+which uip > /dev/null 2>&1 || echo "install uip/runtimes: curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash"
 ```
+
+Windows PowerShell fresh-machine setup: `irm https://download.uipath.com/uipath-cli/install.ps1 | iex`. The UiPath installer handles Node.js, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14; install `uv` separately.
 
 ## Framework Selection
 

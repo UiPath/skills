@@ -1,0 +1,220 @@
+task_id: skill-insights-smoke-dashboard-update
+description: >
+  Smoke test: agent uses the uipath-insights skill to change a Maestro
+  process's saved monitoring dashboard. Given a rename request, the agent
+  should read the slot, follow the reported id into the by-id read so the
+  file carries the stored global filters (writes guide Rule 13), take the
+  definition as a file rather than as captured stdout, keep a backup
+  (Rule 15), and update once with the version the slot read reported
+  (Rules 11 and 12). The CLI is authenticated.
+
+  The process key is a fresh GUID per run, written to seed.json in
+  pre_run and belonging to no Maestro process, and a second pre_run step
+  seeds its slot with a saved dashboard (post_run deletes it), so the update branch runs on every run
+  rather than only on a tenant that happened to hold one. That is what
+  lets the flags the guide teaches be gated instead of advisory, and what
+  lets the live read-back at the end prove the rename landed rather than
+  that a command was typed. Delete and copy are graded here only for the
+  surface being real; their round trips are delete_smoke and copy_smoke.
+tags: [uipath-insights, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 14
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  # A fresh key per run, then a saved row in its slot. slot.py never fails
+  # the task: a slot it cannot seed is left as it is, and the prompt's own
+  # rule tells the agent to stop on an empty slot. The fresh key is what
+  # keeps two gate runs on stacked PRs out of each other's slot (skills
+  # runs 35721927455 and 35721932318 collided on a fixed key).
+  - command: "python3 _setup/slot.py new"
+    timeout: 30
+    fail_on_error: false
+  - command: "python3 _setup/slot.py seed"
+    timeout: 180
+    fail_on_error: false
+
+post_run:
+  - command: "python3 _setup/slot.py clear"
+    timeout: 120
+
+initial_prompt: |
+  Rename the Insights monitoring dashboard on the Maestro process whose
+  key is the process_key in ./seed.json to "Order intake health (EMEA)".
+  Nothing else about it should change, its global filters included, and
+  I want a copy of what was there before you touch it. If the process has
+  no saved dashboard, say so and stop rather than creating one. Send the
+  update once and do not delete anything. Report what the result proves
+  and what it does not.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every wildcard in this file is bounded with
+  # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, and each part is load-bearing. The
+  # grader matches every pattern against two haystacks: the raw
+  # `bash -lc "..."` text, which keeps newlines, and a normalized one that
+  # unwraps the wrapper and re-joins the shlex tokens with single spaces
+  # (coder-eval 0.12.1, criteria/command_executed.py, _normalize_shell and
+  # _match_haystacks). The \n in the class stops a batched neighbour on the
+  # raw haystack; the (?!uip\s) lookahead stops the next `uip ` on the
+  # normalized one, where the newline is already a space. The \\\n branch
+  # lets a backslash-continued command through: shlex keeps an escaped
+  # newline as its own token, so the normalized haystack carries a literal
+  # newline there too, and a class without that branch false-fails every
+  # continued command on both haystacks. A bare .* is worse than any of
+  # these, since re.DOTALL lets it leave the command entirely. No barrier
+  # closes the case where the neighbour is not a `uip` command; only naming
+  # the flags the target accepts does that, which the flag patterns below do.
+  #
+  # Rule 10 and Rule 13: read before writing, and take the file from the
+  # by-id read through the artifact channel. The slot read is what reports
+  # the id and the version; the by-id read is the only one whose file
+  # carries the stored global filters, so an update built from the slot
+  # read drops them in silence. \d+ keeps the slot read from satisfying
+  # this, and --output-file is required because it is the only channel
+  # carrying the camelCase definition update accepts.
+  - type: command_executed
+    description: "Agent read the dashboard by id to a file before changing anything"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get\s+"?\d+\b(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Rule 1: the file is the contract and CLI stdout is not. Same pattern as
+  # create_smoke.yaml, whose comment explains its shape: it walks only what
+  # `get` can take, then requires a capture (a redirect to a path that is
+  # not /dev/null, a pipe into tee, or a pipe through jq that redirects),
+  # so 2>&1 and a `jq ... > file` on the next line do not trip it. Single
+  # quotes inside the pattern are written as \x27 because the YAML scalar
+  # is single-quoted; the atomic group needs the Python 3.11+ `re` the
+  # pinned coder-eval runs on.
+  - type: command_not_executed
+    description: "Agent did not capture read stdout into the definition file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+get(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:"[^"]*"|\x27[^\x27]*\x27|(?!-)[A-Za-z0-9_.:-]+))?(?:(?:[ \t]+|[ \t]*\\\n[ \t]*)(?:--(?:output-file|file|backup-file)[ \t=]+(?>"[^"]*"|\x27[^\x27]*\x27|[^\s|&;]+)|--(?!(?:output-file|file|backup-file)\b)[a-z-]+(?:[ \t=]+(?:"[^"]*"|\x27[^\x27]*\x27|[^\s>|&;]+))?|\d>&\d))*[ 	]*(?:(?:(?<![0-9&])>>?|&>|>\||(?<![0-9])1>>?)[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"]*[./][^\s\x27"]*)|\|[ \t]*tee\b|\|[ \t]*jq[^&;|\n]*?(?<![0-9&])>[ \t]*(?!/dev/null)(?:"[^"]*[./][^"]*"|\x27[^\x27]*[./][^\x27]*\x27|[^\s\x27"]*[./][^\s\x27"]*))'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The update itself, in the shape the guide teaches: a file (Rule 1),
+  # the version the read reported (Rule 11), and a backup (Rule 15). The
+  # three flags are matched in one pattern each rather than one combined
+  # pattern, so a run that misses one names the one it missed. --file and
+  # --expected-version are what the CLI requires; --backup-file is what
+  # the guide requires, because the backend keeps no history.
+  - type: command_executed
+    description: "Agent sent the update from a file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed the version the read reported on the update"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--expected-version[\s=]+"?\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent kept a backup of the definition the update replaces"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--backup-file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 18: one write, never a blind repeat. The cap is 1 rather than 0,
+  # so this is a bounded command_executed and not a command_not_executed:
+  # the loader rewrites command_not_executed to min_count 0 / max_count 0
+  # whatever the file says (coder_eval/models/tasks.py, the success_criteria
+  # normalizer), which would fail the single legitimate update. min_count 0
+  # keeps this criterion about the cap alone; the three above are what
+  # require the update to happen.
+  - type: command_executed
+    description: "Agent did not send the update more than once"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\b(?!\s+(?:--help|-h)\b)'
+    min_count: 0
+    max_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 17: an edit is never a delete and a recreate, however clean the
+  # result. High weight, because an agent that deletes has destroyed the
+  # dashboard's linked alert definitions along with it.
+  - type: command_not_executed
+    description: "Agent did not delete the dashboard to start over"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+delete\b(?!\s+(?:--help|-h)\b)'
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The update id form takes the numeric id only; a template-keyed id is
+  # refused locally. Anchored to the literal backend prefix rather than to
+  # a general shape, so a numeric id that happens to contain those
+  # characters is not caught.
+  - type: command_not_executed
+    description: "Agent did not address the update with a template-keyed id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+update\s+"?UiPath-'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids command substitution and shell
+  # variables inside a uip invocation. The flag branch names only the flags
+  # the dashboard commands accept, the superset every dashboard task
+  # carries, so a neighbour's `jq --arg $KEY` cannot satisfy it; --json and
+  # --output are left in because both are real host global options
+  # (packages/common/src/host-global-options.ts). The positional branch
+  # catches a variable dashboard id on the get, update and delete id forms.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights dashboard command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+\S+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(process-key|case|source-type|localization|output-file|file|backup-file|expected-version|from-process-key|to-process-key|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_{])|uip\s+insights\s+dashboards\s+(get|update|delete)\s+"?(\$\(|`|\$[A-Za-z_{])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so every pattern above
+  # passes even when the verb exists in no installed CLI. --help is the
+  # reality gate: it exits 0 only when the CLI registers the command and
+  # exits 3 on an unknown one.
+  - type: run_command
+    description: "CLI path is real: dashboards update is registered in the installed CLI"
+    command: "uip insights dashboards update --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The rename landed. This is the one criterion the agent cannot satisfy
+  # by typing the right command: the slot read after the run carries the
+  # stored name, and the name is the ground-truth anchor the prompt set.
+  - type: run_command
+    description: "Live: the seeded slot now reads the new name"
+    command: >-
+      K=$(python3 -c 'import json; print(json.load(open("seed.json"))["process_key"])');
+      uip insights dashboards get --process-key "$K" --output json
+      | python3 -c 'import json,sys; d=json.load(sys.stdin)["Data"]; sys.exit(0 if d["Saved"] is True and d["Name"] == "Order intake health (EMEA)" else 1)'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

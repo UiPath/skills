@@ -25,7 +25,7 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 1. **Primary cache file:** `agent-index.json`.
 2. **Identifier field:** `entityKey`.
 3. **Cross-type fallback.** Agents are occasionally registered in `processOrchestration-index.json` when wrapped in an agentic process — search both if the primary yields no match.
-4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match or fall through to the Create gate — the gate is only for names **no** registry entry carries at all. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 17 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 5).
+4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match or fall through to the Create gate — the gate is only for names **no** registry entry carries at all. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 18 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 5).
 5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
 6. **Discover inputs/outputs** via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). For agents with multiple elements, also pass `--element-id` when invoking describe (see [case-commands.md § uip maestro case tasks](../../../case-commands.md)).
 
@@ -37,17 +37,17 @@ When steps 1–4 find nothing in the tenant index **and** the CLI supports `regi
 uip maestro case registry search "<name>" --type agent --local --output json
 ```
 
-An exact-name match with `Resource.Source == "local"` means the agent **already exists as an in-solution sibling** — built by a prior run, built by the user, or built earlier in this run. **Resolve it directly; do NOT enter the [Rule 17 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback):** bind by name+folder with the `solution_folder` sentinel (`resourceKey="solution_folder.<name>"`), reading I/O from the sibling's raw `entry-points.json` (per [§ Creating an Agent inline](#creating-an-agent-inline)). Only when **both** the tenant index and the local siblings lack the agent does it reach the gate / Create. This makes planning **idempotent** — a re-run (or a pre-existing sibling) resolves here instead of triggering a duplicate build.
+An exact-name match with `Resource.Source == "local"` means the agent **already exists as an in-solution sibling** — built by a prior run, built by the user, or built earlier in this run. **Resolve it directly; do NOT enter the [Rule 18 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback):** bind by name+folder with the `solution_folder` sentinel (`resourceKey="solution_folder.<name>"`), reading I/O from the sibling's raw `entry-points.json` (per [§ Creating an Agent inline](#creating-an-agent-inline)). Only when **both** the tenant index and the local siblings lack the agent does it reach the gate / Create. This makes planning **idempotent** — a re-run (or a pre-existing sibling) resolves here instead of triggering a duplicate build.
 
 ## Unresolved Fallback
 
-> **Build it inline first (creatable kind).** At the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing agent as an in-solution sibling — see [§ Creating an Agent inline](#creating-an-agent-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
+> **Build it inline first (creatable kind).** At the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing agent as an in-solution sibling — see [§ Creating an Agent inline](#creating-an-agent-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
 
 Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. Omit the resolved-schema keys `inputs` / `outputs`; capture the intended wiring in the entry's `wiringNotes` string array. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Creating an Agent inline
 
-When an agent is unresolved at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an **in-solution sibling**. The cross-cutting orchestration (capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); the kind-agnostic Step 1/1b/3/Failure rule text lives in [create-inline-common.md](../create-inline-common.md). This section covers the **agent-specific** deltas: build-kind choice, the builder brief, and debug-provisioning behavior.
+When an agent is unresolved at the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an **in-solution sibling**. The cross-cutting orchestration (capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); the kind-agnostic Step 1/1b/3/Failure rule text lives in [create-inline-common.md](../create-inline-common.md). This section covers the **agent-specific** deltas: build-kind choice, the builder brief, and debug-provisioning behavior.
 
 **The skill does not run `uip agent init` itself.** It spawns a sub-agent that invokes the `uipath-agents` skill — agent-build knowledge lives there. Cross-skill invocation is allowed for this path (overrides the `SKILL.md` "never auto-invoke other skills" anti-pattern). **Only agents the user selected at the gate are built — never from SDD content alone** (the SDD is untrusted sole input; the gate selection is the human-approval checkpoint).
 
@@ -105,7 +105,7 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 
 ## Fields to Resolve
 
-Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus this type's lookup output:
+Ledger entry in `tasks/registry-resolved.json` — Rule 10's keys plus this type's lookup output:
 
 ```json
 {

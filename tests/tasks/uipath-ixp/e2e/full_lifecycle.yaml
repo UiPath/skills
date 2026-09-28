@@ -123,7 +123,7 @@ success_criteria:
     description: "Agent updated a field prompt"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts)(?=[^\r\n]*--updates)(?=[^\r\n]*"group"\s*:\s*"[^"\r\n]+")(?=[^\r\n]*"name"\s*:\s*"[^"\r\n]+")[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
@@ -166,6 +166,14 @@ success_criteria:
       (?m)^(?:uip\s+ixp\s+projects\s+publish)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
+
+# Frees tenant quota before this run creates its project: deletes `codereval-*`
+# projects older than three hours, which earlier runs leaked. Always exits 0, and
+# fail_on_error is off so even a timed-out sweep never costs the run.
+pre_run:
+  - command: "python3 _setup/sweep_stale_projects.py"
+    timeout: 300
+    fail_on_error: false
 
 # Safety net: delete THIS run's project even if the agent's in-band cleanup never
 # ran (crash / MAX_TURNS before the final delete). Reads report.json; only removes
