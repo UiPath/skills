@@ -50,6 +50,9 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
    and secret values in summaries.
 8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require
    explicit user consent after root cause analysis.
+9. **One literal command per diagnostic read, never a loop** - write each read out in full, e.g. `uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json`.
+   No loop, function, alias, or variable in place of the verb, ID, or folder key: the command log is the record of what
+   was read. To batch, chain the literal reads in one Bash call, one per line.
 
 ## Workflow
 

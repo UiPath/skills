@@ -71,7 +71,9 @@ success_criteria:
   - type: command_executed
     description: "Agent ran uip maestro case validate on the built aged-invoice case"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*AgedInvoiceResolution/AgedInvoiceResolution/caseplan\.json'
+    # The path may arrive through a shell variable (`C=…/caseplan.json; uip maestro
+    # case validate $C`); the run_command criteria below grade the real file.
+    command_pattern: 'uip\s+maestro\s+case\s+validate\s+(?:"?AgedInvoiceResolution/AgedInvoiceResolution/caseplan\.json|"?\$\{?\w+\}?)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

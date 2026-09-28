@@ -413,10 +413,20 @@ rows (`uipath-uipath-jdbc`) it is the only path; take its object from
 return an empty list without `--connection-id`.
 
 `registry get` returns the node template and its `InputFields`, not the event
-schema. That comes from `uip is triggers describe`: build the filter tree's
-leaves from its `FilterFields`, never from an activity's `RequestFields`;
-`EventParameters` are the trigger's scoping inputs, `OutputFields` the event
-payload.
+schema. That comes from `uip is triggers describe`: build the filter from its
+`FilterFields`, never from an activity's `RequestFields`; `EventParameters` are
+the trigger's scoping inputs, `OutputFields` the event payload.
+
+The runtime reads only a `target="body"` input; the template's `filter` and
+`parameters` fields, and any sibling input without `target`, are dropped. Write one
+`body` input as a sibling of `uipath:context`: `queryParams` holds the
+`EventParameters`; `filters.expression` AND-joins one equality clause per event
+parameter with the `FilterFields` conditions. No filter tree; only the
+expression is evaluated.
+
+```xml
+<uipath:input name="body" type="json" target="body"><![CDATA[{"filters":{"expression":"(parentFolderId == '<INBOX_ID>') && (contains(subject, 'Invoice'))"},"queryParams":{"parentFolderId":"<INBOX_ID>"}}]]></uipath:input>
+```
 
 `uip is triggers` and `registry get` uppercase the operation, so a connector
 whose trigger operations are mixed case (`uipath-uipath-testmanager`:

@@ -7,8 +7,9 @@ description: >
   CONTAINS the fixed string "TestWaitFor", then an End. Exercises the
   connector-wait registry wrapper (event node added mid-flow with the
   registry template, NOT replacing the manual start; bound to the Outlook
-  connection) AND the structured `filter` tree (a subject / Contains /
-  "TestWaitFor" literal leaf -- never a bare filter-expression string). No
+  connection) AND the runtime filter (a `contains(subject, 'TestWaitFor')`
+  clause in the `target="body"` input's `filters.expression`, scoped to the
+  Inbox via `queryParams.parentFolderId` and its equality clause). No
   execution -- `bpmn debug` is intentionally omitted; the task only requires
   the process to build and validate. Distinct from a connector-trigger START
   event, which would use the same event to start the process; this one uses
@@ -17,7 +18,7 @@ description: >
   Wait-for-event node (matched by a `type` substring) becomes a
   `bpmn:receiveTask` carrying the registry `Intsvc.WaitForEvent` wrapper, and
   the Flow node-id/JSON walk becomes an XML walk over the receiveTask's
-  `uipath:input` context fields and filter payload.
+  `uipath:input` context fields and body filter.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "feature:trigger", connector, uipath-microsoft-outlook365, filter, wait-for-event]
 sandbox:
   template_sources:

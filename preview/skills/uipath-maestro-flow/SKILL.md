@@ -55,14 +55,14 @@ It resolves the `@uipath` scope through GitHub Packages, so `.npmrc` must route 
 npm records the dependency in the nearest `package.json` up the directory tree, installing `node_modules/` beside that file rather than in the current directory — so when an unrelated ancestor owns one, claim the intended root first with `[ -f package.json ] || npm init -y`.
 On a `package.json` npm generated itself, `npm pkg set type=module` silences the `MODULE_TYPELESS_PACKAGE_JSON` warning every compile otherwise prints; leave an existing project's `type` alone.
 
-Integrations with non-UiPath systems are handled through connectors.
+Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()`, and a usage error means the library is not cached, so run `uip maestro registry pull` first. For document extraction or another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
 Connectors require a root-level [`bindings.json`](references/bindings.md).
 `uip maestro registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
 Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
 
 ### The connector loop: author → check → prepare → check → compile
 
-Authoring never waits on `prepare`, and no discovery command precedes the source.
+Authoring never waits on `prepare`: once the search above has chosen the node, no further discovery command precedes the source.
 Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check <Name>.flow.ts --source`.
 Check names every prepare you owe, with the exact command:
 `OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `bindings.json`, and repoints your import at the generated `connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
@@ -637,7 +637,7 @@ Signature: `mock()`.
   code: 'return $vars.assumedInvoiceId;' }))
 ```
 
-Use a script for stand-in data; use a placeholder only to expose a capability gap.
+Use a script for local fixed data, never in place of a capability the request needs; use a placeholder only to expose a capability gap the search proved.
 
 **Reference: [`references/placeholder.md`](references/placeholder.md)**
 
