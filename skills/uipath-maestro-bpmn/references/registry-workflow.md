@@ -25,8 +25,10 @@ listing silently misses them. An empty or unmatched result from a missing
 found via `registry search`, is a **false negative** — never conclude "no
 connection exists" or ask the user to create one until you have searched the
 registry for the real connector key and listed across all folders.
-Select rows by field, never by position: `uip is connections list
---all-folders --output json | jq '.Data[] | select(.ConnectorKey=="<connectorKey>" and .State=="Enabled")'`.
+Select rows by field, never by position, lower-casing `Data` keys first
+(their casing is not fixed): `uip is connections list --all-folders --output json
+| jq '.Data[] | with_entries(.key |= ascii_downcase)
+| select(.connectorkey=="<connectorKey>" and .state=="Enabled")'`.
 A truncated listing is also a false negative; see
 [cli-conventions.md](cli-conventions.md).
 
@@ -282,10 +284,11 @@ value, so pass `--operation Create`.
 
 Put every `RequestFields` entry marked `Required: true` in the body under its
 described name. List them from the describe `--output json` result with
-`jq '.Data.RequestFields | map(select(.Required) | .Name)'`;
+`jq '.Data | with_entries(.key |= ascii_downcase) | .requestfields
+| map(with_entries(.key |= ascii_downcase) | select(.required) | .name)'`;
 never filter `RequestFields` by the names you expect. A missing Slack
-`messageToSend` faults with `invalid_blocks`. Describe omits Jira's
-`fields.summary`; set it anyway.
+`messageToSend` faults with `invalid_blocks`. Describe for Jira
+`curated_create_issue` omits `fields.summary`; set it there anyway.
 
 ### Required `Parameters` are separate from the body — emit every one
 
