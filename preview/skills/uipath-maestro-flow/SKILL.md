@@ -119,7 +119,7 @@ If the source must stay inside the Flow project (for example, to preserve relati
 
 The quick start above shows the shape — `flow(id)`, declarations, nodes, `.return(...)`, `.build()`. Three things it does not show:
 
-- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than one step writes or reads. `.input` and `.output` are the flow's contract with its caller; a var is the state in between. A step writes one with `{ updates: { name: <expr> } }`.
+- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than one step writes or reads. `.input` and `.output` are the flow's contract with its caller; a var is the state in between. A step writes one with `{ updates: { name: <expr> } }`. Inputs, outputs and vars take one of the six types a `.flow` stores: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`; the rest of `types` (`integer`, `float`, `double`, `date`, `datetime`, `jsonSchema`) is case-plan vocabulary, so a date or an integer is `types.string` or `types.number` here.
 - **`.return(...)` ends a PATH. `.terminate(...)` ends the RUN.** They look interchangeable on a straight chain and are not: inside a `.parallel` arm a terminate aborts the sibling arms mid-flight, where a return leaves them going.
 - **Expressions are how a step names something that is not a literal.** There is one per kind of thing you can refer to:
 
