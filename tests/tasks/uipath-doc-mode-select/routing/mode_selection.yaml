@@ -1,27 +1,34 @@
 task_id: skill-doc-mode-select-mode-selection
 description: >
-  Mode-selection accuracy across the whole decision surface: one row per case in
-  the skill's case library, three rows per mode, twenty-four rows total. Each row
-  states a workload the way a practitioner would describe it — no mode vocabulary,
-  no case IDs — and the agent must name the single mode the library routes it to.
+  Mode-selection accuracy across the whole decision surface: 27 rows, three per
+  mode across all eight, plus three whose ground truth is NONE because the work
+  is deterministic and belongs outside the taxonomy.
 
-  This is the scaled version of the ad-hoc seven-case run (one prompt per mode)
-  used while the skill was drafted. Ground truth is the case library itself, so a
-  row failing here means either the routing signal in SKILL.md's Fast Routing
-  table is not discriminative enough, or the case it is drawn from does not
-  actually teach its decisive signal. Fix the routing copy, do not relax the row.
+  Rows are deliberately drawn from workloads the case library does NOT use. An
+  earlier version paraphrased each case's own Problem description, which meant
+  it largely measured whether an agent could match text it had just read —
+  rows shared 65-97% of their content words with their case and peaked at 0.47
+  Jaccard. These rows peak at 0.16 against any case in the library. Eighteen
+  come from separate engagements; nine are constructed in unrelated domains
+  where no distinct engagement was available. The `provenance` field records
+  which is which.
 
-  Three rows carry the ground truth NONE: the workload is deterministic and
-  belongs in a Data, Transform or Script node, outside the taxonomy. Without
-  them a skill that answers BT to anything tabular would score well.
+  A row failing here means the routing signal in SKILL.md's Fast Routing table
+  did not generalise past the wording of the case it was written from. Fix the
+  routing copy, do not relax the row.
 
-  Two things to know before reading a red result:
+  Three things to know before reading a red result:
 
-  - CS rows are expected to be the weakest. There is no published Classify &
-    Split node configuration in Flow (references/classify-split-guide.md says so
-    outright), so an agent reasoning about what it can actually build may
-    legitimately fall back to another mode. Treat CS misses as a product-gap
-    signal, not a copy defect, until that configuration is documented.
+  - AH is the weakest ground truth in the set and always will be. Its decisive
+    signal is a capability need verified to exist only in the advanced harness,
+    which is a design conclusion rather than something a business states about
+    its own workload. The AH rows carry the long-running, multi-stage,
+    precedence-and-resumability signals the library's AH cases use; treat a
+    near miss onto EX or SU as weaker evidence than a miss elsewhere.
+  - CS rows are expected to underperform. There is no published Classify &
+    Split node configuration in Flow (references/classify-split-guide.md says
+    so outright), so an agent reasoning about what it can actually build may
+    legitimately fall back. Read a CS miss as a product-gap signal.
   - The grading command interpolates ${row.expected_mode} into a run_command
     string. If the harness does not substitute row fields there, check_mode.py
     fails loudly with an explicit message rather than grading against a literal
