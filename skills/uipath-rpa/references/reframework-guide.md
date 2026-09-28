@@ -124,7 +124,7 @@ System Exception in `Process.xaml` → `SetTransactionStatus.xaml` runs `CloseAl
 
 1. `InitAllApplications.xaml` must be safe to rerun: open only what is not open, never a second instance.
 2. `CloseAllApplications.xaml` must be safe on unopened resources: null-check each, close each in its own Try/Catch, null the handle after closing.
-3. Hold non-UI resources (database connections, API/mail/storage clients) in a context object `Main.xaml` creates (`Variable.Default`) and passes **In**; Init sets its fields. Never return them as `out_*` of Init — on fault they are not copied back ([xaml/common-pitfalls.md § Out and InOut Arguments Are Not Copied Back When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-are-not-copied-back-when-the-callee-faults)) and leak. `KillAllProcesses.xaml` does not release in-process handles.
+3. Hold non-UI resources (database connections, API/mail/storage clients) in a context object `Main.xaml` creates (`Variable.Default`) and passes **In**; Init sets its fields. Never return them as `out_*` of Init — they leak when Init faults ([xaml/common-pitfalls.md § Out and InOut Arguments Are Not Copied Back When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-are-not-copied-back-when-the-callee-faults)). `KillAllProcesses.xaml` does not release in-process handles.
 
 ### Retried Transactions (Queue-Driven)
 
@@ -196,7 +196,7 @@ Before first run:
 - [ ] **For tabular / single-shot:** delete the three Set Transaction Status activities from `SetTransactionStatus.xaml`. Replace with status-column write-back or log-only.
 - [ ] **For tabular / single-shot:** migrate every `TransactionItem` argument type (see [Gotchas § type migration](#type-migration-cascade)).
 - [ ] **`InitAllApplications.xaml`** — implement app-open/login for every application the process touches; rerun-safe ([§ Init and Close Run More Than Once](#init-and-close-run-more-than-once-all-modes)).
-- [ ] **`CloseAllApplications.xaml`** + **`KillAllProcesses.xaml`** — graceful close + force-kill fallback for every app process name; Close tolerates unopened resources.
+- [ ] **`CloseAllApplications.xaml`** + **`KillAllProcesses.xaml`** — graceful close + force-kill fallback for every app process name; Close safe on unopened resources ([§ Init and Close Run More Than Once](#init-and-close-run-more-than-once-all-modes)).
 - [ ] **Template test cases** under `Tests\` bind every argument the framework workflows gained, or are deleted with their registration (see [Gotchas § template test cases](#template-test-cases-fall-behind-the-framework-files)).
 - [ ] **Classify exceptions in `Process.xaml`** — throw `BusinessRuleException` for data issues; let everything else propagate.
 - [ ] **Move secrets to Orchestrator Assets** — credentials, API keys, environment-specific URLs.

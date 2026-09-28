@@ -103,7 +103,7 @@ Hybrid projects mix coded and XAML files. The `workflows` property provides stro
 | Coded | Coded Workflow | `workflows.Name()` | Strongly typed |
 | Any | Any (dynamic) | `RunWorkflow("path", dict)` | String-based fallback — use only when path is determined at runtime |
 
-**XAML → coded argument keys** (`x:Key`): parameter → its name (In); single return → `Output` (Out), never `out_*`; tuple return → one Out per element name; parameter named like a tuple element (or `Output`) → InOut (ST-REL-001).
+XAML invoking a coded workflow: each argument's `x:Key` is the name the coded signature produces — never an `out_*`/`in_*` XAML-style name. Name and direction rules: [coded/operations-guide.md § Add a Workflow File to Existing Project, step 3](coded/operations-guide.md#add-a-workflow-file-to-existing-project).
 
 ### Pattern 1: XAML Root + Coded Logic
 
