@@ -18,6 +18,19 @@ BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 
 IS_ASCENDING_FALSE = '<uipath:input name="isAscending" type="boolean" target="query" value="false" />'
+IS_ASCENDING_TRUE = '<uipath:input name="isAscending" type="boolean" target="query" value="true" />'
+SORT_FIELD_BODY = '<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName": "priority"}]]></uipath:input>'
+SORT_FIELD_QUERY = '<uipath:input name="_sortFieldName" type="string" target="query" value="priority" />'
+DOCUMENTED_QUERY = (
+    '<uipath:input name="queryExpression" type="string" target="query" value="contractTitle = &apos;Q&apos;" />'
+    + IS_ASCENDING_FALSE
+    + SORT_FIELD_BODY
+)
+FILTER_TREE_WITH_SORT = (
+    '<uipath:input name="queryExpression" type="json" target="query"><![CDATA['
+    '{"groupOperator": 0, "index": 0, "filters": [], "groups": [], '
+    '"sortOptions": [{"fieldName": "priority", "isDescending": true}]}]]></uipath:input>'
+)
 
 
 def _load(name: str):
@@ -57,9 +70,12 @@ def _sort_body(sort_options: str) -> str:
         IS_ASCENDING_FALSE + _sort_body('[{"fieldName": "priority", "isDescending": true}]'),
         _sort_body('[{"fieldName": "Priority", "isDescending": "true"}]'),
         _sort_body('[{"fieldName": "status", "isDescending": false}, {"fieldName": "priority", "isDescending": true}]'),
-        '<uipath:input name="_sortFieldName" type="string" target="query" value="priority" />' + IS_ASCENDING_FALSE,
+        '<uipath:input name="sortFieldName" type="string" target="query" value="priority" />' + IS_ASCENDING_FALSE,
+        IS_ASCENDING_FALSE + SORT_FIELD_BODY,
+        IS_ASCENDING_FALSE + '<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName": "Priority"}]]></uipath:input>',
+        DOCUMENTED_QUERY,
     ],
-    ids=["eval-node", "string-true", "second-entry", "sortfieldname"],
+    ids=["eval-node", "string-true", "second-entry", "sortfieldname", "body-sortfieldname", "body-capitalized", "documented"],
 )
 def test_priority_desc_sort_accepted(inputs: str) -> None:
     assert checker.has_priority_desc_sort(_query(inputs))
@@ -75,6 +91,12 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         IS_ASCENDING_FALSE,
         '<uipath:input name="body" type="json" target="body" value="=vars.sortBody" />',
         '<uipath:input name="body" type="json" target="body"><![CDATA[[{"fieldName": "priority"}]]]></uipath:input>',
+        SORT_FIELD_BODY,
+        IS_ASCENDING_TRUE + SORT_FIELD_BODY,
+        IS_ASCENDING_FALSE + SORT_FIELD_QUERY,
+        IS_ASCENDING_FALSE + SORT_FIELD_BODY + '<uipath:input name="body" type="json" target="body"><![CDATA[{}]]></uipath:input>',
+        IS_ASCENDING_FALSE + '<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName": "priorityLabel"}]]></uipath:input>',
+        IS_ASCENDING_FALSE + FILTER_TREE_WITH_SORT,
     ],
     ids=[
         "descending-false",
@@ -84,6 +106,12 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         "isascending-only",
         "expression-body",
         "array-body",
+        "body-sortfieldname-no-direction",
+        "body-sortfieldname-ascending",
+        "query-sortfieldname",
+        "overridden-body",
+        "body-sortfieldname-other-field",
+        "sort-in-filter-tree",
     ],
 )
 def test_priority_desc_sort_rejected(inputs: str) -> None:

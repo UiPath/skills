@@ -156,6 +156,34 @@ are the entity's columns, so Create and Update take their body from it.
 The file rows take the field as a `fieldName` path parameter. Their `V2`
 counterparts expose no field parameter, so do not use them.
 
+`QueryEntityRecordsCurated` reports an empty `RequestFields` until you pass
+the entity:
+
+```bash
+uip is resources describe <connectorKey> <object> --connection-id <id> \
+    --operation Create --field entityName=<EntityName> --output json
+```
+
+`RequestFields` then lists `_sortFieldName`. Send it only in the body; as a
+query parameter it is ignored. Always set `isAscending`: omitted, the query
+sorts ascending, whatever its `DefaultValue` says.
+
+No `uip maestro bpmn` command compiles a filter tree, so write the filter in
+`queryExpression` as a CEQL string yourself, even when the request asks for a
+FilterBuilder tree and no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
+`>=`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`, joined by
+`AND` / `OR`; "contains" is `LIKE '%<text>%'`. A tree in `queryExpression`
+fails with `400 Error parsing query`. Put a requested tree in the context `metadata` at
+`activityPropertyConfiguration.configuration.essentialConfiguration.savedFilterTrees.queryExpression`,
+and say in your summary that the runtime filter is the CEQL string.
+
+```xml
+<uipath:input name="entityName" type="string" target="path" value="<EntityName>" />
+<uipath:input name="queryExpression" type="string" target="query" value="<field> = &apos;<value>&apos; AND <field> &gt;= <number>" />
+<uipath:input name="isAscending" type="boolean" target="query" value="false" />
+<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName":"<field>"}]]></uipath:input>
+```
+
 For a Data Fabric operation not listed, drop objects whose display name ends
 in `(Preview)` or `(Deprecated)`, then prefer a path starting with `/v2/`.
 

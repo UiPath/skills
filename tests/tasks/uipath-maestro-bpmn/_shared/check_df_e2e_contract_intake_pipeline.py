@@ -107,6 +107,7 @@ Assertion map (Flow -> BPMN):
   F _shared/check_connector_node_shape.py:48-51    manifest(ntype) resolves (node type is real)        -> has_typed_uipath_extension(task, "activity", ACTIVITY_TYPE) in --shape mode
   I                                                 locate/parse .bpmn                                  -> parse_bpmn()
   T                                                 curated|generic objectName classification           -> is_kind()
+  T                                                 body `_sortFieldName` key as the sort field (curated Query's GenerateSchema RequestField) -> has_priority_body_sort_field()
   T                                                 body sortOptions[] entry {fieldName: priority, isDescending: true} as a sort carrier -> has_priority_sort_option()
   T                                                 entity name anywhere in node inputs/objectName/path  -> entity_ok()
   T                                                 vars.<VarId> substring reference in place of Flow node-id reference -> wired_to_create()
@@ -167,13 +168,15 @@ GENERIC_OP_PATTERNS = {
 DESC_TOKEN_RE = re.compile(r"\bdesc(ending)?\b", re.IGNORECASE)
 
 # A curated Query node carries the sort field and direction as two SEPARATE
-# named inputs (e.g. `_sortFieldName`="priority", `isAscending`="false"), so
+# inputs (body `_sortFieldName`="priority", query `isAscending`="false"), so
 # neither name nor value alone proves DESC-by-priority -- unlike a raw
 # expression/metadata blob where both tokens appear together in one string.
-# Check named inputs first; fall back to blob-text scanning (Flow's own dual
-# tolerance) only for the js:/metadata-embedded shape where both live in one
-# expression string.
-SORT_FIELD_NAMES = {"sortfieldname", "_sortfieldname", "sortfield", "sortby", "orderby"}
+# Check the body sort field and named inputs first; fall back to blob-text
+# scanning (Flow's own dual tolerance) only for the js:/metadata-embedded
+# shape where both live in one expression string.
+SORT_FIELD_NAMES = {"sortfieldname", "sortfield", "sortby", "orderby"}
+# Live: honored in the body, ignored as a query parameter.
+SORT_FIELD_BODY_KEY = "_sortFieldName"
 SORT_DIR_NAMES = {"isascending", "sortdirection", "sortorder", "direction"}
 
 
@@ -266,9 +269,29 @@ def named_inputs(task: ET.Element) -> list[tuple[str, str]]:
     return pairs
 
 
+def sent_body(task: ET.Element) -> dict:
+    bodies = [inp for inp in node_inputs(task) if inp.attrib.get("target") == "body"]
+    if not bodies:
+        return {}
+
+    # The runtime sends only the last target="body" input.
+    try:
+        body = json.loads(bodies[-1].text or "")
+    except json.JSONDecodeError:
+        return {}
+    return body if isinstance(body, dict) else {}
+
+
+def has_priority_body_sort_field(task: ET.Element) -> bool:
+    field = sent_body(task).get(SORT_FIELD_BODY_KEY)
+    return isinstance(field, str) and field.strip().lower() == "priority"
+
+
 def has_priority_desc_sort(task: ET.Element) -> bool:
     pairs = named_inputs(task)
-    field_hit = any(name in SORT_FIELD_NAMES and "priority" in value.lower() for name, value in pairs)
+    field_hit = has_priority_body_sort_field(task) or any(
+        name in SORT_FIELD_NAMES and "priority" in value.lower() for name, value in pairs
+    )
     dir_hit = False
     for name, value in pairs:
         if name not in SORT_DIR_NAMES:
@@ -291,17 +314,8 @@ def has_priority_desc_sort(task: ET.Element) -> bool:
 
 
 def sort_options(task: ET.Element) -> list:
-    options = []
-    for inp in node_inputs(task):
-        if inp.attrib.get("target") != "body":
-            continue
-        try:
-            body = json.loads(inp.text or "")
-        except json.JSONDecodeError:
-            continue
-        if isinstance(body, dict) and isinstance(body.get("sortOptions"), list):
-            options.extend(body["sortOptions"])
-    return options
+    options = sent_body(task).get("sortOptions")
+    return options if isinstance(options, list) else []
 
 
 def has_priority_sort_option(task: ET.Element) -> bool:
