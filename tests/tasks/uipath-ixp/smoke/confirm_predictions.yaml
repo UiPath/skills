@@ -1,9 +1,10 @@
 task_id: skill-ixp-confirm-predictions-smoke
 description: >
   Smoke: agent reviews predictions and picks the right verdict per
-  field — correct → `confirm --fields`; OCR-mangled → `confirm
-  --corrections` (Rule 8); wrong-field prediction → left
-  unannotated (Rule 10 — agent reviews, doesn't extract).
+  field — correct → `confirm --fields`; OCR-mangled → row-scoped
+  `confirm --group --occurrence --fields --corrections` (Rule 8);
+  wrong-field prediction → left unannotated (Rule 10 — agent
+  reviews, doesn't extract).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -36,7 +37,8 @@ initial_prompt: |
     (the model located the Total line but the OCR mis-read the digits)
   - Vendor Name (field id `f-004`): `Acme Corp`
 
-  `get-predictions` reports these predictions are from ModelVersion 7.
+  `get-predictions` reports these predictions are from ModelVersion 7;
+  all four fields sit in field group `Invoice Header`, at `Occurrence` 0.
 
   Compare each prediction to the document and record your verdict.
 
@@ -85,9 +87,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "--corrections carries the OCR-mangled field's corrected value, on a version-pinned call"
+    description: "The correction names its row (--group Invoice Header + occurrence 0), lists f-003 in its fields, carries the corrected value, on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--corrections\s+[^\r\n]*f-003[^\r\n]*\$?12,?000\.00).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--group(?:\s+|=)["']?Invoice\sHeader["']?(?=\s|$))(?=[^\r\n]*(?:--occurrence(?:\s+|=)["']?0["']?(?=\s|$)|--updates\s+[^\r\n]*"occurrence"\s*:\s*0\b))(?=[^\r\n]*(?:--fields(?:\s+|=)["']?[^\s"']*f-003|"fields"\s*:\s*\[[^\]]*f-003))(?=[^\r\n]*(?:--corrections\s+[^\r\n]*f-003|"corrections"[^\r\n]*f-003)[^\r\n]*\$?12,?000\.00).*)[^\r\n]*$
     weight: 2.0
+    pass_threshold: 1.0
+
+  # Without --group, a correction is written into every occurrence of the
+  # field on the document.
+  - type: file_matches_regex
+    description: "Agent did NOT pass --corrections without --group (Critical Rule 8)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?![^\r\n]*--group)(?=[^\r\n]*--corrections)).*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The plain call confirms the predicted value, so listing the corrected
+  # field there would overwrite the correction.
+  - type: file_matches_regex
+    description: "Agent did NOT list the corrected f-003 in a plain (no --group) --fields call"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?![^\r\n]*--group)(?=[^\r\n]*--fields(?:\s+|=)["']?[^\s"']*f-003)).*$
+    must_match: false
+    weight: 1.5
     pass_threshold: 1.0

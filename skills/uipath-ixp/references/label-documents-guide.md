@@ -84,33 +84,46 @@ For **MISSING** fields: state that the prediction was empty AND describe how you
 For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location. Includes any non-OCR mistake — wrong source, wrong boolean, wrong inferred value, hallucination, value the document doesn't contain. **Do NOT use `--corrections` to fix these** — improve the field's prompt instructions instead.
 
 4. **Build two lists from the table:**
-   - **Submit field IDs** — all CONFIRMED + CORRECTED + MISSING fields (one combined list — the CLI applies the right semantic per field based on IXP's prediction)
-   - **Corrections JSON** — only CORRECTED fields: `[{"field_id":"...","value":"corrected text"}]`
+   - **Plain confirm IDs** — all CONFIRMED + MISSING fields (one combined list — the CLI applies the right semantic per field based on IXP's prediction). Never a CORRECTED field.
+   - **Row corrections** — each CORRECTED field with the `Name` and `Occurrence` of the label that holds it in the 2a read, and its corrected text
 
 ### 2d. Confirm and correct
 
-Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
+Corrections go first, as row-scoped calls; everything else goes in one plain call. With no CORRECTED fields, the plain call alone is enough.
 
 **Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to every `confirm` call below — the narrowed `--occurrence`/`--updates` forms included. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
 
-**If there are corrections:**
+**1. Corrections — one row-scoped call per group that holds a CORRECTED field.** Take `--group` and `--occurrence` from the label that holds the field in the latest `get-predictions` read, even when the group appears only once. List the corrected IDs in `--fields`: without `--fields` the call confirms every predicted field in that row, wrong ones included.
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
-  --fields "<all_submitted_ids>" \
-  --corrections '[{"field_id":"<id>","value":"<corrected_value>"}]' \
+  --group "<group_name>" --occurrence <N> \
+  --fields "<corrected_id>" \
+  --corrections '[{"field_id":"<corrected_id>","value":"<corrected_value>"}]' \
   -m <model_version> \
   --output json
 ```
 
-The `--fields` list includes CONFIRMED, CORRECTED, and MISSING field IDs together — the CLI writes the right annotation per field based on IXP's prediction (content → confirm, content with override → correct, empty → missing marker). The `--corrections` JSON overrides the predicted value for corrected fields while keeping their document references (bounding boxes).
+Several corrected rows in one group go in one `--updates` call — each entry carries its own `"fields"` and a `"corrections"` object keyed by field id:
 
-**If there are no corrections (all approved fields are exact matches):**
+```bash
+uip ixp labellings confirm <project-name> <document-id> \
+  --group "<group_name>" \
+  --updates '[{"occurrence":<N1>,"fields":["<id>"],"corrections":{"<id>":"<value_1>"}},{"occurrence":<N2>,"fields":["<id>"],"corrections":{"<id>":"<value_2>"}}]' \
+  -m <model_version> \
+  --output json
+```
+
+The correction replaces only the text; the field keeps its document references (bounding boxes). If a second group also holds a correction, re-run step 2a before its call and take the index from that read (Critical Rule 17).
+
+**2. Everything else — one plain call** with the CONFIRMED and MISSING IDs. Never list a CORRECTED ID here: this call confirms the predicted value, which overwrites your correction.
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
   --fields "<field_id_1>,<field_id_2>,<field_id_3>" -m <model_version> --output json
 ```
+
+Make the correction calls first: they use occurrence indices, and a write renumbers the group it touches (Critical Rule 17); the plain call uses none. If the plain call fails with `PredictionVersionChangedError`, a retrain landed after the correction — re-run step 2a, re-review, and confirm the remaining fields against the new version.
 
 If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm every predicted field on **that one document** in a single call:
 
@@ -120,12 +133,11 @@ uip ixp labellings confirm <project-name> <document-id> -m <model_version> --out
 
 This per-document form is fine **once you've reviewed the document and every field is correct** (2c). What you must NOT do is run `confirm` **without a `<document-id>`** — that confirms every document in the project at once, bypassing the per-document review loop. Confirming unreviewed predictions bakes wrong values into the labels, and because F1 compares predictions against those labels, **the metric reports 1.00 even when the confirmed values are wrong**. F1 alone is never evidence the values are correct.
 
-**If there are missing fields**, include their IDs in the same `--fields` list as the CONFIRMED and CORRECTED IDs. The `confirm` command applies one uniform rule per listed field: if IXP predicted content, the content is confirmed; if IXP predicted nothing, a missing marker is written. No separate call needed.
+**If there are missing fields**, include their IDs in the same plain `--fields` list as the CONFIRMED IDs. The `confirm` command applies one uniform rule per listed field: if IXP predicted content, the content is confirmed; if IXP predicted nothing, a missing marker is written. No separate call needed.
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
-  --fields "<confirmed_id>,<corrected_id>,<missing_id_1>,<missing_id_2>" \
-  --corrections '[{"field_id":"<corrected_id>","value":"<corrected_value>"}]' \
+  --fields "<confirmed_id>,<missing_id_1>,<missing_id_2>" \
   -m <model_version> \
   --output json
 ```
