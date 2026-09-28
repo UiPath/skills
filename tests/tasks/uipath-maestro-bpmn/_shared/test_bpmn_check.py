@@ -384,6 +384,52 @@ def test_waitfor_requires_inbox_scope() -> None:
     )
 
 
+_WAIT_EVENT = (
+    '<bpmn:extensionElements><uipath:event version="v1">'
+    '<uipath:type value="Intsvc.WaitForEvent" version="v1" /><uipath:context>'
+    '<uipath:input name="connectorKey" value="uipath-microsoft-outlook365" />'
+    '<uipath:input name="operation" value="EMAIL_RECEIVED" />'
+    "</uipath:context>"
+    '<uipath:input name="body" type="json" target="body"><![CDATA['
+    '{"filters":{"expression":"(parentFolderId == \'X\') && '
+    '(contains(subject, \'TestWaitFor\'))"},"queryParams":{"parentFolderId":"X"}}'
+    "]]></uipath:input></uipath:event></bpmn:extensionElements>"
+)
+
+
+def _waitfor_process(
+    host: str, event_definition: str = "", payload: str = _WAIT_EVENT
+) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}">'
+        f'<bpmn:process id="P"><bpmn:{host} id="Wait_1">{payload}{event_definition}'
+        f"</bpmn:{host}></bpmn:process></bpmn:definitions>"
+    )
+
+
+def test_waitfor_hosts() -> None:
+    grader = _load("check_outlook_waitfor_email")
+    message = "<bpmn:messageEventDefinition />"
+    timer = "<bpmn:timerEventDefinition />"
+
+    for host, definition in (("receiveTask", ""), ("intermediateCatchEvent", message)):
+        nodes = grader.wait_for_event_nodes(_waitfor_process(host, definition))
+        assert nodes and grader.has_subject_contains_filter(nodes[0]), host
+    assert not grader.wait_for_event_nodes(_waitfor_process("intermediateCatchEvent"))
+    assert not grader.wait_for_event_nodes(_waitfor_process("intermediateCatchEvent", timer))
+    assert not grader.wait_for_event_nodes(
+        _waitfor_process("intermediateCatchEvent", message + timer)
+    )
+    assert not grader.wait_for_event_nodes(_waitfor_process("boundaryEvent", message))
+
+    for other in (
+        _WAIT_EVENT.replace("Intsvc.WaitForEvent", "Maestro.ReceiveMessageEvent"),
+        _WAIT_EVENT.replace("uipath-microsoft-outlook365", "uipath-google-gmail"),
+    ):
+        catch = _waitfor_process("intermediateCatchEvent", message, other)
+        assert not grader.wait_for_event_nodes(catch)
+
+
 def test_trigger_inbox_reads_parent_folder_from_body_query_params() -> None:
     grader = _load("check_outlook_trigger_inbox")
 

@@ -512,7 +512,7 @@ exact template for any of them with `registry get <type>`.
 | `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:callActivity` | activity |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` | activity |
 | `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | activity |
-| `Intsvc.WaitForEvent` | `bpmn:receiveTask` | event |
+| `Intsvc.WaitForEvent` | `bpmn:receiveTask`; or its `uipath:event` block on a `bpmn:intermediateCatchEvent` (incoming + outgoing) or a `bpmn:boundaryEvent` (`attachedToRef`, outgoing only), with a bare `<bpmn:messageEventDefinition />` after the flows | event |
 | `Intsvc.EventTrigger` | `bpmn:startEvent` | event |
 | `Intsvc.TimerTrigger` | `bpmn:startEvent` | activity |
 | `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:serviceTask` | activity |

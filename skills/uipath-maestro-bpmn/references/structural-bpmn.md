@@ -438,12 +438,14 @@ Payload shapes the canvas serializes:
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
   `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare
   `<bpmn:messageEventDefinition />` (see their registry templates).
-  A mid-process wait for an inbound message is a
+  A mid-process `Maestro.ReceiveMessageEvent` wait is a
   `<bpmn:intermediateCatchEvent>` with incoming and outgoing sequence flows,
-  the registry-provided `Maestro.ReceiveMessageEvent` payload under
-  `bpmn:extensionElements`, and a sibling `<bpmn:messageEventDefinition />`.
-  Do not model a mid-process receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
-  start event, or the PascalCase `bpmn:IntermediateCatchEvent`.
+  the registry-provided payload under `bpmn:extensionElements`, and a sibling
+  `<bpmn:messageEventDefinition />`. Do not model it as `bpmn:receiveTask`,
+  `bpmn:serviceTask`, a start event, or the PascalCase
+  `bpmn:IntermediateCatchEvent`. A connector event wait is
+  `Intsvc.WaitForEvent`; hosts in
+  [registry-workflow.md](registry-workflow.md#ootb-extension-types-29-login-free).
 - **Error**: `<bpmn:errorEventDefinition errorRef="Error_1" />` with a
   `<bpmn:error id="Error_1" name="…" errorCode="…"/>` at definitions level. An
   error end event with no `errorRef` fails to parse at runtime
