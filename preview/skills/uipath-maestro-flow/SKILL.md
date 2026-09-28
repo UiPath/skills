@@ -870,7 +870,7 @@ Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 
 ```ts
 .var('page', types.number, 1)
-.doWhile('paginate', js`$vars.fetch.output.hasNextPage === true`, (body) => body
+.doWhile('paginate', js`$vars.fetch.output.body.hasNextPage === true`, (body) => body
   .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
     method: 'GET', managed: false, returns: { hasNextPage: 'boolean' } }),
     { updates: { page: js`$vars.page + 1` } }),
