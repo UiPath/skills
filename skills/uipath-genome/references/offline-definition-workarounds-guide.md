@@ -110,33 +110,43 @@ The whole seed `create-screen` accepts — `Area` zeros are fine offline, `Selec
 
 ## Order of commands, offline
 
-One definition file per command. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move — the relay commands print little or nothing on success.
+The run's target tool ([source-migration-guide.md § UI targets](source-migration-guide.md)) runs these steps. A success line is not proof: a batch past the shell's length limit reports success for the part that arrived. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move.
 
 1. Screen seed → `target-app update-definition --name --description --selector`.
-2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --activity-type` per element; `--full-selector` on every element (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling.
-3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with the element definitions under that screen.
-4. `link-screen` on the card's workflow, then `link-elements` — never two link commands on one file at once.
-5. An element with a number attribute other than `idx` bound to a selector variable takes steps 2–4 as § Selector variables in number attributes changes them.
+2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --semantic-selector --activity-type` per element; `--full-selector` on every element (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling. `--semantic-selector` adds the semantic step beside the strict one (`SearchSteps="Selector, SemanticSelector"`) and leaves the strict selector as it is, an interpolated expression included. On a registered element, the same call on its exported definition (`object-repository get-element-definition`) followed by `replace-elements` carries the semantic step and the description into the store and keeps the `referenceId` (checked).
+3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with every new element definition of that screen in one call (`--definition-file-paths`, comma-separated). The ids the registry keeps come from what they print:
+   - `create-app` prints the application's `referenceId`.
+   - `create-screen` prints `Name:`, `DefinitionFilePath:` and `ReferenceId: <app id>/<screen id>`.
+   - `create-elements` prints one `DefinitionFilePath:` / `ReferenceId:` pair per definition and writes the `Reference` into each definition file.
+   - `get-screens` and `get-elements` print one `ReferenceId:` / `Name:` / `Description:` block per entry — the store lookup that find-before-create makes.
+   - `target-anchorable update-definition` prints `Message: Target anchorable definition updated.`; `replace-elements` prints one `Successfully replaced Object Repository element '<referenceId>' from definition file '<path>'.` line per entry.
+4. `link-screen` links one card per call. `link-elements` takes entries for several workflows in one call (`workflowFilePath` per entry) and prints one `Successfully linked … to activity '<id>' in workflow '<file>'` line per entry. Never run two link commands on one file at once.
+5. An element whose selector binds a number attribute to a selector variable takes steps 2–4 as § Selector variables in number attributes changes them.
 
 ## Selector variables in number attributes
 
-A number attribute other than `idx` bound to a selector variable (`tableRow='{{Row}}'`) cannot be registered through the CLI: `tableRow` and `tableCol` on a `sap`, `uia` or `java` target, and the `nav` counts `up`, `next` and `prev`.
+A number attribute bound to a selector variable (`tableRow='{{Row}}'`) cannot be registered through the CLI. That holds for `tableRow` and `tableCol` on a `sap`, `uia` or `java` target, and for the `nav` counts `up`, `next` and `prev`. For `idx` it depends on the installed UI Automation package:
+- **26.10.3:** `update-definition` rejects `idx` bound to a variable at the first call, on every tag (checked on `java` and `webctrl`).
+- **26.10.4:** it stores the `string.Format` form and passes every command.
+
+**Probe once per run, before the first element is defined:** run one `update-definition` with `idx='{{Row}}'` on a seed copy, against the project, and record the answer in the brief. If it is rejected, every positional selector variable takes the workaround below, including the annotated constants that carry an `idx` above 2 ([selector-translation-guide.md](selector-translation-guide.md) rule 7).
 
 | Command | Result |
 |---|---|
-| `target-anchorable update-definition --full-selector` with the variable | stores the `string.Format` form, reports success |
-| any later command reading that definition — `update-definition` without `--full-selector` (`--name`, `--description`, `--activity-type`), `create-elements`, `replace-elements` | `Invalid configuration for Target: The attribute '<attribute>' is not supported.` |
+| `target-anchorable update-definition --full-selector` with the variable | stores the `string.Format` form, reports success; `idx` under 26.10.3: rejected at once with the error below |
+| any later command reading that definition — `update-definition` without `--full-selector` (`--name`, `--description`, `--activity-type`), `create-elements`, `replace-elements` | `Invalid configuration for Target '<name>': The attribute '<attribute>' is not supported.` |
 | same selector, literal value | passes every command |
-| `idx` bound to a variable — any tag, in element, fuzzy, scope and screen selectors; `webctrl` table attributes bound to a variable | pass every command and resolve at run time |
+| `idx` bound to a variable (26.10.4) — any tag, in element, fuzzy, scope and screen selectors; `webctrl` table attributes bound to a variable | pass every command and resolve at run time |
 | definition's `string.Format` rewritten as an interpolated string or a concatenation | registers; `link-elements` then writes the activity's target without a strict selector and still reports success |
+| `target-anchorable link` with that registered definition file | links with the `Reference` and drops the expression the same way |
 
 The error names the attribute, but the attribute is valid: keep it, because the selector without it no longer names the row, column or relative node it acts on. A run evaluates the Object Repository element's selector, not the activity's copy in the workflow, and an expression selector runs only when the build compiled the same expression text from the workflow; otherwise the activity fails with `Expression Activity type 'CSharpValue`1 (…)' requires compilation in order to run`. Workaround, per element:
 
-1. Run one `target-anchorable update-definition` on the element's definition with the variable selector in `--full-selector`, and with `--name`, `--description` and `--activity-type` in the same call: every later call without `--full-selector` rejects the file. It writes the `string.Format` expression in the project's expression language.
-2. In the definition file, rewrite that expression as an interpolated string: `string.Format("…tableRow='{0}'…", Row)` becomes `$"…tableRow='{Row}'…"` (checked in a C# project).
+1. Run one `target-anchorable update-definition` on the element's definition with the variable selector in `--full-selector`, and with `--name`, `--description` and `--activity-type` in the same call: every later call without `--full-selector` rejects the file. It writes the `string.Format` expression in the project's expression language. Where the variable is rejected at once (`idx` under 26.10.3), pass the selector with a literal in the variable's place instead.
+2. In the definition file, rewrite that expression (or that literal) as an interpolated string: `string.Format("…tableRow='{0}'…", Row)` becomes `$"…tableRow='{Row}'…"`. In a C# project that is the text of the `CSharpValue`; in a VB project it is the attribute value `[$"…"]` (both checked).
 3. Register the definition with `create-elements` (`replace-elements` for an existing element), then link as usual.
-4. Copy the definition's `<uix:TargetAnchorable.FullSelectorArgument>` element, text unchanged, into the linked activity's `TargetAnchorable`, and keep `Reference`. The build compiles the expression, and per-file `validate`, `build` and the run accept the target.
-5. A re-link writes the target without the expression again. Re-apply step 4 after every re-link and after every `replace-elements` that changes the expression text, and list these activities in the report.
+4. After the link pass, every target linked to that element in one workflow file is the same tag, without the selector. Restore them with one Edit per file and element, `replace_all` on that tag: add the definition's `FullSelectorArgument`, text unchanged, and keep `Reference`. It is a child element in a C# project and an attribute in a VB project. Validate the file. The build compiles the expression, and per-file `validate`, `build` and the run accept the target.
+5. A re-link writes the target without the expression again, and no link command keeps it. Re-apply step 4 after every re-link and after every `replace-elements` that changes the expression text. The link table marks these rows, and the report lists them.
 
 Linked target after step 4 (C# project):
 
@@ -153,6 +163,8 @@ Linked target after step 4 (C# project):
 ## CLI behaviour observed offline
 
 - `uip rpa uia …` relay commands (`object-repository *`, `target-anchorable *`, `target-app *`) reject `--output`; read what they print.
+- On Windows `uip` resolves to a `.cmd` shim, so arguments a script passes to it go through `cmd.exe`, which splits free text at `|`, `&`, `<` and `>` and expands `%VAR%`. A description quoting a source path (`1|1|$vRow$`) then fails with `'1' is not recognized as an internal or external command` and nothing is written. A script calls the CLI's node entry point instead (`node <npm prefix>/node_modules/@uipath/cli/dist/index.js rpa uia …`) with an argument list; that stores the text byte for byte (both checked).
+- `object-repository get-element-definition` takes about ten seconds per element. To check what the store holds, read each element's `.metadata` under `.objects` (JSON: `Name`, `Description`, `Type`, `Reference`) instead of exporting it again; the definition in its `.data` folder declares `utf-16` but is UTF-8.
 - `target-app update-definition` prints nothing on success; confirm the write by reading the definition file back (`--name` / `--description` land in its `.metadata` sibling).
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
 - Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). Carry positional indexes as selector variables ([selector-translation-guide.md](selector-translation-guide.md) rule 7) and write the change back with `target-anchorable update-definition` → `object-repository replace-elements`.
