@@ -24,8 +24,10 @@ Assertion map (Flow -> BPMN):
                                  `.query-entity-records` nodes             -> is_query_node() + mentions_entity()
   F check_smoke_error.py:37-39  `not error_creates` -> fail                -> `error_creates < 1` check
   F check_smoke_error.py:40-42  `len(good_queries) < 2` -> fail            -> `good_queries < 2` check
-  F check_smoke_error.py:21     `for path in glob("**/*.flow")`: the first  -> candidate_files(): every .bpmn under
-                                 file satisfying the shape passes, else fail    the sandbox, first satisfying file passes
+  F check_smoke_error.py:21     `for path in glob("**/*.flow")`: the first  -> candidate_files(): every project .bpmn
+                                 file satisfying the shape passes, else fail    that is an entry point (a Flow project is
+                                                                                one file; a BPMN project runs only its
+                                                                                entry-points.json files)
   I                             parse each .bpmn                          -> ET.parse()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
   T                             entity as the generic objectName, an exact -> mentions_entity()
@@ -58,6 +60,8 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
+    _project_files,
+    entry_point_files,
     NS,
     context_inputs,
     context_value,
@@ -124,17 +128,37 @@ def is_query_node(task: ET.Element, object_name: str, entity: str) -> bool:
 SKIP_PARTS = {"node_modules", ".npm-prefix", ".venv"}
 
 
-def candidate_files() -> list[Path]:
-    """Every .bpmn under the sandbox, as Flow's grader globbed every .flow.
+def candidate_files() -> tuple[list[Path], list[Path]]:
+    """(graded, skipped): the ``.bpmn`` files this grader may pass on, and
+    the project files it deliberately ignores.
 
-    The agent may split the error path into its own file beside the main
-    process (smoke run 36357685718 left DataFabricSmokeError.bpmn and
-    DataFabricSmokeError_error.bpmn in one project); Flow passes when ANY
-    file satisfies the shape, so the port does the same.
+    Flow's grader globbed every ``.flow`` because a Flow project is one file.
+    A BPMN project holds several, and ``entry-points.json`` says which run, so
+    the scan is scoped twice: only files beside a ``project.uiproj`` when any
+    project exists (``bpmn_check._project_files``, so a scratch copy under
+    ``tmp/`` never outranks the project; a bare .bpmn with no project at all
+    still counts, as in find_bpmn_file), then only the entry points of that project when its
+    ``entry-points.json`` exists (before ``refresh`` writes it, every project
+    file counts). Smoke run 36357685718 left the graded shape in
+    ``DataFabricSmokeError_error.bpmn`` beside an empty scaffold that was the
+    project's only entry point; that project must fail.
     """
-    return sorted(
+    every = sorted(
         p for p in Path.cwd().rglob("*.bpmn") if not (SKIP_PARTS & set(p.parts))
     )
+    # As find_bpmn_file: the project guard disambiguates when a project
+    # exists; a bare .bpmn with no project.uiproj anywhere (batch-10 run
+    # 35538279757 passed that way) is still the artifact.
+    in_project = _project_files(every) or every
+    graded: list[Path] = []
+    skipped: list[Path] = []
+    for path in in_project:
+        entry = entry_point_files(path.parent)
+        if entry is None or path in entry:
+            graded.append(path)
+        else:
+            skipped.append(path)
+    return graded, skipped
 
 
 def shape_of(root: ET.Element) -> tuple[int, int]:
@@ -150,8 +174,8 @@ def shape_of(root: ET.Element) -> tuple[int, int]:
 
 
 def main() -> None:
-    files = candidate_files()
-    if not files:
+    files, skipped = candidate_files()
+    if not files and not skipped:
         fail("no BPMN file found")
 
     for path in files:
@@ -179,7 +203,19 @@ def main() -> None:
         print(f"OK: {path} -- create on {CREATE_ENTITY}, {good_queries} query on {QUERY_ENTITY}")
         return
 
-    fail("no .bpmn satisfies the error-path shape")
+    for path in skipped:
+        try:
+            error_creates, good_queries = shape_of(ET.parse(path).getroot())
+        except ET.ParseError:
+            continue
+        if error_creates >= 1 and good_queries >= 2:
+            print(
+                f"FAIL: the error-path shape is in {path}, which is not an entry point "
+                f"of its project (entry-points.json); the process that runs does not "
+                f"carry it",
+                file=sys.stderr,
+            )
+    fail("no entry-point .bpmn satisfies the error-path shape")
 
 
 if __name__ == "__main__":

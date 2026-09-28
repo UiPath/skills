@@ -37,6 +37,33 @@ def _project_files(paths: Iterable[_PathLike]) -> list[_PathLike]:
     return [p for p in paths if (Path(p).parent / "project.uiproj").is_file()]
 
 
+def entry_point_files(project_dir: Path) -> list[Path] | None:
+    """The ``.bpmn`` files ``entry-points.json`` names in ``project_dir``.
+
+    ``filePath`` is written as ``/content/<file>.bpmn#<start-event-id>``;
+    the ``/content/`` prefix and the ``#…`` suffix are stripped. Returns
+    ``None`` when the project has no ``entry-points.json`` yet (``refresh``
+    has not run), so a caller can fall back to every project file. A BPMN
+    project can hold several ``.bpmn`` files and only the entry points run:
+    smoke run 36357685718 left the graded shape in a non-entry file beside an
+    empty scaffold that was the only entry point.
+    """
+    manifest = Path(project_dir) / "entry-points.json"
+    if not manifest.is_file():
+        return None
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out: list[Path] = []
+    for ep in data.get("entryPoints") or []:
+        file_path = str(ep.get("filePath") or "").split("#", 1)[0]
+        name = Path(file_path.removeprefix("/content/")).name
+        if name:
+            out.append(Path(project_dir) / name)
+    return out
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
     paths = sorted(glob.glob("**/*.bpmn", recursive=True))
     if not paths:
